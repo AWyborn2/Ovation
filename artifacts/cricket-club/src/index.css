@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -51,80 +51,88 @@
 }
 
 :root {
-  --background: 40 33% 98%;
-  --foreground: 150 40% 10%;
-  --border: 150 20% 85%;
-  --input: 150 20% 85%;
-  --ring: 150 40% 20%;
+  /* Slate */
+  --background: 207 17% 24%;
+  --foreground: 0 0% 100%;
+  
+  --border: 207 17% 35%;
+  --input: 207 17% 35%;
+  
+  /* Gold */
+  --ring: 46 96% 57%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 150 40% 10%;
-  --card-border: 150 20% 85%;
+  /* Slightly lighter slate for cards */
+  --card: 207 17% 27%;
+  --card-foreground: 0 0% 100%;
+  --card-border: 46 96% 57%; /* subtle gold accent */
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 150 40% 10%;
-  --popover-border: 150 20% 85%;
+  --popover: 207 17% 27%;
+  --popover-foreground: 0 0% 100%;
+  --popover-border: 207 17% 35%;
 
-  --primary: 150 40% 20%;
-  --primary-foreground: 40 33% 98%;
-  --primary-border: 150 40% 15%;
+  /* Gold */
+  --primary: 46 96% 57%;
+  /* Dark text on gold button */
+  --primary-foreground: 207 17% 24%; 
+  --primary-border: 46 96% 50%;
 
-  --secondary: 40 20% 90%;
-  --secondary-foreground: 150 40% 20%;
-  --secondary-border: 40 20% 80%;
+  /* Secondary / Brown Accent */
+  --secondary: 25 20% 21%;
+  --secondary-foreground: 46 96% 57%;
+  --secondary-border: 25 20% 15%;
 
-  --muted: 40 20% 90%;
-  --muted-foreground: 150 10% 40%;
-  --muted-border: 40 20% 80%;
+  --muted: 207 17% 30%;
+  --muted-foreground: 207 10% 75%;
+  --muted-border: 207 17% 35%;
 
-  --accent: 350 60% 45%;
-  --accent-foreground: 0 0% 100%;
-  --accent-border: 350 60% 40%;
+  --accent: 46 96% 57%;
+  --accent-foreground: 207 17% 24%;
+  --accent-border: 46 96% 50%;
 
-  --destructive: 350 60% 45%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --destructive-border: 350 60% 40%;
+  --destructive-border: 0 72% 45%;
 
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Bricolage Grotesque', sans-serif;
+  --app-font-sans: 'Montserrat', sans-serif;
+  --app-font-serif: 'Oswald', sans-serif;
   --app-font-mono: 'Space Mono', monospace;
-  --radius: 0.25rem;
+  --radius: 0.375rem;
 }
 
 .dark {
-  --background: 150 40% 6%;
-  --foreground: 40 33% 98%;
-  --border: 150 40% 15%;
-  --input: 150 40% 15%;
-  --ring: 40 33% 98%;
+  --background: 207 17% 24%;
+  --foreground: 0 0% 100%;
+  --border: 207 17% 35%;
+  --input: 207 17% 35%;
+  --ring: 46 96% 57%;
 
-  --card: 150 40% 8%;
-  --card-foreground: 40 33% 98%;
-  --card-border: 150 40% 15%;
+  --card: 207 17% 27%;
+  --card-foreground: 0 0% 100%;
+  --card-border: 46 96% 57%;
 
-  --popover: 150 40% 8%;
-  --popover-foreground: 40 33% 98%;
-  --popover-border: 150 40% 15%;
+  --popover: 207 17% 27%;
+  --popover-foreground: 0 0% 100%;
+  --popover-border: 207 17% 35%;
 
-  --primary: 40 33% 98%;
-  --primary-foreground: 150 40% 10%;
-  --primary-border: 40 33% 90%;
+  --primary: 46 96% 57%;
+  --primary-foreground: 207 17% 24%;
+  --primary-border: 46 96% 50%;
 
-  --secondary: 150 40% 15%;
-  --secondary-foreground: 40 33% 98%;
-  --secondary-border: 150 40% 20%;
+  --secondary: 25 20% 21%;
+  --secondary-foreground: 46 96% 57%;
+  --secondary-border: 25 20% 15%;
 
-  --muted: 150 40% 15%;
-  --muted-foreground: 150 10% 60%;
-  --muted-border: 150 40% 20%;
+  --muted: 207 17% 30%;
+  --muted-foreground: 207 10% 75%;
+  --muted-border: 207 17% 35%;
 
-  --accent: 350 60% 45%;
-  --accent-foreground: 0 0% 100%;
-  --accent-border: 350 60% 40%;
+  --accent: 46 96% 57%;
+  --accent-foreground: 207 17% 24%;
+  --accent-border: 46 96% 50%;
 
-  --destructive: 350 60% 45%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --destructive-border: 350 60% 40%;
+  --destructive-border: 0 72% 45%;
 }
 
 @layer base {
@@ -133,8 +141,17 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    background-image: url('@assets/HHCC-Website-background-1-1-1_1779834877551.png');
+    background-repeat: repeat;
+    background-size: auto;
+    background-attachment: fixed;
+  }
+  /* Optional dark overlay if texture is too bright, though requested subtle */
+  body::before {
+    content: "";
+    @apply fixed inset-0 pointer-events-none bg-background/80 mix-blend-multiply z-[-1];
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight text-foreground;
+    @apply font-serif tracking-normal uppercase text-primary;
   }
 }
