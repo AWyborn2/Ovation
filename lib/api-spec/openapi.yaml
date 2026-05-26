@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Halls Head Cricket Club Stats API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: players
+    description: Player operations
+  - name: stats
+    description: Per-grade stats operations
+  - name: grades
+    description: Grade summary operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,312 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /players:
+    get:
+      operationId: listPlayers
+      tags: [players]
+      summary: List all players
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name
+        - name: grade
+          in: query
+          schema:
+            type: string
+          description: Filter by grade
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [games, runs, wickets, average, name]
+          description: Sort field
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of players
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerListResponse"
+    post:
+      operationId: createPlayer
+      tags: [players]
+      summary: Create a new player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/{id}:
+    get:
+      operationId: getPlayer
+      tags: [players]
+      summary: Get a player by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player with all grade stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePlayer
+      tags: [players]
+      summary: Update a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerUpdate"
+      responses:
+        "200":
+          description: Updated player
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePlayer
+      tags: [players]
+      summary: Delete a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /stats:
+    get:
+      operationId: listStats
+      tags: [stats]
+      summary: List per-grade stats records
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: grade
+          in: query
+          schema:
+            type: string
+        - name: playerId
+          in: query
+          schema:
+            type: integer
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [games, runs, wickets, batAvg, bowlAvg, catches, name]
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of stat records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatListResponse"
+    post:
+      operationId: createStat
+      tags: [stats]
+      summary: Create a stat record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stat"
+
+  /stats/{id}:
+    get:
+      operationId: getStat
+      tags: [stats]
+      summary: Get a stat record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Stat record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stat"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateStat
+      tags: [stats]
+      summary: Update a stat record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatUpdate"
+      responses:
+        "200":
+          description: Updated stat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stat"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteStat
+      tags: [stats]
+      summary: Delete a stat record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /grades:
+    get:
+      operationId: listGrades
+      tags: [grades]
+      summary: List all grades with summary stats
+      responses:
+        "200":
+          description: List of grade summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GradeSummary"
+
+  /grades/{grade}/leaderboard:
+    get:
+      operationId: getGradeLeaderboard
+      tags: [grades]
+      summary: Get leaderboard for a specific grade
+      parameters:
+        - name: grade
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Stat"
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [grades]
+      summary: Club-wide dashboard stats
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+
+  /records:
+    get:
+      operationId: getRecords
+      tags: [grades]
+      summary: Club all-time records
+      responses:
+        "200":
+          description: All-time records across all grades
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubRecords"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +346,280 @@ components:
       required:
         - status
 
+    Player:
+      type: object
+      required: [id, surname, givenName]
+      properties:
+        id:
+          type: integer
+        surname:
+          type: string
+        givenName:
+          type: string
+        gradesPlayed:
+          type: ["string", "null"]
+        totalGames:
+          type: ["integer", "null"]
+        totalRuns:
+          type: ["integer", "null"]
+        totalWickets:
+          type: ["integer", "null"]
+
+    PlayerInput:
+      type: object
+      required: [surname, givenName]
+      properties:
+        surname:
+          type: string
+        givenName:
+          type: string
+
+    PlayerUpdate:
+      type: object
+      properties:
+        surname:
+          type: string
+        givenName:
+          type: string
+
+    PlayerDetail:
+      type: object
+      required: [id, surname, givenName, stats]
+      properties:
+        id:
+          type: integer
+        surname:
+          type: string
+        givenName:
+          type: string
+        gradesPlayed:
+          type: ["string", "null"]
+        stats:
+          type: array
+          items:
+            $ref: "#/components/schemas/Stat"
+
+    PlayerListResponse:
+      type: object
+      required: [players, total, page, limit]
+      properties:
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    Stat:
+      type: object
+      required: [id, playerId, surname, givenName, grade]
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        surname:
+          type: string
+        givenName:
+          type: string
+        grade:
+          type: string
+        games:
+          type: ["integer", "null"]
+        innings:
+          type: ["integer", "null"]
+        notOuts:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        batAvg:
+          type: ["number", "null"]
+        highScore:
+          type: ["string", "null"]
+        fifties:
+          type: ["integer", "null"]
+        hundreds:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        runsConceded:
+          type: ["integer", "null"]
+        bowlAvg:
+          type: ["number", "null"]
+        bestBowling:
+          type: ["string", "null"]
+        fiveWickets:
+          type: ["integer", "null"]
+        catches:
+          type: ["integer", "null"]
+        stumpings:
+          type: ["integer", "null"]
+        runOuts:
+          type: ["integer", "null"]
+
+    StatInput:
+      type: object
+      required: [playerId, grade]
+      properties:
+        playerId:
+          type: integer
+        grade:
+          type: string
+        games:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        batAvg:
+          type: number
+        highScore:
+          type: string
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        bowlAvg:
+          type: number
+        bestBowling:
+          type: string
+        fiveWickets:
+          type: integer
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+
+    StatUpdate:
+      type: object
+      properties:
+        grade:
+          type: string
+        games:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        batAvg:
+          type: number
+        highScore:
+          type: string
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        bowlAvg:
+          type: number
+        bestBowling:
+          type: string
+        fiveWickets:
+          type: integer
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+
+    StatListResponse:
+      type: object
+      required: [stats, total, page, limit]
+      properties:
+        stats:
+          type: array
+          items:
+            $ref: "#/components/schemas/Stat"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    GradeSummary:
+      type: object
+      required: [grade]
+      properties:
+        grade:
+          type: string
+        players:
+          type: ["integer", "null"]
+        games:
+          type: ["integer", "null"]
+        innings:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        catches:
+          type: ["integer", "null"]
+        stumpings:
+          type: ["integer", "null"]
+        runOuts:
+          type: ["integer", "null"]
+
+    Dashboard:
+      type: object
+      required: [totalPlayers, totalGames, totalRuns, totalWickets, gradesCount, topRunScorer, topWicketTaker, topFielder]
+      properties:
+        totalPlayers:
+          type: integer
+        totalGames:
+          type: integer
+        totalRuns:
+          type: integer
+        totalWickets:
+          type: integer
+        gradesCount:
+          type: integer
+        topRunScorer:
+          $ref: "#/components/schemas/Player"
+        topWicketTaker:
+          $ref: "#/components/schemas/Player"
+        topFielder:
+          $ref: "#/components/schemas/Player"
+        gradeSummaries:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeSummary"
+
+    ClubRecords:
+      type: object
+      required: [mostGames, mostRuns, mostWickets, highestScore, bestBowling, mostCatches, mostFifties, mostHundreds]
+      properties:
+        mostGames:
+          $ref: "#/components/schemas/Stat"
+        mostRuns:
+          $ref: "#/components/schemas/Stat"
+        mostWickets:
+          $ref: "#/components/schemas/Stat"
+        highestScore:
+          $ref: "#/components/schemas/Stat"
+        bestBowling:
+          $ref: "#/components/schemas/Stat"
+        mostCatches:
+          $ref: "#/components/schemas/Stat"
+        mostFifties:
+          $ref: "#/components/schemas/Stat"
+        mostHundreds:
+          $ref: "#/components/schemas/Stat"

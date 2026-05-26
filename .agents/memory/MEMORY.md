@@ -1,0 +1,2 @@
+- [Cricket club OpenAPI gotchas](cricket-openapi-gotchas.md) — Orval naming collisions: don't add query params to getGradeLeaderboard, use entity-shaped body schema names.
+- [Seeding from xlsx](seeding-from-xlsx.md) — Use executeSql callback for seeding; scripts package lacks drizzle-orm at runtime unless explicitly added to dependencies.
