@@ -88,52 +88,52 @@ export const BOARDS: BoardMeta[] = [
 
 const TIERS: Record<BoardKey, { label: string; min: number; max?: number }[]> = {
   games: [
-    { label: "350+ Games", min: 350 },
-    { label: "300–349 Games", min: 300, max: 349 },
-    { label: "250–299 Games", min: 250, max: 299 },
-    { label: "200–249 Games", min: 200, max: 249 },
-    { label: "150–199 Games", min: 150, max: 199 },
-    { label: "100–149 Games", min: 100, max: 149 },
-    { label: "50–99 Games", min: 50, max: 99 },
+    { label: "350 Games Club", min: 350 },
+    { label: "300 Games Club", min: 300, max: 349 },
+    { label: "250 Games Club", min: 250, max: 299 },
+    { label: "200 Games Club", min: 200, max: 249 },
+    { label: "150 Games Club", min: 150, max: 199 },
+    { label: "100 Games Club", min: 100, max: 149 },
+    { label: "50 Games Club", min: 50, max: 99 },
   ],
   runs: [
-    { label: "10,000+ Runs", min: 10000 },
-    { label: "7,500+ Runs", min: 7500, max: 9999 },
-    { label: "5,000+ Runs", min: 5000, max: 7499 },
-    { label: "2,500+ Runs", min: 2500, max: 4999 },
-    { label: "1,000+ Runs", min: 1000, max: 2499 },
-    { label: "500+ Runs", min: 500, max: 999 },
+    { label: "10,000 Runs Club", min: 10000 },
+    { label: "7,500 Runs Club", min: 7500, max: 9999 },
+    { label: "5,000 Runs Club", min: 5000, max: 7499 },
+    { label: "2,500 Runs Club", min: 2500, max: 4999 },
+    { label: "1,000 Runs Club", min: 1000, max: 2499 },
+    { label: "500 Runs Club", min: 500, max: 999 },
   ],
   wickets: [
-    { label: "500+ Wickets", min: 500 },
-    { label: "300+ Wickets", min: 300, max: 499 },
-    { label: "200+ Wickets", min: 200, max: 299 },
-    { label: "100+ Wickets", min: 100, max: 199 },
-    { label: "50+ Wickets", min: 50, max: 99 },
-    { label: "25+ Wickets", min: 25, max: 49 },
+    { label: "500 Wickets Club", min: 500 },
+    { label: "300 Wickets Club", min: 300, max: 499 },
+    { label: "200 Wickets Club", min: 200, max: 299 },
+    { label: "100 Wickets Club", min: 100, max: 199 },
+    { label: "50 Wickets Club", min: 50, max: 99 },
+    { label: "25 Wickets Club", min: 25, max: 49 },
   ],
   dismissals: [
-    { label: "100+ Dismissals", min: 100 },
-    { label: "75+ Dismissals", min: 75, max: 99 },
-    { label: "50+ Dismissals", min: 50, max: 74 },
-    { label: "25+ Dismissals", min: 25, max: 49 },
-    { label: "10+ Dismissals", min: 10, max: 24 },
+    { label: "100 Dismissals Club", min: 100 },
+    { label: "75 Dismissals Club", min: 75, max: 99 },
+    { label: "50 Dismissals Club", min: 50, max: 74 },
+    { label: "25 Dismissals Club", min: 25, max: 49 },
+    { label: "10 Dismissals Club", min: 10, max: 24 },
   ],
   highscores: [
-    { label: "200+", min: 200 },
-    { label: "150+", min: 150, max: 199 },
-    { label: "100+ (Centurions)", min: 100, max: 149 },
-    { label: "75+", min: 75, max: 99 },
-    { label: "50+", min: 50, max: 74 },
+    { label: "Double Century Club (200+)", min: 200 },
+    { label: "150 Run Club", min: 150, max: 199 },
+    { label: "Century Club (100+)", min: 100, max: 149 },
+    { label: "75 Run Club", min: 75, max: 99 },
+    { label: "Half Century Club (50+)", min: 50, max: 74 },
   ],
   bestbowling: [
-    { label: "8+ Wickets", min: 8 },
-    { label: "7 Wickets", min: 7, max: 7 },
-    { label: "6 Wickets", min: 6, max: 6 },
-    { label: "5 Wickets", min: 5, max: 5 },
+    { label: "8 Wicket Haul Club", min: 8 },
+    { label: "7 Wicket Haul Club", min: 7, max: 7 },
+    { label: "6 Wicket Haul Club", min: 6, max: 6 },
+    { label: "5 Wicket Haul Club", min: 5, max: 5 },
   ],
-  centurions: [{ label: "100+ High Score", min: 100 }],
-  fivefers: [{ label: "Five-Wicket Haul", min: 1 }],
+  centurions: [{ label: "Century Club", min: 100 }],
+  fivefers: [{ label: "Five-Wicket Haul Club", min: 1 }],
 };
 
 export interface AggregatedPlayer {
@@ -277,6 +277,8 @@ export interface BoardRow {
 export interface BoardTier {
   label: string;
   rows: BoardRow[];
+  startRank: number;
+  tierIndex: number;
 }
 
 const fmtNum = (n: number): string => n.toLocaleString();
@@ -312,7 +314,7 @@ const getPlayerValue = (
 
 export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardTier[] => {
   const tiers = TIERS[key];
-  const tierResults: BoardTier[] = tiers.map((t) => ({ label: t.label, rows: [] }));
+  const tierResults: BoardTier[] = tiers.map((t, i) => ({ label: t.label, rows: [], startRank: 1, tierIndex: i }));
   const seen = new Set<number>();
 
   const enriched = players
@@ -337,5 +339,11 @@ export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardT
       sortValue: v.sortValue,
     });
   }
-  return tierResults.filter((t) => t.rows.length > 0);
+  const populated = tierResults.filter((t) => t.rows.length > 0);
+  let running = 1;
+  for (const t of populated) {
+    t.startRank = running;
+    running += t.rows.length;
+  }
+  return populated;
 };

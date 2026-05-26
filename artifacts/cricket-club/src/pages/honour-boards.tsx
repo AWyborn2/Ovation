@@ -11,6 +11,7 @@ import {
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
+import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles } from "lucide-react";
 import {
   BOARDS,
   type BoardKey,
@@ -32,17 +33,26 @@ const SummaryStat = ({ label, value }: { label: string; value: string | number }
   </div>
 );
 
+const TIER_ICONS = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
+const TierBadge = ({ tierIndex }: { tierIndex: number }) => {
+  const Icon = TIER_ICONS[Math.min(tierIndex, TIER_ICONS.length - 1)];
+  return <Icon className="h-5 w-5 md:h-6 md:w-6 shrink-0" strokeWidth={2.25} />;
+};
+
 const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[number] }) => (
   <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
-    <div className="bg-primary text-primary-foreground px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between">
-      <span>{tier.label}</span>
-      <span className="text-xs">{tier.rows.length} {tier.rows.length === 1 ? "player" : "players"}</span>
+    <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
+      <span className="flex items-center gap-2 md:gap-3">
+        <TierBadge tierIndex={tier.tierIndex} />
+        <span>{tier.label}</span>
+      </span>
+      <span className="text-xs whitespace-nowrap">{tier.rows.length} {tier.rows.length === 1 ? "player" : "players"}</span>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-black/25">
-            <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-12">#</th>
+            <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-14">#</th>
             <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Surname</th>
             <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Given Name</th>
             <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">{board.headlineLabel}</th>
@@ -52,7 +62,7 @@ const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[nu
         <tbody>
           {tier.rows.map((r, i) => (
             <tr key={r.playerId} className={`border-t border-border/50 hover:bg-primary/10 transition-colors ${i % 2 ? "bg-black/10" : ""}`}>
-              <td className="p-3 text-center font-mono text-primary font-bold">{i + 1}</td>
+              <td className="p-3 text-center font-mono text-primary font-bold">{tier.startRank + i}</td>
               <td className="p-3">
                 <Link href={`/players/${r.playerId}`} className="font-semibold text-primary hover:underline uppercase">
                   {r.surname}
