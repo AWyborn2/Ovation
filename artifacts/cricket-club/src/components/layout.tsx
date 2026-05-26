@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, LayoutDashboard, Trophy, Award, Menu, X, Mail } from "lucide-react";
+import { Users, ScrollText, Trophy, Award, Menu, X } from "lucide-react";
 import { useState } from "react";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
 
@@ -8,7 +8,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Honour Boards", href: "/", icon: ScrollText },
     { name: "Players", href: "/players", icon: Users },
     { name: "Grades", href: "/grades", icon: Trophy },
     { name: "Records", href: "/records", icon: Award },

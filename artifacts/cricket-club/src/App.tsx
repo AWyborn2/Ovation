@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
-import Dashboard from "@/pages/dashboard";
+import HonourBoards from "@/pages/honour-boards";
 import Players from "@/pages/players";
 import PlayerDetail from "@/pages/player-detail";
 import Grades from "@/pages/grades";
@@ -18,7 +18,7 @@ function Router() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        <Route path="/" component={HonourBoards} />
         <Route path="/players" component={Players} />
         <Route path="/players/:id" component={PlayerDetail} />
         <Route path="/grades" component={Grades} />
