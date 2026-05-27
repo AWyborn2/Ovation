@@ -37,7 +37,7 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
 const Plaque = ({ prem }: { prem: Premiership }) => {
   return (
     <div
-      className="relative h-full shadow-xl"
+      className="relative h-full shadow-xl border border-slate-900/60"
       style={{
         background:
           "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
@@ -45,10 +45,10 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
       }}
     >
       <div
-        className="h-full m-2 border-[3px] border-slate-700/80 p-[3px]"
+        className="h-full m-2 border-[3px] border-slate-800 p-[3px]"
       >
         <div
-          className="h-full px-3 py-3 text-center flex flex-col border border-slate-700/80"
+          className="h-full px-3 py-3 text-center flex flex-col border border-slate-800"
           style={{
             color: "#0f172a",
             fontFamily: PLAQUE_FONT,
