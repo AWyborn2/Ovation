@@ -1,28 +1,23 @@
-import badgeTemplate from "@assets/HHCC_Badge_ICON_Template_1779852473312.png";
-
 interface GradeMeta {
   full: string;
   abbr: string;
   bannerShort: string;
   bannerLong: string;
-  accent: string;
   sortOrder: number;
 }
 
 const META: Record<string, GradeMeta> = {
-  "A Grade":        { full: "A Grade",        abbr: "A",   bannerShort: "A GRADE",     bannerLong: "A GRADE",        accent: "#F2B544", sortOrder: 1 },
-  "B Grade":        { full: "B Grade",        abbr: "B",   bannerShort: "B GRADE",     bannerLong: "B GRADE",        accent: "#F2B544", sortOrder: 2 },
-  "C Grade":        { full: "C Grade",        abbr: "C",   bannerShort: "C GRADE",     bannerLong: "C GRADE",        accent: "#F2B544", sortOrder: 3 },
-  "D Grade":        { full: "D Grade",        abbr: "D",   bannerShort: "D GRADE",     bannerLong: "D GRADE",        accent: "#F2B544", sortOrder: 4 },
-  "E Grade":        { full: "E Grade",        abbr: "E",   bannerShort: "E GRADE",     bannerLong: "E GRADE",        accent: "#F2B544", sortOrder: 5 },
-  "F Grade":        { full: "F Grade",        abbr: "F",   bannerShort: "F GRADE",     bannerLong: "F GRADE",        accent: "#F2B544", sortOrder: 6 },
-  "Female A Grade": { full: "Female A Grade", abbr: "FA",  bannerShort: "FEM A",       bannerLong: "FEMALE A",       accent: "#F2B544", sortOrder: 7 },
-  "Female B Grade": { full: "Female B Grade", abbr: "FB",  bannerShort: "FEM B",       bannerLong: "FEMALE B",       accent: "#F2B544", sortOrder: 8 },
-  "PPL":            { full: "PPL",            abbr: "PPL", bannerShort: "PPL",         bannerLong: "PPL",            accent: "#F2B544", sortOrder: 9 },
-  "Colts":          { full: "Colts",          abbr: "Co",  bannerShort: "COLTS",       bannerLong: "COLTS",          accent: "#F2B544", sortOrder: 10 },
+  "A Grade":        { full: "A Grade",        abbr: "A",   bannerShort: "A GRADE",  bannerLong: "A GRADE",         sortOrder: 1 },
+  "B Grade":        { full: "B Grade",        abbr: "B",   bannerShort: "B GRADE",  bannerLong: "B GRADE",         sortOrder: 2 },
+  "C Grade":        { full: "C Grade",        abbr: "C",   bannerShort: "C GRADE",  bannerLong: "C GRADE",         sortOrder: 3 },
+  "D Grade":        { full: "D Grade",        abbr: "D",   bannerShort: "D GRADE",  bannerLong: "D GRADE",         sortOrder: 4 },
+  "E Grade":        { full: "E Grade",        abbr: "E",   bannerShort: "E GRADE",  bannerLong: "E GRADE",         sortOrder: 5 },
+  "F Grade":        { full: "F Grade",        abbr: "F",   bannerShort: "F GRADE",  bannerLong: "F GRADE",         sortOrder: 6 },
+  "Female A Grade": { full: "Female A Grade", abbr: "FA",  bannerShort: "FEM A",    bannerLong: "FEMALE A",        sortOrder: 7 },
+  "Female B Grade": { full: "Female B Grade", abbr: "FB",  bannerShort: "FEM B",    bannerLong: "FEMALE B",        sortOrder: 8 },
+  "PPL":            { full: "PPL",            abbr: "PPL", bannerShort: "PPL",      bannerLong: "PPL",             sortOrder: 9 },
+  "Colts":          { full: "Colts",          abbr: "Co",  bannerShort: "COLTS",    bannerLong: "COLTS",           sortOrder: 10 },
 };
-
-const FALLBACK_ACCENT = "#F2B544";
 
 const getMeta = (grade: string): GradeMeta => {
   return META[grade] ?? {
@@ -30,7 +25,6 @@ const getMeta = (grade: string): GradeMeta => {
     abbr: grade.slice(0, 2).toUpperCase(),
     bannerShort: grade.toUpperCase().slice(0, 8),
     bannerLong: grade.toUpperCase(),
-    accent: FALLBACK_ACCENT,
     sortOrder: 99,
   };
 };
@@ -40,7 +34,12 @@ export const sortGradesBySeniority = (grades: Iterable<string>): string[] =>
 
 type Size = "sm" | "md" | "lg";
 
-const SIZE_PX: Record<Size, number> = { sm: 44, md: 64, lg: 104 };
+const SIZE_PX: Record<Size, number> = { sm: 40, md: 64, lg: 104 };
+
+// Template palette (matches the HHCC badge PNG)
+const GOLD = "#F2B544";
+const GOLD_DARK = "#B07A1F";
+const INK = "#2A1F12";
 
 interface GradeBadgeProps {
   grade: string;
@@ -49,76 +48,93 @@ interface GradeBadgeProps {
 }
 
 /**
- * HHCC crest badge. Renders the club's badge template (gold diamond + ribbon)
- * with the grade abbreviation overlaid on the diamond and a grade-specific
- * label painted over the banner's placeholder "GRADE" text.
- *
- * Layout percentages are tuned to the 1024x1024 template image. The diamond's
- * visual centre sits ~38% from the top; the banner text sits ~67% from the
- * top.
+ * HHCC crest badge — SVG rebuild of the club badge template.
+ * Gold diamond with ink-coloured inner fill, gold ribbon banner underneath,
+ * grade abbreviation on the diamond, grade label on the ribbon.
  */
 export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) => {
   const meta = getMeta(grade);
   const px = SIZE_PX[size];
-  // Always show the banner overlay so the grade is identifiable at any size.
   const bannerText = size === "lg" ? meta.bannerLong : meta.bannerShort;
 
-  // Abbreviation font scales with badge size; long abbreviations shrink.
   const abbrLen = meta.abbr.length;
-  const abbrFontPx =
-    abbrLen >= 3 ? px * 0.26 : abbrLen === 2 ? px * 0.32 : px * 0.42;
+  const abbrFontSize = abbrLen >= 3 ? 26 : abbrLen === 2 ? 32 : 44;
+  const bannerFontSize = bannerText.length > 6 ? 9 : bannerText.length > 4 ? 10.5 : 12;
 
-  // Banner text + cover strip dimensions
-  const bannerFontPx = Math.max(7, px * 0.1);
+  // Outer diamond (square rotated 45°), points slightly inset so we have room
+  // for the dark drop shadow / stroke.
+  const diamondOuter = "M50 6 L94 50 L50 86 L6 50 Z";
+  const diamondInner = "M50 14 L86 50 L50 78 L14 50 Z";
+
+  // Ribbon: a banner that sits underneath the diamond and dips at the centre
+  // following the diamond's lower point. Two trailing tails on either end.
+  // Coordinate system: 100 wide, sits between y=74 and y=110.
+  const ribbon =
+    // left tail
+    "M2 80 L14 76 L14 86 " +
+    // left main body sweeping up and across the diamond bottom
+    "L22 82 Q40 86 50 92 Q60 86 78 82 L86 86 L86 76 L98 80 " +
+    // right tail bottom
+    "L92 92 L86 90 L86 98 L74 94 " +
+    // bottom of right main body, back across to left
+    "Q60 98 50 102 Q40 98 26 94 L14 98 L14 90 L8 92 Z";
 
   return (
-    <div
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 110"
+      width={px}
+      height={Math.round(px * 1.1)}
+      className={`inline-block shrink-0 ${className ?? ""}`}
       role="img"
       aria-label={meta.full}
-      title={meta.full}
-      className={`relative inline-block shrink-0 select-none ${className ?? ""}`}
-      style={{ width: px, height: px }}
     >
-      <img
-        src={badgeTemplate}
-        alt=""
-        draggable={false}
-        className="block h-full w-full object-contain"
+      <title>{meta.full}</title>
+
+      {/* --- Ribbon (drawn first so the diamond sits on top) --- */}
+      <path d={ribbon} fill={GOLD} stroke={INK} strokeWidth="2.2" strokeLinejoin="round" />
+      {/* Inner shadow line on ribbon for depth */}
+      <path
+        d="M14 86 L22 82 Q40 86 50 92 Q60 86 78 82 L86 86"
+        fill="none"
+        stroke={GOLD_DARK}
+        strokeOpacity="0.55"
+        strokeWidth="0.8"
       />
 
-      {/* Grade abbreviation on the diamond */}
-      <span
-        className="pointer-events-none absolute font-serif font-bold leading-none"
-        style={{
-          left: "50%",
-          top: "36%",
-          transform: "translate(-50%, -50%)",
-          fontSize: abbrFontPx,
-          color: "hsl(207 17% 14%)",
-          letterSpacing: abbrLen >= 3 ? "0" : "0.02em",
-        }}
+      {/* --- Diamond --- */}
+      <path d={diamondOuter} fill={GOLD} stroke={INK} strokeWidth="2.2" strokeLinejoin="round" />
+      <path d={diamondInner} fill={INK} />
+
+      {/* Grade abbreviation centred on the diamond */}
+      <text
+        x="50"
+        y="50"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontWeight="bold"
+        fontSize={abbrFontSize}
+        fill={GOLD}
       >
         {meta.abbr}
-      </span>
+      </text>
 
-      {/* Banner label: covers the template's placeholder "GRADE" text */}
-      <span
-        className="pointer-events-none absolute flex items-center justify-center font-serif font-bold leading-none"
-        style={{
-          left: "22%",
-          right: "22%",
-          top: "62%",
-          height: `${Math.max(9, px * 0.13)}px`,
-          backgroundColor: meta.accent,
-          color: "hsl(207 17% 14%)",
-          fontSize: bannerFontPx,
-          letterSpacing: "0.04em",
-          borderRadius: 1,
-        }}
+      {/* Banner text */}
+      <text
+        x="50"
+        y="91"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontWeight="bold"
+        fontSize={bannerFontSize}
+        fill={INK}
+        letterSpacing="0.6"
       >
         {bannerText}
-      </span>
-    </div>
+      </text>
+    </svg>
   );
 };
 
