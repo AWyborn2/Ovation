@@ -63,8 +63,15 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
   // Single label rendered in the diamond's visual centre.
   const diamondLabel = size === "lg" ? meta.bannerLong : meta.bannerShort;
   const diamondScale =
-    diamondLabel.length > 7 ? 0.1 : diamondLabel.length > 5 ? 0.12 : 0.14;
-  const diamondFontPx = Math.max(8, px * diamondScale);
+    diamondLabel.length > 7 ? 0.075 : diamondLabel.length > 5 ? 0.09 : 0.11;
+  const diamondFontPx = Math.max(7, px * diamondScale);
+
+  // Stack same-colour drop-shadows to visually thicken the PNG's gold outline
+  // so it matches the heavier stroke weight of the club's other crest icons.
+  const strokeBoost =
+    `drop-shadow(0 0 0.4px ${GOLD}) drop-shadow(0 0 0.4px ${GOLD}) ` +
+    `drop-shadow(0.4px 0 0 ${GOLD}) drop-shadow(-0.4px 0 0 ${GOLD}) ` +
+    `drop-shadow(0 0.4px 0 ${GOLD}) drop-shadow(0 -0.4px 0 ${GOLD})`;
 
   return (
     <div
@@ -79,6 +86,7 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
         alt=""
         draggable={false}
         className="block h-full w-full object-contain"
+        style={{ filter: strokeBoost }}
       />
 
       {/* Grade label centred in the diamond's visual centre */}
