@@ -2,38 +2,33 @@ import { Link } from "wouter";
 import { useMemo, useState } from "react";
 import { useListPremierships } from "@workspace/api-client-react";
 import type { Premiership, PremiershipPlayer } from "@workspace/api-client-react";
-import { Trophy } from "lucide-react";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+
+const PLAQUE_FONT = "'Inter', sans-serif";
 
 const formatDate = (d: string | null | undefined) => {
   if (!d) return "";
   const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return d;
-  const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return dt.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+  return `${m[3]}/${m[2]}/${m[1]}`;
 };
 
 const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
-  const display = p.name.replace(/\s+/g, " ").trim();
+  const display = p.name.replace(/\s+/g, " ").trim().toUpperCase();
   const inner = (
-    <span>
+    <>
       {display}
-      {p.isCaptain && (
-        <span className="ml-1 font-bold text-slate-900">(CAPT)</span>
-      )}
-    </span>
+      {p.isCaptain && <span> (CAPT)</span>}
+    </>
   );
   return (
-    <li className="py-0.5">
+    <li className="leading-snug">
       {p.playerId ? (
-        <Link
-          href={`/players/${p.playerId}`}
-          className="hover:underline text-slate-800"
-        >
+        <Link href={`/players/${p.playerId}`} className="hover:underline text-slate-900">
           {inner}
         </Link>
       ) : (
-        <span className="text-slate-700 italic">{inner}</span>
+        <span className="text-slate-900">{inner}</span>
       )}
     </li>
   );
@@ -42,70 +37,59 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
 const Plaque = ({ prem }: { prem: Premiership }) => {
   return (
     <div
-      className="relative rounded-md p-[2px] shadow-2xl h-full"
+      className="relative h-full p-[2px] shadow-xl"
       style={{
         background:
-          "linear-gradient(180deg, #8a8d92 0%, #d8dade 25%, #6e7176 50%, #d8dade 75%, #8a8d92 100%)",
+          "linear-gradient(180deg, #2a2a2a 0%, #555 50%, #2a2a2a 100%)",
+        fontFamily: PLAQUE_FONT,
       }}
     >
       <div
-        className="rounded-[4px] px-3 py-3 text-center h-full flex flex-col border-double border-[3px] border-slate-500/60"
+        className="h-full px-4 py-4 text-center flex flex-col border-double border-[3px] border-slate-700/70"
         style={{
           background:
-            "linear-gradient(180deg, #e6e8eb 0%, #d1d4d8 50%, #b8bcc2 100%)",
-          color: "#1f2937",
-          fontFamily: '"Times New Roman", "Cormorant Garamond", Georgia, serif',
+            "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
+          color: "#0f172a",
+          fontFamily: PLAQUE_FONT,
         }}
       >
-        <div className="flex items-center justify-center gap-1.5 mb-1">
-          <Trophy className="h-3.5 w-3.5 text-slate-700 shrink-0" />
-          <div className="text-base font-extrabold tracking-[0.12em] uppercase leading-tight">
-            {prem.grade}
-          </div>
-          <Trophy className="h-3.5 w-3.5 text-slate-700 shrink-0" />
+        <div className="text-[15px] font-bold tracking-wide leading-tight">
+          {prem.grade.toUpperCase()}
         </div>
-        {prem.competition && prem.competition !== prem.grade.toUpperCase() && (
-          <div className="text-[9px] uppercase tracking-widest text-slate-700 leading-tight">
-            {prem.competition}
-          </div>
-        )}
-        <div className="text-sm font-bold mt-1.5 leading-tight">
-          {prem.year} PREMIERS
-        </div>
+
         {prem.venue && (
-          <div className="text-[10px] uppercase tracking-wider text-slate-700 mt-1 leading-tight">
-            {prem.venue}
+          <div className="text-[12px] font-bold mt-3 leading-tight">
+            {prem.venue.toUpperCase()}
           </div>
         )}
         {prem.matchDate && (
-          <div className="text-[10px] text-slate-700 leading-tight">
+          <div className="text-[12px] font-bold leading-tight">
             {formatDate(prem.matchDate)}
           </div>
         )}
-        {prem.result && (
-          <div className="text-xs font-semibold mt-1.5 leading-snug">
-            {prem.result}
-          </div>
-        )}
-        <div className="my-2 h-px bg-slate-600/40" />
-        <ul className="text-[11px] text-left list-none p-0 m-0 flex-1">
+
+        <ul className="text-[12px] font-semibold list-none p-0 mt-3 mb-0 flex-1 space-y-0.5">
           {prem.players.map((p) => (
             <PlayerLine key={p.id} p={p} />
           ))}
         </ul>
+
         {prem.mom && (
-          <>
-            <div className="my-2 h-px bg-slate-600/40" />
-            <div className="text-[10px]">
-              <span className="uppercase tracking-widest text-slate-700">
-                M.O.M:
-              </span>{" "}
-              <span className="font-bold uppercase">{prem.mom}</span>
-            </div>
-          </>
+          <div className="text-[12px] font-bold mt-3 leading-tight">
+            M.O.M - {prem.mom.toUpperCase()}
+          </div>
         )}
+
+        {prem.result && (
+          <div className="text-[12px] font-bold mt-3 leading-tight whitespace-pre-line">
+            {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
+          </div>
+        )}
+
         {prem.notes && (
-          <div className="text-[10px] italic text-slate-700 mt-1.5">{prem.notes}</div>
+          <div className="text-[11px] italic text-slate-700 mt-2 leading-tight">
+            {prem.notes}
+          </div>
         )}
       </div>
     </div>
@@ -175,7 +159,7 @@ export default function Premierships() {
               "linear-gradient(180deg, #1a1410 0%, #2a201a 50%, #1a1410 100%)",
           }}
         >
-          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))] auto-rows-fr items-stretch">
+          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(210px,1fr))] auto-rows-fr items-stretch">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
