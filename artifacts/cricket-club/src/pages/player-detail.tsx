@@ -1,10 +1,11 @@
 import { useParams, Link } from "wouter";
+import { useMemo, useState, useEffect } from "react";
 import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
-import { useMemo, useState, useEffect } from "react";
+import { Share2 } from "lucide-react";
 import {
   aggregateCareer,
   getAvailableSeasons,
@@ -13,14 +14,35 @@ import {
   MILESTONE_BOARDS,
   type MilestoneStatus,
 } from "@/lib/honour-boards";
+import { downloadMilestoneCard } from "@/lib/milestone-share";
 
 const fmtNum = (n: number) => n.toLocaleString();
 
-const MilestoneCard = ({ status }: { status: MilestoneStatus }) => {
+const MilestoneCard = ({ status, playerName }: { status: MilestoneStatus; playerName: string }) => {
   const hasNext = status.nextTierLabel !== null && status.gap !== null;
   const inAnyTier = status.currentTierIndex !== null;
+  const [sharing, setSharing] = useState(false);
+  const handleShare = async () => {
+    if (sharing || !inAnyTier || !status.currentTierLabel) return;
+    setSharing(true);
+    try {
+      await downloadMilestoneCard({
+        playerName,
+        tierLabel: status.currentTierLabel,
+        tierIndex: status.currentTierIndex!,
+        milestoneLabel: status.boardLabel,
+        currentValue: status.currentValue,
+        headline: "Honour Board Milestone",
+      });
+    } catch (err) {
+      console.error("Failed to generate milestone card", err);
+      alert("Could not generate the share image. Please try again.");
+    } finally {
+      setSharing(false);
+    }
+  };
   return (
-    <div className="bg-card border border-border rounded-md p-4 shadow-sm flex flex-col gap-3">
+    <div className="bg-card border border-border rounded-md p-4 shadow-sm flex flex-col gap-3 relative">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs uppercase tracking-widest text-muted-foreground font-serif">{status.boardLabel}</div>
         <div className="font-mono font-bold text-primary text-lg">{fmtNum(status.currentValue)}</div>
@@ -28,9 +50,19 @@ const MilestoneCard = ({ status }: { status: MilestoneStatus }) => {
       {inAnyTier && status.currentTierLabel && (
         <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2">
           <TierBadge tierIndex={status.currentTierIndex!} className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary truncate">
+          <span className="text-xs font-semibold uppercase tracking-wider text-primary truncate flex-1">
             {status.currentTierLabel}
           </span>
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={sharing}
+            aria-label={`Share ${status.currentTierLabel} milestone`}
+            title="Share milestone"
+            className="p-1 -m-1 rounded text-primary/80 hover:text-primary hover:bg-primary/15 transition-colors disabled:opacity-50 shrink-0"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
       {hasNext ? (
@@ -109,7 +141,7 @@ export default function PlayerDetail() {
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {milestones.map((m) => (
-              <MilestoneCard key={m.key} status={m} />
+              <MilestoneCard key={m.key} status={m} playerName={`${player.givenName} ${player.surname}`.trim()} />
             ))}
           </div>
         </div>

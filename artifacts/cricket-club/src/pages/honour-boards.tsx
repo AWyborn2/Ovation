@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQueries } from "@tanstack/react-query";
 import {
@@ -12,10 +11,14 @@ import {
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { TierBadge } from "@/components/tier-badge";
+import { downloadMilestoneCard } from "@/lib/milestone-share";
+import { Share2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BOARDS,
   type BoardKey,
   type BoardTier,
+  type PromotionEntry,
   aggregateCareer,
   computeBoard,
   getAvailableSeasons,
@@ -92,6 +95,62 @@ const BoardView = ({ tiers, board }: { tiers: BoardTier[]; board: (typeof BOARDS
     )}
   </div>
 );
+
+const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
+  const [sharing, setSharing] = useState(false);
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (sharing) return;
+    setSharing(true);
+    try {
+      await downloadMilestoneCard({
+        playerName: `${p.givenName} ${p.surname}`.trim(),
+        tierLabel: p.tierLabel,
+        tierIndex: p.tierIndex,
+        milestoneLabel: p.boardLabel,
+        currentValue: p.currentValue,
+        threshold: p.threshold,
+        headline: "Just Promoted",
+      });
+    } catch (err) {
+      console.error("Failed to generate milestone card", err);
+      alert("Could not generate the share image. Please try again.");
+    } finally {
+      setSharing(false);
+    }
+  };
+  return (
+    <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
+      <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2 pr-8">
+        <div className="flex items-center gap-2">
+          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+            {p.tierLabel}
+          </span>
+        </div>
+        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+          {p.surname}
+          <span className="font-sans font-normal text-foreground/80 normal-case"> {p.givenName}</span>
+        </div>
+        <div className="text-xs text-muted-foreground mt-auto">
+          <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
+          {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
+        </div>
+      </Link>
+      <button
+        type="button"
+        onClick={handleShare}
+        disabled={sharing}
+        aria-label={`Share ${p.givenName} ${p.surname} milestone`}
+        title="Share milestone"
+        className="absolute top-2 right-2 p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+      >
+        <Share2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
 
 const SearchResultCard = ({ playerId }: { playerId: number }) => {
   const { data: player } = useGetPlayer(playerId, {
@@ -300,29 +359,7 @@ export default function HonourBoards() {
           ) : (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             {recentPromotions.map((p) => (
-              <Link
-                key={`${p.playerId}-${p.boardKey}`}
-                href={`/players/${p.playerId}`}
-                className="group bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
-                    {p.tierLabel}
-                  </span>
-                </div>
-                <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
-                  {p.surname}
-                  <span className="font-sans font-normal text-foreground/80 normal-case">
-                    {" "}
-                    {p.givenName}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-auto">
-                  <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
-                  {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
-                </div>
-              </Link>
+              <PromotionCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
             ))}
           </div>
           )}
