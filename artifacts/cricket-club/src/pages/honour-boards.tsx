@@ -11,13 +11,14 @@ import {
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
-import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles } from "lucide-react";
+import { TierBadge } from "@/components/tier-badge";
 import {
   BOARDS,
   type BoardKey,
   type BoardTier,
   aggregateCareer,
   computeBoard,
+  getRecentPromotions,
   statToAggregated,
 } from "@/lib/honour-boards";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
@@ -32,12 +33,6 @@ const SummaryStat = ({ label, value }: { label: string; value: string | number }
     <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1 font-serif">{label}</div>
   </div>
 );
-
-const TIER_ICONS = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
-const TierBadge = ({ tierIndex }: { tierIndex: number }) => {
-  const Icon = TIER_ICONS[Math.min(tierIndex, TIER_ICONS.length - 1)];
-  return <Icon className="h-5 w-5 md:h-6 md:w-6 shrink-0" strokeWidth={2.25} />;
-};
 
 const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[number] }) => (
   <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
@@ -207,6 +202,11 @@ export default function HonourBoards() {
     return aggregatedPlayers.reduce((sum, p) => sum + p.catches + p.stumpings + p.runOuts, 0);
   }, [aggregatedPlayers, dashboard]);
 
+  const recentPromotions = useMemo(
+    () => (scope === "career" ? getRecentPromotions(aggregatedPlayers, 5) : []),
+    [aggregatedPlayers, scope],
+  );
+
   // Search
   const searchParams = { search: searchTerm, page: 1, limit: 12 };
   const { data: searchResults, isLoading: isSearchLoading } = useListPlayers(
@@ -242,6 +242,46 @@ export default function HonourBoards() {
           <SummaryStat label="Runs Scored" value={dashboard.totalRuns} />
           <SummaryStat label="Wickets" value={dashboard.totalWickets} />
           <SummaryStat label="Total Dismissals" value={totalDismissals} />
+        </div>
+      )}
+
+      {/* Recent promotions */}
+      {activeTab !== "search" && scope === "career" && recentPromotions.length > 0 && (
+        <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md">
+          <div className="flex items-baseline justify-between gap-3 mb-1">
+            <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">Just promoted</h2>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">
+              Newest entries to a milestone club
+            </span>
+          </div>
+          <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            {recentPromotions.map((p) => (
+              <Link
+                key={`${p.playerId}-${p.boardKey}`}
+                href={`/players/${p.playerId}`}
+                className="group bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+                    {p.tierLabel}
+                  </span>
+                </div>
+                <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+                  {p.surname}
+                  <span className="font-sans font-normal text-foreground/80 normal-case">
+                    {" "}
+                    {p.givenName}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-auto">
+                  <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
+                  {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

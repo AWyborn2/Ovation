@@ -3,6 +3,50 @@ import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer } from "@workspace/
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TierBadge } from "@/components/tier-badge";
+import {
+  aggregateCareer,
+  getMilestoneStatus,
+  MILESTONE_BOARDS,
+  type MilestoneStatus,
+} from "@/lib/honour-boards";
+
+const fmtNum = (n: number) => n.toLocaleString();
+
+const MilestoneCard = ({ status }: { status: MilestoneStatus }) => {
+  const hasNext = status.nextTierLabel !== null && status.gap !== null;
+  const inAnyTier = status.currentTierIndex !== null;
+  return (
+    <div className="bg-card border border-border rounded-md p-4 shadow-sm flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground font-serif">{status.boardLabel}</div>
+        <div className="font-mono font-bold text-primary text-lg">{fmtNum(status.currentValue)}</div>
+      </div>
+      {inAnyTier && status.currentTierLabel && (
+        <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2">
+          <TierBadge tierIndex={status.currentTierIndex!} className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-primary truncate">
+            {status.currentTierLabel}
+          </span>
+        </div>
+      )}
+      {hasNext ? (
+        <div className="flex items-start gap-2 mt-auto">
+          <TierBadge tierIndex={status.nextTierIndex!} className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-xs leading-snug">
+            <span className="font-mono font-bold text-primary">{fmtNum(status.gap!)}</span>{" "}
+            <span className="text-muted-foreground">
+              {status.boardLabel.toLowerCase()} away from the{" "}
+            </span>
+            <span className="font-semibold text-foreground">{status.nextTierLabel}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="text-xs italic text-muted-foreground mt-auto">Top of the honour board — every milestone unlocked.</div>
+      )}
+    </div>
+  );
+};
 
 export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +69,9 @@ export default function PlayerDetail() {
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
   if (!player) return <div className="p-8 text-center text-muted-foreground">Player not found.</div>;
 
+  const aggregated = aggregateCareer(player.stats)[0];
+  const milestones = aggregated ? MILESTONE_BOARDS.map((k) => getMilestoneStatus(aggregated, k)) : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -34,6 +81,21 @@ export default function PlayerDetail() {
         </div>
         <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
       </div>
+
+      {milestones.length > 0 && (
+        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+          <div className="flex items-baseline justify-between gap-3 mb-1">
+            <h2 className="text-lg font-serif font-bold text-primary m-0">Milestone tracker</h2>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Next honour board target</span>
+          </div>
+          <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {milestones.map((m) => (
+              <MilestoneCard key={m.key} status={m} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border rounded-lg overflow-x-auto shadow-sm">
         <table className="w-full text-sm">

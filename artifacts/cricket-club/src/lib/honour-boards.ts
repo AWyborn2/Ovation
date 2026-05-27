@@ -380,6 +380,108 @@ const getPlayerValue = (
   }
 };
 
+export const MILESTONE_BOARDS: BoardKey[] = ["games", "runs", "wickets", "dismissals"];
+
+const milestoneValue = (p: AggregatedPlayer, key: BoardKey): number => {
+  switch (key) {
+    case "games":
+      return p.games;
+    case "runs":
+      return p.runs;
+    case "wickets":
+      return p.wickets;
+    case "dismissals":
+      return p.catches + p.stumpings + p.runOuts;
+    default:
+      return 0;
+  }
+};
+
+export interface MilestoneStatus {
+  key: BoardKey;
+  boardLabel: string;
+  currentValue: number;
+  currentTierIndex: number | null;
+  currentTierLabel: string | null;
+  nextTierIndex: number | null;
+  nextTierLabel: string | null;
+  nextTierThreshold: number | null;
+  gap: number | null;
+}
+
+export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): MilestoneStatus => {
+  const tiers = TIERS[key];
+  const value = milestoneValue(p, key);
+  const board = BOARDS.find((b) => b.key === key)!;
+  const currentIdx = tiers.findIndex((t) => value >= t.min && (t.max === undefined || value <= t.max));
+  let nextIdx: number | null = null;
+  if (currentIdx === -1) {
+    nextIdx = tiers.length - 1;
+  } else if (currentIdx > 0) {
+    nextIdx = currentIdx - 1;
+  }
+  const next = nextIdx !== null ? tiers[nextIdx] : null;
+  return {
+    key,
+    boardLabel: board.label,
+    currentValue: value,
+    currentTierIndex: currentIdx >= 0 ? currentIdx : null,
+    currentTierLabel: currentIdx >= 0 ? tiers[currentIdx].label : null,
+    nextTierIndex: nextIdx,
+    nextTierLabel: next?.label ?? null,
+    nextTierThreshold: next?.min ?? null,
+    gap: next ? Math.max(next.min - value, 0) : null,
+  };
+};
+
+export interface PromotionEntry {
+  playerId: number;
+  surname: string;
+  givenName: string;
+  boardKey: BoardKey;
+  boardLabel: string;
+  tierLabel: string;
+  tierIndex: number;
+  currentValue: number;
+  threshold: number;
+  excess: number;
+  recencyScore: number;
+}
+
+export const getRecentPromotions = (players: AggregatedPlayer[], limit = 5): PromotionEntry[] => {
+  const entries: PromotionEntry[] = [];
+  for (const p of players) {
+    for (const key of MILESTONE_BOARDS) {
+      const tiers = TIERS[key];
+      const value = milestoneValue(p, key);
+      const idx = tiers.findIndex((t) => value >= t.min && (t.max === undefined || value <= t.max));
+      if (idx === -1) continue;
+      const tier = tiers[idx];
+      if (tier.min <= 0) continue;
+      const excess = value - tier.min;
+      const board = BOARDS.find((b) => b.key === key)!;
+      entries.push({
+        playerId: p.playerId,
+        surname: p.surname,
+        givenName: p.givenName,
+        boardKey: key,
+        boardLabel: board.label,
+        tierLabel: tier.label,
+        tierIndex: idx,
+        currentValue: value,
+        threshold: tier.min,
+        excess,
+        recencyScore: excess / tier.min,
+      });
+    }
+  }
+  entries.sort((a, b) => {
+    if (a.recencyScore !== b.recencyScore) return a.recencyScore - b.recencyScore;
+    return a.surname.localeCompare(b.surname);
+  });
+  return entries.slice(0, limit);
+};
+
 export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardTier[] => {
   const tiers = buildTiers(key, players);
   const tierResults: BoardTier[] = tiers.map((t, i) => ({ label: t.label, rows: [], startRank: 1, tierIndex: i }));
