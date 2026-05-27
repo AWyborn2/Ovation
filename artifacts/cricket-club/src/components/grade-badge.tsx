@@ -1,3 +1,5 @@
+import badgeTemplate from "@assets/HHCC_Badge_ICON_Template_1779852473312.png";
+
 interface GradeMeta {
   full: string;
   abbr: string;
@@ -8,16 +10,16 @@ interface GradeMeta {
 }
 
 const META: Record<string, GradeMeta> = {
-  "A Grade":        { full: "A Grade",        abbr: "A",   bannerShort: "A",       bannerLong: "A GRADE",        accent: "#F2B544", sortOrder: 1 },
-  "B Grade":        { full: "B Grade",        abbr: "B",   bannerShort: "B",       bannerLong: "B GRADE",        accent: "#CBD5E1", sortOrder: 2 },
-  "C Grade":        { full: "C Grade",        abbr: "C",   bannerShort: "C",       bannerLong: "C GRADE",        accent: "#C78A4A", sortOrder: 3 },
-  "D Grade":        { full: "D Grade",        abbr: "D",   bannerShort: "D",       bannerLong: "D GRADE",        accent: "#7BA8D9", sortOrder: 4 },
-  "E Grade":        { full: "E Grade",        abbr: "E",   bannerShort: "E",       bannerLong: "E GRADE",        accent: "#9BA8C9", sortOrder: 5 },
-  "F Grade":        { full: "F Grade",        abbr: "F",   bannerShort: "F",       bannerLong: "F GRADE",        accent: "#A89BC9", sortOrder: 6 },
-  "Female A Grade": { full: "Female A Grade", abbr: "FA",  bannerShort: "FEM A",   bannerLong: "FEMALE A GRADE", accent: "#2DD4BF", sortOrder: 7 },
-  "Female B Grade": { full: "Female B Grade", abbr: "FB",  bannerShort: "FEM B",   bannerLong: "FEMALE B GRADE", accent: "#F472B6", sortOrder: 8 },
-  "PPL":            { full: "PPL",            abbr: "PPL", bannerShort: "PPL",     bannerLong: "PPL",            accent: "#C084FC", sortOrder: 9 },
-  "Colts":          { full: "Colts",          abbr: "Co",  bannerShort: "COLTS",   bannerLong: "COLTS",          accent: "#4ADE80", sortOrder: 10 },
+  "A Grade":        { full: "A Grade",        abbr: "A",   bannerShort: "A GRADE",     bannerLong: "A GRADE",        accent: "#F2B544", sortOrder: 1 },
+  "B Grade":        { full: "B Grade",        abbr: "B",   bannerShort: "B GRADE",     bannerLong: "B GRADE",        accent: "#F2B544", sortOrder: 2 },
+  "C Grade":        { full: "C Grade",        abbr: "C",   bannerShort: "C GRADE",     bannerLong: "C GRADE",        accent: "#F2B544", sortOrder: 3 },
+  "D Grade":        { full: "D Grade",        abbr: "D",   bannerShort: "D GRADE",     bannerLong: "D GRADE",        accent: "#F2B544", sortOrder: 4 },
+  "E Grade":        { full: "E Grade",        abbr: "E",   bannerShort: "E GRADE",     bannerLong: "E GRADE",        accent: "#F2B544", sortOrder: 5 },
+  "F Grade":        { full: "F Grade",        abbr: "F",   bannerShort: "F GRADE",     bannerLong: "F GRADE",        accent: "#F2B544", sortOrder: 6 },
+  "Female A Grade": { full: "Female A Grade", abbr: "FA",  bannerShort: "FEM A",       bannerLong: "FEMALE A",       accent: "#F2B544", sortOrder: 7 },
+  "Female B Grade": { full: "Female B Grade", abbr: "FB",  bannerShort: "FEM B",       bannerLong: "FEMALE B",       accent: "#F2B544", sortOrder: 8 },
+  "PPL":            { full: "PPL",            abbr: "PPL", bannerShort: "PPL",         bannerLong: "PPL",            accent: "#F2B544", sortOrder: 9 },
+  "Colts":          { full: "Colts",          abbr: "Co",  bannerShort: "COLTS",       bannerLong: "COLTS",          accent: "#F2B544", sortOrder: 10 },
 };
 
 const FALLBACK_ACCENT = "#F2B544";
@@ -38,7 +40,7 @@ export const sortGradesBySeniority = (grades: Iterable<string>): string[] =>
 
 type Size = "sm" | "md" | "lg";
 
-const SIZE_PX: Record<Size, number> = { sm: 28, md: 44, lg: 72 };
+const SIZE_PX: Record<Size, number> = { sm: 44, md: 64, lg: 104 };
 
 interface GradeBadgeProps {
   grade: string;
@@ -46,94 +48,77 @@ interface GradeBadgeProps {
   className?: string;
 }
 
+/**
+ * HHCC crest badge. Renders the club's badge template (gold diamond + ribbon)
+ * with the grade abbreviation overlaid on the diamond and a grade-specific
+ * label painted over the banner's placeholder "GRADE" text.
+ *
+ * Layout percentages are tuned to the 1024x1024 template image. The diamond's
+ * visual centre sits ~38% from the top; the banner text sits ~67% from the
+ * top.
+ */
 export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) => {
   const meta = getMeta(grade);
   const px = SIZE_PX[size];
-  const showBanner = size !== "sm";
+  // Always show the banner overlay so the grade is identifiable at any size.
   const bannerText = size === "lg" ? meta.bannerLong : meta.bannerShort;
 
-  // Diamond points (rotated square) in 100x120 viewBox
-  // Top, right, bottom, left
-  const diamond = "M50,6 L92,48 L50,90 L8,48 Z";
-
-  // Ribbon banner under the diamond (medium/large only)
-  const banner =
-    "M6,86 L94,86 L98,104 L86,100 L86,110 L74,103 L26,103 L14,110 L14,100 L2,104 Z";
-
-  // Bigger abbr text needs smaller font; "PPL" needs to fit too
+  // Abbreviation font scales with badge size; long abbreviations shrink.
   const abbrLen = meta.abbr.length;
-  const letterSize = abbrLen >= 3 ? 32 : abbrLen === 2 ? 40 : 52;
-  const bannerFontSize = size === "lg" ? (bannerText.length > 10 ? 12 : 14) : (bannerText.length > 6 ? 10 : 11);
+  const abbrFontPx =
+    abbrLen >= 3 ? px * 0.26 : abbrLen === 2 ? px * 0.32 : px * 0.42;
+
+  // Banner text + cover strip dimensions
+  const bannerFontPx = Math.max(7, px * 0.1);
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox={showBanner ? "0 0 100 115" : "0 0 100 96"}
-      width={px}
-      height={showBanner ? Math.round(px * 1.15) : Math.round(px * 0.96)}
-      className={`inline-block shrink-0 drop-shadow-sm ${className ?? ""}`}
+    <div
       role="img"
       aria-label={meta.full}
+      title={meta.full}
+      className={`relative inline-block shrink-0 select-none ${className ?? ""}`}
+      style={{ width: px, height: px }}
     >
-      <title>{meta.full}</title>
-
-      {/* Diamond */}
-      <path
-        d={diamond}
-        fill="hsl(207 17% 18%)"
-        stroke={meta.accent}
-        strokeWidth="4"
-        strokeLinejoin="round"
+      <img
+        src={badgeTemplate}
+        alt=""
+        draggable={false}
+        className="block h-full w-full object-contain"
       />
 
-      {/* Inner diamond outline for crest depth */}
-      <path
-        d="M50,16 L82,48 L50,80 L18,48 Z"
-        fill="none"
-        stroke={meta.accent}
-        strokeOpacity="0.5"
-        strokeWidth="1.5"
-      />
-
-      {/* Letter */}
-      <text
-        x="50"
-        y="48"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontWeight="bold"
-        fontSize={letterSize}
-        fill={meta.accent}
+      {/* Grade abbreviation on the diamond */}
+      <span
+        className="pointer-events-none absolute font-serif font-bold leading-none"
+        style={{
+          left: "50%",
+          top: "36%",
+          transform: "translate(-50%, -50%)",
+          fontSize: abbrFontPx,
+          color: "hsl(207 17% 14%)",
+          letterSpacing: abbrLen >= 3 ? "0" : "0.02em",
+        }}
       >
         {meta.abbr}
-      </text>
+      </span>
 
-      {showBanner && (
-        <>
-          <path
-            d={banner}
-            fill={meta.accent}
-            stroke="hsl(207 17% 18%)"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <text
-            x="50"
-            y="95"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontFamily="Georgia, 'Times New Roman', serif"
-            fontWeight="bold"
-            fontSize={bannerFontSize}
-            letterSpacing="1"
-            fill="hsl(207 17% 18%)"
-          >
-            {bannerText}
-          </text>
-        </>
-      )}
-    </svg>
+      {/* Banner label: covers the template's placeholder "GRADE" text */}
+      <span
+        className="pointer-events-none absolute flex items-center justify-center font-serif font-bold leading-none"
+        style={{
+          left: "22%",
+          right: "22%",
+          top: "62%",
+          height: `${Math.max(9, px * 0.13)}px`,
+          backgroundColor: meta.accent,
+          color: "hsl(207 17% 14%)",
+          fontSize: bannerFontPx,
+          letterSpacing: "0.04em",
+          borderRadius: 1,
+        }}
+      >
+        {bannerText}
+      </span>
+    </div>
   );
 };
 
@@ -147,7 +132,7 @@ export const GradeBadgeList = ({ grades, size = "sm", className }: GradeBadgeLis
   const sorted = sortGradesBySeniority(grades);
   if (sorted.length === 0) return <span className="text-xs text-muted-foreground italic">—</span>;
   return (
-    <div className={`inline-flex flex-wrap gap-1.5 items-center ${className ?? ""}`}>
+    <div className={`inline-flex flex-wrap items-center gap-1.5 ${className ?? ""}`}>
       {sorted.map((g) => (
         <GradeBadge key={g} grade={g} size={size} />
       ))}
