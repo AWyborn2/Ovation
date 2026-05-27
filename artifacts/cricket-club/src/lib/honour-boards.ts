@@ -410,17 +410,31 @@ export interface MilestoneStatus {
 }
 
 export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): MilestoneStatus => {
-  const tiers = TIERS[key];
+  const cfg = TIER_CONFIG[key];
+  const tiers = buildTiers(key, [p]);
   const value = milestoneValue(p, key);
   const board = BOARDS.find((b) => b.key === key)!;
   const currentIdx = tiers.findIndex((t) => value >= t.min && (t.max === undefined || value <= t.max));
+
   let nextIdx: number | null = null;
-  if (currentIdx === -1) {
-    nextIdx = tiers.length - 1;
-  } else if (currentIdx > 0) {
+  let nextLabel: string | null = null;
+  let nextThreshold: number | null = null;
+
+  if (currentIdx > 0) {
     nextIdx = currentIdx - 1;
+    nextLabel = tiers[nextIdx].label;
+    nextThreshold = tiers[nextIdx].min;
+  } else if (currentIdx === 0 && cfg.kind === "extendable") {
+    const synthMin = tiers[0].min + cfg.step;
+    nextIdx = 0;
+    nextLabel = `${synthMin.toLocaleString()} ${cfg.noun} Club`;
+    nextThreshold = synthMin;
+  } else if (currentIdx === -1 && tiers.length > 0) {
+    nextIdx = tiers.length - 1;
+    nextLabel = tiers[nextIdx].label;
+    nextThreshold = tiers[nextIdx].min;
   }
-  const next = nextIdx !== null ? tiers[nextIdx] : null;
+
   return {
     key,
     boardLabel: board.label,
@@ -428,9 +442,9 @@ export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): Mileston
     currentTierIndex: currentIdx >= 0 ? currentIdx : null,
     currentTierLabel: currentIdx >= 0 ? tiers[currentIdx].label : null,
     nextTierIndex: nextIdx,
-    nextTierLabel: next?.label ?? null,
-    nextTierThreshold: next?.min ?? null,
-    gap: next ? Math.max(next.min - value, 0) : null,
+    nextTierLabel: nextLabel,
+    nextTierThreshold: nextThreshold,
+    gap: nextThreshold !== null ? Math.max(nextThreshold - value, 0) : null,
   };
 };
 
@@ -450,9 +464,11 @@ export interface PromotionEntry {
 
 export const getRecentPromotions = (players: AggregatedPlayer[], limit = 5): PromotionEntry[] => {
   const entries: PromotionEntry[] = [];
+  const tiersByKey = new Map<BoardKey, TierDef[]>();
+  for (const key of MILESTONE_BOARDS) tiersByKey.set(key, buildTiers(key, players));
   for (const p of players) {
     for (const key of MILESTONE_BOARDS) {
-      const tiers = TIERS[key];
+      const tiers = tiersByKey.get(key)!;
       const value = milestoneValue(p, key);
       const idx = tiers.findIndex((t) => value >= t.min && (t.max === undefined || value <= t.max));
       if (idx === -1) continue;
