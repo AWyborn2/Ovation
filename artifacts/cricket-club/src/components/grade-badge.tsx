@@ -59,18 +59,12 @@ interface GradeBadgeProps {
 export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) => {
   const meta = getMeta(grade);
   const px = SIZE_PX[size];
-  const bannerText = size === "lg" ? meta.bannerLong : meta.bannerShort;
 
-  // The label sits inside the diamond; scale it down for long labels so it
-  // fits comfortably within the gold outline.
-  const diamondLabel = meta.bannerShort;
+  // Single label rendered in the diamond's visual centre.
+  const diamondLabel = size === "lg" ? meta.bannerLong : meta.bannerShort;
   const diamondScale =
-    diamondLabel.length > 6 ? 0.09 : diamondLabel.length > 4 ? 0.105 : 0.12;
-  const diamondFontPx = Math.max(7, px * diamondScale);
-
-  // Banner text scales with badge size and label length.
-  const bannerScale = bannerText.length > 6 ? 0.085 : bannerText.length > 4 ? 0.1 : 0.11;
-  const bannerFontPx = Math.max(7, px * bannerScale);
+    diamondLabel.length > 7 ? 0.1 : diamondLabel.length > 5 ? 0.12 : 0.14;
+  const diamondFontPx = Math.max(8, px * diamondScale);
 
   return (
     <div
@@ -87,12 +81,12 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
         className="block h-full w-full object-contain"
       />
 
-      {/* Grade label centred on the diamond */}
+      {/* Grade label centred in the diamond's visual centre */}
       <span
         className="pointer-events-none absolute font-serif font-bold leading-none"
         style={{
           left: "50%",
-          top: "33%",
+          top: "35%",
           transform: "translate(-50%, -50%)",
           fontSize: diamondFontPx,
           color: GOLD,
@@ -101,22 +95,6 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
         }}
       >
         {diamondLabel}
-      </span>
-
-      {/* Grade label on the ribbon */}
-      <span
-        className="pointer-events-none absolute font-serif font-bold leading-none"
-        style={{
-          left: "50%",
-          top: "71%",
-          transform: "translate(-50%, -50%)",
-          fontSize: bannerFontPx,
-          color: GOLD,
-          letterSpacing: "0.05em",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {bannerText}
       </span>
     </div>
   );
