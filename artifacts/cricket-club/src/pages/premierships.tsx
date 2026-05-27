@@ -19,7 +19,7 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
     <span>
       {display}
       {p.isCaptain && (
-        <span className="ml-1 font-bold text-amber-900">(CAPT)</span>
+        <span className="ml-1 font-bold text-slate-900">(CAPT)</span>
       )}
     </span>
   );
@@ -28,12 +28,12 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
       {p.playerId ? (
         <Link
           href={`/players/${p.playerId}`}
-          className="hover:underline text-stone-800"
+          className="hover:underline text-slate-800"
         >
           {inner}
         </Link>
       ) : (
-        <span className="text-stone-700 italic">{inner}</span>
+        <span className="text-slate-700 italic">{inner}</span>
       )}
     </li>
   );
@@ -41,25 +41,31 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
 
 const Plaque = ({ prem }: { prem: Premiership }) => {
   return (
-    <div className="relative rounded-md p-[3px] bg-gradient-to-b from-amber-900 via-amber-700 to-amber-900 shadow-2xl">
+    <div
+      className="relative rounded-md p-[2px] shadow-2xl h-full"
+      style={{
+        background:
+          "linear-gradient(180deg, #8a8d92 0%, #d8dade 25%, #6e7176 50%, #d8dade 75%, #8a8d92 100%)",
+      }}
+    >
       <div
-        className="rounded-[5px] px-3 py-3 text-center"
+        className="rounded-[4px] px-3 py-3 text-center h-full flex flex-col border-double border-[3px] border-slate-500/60"
         style={{
           background:
-            "linear-gradient(180deg, #f5f0e6 0%, #e9e1cf 50%, #d9cdb1 100%)",
-          color: "#3b2f1c",
+            "linear-gradient(180deg, #e6e8eb 0%, #d1d4d8 50%, #b8bcc2 100%)",
+          color: "#1f2937",
           fontFamily: '"Times New Roman", "Cormorant Garamond", Georgia, serif',
         }}
       >
         <div className="flex items-center justify-center gap-1.5 mb-1">
-          <Trophy className="h-3.5 w-3.5 text-amber-900 shrink-0" />
+          <Trophy className="h-3.5 w-3.5 text-slate-700 shrink-0" />
           <div className="text-base font-extrabold tracking-[0.12em] uppercase leading-tight">
             {prem.grade}
           </div>
-          <Trophy className="h-3.5 w-3.5 text-amber-900 shrink-0" />
+          <Trophy className="h-3.5 w-3.5 text-slate-700 shrink-0" />
         </div>
         {prem.competition && prem.competition !== prem.grade.toUpperCase() && (
-          <div className="text-[9px] uppercase tracking-widest text-stone-700 leading-tight">
+          <div className="text-[9px] uppercase tracking-widest text-slate-700 leading-tight">
             {prem.competition}
           </div>
         )}
@@ -67,12 +73,12 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           {prem.year} PREMIERS
         </div>
         {prem.venue && (
-          <div className="text-[10px] uppercase tracking-wider text-stone-700 mt-1 leading-tight">
+          <div className="text-[10px] uppercase tracking-wider text-slate-700 mt-1 leading-tight">
             {prem.venue}
           </div>
         )}
         {prem.matchDate && (
-          <div className="text-[10px] text-stone-700 leading-tight">
+          <div className="text-[10px] text-slate-700 leading-tight">
             {formatDate(prem.matchDate)}
           </div>
         )}
@@ -81,17 +87,17 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
             {prem.result}
           </div>
         )}
-        <div className="my-2 h-px bg-amber-900/40" />
-        <ul className="text-[11px] text-left list-none p-0 m-0">
+        <div className="my-2 h-px bg-slate-600/40" />
+        <ul className="text-[11px] text-left list-none p-0 m-0 flex-1">
           {prem.players.map((p) => (
             <PlayerLine key={p.id} p={p} />
           ))}
         </ul>
         {prem.mom && (
           <>
-            <div className="my-2 h-px bg-amber-900/40" />
+            <div className="my-2 h-px bg-slate-600/40" />
             <div className="text-[10px]">
-              <span className="uppercase tracking-widest text-stone-700">
+              <span className="uppercase tracking-widest text-slate-700">
                 M.O.M:
               </span>{" "}
               <span className="font-bold uppercase">{prem.mom}</span>
@@ -99,7 +105,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           </>
         )}
         {prem.notes && (
-          <div className="text-[10px] italic text-stone-700 mt-1.5">{prem.notes}</div>
+          <div className="text-[10px] italic text-slate-700 mt-1.5">{prem.notes}</div>
         )}
       </div>
     </div>
@@ -169,7 +175,7 @@ export default function Premierships() {
               "linear-gradient(180deg, #1a1410 0%, #2a201a 50%, #1a1410 100%)",
           }}
         >
-          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
+          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))] auto-rows-fr items-stretch">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
