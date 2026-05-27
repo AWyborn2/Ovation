@@ -37,22 +37,23 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
 const Plaque = ({ prem }: { prem: Premiership }) => {
   return (
     <div
-      className="relative h-full p-[2px] shadow-xl"
+      className="relative h-full shadow-xl"
       style={{
         background:
-          "linear-gradient(180deg, #2a2a2a 0%, #555 50%, #2a2a2a 100%)",
+          "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
         fontFamily: PLAQUE_FONT,
       }}
     >
       <div
-        className="h-full px-4 py-4 text-center flex flex-col border-double border-[3px] border-slate-700/70"
-        style={{
-          background:
-            "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
-          color: "#0f172a",
-          fontFamily: PLAQUE_FONT,
-        }}
+        className="h-full m-2 border-[3px] border-slate-700/80 p-[3px]"
       >
+        <div
+          className="h-full px-3 py-3 text-center flex flex-col border border-slate-700/80"
+          style={{
+            color: "#0f172a",
+            fontFamily: PLAQUE_FONT,
+          }}
+        >
         <div className="text-[15px] font-bold tracking-wide leading-tight">
           {prem.grade.toUpperCase()}
         </div>
@@ -91,6 +92,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
             {prem.notes}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
