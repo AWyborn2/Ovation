@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "NuV8ao0FmQZa5ItlYD49Z"
+uri = "file://artifacts/cricket-mobile/assets/images/icon.png"
+type = "image"
+title = "cricket club icon"

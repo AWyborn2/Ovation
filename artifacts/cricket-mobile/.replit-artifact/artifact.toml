@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/cricket-mobile/"
+title = "HHCC Mobile"
+version = "1.0.0"
+id = "artifacts/cricket-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/cricket-mobile/" ]
+localPort = 18774
+
+[services.development]
+run = "pnpm --filter @workspace/cricket-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cricket-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/cricket-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "18774"
+BASE_PATH = "/cricket-mobile/"
