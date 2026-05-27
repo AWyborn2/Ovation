@@ -69,9 +69,7 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
   // Stack same-colour drop-shadows to visually thicken the PNG's gold outline
   // so it matches the heavier stroke weight of the club's other crest icons.
   const strokeBoost =
-    `drop-shadow(0 0 0.4px ${GOLD}) drop-shadow(0 0 0.4px ${GOLD}) ` +
-    `drop-shadow(0.4px 0 0 ${GOLD}) drop-shadow(-0.4px 0 0 ${GOLD}) ` +
-    `drop-shadow(0 0.4px 0 ${GOLD}) drop-shadow(0 -0.4px 0 ${GOLD})`;
+    `drop-shadow(0 0 0.3px ${GOLD}) drop-shadow(0 0 0.3px ${GOLD})`;
 
   return (
     <div
