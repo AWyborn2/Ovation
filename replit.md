@@ -74,3 +74,4 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- `docs/playcricket-ingestion.md` — spike findings on pulling stats directly from playcricket.com.au. Decision: **stay on CSV**. PlayHQ's public API does not expose per-grade cricket aggregates, and the private profile-stats endpoints need partner approval. Do not re-investigate without explicit user demand.
