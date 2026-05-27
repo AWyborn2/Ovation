@@ -170,11 +170,15 @@ paths:
           in: query
           schema:
             type: integer
+        - name: season
+          in: query
+          schema:
+            type: integer
         - name: sortBy
           in: query
           schema:
             type: string
-            enum: [games, runs, wickets, batAvg, bowlAvg, catches, name]
+            enum: [games, runs, wickets, batAvg, bowlAvg, catches, name, season]
         - name: sortOrder
           in: query
           schema:
@@ -428,6 +432,8 @@ components:
           type: string
         grade:
           type: string
+        season:
+          type: ["integer", "null"]
         games:
           type: ["integer", "null"]
         innings:
@@ -469,6 +475,8 @@ components:
           type: integer
         grade:
           type: string
+        season:
+          type: integer
         games:
           type: integer
         innings:
@@ -507,6 +515,8 @@ components:
       properties:
         grade:
           type: string
+        season:
+          type: integer
         games:
           type: integer
         innings:

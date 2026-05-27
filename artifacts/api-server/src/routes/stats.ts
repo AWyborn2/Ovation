@@ -23,6 +23,7 @@ router.get("/stats", async (req, res): Promise<void> => {
     search,
     grade,
     playerId,
+    season,
     sortBy = "name",
     sortOrder = "asc",
     page = 1,
@@ -46,6 +47,9 @@ router.get("/stats", async (req, res): Promise<void> => {
   }
   if (playerId) {
     conditions.push(eq(playerGradeStatsTable.playerId, Number(playerId)));
+  }
+  if (season !== undefined) {
+    conditions.push(eq(playerGradeStatsTable.season, Number(season)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -85,6 +89,8 @@ function getStatOrderCol(sortBy: string | undefined, sortOrder: string | undefin
       return dir(playerGradeStatsTable.bowlAvg);
     case "catches":
       return dir(playerGradeStatsTable.catches);
+    case "season":
+      return dir(playerGradeStatsTable.season);
     case "name":
     default:
       return dir(playerGradeStatsTable.surname);

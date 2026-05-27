@@ -78,6 +78,10 @@ export default function StatDetail() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-2">
+                <Label>Season</Label>
+                <Input type="number" name="season" value={formData.season ?? ""} onChange={handleChange} placeholder="e.g. 2025" />
+              </div>
+              <div className="space-y-2">
                 <Label>Games</Label>
                 <Input type="number" name="games" value={formData.games || ""} onChange={handleChange} />
               </div>

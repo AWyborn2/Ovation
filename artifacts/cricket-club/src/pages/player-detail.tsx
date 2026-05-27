@@ -4,9 +4,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
+import { useMemo, useState, useEffect } from "react";
 import {
   aggregateCareer,
+  getAvailableSeasons,
   getMilestoneStatus,
+  getPlayerSeasonCrossings,
   MILESTONE_BOARDS,
   type MilestoneStatus,
 } from "@/lib/honour-boards";
@@ -56,6 +59,21 @@ export default function PlayerDetail() {
   const queryClient = useQueryClient();
   const deletePlayer = useDeletePlayer();
 
+  const playerStats = player?.stats ?? [];
+  const seasons = useMemo(() => getAvailableSeasons(playerStats), [playerStats]);
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  useEffect(() => {
+    if (selectedSeason !== null && !seasons.includes(selectedSeason)) {
+      setSelectedSeason(seasons[0] ?? null);
+    } else if (selectedSeason === null && seasons.length > 0) {
+      setSelectedSeason(seasons[0]);
+    }
+  }, [seasons, selectedSeason]);
+  const seasonCrossings = useMemo(
+    () => (selectedSeason !== null ? getPlayerSeasonCrossings(playerStats, selectedSeason) : []),
+    [playerStats, selectedSeason],
+  );
+
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this player?")) {
       deletePlayer.mutate({ id: playerId }, {
@@ -94,6 +112,47 @@ export default function PlayerDetail() {
               <MilestoneCard key={m.key} status={m} />
             ))}
           </div>
+        </div>
+      )}
+
+      {seasons.length > 0 && selectedSeason !== null && (
+        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
+            <h2 className="text-lg font-serif font-bold text-primary m-0">Milestones hit this season</h2>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+              <select
+                value={String(selectedSeason)}
+                onChange={(e) => setSelectedSeason(parseInt(e.target.value, 10))}
+                className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+              >
+                {seasons.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="w-12 h-[2px] bg-primary mb-4" />
+          {seasonCrossings.length === 0 ? (
+            <div className="text-sm text-muted-foreground italic">No honour board crossed in {selectedSeason}.</div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {seasonCrossings.map((c) => (
+                <div key={`${c.key}-${c.threshold}`} className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3">
+                  <TierBadge tierIndex={c.tierIndex} className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">{c.tierLabel}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <span className="font-mono font-bold text-foreground">{fmtNum(c.beforeValue)}</span>
+                      <span> → </span>
+                      <span className="font-mono font-bold text-foreground">{fmtNum(c.afterValue)}</span>{" "}
+                      {c.boardLabel.toLowerCase()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

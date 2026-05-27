@@ -204,6 +204,25 @@ const buildTiers = (key: BoardKey, players: AggregatedPlayer[]): TierDef[] => {
   return tiers;
 };
 
+const TIERS: Record<BoardKey, TierDef[]> = {
+  games: buildTiersStatic("games"),
+  runs: buildTiersStatic("runs"),
+  wickets: buildTiersStatic("wickets"),
+  dismissals: buildTiersStatic("dismissals"),
+  highscores: buildTiersStatic("highscores"),
+  bestbowling: buildTiersStatic("bestbowling"),
+  centurions: buildTiersStatic("centurions"),
+  fivefers: buildTiersStatic("fivefers"),
+};
+
+function buildTiersStatic(key: BoardKey): TierDef[] {
+  const cfg = TIER_CONFIG[key];
+  if (cfg.kind === "static") return cfg.tiers;
+  const { noun, anchorMin, belowAnchor } = cfg;
+  const mkLabel = (n: number) => `${n.toLocaleString()} ${noun} Club`;
+  return [{ label: mkLabel(anchorMin), min: anchorMin }, ...belowAnchor];
+}
+
 export interface AggregatedPlayer {
   playerId: number;
   surname: string;
@@ -244,6 +263,14 @@ const parseBestBowling = (bb: string | null | undefined): { wkts: number; runs: 
 const isBetterBowling = (a: { wkts: number; runs: number }, b: { wkts: number; runs: number }): boolean => {
   if (a.wkts !== b.wkts) return a.wkts > b.wkts;
   return a.runs < b.runs;
+};
+
+export const getAvailableSeasons = (stats: Stat[]): number[] => {
+  const set = new Set<number>();
+  for (const s of stats) {
+    if (typeof s.season === "number") set.add(s.season);
+  }
+  return Array.from(set).sort((a, b) => b - a);
 };
 
 export const aggregateCareer = (stats: Stat[]): AggregatedPlayer[] => {
@@ -446,6 +473,138 @@ export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): Mileston
     nextTierThreshold: nextThreshold,
     gap: nextThreshold !== null ? Math.max(nextThreshold - value, 0) : null,
   };
+};
+
+export interface SeasonCrossing {
+  key: BoardKey;
+  boardLabel: string;
+  tierLabel: string;
+  tierIndex: number;
+  threshold: number;
+  beforeValue: number;
+  afterValue: number;
+}
+
+export const getSeasonCrossings = (
+  before: AggregatedPlayer,
+  after: AggregatedPlayer,
+): SeasonCrossing[] => {
+  const out: SeasonCrossing[] = [];
+  for (const key of MILESTONE_BOARDS) {
+    const tiers = TIERS[key];
+    const bVal = milestoneValue(before, key);
+    const aVal = milestoneValue(after, key);
+    const board = BOARDS.find((b) => b.key === key)!;
+    for (let i = 0; i < tiers.length; i++) {
+      const t = tiers[i];
+      if (t.min <= 0) continue;
+      if (t.min > bVal && t.min <= aVal) {
+        out.push({
+          key,
+          boardLabel: board.label,
+          tierLabel: t.label,
+          tierIndex: i,
+          threshold: t.min,
+          beforeValue: bVal,
+          afterValue: aVal,
+        });
+      }
+    }
+  }
+  out.sort((a, b) => b.threshold - a.threshold);
+  return out;
+};
+
+export interface PlayerSeasonCrossings {
+  playerId: number;
+  surname: string;
+  givenName: string;
+  crossings: SeasonCrossing[];
+}
+
+export const getSeasonPromotions = (
+  allStats: Stat[],
+  season: number,
+  limit = 5,
+): PromotionEntry[] => {
+  const beforeStats = allStats.filter(
+    (s) => typeof s.season !== "number" || s.season < season,
+  );
+  const throughStats = allStats.filter(
+    (s) => typeof s.season !== "number" || s.season <= season,
+  );
+  const beforeMap = new Map<number, AggregatedPlayer>();
+  for (const p of aggregateCareer(beforeStats)) beforeMap.set(p.playerId, p);
+  const throughMap = new Map<number, AggregatedPlayer>();
+  for (const p of aggregateCareer(throughStats)) throughMap.set(p.playerId, p);
+
+  const entries: PromotionEntry[] = [];
+
+  for (const [playerId, after] of throughMap) {
+    const before = beforeMap.get(playerId) ?? {
+      ...after,
+      games: 0,
+      runs: 0,
+      wickets: 0,
+      catches: 0,
+      stumpings: 0,
+      runOuts: 0,
+    };
+    const crossings = getSeasonCrossings(before, after);
+    for (const c of crossings) {
+      const excess = c.afterValue - c.threshold;
+      entries.push({
+        playerId,
+        surname: after.surname,
+        givenName: after.givenName,
+        boardKey: c.key,
+        boardLabel: c.boardLabel,
+        tierLabel: c.tierLabel,
+        tierIndex: c.tierIndex,
+        currentValue: c.afterValue,
+        threshold: c.threshold,
+        excess,
+        recencyScore: c.threshold > 0 ? excess / c.threshold : excess,
+      });
+    }
+  }
+  entries.sort((a, b) => {
+    if (a.recencyScore !== b.recencyScore) return a.recencyScore - b.recencyScore;
+    return a.surname.localeCompare(b.surname);
+  });
+  return entries.slice(0, limit);
+};
+
+export const getPlayerSeasonCrossings = (
+  playerStats: Stat[],
+  season: number,
+): SeasonCrossing[] => {
+  const before = aggregateCareer(
+    playerStats.filter((s) => typeof s.season !== "number" || s.season < season),
+  )[0];
+  const after = aggregateCareer(
+    playerStats.filter((s) => typeof s.season !== "number" || s.season <= season),
+  )[0];
+  if (!after) return [];
+  const zero: AggregatedPlayer = before ?? {
+    ...after,
+    games: 0,
+    innings: 0,
+    notOuts: 0,
+    runs: 0,
+    hundreds: 0,
+    fifties: 0,
+    wickets: 0,
+    runsConceded: 0,
+    fiveWickets: 0,
+    catches: 0,
+    stumpings: 0,
+    runOuts: 0,
+    highScore: 0,
+    bestBowlingWkts: 0,
+    bestBowlingRuns: 0,
+  };
+  return getSeasonCrossings(zero, after);
 };
 
 export interface PromotionEntry {

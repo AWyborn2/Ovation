@@ -40,6 +40,8 @@ export interface Stat {
   givenName: string;
   grade: string;
   /** @nullable */
+  season?: number | null;
+  /** @nullable */
   games?: number | null;
   /** @nullable */
   innings?: number | null;
@@ -92,6 +94,7 @@ export interface PlayerListResponse {
 export interface StatInput {
   playerId: number;
   grade: string;
+  season?: number;
   games?: number;
   innings?: number;
   notOuts?: number;
@@ -112,6 +115,7 @@ export interface StatInput {
 
 export interface StatUpdate {
   grade?: string;
+  season?: number;
   games?: number;
   innings?: number;
   notOuts?: number;
@@ -221,6 +225,7 @@ export type ListStatsParams = {
 search?: string;
 grade?: string;
 playerId?: number;
+season?: number;
 sortBy?: ListStatsSortBy;
 sortOrder?: ListStatsSortOrder;
 page?: number;
@@ -238,6 +243,7 @@ export const ListStatsSortBy = {
   bowlAvg: 'bowlAvg',
   catches: 'catches',
   name: 'name',
+  season: 'season',
 } as const;
 
 export type ListStatsSortOrder = typeof ListStatsSortOrder[keyof typeof ListStatsSortOrder];

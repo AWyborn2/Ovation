@@ -18,7 +18,9 @@ import {
   type BoardTier,
   aggregateCareer,
   computeBoard,
+  getAvailableSeasons,
   getRecentPromotions,
+  getSeasonPromotions,
   statToAggregated,
 } from "@/lib/honour-boards";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
@@ -202,10 +204,27 @@ export default function HonourBoards() {
     return aggregatedPlayers.reduce((sum, p) => sum + p.catches + p.stumpings + p.runOuts, 0);
   }, [aggregatedPlayers, dashboard]);
 
-  const recentPromotions = useMemo(
-    () => (scope === "career" ? getRecentPromotions(aggregatedPlayers, 5) : []),
-    [aggregatedPlayers, scope],
-  );
+  const availableSeasons = useMemo(() => getAvailableSeasons(allStats), [allStats]);
+  const [selectedSeason, setSelectedSeason] = useState<number | "all">("all");
+
+  useEffect(() => {
+    if (selectedSeason === "all") return;
+    if (!availableSeasons.includes(selectedSeason)) {
+      setSelectedSeason("all");
+    }
+  }, [availableSeasons, selectedSeason]);
+
+  const recentPromotions = useMemo(() => {
+    if (scope !== "career") return [];
+    if (selectedSeason === "all") return getRecentPromotions(aggregatedPlayers, 5);
+    return getSeasonPromotions(allStats, selectedSeason, 5);
+  }, [aggregatedPlayers, allStats, scope, selectedSeason]);
+
+  const promotionHeading = selectedSeason === "all" ? "Just promoted" : `Milestones hit in ${selectedSeason}`;
+  const promotionSubheading =
+    selectedSeason === "all"
+      ? "Newest entries to a milestone club"
+      : `Players who crossed an honour board in ${selectedSeason}`;
 
   // Search
   const searchParams = { search: searchTerm, page: 1, limit: 12 };
@@ -245,16 +264,40 @@ export default function HonourBoards() {
         </div>
       )}
 
-      {/* Recent promotions */}
-      {activeTab !== "search" && scope === "career" && recentPromotions.length > 0 && (
-        <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md">
-          <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">Just promoted</h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
-              Newest entries to a milestone club
-            </span>
+      {/* Season selector + Recent promotions */}
+      {activeTab !== "search" && scope === "career" && (
+        <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
+            <div>
+              <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">{promotionHeading}</h2>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{promotionSubheading}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+              <select
+                value={selectedSeason === "all" ? "all" : String(selectedSeason)}
+                onChange={(e) =>
+                  setSelectedSeason(e.target.value === "all" ? "all" : parseInt(e.target.value, 10))
+                }
+                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+              >
+                <option value="all">All-time</option>
+                {availableSeasons.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="w-12 h-[2px] bg-primary" />
+          {recentPromotions.length === 0 ? (
+            <div className="text-sm text-muted-foreground italic">
+              {selectedSeason === "all"
+                ? "No milestone promotions to show yet."
+                : `No players crossed an honour board in ${selectedSeason}. Tag stat records with this season to populate.`}
+            </div>
+          ) : (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             {recentPromotions.map((p) => (
               <Link
@@ -282,6 +325,7 @@ export default function HonourBoards() {
               </Link>
             ))}
           </div>
+          )}
         </div>
       )}
 

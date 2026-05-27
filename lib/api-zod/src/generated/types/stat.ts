@@ -13,6 +13,8 @@ export interface Stat {
   givenName: string;
   grade: string;
   /** @nullable */
+  season?: number | null;
+  /** @nullable */
   games?: number | null;
   /** @nullable */
   innings?: number | null;

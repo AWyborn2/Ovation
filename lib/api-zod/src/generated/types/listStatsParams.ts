@@ -12,6 +12,7 @@ export type ListStatsParams = {
 search?: string;
 grade?: string;
 playerId?: number;
+season?: number;
 sortBy?: ListStatsSortBy;
 sortOrder?: ListStatsSortOrder;
 page?: number;

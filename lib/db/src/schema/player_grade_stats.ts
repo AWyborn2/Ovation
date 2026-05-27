@@ -9,6 +9,7 @@ export const playerGradeStatsTable = pgTable("player_grade_stats", {
   surname: text("surname").notNull(),
   givenName: text("given_name").notNull(),
   grade: text("grade").notNull(),
+  season: integer("season"),
   games: integer("games"),
   innings: integer("innings"),
   notOuts: integer("not_outs"),

@@ -17,4 +17,5 @@ export const ListStatsSortBy = {
   bowlAvg: 'bowlAvg',
   catches: 'catches',
   name: 'name',
+  season: 'season',
 } as const;

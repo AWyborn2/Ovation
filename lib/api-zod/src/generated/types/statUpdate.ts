@@ -8,6 +8,7 @@
 
 export interface StatUpdate {
   grade?: string;
+  season?: number;
   games?: number;
   innings?: number;
   notOuts?: number;
