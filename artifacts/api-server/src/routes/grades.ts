@@ -89,41 +89,45 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
 });
 
 router.get("/records", async (_req, res): Promise<void> => {
-  const [mostGames] = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .orderBy(desc(playerGradeStatsTable.games))
-    .limit(1);
+  async function topAggregate(
+    col:
+      | typeof playerGradeStatsTable.games
+      | typeof playerGradeStatsTable.runs
+      | typeof playerGradeStatsTable.wickets
+      | typeof playerGradeStatsTable.catches
+      | typeof playerGradeStatsTable.fifties
+      | typeof playerGradeStatsTable.hundreds,
+  ): Promise<{ playerId: number; givenName: string; surname: string; value: number } | null> {
+    const [row] = await db
+      .select({
+        playerId: playerGradeStatsTable.playerId,
+        givenName: playerGradeStatsTable.givenName,
+        surname: playerGradeStatsTable.surname,
+        value: sum(col).as("value"),
+      })
+      .from(playerGradeStatsTable)
+      .groupBy(
+        playerGradeStatsTable.playerId,
+        playerGradeStatsTable.givenName,
+        playerGradeStatsTable.surname,
+      )
+      .orderBy(desc(sum(col)))
+      .limit(1);
+    if (!row) return null;
+    return {
+      playerId: row.playerId,
+      givenName: row.givenName,
+      surname: row.surname,
+      value: Number(row.value ?? 0),
+    };
+  }
 
-  const [mostRuns] = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .orderBy(desc(playerGradeStatsTable.runs))
-    .limit(1);
-
-  const [mostWickets] = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .orderBy(desc(playerGradeStatsTable.wickets))
-    .limit(1);
-
-  const [mostCatches] = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .orderBy(desc(playerGradeStatsTable.catches))
-    .limit(1);
-
-  const [mostFifties] = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .orderBy(desc(playerGradeStatsTable.fifties))
-    .limit(1);
-
-  const [mostHundreds] = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .orderBy(desc(playerGradeStatsTable.hundreds))
-    .limit(1);
+  const mostGames = await topAggregate(playerGradeStatsTable.games);
+  const mostRuns = await topAggregate(playerGradeStatsTable.runs);
+  const mostWickets = await topAggregate(playerGradeStatsTable.wickets);
+  const mostCatches = await topAggregate(playerGradeStatsTable.catches);
+  const mostFifties = await topAggregate(playerGradeStatsTable.fifties);
+  const mostHundreds = await topAggregate(playerGradeStatsTable.hundreds);
 
   // Highest score and best bowling need custom logic (strings like "200", "162*", "8/12")
   // We parse numeric values from strings for comparison

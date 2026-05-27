@@ -878,23 +878,36 @@ components:
           items:
             $ref: "#/components/schemas/ImportPreviewPlayer"
 
+    PlayerRecord:
+      type: object
+      required: [playerId, givenName, surname, value]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        value:
+          type: integer
+
     ClubRecords:
       type: object
       required: [mostGames, mostRuns, mostWickets, highestScore, bestBowling, mostCatches, mostFifties, mostHundreds]
       properties:
         mostGames:
-          $ref: "#/components/schemas/Stat"
+          $ref: "#/components/schemas/PlayerRecord"
         mostRuns:
-          $ref: "#/components/schemas/Stat"
+          $ref: "#/components/schemas/PlayerRecord"
         mostWickets:
-          $ref: "#/components/schemas/Stat"
+          $ref: "#/components/schemas/PlayerRecord"
         highestScore:
           $ref: "#/components/schemas/Stat"
         bestBowling:
           $ref: "#/components/schemas/Stat"
         mostCatches:
-          $ref: "#/components/schemas/Stat"
+          $ref: "#/components/schemas/PlayerRecord"
         mostFifties:
-          $ref: "#/components/schemas/Stat"
+          $ref: "#/components/schemas/PlayerRecord"
         mostHundreds:
-          $ref: "#/components/schemas/Stat"
+          $ref: "#/components/schemas/PlayerRecord"

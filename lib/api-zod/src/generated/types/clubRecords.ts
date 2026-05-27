@@ -5,15 +5,16 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PlayerRecord } from './playerRecord';
 import type { Stat } from './stat';
 
 export interface ClubRecords {
-  mostGames: Stat;
-  mostRuns: Stat;
-  mostWickets: Stat;
+  mostGames: PlayerRecord;
+  mostRuns: PlayerRecord;
+  mostWickets: PlayerRecord;
   highestScore: Stat;
   bestBowling: Stat;
-  mostCatches: Stat;
-  mostFifties: Stat;
-  mostHundreds: Stat;
+  mostCatches: PlayerRecord;
+  mostFifties: PlayerRecord;
+  mostHundreds: PlayerRecord;
 }

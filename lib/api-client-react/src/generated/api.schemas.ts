@@ -275,15 +275,22 @@ export interface ImportPreview {
   players: ImportPreviewPlayer[];
 }
 
+export interface PlayerRecord {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  value: number;
+}
+
 export interface ClubRecords {
-  mostGames: Stat;
-  mostRuns: Stat;
-  mostWickets: Stat;
+  mostGames: PlayerRecord;
+  mostRuns: PlayerRecord;
+  mostWickets: PlayerRecord;
   highestScore: Stat;
   bestBowling: Stat;
-  mostCatches: Stat;
-  mostFifties: Stat;
-  mostHundreds: Stat;
+  mostCatches: PlayerRecord;
+  mostFifties: PlayerRecord;
+  mostHundreds: PlayerRecord;
 }
 
 export type ListPlayersParams = {

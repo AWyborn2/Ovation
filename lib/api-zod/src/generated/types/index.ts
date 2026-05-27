@@ -26,6 +26,7 @@ export * from './playerDetail';
 export * from './playerInput';
 export * from './playerListResponse';
 export * from './playerPremiership';
+export * from './playerRecord';
 export * from './playerUpdate';
 export * from './premiership';
 export * from './premiershipPlayer';

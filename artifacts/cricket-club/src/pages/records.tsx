@@ -16,7 +16,7 @@ type Tab = "total" | "by-grade";
 type RecordRow = {
   title: string;
   value: string | number;
-  stat: { playerId: number; givenName: string; surname: string; grade: string } | null;
+  stat: { playerId: number; givenName: string; surname: string; grade?: string } | null;
 };
 
 const parseHs = (hs: string | null | undefined): number => {
@@ -104,10 +104,12 @@ const RecordCard = ({ row }: { row: RecordRow }) => (
           <Link href={`/players/${row.stat.playerId}`} className="text-sm font-medium hover:underline text-foreground">
             {row.stat.givenName} {row.stat.surname}
           </Link>
-          <div className="mt-1 flex items-center gap-2">
-            <GradeBadge grade={row.stat.grade} size="sm" />
-            <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
-          </div>
+          {row.stat.grade && (
+            <div className="mt-1 flex items-center gap-2">
+              <GradeBadge grade={row.stat.grade} size="sm" />
+              <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
+            </div>
+          )}
         </>
       ) : (
         <div className="text-sm text-muted-foreground italic">No data</div>
@@ -134,17 +136,19 @@ export default function Records() {
 
   const totalRows: RecordRow[] = useMemo(() => {
     if (!records) return [];
-    const m = (title: string, value: string | number, s: { playerId: number; givenName: string; surname: string; grade: string }): RecordRow =>
+    const agg = (title: string, r: { playerId: number; givenName: string; surname: string; value: number }): RecordRow =>
+      ({ title, value: r.value || 0, stat: { playerId: r.playerId, givenName: r.givenName, surname: r.surname } });
+    const peak = (title: string, value: string | number, s: { playerId: number; givenName: string; surname: string; grade: string }): RecordRow =>
       ({ title, value, stat: { playerId: s.playerId, givenName: s.givenName, surname: s.surname, grade: s.grade } });
     return [
-      m("Most Games", records.mostGames.games || 0, records.mostGames),
-      m("Most Runs", records.mostRuns.runs || 0, records.mostRuns),
-      m("Highest Score", records.highestScore.highScore || "-", records.highestScore),
-      m("Most Fifties", records.mostFifties.fifties || 0, records.mostFifties),
-      m("Most Hundreds", records.mostHundreds.hundreds || 0, records.mostHundreds),
-      m("Most Wickets", records.mostWickets.wickets || 0, records.mostWickets),
-      m("Best Bowling", records.bestBowling.bestBowling || "-", records.bestBowling),
-      m("Most Catches", records.mostCatches.catches || 0, records.mostCatches),
+      agg("Most Games", records.mostGames),
+      agg("Most Runs", records.mostRuns),
+      peak("Highest Score", records.highestScore.highScore || "-", records.highestScore),
+      agg("Most Fifties", records.mostFifties),
+      agg("Most Hundreds", records.mostHundreds),
+      agg("Most Wickets", records.mostWickets),
+      peak("Best Bowling", records.bestBowling.bestBowling || "-", records.bestBowling),
+      agg("Most Catches", records.mostCatches),
     ];
   }, [records]);
 
