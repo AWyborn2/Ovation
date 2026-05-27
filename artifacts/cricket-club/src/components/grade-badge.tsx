@@ -92,7 +92,7 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
         className="pointer-events-none absolute font-serif font-bold leading-none"
         style={{
           left: "50%",
-          top: "35%",
+          top: "45%",
           transform: "translate(-50%, -50%)",
           fontSize: diamondFontPx,
           color: GOLD,
