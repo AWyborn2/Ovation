@@ -1,5 +1,12 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { ADMIN_PASSWORD_STORAGE_KEY } from "@/lib/admin-auth";
+
+setAuthTokenGetter(() =>
+  typeof window === "undefined" ? null : window.sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY),
+);
+
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";

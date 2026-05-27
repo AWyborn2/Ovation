@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  ADMIN_PASSWORD_STORAGE_KEY,
+  clearAdminPassword,
+  getAdminPassword,
+  setAdminPassword,
+} from "@/lib/admin-auth";
 import {
   useListImports,
   useCommitImport,
@@ -39,6 +45,71 @@ const seasonLabel = (s: number | null | undefined) =>
   s == null ? "—" : `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
 export default function AdminImport() {
+  const [authed, setAuthed] = useState<boolean>(() => getAdminPassword() != null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ADMIN_PASSWORD_STORAGE_KEY) {
+        setAuthed(getAdminPassword() != null);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  if (!authed) {
+    return <AdminPasswordGate onUnlock={() => setAuthed(true)} />;
+  }
+  return <AdminImportInner onAuthFailed={() => setAuthed(false)} />;
+}
+
+function AdminPasswordGate({ onUnlock }: { onUnlock: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password) {
+      setError("Enter the admin password.");
+      return;
+    }
+    setAdminPassword(password);
+    setError(null);
+    onUnlock();
+  };
+
+  return (
+    <div className="max-w-md">
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin password required</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-password">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <Button type="submit">Unlock</Button>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <p className="text-xs text-muted-foreground">
+              The password is stored in this browser tab only and cleared when you close it.
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AdminImportInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [season, setSeason] = useState<number>(new Date().getFullYear());
@@ -70,7 +141,17 @@ export default function AdminImport() {
       const form = new FormData();
       form.append("file", file);
       form.append("season", String(season));
-      const res = await fetch("/api/imports/playcricket-csv", { method: "POST", body: form });
+      const token = getAdminPassword();
+      const res = await fetch("/api/imports/playcricket-csv", {
+        method: "POST",
+        body: form,
+        headers: token ? { authorization: `Bearer ${token}` } : undefined,
+      });
+      if (res.status === 401) {
+        clearAdminPassword();
+        onAuthFailed();
+        return;
+      }
       const body = await res.json();
       if (!res.ok) {
         setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
@@ -85,6 +166,16 @@ export default function AdminImport() {
     }
   };
 
+  const handleMutationError = (e: unknown): boolean => {
+    const status = (e as { status?: number } | null)?.status;
+    if (status === 401) {
+      clearAdminPassword();
+      onAuthFailed();
+      return true;
+    }
+    return false;
+  };
+
   const onConfirm = () => {
     if (!preview) return;
     commit.mutate(
@@ -95,7 +186,10 @@ export default function AdminImport() {
           setFile(null);
           invalidateAggregates();
         },
-        onError: (e) => setError((e as Error).message),
+        onError: (e) => {
+          if (handleMutationError(e)) return;
+          setError((e as Error).message);
+        },
       },
     );
   };
@@ -105,9 +199,13 @@ export default function AdminImport() {
     del.mutate(
       { id: preview.importId },
       {
-        onSettled: () => {
+        onSuccess: () => {
           setPreview(null);
           invalidateAggregates();
+        },
+        onError: (e) => {
+          if (handleMutationError(e)) return;
+          setError((e as Error).message);
         },
       },
     );
@@ -115,7 +213,16 @@ export default function AdminImport() {
 
   const onDeleteImport = (id: number) => {
     if (!confirm("Delete this import? Aggregates will be re-derived without its contribution.")) return;
-    del.mutate({ id }, { onSuccess: invalidateAggregates });
+    del.mutate(
+      { id },
+      {
+        onSuccess: invalidateAggregates,
+        onError: (e) => {
+          if (handleMutationError(e)) return;
+          setError((e as Error).message);
+        },
+      },
+    );
   };
 
   return (

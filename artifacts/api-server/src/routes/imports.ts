@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
 import { recomputeAggregates } from "../lib/recompute";
+import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
 
@@ -38,6 +39,7 @@ router.get("/imports", async (_req, res): Promise<void> => {
 
 router.post(
   "/imports/playcricket-csv",
+  requireAdmin,
   upload.single("file"),
   async (req: MulterRequest, res): Promise<void> => {
     const file = req.file;
@@ -147,8 +149,8 @@ router.post(
   },
 );
 
-router.post("/imports/:id/commit", async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
@@ -264,8 +266,8 @@ router.post("/imports/:id/commit", async (req, res): Promise<void> => {
   >);
 });
 
-router.delete("/imports/:id", async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
     return;
