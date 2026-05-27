@@ -340,6 +340,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ClubRecords"
 
+  /premierships:
+    get:
+      operationId: listPremierships
+      tags: [grades]
+      summary: List all premierships with rosters
+      responses:
+        "200":
+          description: List of premiership records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Premiership"
+
 components:
   schemas:
     HealthStatus:
@@ -367,6 +382,10 @@ components:
         totalRuns:
           type: ["integer", "null"]
         totalWickets:
+          type: ["integer", "null"]
+        premiershipsWon:
+          type: ["integer", "null"]
+        premiershipsCaptained:
           type: ["integer", "null"]
 
     PlayerInput:
@@ -398,10 +417,85 @@ components:
           type: string
         gradesPlayed:
           type: ["string", "null"]
+        premiershipsWon:
+          type: ["integer", "null"]
+        premiershipsCaptained:
+          type: ["integer", "null"]
         stats:
           type: array
           items:
             $ref: "#/components/schemas/Stat"
+        premierships:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerPremiership"
+
+    PlayerPremiership:
+      type: object
+      required: [id, year, grade, competition, isCaptain]
+      properties:
+        id:
+          type: integer
+        year:
+          type: integer
+        grade:
+          type: string
+        competition:
+          type: string
+        venue:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        mom:
+          type: ["string", "null"]
+        isCaptain:
+          type: boolean
+
+    Premiership:
+      type: object
+      required: [id, year, grade, competition, players]
+      properties:
+        id:
+          type: integer
+        year:
+          type: integer
+        grade:
+          type: string
+        competition:
+          type: string
+        venue:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        mom:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PremiershipPlayer"
+
+    PremiershipPlayer:
+      type: object
+      required: [id, premiershipId, name, isCaptain]
+      properties:
+        id:
+          type: integer
+        premiershipId:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        isCaptain:
+          type: boolean
+        battingOrder:
+          type: ["integer", "null"]
 
     PlayerListResponse:
       type: object

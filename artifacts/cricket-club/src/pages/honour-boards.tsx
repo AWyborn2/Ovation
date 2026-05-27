@@ -5,10 +5,12 @@ import {
   useListGrades,
   useListPlayers,
   useGetPlayer,
+  useListPremierships,
   getGetGradeLeaderboardQueryOptions,
   getGetPlayerQueryKey,
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
+import { Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
@@ -40,7 +42,27 @@ const SummaryStat = ({ label, value }: { label: string; value: string | number }
   </div>
 );
 
-const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[number] }) => (
+export type PremiershipCount = { won: number; captained: number };
+
+const PremiershipBadge = ({ count }: { count: PremiershipCount }) => {
+  if (count.won === 0) return <span className="text-muted-foreground/60">—</span>;
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold text-xs"
+      title={`${count.won} premiership${count.won === 1 ? "" : "s"}${count.captained ? `, captained ${count.captained}` : ""}`}
+    >
+      <Trophy className="h-3 w-3" />
+      <span className="font-mono">{count.won}</span>
+      {count.captained > 0 && (
+        <span className="ml-0.5 font-mono text-[10px] bg-amber-600 text-white rounded px-1">
+          C×{count.captained}
+        </span>
+      )}
+    </span>
+  );
+};
+
+const BoardCard = ({ tier, board, premMap }: { tier: BoardTier; board: (typeof BOARDS)[number]; premMap?: Map<number, PremiershipCount> }) => (
   <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
     <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
       <span className="flex items-center gap-2 md:gap-3">
@@ -57,6 +79,9 @@ const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[nu
             <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Surname</th>
             <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Given Name</th>
             <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">{board.headlineLabel}</th>
+            {board.key === "games" && (
+              <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs">Prem</th>
+            )}
             <th className={`font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}>{board.key === "games" ? "Grades" : board.supportingLabel}</th>
           </tr>
         </thead>
@@ -71,6 +96,11 @@ const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[nu
               </td>
               <td className="p-3 text-foreground/90">{r.givenName}</td>
               <td className="p-3 text-right font-mono font-bold">{r.headline}</td>
+              {board.key === "games" && (
+                <td className="p-3 text-center">
+                  <PremiershipBadge count={premMap?.get(r.playerId) ?? { won: 0, captained: 0 }} />
+                </td>
+              )}
               <td className="p-3 hidden sm:table-cell">
                 {board.key === "games" ? (
                   <GradeBadgeList grades={r.gradesPlayed} size="sm" />
@@ -86,7 +116,7 @@ const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[nu
   </div>
 );
 
-const BoardView = ({ tiers, board }: { tiers: BoardTier[]; board: (typeof BOARDS)[number] }) => (
+const BoardView = ({ tiers, board, premMap }: { tiers: BoardTier[]; board: (typeof BOARDS)[number]; premMap?: Map<number, PremiershipCount> }) => (
   <div className="space-y-4">
     <div className="bg-card border border-border rounded-md p-6 shadow-md">
       <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">{board.title}</h2>
@@ -98,7 +128,7 @@ const BoardView = ({ tiers, board }: { tiers: BoardTier[]; board: (typeof BOARDS
         No players qualify yet.
       </div>
     ) : (
-      tiers.map((t) => <BoardCard key={t.label} tier={t} board={board} />)
+      tiers.map((t) => <BoardCard key={t.label} tier={t} board={board} premMap={premMap} />)
     )}
   </div>
 );
@@ -245,6 +275,21 @@ export default function HonourBoards() {
 
   const { data: dashboard } = useGetDashboard();
   const { data: gradesList } = useListGrades();
+  const { data: premierships } = useListPremierships();
+
+  const premMap = useMemo(() => {
+    const m = new Map<number, PremiershipCount>();
+    for (const p of premierships ?? []) {
+      for (const pl of p.players) {
+        if (pl.playerId == null) continue;
+        const cur = m.get(pl.playerId) ?? { won: 0, captained: 0 };
+        cur.won += 1;
+        if (pl.isCaptain) cur.captained += 1;
+        m.set(pl.playerId, cur);
+      }
+    }
+    return m;
+  }, [premierships]);
 
   const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
 
@@ -489,7 +534,7 @@ export default function HonourBoards() {
         (() => {
           const board = BOARDS.find((b) => b.key === activeTab)!;
           const tiers = computeBoard(aggregatedPlayers, board.key);
-          return <BoardView tiers={tiers} board={board} />;
+          return <BoardView tiers={tiers} board={board} premMap={premMap} />;
         })()
       )}
 

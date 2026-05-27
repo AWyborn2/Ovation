@@ -31,6 +31,7 @@ import type {
   PlayerInput,
   PlayerListResponse,
   PlayerUpdate,
+  Premiership,
   Stat,
   StatInput,
   StatListResponse,
@@ -1171,6 +1172,83 @@ export function useGetRecords<TData = Awaited<ReturnType<typeof getRecords>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetRecordsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListPremiershipsUrl = () => {
+
+
+
+
+  return `/api/premierships`
+}
+
+/**
+ * @summary List all premierships with rosters
+ */
+export const listPremierships = async ( options?: RequestInit): Promise<Premiership[]> => {
+
+  return customFetch<Premiership[]>(getListPremiershipsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPremiershipsQueryKey = () => {
+    return [
+    `/api/premierships`
+    ] as const;
+    }
+
+
+export const getListPremiershipsQueryOptions = <TData = Awaited<ReturnType<typeof listPremierships>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPremierships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPremiershipsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPremierships>>> = ({ signal }) => listPremierships({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPremierships>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPremiershipsQueryResult = NonNullable<Awaited<ReturnType<typeof listPremierships>>>
+export type ListPremiershipsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all premierships with rosters
+ */
+
+export function useListPremierships<TData = Awaited<ReturnType<typeof listPremierships>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPremierships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPremiershipsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

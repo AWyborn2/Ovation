@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";
-import { Share2 } from "lucide-react";
+import { Share2, Trophy, Crown } from "lucide-react";
 import {
   aggregateCareer,
   getAvailableSeasons,
@@ -122,6 +122,15 @@ export default function PlayerDetail() {
 
   const aggregated = aggregateCareer(player.stats)[0];
   const milestones = aggregated ? MILESTONE_BOARDS.map((k) => getMilestoneStatus(aggregated, k)) : [];
+  const premierships = player.premierships ?? [];
+  const premsWon = player.premiershipsWon ?? premierships.length;
+  const premsCaptained = player.premiershipsCaptained ?? premierships.filter((p) => p.isCaptain).length;
+  const formatPremDate = (d: string | null | undefined) => {
+    if (!d) return "";
+    const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return d;
+    return `${m[3]}/${m[2]}/${m[1]}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -134,6 +143,58 @@ export default function PlayerDetail() {
         </div>
         <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
       </div>
+
+      {premsWon > 0 && (
+        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+          <div className="flex items-baseline justify-between gap-3 mb-1">
+            <h2 className="text-lg font-serif font-bold text-primary m-0 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-600" />
+              Premierships won
+            </h2>
+            <Link href="/premierships" className="text-xs uppercase tracking-widest text-primary hover:underline">View board →</Link>
+          </div>
+          <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-amber-500/15 border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold">
+              <Trophy className="h-4 w-4" />
+              <span className="font-mono text-lg">{premsWon}</span>
+              <span className="text-xs uppercase tracking-wider">won</span>
+            </div>
+            {premsCaptained > 0 && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-amber-600 text-white font-bold">
+                <Crown className="h-4 w-4" />
+                <span className="font-mono text-lg">{premsCaptained}</span>
+                <span className="text-xs uppercase tracking-wider">captained</span>
+              </div>
+            )}
+          </div>
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {premierships.map((p) => (
+              <div key={p.id} className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3">
+                <div className="text-center shrink-0">
+                  <div className="font-mono font-bold text-primary text-lg leading-none">{p.year}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{p.grade}</div>
+                </div>
+                <div className="min-w-0 text-xs">
+                  {p.competition && p.competition !== p.grade.toUpperCase() && (
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{p.competition}</div>
+                  )}
+                  {p.result && <div className="font-semibold text-foreground/90 leading-snug">{p.result}</div>}
+                  <div className="text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                    {p.venue && <span>{p.venue}</span>}
+                    {p.matchDate && <span>· {formatPremDate(p.matchDate)}</span>}
+                    {p.isCaptain && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-600 text-white font-bold text-[10px] uppercase">
+                        <Crown className="h-3 w-3" /> Captain
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {milestones.length > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">

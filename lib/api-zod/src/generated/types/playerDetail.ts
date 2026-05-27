@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PlayerPremiership } from './playerPremiership';
 import type { Stat } from './stat';
 
 export interface PlayerDetail {
@@ -13,5 +14,10 @@ export interface PlayerDetail {
   givenName: string;
   /** @nullable */
   gradesPlayed?: string | null;
+  /** @nullable */
+  premiershipsWon?: number | null;
+  /** @nullable */
+  premiershipsCaptained?: number | null;
   stats: Stat[];
+  premierships?: PlayerPremiership[];
 }

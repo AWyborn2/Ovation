@@ -37,7 +37,9 @@ export const ListPlayersResponse = zod.object({
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
-  "totalWickets": zod.number().nullish()
+  "totalWickets": zod.number().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -66,6 +68,8 @@ export const GetPlayerResponse = zod.object({
   "surname": zod.string(),
   "givenName": zod.string(),
   "gradesPlayed": zod.string().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish(),
   "stats": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -89,7 +93,18 @@ export const GetPlayerResponse = zod.object({
   "catches": zod.number().nullish(),
   "stumpings": zod.number().nullish(),
   "runOuts": zod.number().nullish()
-}))
+})),
+  "premierships": zod.array(zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "grade": zod.string(),
+  "competition": zod.string(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "isCaptain": zod.boolean()
+})).optional()
 })
 
 
@@ -112,7 +127,9 @@ export const UpdatePlayerResponse = zod.object({
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
-  "totalWickets": zod.number().nullish()
+  "totalWickets": zod.number().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish()
 })
 
 
@@ -357,7 +374,9 @@ export const GetDashboardResponse = zod.object({
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
-  "totalWickets": zod.number().nullish()
+  "totalWickets": zod.number().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish()
 }),
   "topWicketTaker": zod.object({
   "id": zod.number(),
@@ -366,7 +385,9 @@ export const GetDashboardResponse = zod.object({
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
-  "totalWickets": zod.number().nullish()
+  "totalWickets": zod.number().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish()
 }),
   "topFielder": zod.object({
   "id": zod.number(),
@@ -375,7 +396,9 @@ export const GetDashboardResponse = zod.object({
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
-  "totalWickets": zod.number().nullish()
+  "totalWickets": zod.number().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish()
 }),
   "gradeSummaries": zod.array(zod.object({
   "grade": zod.string(),
@@ -588,5 +611,30 @@ export const GetRecordsResponse = zod.object({
   "runOuts": zod.number().nullish()
 })
 })
+
+
+/**
+ * @summary List all premierships with rosters
+ */
+export const ListPremiershipsResponseItem = zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "grade": zod.string(),
+  "competition": zod.string(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "premiershipId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "isCaptain": zod.boolean(),
+  "battingOrder": zod.number().nullish()
+}))
+})
+export const ListPremiershipsResponse = zod.array(ListPremiershipsResponseItem)
 
 

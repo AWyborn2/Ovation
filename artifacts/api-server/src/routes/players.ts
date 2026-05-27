@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, desc, asc, count, sql } from "drizzle-orm";
-import { db, playersTable, playerGradeStatsTable } from "@workspace/db";
+import {
+  db,
+  playersTable,
+  playerGradeStatsTable,
+  premiershipsTable,
+  premiershipPlayersTable,
+} from "@workspace/db";
 import {
   CreatePlayerBody,
   UpdatePlayerBody,
@@ -141,23 +147,53 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [player] = await db
-    .select()
-    .from(playersTable)
-    .where(eq(playersTable.id, params.data.id));
+  const [playerRow, stats, premRows] = await Promise.all([
+    db
+      .select()
+      .from(playersTable)
+      .where(eq(playersTable.id, params.data.id))
+      .then((rows) => rows[0]),
+    db
+      .select()
+      .from(playerGradeStatsTable)
+      .where(eq(playerGradeStatsTable.playerId, params.data.id))
+      .orderBy(asc(playerGradeStatsTable.grade)),
+    db
+      .select({
+        id: premiershipsTable.id,
+        year: premiershipsTable.year,
+        grade: premiershipsTable.grade,
+        competition: premiershipsTable.competition,
+        venue: premiershipsTable.venue,
+        matchDate: premiershipsTable.matchDate,
+        result: premiershipsTable.result,
+        mom: premiershipsTable.mom,
+        isCaptain: premiershipPlayersTable.isCaptain,
+      })
+      .from(premiershipPlayersTable)
+      .innerJoin(
+        premiershipsTable,
+        eq(premiershipsTable.id, premiershipPlayersTable.premiershipId),
+      )
+      .where(eq(premiershipPlayersTable.playerId, params.data.id))
+      .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade)),
+  ]);
 
-  if (!player) {
+  if (!playerRow) {
     res.status(404).json({ error: "Player not found" });
     return;
   }
 
-  const stats = await db
-    .select()
-    .from(playerGradeStatsTable)
-    .where(eq(playerGradeStatsTable.playerId, params.data.id))
-    .orderBy(asc(playerGradeStatsTable.grade));
+  const premiershipsWon = premRows.length;
+  const premiershipsCaptained = premRows.filter((r) => r.isCaptain).length;
 
-  res.json({ ...player, stats });
+  res.json({
+    ...playerRow,
+    premiershipsWon,
+    premiershipsCaptained,
+    stats,
+    premierships: premRows,
+  });
 });
 
 router.patch("/players/:id", async (req, res): Promise<void> => {

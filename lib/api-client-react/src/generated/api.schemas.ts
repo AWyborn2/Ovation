@@ -21,6 +21,10 @@ export interface Player {
   totalRuns?: number | null;
   /** @nullable */
   totalWickets?: number | null;
+  /** @nullable */
+  premiershipsWon?: number | null;
+  /** @nullable */
+  premiershipsCaptained?: number | null;
 }
 
 export interface PlayerInput {
@@ -75,13 +79,63 @@ export interface Stat {
   runOuts?: number | null;
 }
 
+export interface PlayerPremiership {
+  id: number;
+  year: number;
+  grade: string;
+  competition: string;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  mom?: string | null;
+  isCaptain: boolean;
+}
+
 export interface PlayerDetail {
   id: number;
   surname: string;
   givenName: string;
   /** @nullable */
   gradesPlayed?: string | null;
+  /** @nullable */
+  premiershipsWon?: number | null;
+  /** @nullable */
+  premiershipsCaptained?: number | null;
   stats: Stat[];
+  premierships?: PlayerPremiership[];
+}
+
+export interface PremiershipPlayer {
+  id: number;
+  premiershipId: number;
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  isCaptain: boolean;
+  /** @nullable */
+  battingOrder?: number | null;
+}
+
+export interface Premiership {
+  id: number;
+  year: number;
+  grade: string;
+  competition: string;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  mom?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  players: PremiershipPlayer[];
 }
 
 export interface PlayerListResponse {

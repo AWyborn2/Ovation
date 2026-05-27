@@ -18,4 +18,8 @@ export interface Player {
   totalRuns?: number | null;
   /** @nullable */
   totalWickets?: number | null;
+  /** @nullable */
+  premiershipsWon?: number | null;
+  /** @nullable */
+  premiershipsCaptained?: number | null;
 }

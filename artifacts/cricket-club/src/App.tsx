@@ -9,6 +9,7 @@ import PlayerDetail from "@/pages/player-detail";
 import Grades from "@/pages/grades";
 import GradeLeaderboard from "@/pages/grade-leaderboard";
 import Records from "@/pages/records";
+import Premierships from "@/pages/premierships";
 import Compare from "@/pages/compare";
 import StatDetail from "@/pages/stat-detail";
 import NotFound from "@/pages/not-found";
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/grades" component={Grades} />
         <Route path="/grades/:grade" component={GradeLeaderboard} />
         <Route path="/records" component={Records} />
+        <Route path="/premierships" component={Premierships} />
         <Route path="/compare" component={Compare} />
         <Route path="/stats/:id" component={StatDetail} />
         <Route component={NotFound} />
