@@ -1,12 +1,18 @@
-import { useGetDashboard } from "@workspace/api-client-react";
+import { useListGrades } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
+import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 
 export default function Grades() {
-  // Grades overview is essentially gradeSummaries from Dashboard
-  const { data, isLoading } = useGetDashboard();
+  const { data, isLoading } = useListGrades();
 
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+
+  const grades = (data ?? []).filter((g) => g.grade !== "CLUB TOTAL");
+  const order = sortGradesBySeniority(grades.map((g) => g.grade));
+  const ordered = order
+    .map((name) => grades.find((g) => g.grade === name))
+    .filter((g): g is NonNullable<typeof g> => Boolean(g));
 
   return (
     <div className="space-y-6">
@@ -16,10 +22,11 @@ export default function Grades() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data?.gradeSummaries?.map(grade => (
+        {ordered.map((grade) => (
           <Link key={grade.grade} href={`/grades/${encodeURIComponent(grade.grade)}`}>
             <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center gap-4">
+                <GradeBadge grade={grade.grade} size="lg" />
                 <CardTitle className="group-hover:text-primary transition-colors">{grade.grade}</CardTitle>
               </CardHeader>
               <CardContent>

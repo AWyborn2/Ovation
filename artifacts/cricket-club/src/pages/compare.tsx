@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 
 type Side = "a" | "b";
 
@@ -49,7 +50,16 @@ function PlayerPicker({ value, onChange, label }: { value: number | null; onChan
                     >
                       <Check className={cn("mr-2 h-4 w-4", value === p.id ? "opacity-100" : "opacity-0")} />
                       <span className="flex-1">{p.surname}, {p.givenName}</span>
-                      <span className="text-xs text-muted-foreground ml-2">{p.gradesPlayed || ""}</span>
+                      <span className="ml-2 flex flex-wrap gap-1">
+                        {sortGradesBySeniority(
+                          (p.gradesPlayed || "")
+                            .split(",")
+                            .map((g) => g.trim())
+                            .filter((g) => g && g !== "CLUB TOTAL"),
+                        ).map((g) => (
+                          <GradeBadge key={g} grade={g} size="sm" />
+                        ))}
+                      </span>
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -190,7 +200,8 @@ export default function Compare() {
     const set = new Set<string>();
     playerA?.stats.forEach((s) => set.add(s.grade));
     playerB?.stats.forEach((s) => set.add(s.grade));
-    return Array.from(set).sort();
+    set.delete("CLUB TOTAL");
+    return sortGradesBySeniority(set);
   }, [playerA, playerB]);
 
   function statFor(stats: Stat[] | undefined, grade: string): Stat | undefined {
@@ -251,7 +262,10 @@ export default function Compare() {
                 }));
                 return (
                   <div key={grade} className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-4 py-3 border-b bg-muted/50 font-semibold text-primary">{grade}</div>
+                    <div className="px-4 py-3 border-b bg-muted/50 font-semibold text-primary flex items-center gap-3">
+                      <GradeBadge grade={grade} size="md" />
+                      <span>{grade}</span>
+                    </div>
                     <table className="w-full text-sm">
                       <tbody>
                         {rows.map((row) => (

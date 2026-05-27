@@ -1,18 +1,36 @@
-import { useParams, Link } from "wouter";
+import { useEffect } from "react";
+import { useParams, Link, useLocation } from "wouter";
 import { useGetGradeLeaderboard, getGetGradeLeaderboardQueryKey } from "@workspace/api-client-react";
+import { GradeBadge } from "@/components/grade-badge";
 
 export default function GradeLeaderboard() {
   const { grade } = useParams<{ grade: string }>();
   const decodedGrade = decodeURIComponent(grade);
-  const { data: stats, isLoading } = useGetGradeLeaderboard(decodedGrade, { query: { enabled: !!decodedGrade, queryKey: getGetGradeLeaderboardQueryKey(decodedGrade) } });
+  const [, setLocation] = useLocation();
 
+  // CLUB TOTAL is an aggregate row, not a real grade — redirect away.
+  useEffect(() => {
+    if (decodedGrade === "CLUB TOTAL") {
+      setLocation("/grades");
+    }
+  }, [decodedGrade, setLocation]);
+
+  const isValid = decodedGrade !== "CLUB TOTAL";
+  const { data: stats, isLoading } = useGetGradeLeaderboard(decodedGrade, {
+    query: { enabled: !!decodedGrade && isValid, queryKey: getGetGradeLeaderboardQueryKey(decodedGrade) },
+  });
+
+  if (!isValid) return <div className="p-8 text-center text-muted-foreground">Redirecting…</div>;
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{decodedGrade} Grade</h1>
-        <p className="text-muted-foreground mt-1">Leaderboard and player statistics.</p>
+      <div className="flex items-center gap-4">
+        <GradeBadge grade={decodedGrade} size="lg" />
+        <div>
+          <h1 className="text-3xl font-serif font-bold text-primary">{decodedGrade}</h1>
+          <p className="text-muted-foreground mt-1">Leaderboard and player statistics.</p>
+        </div>
       </div>
 
       <div className="bg-card border rounded-lg overflow-x-auto shadow-sm">

@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
+import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";
 import { Share2 } from "lucide-react";
 import {
   aggregateCareer,
@@ -127,7 +128,9 @@ export default function PlayerDetail() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-serif font-bold text-primary">{player.givenName} {player.surname}</h1>
-          <p className="text-muted-foreground mt-1">Grades: {player.gradesPlayed || "None"}</p>
+          <div className="mt-2">
+            <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="md" />
+          </div>
         </div>
         <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
       </div>
@@ -213,9 +216,14 @@ export default function PlayerDetail() {
             </tr>
           </thead>
           <tbody>
-            {player.stats.map(stat => (
+            {player.stats.filter(s => s.grade !== "CLUB TOTAL").map(stat => (
               <tr key={stat.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                <td className="p-4 font-semibold text-primary">{stat.grade}</td>
+                <td className="p-4">
+                  <div className="flex items-center gap-2">
+                    <GradeBadge grade={stat.grade} size="sm" />
+                    <span className="font-semibold text-primary">{stat.grade}</span>
+                  </div>
+                </td>
                 <td className="p-4 text-right font-mono">{stat.games || "-"}</td>
                 <td className="p-4 text-right font-mono">{stat.innings || "-"}</td>
                 <td className="p-4 text-right font-mono">{stat.notOuts || "-"}</td>

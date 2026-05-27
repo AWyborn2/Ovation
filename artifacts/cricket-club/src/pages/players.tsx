@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { GradeBadgeListFromString } from "@/components/grade-badge";
 
 export default function Players() {
   const [search, setSearch] = useState("");
@@ -93,7 +94,9 @@ export default function Players() {
                       {player.surname}, {player.givenName}
                     </Link>
                   </td>
-                  <td className="p-4 text-muted-foreground">{player.gradesPlayed || "-"}</td>
+                  <td className="p-4">
+                    <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="sm" />
+                  </td>
                   <td className="p-4 text-right font-mono">{player.totalGames || 0}</td>
                   <td className="p-4 text-right font-mono">{player.totalRuns || 0}</td>
                   <td className="p-4 text-right font-mono">{player.totalWickets || 0}</td>

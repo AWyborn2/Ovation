@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { TierBadge } from "@/components/tier-badge";
+import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
 import { downloadMilestoneCard } from "@/lib/milestone-share";
 import { Share2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -56,7 +57,7 @@ const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[nu
             <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Surname</th>
             <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Given Name</th>
             <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">{board.headlineLabel}</th>
-            <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell">{board.supportingLabel}</th>
+            <th className={`font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}>{board.key === "games" ? "Grades" : board.supportingLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -70,7 +71,13 @@ const BoardCard = ({ tier, board }: { tier: BoardTier; board: (typeof BOARDS)[nu
               </td>
               <td className="p-3 text-foreground/90">{r.givenName}</td>
               <td className="p-3 text-right font-mono font-bold">{r.headline}</td>
-              <td className="p-3 text-right font-mono text-muted-foreground hidden sm:table-cell">{r.supporting}</td>
+              <td className="p-3 hidden sm:table-cell">
+                {board.key === "games" ? (
+                  <GradeBadgeList grades={r.gradesPlayed} size="sm" />
+                ) : (
+                  <span className="block text-right font-mono text-muted-foreground">{r.supporting}</span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -167,7 +174,13 @@ const SearchResultCard = ({ playerId }: { playerId: number }) => {
           {player.givenName} {player.surname}
         </h3>
       </Link>
-      <div className="text-xs text-muted-foreground mt-1 mb-4">{grades}</div>
+      <div className="mt-1 mb-4">
+        {player.gradesPlayed ? (
+          <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="sm" />
+        ) : (
+          <span className="text-xs text-muted-foreground italic">{grades}</span>
+        )}
+      </div>
       {a && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-sm">
           <Chip label="Games" value={a.games} />
@@ -194,9 +207,14 @@ const SearchResultCard = ({ playerId }: { playerId: number }) => {
               </tr>
             </thead>
             <tbody>
-              {player.stats.map((s) => (
+              {player.stats.filter((s) => s.grade !== "CLUB TOTAL").map((s) => (
                 <tr key={s.id} className="border-t border-border/50">
-                  <td className="p-2 font-semibold text-primary">{s.grade}</td>
+                  <td className="p-2">
+                    <div className="flex items-center gap-2">
+                      <GradeBadge grade={s.grade} size="sm" />
+                      <span className="font-semibold text-primary">{s.grade}</span>
+                    </div>
+                  </td>
                   <td className="p-2 text-right font-mono">{s.games ?? "-"}</td>
                   <td className="p-2 text-right font-mono">{s.runs ?? "-"}</td>
                   <td className="p-2 text-right font-mono">{s.highScore ?? "-"}</td>
@@ -416,17 +434,20 @@ export default function HonourBoards() {
             </button>
           </div>
           {scope === "by-grade" && (
-            <select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium self-start"
-            >
-              {grades.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-3 self-start">
+              {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
+              <select
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value)}
+                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+              >
+                {grades.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
       )}

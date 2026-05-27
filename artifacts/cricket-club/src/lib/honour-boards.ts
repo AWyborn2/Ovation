@@ -367,6 +367,9 @@ export interface BoardRow {
   headline: string;
   supporting: string;
   sortValue: number;
+  /** All grades this player has appeared in. Used by the Games board to render
+   * grade-crest badges instead of the supporting text. */
+  gradesPlayed: string[];
 }
 
 export interface BoardTier {
@@ -682,6 +685,7 @@ export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardT
       headline: v.headline,
       supporting: v.supporting,
       sortValue: v.sortValue,
+      gradesPlayed: Array.from(p.grades).filter((g) => g !== "CLUB TOTAL"),
     });
   }
   const populated = tierResults.filter((t) => t.rows.length > 0);

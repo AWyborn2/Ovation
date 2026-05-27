@@ -9,7 +9,9 @@ router.get("/grades", async (_req, res): Promise<void> => {
     .select()
     .from(gradeSummariesTable)
     .orderBy(gradeSummariesTable.grade);
-  res.json(grades);
+  // CLUB TOTAL is an aggregate row stored alongside real grades; it isn't a
+  // grade users can pick, so filter it out of the API response.
+  res.json(grades.filter((g) => g.grade !== "CLUB TOTAL"));
 });
 
 router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
@@ -35,7 +37,9 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     })
     .from(playersTable);
 
-  const gradeSummaries = await db.select().from(gradeSummariesTable);
+  const allGradeSummaries = await db.select().from(gradeSummariesTable);
+  // CLUB TOTAL is an aggregate row, not a real grade — exclude from counts and lists.
+  const gradeSummaries = allGradeSummaries.filter((g) => g.grade !== "CLUB TOTAL");
   const gradesCount = gradeSummaries.length;
 
   // Top performers from club totals

@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Award } from "lucide-react";
+import { GradeBadge } from "@/components/grade-badge";
 
 type Tab = "total" | "by-grade";
 
@@ -103,7 +104,10 @@ const RecordCard = ({ row }: { row: RecordRow }) => (
           <Link href={`/players/${row.stat.playerId}`} className="text-sm font-medium hover:underline text-foreground">
             {row.stat.givenName} {row.stat.surname}
           </Link>
-          <div className="text-xs text-muted-foreground mt-1">{row.stat.grade}</div>
+          <div className="mt-1 flex items-center gap-2">
+            <GradeBadge grade={row.stat.grade} size="sm" />
+            <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
+          </div>
         </>
       ) : (
         <div className="text-sm text-muted-foreground italic">No data</div>
@@ -185,15 +189,18 @@ export default function Records() {
       {tab === "by-grade" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">Grade</span>
-          <select
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium self-start"
-          >
-            {grades.map((g) => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-3 self-start">
+            {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+            >
+              {grades.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
