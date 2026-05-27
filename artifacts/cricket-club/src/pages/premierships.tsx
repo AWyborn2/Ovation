@@ -15,20 +15,20 @@ const formatDate = (d: string | null | undefined) => {
 
 const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   const display = p.name.replace(/\s+/g, " ").trim().toUpperCase();
-  const inner = (
-    <>
-      {display}
-      {p.isCaptain && <span> (CAPT)</span>}
-    </>
-  );
+  const label = p.isCaptain ? `${display} (CAPT)` : display;
+  const justified =
+    "block leading-snug text-justify [text-align-last:justify] whitespace-nowrap overflow-hidden";
   return (
-    <li className="leading-snug">
+    <li>
       {p.playerId ? (
-        <Link href={`/players/${p.playerId}`} className="hover:underline text-slate-900">
-          {inner}
+        <Link
+          href={`/players/${p.playerId}`}
+          className={`${justified} hover:underline text-slate-900`}
+        >
+          {label}
         </Link>
       ) : (
-        <span className="text-slate-900">{inner}</span>
+        <span className={`${justified} text-slate-900`}>{label}</span>
       )}
     </li>
   );
@@ -37,18 +37,16 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
 const Plaque = ({ prem }: { prem: Premiership }) => {
   return (
     <div
-      className="relative h-full shadow-xl border border-slate-900/60 p-2"
+      className="relative shadow-xl border border-slate-900/60 p-2 aspect-[564/965] overflow-hidden"
       style={{
         background:
           "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
         fontFamily: PLAQUE_FONT,
       }}
     >
-      <div
-        className="h-full border-[3px] border-slate-800 p-[3px]"
-      >
+      <div className="h-full border-[3px] border-slate-800 p-[3px]">
         <div
-          className="h-full px-3 py-3 text-center flex flex-col border border-slate-800"
+          className="h-full px-3 py-3 text-center flex flex-col border border-slate-800 overflow-hidden"
           style={{
             color: "#0f172a",
             fontFamily: PLAQUE_FONT,
@@ -105,9 +103,14 @@ export default function Premierships() {
 
   const filtered = useMemo(() => {
     if (!premierships) return [];
-    return selectedGrade === "All"
-      ? premierships
-      : premierships.filter((p) => p.grade === selectedGrade);
+    const list =
+      selectedGrade === "All"
+        ? premierships
+        : premierships.filter((p) => p.grade === selectedGrade);
+    return [...list].sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return (a.matchDate ?? "").localeCompare(b.matchDate ?? "");
+    });
   }, [premierships, selectedGrade]);
 
   return (
@@ -156,7 +159,7 @@ export default function Premierships() {
               "linear-gradient(180deg, #1a1410 0%, #2a201a 50%, #1a1410 100%)",
           }}
         >
-          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(210px,1fr))] auto-rows-fr items-stretch">
+          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))] items-stretch">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
