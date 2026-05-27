@@ -86,54 +86,122 @@ export const BOARDS: BoardMeta[] = [
   },
 ];
 
-const TIERS: Record<BoardKey, { label: string; min: number; max?: number }[]> = {
-  games: [
-    { label: "350 Games Club", min: 350 },
-    { label: "300 Games Club", min: 300, max: 349 },
-    { label: "250 Games Club", min: 250, max: 299 },
-    { label: "200 Games Club", min: 200, max: 249 },
-    { label: "150 Games Club", min: 150, max: 199 },
-    { label: "100 Games Club", min: 100, max: 149 },
-    { label: "50 Games Club", min: 50, max: 99 },
-  ],
-  runs: [
-    { label: "10,000 Runs Club", min: 10000 },
-    { label: "7,500 Runs Club", min: 7500, max: 9999 },
-    { label: "5,000 Runs Club", min: 5000, max: 7499 },
-    { label: "2,500 Runs Club", min: 2500, max: 4999 },
-    { label: "1,000 Runs Club", min: 1000, max: 2499 },
-    { label: "500 Runs Club", min: 500, max: 999 },
-  ],
-  wickets: [
-    { label: "500 Wickets Club", min: 500 },
-    { label: "300 Wickets Club", min: 300, max: 499 },
-    { label: "200 Wickets Club", min: 200, max: 299 },
-    { label: "100 Wickets Club", min: 100, max: 199 },
-    { label: "50 Wickets Club", min: 50, max: 99 },
-    { label: "25 Wickets Club", min: 25, max: 49 },
-  ],
-  dismissals: [
-    { label: "100 Dismissals Club", min: 100 },
-    { label: "75 Dismissals Club", min: 75, max: 99 },
-    { label: "50 Dismissals Club", min: 50, max: 74 },
-    { label: "25 Dismissals Club", min: 25, max: 49 },
-    { label: "10 Dismissals Club", min: 10, max: 24 },
-  ],
-  highscores: [
-    { label: "Double Century Club (200+)", min: 200 },
-    { label: "150 Run Club", min: 150, max: 199 },
-    { label: "Century Club (100+)", min: 100, max: 149 },
-    { label: "75 Run Club", min: 75, max: 99 },
-    { label: "Half Century Club (50+)", min: 50, max: 74 },
-  ],
-  bestbowling: [
-    { label: "8 Wicket Haul Club", min: 8 },
-    { label: "7 Wicket Haul Club", min: 7, max: 7 },
-    { label: "6 Wicket Haul Club", min: 6, max: 6 },
-    { label: "5 Wicket Haul Club", min: 5, max: 5 },
-  ],
-  centurions: [{ label: "Century Club", min: 100 }],
-  fivefers: [{ label: "Five-Wicket Haul Club", min: 1 }],
+type TierDef = { label: string; min: number; max?: number };
+
+type TierConfig =
+  | { kind: "static"; tiers: TierDef[] }
+  | {
+      kind: "extendable";
+      noun: string;
+      step: number;
+      anchorMin: number;
+      belowAnchor: TierDef[];
+    };
+
+const TIER_CONFIG: Record<BoardKey, TierConfig> = {
+  games: {
+    kind: "extendable",
+    noun: "Games",
+    step: 50,
+    anchorMin: 350,
+    belowAnchor: [
+      { label: "300 Games Club", min: 300, max: 349 },
+      { label: "250 Games Club", min: 250, max: 299 },
+      { label: "200 Games Club", min: 200, max: 249 },
+      { label: "150 Games Club", min: 150, max: 199 },
+      { label: "100 Games Club", min: 100, max: 149 },
+      { label: "50 Games Club", min: 50, max: 99 },
+    ],
+  },
+  runs: {
+    kind: "extendable",
+    noun: "Runs",
+    step: 500,
+    anchorMin: 10000,
+    belowAnchor: [
+      { label: "7,500 Runs Club", min: 7500, max: 9999 },
+      { label: "5,000 Runs Club", min: 5000, max: 7499 },
+      { label: "2,500 Runs Club", min: 2500, max: 4999 },
+      { label: "1,000 Runs Club", min: 1000, max: 2499 },
+      { label: "500 Runs Club", min: 500, max: 999 },
+    ],
+  },
+  wickets: {
+    kind: "extendable",
+    noun: "Wickets",
+    step: 50,
+    anchorMin: 500,
+    belowAnchor: [
+      { label: "300 Wickets Club", min: 300, max: 499 },
+      { label: "200 Wickets Club", min: 200, max: 299 },
+      { label: "100 Wickets Club", min: 100, max: 199 },
+      { label: "50 Wickets Club", min: 50, max: 99 },
+      { label: "25 Wickets Club", min: 25, max: 49 },
+    ],
+  },
+  dismissals: {
+    kind: "extendable",
+    noun: "Dismissals",
+    step: 25,
+    anchorMin: 100,
+    belowAnchor: [
+      { label: "75 Dismissals Club", min: 75, max: 99 },
+      { label: "50 Dismissals Club", min: 50, max: 74 },
+      { label: "25 Dismissals Club", min: 25, max: 49 },
+      { label: "10 Dismissals Club", min: 10, max: 24 },
+    ],
+  },
+  highscores: {
+    kind: "static",
+    tiers: [
+      { label: "Double Century Club (200+)", min: 200 },
+      { label: "150 Run Club", min: 150, max: 199 },
+      { label: "Century Club (100+)", min: 100, max: 149 },
+      { label: "75 Run Club", min: 75, max: 99 },
+      { label: "Half Century Club (50+)", min: 50, max: 74 },
+    ],
+  },
+  bestbowling: {
+    kind: "static",
+    tiers: [
+      { label: "8 Wicket Haul Club", min: 8 },
+      { label: "7 Wicket Haul Club", min: 7, max: 7 },
+      { label: "6 Wicket Haul Club", min: 6, max: 6 },
+      { label: "5 Wicket Haul Club", min: 5, max: 5 },
+    ],
+  },
+  centurions: { kind: "static", tiers: [{ label: "Century Club", min: 100 }] },
+  fivefers: { kind: "static", tiers: [{ label: "Five-Wicket Haul Club", min: 1 }] },
+};
+
+const buildTiers = (key: BoardKey, players: AggregatedPlayer[]): TierDef[] => {
+  const cfg = TIER_CONFIG[key];
+  if (cfg.kind === "static") return cfg.tiers;
+
+  const { noun, step, anchorMin, belowAnchor } = cfg;
+  const mkLabel = (n: number) => `${n.toLocaleString()} ${noun} Club`;
+
+  let max = 0;
+  for (const p of players) {
+    const v = getPlayerValue(p, key).tierValue;
+    if (v > max) max = v;
+  }
+
+  const tiers: TierDef[] = [];
+  let topMin = anchorMin;
+  if (max >= anchorMin + step) {
+    topMin = Math.floor(max / step) * step;
+  }
+
+  tiers.push({ label: mkLabel(topMin), min: topMin });
+  for (let m = topMin - step; m > anchorMin; m -= step) {
+    tiers.push({ label: mkLabel(m), min: m, max: m + step - 1 });
+  }
+  if (topMin > anchorMin) {
+    tiers.push({ label: mkLabel(anchorMin), min: anchorMin, max: anchorMin + step - 1 });
+  }
+  tiers.push(...belowAnchor);
+  return tiers;
 };
 
 export interface AggregatedPlayer {
@@ -313,7 +381,7 @@ const getPlayerValue = (
 };
 
 export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardTier[] => {
-  const tiers = TIERS[key];
+  const tiers = buildTiers(key, players);
   const tierResults: BoardTier[] = tiers.map((t, i) => ({ label: t.label, rows: [], startRank: 1, tierIndex: i }));
   const seen = new Set<number>();
 
@@ -341,7 +409,9 @@ export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardT
   }
   const populated = tierResults.filter((t) => t.rows.length > 0);
   let running = 1;
-  for (const t of populated) {
+  for (let i = 0; i < populated.length; i++) {
+    const t = populated[i];
+    t.tierIndex = i;
     t.startRank = running;
     running += t.rows.length;
   }
