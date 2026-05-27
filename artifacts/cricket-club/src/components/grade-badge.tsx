@@ -61,14 +61,15 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
   const px = SIZE_PX[size];
   const bannerText = size === "lg" ? meta.bannerLong : meta.bannerShort;
 
-  // Abbreviation font scales with badge size; long abbreviations shrink to fit.
-  const abbrLen = meta.abbr.length;
-  const abbrFontPx =
-    abbrLen >= 3 ? px * 0.22 : abbrLen === 2 ? px * 0.28 : px * 0.36;
+  // The label sits inside the diamond; scale it down for long labels so it
+  // fits comfortably within the gold outline.
+  const diamondLabel = meta.bannerShort;
+  const diamondScale =
+    diamondLabel.length > 6 ? 0.09 : diamondLabel.length > 4 ? 0.105 : 0.12;
+  const diamondFontPx = Math.max(7, px * diamondScale);
 
   // Banner text scales with badge size and label length.
-  const bannerCharBudget = bannerText.length;
-  const bannerScale = bannerCharBudget > 6 ? 0.085 : bannerCharBudget > 4 ? 0.1 : 0.11;
+  const bannerScale = bannerText.length > 6 ? 0.085 : bannerText.length > 4 ? 0.1 : 0.11;
   const bannerFontPx = Math.max(7, px * bannerScale);
 
   return (
@@ -86,19 +87,20 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
         className="block h-full w-full object-contain"
       />
 
-      {/* Grade abbreviation centred on the diamond */}
+      {/* Grade label centred on the diamond */}
       <span
         className="pointer-events-none absolute font-serif font-bold leading-none"
         style={{
           left: "50%",
           top: "33%",
           transform: "translate(-50%, -50%)",
-          fontSize: abbrFontPx,
+          fontSize: diamondFontPx,
           color: GOLD,
-          letterSpacing: abbrLen >= 3 ? "0" : "0.02em",
+          letterSpacing: "0.05em",
+          whiteSpace: "nowrap",
         }}
       >
-        {meta.abbr}
+        {diamondLabel}
       </span>
 
       {/* Grade label on the ribbon */}
