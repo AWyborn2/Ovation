@@ -43,7 +43,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
   return (
     <div className="relative rounded-md p-[3px] bg-gradient-to-b from-amber-900 via-amber-700 to-amber-900 shadow-2xl">
       <div
-        className="rounded-[5px] px-5 py-5 md:px-6 md:py-6 text-center"
+        className="rounded-[5px] px-3 py-3 text-center"
         style={{
           background:
             "linear-gradient(180deg, #f5f0e6 0%, #e9e1cf 50%, #d9cdb1 100%)",
@@ -51,55 +51,55 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           fontFamily: '"Times New Roman", "Cormorant Garamond", Georgia, serif',
         }}
       >
-        <div className="flex items-center justify-center gap-3 mb-1">
-          <Trophy className="h-5 w-5 text-amber-900" />
-          <div className="text-2xl md:text-3xl font-extrabold tracking-[0.18em] uppercase">
+        <div className="flex items-center justify-center gap-1.5 mb-1">
+          <Trophy className="h-3.5 w-3.5 text-amber-900 shrink-0" />
+          <div className="text-base font-extrabold tracking-[0.12em] uppercase leading-tight">
             {prem.grade}
           </div>
-          <Trophy className="h-5 w-5 text-amber-900" />
+          <Trophy className="h-3.5 w-3.5 text-amber-900 shrink-0" />
         </div>
         {prem.competition && prem.competition !== prem.grade.toUpperCase() && (
-          <div className="text-[10px] md:text-xs uppercase tracking-widest text-stone-700 mt-0.5">
+          <div className="text-[9px] uppercase tracking-widest text-stone-700 leading-tight">
             {prem.competition}
           </div>
         )}
-        <div className="text-base md:text-lg font-bold mt-2 leading-tight">
+        <div className="text-sm font-bold mt-1.5 leading-tight">
           {prem.year} PREMIERS
         </div>
         {prem.venue && (
-          <div className="text-xs md:text-sm uppercase tracking-wider text-stone-700 mt-1">
+          <div className="text-[10px] uppercase tracking-wider text-stone-700 mt-1 leading-tight">
             {prem.venue}
           </div>
         )}
         {prem.matchDate && (
-          <div className="text-xs md:text-sm text-stone-700">
+          <div className="text-[10px] text-stone-700 leading-tight">
             {formatDate(prem.matchDate)}
           </div>
         )}
         {prem.result && (
-          <div className="text-sm md:text-base font-semibold mt-2 px-2 leading-snug">
+          <div className="text-xs font-semibold mt-1.5 leading-snug">
             {prem.result}
           </div>
         )}
-        <div className="my-3 h-px bg-amber-900/40" />
-        <ul className="text-sm md:text-[15px] columns-2 gap-x-4 text-left list-none p-0 m-0">
+        <div className="my-2 h-px bg-amber-900/40" />
+        <ul className="text-[11px] text-left list-none p-0 m-0">
           {prem.players.map((p) => (
             <PlayerLine key={p.id} p={p} />
           ))}
         </ul>
         {prem.mom && (
           <>
-            <div className="my-3 h-px bg-amber-900/40" />
-            <div className="text-xs md:text-sm">
+            <div className="my-2 h-px bg-amber-900/40" />
+            <div className="text-[10px]">
               <span className="uppercase tracking-widest text-stone-700">
-                Man of the Match:
+                M.O.M:
               </span>{" "}
               <span className="font-bold uppercase">{prem.mom}</span>
             </div>
           </>
         )}
         {prem.notes && (
-          <div className="text-xs italic text-stone-700 mt-2">{prem.notes}</div>
+          <div className="text-[10px] italic text-stone-700 mt-1.5">{prem.notes}</div>
         )}
       </div>
     </div>
@@ -163,13 +163,13 @@ export default function Premierships() {
         </div>
       ) : (
         <div
-          className="rounded-md p-6 md:p-10 shadow-inner"
+          className="rounded-md p-4 md:p-6 shadow-inner mx-[calc(50%-50vw)] w-screen"
           style={{
             background:
               "linear-gradient(180deg, #1a1410 0%, #2a201a 50%, #1a1410 100%)",
           }}
         >
-          <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
