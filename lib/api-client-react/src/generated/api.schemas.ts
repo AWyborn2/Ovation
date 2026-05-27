@@ -227,6 +227,54 @@ export interface Dashboard {
   gradeSummaries?: GradeSummary[];
 }
 
+export interface ImportRecord {
+  id: number;
+  filename: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  season?: number | null;
+  rowCount: number;
+  status: string;
+  importedAt: string;
+}
+
+export type ImportPreviewPlayerStatus = typeof ImportPreviewPlayerStatus[keyof typeof ImportPreviewPlayerStatus];
+
+
+export const ImportPreviewPlayerStatus = {
+  matched: 'matched',
+  new: 'new',
+} as const;
+
+export interface ImportPreviewPlayer {
+  surname: string;
+  givenName: string;
+  status: ImportPreviewPlayerStatus;
+  /** @nullable */
+  playerId?: number | null;
+}
+
+export interface ImportPreviewGradeTotal {
+  grade: string;
+  rows: number;
+  games: number;
+  runs: number;
+  wickets: number;
+}
+
+export interface ImportPreview {
+  importId: number;
+  filename: string;
+  season: number;
+  rowsParsed: number;
+  matchedPlayers: number;
+  newPlayers: number;
+  unmappedGrades: string[];
+  gradeTotals: ImportPreviewGradeTotal[];
+  players: ImportPreviewPlayer[];
+}
+
 export interface ClubRecords {
   mostGames: Stat;
   mostRuns: Stat;
@@ -307,4 +355,11 @@ export const ListStatsSortOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type UploadPlaycricketCsvBody = {
+  /** The PlayCricket CSV export */
+  file: Blob;
+  /** Starting year of the season (e.g. 2025 for 2025/26) */
+  season: number;
+};
 

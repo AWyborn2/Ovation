@@ -4,6 +4,7 @@ import playersRouter from "./players";
 import statsRouter from "./stats";
 import gradesRouter from "./grades";
 import premiershipsRouter from "./premierships";
+import importsRouter from "./imports";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(playersRouter);
 router.use(statsRouter);
 router.use(gradesRouter);
 router.use(premiershipsRouter);
+router.use(importsRouter);
 
 export default router;

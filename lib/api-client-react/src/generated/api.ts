@@ -24,6 +24,8 @@ import type {
   Dashboard,
   GradeSummary,
   HealthStatus,
+  ImportPreview,
+  ImportRecord,
   ListPlayersParams,
   ListStatsParams,
   Player,
@@ -35,7 +37,8 @@ import type {
   Stat,
   StatInput,
   StatListResponse,
-  StatUpdate
+  StatUpdate,
+  UploadPlaycricketCsvBody
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1106,6 +1109,305 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
 
 
 
+
+export const getListImportsUrl = () => {
+
+
+
+
+  return `/api/imports`
+}
+
+/**
+ * @summary List past CSV imports
+ */
+export const listImports = async ( options?: RequestInit): Promise<ImportRecord[]> => {
+
+  return customFetch<ImportRecord[]>(getListImportsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListImportsQueryKey = () => {
+    return [
+    `/api/imports`
+    ] as const;
+    }
+
+
+export const getListImportsQueryOptions = <TData = Awaited<ReturnType<typeof listImports>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListImportsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listImports>>> = ({ signal }) => listImports({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listImports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListImportsQueryResult = NonNullable<Awaited<ReturnType<typeof listImports>>>
+export type ListImportsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List past CSV imports
+ */
+
+export function useListImports<TData = Awaited<ReturnType<typeof listImports>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListImportsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUploadPlaycricketCsvUrl = () => {
+
+
+
+
+  return `/api/imports/playcricket-csv`
+}
+
+/**
+ * Upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a
+single grade and season. Server parses the file, creates a pending
+import row, and returns a preview of what will be applied. Nothing
+is written to the snapshot/aggregate tables until `commitImport` is
+called. Generated clients should treat the file as `Blob`; the
+cricket-club frontend posts FormData via raw `fetch` against this
+route.
+
+ * @summary Upload a PlayCricket CSV for preview
+ */
+export const uploadPlaycricketCsv = async (uploadPlaycricketCsvBody: UploadPlaycricketCsvBody, options?: RequestInit): Promise<ImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, uploadPlaycricketCsvBody.file);
+formData.append(`season`, uploadPlaycricketCsvBody.season.toString())
+
+  return customFetch<ImportPreview>(getUploadPlaycricketCsvUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadPlaycricketCsvMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPlaycricketCsv>>, TError,{data: BodyType<UploadPlaycricketCsvBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadPlaycricketCsv>>, TError,{data: BodyType<UploadPlaycricketCsvBody>}, TContext> => {
+
+const mutationKey = ['uploadPlaycricketCsv'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadPlaycricketCsv>>, {data: BodyType<UploadPlaycricketCsvBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadPlaycricketCsv(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadPlaycricketCsvMutationResult = NonNullable<Awaited<ReturnType<typeof uploadPlaycricketCsv>>>
+    export type UploadPlaycricketCsvMutationBody = BodyType<UploadPlaycricketCsvBody>
+    export type UploadPlaycricketCsvMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a PlayCricket CSV for preview
+ */
+export const useUploadPlaycricketCsv = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPlaycricketCsv>>, TError,{data: BodyType<UploadPlaycricketCsvBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadPlaycricketCsv>>,
+        TError,
+        {data: BodyType<UploadPlaycricketCsvBody>},
+        TContext
+      > => {
+      return useMutation(getUploadPlaycricketCsvMutationOptions(options));
+    }
+
+export const getCommitImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/imports/${id}/commit`
+}
+
+/**
+ * @summary Commit a previously-previewed import
+ */
+export const commitImport = async (id: number, options?: RequestInit): Promise<ImportRecord> => {
+
+  return customFetch<ImportRecord>(getCommitImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCommitImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['commitImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitImport>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  commitImport(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitImport>>>
+
+    export type CommitImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Commit a previously-previewed import
+ */
+export const useCommitImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitImport>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCommitImportMutationOptions(options));
+    }
+
+export const getDeleteImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/imports/${id}`
+}
+
+/**
+ * @summary Delete an import and re-derive aggregates
+ */
+export const deleteImport = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteImportUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteImport>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteImport>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteImport(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteImportMutationResult = NonNullable<Awaited<ReturnType<typeof deleteImport>>>
+
+    export type DeleteImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete an import and re-derive aggregates
+ */
+export const useDeleteImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteImport>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteImportMutationOptions(options));
+    }
 
 export const getGetRecordsUrl = () => {
 

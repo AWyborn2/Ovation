@@ -12,6 +12,7 @@ import Records from "@/pages/records";
 import Premierships from "@/pages/premierships";
 import Compare from "@/pages/compare";
 import StatDetail from "@/pages/stat-detail";
+import AdminImport from "@/pages/admin-import";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/premierships" component={Premierships} />
         <Route path="/compare" component={Compare} />
         <Route path="/stats/:id" component={StatDetail} />
+        <Route path="/admin/import" component={AdminImport} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

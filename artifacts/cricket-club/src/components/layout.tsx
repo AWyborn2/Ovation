@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, ScrollText, Trophy, Award, GitCompare, Menu, X, Crown } from "lucide-react";
+import { Users, ScrollText, Trophy, Award, GitCompare, Menu, X, Crown, Upload } from "lucide-react";
 import { useState } from "react";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
 
@@ -14,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Records", href: "/records", icon: Award },
     { name: "Premierships", href: "/premierships", icon: Crown },
     { name: "Compare", href: "/compare", icon: GitCompare },
+    { name: "Import", href: "/admin/import", icon: Upload },
   ];
 
   return (

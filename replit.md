@@ -35,10 +35,11 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 
 ## Data model
 
-Three tables:
-- **players** — one row per player with career aggregates (totalGames, totalRuns, totalWickets, gradesPlayed)
-- **player_grade_stats** — one row per player per grade (1,628 rows); all batting/bowling/fielding stats
-- **grade_summaries** — one row per grade with club-level totals (11 rows)
+- **player_grade_season_stats** — source-of-truth snapshot table: one row per (player, grade, season). Seed data lives here with `season = NULL` as the baseline snapshot; every PlayCricket CSV import adds rows with the imported season.
+- **player_grade_stats** — derived per-(player, grade) aggregate, recomputed by summing snapshots after each import / delete.
+- **players** — one row per player; career aggregates (totalGames, totalRuns, totalWickets, gradesPlayed) are derived from player_grade_stats.
+- **grade_summaries** — derived from player_grade_stats (one row per grade).
+- **imports** — audit row per CSV upload (filename, grade, season, row_count, status, imported_at). Snapshot rows reference it via `import_id` and cascade-delete with it.
 
 Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Female B Grade, PPL, Colts
 
@@ -59,6 +60,7 @@ Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Fe
 - **Grade Leaderboard** (`/grades/:grade`) — full sortable stats table for a specific grade
 - **Records** (`/records`) — all-time club records across all categories
 - **Stat Edit** (`/stats/:id`) — inline edit/delete a stat record
+- **Admin Import** (`/admin/import`) — upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a single grade+season, preview matched/new players and totals, confirm to commit; list and delete past imports. PlayCricket grade-name mapping lives in `artifacts/api-server/src/lib/playcricket-csv.ts` (`PLAYCRICKET_GRADE_MAP`). No auth yet — single-user club portal.
 
 ## User preferences
 

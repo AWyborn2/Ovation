@@ -16,6 +16,8 @@ tags:
     description: Per-grade stats operations
   - name: grades
     description: Grade summary operations
+  - name: imports
+    description: CSV import operations
 paths:
   /healthz:
     get:
@@ -326,6 +328,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+
+  /imports:
+    get:
+      operationId: listImports
+      tags: [imports]
+      summary: List past CSV imports
+      responses:
+        "200":
+          description: List of imports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ImportRecord"
+
+  /imports/playcricket-csv:
+    post:
+      operationId: uploadPlaycricketCsv
+      tags: [imports]
+      summary: Upload a PlayCricket CSV for preview
+      description: |
+        Upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a
+        single grade and season. Server parses the file, creates a pending
+        import row, and returns a preview of what will be applied. Nothing
+        is written to the snapshot/aggregate tables until `commitImport` is
+        called. Generated clients should treat the file as `Blob`; the
+        cricket-club frontend posts FormData via raw `fetch` against this
+        route.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, season]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The PlayCricket CSV export
+                season:
+                  type: integer
+                  description: Starting year of the season (e.g. 2025 for 2025/26)
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportPreview"
+        "400":
+          description: Invalid file or season
+
+  /imports/{id}/commit:
+    post:
+      operationId: commitImport
+      tags: [imports]
+      summary: Commit a previously-previewed import
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Committed import record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRecord"
+        "404":
+          description: Not found
+
+  /imports/{id}:
+    delete:
+      operationId: deleteImport
+      tags: [imports]
+      summary: Delete an import and re-derive aggregates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /records:
     get:
@@ -706,6 +799,84 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GradeSummary"
+
+    ImportRecord:
+      type: object
+      required: [id, filename, status, rowCount, importedAt]
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        grade:
+          type: ["string", "null"]
+        season:
+          type: ["integer", "null"]
+        rowCount:
+          type: integer
+        status:
+          type: string
+        importedAt:
+          type: string
+          format: date-time
+
+    ImportPreviewPlayer:
+      type: object
+      required: [surname, givenName, status]
+      properties:
+        surname:
+          type: string
+        givenName:
+          type: string
+        status:
+          type: string
+          enum: [matched, new]
+        playerId:
+          type: ["integer", "null"]
+
+    ImportPreviewGradeTotal:
+      type: object
+      required: [grade, rows, games, runs, wickets]
+      properties:
+        grade:
+          type: string
+        rows:
+          type: integer
+        games:
+          type: integer
+        runs:
+          type: integer
+        wickets:
+          type: integer
+
+    ImportPreview:
+      type: object
+      required: [importId, filename, season, rowsParsed, matchedPlayers, newPlayers, gradeTotals, unmappedGrades, players]
+      properties:
+        importId:
+          type: integer
+        filename:
+          type: string
+        season:
+          type: integer
+        rowsParsed:
+          type: integer
+        matchedPlayers:
+          type: integer
+        newPlayers:
+          type: integer
+        unmappedGrades:
+          type: array
+          items:
+            type: string
+        gradeTotals:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportPreviewGradeTotal"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportPreviewPlayer"
 
     ClubRecords:
       type: object

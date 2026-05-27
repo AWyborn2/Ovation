@@ -1,2 +1,30 @@
 export * from "./generated/api";
-export * from "./generated/types";
+// `./generated/types` is intentionally re-exported with explicit type-only
+// names because `UploadPlaycricketCsvBody` collides with the zod schema of
+// the same name in `./generated/api` (orval emits both for multipart bodies).
+export type {
+  ClubRecords,
+  Dashboard,
+  GradeSummary,
+  HealthStatus,
+  ImportPreview,
+  ImportPreviewGradeTotal,
+  ImportPreviewPlayer,
+  ImportPreviewPlayerStatus,
+  ImportRecord,
+  ListPlayersParams,
+  ListPlayersSortBy,
+  ListPlayersSortOrder,
+  ListStatsParams,
+  ListStatsSortBy,
+  ListStatsSortOrder,
+  Player,
+  PlayerDetail,
+  PlayerInput,
+  PlayerListResponse,
+  PlayerUpdate,
+  Stat,
+  StatInput,
+  StatListResponse,
+  StatUpdate,
+} from "./generated/types";

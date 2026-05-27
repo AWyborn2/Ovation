@@ -415,6 +415,87 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * @summary List past CSV imports
+ */
+export const ListImportsResponseItem = zod.object({
+  "id": zod.number(),
+  "filename": zod.string(),
+  "grade": zod.string().nullish(),
+  "season": zod.number().nullish(),
+  "rowCount": zod.number(),
+  "status": zod.string(),
+  "importedAt": zod.coerce.date()
+})
+export const ListImportsResponse = zod.array(ListImportsResponseItem)
+
+
+/**
+ * Upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a
+single grade and season. Server parses the file, creates a pending
+import row, and returns a preview of what will be applied. Nothing
+is written to the snapshot/aggregate tables until `commitImport` is
+called. Generated clients should treat the file as `Blob`; the
+cricket-club frontend posts FormData via raw `fetch` against this
+route.
+
+ * @summary Upload a PlayCricket CSV for preview
+ */
+export const UploadPlaycricketCsvBody = zod.object({
+  "file": zod.instanceof(File).describe('The PlayCricket CSV export'),
+  "season": zod.number().describe('Starting year of the season (e.g. 2025 for 2025\/26)')
+})
+
+export const UploadPlaycricketCsvResponse = zod.object({
+  "importId": zod.number(),
+  "filename": zod.string(),
+  "season": zod.number(),
+  "rowsParsed": zod.number(),
+  "matchedPlayers": zod.number(),
+  "newPlayers": zod.number(),
+  "unmappedGrades": zod.array(zod.string()),
+  "gradeTotals": zod.array(zod.object({
+  "grade": zod.string(),
+  "rows": zod.number(),
+  "games": zod.number(),
+  "runs": zod.number(),
+  "wickets": zod.number()
+})),
+  "players": zod.array(zod.object({
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "status": zod.enum(['matched', 'new']),
+  "playerId": zod.number().nullish()
+}))
+})
+
+
+/**
+ * @summary Commit a previously-previewed import
+ */
+export const CommitImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitImportResponse = zod.object({
+  "id": zod.number(),
+  "filename": zod.string(),
+  "grade": zod.string().nullish(),
+  "season": zod.number().nullish(),
+  "rowCount": zod.number(),
+  "status": zod.string(),
+  "importedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an import and re-derive aggregates
+ */
+export const DeleteImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Club all-time records
  */
 export const GetRecordsResponse = zod.object({
