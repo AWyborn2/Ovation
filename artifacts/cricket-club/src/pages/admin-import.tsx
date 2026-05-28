@@ -1,11 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  ADMIN_PASSWORD_STORAGE_KEY,
-  clearAdminPassword,
-  getAdminPassword,
-  setAdminPassword,
-} from "@/lib/admin-auth";
 import {
   useListImports,
   useCommitImport,
@@ -16,6 +10,7 @@ import {
   getListGradesQueryKey,
   getGetRecordsQueryKey,
 } from "@workspace/api-client-react";
+import { useInvalidateAdmin } from "@/lib/admin-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,72 +40,8 @@ const seasonLabel = (s: number | null | undefined) =>
   s == null ? "—" : `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
 export default function AdminImport() {
-  const [authed, setAuthed] = useState<boolean>(() => getAdminPassword() != null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === ADMIN_PASSWORD_STORAGE_KEY) {
-        setAuthed(getAdminPassword() != null);
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  if (!authed) {
-    return <AdminPasswordGate onUnlock={() => setAuthed(true)} />;
-  }
-  return <AdminImportInner onAuthFailed={() => setAuthed(false)} />;
-}
-
-function AdminPasswordGate({ onUnlock }: { onUnlock: () => void }) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password) {
-      setError("Enter the admin password.");
-      return;
-    }
-    setAdminPassword(password);
-    setError(null);
-    onUnlock();
-  };
-
-  return (
-    <div className="max-w-md">
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin password required</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="admin-password">Password</Label>
-              <Input
-                id="admin-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <Button type="submit">Unlock</Button>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <p className="text-xs text-muted-foreground">
-              The password is stored in this browser tab only and cleared when you close it.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function AdminImportInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   const queryClient = useQueryClient();
+  const invalidateAdmin = useInvalidateAdmin();
   const [file, setFile] = useState<File | null>(null);
   const [season, setSeason] = useState<number>(new Date().getFullYear());
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -141,15 +72,14 @@ function AdminImportInner({ onAuthFailed }: { onAuthFailed: () => void }) {
       const form = new FormData();
       form.append("file", file);
       form.append("season", String(season));
-      const token = getAdminPassword();
       const res = await fetch("/api/imports/playcricket-csv", {
         method: "POST",
         body: form,
-        headers: token ? { authorization: `Bearer ${token}` } : undefined,
+        credentials: "include",
       });
       if (res.status === 401) {
-        clearAdminPassword();
-        onAuthFailed();
+        invalidateAdmin();
+        setError("Your session has expired — please sign in again.");
         return;
       }
       const body = await res.json();
@@ -169,8 +99,8 @@ function AdminImportInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   const handleMutationError = (e: unknown): boolean => {
     const status = (e as { status?: number } | null)?.status;
     if (status === 401) {
-      clearAdminPassword();
-      onAuthFailed();
+      invalidateAdmin();
+      setError("Your session has expired — please sign in again.");
       return true;
     }
     return false;

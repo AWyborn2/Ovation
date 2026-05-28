@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PlayerInput {
-  surname: string;
-  givenName: string;
-  deceased?: boolean;
+export interface AdminInput {
+  username: string;
+  displayName: string;
+  password: string;
 }

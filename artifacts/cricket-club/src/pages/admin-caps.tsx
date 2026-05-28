@@ -14,14 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { AdminShell, handleAdminMutationError } from "@/components/admin-shell";
+import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 
 export default function AdminCaps() {
-  return <AdminShell>{(onAuthFailed) => <AdminCapsInner onAuthFailed={onAuthFailed} />}</AdminShell>;
-}
-
-function AdminCapsInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   const queryClient = useQueryClient();
   const { data: caps, isLoading } = useListCaps();
   const createCap = useCreateCap();
@@ -50,7 +46,7 @@ function AdminCapsInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   }, [caps, search]);
 
   const onMutationError = (e: unknown) => {
-    const msg = handleAdminMutationError(e, onAuthFailed);
+    const msg = handleAdminMutationError(e);
     if (msg) setError(msg);
   };
 

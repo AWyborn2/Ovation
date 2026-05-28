@@ -1,11 +1,13 @@
 import { Link, useLocation } from "wouter";
-import { Users, ScrollText, Trophy, Award, GitCompare, Menu, X, Crown } from "lucide-react";
+import { Users, ScrollText, Trophy, Award, GitCompare, Menu, X, Crown, Settings } from "lucide-react";
 import { useState } from "react";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import { useCurrentAdmin } from "@/lib/admin-auth";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const me = useCurrentAdmin();
 
   const navigation = [
     { name: "Honour Boards", href: "/", icon: ScrollText },
@@ -14,6 +16,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Records", href: "/records", icon: Award },
     { name: "Premierships", href: "/premierships", icon: Crown },
     { name: "Compare", href: "/compare", icon: GitCompare },
+    ...(me.data ? [{ name: "Admin", href: "/admin", icon: Settings }] : []),
   ];
 
   return (

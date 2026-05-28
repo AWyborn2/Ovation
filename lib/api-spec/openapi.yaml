@@ -22,6 +22,12 @@ tags:
     description: A Grade Cap Register operations
   - name: lifeMembers
     description: Life Members operations
+  - name: auth
+    description: Authentication operations
+  - name: admins
+    description: Admin user operations
+  - name: honourBoards
+    description: Honour board configuration and overrides
 paths:
   /healthz:
     get:
@@ -605,6 +611,358 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Premiership"
+    post:
+      operationId: createPremiership
+      tags: [grades]
+      summary: Create a premiership record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiershipInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Premiership"
+
+  /premierships/{id}:
+    patch:
+      operationId: updatePremiership
+      tags: [grades]
+      summary: Update a premiership
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiershipUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Premiership"
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePremiership
+      tags: [grades]
+      summary: Delete a premiership
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /players/{id}/merge:
+    post:
+      operationId: mergePlayer
+      tags: [players]
+      summary: Merge a duplicate player into a keeper
+      description: |
+        Reassign all stats, premiership squad rows, cap register rows and life
+        member rows from the duplicate (`id` in the path) into the keeper
+        (`keeperId` in the body), then delete the duplicate and recompute
+        aggregates for all affected grades inside a single DB transaction.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerMergeRequest"
+      responses:
+        "200":
+          description: Keeper player after merge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "404":
+          description: Player not found
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in as an admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out
+      responses:
+        "204":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getCurrentAdmin
+      tags: [auth]
+      summary: Get the currently signed-in admin
+      responses:
+        "200":
+          description: Current admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+        "401":
+          description: Not signed in
+
+  /admins:
+    get:
+      operationId: listAdmins
+      tags: [admins]
+      summary: List all admin users
+      responses:
+        "200":
+          description: List of admins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Admin"
+    post:
+      operationId: createAdmin
+      tags: [admins]
+      summary: Create a new admin user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminInput"
+      responses:
+        "201":
+          description: Created admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+
+  /admins/{id}:
+    patch:
+      operationId: updateAdmin
+      tags: [admins]
+      summary: Update an admin (display name, username, password)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdate"
+      responses:
+        "200":
+          description: Updated admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Admin"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAdmin
+      tags: [admins]
+      summary: Delete an admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Cannot delete the last remaining admin
+        "404":
+          description: Not found
+
+  /honour-boards:
+    get:
+      operationId: listHonourBoards
+      tags: [honourBoards]
+      summary: List all honour board definitions
+      responses:
+        "200":
+          description: Honour board definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HonourBoard"
+    post:
+      operationId: createHonourBoard
+      tags: [honourBoards]
+      summary: Create a honour board definition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HonourBoardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HonourBoard"
+
+  /honour-boards/{key}:
+    patch:
+      operationId: updateHonourBoard
+      tags: [honourBoards]
+      summary: Update an honour board definition
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HonourBoardUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HonourBoard"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteHonourBoard
+      tags: [honourBoards]
+      summary: Soft-delete an honour board
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /honour-boards/{key}/overrides:
+    get:
+      operationId: listHonourBoardOverrides
+      tags: [honourBoards]
+      summary: List overrides for a single honour board
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Override rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HonourBoardOverride"
+    post:
+      operationId: upsertHonourBoardOverride
+      tags: [honourBoards]
+      summary: Create or update an override for (board, player)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HonourBoardOverrideInput"
+      responses:
+        "200":
+          description: Upserted override
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HonourBoardOverride"
+
+  /honour-boards/{key}/overrides/{playerId}:
+    delete:
+      operationId: deleteHonourBoardOverride
+      tags: [honourBoards]
+      summary: Remove an override
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
 components:
   schemas:
@@ -618,7 +976,7 @@ components:
 
     Player:
       type: object
-      required: [id, surname, givenName]
+      required: [id, surname, givenName, deceased]
       properties:
         id:
           type: integer
@@ -626,6 +984,8 @@ components:
           type: string
         givenName:
           type: string
+        deceased:
+          type: boolean
         gradesPlayed:
           type: ["string", "null"]
         totalGames:
@@ -647,6 +1007,8 @@ components:
           type: string
         givenName:
           type: string
+        deceased:
+          type: boolean
 
     PlayerUpdate:
       type: object
@@ -655,10 +1017,12 @@ components:
           type: string
         givenName:
           type: string
+        deceased:
+          type: boolean
 
     PlayerDetail:
       type: object
-      required: [id, surname, givenName, stats]
+      required: [id, surname, givenName, deceased, stats]
       properties:
         id:
           type: integer
@@ -666,6 +1030,8 @@ components:
           type: string
         givenName:
           type: string
+        deceased:
+          type: boolean
         gradesPlayed:
           type: ["string", "null"]
         premiershipsWon:
@@ -1231,3 +1597,201 @@ components:
           $ref: "#/components/schemas/PlayerRecord"
         mostHundreds:
           $ref: "#/components/schemas/PlayerRecord"
+
+    Admin:
+      type: object
+      required: [id, username, displayName, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        createdAt:
+          type: string
+
+    AdminInput:
+      type: object
+      required: [username, displayName, password]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        password:
+          type: string
+
+    AdminUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        password:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    PlayerMergeRequest:
+      type: object
+      required: [keeperId]
+      properties:
+        keeperId:
+          type: integer
+
+    PremiershipInput:
+      type: object
+      required: [year, grade, competition]
+      properties:
+        year:
+          type: integer
+        grade:
+          type: string
+        competition:
+          type: string
+        venue:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        mom:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PremiershipPlayerInput"
+
+    PremiershipUpdate:
+      type: object
+      properties:
+        year:
+          type: integer
+        grade:
+          type: string
+        competition:
+          type: string
+        venue:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        mom:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PremiershipPlayerInput"
+
+    PremiershipPlayerInput:
+      type: object
+      required: [name, isCaptain]
+      properties:
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        isCaptain:
+          type: boolean
+        battingOrder:
+          type: ["integer", "null"]
+
+    HonourBoard:
+      type: object
+      required: [id, key, label, title, subtitle, headlineLabel, supportingLabel, displayOrder]
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        label:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        headlineLabel:
+          type: string
+        supportingLabel:
+          type: string
+        displayOrder:
+          type: integer
+
+    HonourBoardInput:
+      type: object
+      required: [key, label, title]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        headlineLabel:
+          type: string
+        supportingLabel:
+          type: string
+        displayOrder:
+          type: integer
+
+    HonourBoardUpdate:
+      type: object
+      properties:
+        label:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        headlineLabel:
+          type: string
+        supportingLabel:
+          type: string
+        displayOrder:
+          type: integer
+
+    HonourBoardOverride:
+      type: object
+      required: [id, boardKey, playerId, pinned, hidden, note]
+      properties:
+        id:
+          type: integer
+        boardKey:
+          type: string
+        playerId:
+          type: integer
+        pinned:
+          type: boolean
+        hidden:
+          type: boolean
+        note:
+          type: string
+
+    HonourBoardOverrideInput:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: integer
+        pinned:
+          type: boolean
+        hidden:
+          type: boolean
+        note:
+          type: string

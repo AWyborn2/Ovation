@@ -1,4 +1,5 @@
-import type { Stat } from "@workspace/api-client-react";
+import { useMemo } from "react";
+import { useListHonourBoards, getListHonourBoardsQueryKey, type Stat } from "@workspace/api-client-react";
 
 export type BoardKey =
   | "games"
@@ -19,7 +20,7 @@ export interface BoardMeta {
   supportingLabel: string;
 }
 
-export const BOARDS: BoardMeta[] = [
+export const DEFAULT_BOARDS: BoardMeta[] = [
   {
     key: "games",
     label: "Games",
@@ -85,6 +86,40 @@ export const BOARDS: BoardMeta[] = [
     supportingLabel: "Best",
   },
 ];
+
+/**
+ * Static fallback list — used by aggregation/milestone calculations and as the
+ * default if the API hasn't loaded or hasn't customised the boards yet.
+ */
+export const BOARDS: BoardMeta[] = DEFAULT_BOARDS;
+
+/**
+ * Fetches honour-board metadata from the API and merges it on top of the
+ * static defaults so admin label/title/subtitle edits show up on the public
+ * page. Unknown keys from the API are appended at the end.
+ */
+export function useBoardsMeta(): BoardMeta[] {
+  const { data } = useListHonourBoards({
+    query: { queryKey: getListHonourBoardsQueryKey(), staleTime: 60_000 },
+  });
+  return useMemo(() => {
+    if (!data?.length) return DEFAULT_BOARDS;
+    const byKey = new Map(data.map((b) => [b.key, b]));
+    const merged = DEFAULT_BOARDS.map((d) => {
+      const o = byKey.get(d.key);
+      if (!o) return d;
+      return {
+        key: d.key,
+        label: o.label ?? d.label,
+        title: o.title ?? d.title,
+        subtitle: o.subtitle ?? d.subtitle,
+        headlineLabel: o.headlineLabel ?? d.headlineLabel,
+        supportingLabel: o.supportingLabel ?? d.supportingLabel,
+      };
+    });
+    return merged;
+  }, [data]);
+}
 
 type TierDef = { label: string; min: number; max?: number };
 

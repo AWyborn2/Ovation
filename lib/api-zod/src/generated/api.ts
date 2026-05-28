@@ -34,6 +34,7 @@ export const ListPlayersResponse = zod.object({
   "id": zod.number(),
   "surname": zod.string(),
   "givenName": zod.string(),
+  "deceased": zod.boolean(),
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
@@ -52,7 +53,8 @@ export const ListPlayersResponse = zod.object({
  */
 export const CreatePlayerBody = zod.object({
   "surname": zod.string(),
-  "givenName": zod.string()
+  "givenName": zod.string(),
+  "deceased": zod.boolean().optional()
 })
 
 
@@ -67,6 +69,7 @@ export const GetPlayerResponse = zod.object({
   "id": zod.number(),
   "surname": zod.string(),
   "givenName": zod.string(),
+  "deceased": zod.boolean(),
   "gradesPlayed": zod.string().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
@@ -117,13 +120,15 @@ export const UpdatePlayerParams = zod.object({
 
 export const UpdatePlayerBody = zod.object({
   "surname": zod.string().optional(),
-  "givenName": zod.string().optional()
+  "givenName": zod.string().optional(),
+  "deceased": zod.boolean().optional()
 })
 
 export const UpdatePlayerResponse = zod.object({
   "id": zod.number(),
   "surname": zod.string(),
   "givenName": zod.string(),
+  "deceased": zod.boolean(),
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
@@ -371,6 +376,7 @@ export const GetDashboardResponse = zod.object({
   "id": zod.number(),
   "surname": zod.string(),
   "givenName": zod.string(),
+  "deceased": zod.boolean(),
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
@@ -382,6 +388,7 @@ export const GetDashboardResponse = zod.object({
   "id": zod.number(),
   "surname": zod.string(),
   "givenName": zod.string(),
+  "deceased": zod.boolean(),
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
@@ -393,6 +400,7 @@ export const GetDashboardResponse = zod.object({
   "id": zod.number(),
   "surname": zod.string(),
   "givenName": zod.string(),
+  "deceased": zod.boolean(),
   "gradesPlayed": zod.string().nullish(),
   "totalGames": zod.number().nullish(),
   "totalRuns": zod.number().nullish(),
@@ -775,5 +783,304 @@ export const ListPremiershipsResponseItem = zod.object({
 }))
 })
 export const ListPremiershipsResponse = zod.array(ListPremiershipsResponseItem)
+
+
+/**
+ * @summary Create a premiership record
+ */
+export const CreatePremiershipBody = zod.object({
+  "year": zod.number(),
+  "grade": zod.string(),
+  "competition": zod.string(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "players": zod.array(zod.object({
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "isCaptain": zod.boolean(),
+  "battingOrder": zod.number().nullish()
+})).optional()
+})
+
+
+/**
+ * @summary Update a premiership
+ */
+export const UpdatePremiershipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdatePremiershipBody = zod.object({
+  "year": zod.number().optional(),
+  "grade": zod.string().optional(),
+  "competition": zod.string().optional(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "players": zod.array(zod.object({
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "isCaptain": zod.boolean(),
+  "battingOrder": zod.number().nullish()
+})).optional()
+})
+
+export const UpdatePremiershipResponse = zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "grade": zod.string(),
+  "competition": zod.string(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "premiershipId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "isCaptain": zod.boolean(),
+  "battingOrder": zod.number().nullish()
+}))
+})
+
+
+/**
+ * @summary Delete a premiership
+ */
+export const DeletePremiershipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Reassign all stats, premiership squad rows, cap register rows and life
+member rows from the duplicate (`id` in the path) into the keeper
+(`keeperId` in the body), then delete the duplicate and recompute
+aggregates for all affected grades inside a single DB transaction.
+
+ * @summary Merge a duplicate player into a keeper
+ */
+export const MergePlayerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MergePlayerBody = zod.object({
+  "keeperId": zod.number()
+})
+
+export const MergePlayerResponse = zod.object({
+  "id": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "deceased": zod.boolean(),
+  "gradesPlayed": zod.string().nullish(),
+  "totalGames": zod.number().nullish(),
+  "totalRuns": zod.number().nullish(),
+  "totalWickets": zod.number().nullish(),
+  "premiershipsWon": zod.number().nullish(),
+  "premiershipsCaptained": zod.number().nullish()
+})
+
+
+/**
+ * @summary Log in as an admin
+ */
+export const LoginBody = zod.object({
+  "username": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Get the currently signed-in admin
+ */
+export const GetCurrentAdminResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all admin users
+ */
+export const ListAdminsResponseItem = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
+
+
+/**
+ * @summary Create a new admin user
+ */
+export const CreateAdminBody = zod.object({
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "password": zod.string()
+})
+
+
+/**
+ * @summary Update an admin (display name, username, password)
+ */
+export const UpdateAdminParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminBody = zod.object({
+  "username": zod.string().optional(),
+  "displayName": zod.string().optional(),
+  "password": zod.string().optional()
+})
+
+export const UpdateAdminResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete an admin
+ */
+export const DeleteAdminParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all honour board definitions
+ */
+export const ListHonourBoardsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "headlineLabel": zod.string(),
+  "supportingLabel": zod.string(),
+  "displayOrder": zod.number()
+})
+export const ListHonourBoardsResponse = zod.array(ListHonourBoardsResponseItem)
+
+
+/**
+ * @summary Create a honour board definition
+ */
+export const CreateHonourBoardBody = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "subtitle": zod.string().optional(),
+  "headlineLabel": zod.string().optional(),
+  "supportingLabel": zod.string().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update an honour board definition
+ */
+export const UpdateHonourBoardParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const UpdateHonourBoardBody = zod.object({
+  "label": zod.string().optional(),
+  "title": zod.string().optional(),
+  "subtitle": zod.string().optional(),
+  "headlineLabel": zod.string().optional(),
+  "supportingLabel": zod.string().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateHonourBoardResponse = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "headlineLabel": zod.string(),
+  "supportingLabel": zod.string(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Soft-delete an honour board
+ */
+export const DeleteHonourBoardParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+
+/**
+ * @summary List overrides for a single honour board
+ */
+export const ListHonourBoardOverridesParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const ListHonourBoardOverridesResponseItem = zod.object({
+  "id": zod.number(),
+  "boardKey": zod.string(),
+  "playerId": zod.number(),
+  "pinned": zod.boolean(),
+  "hidden": zod.boolean(),
+  "note": zod.string()
+})
+export const ListHonourBoardOverridesResponse = zod.array(ListHonourBoardOverridesResponseItem)
+
+
+/**
+ * @summary Create or update an override for (board, player)
+ */
+export const UpsertHonourBoardOverrideParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const UpsertHonourBoardOverrideBody = zod.object({
+  "playerId": zod.number(),
+  "pinned": zod.boolean().optional(),
+  "hidden": zod.boolean().optional(),
+  "note": zod.string().optional()
+})
+
+export const UpsertHonourBoardOverrideResponse = zod.object({
+  "id": zod.number(),
+  "boardKey": zod.string(),
+  "playerId": zod.number(),
+  "pinned": zod.boolean(),
+  "hidden": zod.boolean(),
+  "note": zod.string()
+})
+
+
+/**
+ * @summary Remove an override
+ */
+export const DeleteHonourBoardOverrideParams = zod.object({
+  "key": zod.coerce.string(),
+  "playerId": zod.coerce.number()
+})
 
 

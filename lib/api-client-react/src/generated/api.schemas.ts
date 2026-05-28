@@ -13,6 +13,7 @@ export interface Player {
   id: number;
   surname: string;
   givenName: string;
+  deceased: boolean;
   /** @nullable */
   gradesPlayed?: string | null;
   /** @nullable */
@@ -30,11 +31,13 @@ export interface Player {
 export interface PlayerInput {
   surname: string;
   givenName: string;
+  deceased?: boolean;
 }
 
 export interface PlayerUpdate {
   surname?: string;
   givenName?: string;
+  deceased?: boolean;
 }
 
 export interface Stat {
@@ -99,6 +102,7 @@ export interface PlayerDetail {
   id: number;
   surname: string;
   givenName: string;
+  deceased: boolean;
   /** @nullable */
   gradesPlayed?: string | null;
   /** @nullable */
@@ -377,6 +381,123 @@ export interface ClubRecords {
   mostCatches: PlayerRecord;
   mostFifties: PlayerRecord;
   mostHundreds: PlayerRecord;
+}
+
+export interface Admin {
+  id: number;
+  username: string;
+  displayName: string;
+  createdAt: string;
+}
+
+export interface AdminInput {
+  username: string;
+  displayName: string;
+  password: string;
+}
+
+export interface AdminUpdate {
+  username?: string;
+  displayName?: string;
+  password?: string;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface PlayerMergeRequest {
+  keeperId: number;
+}
+
+export interface PremiershipPlayerInput {
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  isCaptain: boolean;
+  /** @nullable */
+  battingOrder?: number | null;
+}
+
+export interface PremiershipInput {
+  year: number;
+  grade: string;
+  competition: string;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  mom?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  players?: PremiershipPlayerInput[];
+}
+
+export interface PremiershipUpdate {
+  year?: number;
+  grade?: string;
+  competition?: string;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  mom?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  players?: PremiershipPlayerInput[];
+}
+
+export interface HonourBoard {
+  id: number;
+  key: string;
+  label: string;
+  title: string;
+  subtitle: string;
+  headlineLabel: string;
+  supportingLabel: string;
+  displayOrder: number;
+}
+
+export interface HonourBoardInput {
+  key: string;
+  label: string;
+  title: string;
+  subtitle?: string;
+  headlineLabel?: string;
+  supportingLabel?: string;
+  displayOrder?: number;
+}
+
+export interface HonourBoardUpdate {
+  label?: string;
+  title?: string;
+  subtitle?: string;
+  headlineLabel?: string;
+  supportingLabel?: string;
+  displayOrder?: number;
+}
+
+export interface HonourBoardOverride {
+  id: number;
+  boardKey: string;
+  playerId: number;
+  pinned: boolean;
+  hidden: boolean;
+  note: string;
+}
+
+export interface HonourBoardOverrideInput {
+  playerId: number;
+  pinned?: boolean;
+  hidden?: boolean;
+  note?: string;
 }
 
 export type ListPlayersParams = {

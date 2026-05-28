@@ -9,4 +9,5 @@
 export interface PlayerUpdate {
   surname?: string;
   givenName?: string;
+  deceased?: boolean;
 }

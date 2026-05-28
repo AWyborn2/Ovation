@@ -1,16 +1,30 @@
-export const ADMIN_PASSWORD_STORAGE_KEY = "hhcc.adminPassword";
+import { useGetCurrentAdmin, getGetCurrentAdminQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
-export function getAdminPassword(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY);
+export function useCurrentAdmin() {
+  return useGetCurrentAdmin({
+    query: {
+      queryKey: getGetCurrentAdminQueryKey(),
+      retry: false,
+      staleTime: 30_000,
+      throwOnError: false,
+    },
+  });
 }
 
-export function setAdminPassword(value: string): void {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(ADMIN_PASSWORD_STORAGE_KEY, value);
+export function useInvalidateAdmin() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: getGetCurrentAdminQueryKey() });
 }
 
-export function clearAdminPassword(): void {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
+export function handleAdminMutationError(
+  e: unknown,
+  onAuthFailed?: () => void,
+): string | null {
+  const status = (e as { status?: number } | null)?.status;
+  if (status === 401) {
+    onAuthFailed?.();
+    return "Your session has expired — please sign in again.";
+  }
+  return (e as Error)?.message ?? "Request failed";
 }

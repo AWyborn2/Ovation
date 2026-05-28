@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { AdminShell, handleAdminMutationError } from "@/components/admin-shell";
+import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 
 type FormValues = {
@@ -25,14 +25,6 @@ type FormValues = {
 };
 
 export default function AdminLifeMembers() {
-  return (
-    <AdminShell>
-      {(onAuthFailed) => <AdminLifeMembersInner onAuthFailed={onAuthFailed} />}
-    </AdminShell>
-  );
-}
-
-function AdminLifeMembersInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   const queryClient = useQueryClient();
   const { data: members, isLoading } = useListLifeMembers();
   const createMember = useCreateLifeMember();
@@ -47,7 +39,7 @@ function AdminLifeMembersInner({ onAuthFailed }: { onAuthFailed: () => void }) {
   };
 
   const onMutationError = (e: unknown) => {
-    const msg = handleAdminMutationError(e, onAuthFailed);
+    const msg = handleAdminMutationError(e);
     if (msg) setError(msg);
   };
 

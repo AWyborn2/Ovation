@@ -10,6 +10,7 @@ export interface Player {
   id: number;
   surname: string;
   givenName: string;
+  deceased: boolean;
   /** @nullable */
   gradesPlayed?: string | null;
   /** @nullable */

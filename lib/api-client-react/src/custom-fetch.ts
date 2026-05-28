@@ -360,7 +360,10 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  // Always send cookies so session-based auth works without per-call config.
+  const credentials: RequestCredentials = init.credentials ?? "include";
+
+  const response = await fetch(input, { ...init, method, headers, credentials });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

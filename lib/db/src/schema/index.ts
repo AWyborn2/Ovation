@@ -6,3 +6,5 @@ export * from "./imports";
 export * from "./player_grade_season_stats";
 export * from "./cap_register";
 export * from "./life_members";
+export * from "./admins";
+export * from "./honour_boards";

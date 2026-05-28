@@ -1,15 +1,10 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
-import { ADMIN_PASSWORD_STORAGE_KEY } from "@/lib/admin-auth";
-
-setAuthTokenGetter(() =>
-  typeof window === "undefined" ? null : window.sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY),
-);
 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
+import { AdminShell } from "@/components/admin-shell";
 import HonourBoards from "@/pages/honour-boards";
 import Players from "@/pages/players";
 import PlayerDetail from "@/pages/player-detail";
@@ -19,6 +14,12 @@ import Records from "@/pages/records";
 import Premierships from "@/pages/premierships";
 import Compare from "@/pages/compare";
 import StatDetail from "@/pages/stat-detail";
+import AdminHub from "@/pages/admin";
+import AdminUsers from "@/pages/admin-users";
+import AdminStats from "@/pages/admin-stats";
+import AdminPlayers from "@/pages/admin-players";
+import AdminPremierships from "@/pages/admin-premierships";
+import AdminHonourBoards from "@/pages/admin-honour-boards";
 import AdminImport from "@/pages/admin-import";
 import AdminCaps from "@/pages/admin-caps";
 import AdminLifeMembers from "@/pages/admin-life-members";
@@ -26,7 +27,7 @@ import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function Router() {
+function PublicRoutes() {
   return (
     <Layout>
       <Switch>
@@ -39,12 +40,40 @@ function Router() {
         <Route path="/premierships" component={Premierships} />
         <Route path="/compare" component={Compare} />
         <Route path="/stats/:id" component={StatDetail} />
-        <Route path="/admin/import" component={AdminImport} />
-        <Route path="/admin/caps" component={AdminCaps} />
-        <Route path="/admin/life-members" component={AdminLifeMembers} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
+  );
+}
+
+function AdminRoutes() {
+  return (
+    <Layout>
+      <AdminShell>
+        <Switch>
+          <Route path="/admin" component={AdminHub} />
+          <Route path="/admin/users" component={AdminUsers} />
+          <Route path="/admin/stats" component={AdminStats} />
+          <Route path="/admin/players" component={AdminPlayers} />
+          <Route path="/admin/premierships" component={AdminPremierships} />
+          <Route path="/admin/honour-boards" component={AdminHonourBoards} />
+          <Route path="/admin/import" component={AdminImport} />
+          <Route path="/admin/caps" component={AdminCaps} />
+          <Route path="/admin/life-members" component={AdminLifeMembers} />
+          <Route component={NotFound} />
+        </Switch>
+      </AdminShell>
+    </Layout>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/admin/:rest*" component={AdminRoutes} />
+      <Route path="/admin" component={AdminRoutes} />
+      <Route component={PublicRoutes} />
+    </Switch>
   );
 }
 
