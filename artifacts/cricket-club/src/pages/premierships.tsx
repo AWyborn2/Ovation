@@ -13,8 +13,6 @@ const formatDate = (d: string | null | undefined) => {
   return `${m[3]}/${m[2]}/${m[1]}`;
 };
 
-const PLAQUE_REF_W = 564;
-const cqw = (px: number) => `${((px / PLAQUE_REF_W) * 100).toFixed(3)}cqw`;
 const TRACK = "0.0103em";
 
 const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
@@ -34,63 +32,61 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   );
 };
 
+const gradeStyle = {
+  fontSize: "10.9px",
+  letterSpacing: 0,
+  lineHeight: 1.4,
+  fontWeight: 700,
+} as const;
+const venueDateStyle = {
+  fontSize: "6.4px",
+  letterSpacing: TRACK,
+  lineHeight: 1.4,
+  fontWeight: 700,
+} as const;
+const teamStyle = {
+  fontSize: "6.7px",
+  letterSpacing: TRACK,
+  lineHeight: 1.0,
+  fontWeight: 700,
+} as const;
+const resultStyle = {
+  fontSize: "6.7px",
+  letterSpacing: TRACK,
+  lineHeight: 1.4,
+  fontWeight: 700,
+} as const;
+
 const Plaque = ({ prem }: { prem: Premiership }) => {
-  const venueDateStyle = {
-    fontSize: cqw(23.7),
-    letterSpacing: TRACK,
-    lineHeight: 1.4,
-    fontWeight: 700,
-  } as const;
-  const teamStyle = {
-    fontSize: cqw(25),
-    letterSpacing: TRACK,
-    lineHeight: 1.0,
-    fontWeight: 700,
-  } as const;
-  const resultStyle = {
-    fontSize: cqw(25),
-    letterSpacing: TRACK,
-    lineHeight: 1.4,
-    fontWeight: 700,
-  } as const;
   return (
     <div
-      className="relative shadow-md border border-slate-900/60 overflow-hidden [container-type:inline-size]"
+      className="relative shadow-md border border-slate-900/60 overflow-hidden"
       style={{
         width: "151px",
         height: "259px",
         background:
           "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
         fontFamily: PLAQUE_FONT,
-        padding: cqw(16),
+        padding: "4px",
       }}
     >
       <div
         className="h-full border-slate-800"
-        style={{ borderWidth: cqw(3), padding: cqw(4) }}
+        style={{ borderWidth: "1px", padding: "1px" }}
       >
         <div
           className="h-full text-center flex flex-col border border-slate-800 overflow-hidden"
           style={{
             color: "#0f172a",
             fontFamily: PLAQUE_FONT,
-            paddingInline: cqw(20),
-            paddingBlock: cqw(24),
+            paddingInline: "5px",
+            paddingBlock: "6px",
           }}
         >
-          <div
-            style={{
-              fontSize: cqw(40.4),
-              letterSpacing: 0,
-              lineHeight: 1.4,
-              fontWeight: 700,
-            }}
-          >
-            {prem.grade.toUpperCase()}
-          </div>
+          <div style={gradeStyle}>{prem.grade.toUpperCase()}</div>
 
           {(prem.venue || prem.matchDate) && (
-            <div style={{ ...venueDateStyle, marginTop: cqw(8) }}>
+            <div style={{ ...venueDateStyle, marginTop: "2px" }}>
               {prem.venue && <div>{prem.venue.toUpperCase()}</div>}
               {prem.matchDate && <div>{formatDate(prem.matchDate)}</div>}
             </div>
@@ -98,7 +94,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
 
           <ul
             className="list-none p-0 m-0"
-            style={{ ...teamStyle, marginTop: cqw(16) }}
+            style={{ ...teamStyle, marginTop: "4px" }}
           >
             {prem.players.map((p) => (
               <PlayerLine key={p.id} p={p} />
@@ -108,7 +104,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           <div className="flex-1" />
 
           {prem.mom && (
-            <div style={{ ...resultStyle, marginBottom: cqw(14) }}>
+            <div style={{ ...resultStyle, marginBottom: "4px" }}>
               M.O.M - {prem.mom.toUpperCase()}
             </div>
           )}
