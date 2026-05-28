@@ -22,11 +22,11 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   return (
     <li>
       {p.playerId ? (
-        <Link href={`/players/${p.playerId}`} className="block whitespace-nowrap text-slate-900 hover:underline pt-[0px] pb-[0px] mt-[0px] mb-[0px] text-[10px] font-semibold">
+        <Link href={`/players/${p.playerId}`} className="block whitespace-nowrap text-slate-900 hover:underline pt-[0px] pb-[0px] mt-[0px] mb-[0px] font-semibold text-[9px]">
           {label}
         </Link>
       ) : (
-        <span className="block whitespace-nowrap text-slate-900 text-[10px]">{label}</span>
+        <span className="block whitespace-nowrap text-slate-900 font-semibold text-[9px]">{label}</span>
       )}
     </li>
   );
