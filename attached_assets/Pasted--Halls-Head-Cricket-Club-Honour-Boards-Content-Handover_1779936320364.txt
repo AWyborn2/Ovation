@@ -1,0 +1,541 @@
+# Halls Head Cricket Club — Honour Boards Content
+
+_Handover document generated 28 May 2026_
+
+This file contains the finalised content for two new pages on the Halls Head Cricket Club honour boards site:
+
+1. **A Grade Cap Register** — chronological debut order of every A Grade player
+2. **Life Members** — the 14 inductees with their biographical blurbs and induction years
+
+Both pages are intended to be added as additional tabs in the existing honour boards interface, alongside Games / Runs / Wickets / Dismissals / High Scores / Best Bowling / Centurions / 5-Wicket Hauls / Search.
+
+---
+
+## Implementation Context
+
+### Existing data files in `replit_app/data/`
+
+- `cap_register.json` — 247 cap entries, already cross-referenced against player stats
+- `life_members.json` — 14 life member entries with blurbs and stats hooks
+- `players.json` — all 688 club players (cleaned, Elliot Ireland removed as a data error)
+- `per_grade.json` — per-grade career stats for every player
+
+### Cap Register entry shape
+
+```json
+{
+  "cap_no": 1,
+  "name": "Mark Rowe",
+  "deceased": false,
+  "in_stats": true,
+  "player_id": "rowe__mark",   // null if no stats
+  "games_a_grade": 140         // 0 if no stats
+}
+```
+
+### Life Member entry shape
+
+```json
+{
+  "name": "Paul Gillam",
+  "year": 2000,
+  "player_id": "gillam__paul",  // null for non-playing members
+  "is_playing_member": true,
+  "blurb": "Co-founder of...",  // markdown-like paragraphs separated by \n\n
+  "role": "Scorer"              // only present for non-playing members
+}
+```
+
+Playing members should also have their career stats rendered alongside the blurb. Stats can be looked up via `player_id` against `players.json` and `per_grade.json`.
+
+---
+
+## A Grade Cap Register Page
+
+### Page header
+
+**Title:** A Grade Cap Register
+
+**Subtitle:** Every player to wear the cap for Halls Head Cricket Club in A Grade competition, in chronological order of debut. 247 caps issued — 156 with stats on record, 4 since deceased.
+
+### Disclaimer card (display prominently at top)
+
+**Heading:** About this register
+
+**Body:**
+
+> Cap numbers are assigned in chronological order of A Grade debut for Halls Head Cricket Club. Prior to the adoption of the digital scoring platforms **MyCricket** and **PlayHQ**, the club only retained statistics for players who had played 10 or more games. As a result, many of the players in this register — particularly those from the foundational era — have no statistical record despite having earned their A Grade cap. Their place in club history is honoured here regardless.
+
+**Legend (display below the disclaimer):**
+
+- ✓ stats available — green tag
+- ○ no stats (pre-digital era) — grey/dimmed tag
+- ✝ deceased — gold marker beside the player's name
+
+### Data notes
+
+- Cap numbers are sequential 1–247 (no gaps). One historical typo was corrected: Freddie Higton was originally listed as cap #235 (duplicate), now correctly cap #238.
+- Cap #221 was originally listed as Aaron Burrage. Aaron Burrage has never played A Grade for Halls Head — this entry has been corrected to **Andrew Pasco** who has 5 A Grade games on record.
+- Cap #214 (Elliot Ireland) had a single A Grade game in the MyCricket records, but this was confirmed as a data error by the club. The stat has been removed from the player database. The cap entry is retained in the register but marked as having no stats.
+- Players whose names appeared in slightly different forms across systems have been resolved (e.g. Matt vs Matthew, Mick vs Michael, spelling variants like Stanley vs Staney). The full mapping is preserved in `cap_register.json` via the `stats_name_variant` field where applicable.
+- **Outstanding**: Trevor Allen appears in A Grade stats (23 games, 706 runs, 25 wickets) but is not in the cap register. This is being investigated — he may be a preferred-name variant for another listed player (potentially Wayne Allen, cap #36), or a separate person who needs their own cap number. Leave him out of the register for now pending club confirmation.
+
+### Suggested table structure
+
+| Cap # | Player Name | A Grade Games | Status |
+|-------|-------------|---------------|--------|
+| 1     | Mark Rowe   | 140           | ✓ on record |
+| 7     | Ian Mackintosh ✝ | 18      | ✓ on record |
+| 8     | Luke Carruthers | —          | ○ pre-digital |
+| ...   | ...         | ...           | ...    |
+
+Player names should link to their player profile page when `in_stats == true`. Names with `in_stats == false` should be rendered in a dimmer text style and remain non-clickable.
+
+### Full cap list
+
+_247 entries — Cap #1 through Cap #247_
+
+| Cap # | Player | A Grade Games | Status |
+|-------|--------|---------------|--------|
+| 1 | Mark Rowe | 140 | ✓ on record |
+| 2 | Shane Shanahan | 100 | ✓ on record |
+| 3 | Jeffery Dillon | 51 | ✓ on record |
+| 4 | Wayne Morrison | 20 | ✓ on record |
+| 5 | Paul Gillam | 188 | ✓ on record |
+| 6 | Ashley Smith | 11 | ✓ on record |
+| 7 | Ian Mackintosh ✝ | 18 | ✓ on record |
+| 8 | Luke Carruthers | — | ○ pre-digital |
+| 9 | Roger Wren | 217 | ✓ on record |
+| 10 | Anthony Gieke | — | ○ pre-digital |
+| 11 | Brendan Cullinan | — | ○ pre-digital |
+| 12 | Greg Chalker | 23 | ✓ on record |
+| 13 | Wayne Stevenson | 15 | ✓ on record |
+| 14 | Jamie Malycha | 23 | ✓ on record |
+| 15 | Donald Skipworth | — | ○ pre-digital |
+| 16 | Peter Wyllie | 260 | ✓ on record |
+| 17 | Peter McKell | — | ○ pre-digital |
+| 18 | Brad Flett | — | ○ pre-digital |
+| 19 | Frank Farnsworth | — | ○ pre-digital |
+| 20 | Dennis Bland | — | ○ pre-digital |
+| 21 | Laurie Cross | 100 | ✓ on record |
+| 22 | Rob Romeo | 11 | ✓ on record |
+| 23 | Travis Jones | — | ○ pre-digital |
+| 24 | Steve Lane | — | ○ pre-digital |
+| 25 | Eddie Butler | — | ○ pre-digital |
+| 26 | Rob Lawson | 14 | ✓ on record |
+| 27 | Alan Birmingham | 12 | ✓ on record |
+| 28 | Michael Carlton | 47 | ✓ on record |
+| 29 | Ray Smith ✝ | — | ○ pre-digital |
+| 30 | Adam Bowyer | — | ○ pre-digital |
+| 31 | Jeff Sommors | — | ○ pre-digital |
+| 32 | Aaron Fitzpatrick | — | ○ pre-digital |
+| 33 | Chris Phelps | 372 | ✓ on record |
+| 34 | Martin Crump | — | ○ pre-digital |
+| 35 | Ian Conn | — | ○ pre-digital |
+| 36 | Wayne Allen | — | ○ pre-digital |
+| 37 | Glen Tunstall | — | ○ pre-digital |
+| 38 | Michael O'Brian | 68 | ✓ on record |
+| 39 | Steve Taylor | — | ○ pre-digital |
+| 40 | Stuart Ball | 11 | ✓ on record |
+| 41 | Brian Cullen ✝ | 19 | ✓ on record |
+| 42 | Justin Lockyer | — | ○ pre-digital |
+| 43 | Dale King | — | ○ pre-digital |
+| 44 | Allan Willey | 127 | ✓ on record |
+| 45 | Peter Hunter | 28 | ✓ on record |
+| 46 | Max Crook | 42 | ✓ on record |
+| 47 | Phil Bailey | — | ○ pre-digital |
+| 48 | Matt Brooks | — | ○ pre-digital |
+| 49 | Ben Dell | — | ○ pre-digital |
+| 50 | Chris Baker | 105 | ✓ on record |
+| 51 | Colin Hunter | — | ○ pre-digital |
+| 52 | Leigh Burns | 162 | ✓ on record |
+| 53 | Dale Burns | 239 | ✓ on record |
+| 54 | Matt Blackwell | — | ○ pre-digital |
+| 55 | Dan Mather | — | ○ pre-digital |
+| 56 | Mick Stanley | 18 | ✓ on record |
+| 57 | Colin Birdsall | — | ○ pre-digital |
+| 58 | Robbie Leahy | — | ○ pre-digital |
+| 59 | Billy Miles | — | ○ pre-digital |
+| 60 | Darryl Morgan | 73 | ✓ on record |
+| 61 | Peter Moir | — | ○ pre-digital |
+| 62 | Craig Threlfall | 27 | ✓ on record |
+| 63 | Peter Radcliffe | 52 | ✓ on record |
+| 64 | A Davidson | — | ○ pre-digital |
+| 65 | Dale Gumbleton | 28 | ✓ on record |
+| 66 | Phil Wirth | — | ○ pre-digital |
+| 67 | Dan Buncle | — | ○ pre-digital |
+| 68 | Chris Wren | — | ○ pre-digital |
+| 69 | Wayne Reid | 123 | ✓ on record |
+| 70 | Ben March | — | ○ pre-digital |
+| 71 | Scott Layton | — | ○ pre-digital |
+| 72 | Ryan Ballard | — | ○ pre-digital |
+| 73 | Ken Gillam | — | ○ pre-digital |
+| 74 | Ryan Burns | 53 | ✓ on record |
+| 75 | David McCormack | — | ○ pre-digital |
+| 76 | Ron Coles | 29 | ✓ on record |
+| 77 | Rian Elliot | 18 | ✓ on record |
+| 78 | Mark Chapelhow ✝ | 80 | ✓ on record |
+| 79 | Shannon Kirby | — | ○ pre-digital |
+| 80 | Chris Hickman | — | ○ pre-digital |
+| 81 | Nigel Coe | — | ○ pre-digital |
+| 82 | Brian O'Donnell | — | ○ pre-digital |
+| 83 | Ray Smedley | — | ○ pre-digital |
+| 84 | Ian Bray | — | ○ pre-digital |
+| 85 | C Mills | — | ○ pre-digital |
+| 86 | Trevor Anning | — | ○ pre-digital |
+| 87 | Brad Smith | — | ○ pre-digital |
+| 88 | Hugh Williams | — | ○ pre-digital |
+| 89 | Jeff Carlisle | — | ○ pre-digital |
+| 90 | Darren Jeffrey | 2 | ✓ on record |
+| 91 | Nick Rostin | — | ○ pre-digital |
+| 92 | Steve Chapelhow | — | ○ pre-digital |
+| 93 | Matt Lloyd | — | ○ pre-digital |
+| 94 | Shane Fitzgerald | — | ○ pre-digital |
+| 95 | Matt Guyton | 90 | ✓ on record |
+| 96 | David Lovell | 31 | ✓ on record |
+| 97 | Anthony Brokate | 55 | ✓ on record |
+| 98 | Robert Jeffers | — | ○ pre-digital |
+| 99 | Michael Holmes | 55 | ✓ on record |
+| 100 | Craig White | 64 | ✓ on record |
+| 101 | Cary Green | 79 | ✓ on record |
+| 102 | Brendon King | 126 | ✓ on record |
+| 103 | Ian White | — | ○ pre-digital |
+| 104 | Brad Holmes | — | ○ pre-digital |
+| 105 | Josh Lawson | — | ○ pre-digital |
+| 106 | Shane Goldsmith | — | ○ pre-digital |
+| 107 | Judd Prentice | 17 | ✓ on record |
+| 108 | Gary Hocking | — | ○ pre-digital |
+| 109 | Perry Allen | — | ○ pre-digital |
+| 110 | Michael Sprott | — | ○ pre-digital |
+| 111 | Rick Tyson | 15 | ✓ on record |
+| 112 | Mitch Green | 74 | ✓ on record |
+| 113 | Aaron Thomas | 16 | ✓ on record |
+| 114 | Michael Griffiths | 65 | ✓ on record |
+| 115 | Simon Noble | 29 | ✓ on record |
+| 116 | Wade Blom | 27 | ✓ on record |
+| 117 | Sean Nye | — | ○ pre-digital |
+| 118 | Dean Friskin | — | ○ pre-digital |
+| 119 | Bryce Jeffrey | 21 | ✓ on record |
+| 120 | Jason Clark | 14 | ✓ on record |
+| 121 | Nathan Hogg | 14 | ✓ on record |
+| 122 | Brennan Gillam | 62 | ✓ on record |
+| 123 | Rodney Tregenza | 37 | ✓ on record |
+| 124 | Chris King | — | ○ pre-digital |
+| 125 | Josh McGee | — | ○ pre-digital |
+| 126 | Jason Young | 11 | ✓ on record |
+| 127 | Nathan Dovey | — | ○ pre-digital |
+| 128 | Tristan Clough | — | ○ pre-digital |
+| 129 | Blake Anderson | — | ○ pre-digital |
+| 130 | Josh Quaid | 6 | ✓ on record |
+| 131 | Jake Withers | — | ○ pre-digital |
+| 132 | Caden McCarthy | — | ○ pre-digital |
+| 133 | Jay Deeming | — | ○ pre-digital |
+| 134 | Josh Petersen | 128 | ✓ on record |
+| 135 | Andrew Pocklington | — | ○ pre-digital |
+| 136 | Adam Whitehorn | — | ○ pre-digital |
+| 137 | Jared King | — | ○ pre-digital |
+| 138 | Dean Finlay | — | ○ pre-digital |
+| 139 | Andrew Cocking | — | ○ pre-digital |
+| 140 | Tim Shand | 33 | ✓ on record |
+| 141 | Liam Blampied | 61 | ✓ on record |
+| 142 | Grant Matthews | 13 | ✓ on record |
+| 143 | Mitch Morley | 55 | ✓ on record |
+| 144 | Matthew Gordon | 111 | ✓ on record |
+| 145 | Matthew Skendar | 7 | ✓ on record |
+| 146 | Richard Woods | 53 | ✓ on record |
+| 147 | Jason Sparrow | — | ○ pre-digital |
+| 148 | Cam Lucas | 46 | ✓ on record |
+| 149 | Toby Bairstow | — | ○ pre-digital |
+| 150 | Wade Hall | — | ○ pre-digital |
+| 151 | Ben Finlay | 7 | ✓ on record |
+| 152 | Adam Dallmann | — | ○ pre-digital |
+| 153 | Ashley Jeffrey | 36 | ✓ on record |
+| 154 | Adrian Graham | 13 | ✓ on record |
+| 155 | Phil Hall | 16 | ✓ on record |
+| 156 | Al Kristensen | 18 | ✓ on record |
+| 157 | James Matau | 6 | ✓ on record |
+| 158 | Brad Wiseman | 54 | ✓ on record |
+| 159 | Adam Clues | — | ○ pre-digital |
+| 160 | Dan Kenny | 6 | ✓ on record |
+| 161 | Rodney Shemeld | 3 | ✓ on record |
+| 162 | Kyle Jeffrey | 46 | ✓ on record |
+| 163 | Jessie Roe | — | ○ pre-digital |
+| 164 | Cameron Burrage | 73 | ✓ on record |
+| 165 | Jayden Matthews | 2 | ✓ on record |
+| 166 | Dan Krepevin | — | ○ pre-digital |
+| 167 | Blair Cartwright | 19 | ✓ on record |
+| 168 | Steven Inward | 29 | ✓ on record |
+| 169 | Andrew Tatterson | 80 | ✓ on record |
+| 170 | Tylor Naidoo | 8 | ✓ on record |
+| 171 | Tim Lees | 5 | ✓ on record |
+| 172 | Alex Dillon | 37 | ✓ on record |
+| 173 | Jordan Brokate | 8 | ✓ on record |
+| 174 | Ellis Miah | 6 | ✓ on record |
+| 175 | Lachlan Kinna | 88 | ✓ on record |
+| 176 | Luke Brock | 5 | ✓ on record |
+| 177 | Tannah Dunning | 7 | ✓ on record |
+| 178 | Matt Reilly | — | ○ pre-digital |
+| 179 | Chris Thomas | 12 | ✓ on record |
+| 180 | Peter Boyce | 11 | ✓ on record |
+| 181 | Ashley Wyborn | — | ○ pre-digital |
+| 182 | Jaspreet Pannu | — | ○ pre-digital |
+| 183 | Ben McInnes | — | ○ pre-digital |
+| 184 | Jacob Hodson | 8 | ✓ on record |
+| 185 | Jake O'Byrne | 18 | ✓ on record |
+| 186 | Daniel Baker | 4 | ✓ on record |
+| 187 | Damien Burrage | 2 | ✓ on record |
+| 188 | Scott Martin | 141 | ✓ on record |
+| 189 | Daniel Higham | 3 | ✓ on record |
+| 190 | Levi Muller | 79 | ✓ on record |
+| 191 | James Capenar | 3 | ✓ on record |
+| 192 | Michael Chappell | 79 | ✓ on record |
+| 193 | Joel Evans | 21 | ✓ on record |
+| 194 | Jake Wyllie | 91 | ✓ on record |
+| 195 | Jack Manual | 126 | ✓ on record |
+| 196 | Reid Klopper | 24 | ✓ on record |
+| 197 | Lewis Starbuck | 46 | ✓ on record |
+| 198 | Mitch Felton | 49 | ✓ on record |
+| 199 | Craig Ford | 31 | ✓ on record |
+| 200 | Julian Crudeli | 1 | ✓ on record |
+| 201 | Angus Kent | 8 | ✓ on record |
+| 202 | Will Eason | 18 | ✓ on record |
+| 203 | Sam Pendlebury | 12 | ✓ on record |
+| 204 | Sam Hardman | 2 | ✓ on record |
+| 205 | Dustin Robinson | 45 | ✓ on record |
+| 206 | Jarod Little | 149 | ✓ on record |
+| 207 | Wesley Naidoo | 1 | ✓ on record |
+| 208 | Elliot Foote | 14 | ✓ on record |
+| 209 | Harry Tatterson | 1 | ✓ on record |
+| 210 | Rodney Ford | 2 | ✓ on record |
+| 211 | Mitchell Hogg | 1 | ✓ on record |
+| 212 | Nathan Howell | 18 | ✓ on record |
+| 213 | Corbin Little | 3 | ✓ on record |
+| 214 | Elliot Ireland | — | ○ pre-digital |
+| 215 | Josh Rudge | 126 | ✓ on record |
+| 216 | James Skeels | 18 | ✓ on record |
+| 217 | Josh Fourez | 10 | ✓ on record |
+| 218 | Chris Mills | 16 | ✓ on record |
+| 219 | Alec Smith | 2 | ✓ on record |
+| 220 | Alex Quigg | 11 | ✓ on record |
+| 221 | Andrew Pasco | 5 | ✓ on record |
+| 222 | Joseph Slade | 31 | ✓ on record |
+| 223 | Jacob Barnes | 26 | ✓ on record |
+| 224 | Tim Miles | 85 | ✓ on record |
+| 225 | Jake Patterson | 10 | ✓ on record |
+| 226 | Iszac Willey | 19 | ✓ on record |
+| 227 | Bradley Scott | 12 | ✓ on record |
+| 228 | James Rudge | 16 | ✓ on record |
+| 229 | Will Elvidge | 6 | ✓ on record |
+| 230 | Keelan Beattie | 49 | ✓ on record |
+| 231 | Blake Allen | 9 | ✓ on record |
+| 232 | Noah Frunks | 1 | ✓ on record |
+| 233 | Angus Beattie | 21 | ✓ on record |
+| 234 | Joe Phillips | 18 | ✓ on record |
+| 235 | Dan Lambert | 15 | ✓ on record |
+| 236 | Travis Caine | 47 | ✓ on record |
+| 237 | Oliver Davidson | 15 | ✓ on record |
+| 238 | Freddie Higton | 22 | ✓ on record |
+| 239 | Matthew Loon | 2 | ✓ on record |
+| 240 | Jett Demmery | 31 | ✓ on record |
+| 241 | Ben Higton | 21 | ✓ on record |
+| 242 | Mitchell Caine | 12 | ✓ on record |
+| 243 | Jeff Petrie | 4 | ✓ on record |
+| 244 | Lucius Hysen | 1 | ✓ on record |
+| 245 | Luca Doyle | 16 | ✓ on record |
+| 246 | Oscar Smith | 1 | ✓ on record |
+| 247 | Hudson Malingre | 1 | ✓ on record |
+
+---
+
+## Life Members Page
+
+### Page header
+
+**Title:** Life Members
+
+**Subtitle:** Halls Head Cricket Club's highest individual honour — recognising members whose contribution to the club has been exceptional and enduring. 14 Life Members inducted since the award was first given.
+
+### Layout per member
+
+Each Life Member should have their own card containing:
+
+1. **Name** (large, gold, Roboto Slab Bold) — clickable link to player profile if `player_id` is set
+2. **Role label** (italic, smaller, below name) — only displayed for non-playing members (Kevin Burns shows 'Scorer')
+3. **Induction year** (top right of card, prominent)
+4. **Career stats grid** — for playing members only, 6 stat tiles:
+   - Games | Runs (with avg + HS) | 50s/100s | Wickets (with avg + BB) | 5-Wicket Hauls | Dismissals (with c/s/ro breakdown)
+5. **Grades played** — line listing all grades the player has played in
+6. **Blurb** — italic block with gold left border, displaying paragraphs separated by `\n\n` in the source
+
+### Important data notes
+
+- The blurb field uses `\n\n` to separate paragraphs. Each paragraph should render as its own `<p>` element with appropriate vertical spacing. Avoid rendering as one solid block.
+- Kevin Burns has `is_playing_member: false` and no `player_id` or stats — render only the blurb (no stats grid), with the 'Scorer' role label under his name.
+- Members should be sorted by `year` (ascending), then by `name` alphabetically as a tiebreaker.
+
+### Member entries
+
+#### Mark Rowe (inducted 2000)
+
+**Type:** Playing member
+**Player ID:** `rowe__mark`
+
+**Blurb:**
+
+> Co-founder of Halls Head Cricket Club and the club's inaugural President for eight seasons (1991/92 to 1998/99). Mark also captained the inaugural A Grade side, leading them to premiership glory in 1991/92 after defeating Singleton in a semi-final still spoken of as one of the finest matches in the club's history, then comprehensively defeating Rockingham in the Grand Final. Wears cap #1. Seven premierships including six in A Grade.
+
+#### Paul Gillam (inducted 2000)
+
+**Type:** Playing member
+**Player ID:** `gillam__paul`
+
+**Blurb:**
+
+> Co-founder of Halls Head Cricket Club. In the winter of 1991, Paul and fellow founding member Mark Rowe — both then playing at South Coastals Cricket Club at Falcon Oval — set about forming a new club closer to home in the rapidly growing Halls Head area. Paul served as the club's inaugural Treasurer for eight consecutive seasons (1991/92 to 1998/99) and was later Club President. On the field he won eight A Grade premierships and was named Man of the Match in both the 1994/95 and 1996/97 A Grade Grand Finals.
+
+#### Peter Wyllie (inducted 2003)
+
+**Type:** Playing member
+**Player ID:** `wyllie__peter`
+
+**Blurb:**
+
+> Halls Head's most decorated cricketer and a true legend of Peel cricket. Peter has won 15 premierships for the club — twelve in A Grade and three in C Grade — captaining three consecutive A Grade premierships from 1994/95 to 1996/97. He has been Man of the Match in four A Grade Grand Finals (1991/92, 1997/98, 2001/02, 2006/07), more than any other player in club history.
+>
+> Peter represented the Western Australian Country XI and is a Life Member of the Peel Cricket Association — the PCA A Grade competition, the Wyllie Cup, is named in honour of Peter and his brother John Wyllie of Mandurah Cricket Club. The brothers faced each other in 13 grand finals, with Peter on the winning side in twelve. Off the field, Peter served as the club's Director of Cricket for five years and was the club's Cricketer of the Year three times.
+>
+> The club's player-of-the-match award is also named in his honour — the Wyllie Medal is decided by a club-wide 3-2-1 vote after every game across all grades.
+
+#### Roger Wren (inducted 2004)
+
+**Type:** Playing member
+**Player ID:** `wren__roger`
+
+**Blurb:**
+
+> A foundation A Grader (cap #9) who has played 291 games for Halls Head, taking 399 wickets across A, B and C Grades with five 5-wicket hauls (BB 7/54). Ten A Grade premierships. Off the field, Roger served as Club President for nine consecutive seasons — a record that stood for many years until recently equalled by Ashley Wyborn.
+
+#### Dale Burns (inducted 2006)
+
+**Type:** Playing member
+**Player ID:** `burns__dale`
+
+**Blurb:**
+
+> One of the most prolific cricketers in Halls Head history. Dale has played across all six men's grades — A through F — and is the club's all-time leading run-scorer. Thirteen premierships including ten in A Grade. Captained A Grade in 1997/98 and C Grade in 2016/17, and represented both the Western Australian Country XI and the Australian Country XI — the only player in club history to have worn the Australian Country jersey.
+
+#### Justin Lockyer (inducted 2008)
+
+**Type:** Playing member
+**Player ID:** `lockyer__justin`
+
+**Blurb:**
+
+> A B Grade specialist who has played 204 games across B, C and E Grades, taking 275 wickets with three 5-wicket hauls. Captained back-to-back B Grade premierships in 2000/01 and 2001/02, winning four B Grade flags in total. More recently he has served on the club committee as Junior Coordinator and has coached both of his sons' junior teams.
+
+#### Chris Baker (inducted 2013)
+
+**Type:** Playing member
+**Player ID:** `baker__chris`
+
+**Blurb:**
+
+> The club's premier wicketkeeper, Chris has taken 273 dismissals — 202 catches, 67 stumpings, 4 run outs — across his 260-game career spanning A through E Grades. Eleven premierships across four grades, including four in A Grade. Chris served as the club's Treasurer in the mid-2000s and as Junior Club President for many years.
+
+#### Darren Jeffrey (inducted 2013)
+
+**Type:** Playing member
+**Player ID:** `jeffrey__darren`
+
+**Blurb:**
+
+> A C Grade master and one of the club's all-time greats. Darren has won five C Grade premierships, captaining two of them (2007/08, 2008/09), and has taken 404 wickets for the club — the third-most in club history — with twelve 5-wicket hauls (BB 6/8). Named Man of the Match in the 2008/09 C Grade Grand Final.
+>
+> Off the field, Darren served as the club's Treasurer for many years and is a Life Member of the Peel Cricket Association — the PCA C Grade competition, the Jeffrey Cup, is named in his honour. He has also represented Western Australia in Over-60s Veterans cricket.
+
+#### Chris Phelps (inducted 2014)
+
+**Type:** Playing member
+**Player ID:** `phelps__chris`
+
+**Blurb:**
+
+> The club's most successful cricketer in raw numbers. Chris has played 402 games — more games than any other player in club history — and is the club's all-time leading wicket-taker with 608 wickets, including eleven 5-wicket hauls and club-record figures of 8/12. Sixteen premierships — fifteen in A Grade, more than any other player — including back-to-back A Grade captaincies in 2006/07 and 2008/09. Man of the Match in the 2008/09 A Grade Grand Final.
+>
+> Chris has represented both Western Australia and Australia in Over-40s Veterans cricket. Off the field, he coached the club's first girls' cricket team for three seasons.
+
+#### Kevin Burns (inducted 2016)
+
+**Type:** Non-playing member
+**Role:** Scorer
+
+**Blurb:**
+
+> Halls Head Cricket Club's only non-playing Life Member. Kevin served as the club's A Grade scorer for many years and went on to be the Western Australian Country XI scorer — recognised across the state for his meticulous record-keeping and unwavering dedication to the game. His contribution to the club and to country cricket more broadly has been immeasurable.
+
+#### James Woods (inducted 2021)
+
+**Type:** Playing member
+**Player ID:** `woods__james`
+
+**Blurb:**
+
+> James has played 206 games across five grades, scoring 2,336 runs (HS 94*) and taking 61 wickets with one 5-wicket haul (BB 5/31). Captained the D Grade premiership in 2012/13 and won a second D Grade flag in 2013/14. Off the field, James has served the club as President, as Treasurer, and as a long-standing committee member — three of the club's most demanding administrative roles.
+
+#### Matthew Guyton (inducted 2021)
+
+**Type:** Playing member
+**Player ID:** `guyton__matthew`
+
+**Blurb:**
+
+> An all-grades servant of the club. Matt has played 356 games across all six men's grades, taking 349 wickets (BB 6/12) and scoring 3,134 runs with one century (HS 107*). Ten premierships across A, B, C, D and E Grades — captaining the 2013/14 C Grade and the 2025/26 E Grade premiership sides. He has served on the club committee for over ten years, including two years as Vice President.
+
+#### Grant Matthews (inducted 2026)
+
+**Type:** Playing member
+**Player ID:** `matthews__grant`
+
+**Blurb:**
+
+> Grant has played 286 games for the club across all six men's grades plus PPL, scoring 5,127 runs with one century (HS 103) and taking 227 wickets (BB 6/55). Captained back-to-back B Grade premierships in 2015/16 and 2016/17, with six premierships in total spanning A, B, D and E Grades. Off the field he has been a long-serving committee member, club coach, net captain, and club sponsor — a contributor on every front.
+
+#### Jason Young (inducted 2026)
+
+**Type:** Playing member
+**Player ID:** `young__jason`
+
+**Blurb:**
+
+> Jason has played 209 games for the club across five grades, scoring 4,259 runs at 30.9 with two centuries (HS 148) and taking 156 wickets at 15.5 with one 5-wicket haul. Five premierships including the 2016/17 C Grade. Off the field, Jason has served as Junior Club President, Senior Club Vice President, Secretary, and as coach of both his sons' teams from Under 10 right through to Under 17 — sometimes coaching both teams in the same year.
+
+---
+
+## Future additions (not yet implemented)
+
+The following pages have been discussed with the club but are awaiting full historical data before implementation. They can be added as additional tabs in future iterations:
+
+### Club Honour Board
+
+A year-by-year table of club officials, mirroring the wooden honour board hanging in the clubhouse. Columns:
+
+- Year (e.g. 1991/92)
+- President
+- Secretary
+- Treasurer
+- Club Captain
+- Cricketer of the Year
+- Coach
+- Life Members (cumulative)
+
+Verified data is available for 1991/92 through 2005/06 (from photo). Data for 2006/07 onwards is still being collected by the club.
+
+### Wyllie Medal Winners
+
+The Wyllie Medal is the club's player-of-the-match award, decided by a club-wide 3-2-1 vote after every game across all grades. A historical list of winners is being compiled by the club and will be provided when complete.
+
+---
+
+## Contact
+
+For questions about the data or content above, contact Ashley Wyborn (club committee, recent past President).
