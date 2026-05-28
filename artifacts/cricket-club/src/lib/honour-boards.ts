@@ -412,6 +412,21 @@ const getPlayerValue = (
 
 export const MILESTONE_BOARDS: BoardKey[] = ["games", "runs", "wickets", "dismissals"];
 
+/**
+ * Minimum tier thresholds for a milestone to count as "significant" in the
+ * "Just promoted" feed. Boards not listed here are excluded entirely.
+ */
+const SIGNIFICANT_MIN: Partial<Record<BoardKey, number>> = {
+  games: 100,
+  runs: 1000,
+  wickets: 100,
+};
+
+const isSignificant = (key: BoardKey, threshold: number): boolean => {
+  const min = SIGNIFICANT_MIN[key];
+  return typeof min === "number" && threshold >= min;
+};
+
 const milestoneValue = (p: AggregatedPlayer, key: BoardKey): number => {
   switch (key) {
     case "games":
@@ -501,6 +516,7 @@ export const getSeasonCrossings = (
     for (let i = 0; i < tiers.length; i++) {
       const t = tiers[i];
       if (t.min <= 0) continue;
+      if (!isSignificant(key, t.min)) continue;
       if (t.min > bVal && t.min <= aVal) {
         out.push({
           key,
@@ -636,6 +652,7 @@ export const getRecentPromotions = (players: AggregatedPlayer[], limit = 5): Pro
       if (idx === -1) continue;
       const tier = tiers[idx];
       if (tier.min <= 0) continue;
+      if (!isSignificant(key, tier.min)) continue;
       const excess = value - tier.min;
       const board = BOARDS.find((b) => b.key === key)!;
       entries.push({

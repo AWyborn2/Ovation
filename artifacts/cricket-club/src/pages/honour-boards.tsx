@@ -346,11 +346,12 @@ export default function HonourBoards() {
     return getSeasonPromotions(allStats, selectedSeason, 5);
   }, [aggregatedPlayers, allStats, scope, selectedSeason]);
 
-  const promotionHeading = selectedSeason === "all" ? "Just promoted" : `Milestones hit in ${selectedSeason}`;
+  const promotionHeading =
+    selectedSeason === "all" ? "Significant milestones" : `Significant milestones in ${selectedSeason}`;
   const promotionSubheading =
     selectedSeason === "all"
-      ? "Newest entries to a milestone club"
-      : `Players who crossed an honour board in ${selectedSeason}`;
+      ? "100+ games, 1,000+ runs and 100+ wickets clubs"
+      : `Players who reached 100+ games, 1,000+ runs or 100+ wickets in ${selectedSeason}`;
 
   // Search
   const searchParams = { search: searchTerm, page: 1, limit: 12 };
@@ -420,8 +421,8 @@ export default function HonourBoards() {
           {recentPromotions.length === 0 ? (
             <div className="text-sm text-muted-foreground italic">
               {selectedSeason === "all"
-                ? "No milestone promotions to show yet."
-                : `No players crossed an honour board in ${selectedSeason}. Tag stat records with this season to populate.`}
+                ? "No significant milestones to show yet."
+                : `No players reached a significant milestone in ${selectedSeason}.`}
             </div>
           ) : (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
