@@ -112,7 +112,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           {prem.result && (
             <div
               style={{ ...resultStyle, whiteSpace: "pre-line" }}
-              className="text-[10px] font-semibold">
+              className="text-[12px] font-bold">
               {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
             </div>
           )}
