@@ -55,10 +55,8 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
   } as const;
   return (
     <div
-      className="relative shadow-xl border border-slate-900/60 overflow-hidden [container-type:inline-size]"
+      className="relative shadow-xl border border-slate-900/60 overflow-hidden [container-type:inline-size] aspect-[564/965] w-full"
       style={{
-        width: "564px",
-        height: "965px",
         background:
           "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
         fontFamily: PLAQUE_FONT,
@@ -147,58 +145,61 @@ export default function Premierships() {
   }, [premierships, selectedGrade]);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-card border border-border rounded-md p-6 md:p-8 flex items-center gap-4 md:gap-6 shadow-lg">
-        <img src={logoUrl} alt="HHCC" className="h-16 md:h-20 w-auto drop-shadow-lg" />
-        <div>
-          <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary m-0 leading-tight">
-            Premierships Honour Board
-          </h1>
-          <div className="text-xs md:text-sm uppercase tracking-widest text-muted-foreground mt-2">
-            {premierships?.length ?? 0} premiership{(premierships?.length ?? 0) === 1 ? "" : "s"} since 1991
+    <div
+      className="mx-[calc(50%-50vw)] w-screen min-h-screen"
+      style={{
+        background:
+          "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
+      }}
+    >
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
+        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
+          <img src={logoUrl} alt="HHCC" className="h-14 md:h-20 w-auto drop-shadow" />
+          <div className="text-center text-white">
+            <h1
+              className="m-0 font-bold tracking-[0.08em] leading-tight text-xl md:text-3xl lg:text-4xl"
+              style={{ fontFamily: PLAQUE_FONT }}
+            >
+              HALLS HEAD CRICKET CLUB
+            </h1>
+            <div
+              className="mt-1 font-semibold tracking-[0.25em] text-sm md:text-base lg:text-lg text-white/90"
+              style={{ fontFamily: PLAQUE_FONT }}
+            >
+              PREMIERSHIPS
+            </div>
           </div>
+          <img src={logoUrl} alt="HHCC" className="h-14 md:h-20 w-auto drop-shadow" />
         </div>
-      </div>
 
-      <div className="bg-card border border-border rounded-md p-4 flex items-center gap-3 flex-wrap shadow-md">
-        <span className="text-xs font-bold uppercase tracking-widest text-primary">Grade</span>
-        <select
-          value={selectedGrade}
-          onChange={(e) => setSelectedGrade(e.target.value)}
-          className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-        >
-          {grades.map((g) => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
-        <span className="text-xs text-muted-foreground italic ml-auto">
-          {filtered.length} shown
-        </span>
-      </div>
+        <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">
+          <span className="text-xs font-bold uppercase tracking-widest">Grade</span>
+          <select
+            value={selectedGrade}
+            onChange={(e) => setSelectedGrade(e.target.value)}
+            className="px-3 py-1.5 rounded border border-white/30 bg-black/30 text-white text-sm font-medium"
+          >
+            {grades.map((g) => (
+              <option key={g} value={g} className="text-black">{g}</option>
+            ))}
+          </select>
+          <span className="text-xs italic ml-auto text-white/70">
+            {filtered.length} of {premierships?.length ?? 0} shown
+          </span>
+        </div>
 
-      {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
-          Loading premierships…
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground italic">
-          No premierships found.
-        </div>
-      ) : (
-        <div
-          className="rounded-md p-4 md:p-6 shadow-inner mx-[calc(50%-50vw)] w-screen"
-          style={{
-            background:
-              "linear-gradient(180deg, #1a1410 0%, #2a201a 50%, #1a1410 100%)",
-          }}
-        >
-          <div className="grid gap-4 justify-center [grid-template-columns:repeat(auto-fill,564px)]">
+        {isLoading ? (
+          <div className="p-12 text-center text-white/70">Loading premierships…</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 text-center text-white/70 italic">No premierships found.</div>
+        ) : (
+          <div className="grid gap-2 md:gap-3 [grid-template-columns:repeat(auto-fill,minmax(130px,1fr))] items-start">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
