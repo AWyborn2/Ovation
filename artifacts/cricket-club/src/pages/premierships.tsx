@@ -104,7 +104,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           <div className="flex-1" />
 
           {prem.mom && (
-            <div style={{ ...resultStyle, marginBottom: "4px" }} className="text-[10px] pt-[10px] pb-[10px] text-center font-semibold">
+            <div style={{ ...resultStyle, marginBottom: "4px" }} className="text-[10px] pt-[10px] pb-[10px] text-center font-bold">
               M.O.M - {prem.mom.toUpperCase()}
             </div>
           )}
