@@ -88,7 +88,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           {(prem.venue || prem.matchDate) && (
             <div style={{ ...venueDateStyle, marginTop: "2px" }}>
               {prem.venue && <div className="text-[10px]">{prem.venue.toUpperCase()}</div>}
-              {prem.matchDate && <div className="text-[10px]">{formatDate(prem.matchDate)}</div>}
+              {prem.matchDate && <div className="text-[10px] mt-[2px] mb-[2px]">{formatDate(prem.matchDate)}</div>}
             </div>
           )}
 
