@@ -55,8 +55,10 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
   } as const;
   return (
     <div
-      className="relative shadow-xl border border-slate-900/60 overflow-hidden [container-type:inline-size] aspect-[564/965] w-full"
+      className="relative shadow-md border border-slate-900/60 overflow-hidden [container-type:inline-size]"
       style={{
+        width: "151px",
+        height: "259px",
         background:
           "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
         fontFamily: PLAQUE_FONT,
@@ -193,7 +195,7 @@ export default function Premierships() {
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-white/70 italic">No premierships found.</div>
         ) : (
-          <div className="grid gap-2 md:gap-3 [grid-template-columns:repeat(auto-fill,minmax(130px,1fr))] items-start">
+          <div className="grid gap-[3px] grid-cols-10 justify-center">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
