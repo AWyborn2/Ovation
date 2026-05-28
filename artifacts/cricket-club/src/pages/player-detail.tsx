@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useMemo, useState, useEffect } from "react";
-import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer } from "@workspace/api-client-react";
+import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useListCaps } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,11 +88,18 @@ export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
   const playerId = parseInt(id, 10);
   const { data: player, isLoading } = useGetPlayer(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) } });
-  
+  const { data: caps } = useListCaps();
+
   const queryClient = useQueryClient();
   const deletePlayer = useDeletePlayer();
 
   const playerStats = player?.stats ?? [];
+  const hasAGradeStats = playerStats.some((s) => s.grade === "A Grade");
+  const capEntry = useMemo(
+    () => caps?.find((c) => c.playerId === playerId) ?? null,
+    [caps, playerId],
+  );
+  const showCappedNoStats = !!capEntry && !hasAGradeStats;
   const seasons = useMemo(() => getAvailableSeasons(playerStats), [playerStats]);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   useEffect(() => {
@@ -249,6 +256,16 @@ export default function PlayerDetail() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {showCappedNoStats && capEntry && (
+        <div className="bg-muted/40 border-l-4 border-primary/60 rounded-md p-4 text-sm leading-snug">
+          <p className="text-foreground/90">
+            <span className="font-semibold">A Grade Cap #{capEntry.capNumber}.</span>{" "}
+            Played between 1 and 9 A Grade games for the club. Individual stats were not recorded
+            prior to MyCricket and PlayHQ for players with fewer than 10 games.
+          </p>
         </div>
       )}
 
