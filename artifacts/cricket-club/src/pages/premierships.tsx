@@ -22,7 +22,7 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   return (
     <li>
       {p.playerId ? (
-        <Link href={`/players/${p.playerId}`} className="block whitespace-nowrap text-slate-900 hover:underline pt-[0px] pb-[0px] text-[10px] mt-[0px] mb-[0px]">
+        <Link href={`/players/${p.playerId}`} className="block whitespace-nowrap text-slate-900 hover:underline pt-[0px] pb-[0px] mt-[0px] mb-[0px] text-[10px] font-semibold">
           {label}
         </Link>
       ) : (
@@ -104,7 +104,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           <div className="flex-1" />
 
           {prem.mom && (
-            <div style={{ ...resultStyle, marginBottom: "4px" }} className="text-[10px] pt-[10px] pb-[10px] text-center font-bold">
+            <div style={{ ...resultStyle, marginBottom: "4px" }} className="text-[10px] pt-[10px] pb-[10px] text-center font-semibold">
               M.O.M - {prem.mom.toUpperCase()}
             </div>
           )}
@@ -112,7 +112,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           {prem.result && (
             <div
               style={{ ...resultStyle, whiteSpace: "pre-line" }}
-              className="text-[10px] font-bold">
+              className="text-[10px] font-semibold">
               {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
             </div>
           )}
