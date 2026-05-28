@@ -15,7 +15,7 @@ const formatDate = (d: string | null | undefined) => {
 
 const PLAQUE_REF_W = 564;
 const cqw = (px: number) => `${((px / PLAQUE_REF_W) * 100).toFixed(3)}cqw`;
-const TRACK = "0.103em";
+const TRACK = "0.0103em";
 
 const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   const display = p.name.replace(/\s+/g, " ").trim().toUpperCase();
@@ -44,7 +44,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
   const teamStyle = {
     fontSize: cqw(25),
     letterSpacing: TRACK,
-    lineHeight: 1.15,
+    lineHeight: 1.0,
     fontWeight: 700,
   } as const;
   const resultStyle = {
@@ -74,9 +74,8 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           style={{
             color: "#0f172a",
             fontFamily: PLAQUE_FONT,
-            paddingInline: cqw(18),
-            paddingBlock: cqw(20),
-            rowGap: cqw(14),
+            paddingInline: cqw(20),
+            paddingBlock: cqw(24),
           }}
         >
           <div
@@ -91,20 +90,27 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           </div>
 
           {(prem.venue || prem.matchDate) && (
-            <div style={venueDateStyle}>
+            <div style={{ ...venueDateStyle, marginTop: cqw(8) }}>
               {prem.venue && <div>{prem.venue.toUpperCase()}</div>}
               {prem.matchDate && <div>{formatDate(prem.matchDate)}</div>}
             </div>
           )}
 
-          <ul className="list-none p-0 m-0 flex-1" style={teamStyle}>
+          <ul
+            className="list-none p-0 m-0"
+            style={{ ...teamStyle, marginTop: cqw(16) }}
+          >
             {prem.players.map((p) => (
               <PlayerLine key={p.id} p={p} />
             ))}
           </ul>
 
+          <div className="flex-1" />
+
           {prem.mom && (
-            <div style={resultStyle}>M.O.M - {prem.mom.toUpperCase()}</div>
+            <div style={{ ...resultStyle, marginBottom: cqw(14) }}>
+              M.O.M - {prem.mom.toUpperCase()}
+            </div>
           )}
 
           {prem.result && (
