@@ -30,8 +30,12 @@ import {
   statToAggregated,
 } from "@/lib/honour-boards";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import { CapRegisterTab } from "@/components/cap-register-tab";
+import { LifeMembersTab } from "@/components/life-members-tab";
 
 type Scope = "career" | "by-grade";
+type ExtraTab = "caps" | "life-members" | "search";
+type ActiveTab = BoardKey | ExtraTab;
 
 const SummaryStat = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-card border border-border rounded-md p-5 shadow-md">
@@ -268,7 +272,7 @@ const Chip = ({ label, value }: { label: string; value: string | number }) => (
 );
 
 export default function HonourBoards() {
-  const [activeTab, setActiveTab] = useState<BoardKey | "search">("games");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("games");
   const [scope, setScope] = useState<Scope>("career");
   const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -387,7 +391,7 @@ export default function HonourBoards() {
       )}
 
       {/* Season selector + Recent promotions */}
-      {activeTab !== "search" && scope === "career" && (
+      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && scope === "career" && (
         <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
             <div>
@@ -445,6 +449,26 @@ export default function HonourBoards() {
           </button>
         ))}
         <button
+          onClick={() => setActiveTab("caps")}
+          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "caps"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-primary"
+          }`}
+        >
+          A Grade Cap Register
+        </button>
+        <button
+          onClick={() => setActiveTab("life-members")}
+          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "life-members"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-primary"
+          }`}
+        >
+          Life Members
+        </button>
+        <button
           onClick={() => setActiveTab("search")}
           className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
             activeTab === "search"
@@ -456,8 +480,8 @@ export default function HonourBoards() {
         </button>
       </div>
 
-      {/* Scope control (hidden in search) */}
-      {activeTab !== "search" && (
+      {/* Scope control (hidden in search / caps / life-members) */}
+      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
           <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
@@ -498,7 +522,11 @@ export default function HonourBoards() {
       )}
 
       {/* Tab content */}
-      {activeTab === "search" ? (
+      {activeTab === "caps" ? (
+        <CapRegisterTab />
+      ) : activeTab === "life-members" ? (
+        <LifeMembersTab />
+      ) : activeTab === "search" ? (
         <div className="space-y-4">
           <Input
             placeholder="Search for a player by name…"
@@ -532,7 +560,7 @@ export default function HonourBoards() {
         </div>
       ) : (
         (() => {
-          const board = BOARDS.find((b) => b.key === activeTab)!;
+          const board = BOARDS.find((b) => b.key === (activeTab as BoardKey))!;
           const tiers = computeBoard(aggregatedPlayers, board.key);
           return <BoardView tiers={tiers} board={board} premMap={premMap} />;
         })()

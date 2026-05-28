@@ -6,6 +6,8 @@ export const capRegisterTable = pgTable("cap_register", {
   capNumber: integer("cap_number").notNull().unique(),
   name: text("name").notNull(),
   deceased: boolean("deceased").notNull().default(false),
+  inStats: boolean("in_stats").notNull().default(false),
+  gamesAGrade: integer("games_a_grade").notNull().default(0),
   playerId: integer("player_id").references(() => playersTable.id, {
     onDelete: "set null",
   }),

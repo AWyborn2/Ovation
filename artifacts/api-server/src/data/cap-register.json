@@ -1,0 +1,1731 @@
+[
+  {
+    "capNo": 1,
+    "name": "Mark Rowe",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 140
+  },
+  {
+    "capNo": 2,
+    "name": "Shane Shanahan",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 100
+  },
+  {
+    "capNo": 3,
+    "name": "Jeffery Dillon",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 51
+  },
+  {
+    "capNo": 4,
+    "name": "Wayne Morrison",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 20
+  },
+  {
+    "capNo": 5,
+    "name": "Paul Gillam",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 188
+  },
+  {
+    "capNo": 6,
+    "name": "Ashley Smith",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 11
+  },
+  {
+    "capNo": 7,
+    "name": "Ian Mackintosh",
+    "deceased": true,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 8,
+    "name": "Luke Carruthers",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 9,
+    "name": "Roger Wren",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 217
+  },
+  {
+    "capNo": 10,
+    "name": "Anthony Gieke",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 11,
+    "name": "Brendan Cullinan",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 12,
+    "name": "Greg Chalker",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 23
+  },
+  {
+    "capNo": 13,
+    "name": "Wayne Stevenson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 15
+  },
+  {
+    "capNo": 14,
+    "name": "Jamie Malycha",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 23
+  },
+  {
+    "capNo": 15,
+    "name": "Donald Skipworth",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 16,
+    "name": "Peter Wyllie",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 260
+  },
+  {
+    "capNo": 17,
+    "name": "Peter McKell",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 18,
+    "name": "Brad Flett",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 19,
+    "name": "Frank Farnsworth",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 20,
+    "name": "Dennis Bland",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 21,
+    "name": "Laurie Cross",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 100
+  },
+  {
+    "capNo": 22,
+    "name": "Rob Romeo",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 11
+  },
+  {
+    "capNo": 23,
+    "name": "Travis Jones",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 24,
+    "name": "Steve Lane",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 25,
+    "name": "Eddie Butler",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 26,
+    "name": "Rob Lawson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 14
+  },
+  {
+    "capNo": 27,
+    "name": "Alan Birmingham",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 12
+  },
+  {
+    "capNo": 28,
+    "name": "Michael Carlton",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 47
+  },
+  {
+    "capNo": 29,
+    "name": "Ray Smith",
+    "deceased": true,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 30,
+    "name": "Adam Bowyer",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 31,
+    "name": "Jeff Sommors",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 32,
+    "name": "Aaron Fitzpatrick",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 33,
+    "name": "Chris Phelps",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 372
+  },
+  {
+    "capNo": 34,
+    "name": "Martin Crump",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 35,
+    "name": "Ian Conn",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 36,
+    "name": "Wayne Allen",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 37,
+    "name": "Glen Tunstall",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 38,
+    "name": "Michael O'Brian",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 68
+  },
+  {
+    "capNo": 39,
+    "name": "Steve Taylor",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 40,
+    "name": "Stuart Ball",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 11
+  },
+  {
+    "capNo": 41,
+    "name": "Brian Cullen",
+    "deceased": true,
+    "inStats": true,
+    "gamesAGrade": 19
+  },
+  {
+    "capNo": 42,
+    "name": "Justin Lockyer",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 43,
+    "name": "Dale King",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 44,
+    "name": "Allan Willey",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 127
+  },
+  {
+    "capNo": 45,
+    "name": "Peter Hunter",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 28
+  },
+  {
+    "capNo": 46,
+    "name": "Max Crook",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 42
+  },
+  {
+    "capNo": 47,
+    "name": "Phil Bailey",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 48,
+    "name": "Matt Brooks",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 49,
+    "name": "Ben Dell",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 50,
+    "name": "Chris Baker",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 105
+  },
+  {
+    "capNo": 51,
+    "name": "Colin Hunter",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 52,
+    "name": "Leigh Burns",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 162
+  },
+  {
+    "capNo": 53,
+    "name": "Dale Burns",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 239
+  },
+  {
+    "capNo": 54,
+    "name": "Matt Blackwell",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 55,
+    "name": "Dan Mather",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 56,
+    "name": "Mick Stanley",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 57,
+    "name": "Colin Birdsall",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 58,
+    "name": "Robbie Leahy",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 59,
+    "name": "Billy Miles",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 60,
+    "name": "Darryl Morgan",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 73
+  },
+  {
+    "capNo": 61,
+    "name": "Peter Moir",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 62,
+    "name": "Craig Threlfall",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 27
+  },
+  {
+    "capNo": 63,
+    "name": "Peter Radcliffe",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 52
+  },
+  {
+    "capNo": 64,
+    "name": "A Davidson",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 65,
+    "name": "Dale Gumbleton",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 28
+  },
+  {
+    "capNo": 66,
+    "name": "Phil Wirth",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 67,
+    "name": "Dan Buncle",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 68,
+    "name": "Chris Wren",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 69,
+    "name": "Wayne Reid",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 123
+  },
+  {
+    "capNo": 70,
+    "name": "Ben March",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 71,
+    "name": "Scott Layton",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 72,
+    "name": "Ryan Ballard",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 73,
+    "name": "Ken Gillam",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 74,
+    "name": "Ryan Burns",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 53
+  },
+  {
+    "capNo": 75,
+    "name": "David McCormack",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 76,
+    "name": "Ron Coles",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 29
+  },
+  {
+    "capNo": 77,
+    "name": "Rian Elliot",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 78,
+    "name": "Mark Chapelhow",
+    "deceased": true,
+    "inStats": true,
+    "gamesAGrade": 80
+  },
+  {
+    "capNo": 79,
+    "name": "Shannon Kirby",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 80,
+    "name": "Chris Hickman",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 81,
+    "name": "Nigel Coe",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 82,
+    "name": "Brian O'Donnell",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 83,
+    "name": "Ray Smedley",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 84,
+    "name": "Ian Bray",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 85,
+    "name": "C Mills",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 86,
+    "name": "Trevor Anning",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 87,
+    "name": "Brad Smith",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 88,
+    "name": "Hugh Williams",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 89,
+    "name": "Jeff Carlisle",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 90,
+    "name": "Darren Jeffrey",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 91,
+    "name": "Nick Rostin",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 92,
+    "name": "Steve Chapelhow",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 93,
+    "name": "Matt Lloyd",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 94,
+    "name": "Shane Fitzgerald",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 95,
+    "name": "Matt Guyton",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 90
+  },
+  {
+    "capNo": 96,
+    "name": "David Lovell",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 31
+  },
+  {
+    "capNo": 97,
+    "name": "Anthony Brokate",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 55
+  },
+  {
+    "capNo": 98,
+    "name": "Robert Jeffers",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 99,
+    "name": "Michael Holmes",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 55
+  },
+  {
+    "capNo": 100,
+    "name": "Craig White",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 64
+  },
+  {
+    "capNo": 101,
+    "name": "Cary Green",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 79
+  },
+  {
+    "capNo": 102,
+    "name": "Brendon King",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 126
+  },
+  {
+    "capNo": 103,
+    "name": "Ian White",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 104,
+    "name": "Brad Holmes",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 105,
+    "name": "Josh Lawson",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 106,
+    "name": "Shane Goldsmith",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 107,
+    "name": "Judd Prentice",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 17
+  },
+  {
+    "capNo": 108,
+    "name": "Gary Hocking",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 109,
+    "name": "Perry Allen",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 110,
+    "name": "Michael Sprott",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 111,
+    "name": "Rick Tyson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 15
+  },
+  {
+    "capNo": 112,
+    "name": "Mitch Green",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 74
+  },
+  {
+    "capNo": 113,
+    "name": "Aaron Thomas",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 16
+  },
+  {
+    "capNo": 114,
+    "name": "Michael Griffiths",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 65
+  },
+  {
+    "capNo": 115,
+    "name": "Simon Noble",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 29
+  },
+  {
+    "capNo": 116,
+    "name": "Wade Blom",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 27
+  },
+  {
+    "capNo": 117,
+    "name": "Sean Nye",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 118,
+    "name": "Dean Friskin",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 119,
+    "name": "Bryce Jeffrey",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 21
+  },
+  {
+    "capNo": 120,
+    "name": "Jason Clark",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 14
+  },
+  {
+    "capNo": 121,
+    "name": "Nathan Hogg",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 14
+  },
+  {
+    "capNo": 122,
+    "name": "Brennan Gillam",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 62
+  },
+  {
+    "capNo": 123,
+    "name": "Rodney Tregenza",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 37
+  },
+  {
+    "capNo": 124,
+    "name": "Chris King",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 125,
+    "name": "Josh McGee",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 126,
+    "name": "Jason Young",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 11
+  },
+  {
+    "capNo": 127,
+    "name": "Nathan Dovey",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 128,
+    "name": "Tristan Clough",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 129,
+    "name": "Blake Anderson",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 130,
+    "name": "Josh Quaid",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 6
+  },
+  {
+    "capNo": 131,
+    "name": "Jake Withers",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 132,
+    "name": "Caden McCarthy",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 133,
+    "name": "Jay Deeming",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 134,
+    "name": "Josh Petersen",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 128
+  },
+  {
+    "capNo": 135,
+    "name": "Andrew Pocklington",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 136,
+    "name": "Adam Whitehorn",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 137,
+    "name": "Jared King",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 138,
+    "name": "Dean Finlay",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 139,
+    "name": "Andrew Cocking",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 140,
+    "name": "Tim Shand",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 33
+  },
+  {
+    "capNo": 141,
+    "name": "Liam Blampied",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 61
+  },
+  {
+    "capNo": 142,
+    "name": "Grant Matthews",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 13
+  },
+  {
+    "capNo": 143,
+    "name": "Mitch Morley",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 55
+  },
+  {
+    "capNo": 144,
+    "name": "Matthew Gordon",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 111
+  },
+  {
+    "capNo": 145,
+    "name": "Matthew Skendar",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 7
+  },
+  {
+    "capNo": 146,
+    "name": "Richard Woods",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 53
+  },
+  {
+    "capNo": 147,
+    "name": "Jason Sparrow",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 148,
+    "name": "Cam Lucas",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 46
+  },
+  {
+    "capNo": 149,
+    "name": "Toby Bairstow",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 150,
+    "name": "Wade Hall",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 151,
+    "name": "Ben Finlay",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 7
+  },
+  {
+    "capNo": 152,
+    "name": "Adam Dallmann",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 153,
+    "name": "Ashley Jeffrey",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 36
+  },
+  {
+    "capNo": 154,
+    "name": "Adrian Graham",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 13
+  },
+  {
+    "capNo": 155,
+    "name": "Phil Hall",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 16
+  },
+  {
+    "capNo": 156,
+    "name": "Al Kristensen",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 157,
+    "name": "James Matau",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 6
+  },
+  {
+    "capNo": 158,
+    "name": "Brad Wiseman",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 54
+  },
+  {
+    "capNo": 159,
+    "name": "Adam Clues",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 160,
+    "name": "Dan Kenny",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 6
+  },
+  {
+    "capNo": 161,
+    "name": "Rodney Shemeld",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 3
+  },
+  {
+    "capNo": 162,
+    "name": "Kyle Jeffrey",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 46
+  },
+  {
+    "capNo": 163,
+    "name": "Jessie Roe",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 164,
+    "name": "Cameron Burrage",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 73
+  },
+  {
+    "capNo": 165,
+    "name": "Jayden Matthews",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 166,
+    "name": "Dan Krepevin",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 167,
+    "name": "Blair Cartwright",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 19
+  },
+  {
+    "capNo": 168,
+    "name": "Steven Inward",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 29
+  },
+  {
+    "capNo": 169,
+    "name": "Andrew Tatterson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 80
+  },
+  {
+    "capNo": 170,
+    "name": "Tylor Naidoo",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 8
+  },
+  {
+    "capNo": 171,
+    "name": "Tim Lees",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 5
+  },
+  {
+    "capNo": 172,
+    "name": "Alex Dillon",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 37
+  },
+  {
+    "capNo": 173,
+    "name": "Jordan Brokate",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 8
+  },
+  {
+    "capNo": 174,
+    "name": "Ellis Miah",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 6
+  },
+  {
+    "capNo": 175,
+    "name": "Lachlan Kinna",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 88
+  },
+  {
+    "capNo": 176,
+    "name": "Luke Brock",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 5
+  },
+  {
+    "capNo": 177,
+    "name": "Tannah Dunning",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 7
+  },
+  {
+    "capNo": 178,
+    "name": "Matt Reilly",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 179,
+    "name": "Chris Thomas",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 12
+  },
+  {
+    "capNo": 180,
+    "name": "Peter Boyce",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 11
+  },
+  {
+    "capNo": 181,
+    "name": "Ashley Wyborn",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 182,
+    "name": "Jaspreet Pannu",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 183,
+    "name": "Ben McInnes",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 184,
+    "name": "Jacob Hodson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 8
+  },
+  {
+    "capNo": 185,
+    "name": "Jake O'Byrne",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 186,
+    "name": "Daniel Baker",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 4
+  },
+  {
+    "capNo": 187,
+    "name": "Damien Burrage",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 188,
+    "name": "Scott Martin",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 141
+  },
+  {
+    "capNo": 189,
+    "name": "Daniel Higham",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 3
+  },
+  {
+    "capNo": 190,
+    "name": "Levi Muller",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 79
+  },
+  {
+    "capNo": 191,
+    "name": "James Capenar",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 3
+  },
+  {
+    "capNo": 192,
+    "name": "Michael Chappell",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 79
+  },
+  {
+    "capNo": 193,
+    "name": "Joel Evans",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 21
+  },
+  {
+    "capNo": 194,
+    "name": "Jake Wyllie",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 91
+  },
+  {
+    "capNo": 195,
+    "name": "Jack Manual",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 126
+  },
+  {
+    "capNo": 196,
+    "name": "Reid Klopper",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 24
+  },
+  {
+    "capNo": 197,
+    "name": "Lewis Starbuck",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 46
+  },
+  {
+    "capNo": 198,
+    "name": "Mitch Felton",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 49
+  },
+  {
+    "capNo": 199,
+    "name": "Craig Ford",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 31
+  },
+  {
+    "capNo": 200,
+    "name": "Julian Crudeli",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 201,
+    "name": "Angus Kent",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 8
+  },
+  {
+    "capNo": 202,
+    "name": "Will Eason",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 203,
+    "name": "Sam Pendlebury",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 12
+  },
+  {
+    "capNo": 204,
+    "name": "Sam Hardman",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 205,
+    "name": "Dustin Robinson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 45
+  },
+  {
+    "capNo": 206,
+    "name": "Jarod Little",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 149
+  },
+  {
+    "capNo": 207,
+    "name": "Wesley Naidoo",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 208,
+    "name": "Elliot Foote",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 14
+  },
+  {
+    "capNo": 209,
+    "name": "Harry Tatterson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 210,
+    "name": "Rodney Ford",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 211,
+    "name": "Mitchell Hogg",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 212,
+    "name": "Nathan Howell",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 213,
+    "name": "Corbin Little",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 3
+  },
+  {
+    "capNo": 214,
+    "name": "Elliot Ireland",
+    "deceased": false,
+    "inStats": false,
+    "gamesAGrade": 0
+  },
+  {
+    "capNo": 215,
+    "name": "Josh Rudge",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 126
+  },
+  {
+    "capNo": 216,
+    "name": "James Skeels",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 217,
+    "name": "Josh Fourez",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 10
+  },
+  {
+    "capNo": 218,
+    "name": "Chris Mills",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 16
+  },
+  {
+    "capNo": 219,
+    "name": "Alec Smith",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 220,
+    "name": "Alex Quigg",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 11
+  },
+  {
+    "capNo": 221,
+    "name": "Andrew Pasco",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 5
+  },
+  {
+    "capNo": 222,
+    "name": "Joseph Slade",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 31
+  },
+  {
+    "capNo": 223,
+    "name": "Jacob Barnes",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 26
+  },
+  {
+    "capNo": 224,
+    "name": "Tim Miles",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 85
+  },
+  {
+    "capNo": 225,
+    "name": "Jake Patterson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 10
+  },
+  {
+    "capNo": 226,
+    "name": "Iszac Willey",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 19
+  },
+  {
+    "capNo": 227,
+    "name": "Bradley Scott",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 12
+  },
+  {
+    "capNo": 228,
+    "name": "James Rudge",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 16
+  },
+  {
+    "capNo": 229,
+    "name": "Will Elvidge",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 6
+  },
+  {
+    "capNo": 230,
+    "name": "Keelan Beattie",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 49
+  },
+  {
+    "capNo": 231,
+    "name": "Blake Allen",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 9
+  },
+  {
+    "capNo": 232,
+    "name": "Noah Frunks",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 233,
+    "name": "Angus Beattie",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 21
+  },
+  {
+    "capNo": 234,
+    "name": "Joe Phillips",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 18
+  },
+  {
+    "capNo": 235,
+    "name": "Dan Lambert",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 15
+  },
+  {
+    "capNo": 236,
+    "name": "Travis Caine",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 47
+  },
+  {
+    "capNo": 237,
+    "name": "Oliver Davidson",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 15
+  },
+  {
+    "capNo": 238,
+    "name": "Freddie Higton",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 22
+  },
+  {
+    "capNo": 239,
+    "name": "Matthew Loon",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 2
+  },
+  {
+    "capNo": 240,
+    "name": "Jett Demmery",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 31
+  },
+  {
+    "capNo": 241,
+    "name": "Ben Higton",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 21
+  },
+  {
+    "capNo": 242,
+    "name": "Mitchell Caine",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 12
+  },
+  {
+    "capNo": 243,
+    "name": "Jeff Petrie",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 4
+  },
+  {
+    "capNo": 244,
+    "name": "Lucius Hysen",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 245,
+    "name": "Luca Doyle",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 16
+  },
+  {
+    "capNo": 246,
+    "name": "Oscar Smith",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  },
+  {
+    "capNo": 247,
+    "name": "Hudson Malingre",
+    "deceased": false,
+    "inStats": true,
+    "gamesAGrade": 1
+  }
+]

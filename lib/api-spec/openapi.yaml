@@ -442,6 +442,7 @@ paths:
       operationId: listCaps
       tags: [caps]
       summary: List all A Grade cap register entries
+      description: Full A Grade cap register in chronological cap-number order.
       responses:
         "200":
           description: Cap register
@@ -516,6 +517,11 @@ paths:
       operationId: listLifeMembers
       tags: [lifeMembers]
       summary: List all life members
+      description: |
+        Full list of Life Members, ordered by induction year ascending then
+        name alphabetically. Playing members include their aggregated career
+        stats and grades-played list inline so the page can render without a
+        second round-trip.
       responses:
         "200":
           description: Life members
@@ -1030,6 +1036,60 @@ components:
           items:
             $ref: "#/components/schemas/ImportPreviewPlayer"
 
+    LifeMemberStats:
+      type: object
+      required:
+        [
+          games,
+          innings,
+          notOuts,
+          runs,
+          highScore,
+          fifties,
+          hundreds,
+          wickets,
+          runsConceded,
+          bestBowling,
+          fiveWickets,
+          catches,
+          stumpings,
+          runOuts,
+          gradesPlayed,
+        ]
+      properties:
+        games:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        highScore:
+          type: ["string", "null"]
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        bestBowling:
+          type: ["string", "null"]
+        fiveWickets:
+          type: integer
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+        gradesPlayed:
+          type: array
+          items:
+            type: string
+
     PlayerRecord:
       type: object
       required: [playerId, givenName, surname, value]
@@ -1045,7 +1105,7 @@ components:
 
     CapEntry:
       type: object
-      required: [id, capNumber, name, deceased]
+      required: [id, capNumber, name, deceased, inStats, gamesAGrade]
       properties:
         id:
           type: integer
@@ -1055,6 +1115,10 @@ components:
           type: string
         deceased:
           type: boolean
+        inStats:
+          type: boolean
+        gamesAGrade:
+          type: integer
         playerId:
           type: ["integer", "null"]
 
@@ -1068,6 +1132,10 @@ components:
           type: string
         deceased:
           type: boolean
+        inStats:
+          type: boolean
+        gamesAGrade:
+          type: integer
         playerId:
           type: ["integer", "null"]
 
@@ -1080,6 +1148,10 @@ components:
           type: string
         deceased:
           type: boolean
+        inStats:
+          type: boolean
+        gamesAGrade:
+          type: integer
         playerId:
           type: ["integer", "null"]
 
@@ -1101,6 +1173,10 @@ components:
           type: ["string", "null"]
         blurb:
           type: string
+        stats:
+          oneOf:
+            - $ref: "#/components/schemas/LifeMemberStats"
+            - type: "null"
 
     LifeMemberInput:
       type: object

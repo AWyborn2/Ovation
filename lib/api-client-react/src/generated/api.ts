@@ -1501,6 +1501,7 @@ export const getListCapsUrl = () => {
 }
 
 /**
+ * Full A Grade cap register in chronological cap-number order.
  * @summary List all A Grade cap register entries
  */
 export const listCaps = async ( options?: RequestInit): Promise<CapEntry[]> => {
@@ -1791,6 +1792,11 @@ export const getListLifeMembersUrl = () => {
 }
 
 /**
+ * Full list of Life Members, ordered by induction year ascending then
+name alphabetically. Playing members include their aggregated career
+stats and grades-played list inline so the page can render without a
+second round-trip.
+
  * @summary List all life members
  */
 export const listLifeMembers = async ( options?: RequestInit): Promise<LifeMember[]> => {

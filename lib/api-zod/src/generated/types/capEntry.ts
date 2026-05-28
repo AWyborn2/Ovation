@@ -11,6 +11,8 @@ export interface CapEntry {
   capNumber: number;
   name: string;
   deceased: boolean;
+  inStats: boolean;
+  gamesAGrade: number;
   /** @nullable */
   playerId?: number | null;
 }

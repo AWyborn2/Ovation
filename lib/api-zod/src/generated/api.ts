@@ -587,6 +587,7 @@ export const GetRecordsResponse = zod.object({
 
 
 /**
+ * Full A Grade cap register in chronological cap-number order.
  * @summary List all A Grade cap register entries
  */
 export const ListCapsResponseItem = zod.object({
@@ -594,6 +595,8 @@ export const ListCapsResponseItem = zod.object({
   "capNumber": zod.number(),
   "name": zod.string(),
   "deceased": zod.boolean(),
+  "inStats": zod.boolean(),
+  "gamesAGrade": zod.number(),
   "playerId": zod.number().nullish()
 })
 export const ListCapsResponse = zod.array(ListCapsResponseItem)
@@ -606,6 +609,8 @@ export const CreateCapBody = zod.object({
   "capNumber": zod.number(),
   "name": zod.string(),
   "deceased": zod.boolean().optional(),
+  "inStats": zod.boolean().optional(),
+  "gamesAGrade": zod.number().optional(),
   "playerId": zod.number().nullish()
 })
 
@@ -621,6 +626,8 @@ export const UpdateCapBody = zod.object({
   "capNumber": zod.number().optional(),
   "name": zod.string().optional(),
   "deceased": zod.boolean().optional(),
+  "inStats": zod.boolean().optional(),
+  "gamesAGrade": zod.number().optional(),
   "playerId": zod.number().nullish()
 })
 
@@ -629,6 +636,8 @@ export const UpdateCapResponse = zod.object({
   "capNumber": zod.number(),
   "name": zod.string(),
   "deceased": zod.boolean(),
+  "inStats": zod.boolean(),
+  "gamesAGrade": zod.number(),
   "playerId": zod.number().nullish()
 })
 
@@ -642,6 +651,11 @@ export const DeleteCapParams = zod.object({
 
 
 /**
+ * Full list of Life Members, ordered by induction year ascending then
+name alphabetically. Playing members include their aggregated career
+stats and grades-played list inline so the page can render without a
+second round-trip.
+
  * @summary List all life members
  */
 export const ListLifeMembersResponseItem = zod.object({
@@ -651,7 +665,24 @@ export const ListLifeMembersResponseItem = zod.object({
   "isPlayingMember": zod.boolean(),
   "playerId": zod.number().nullish(),
   "roleLabel": zod.string().nullish(),
-  "blurb": zod.string()
+  "blurb": zod.string(),
+  "stats": zod.union([zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.string().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bestBowling": zod.string().nullable(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "gradesPlayed": zod.array(zod.string())
+}),zod.null()]).optional()
 })
 export const ListLifeMembersResponse = zod.array(ListLifeMembersResponseItem)
 
@@ -692,7 +723,24 @@ export const UpdateLifeMemberResponse = zod.object({
   "isPlayingMember": zod.boolean(),
   "playerId": zod.number().nullish(),
   "roleLabel": zod.string().nullish(),
-  "blurb": zod.string()
+  "blurb": zod.string(),
+  "stats": zod.union([zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.string().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bestBowling": zod.string().nullable(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "gradesPlayed": zod.array(zod.string())
+}),zod.null()]).optional()
 })
 
 

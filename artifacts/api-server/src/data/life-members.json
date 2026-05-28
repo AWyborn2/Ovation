@@ -1,0 +1,114 @@
+[
+  {
+    "name": "Mark Rowe",
+    "year": 2000,
+    "isPlayingMember": true,
+    "playerSlug": "rowe__mark",
+    "role": null,
+    "blurb": "Co-founder of Halls Head Cricket Club and the club's inaugural President for eight seasons (1991/92 to 1998/99). Mark also captained the inaugural A Grade side, leading them to premiership glory in 1991/92 after defeating Singleton in a semi-final still spoken of as one of the finest matches in the club's history, then comprehensively defeating Rockingham in the Grand Final. Wears cap #1. Seven premierships including six in A Grade."
+  },
+  {
+    "name": "Paul Gillam",
+    "year": 2000,
+    "isPlayingMember": true,
+    "playerSlug": "gillam__paul",
+    "role": null,
+    "blurb": "Co-founder of Halls Head Cricket Club. In the winter of 1991, Paul and fellow founding member Mark Rowe — both then playing at South Coastals Cricket Club at Falcon Oval — set about forming a new club closer to home in the rapidly growing Halls Head area. Paul served as the club's inaugural Treasurer for eight consecutive seasons (1991/92 to 1998/99) and was later Club President. On the field he won eight A Grade premierships and was named Man of the Match in both the 1994/95 and 1996/97 A Grade Grand Finals."
+  },
+  {
+    "name": "Peter Wyllie",
+    "year": 2003,
+    "isPlayingMember": true,
+    "playerSlug": "wyllie__peter",
+    "role": null,
+    "blurb": "Halls Head's most decorated cricketer and a true legend of Peel cricket. Peter has won 15 premierships for the club — twelve in A Grade and three in C Grade — captaining three consecutive A Grade premierships from 1994/95 to 1996/97. He has been Man of the Match in four A Grade Grand Finals (1991/92, 1997/98, 2001/02, 2006/07), more than any other player in club history.\n\nPeter represented the Western Australian Country XI and is a Life Member of the Peel Cricket Association — the PCA A Grade competition, the Wyllie Cup, is named in honour of Peter and his brother John Wyllie of Mandurah Cricket Club. The brothers faced each other in 13 grand finals, with Peter on the winning side in twelve. Off the field, Peter served as the club's Director of Cricket for five years and was the club's Cricketer of the Year three times.\n\nThe club's player-of-the-match award is also named in his honour — the Wyllie Medal is decided by a club-wide 3-2-1 vote after every game across all grades."
+  },
+  {
+    "name": "Roger Wren",
+    "year": 2004,
+    "isPlayingMember": true,
+    "playerSlug": "wren__roger",
+    "role": null,
+    "blurb": "A foundation A Grader (cap #9) who has played 291 games for Halls Head, taking 399 wickets across A, B and C Grades with five 5-wicket hauls (BB 7/54). Ten A Grade premierships. Off the field, Roger served as Club President for nine consecutive seasons — a record that stood for many years until recently equalled by Ashley Wyborn."
+  },
+  {
+    "name": "Dale Burns",
+    "year": 2006,
+    "isPlayingMember": true,
+    "playerSlug": "burns__dale",
+    "role": null,
+    "blurb": "One of the most prolific cricketers in Halls Head history. Dale has played across all six men's grades — A through F — and is the club's all-time leading run-scorer. Thirteen premierships including ten in A Grade. Captained A Grade in 1997/98 and C Grade in 2016/17, and represented both the Western Australian Country XI and the Australian Country XI — the only player in club history to have worn the Australian Country jersey."
+  },
+  {
+    "name": "Justin Lockyer",
+    "year": 2008,
+    "isPlayingMember": true,
+    "playerSlug": "lockyer__justin",
+    "role": null,
+    "blurb": "A B Grade specialist who has played 204 games across B, C and E Grades, taking 275 wickets with three 5-wicket hauls. Captained back-to-back B Grade premierships in 2000/01 and 2001/02, winning four B Grade flags in total. More recently he has served on the club committee as Junior Coordinator and has coached both of his sons' junior teams."
+  },
+  {
+    "name": "Chris Baker",
+    "year": 2013,
+    "isPlayingMember": true,
+    "playerSlug": "baker__chris",
+    "role": null,
+    "blurb": "The club's premier wicketkeeper, Chris has taken 273 dismissals — 202 catches, 67 stumpings, 4 run outs — across his 260-game career spanning A through E Grades. Eleven premierships across four grades, including four in A Grade. Chris served as the club's Treasurer in the mid-2000s and as Junior Club President for many years."
+  },
+  {
+    "name": "Darren Jeffrey",
+    "year": 2013,
+    "isPlayingMember": true,
+    "playerSlug": "jeffrey__darren",
+    "role": null,
+    "blurb": "A C Grade master and one of the club's all-time greats. Darren has won five C Grade premierships, captaining two of them (2007/08, 2008/09), and has taken 404 wickets for the club — the third-most in club history — with twelve 5-wicket hauls (BB 6/8). Named Man of the Match in the 2008/09 C Grade Grand Final.\n\nOff the field, Darren served as the club's Treasurer for many years and is a Life Member of the Peel Cricket Association — the PCA C Grade competition, the Jeffrey Cup, is named in his honour. He has also represented Western Australia in Over-60s Veterans cricket."
+  },
+  {
+    "name": "Chris Phelps",
+    "year": 2014,
+    "isPlayingMember": true,
+    "playerSlug": "phelps__chris",
+    "role": null,
+    "blurb": "The club's most successful cricketer in raw numbers. Chris has played 402 games — more games than any other player in club history — and is the club's all-time leading wicket-taker with 608 wickets, including eleven 5-wicket hauls and club-record figures of 8/12. Sixteen premierships — fifteen in A Grade, more than any other player — including back-to-back A Grade captaincies in 2006/07 and 2008/09. Man of the Match in the 2008/09 A Grade Grand Final.\n\nChris has represented both Western Australia and Australia in Over-40s Veterans cricket. Off the field, he coached the club's first girls' cricket team for three seasons."
+  },
+  {
+    "name": "Kevin Burns",
+    "year": 2016,
+    "isPlayingMember": false,
+    "playerSlug": null,
+    "role": "Scorer",
+    "blurb": "Halls Head Cricket Club's only non-playing Life Member. Kevin served as the club's A Grade scorer for many years and went on to be the Western Australian Country XI scorer — recognised across the state for his meticulous record-keeping and unwavering dedication to the game. His contribution to the club and to country cricket more broadly has been immeasurable."
+  },
+  {
+    "name": "James Woods",
+    "year": 2021,
+    "isPlayingMember": true,
+    "playerSlug": "woods__james",
+    "role": null,
+    "blurb": "James has played 206 games across five grades, scoring 2,336 runs (HS 94*) and taking 61 wickets with one 5-wicket haul (BB 5/31). Captained the D Grade premiership in 2012/13 and won a second D Grade flag in 2013/14. Off the field, James has served the club as President, as Treasurer, and as a long-standing committee member — three of the club's most demanding administrative roles."
+  },
+  {
+    "name": "Matthew Guyton",
+    "year": 2021,
+    "isPlayingMember": true,
+    "playerSlug": "guyton__matthew",
+    "role": null,
+    "blurb": "An all-grades servant of the club. Matt has played 356 games across all six men's grades, taking 349 wickets (BB 6/12) and scoring 3,134 runs with one century (HS 107*). Ten premierships across A, B, C, D and E Grades — captaining the 2013/14 C Grade and the 2025/26 E Grade premiership sides. He has served on the club committee for over ten years, including two years as Vice President."
+  },
+  {
+    "name": "Grant Matthews",
+    "year": 2026,
+    "isPlayingMember": true,
+    "playerSlug": "matthews__grant",
+    "role": null,
+    "blurb": "Grant has played 286 games for the club across all six men's grades plus PPL, scoring 5,127 runs with one century (HS 103) and taking 227 wickets (BB 6/55). Captained back-to-back B Grade premierships in 2015/16 and 2016/17, with six premierships in total spanning A, B, D and E Grades. Off the field he has been a long-serving committee member, club coach, net captain, and club sponsor — a contributor on every front."
+  },
+  {
+    "name": "Jason Young",
+    "year": 2026,
+    "isPlayingMember": true,
+    "playerSlug": "young__jason",
+    "role": null,
+    "blurb": "Jason has played 209 games for the club across five grades, scoring 4,259 runs at 30.9 with two centuries (HS 148) and taking 156 wickets at 15.5 with one 5-wicket haul. Five premierships including the 2016/17 C Grade. Off the field, Jason has served as Junior Club President, Senior Club Vice President, Secretary, and as coach of both his sons' teams from Under 10 right through to Under 17 — sometimes coaching both teams in the same year."
+  }
+]

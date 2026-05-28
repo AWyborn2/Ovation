@@ -275,6 +275,26 @@ export interface ImportPreview {
   players: ImportPreviewPlayer[];
 }
 
+export interface LifeMemberStats {
+  games: number;
+  innings: number;
+  notOuts: number;
+  runs: number;
+  /** @nullable */
+  highScore: string | null;
+  fifties: number;
+  hundreds: number;
+  wickets: number;
+  runsConceded: number;
+  /** @nullable */
+  bestBowling: string | null;
+  fiveWickets: number;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+  gradesPlayed: string[];
+}
+
 export interface PlayerRecord {
   playerId: number;
   givenName: string;
@@ -287,6 +307,8 @@ export interface CapEntry {
   capNumber: number;
   name: string;
   deceased: boolean;
+  inStats: boolean;
+  gamesAGrade: number;
   /** @nullable */
   playerId?: number | null;
 }
@@ -295,6 +317,8 @@ export interface CapEntryInput {
   capNumber: number;
   name: string;
   deceased?: boolean;
+  inStats?: boolean;
+  gamesAGrade?: number;
   /** @nullable */
   playerId?: number | null;
 }
@@ -303,6 +327,8 @@ export interface CapEntryUpdate {
   capNumber?: number;
   name?: string;
   deceased?: boolean;
+  inStats?: boolean;
+  gamesAGrade?: number;
   /** @nullable */
   playerId?: number | null;
 }
@@ -317,6 +343,7 @@ export interface LifeMember {
   /** @nullable */
   roleLabel?: string | null;
   blurb: string;
+  stats?: LifeMemberStats | null;
 }
 
 export interface LifeMemberInput {

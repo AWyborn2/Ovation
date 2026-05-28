@@ -20,6 +20,7 @@ export * from './importPreviewPlayerStatus';
 export * from './importRecord';
 export * from './lifeMember';
 export * from './lifeMemberInput';
+export * from './lifeMemberStats';
 export * from './lifeMemberUpdate';
 export * from './listPlayersParams';
 export * from './listPlayersSortBy';

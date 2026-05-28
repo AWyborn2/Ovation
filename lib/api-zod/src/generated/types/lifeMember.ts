@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { LifeMemberStats } from './lifeMemberStats';
 
 export interface LifeMember {
   id: number;
@@ -16,4 +17,5 @@ export interface LifeMember {
   /** @nullable */
   roleLabel?: string | null;
   blurb: string;
+  stats?: LifeMemberStats | null;
 }
