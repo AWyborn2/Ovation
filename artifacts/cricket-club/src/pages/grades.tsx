@@ -1,10 +1,21 @@
-import { useListGrades } from "@workspace/api-client-react";
+import { useMemo } from "react";
+import { useListGrades, useListPremierships } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
+import { Trophy } from "lucide-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 
 export default function Grades() {
   const { data, isLoading } = useListGrades();
+  const { data: premierships } = useListPremierships();
+
+  const premsByGrade = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of premierships ?? []) {
+      map.set(p.grade, (map.get(p.grade) ?? 0) + 1);
+    }
+    return map;
+  }, [premierships]);
 
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
 
@@ -27,7 +38,16 @@ export default function Grades() {
             <Card className="hover:border-primary transition-colors cursor-pointer group">
               <CardHeader className="flex flex-row items-center gap-4">
                 <GradeBadge grade={grade.grade} size="lg" />
-                <CardTitle className="group-hover:text-primary transition-colors">{grade.grade}</CardTitle>
+                <CardTitle className="group-hover:text-primary transition-colors flex-1">{grade.grade}</CardTitle>
+                <div
+                  className="flex items-center gap-1.5 text-primary font-bold"
+                  title={`${premsByGrade.get(grade.grade) ?? 0} premierships`}
+                >
+                  <Trophy className="h-5 w-5" />
+                  <span className="font-mono text-lg leading-none">
+                    {premsByGrade.get(grade.grade) ?? 0}
+                  </span>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
