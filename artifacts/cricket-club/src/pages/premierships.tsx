@@ -22,7 +22,7 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   return (
     <li>
       {p.playerId ? (
-        <Link href={`/players/${p.playerId}`} className={`${baseCls} hover:underline`}>
+        <Link href={`/players/${p.playerId}`} className="block whitespace-nowrap text-slate-900 hover:underline pt-[0px] pb-[0px] text-[10px]">
           {label}
         </Link>
       ) : (
@@ -83,11 +83,11 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
             paddingBlock: "6px",
           }}
         >
-          <div style={gradeStyle}>{prem.grade.toUpperCase()}</div>
+          <div style={gradeStyle} className="text-[12px] font-bold">{prem.grade.toUpperCase()}</div>
 
           {(prem.venue || prem.matchDate) && (
             <div style={{ ...venueDateStyle, marginTop: "2px" }}>
-              {prem.venue && <div>{prem.venue.toUpperCase()}</div>}
+              {prem.venue && <div className="text-[10px]">{prem.venue.toUpperCase()}</div>}
               {prem.matchDate && <div>{formatDate(prem.matchDate)}</div>}
             </div>
           )}
@@ -104,13 +104,15 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
           <div className="flex-1" />
 
           {prem.mom && (
-            <div style={{ ...resultStyle, marginBottom: "4px" }}>
+            <div style={{ ...resultStyle, marginBottom: "4px" }} className="font-semibold text-left text-[10px] pt-[10px] pb-[10px]">
               M.O.M - {prem.mom.toUpperCase()}
             </div>
           )}
 
           {prem.result && (
-            <div style={{ ...resultStyle, whiteSpace: "pre-line" }}>
+            <div
+              style={{ ...resultStyle, whiteSpace: "pre-line" }}
+              className="text-[10px] font-semibold">
               {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
             </div>
           )}
