@@ -13,78 +13,103 @@ const formatDate = (d: string | null | undefined) => {
   return `${m[3]}/${m[2]}/${m[1]}`;
 };
 
+const PLAQUE_REF_W = 564;
+const cqw = (px: number) => `${((px / PLAQUE_REF_W) * 100).toFixed(3)}cqw`;
+const TRACK = "0.103em";
+
 const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   const display = p.name.replace(/\s+/g, " ").trim().toUpperCase();
   const label = p.isCaptain ? `${display} (CAPT)` : display;
-  const justified =
-    "block leading-snug text-justify [text-align-last:justify] whitespace-nowrap overflow-hidden";
+  const baseCls = "block whitespace-nowrap text-slate-900";
   return (
     <li>
       {p.playerId ? (
-        <Link
-          href={`/players/${p.playerId}`}
-          className={`${justified} hover:underline text-slate-900`}
-        >
+        <Link href={`/players/${p.playerId}`} className={`${baseCls} hover:underline`}>
           {label}
         </Link>
       ) : (
-        <span className={`${justified} text-slate-900`}>{label}</span>
+        <span className={baseCls}>{label}</span>
       )}
     </li>
   );
 };
 
 const Plaque = ({ prem }: { prem: Premiership }) => {
+  const venueDateStyle = {
+    fontSize: cqw(23.7),
+    letterSpacing: TRACK,
+    lineHeight: 1.4,
+    fontWeight: 700,
+  } as const;
+  const teamStyle = {
+    fontSize: cqw(25),
+    letterSpacing: TRACK,
+    lineHeight: 1.15,
+    fontWeight: 700,
+  } as const;
+  const resultStyle = {
+    fontSize: cqw(25),
+    letterSpacing: TRACK,
+    lineHeight: 1.4,
+    fontWeight: 700,
+  } as const;
   return (
     <div
-      className="relative shadow-xl border border-slate-900/60 p-2 aspect-[564/965] overflow-hidden"
+      className="relative shadow-xl border border-slate-900/60 aspect-[564/965] overflow-hidden [container-type:inline-size]"
       style={{
         background:
           "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
         fontFamily: PLAQUE_FONT,
+        padding: cqw(16),
       }}
     >
-      <div className="h-full border-[3px] border-slate-800 p-[3px]">
+      <div
+        className="h-full border-slate-800"
+        style={{ borderWidth: cqw(3), padding: cqw(4) }}
+      >
         <div
-          className="h-full px-3 py-3 text-center flex flex-col border border-slate-800 overflow-hidden"
+          className="h-full text-center flex flex-col border border-slate-800 overflow-hidden"
           style={{
             color: "#0f172a",
             fontFamily: PLAQUE_FONT,
+            paddingInline: cqw(18),
+            paddingBlock: cqw(20),
+            rowGap: cqw(14),
           }}
         >
-        <div className="text-[15px] font-bold tracking-wide leading-tight">
-          {prem.grade.toUpperCase()}
-        </div>
-
-        {prem.venue && (
-          <div className="text-[12px] font-bold mt-3 leading-tight">
-            {prem.venue.toUpperCase()}
+          <div
+            style={{
+              fontSize: cqw(40.4),
+              letterSpacing: 0,
+              lineHeight: 1.4,
+              fontWeight: 700,
+            }}
+          >
+            {prem.grade.toUpperCase()}
           </div>
-        )}
-        {prem.matchDate && (
-          <div className="text-[12px] font-bold leading-tight">
-            {formatDate(prem.matchDate)}
-          </div>
-        )}
 
-        <ul className="text-[12px] font-semibold list-none p-0 mt-3 mb-0 flex-1 space-y-0.5">
-          {prem.players.map((p) => (
-            <PlayerLine key={p.id} p={p} />
-          ))}
-        </ul>
+          {(prem.venue || prem.matchDate) && (
+            <div style={venueDateStyle}>
+              {prem.venue && <div>{prem.venue.toUpperCase()}</div>}
+              {prem.matchDate && <div>{formatDate(prem.matchDate)}</div>}
+            </div>
+          )}
 
-        {prem.mom && (
-          <div className="text-[12px] font-bold mt-3 leading-tight">
-            M.O.M - {prem.mom.toUpperCase()}
-          </div>
-        )}
+          <ul className="list-none p-0 m-0 flex-1" style={teamStyle}>
+            {prem.players.map((p) => (
+              <PlayerLine key={p.id} p={p} />
+            ))}
+          </ul>
 
-        {prem.result && (
-          <div className="text-[12px] font-bold mt-3 leading-tight whitespace-pre-line">
-            {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
-          </div>
-        )}
+          {prem.mom && (
+            <div style={resultStyle}>M.O.M - {prem.mom.toUpperCase()}</div>
+          )}
 
+          {prem.result && (
+            <div style={{ ...resultStyle, whiteSpace: "pre-line" }}>
+              {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -159,7 +184,7 @@ export default function Premierships() {
               "linear-gradient(180deg, #1a1410 0%, #2a201a 50%, #1a1410 100%)",
           }}
         >
-          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))] items-stretch">
+          <div className="grid gap-3 md:gap-4 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))] items-stretch">
             {filtered.map((p) => (
               <Plaque key={p.id} prem={p} />
             ))}
