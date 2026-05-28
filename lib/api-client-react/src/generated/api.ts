@@ -20,12 +20,18 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CapEntry,
+  CapEntryInput,
+  CapEntryUpdate,
   ClubRecords,
   Dashboard,
   GradeSummary,
   HealthStatus,
   ImportPreview,
   ImportRecord,
+  LifeMember,
+  LifeMemberInput,
+  LifeMemberUpdate,
   ListPlayersParams,
   ListStatsParams,
   Player,
@@ -1485,6 +1491,586 @@ export function useGetRecords<TData = Awaited<ReturnType<typeof getRecords>>, TE
 
 
 
+
+export const getListCapsUrl = () => {
+
+
+
+
+  return `/api/caps`
+}
+
+/**
+ * @summary List all A Grade cap register entries
+ */
+export const listCaps = async ( options?: RequestInit): Promise<CapEntry[]> => {
+
+  return customFetch<CapEntry[]>(getListCapsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCapsQueryKey = () => {
+    return [
+    `/api/caps`
+    ] as const;
+    }
+
+
+export const getListCapsQueryOptions = <TData = Awaited<ReturnType<typeof listCaps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCapsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCaps>>> = ({ signal }) => listCaps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCaps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCapsQueryResult = NonNullable<Awaited<ReturnType<typeof listCaps>>>
+export type ListCapsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all A Grade cap register entries
+ */
+
+export function useListCaps<TData = Awaited<ReturnType<typeof listCaps>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCapsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCapUrl = () => {
+
+
+
+
+  return `/api/caps`
+}
+
+/**
+ * @summary Create a cap register entry
+ */
+export const createCap = async (capEntryInput: CapEntryInput, options?: RequestInit): Promise<CapEntry> => {
+
+  return customFetch<CapEntry>(getCreateCapUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      capEntryInput,)
+  }
+);}
+
+
+
+
+export const getCreateCapMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCap>>, TError,{data: BodyType<CapEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCap>>, TError,{data: BodyType<CapEntryInput>}, TContext> => {
+
+const mutationKey = ['createCap'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCap>>, {data: BodyType<CapEntryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCap(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCapMutationResult = NonNullable<Awaited<ReturnType<typeof createCap>>>
+    export type CreateCapMutationBody = BodyType<CapEntryInput>
+    export type CreateCapMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a cap register entry
+ */
+export const useCreateCap = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCap>>, TError,{data: BodyType<CapEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCap>>,
+        TError,
+        {data: BodyType<CapEntryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCapMutationOptions(options));
+    }
+
+export const getUpdateCapUrl = (id: number,) => {
+
+
+
+
+  return `/api/caps/${id}`
+}
+
+/**
+ * @summary Update a cap register entry
+ */
+export const updateCap = async (id: number,
+    capEntryUpdate: CapEntryUpdate, options?: RequestInit): Promise<CapEntry> => {
+
+  return customFetch<CapEntry>(getUpdateCapUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      capEntryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCapMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCap>>, TError,{id: number;data: BodyType<CapEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCap>>, TError,{id: number;data: BodyType<CapEntryUpdate>}, TContext> => {
+
+const mutationKey = ['updateCap'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCap>>, {id: number;data: BodyType<CapEntryUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCap(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCapMutationResult = NonNullable<Awaited<ReturnType<typeof updateCap>>>
+    export type UpdateCapMutationBody = BodyType<CapEntryUpdate>
+    export type UpdateCapMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a cap register entry
+ */
+export const useUpdateCap = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCap>>, TError,{id: number;data: BodyType<CapEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCap>>,
+        TError,
+        {id: number;data: BodyType<CapEntryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCapMutationOptions(options));
+    }
+
+export const getDeleteCapUrl = (id: number,) => {
+
+
+
+
+  return `/api/caps/${id}`
+}
+
+/**
+ * @summary Delete a cap register entry
+ */
+export const deleteCap = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCapUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCapMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCap>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCap>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCap'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCap>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCap(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCapMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCap>>>
+
+    export type DeleteCapMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a cap register entry
+ */
+export const useDeleteCap = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCap>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCap>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCapMutationOptions(options));
+    }
+
+export const getListLifeMembersUrl = () => {
+
+
+
+
+  return `/api/life-members`
+}
+
+/**
+ * @summary List all life members
+ */
+export const listLifeMembers = async ( options?: RequestInit): Promise<LifeMember[]> => {
+
+  return customFetch<LifeMember[]>(getListLifeMembersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLifeMembersQueryKey = () => {
+    return [
+    `/api/life-members`
+    ] as const;
+    }
+
+
+export const getListLifeMembersQueryOptions = <TData = Awaited<ReturnType<typeof listLifeMembers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLifeMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLifeMembersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLifeMembers>>> = ({ signal }) => listLifeMembers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLifeMembers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLifeMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listLifeMembers>>>
+export type ListLifeMembersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all life members
+ */
+
+export function useListLifeMembers<TData = Awaited<ReturnType<typeof listLifeMembers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLifeMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLifeMembersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateLifeMemberUrl = () => {
+
+
+
+
+  return `/api/life-members`
+}
+
+/**
+ * @summary Create a life member
+ */
+export const createLifeMember = async (lifeMemberInput: LifeMemberInput, options?: RequestInit): Promise<LifeMember> => {
+
+  return customFetch<LifeMember>(getCreateLifeMemberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      lifeMemberInput,)
+  }
+);}
+
+
+
+
+export const getCreateLifeMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLifeMember>>, TError,{data: BodyType<LifeMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLifeMember>>, TError,{data: BodyType<LifeMemberInput>}, TContext> => {
+
+const mutationKey = ['createLifeMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLifeMember>>, {data: BodyType<LifeMemberInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createLifeMember(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLifeMemberMutationResult = NonNullable<Awaited<ReturnType<typeof createLifeMember>>>
+    export type CreateLifeMemberMutationBody = BodyType<LifeMemberInput>
+    export type CreateLifeMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a life member
+ */
+export const useCreateLifeMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLifeMember>>, TError,{data: BodyType<LifeMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLifeMember>>,
+        TError,
+        {data: BodyType<LifeMemberInput>},
+        TContext
+      > => {
+      return useMutation(getCreateLifeMemberMutationOptions(options));
+    }
+
+export const getUpdateLifeMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/life-members/${id}`
+}
+
+/**
+ * @summary Update a life member
+ */
+export const updateLifeMember = async (id: number,
+    lifeMemberUpdate: LifeMemberUpdate, options?: RequestInit): Promise<LifeMember> => {
+
+  return customFetch<LifeMember>(getUpdateLifeMemberUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      lifeMemberUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateLifeMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLifeMember>>, TError,{id: number;data: BodyType<LifeMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateLifeMember>>, TError,{id: number;data: BodyType<LifeMemberUpdate>}, TContext> => {
+
+const mutationKey = ['updateLifeMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateLifeMember>>, {id: number;data: BodyType<LifeMemberUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateLifeMember(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateLifeMemberMutationResult = NonNullable<Awaited<ReturnType<typeof updateLifeMember>>>
+    export type UpdateLifeMemberMutationBody = BodyType<LifeMemberUpdate>
+    export type UpdateLifeMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a life member
+ */
+export const useUpdateLifeMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLifeMember>>, TError,{id: number;data: BodyType<LifeMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateLifeMember>>,
+        TError,
+        {id: number;data: BodyType<LifeMemberUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateLifeMemberMutationOptions(options));
+    }
+
+export const getDeleteLifeMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/life-members/${id}`
+}
+
+/**
+ * @summary Delete a life member
+ */
+export const deleteLifeMember = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteLifeMemberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteLifeMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLifeMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteLifeMember>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteLifeMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteLifeMember>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteLifeMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteLifeMemberMutationResult = NonNullable<Awaited<ReturnType<typeof deleteLifeMember>>>
+
+    export type DeleteLifeMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a life member
+ */
+export const useDeleteLifeMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLifeMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteLifeMember>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteLifeMemberMutationOptions(options));
+    }
 
 export const getListPremiershipsUrl = () => {
 

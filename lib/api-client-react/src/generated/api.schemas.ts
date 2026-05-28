@@ -282,6 +282,65 @@ export interface PlayerRecord {
   value: number;
 }
 
+export interface CapEntry {
+  id: number;
+  capNumber: number;
+  name: string;
+  deceased: boolean;
+  /** @nullable */
+  playerId?: number | null;
+}
+
+export interface CapEntryInput {
+  capNumber: number;
+  name: string;
+  deceased?: boolean;
+  /** @nullable */
+  playerId?: number | null;
+}
+
+export interface CapEntryUpdate {
+  capNumber?: number;
+  name?: string;
+  deceased?: boolean;
+  /** @nullable */
+  playerId?: number | null;
+}
+
+export interface LifeMember {
+  id: number;
+  name: string;
+  inductionYear: number;
+  isPlayingMember: boolean;
+  /** @nullable */
+  playerId?: number | null;
+  /** @nullable */
+  roleLabel?: string | null;
+  blurb: string;
+}
+
+export interface LifeMemberInput {
+  name: string;
+  inductionYear: number;
+  isPlayingMember?: boolean;
+  /** @nullable */
+  playerId?: number | null;
+  /** @nullable */
+  roleLabel?: string | null;
+  blurb?: string;
+}
+
+export interface LifeMemberUpdate {
+  name?: string;
+  inductionYear?: number;
+  isPlayingMember?: boolean;
+  /** @nullable */
+  playerId?: number | null;
+  /** @nullable */
+  roleLabel?: string | null;
+  blurb?: string;
+}
+
 export interface ClubRecords {
   mostGames: PlayerRecord;
   mostRuns: PlayerRecord;

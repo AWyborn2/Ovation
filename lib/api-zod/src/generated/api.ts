@@ -587,6 +587,124 @@ export const GetRecordsResponse = zod.object({
 
 
 /**
+ * @summary List all A Grade cap register entries
+ */
+export const ListCapsResponseItem = zod.object({
+  "id": zod.number(),
+  "capNumber": zod.number(),
+  "name": zod.string(),
+  "deceased": zod.boolean(),
+  "playerId": zod.number().nullish()
+})
+export const ListCapsResponse = zod.array(ListCapsResponseItem)
+
+
+/**
+ * @summary Create a cap register entry
+ */
+export const CreateCapBody = zod.object({
+  "capNumber": zod.number(),
+  "name": zod.string(),
+  "deceased": zod.boolean().optional(),
+  "playerId": zod.number().nullish()
+})
+
+
+/**
+ * @summary Update a cap register entry
+ */
+export const UpdateCapParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCapBody = zod.object({
+  "capNumber": zod.number().optional(),
+  "name": zod.string().optional(),
+  "deceased": zod.boolean().optional(),
+  "playerId": zod.number().nullish()
+})
+
+export const UpdateCapResponse = zod.object({
+  "id": zod.number(),
+  "capNumber": zod.number(),
+  "name": zod.string(),
+  "deceased": zod.boolean(),
+  "playerId": zod.number().nullish()
+})
+
+
+/**
+ * @summary Delete a cap register entry
+ */
+export const DeleteCapParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all life members
+ */
+export const ListLifeMembersResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "inductionYear": zod.number(),
+  "isPlayingMember": zod.boolean(),
+  "playerId": zod.number().nullish(),
+  "roleLabel": zod.string().nullish(),
+  "blurb": zod.string()
+})
+export const ListLifeMembersResponse = zod.array(ListLifeMembersResponseItem)
+
+
+/**
+ * @summary Create a life member
+ */
+export const CreateLifeMemberBody = zod.object({
+  "name": zod.string(),
+  "inductionYear": zod.number(),
+  "isPlayingMember": zod.boolean().optional(),
+  "playerId": zod.number().nullish(),
+  "roleLabel": zod.string().nullish(),
+  "blurb": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a life member
+ */
+export const UpdateLifeMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateLifeMemberBody = zod.object({
+  "name": zod.string().optional(),
+  "inductionYear": zod.number().optional(),
+  "isPlayingMember": zod.boolean().optional(),
+  "playerId": zod.number().nullish(),
+  "roleLabel": zod.string().nullish(),
+  "blurb": zod.string().optional()
+})
+
+export const UpdateLifeMemberResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "inductionYear": zod.number(),
+  "isPlayingMember": zod.boolean(),
+  "playerId": zod.number().nullish(),
+  "roleLabel": zod.string().nullish(),
+  "blurb": zod.string()
+})
+
+
+/**
+ * @summary Delete a life member
+ */
+export const DeleteLifeMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all premierships with rosters
  */
 export const ListPremiershipsResponseItem = zod.object({

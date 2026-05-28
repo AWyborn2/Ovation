@@ -4,3 +4,5 @@ export * from "./grade_summaries";
 export * from "./premierships";
 export * from "./imports";
 export * from "./player_grade_season_stats";
+export * from "./cap_register";
+export * from "./life_members";

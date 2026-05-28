@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './capEntry';
+export * from './capEntryInput';
+export * from './capEntryUpdate';
 export * from './clubRecords';
 export * from './dashboard';
 export * from './gradeSummary';
@@ -15,6 +18,9 @@ export * from './importPreviewGradeTotal';
 export * from './importPreviewPlayer';
 export * from './importPreviewPlayerStatus';
 export * from './importRecord';
+export * from './lifeMember';
+export * from './lifeMemberInput';
+export * from './lifeMemberUpdate';
 export * from './listPlayersParams';
 export * from './listPlayersSortBy';
 export * from './listPlayersSortOrder';

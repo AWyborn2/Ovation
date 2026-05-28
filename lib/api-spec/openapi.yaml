@@ -18,6 +18,10 @@ tags:
     description: Grade summary operations
   - name: imports
     description: CSV import operations
+  - name: caps
+    description: A Grade Cap Register operations
+  - name: lifeMembers
+    description: Life Members operations
 paths:
   /healthz:
     get:
@@ -432,6 +436,154 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClubRecords"
+
+  /caps:
+    get:
+      operationId: listCaps
+      tags: [caps]
+      summary: List all A Grade cap register entries
+      responses:
+        "200":
+          description: Cap register
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CapEntry"
+    post:
+      operationId: createCap
+      tags: [caps]
+      summary: Create a cap register entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapEntry"
+
+  /caps/{id}:
+    patch:
+      operationId: updateCap
+      tags: [caps]
+      summary: Update a cap register entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapEntryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapEntry"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCap
+      tags: [caps]
+      summary: Delete a cap register entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /life-members:
+    get:
+      operationId: listLifeMembers
+      tags: [lifeMembers]
+      summary: List all life members
+      responses:
+        "200":
+          description: Life members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LifeMember"
+    post:
+      operationId: createLifeMember
+      tags: [lifeMembers]
+      summary: Create a life member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LifeMemberInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LifeMember"
+
+  /life-members/{id}:
+    patch:
+      operationId: updateLifeMember
+      tags: [lifeMembers]
+      summary: Update a life member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LifeMemberUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LifeMember"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteLifeMember
+      tags: [lifeMembers]
+      summary: Delete a life member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /premierships:
     get:
@@ -890,6 +1042,98 @@ components:
           type: string
         value:
           type: integer
+
+    CapEntry:
+      type: object
+      required: [id, capNumber, name, deceased]
+      properties:
+        id:
+          type: integer
+        capNumber:
+          type: integer
+        name:
+          type: string
+        deceased:
+          type: boolean
+        playerId:
+          type: ["integer", "null"]
+
+    CapEntryInput:
+      type: object
+      required: [capNumber, name]
+      properties:
+        capNumber:
+          type: integer
+        name:
+          type: string
+        deceased:
+          type: boolean
+        playerId:
+          type: ["integer", "null"]
+
+    CapEntryUpdate:
+      type: object
+      properties:
+        capNumber:
+          type: integer
+        name:
+          type: string
+        deceased:
+          type: boolean
+        playerId:
+          type: ["integer", "null"]
+
+    LifeMember:
+      type: object
+      required: [id, name, inductionYear, isPlayingMember, blurb]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        inductionYear:
+          type: integer
+        isPlayingMember:
+          type: boolean
+        playerId:
+          type: ["integer", "null"]
+        roleLabel:
+          type: ["string", "null"]
+        blurb:
+          type: string
+
+    LifeMemberInput:
+      type: object
+      required: [name, inductionYear]
+      properties:
+        name:
+          type: string
+        inductionYear:
+          type: integer
+        isPlayingMember:
+          type: boolean
+        playerId:
+          type: ["integer", "null"]
+        roleLabel:
+          type: ["string", "null"]
+        blurb:
+          type: string
+
+    LifeMemberUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        inductionYear:
+          type: integer
+        isPlayingMember:
+          type: boolean
+        playerId:
+          type: ["integer", "null"]
+        roleLabel:
+          type: ["string", "null"]
+        blurb:
+          type: string
 
     ClubRecords:
       type: object
