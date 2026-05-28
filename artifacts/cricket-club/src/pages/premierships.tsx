@@ -26,7 +26,7 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
           {label}
         </Link>
       ) : (
-        <span className={baseCls}>{label}</span>
+        <span className="block whitespace-nowrap text-slate-900 text-[10px]">{label}</span>
       )}
     </li>
   );
