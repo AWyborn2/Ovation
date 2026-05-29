@@ -23,4 +23,6 @@ export interface Player {
   premiershipsWon?: number | null;
   /** @nullable */
   premiershipsCaptained?: number | null;
+  /** @nullable */
+  imageUrl?: string | null;
 }

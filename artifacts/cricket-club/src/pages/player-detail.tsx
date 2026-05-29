@@ -1,12 +1,14 @@
 import { useParams, Link } from "wouter";
-import { useMemo, useState, useEffect } from "react";
-import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useListCaps } from "@workspace/api-client-react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";
-import { Share2, Trophy, Crown } from "lucide-react";
+import { Share2, Trophy, Crown, Upload, Loader2, ImageOff } from "lucide-react";
+import { useCurrentAdmin } from "@/lib/admin-auth";
 import {
   aggregateCareer,
   getAvailableSeasons,
@@ -21,7 +23,7 @@ import type { ShareCardInput } from "@/lib/share-card";
 
 const fmtNum = (n: number) => n.toLocaleString();
 
-const MilestoneCard = ({ status, playerName }: { status: MilestoneStatus; playerName: string }) => {
+const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStatus; playerName: string; photoUrl?: string | null }) => {
   const hasNext = status.nextTierLabel !== null && status.gap !== null;
   const inAnyTier = status.currentTierIndex !== null;
   const [sharing, setSharing] = useState(false);
@@ -36,6 +38,7 @@ const MilestoneCard = ({ status, playerName }: { status: MilestoneStatus; player
         milestoneLabel: status.boardLabel,
         currentValue: status.currentValue,
         headline: "Honour Board Milestone",
+        photoUrl,
       });
     } catch (err) {
       console.error("Failed to generate milestone card", err);
@@ -94,6 +97,35 @@ export default function PlayerDetail() {
 
   const queryClient = useQueryClient();
   const deletePlayer = useDeletePlayer();
+  const updatePlayer = useUpdatePlayer();
+  const adminQ = useCurrentAdmin();
+  const isAdmin = !!adminQ.data;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const { uploadFile, isUploading } = useUpload({
+    onError: (e) => setPhotoError(e.message),
+  });
+
+  const persistImageUrl = (imageUrl: string | null) => {
+    updatePlayer.mutate(
+      { id: playerId, data: { imageUrl } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(playerId) });
+        },
+        onError: (e) => setPhotoError((e as Error)?.message ?? "Could not save photo"),
+      },
+    );
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoError(null);
+    const result = await uploadFile(file);
+    if (result) persistImageUrl(`/api/storage${result.objectPath}`);
+  };
 
   const playerStats = player?.stats ?? [];
   const hasAGradeStats = playerStats.some((s) => s.grade === "A Grade");
@@ -144,10 +176,59 @@ export default function PlayerDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">{player.givenName} {player.surname}</h1>
-          <div className="mt-2">
-            <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="md" />
+        <div className="flex items-center gap-4">
+          {(player.imageUrl || isAdmin) && (
+            <div className="relative shrink-0">
+              <div className="h-20 w-20 rounded-full overflow-hidden border-2 border-primary/40 bg-muted flex items-center justify-center">
+                {player.imageUrl ? (
+                  <img src={player.imageUrl} alt={`${player.givenName} ${player.surname}`} className="h-full w-full object-cover" />
+                ) : (
+                  <ImageOff className="h-7 w-7 text-muted-foreground" />
+                )}
+              </div>
+              {isAdmin && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || updatePlayer.isPending}
+                    aria-label="Upload player photo"
+                    title="Upload player photo"
+                    className="absolute -bottom-1 -right-1 rounded-full bg-primary text-primary-foreground p-1.5 shadow hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {isUploading || updatePlayer.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          <div>
+            <h1 className="text-3xl font-serif font-bold text-primary">{player.givenName} {player.surname}</h1>
+            <div className="mt-2">
+              <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="md" />
+            </div>
+            {isAdmin && player.imageUrl && (
+              <button
+                type="button"
+                onClick={() => persistImageUrl(null)}
+                disabled={updatePlayer.isPending}
+                className="mt-2 text-xs text-muted-foreground hover:text-destructive underline disabled:opacity-50"
+              >
+                Remove photo
+              </button>
+            )}
+            {photoError && <p className="mt-1 text-xs text-destructive">{photoError}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -169,6 +250,7 @@ export default function PlayerDetail() {
               playerName: fullName,
               gradesPlayed: player.gradesPlayed,
               stats,
+              photoUrl: player.imageUrl,
             };
             return <ShareButton input={input} appPath={`/players/${player.id}`} label="Share profile" />;
           })()}
@@ -237,7 +319,7 @@ export default function PlayerDetail() {
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {milestones.map((m) => (
-              <MilestoneCard key={m.key} status={m} playerName={`${player.givenName} ${player.surname}`.trim()} />
+              <MilestoneCard key={m.key} status={m} playerName={`${player.givenName} ${player.surname}`.trim()} photoUrl={player.imageUrl} />
             ))}
           </div>
         </div>

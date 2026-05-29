@@ -1042,6 +1042,80 @@ paths:
         "404":
           description: Not found
 
+  /card-themes:
+    get:
+      operationId: listCardThemes
+      tags: [socialCards]
+      summary: List all card themes (ordered)
+      responses:
+        "200":
+          description: Card theme list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardTheme"
+    post:
+      operationId: createCardTheme
+      tags: [socialCards]
+      summary: Create a card theme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardThemeInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardTheme"
+
+  /card-themes/{id}:
+    patch:
+      operationId: updateCardTheme
+      tags: [socialCards]
+      summary: Update a card theme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardThemeUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardTheme"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCardTheme
+      tags: [socialCards]
+      summary: Delete a card theme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /social-settings:
     get:
       operationId: getSocialSettings
@@ -1340,6 +1414,8 @@ components:
           type: ["integer", "null"]
         premiershipsCaptained:
           type: ["integer", "null"]
+        imageUrl:
+          type: ["string", "null"]
 
     PlayerInput:
       type: object
@@ -1351,6 +1427,8 @@ components:
           type: string
         deceased:
           type: boolean
+        imageUrl:
+          type: ["string", "null"]
 
     PlayerUpdate:
       type: object
@@ -1361,6 +1439,8 @@ components:
           type: string
         deceased:
           type: boolean
+        imageUrl:
+          type: ["string", "null"]
 
     PlayerDetail:
       type: object
@@ -1380,6 +1460,8 @@ components:
           type: ["integer", "null"]
         premiershipsCaptained:
           type: ["integer", "null"]
+        imageUrl:
+          type: ["string", "null"]
         stats:
           type: array
           items:
@@ -2235,6 +2317,76 @@ components:
           type: ["string", "null"]
         activeTo:
           type: ["string", "null"]
+        displayOrder:
+          type: integer
+
+    CardTheme:
+      type: object
+      required: [id, name, bgDark, bgPanel, accent, textLight, isDefault, displayOrder]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        bgDark:
+          type: string
+        bgPanel:
+          type: string
+        accent:
+          type: string
+        textLight:
+          type: string
+        backgroundImageUrl:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        isDefault:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardThemeInput:
+      type: object
+      required: [name, bgDark, bgPanel, accent, textLight]
+      properties:
+        name:
+          type: string
+        bgDark:
+          type: string
+        bgPanel:
+          type: string
+        accent:
+          type: string
+        textLight:
+          type: string
+        backgroundImageUrl:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        isDefault:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardThemeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        bgDark:
+          type: string
+        bgPanel:
+          type: string
+        accent:
+          type: string
+        textLight:
+          type: string
+        backgroundImageUrl:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        isDefault:
+          type: boolean
         displayOrder:
           type: integer
 

@@ -28,6 +28,9 @@ import type {
   CapEntryUpdate,
   CaptionTemplate,
   CaptionTemplateInput,
+  CardTheme,
+  CardThemeInput,
+  CardThemeUpdate,
   ClubRecords,
   CommitImportResult,
   Dashboard,
@@ -3781,6 +3784,296 @@ export const useDeleteSponsor = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteSponsorMutationOptions(options));
+    }
+
+export const getListCardThemesUrl = () => {
+
+
+
+
+  return `/api/card-themes`
+}
+
+/**
+ * @summary List all card themes (ordered)
+ */
+export const listCardThemes = async ( options?: RequestInit): Promise<CardTheme[]> => {
+
+  return customFetch<CardTheme[]>(getListCardThemesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardThemesQueryKey = () => {
+    return [
+    `/api/card-themes`
+    ] as const;
+    }
+
+
+export const getListCardThemesQueryOptions = <TData = Awaited<ReturnType<typeof listCardThemes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardThemes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardThemesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCardThemes>>> = ({ signal }) => listCardThemes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCardThemes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardThemesQueryResult = NonNullable<Awaited<ReturnType<typeof listCardThemes>>>
+export type ListCardThemesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all card themes (ordered)
+ */
+
+export function useListCardThemes<TData = Awaited<ReturnType<typeof listCardThemes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardThemes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardThemesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCardThemeUrl = () => {
+
+
+
+
+  return `/api/card-themes`
+}
+
+/**
+ * @summary Create a card theme
+ */
+export const createCardTheme = async (cardThemeInput: CardThemeInput, options?: RequestInit): Promise<CardTheme> => {
+
+  return customFetch<CardTheme>(getCreateCardThemeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardThemeInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardThemeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardTheme>>, TError,{data: BodyType<CardThemeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardTheme>>, TError,{data: BodyType<CardThemeInput>}, TContext> => {
+
+const mutationKey = ['createCardTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardTheme>>, {data: BodyType<CardThemeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardTheme(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardThemeMutationResult = NonNullable<Awaited<ReturnType<typeof createCardTheme>>>
+    export type CreateCardThemeMutationBody = BodyType<CardThemeInput>
+    export type CreateCardThemeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a card theme
+ */
+export const useCreateCardTheme = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardTheme>>, TError,{data: BodyType<CardThemeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardTheme>>,
+        TError,
+        {data: BodyType<CardThemeInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardThemeMutationOptions(options));
+    }
+
+export const getUpdateCardThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-themes/${id}`
+}
+
+/**
+ * @summary Update a card theme
+ */
+export const updateCardTheme = async (id: number,
+    cardThemeUpdate: CardThemeUpdate, options?: RequestInit): Promise<CardTheme> => {
+
+  return customFetch<CardTheme>(getUpdateCardThemeUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardThemeUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCardThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCardTheme>>, TError,{id: number;data: BodyType<CardThemeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCardTheme>>, TError,{id: number;data: BodyType<CardThemeUpdate>}, TContext> => {
+
+const mutationKey = ['updateCardTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCardTheme>>, {id: number;data: BodyType<CardThemeUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCardTheme(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCardThemeMutationResult = NonNullable<Awaited<ReturnType<typeof updateCardTheme>>>
+    export type UpdateCardThemeMutationBody = BodyType<CardThemeUpdate>
+    export type UpdateCardThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a card theme
+ */
+export const useUpdateCardTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCardTheme>>, TError,{id: number;data: BodyType<CardThemeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCardTheme>>,
+        TError,
+        {id: number;data: BodyType<CardThemeUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCardThemeMutationOptions(options));
+    }
+
+export const getDeleteCardThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-themes/${id}`
+}
+
+/**
+ * @summary Delete a card theme
+ */
+export const deleteCardTheme = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardThemeUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCardThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCardTheme>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCardTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCardTheme>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCardTheme(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardThemeMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCardTheme>>>
+
+    export type DeleteCardThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a card theme
+ */
+export const useDeleteCardTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCardTheme>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCardThemeMutationOptions(options));
     }
 
 export const getGetSocialSettingsUrl = () => {

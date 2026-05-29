@@ -23,6 +23,24 @@ export const sponsorsTable = pgTable("sponsors", {
 
 export type SponsorRow = typeof sponsorsTable.$inferSelect;
 
+// Named, selectable card themes (colors + optional background image + optional logo).
+// Admins pick a theme per social card; one row is flagged isDefault.
+export const cardThemesTable = pgTable("card_themes", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  bgDark: text("bg_dark").notNull().default("#322F3D"),
+  bgPanel: text("bg_panel").notNull().default("#3F3C4C"),
+  accent: text("accent").notNull().default("#FBD039"),
+  textLight: text("text_light").notNull().default("#F5F2E8"),
+  backgroundImageUrl: text("background_image_url"),
+  logoUrl: text("logo_url"),
+  isDefault: boolean("is_default").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CardThemeRow = typeof cardThemesTable.$inferSelect;
+
 export const socialSettingsTable = pgTable("social_settings", {
   id: serial("id").primaryKey(),
   engineOnDemand: boolean("engine_on_demand").notNull().default(true),

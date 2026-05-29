@@ -40,7 +40,8 @@ export const ListPlayersResponse = zod.object({
   "totalRuns": zod.number().nullish(),
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
-  "premiershipsCaptained": zod.number().nullish()
+  "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -54,7 +55,8 @@ export const ListPlayersResponse = zod.object({
 export const CreatePlayerBody = zod.object({
   "surname": zod.string(),
   "givenName": zod.string(),
-  "deceased": zod.boolean().optional()
+  "deceased": zod.boolean().optional(),
+  "imageUrl": zod.string().nullish()
 })
 
 
@@ -73,6 +75,7 @@ export const GetPlayerResponse = zod.object({
   "gradesPlayed": zod.string().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish(),
   "stats": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -121,7 +124,8 @@ export const UpdatePlayerParams = zod.object({
 export const UpdatePlayerBody = zod.object({
   "surname": zod.string().optional(),
   "givenName": zod.string().optional(),
-  "deceased": zod.boolean().optional()
+  "deceased": zod.boolean().optional(),
+  "imageUrl": zod.string().nullish()
 })
 
 export const UpdatePlayerResponse = zod.object({
@@ -134,7 +138,8 @@ export const UpdatePlayerResponse = zod.object({
   "totalRuns": zod.number().nullish(),
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
-  "premiershipsCaptained": zod.number().nullish()
+  "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
 })
 
 
@@ -382,7 +387,8 @@ export const GetDashboardResponse = zod.object({
   "totalRuns": zod.number().nullish(),
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
-  "premiershipsCaptained": zod.number().nullish()
+  "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
 }),
   "topWicketTaker": zod.object({
   "id": zod.number(),
@@ -394,7 +400,8 @@ export const GetDashboardResponse = zod.object({
   "totalRuns": zod.number().nullish(),
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
-  "premiershipsCaptained": zod.number().nullish()
+  "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
 }),
   "topFielder": zod.object({
   "id": zod.number(),
@@ -406,7 +413,8 @@ export const GetDashboardResponse = zod.object({
   "totalRuns": zod.number().nullish(),
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
-  "premiershipsCaptained": zod.number().nullish()
+  "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
 }),
   "gradeSummaries": zod.array(zod.object({
   "grade": zod.string(),
@@ -895,7 +903,8 @@ export const MergePlayerResponse = zod.object({
   "totalRuns": zod.number().nullish(),
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
-  "premiershipsCaptained": zod.number().nullish()
+  "premiershipsCaptained": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
 })
 
 
@@ -1153,6 +1162,81 @@ export const UpdateSponsorResponse = zod.object({
  * @summary Delete a sponsor
  */
 export const DeleteSponsorParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all card themes (ordered)
+ */
+export const ListCardThemesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bgDark": zod.string(),
+  "bgPanel": zod.string(),
+  "accent": zod.string(),
+  "textLight": zod.string(),
+  "backgroundImageUrl": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "isDefault": zod.boolean(),
+  "displayOrder": zod.number()
+})
+export const ListCardThemesResponse = zod.array(ListCardThemesResponseItem)
+
+
+/**
+ * @summary Create a card theme
+ */
+export const CreateCardThemeBody = zod.object({
+  "name": zod.string(),
+  "bgDark": zod.string(),
+  "bgPanel": zod.string(),
+  "accent": zod.string(),
+  "textLight": zod.string(),
+  "backgroundImageUrl": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "isDefault": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a card theme
+ */
+export const UpdateCardThemeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCardThemeBody = zod.object({
+  "name": zod.string().optional(),
+  "bgDark": zod.string().optional(),
+  "bgPanel": zod.string().optional(),
+  "accent": zod.string().optional(),
+  "textLight": zod.string().optional(),
+  "backgroundImageUrl": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "isDefault": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateCardThemeResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bgDark": zod.string(),
+  "bgPanel": zod.string(),
+  "accent": zod.string(),
+  "textLight": zod.string(),
+  "backgroundImageUrl": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "isDefault": zod.boolean(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Delete a card theme
+ */
+export const DeleteCardThemeParams = zod.object({
   "id": zod.coerce.number()
 })
 

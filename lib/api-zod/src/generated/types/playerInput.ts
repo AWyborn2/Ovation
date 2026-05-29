@@ -10,4 +10,6 @@ export interface PlayerInput {
   surname: string;
   givenName: string;
   deceased?: boolean;
+  /** @nullable */
+  imageUrl?: string | null;
 }

@@ -3,7 +3,10 @@ import JSZip from "jszip";
 import {
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
+  useListCardThemes,
+  getListCardThemesQueryKey,
   type SocialSettingsBundle,
+  type CardTheme as ApiCardTheme,
 } from "@workspace/api-client-react";
 import {
   Dialog,
@@ -74,6 +77,22 @@ export function ShareCardModal({
     query: { enabled: open, queryKey: getGetSocialSettingsQueryKey() },
   });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
+
+  const themesQ = useListCardThemes({
+    query: { enabled: open, queryKey: getListCardThemesQueryKey() },
+  });
+  const themes = (themesQ.data ?? []) as ApiCardTheme[];
+  const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null);
+  useEffect(() => {
+    if (!open || themes.length === 0) return;
+    if (selectedThemeId !== null && themes.some((t) => t.id === selectedThemeId)) return;
+    const def = themes.find((t) => t.isDefault) ?? themes[0];
+    setSelectedThemeId(def.id);
+  }, [open, themes, selectedThemeId]);
+  const selectedTheme = useMemo(
+    () => themes.find((t) => t.id === selectedThemeId),
+    [themes, selectedThemeId],
+  );
 
   const enabledSizes: CardSize[] = useMemo(() => {
     const s = bundle?.settings;
@@ -190,6 +209,7 @@ export function ShareCardModal({
           sponsors,
           clubUrl,
           hashtag,
+          theme: selectedTheme,
         });
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
@@ -205,9 +225,9 @@ export function ShareCardModal({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, input, activeSize, sponsors, clubUrl, hashtag]);
+  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme]);
 
-  // Invalidate cached previews when sponsors flip.
+  // Invalidate cached previews when sponsors flip or the theme changes.
   useEffect(() => {
     setPreviewUrls((prev) => {
       Object.values(prev).forEach((url) => {
@@ -216,7 +236,7 @@ export function ShareCardModal({
       return { square: null, portrait: null, story: null };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeSponsors, input]);
+  }, [includeSponsors, input, selectedThemeId]);
 
   // Cleanup URLs on close.
   useEffect(() => {
@@ -231,7 +251,7 @@ export function ShareCardModal({
 
   const handleDownload = async (size: CardSize) => {
     if (!input) return;
-    const blob = await renderShareCard(input, { size, sponsors, clubUrl, hashtag });
+    const blob = await renderShareCard(input, { size, sponsors, clubUrl, hashtag, theme: selectedTheme });
     downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
   };
 
@@ -241,7 +261,7 @@ export function ShareCardModal({
     try {
       const zip = new JSZip();
       for (const size of enabledSizes) {
-        const blob = await renderShareCard(input, { size, sponsors, clubUrl, hashtag });
+        const blob = await renderShareCard(input, { size, sponsors, clubUrl, hashtag, theme: selectedTheme });
         zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.png`, blob);
       }
       if (bundle?.settings.captionsEnabled) {
@@ -318,6 +338,27 @@ export function ShareCardModal({
                 </TabsContent>
               ))}
             </Tabs>
+
+            {themes.length > 1 && (
+              <div className="space-y-1.5 rounded border px-3 py-2">
+                <Label htmlFor="theme-select" className="text-sm">
+                  Card theme
+                </Label>
+                <select
+                  id="theme-select"
+                  value={selectedThemeId ?? ""}
+                  onChange={(e) => setSelectedThemeId(Number(e.target.value))}
+                  className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                >
+                  {themes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.isDefault ? " (default)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {sponsorsAvailable && (
               <div className="flex items-center justify-between rounded border px-3 py-2">

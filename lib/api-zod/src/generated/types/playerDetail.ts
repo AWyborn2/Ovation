@@ -19,6 +19,8 @@ export interface PlayerDetail {
   premiershipsWon?: number | null;
   /** @nullable */
   premiershipsCaptained?: number | null;
+  /** @nullable */
+  imageUrl?: string | null;
   stats: Stat[];
   premierships?: PlayerPremiership[];
 }

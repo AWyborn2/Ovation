@@ -26,18 +26,24 @@ export interface Player {
   premiershipsWon?: number | null;
   /** @nullable */
   premiershipsCaptained?: number | null;
+  /** @nullable */
+  imageUrl?: string | null;
 }
 
 export interface PlayerInput {
   surname: string;
   givenName: string;
   deceased?: boolean;
+  /** @nullable */
+  imageUrl?: string | null;
 }
 
 export interface PlayerUpdate {
   surname?: string;
   givenName?: string;
   deceased?: boolean;
+  /** @nullable */
+  imageUrl?: string | null;
 }
 
 export interface Stat {
@@ -109,6 +115,8 @@ export interface PlayerDetail {
   premiershipsWon?: number | null;
   /** @nullable */
   premiershipsCaptained?: number | null;
+  /** @nullable */
+  imageUrl?: string | null;
   stats: Stat[];
   premierships?: PlayerPremiership[];
 }
@@ -565,6 +573,49 @@ export interface SponsorUpdate {
   activeFrom?: string | null;
   /** @nullable */
   activeTo?: string | null;
+  displayOrder?: number;
+}
+
+export interface CardTheme {
+  id: number;
+  name: string;
+  bgDark: string;
+  bgPanel: string;
+  accent: string;
+  textLight: string;
+  /** @nullable */
+  backgroundImageUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  isDefault: boolean;
+  displayOrder: number;
+}
+
+export interface CardThemeInput {
+  name: string;
+  bgDark: string;
+  bgPanel: string;
+  accent: string;
+  textLight: string;
+  /** @nullable */
+  backgroundImageUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  isDefault?: boolean;
+  displayOrder?: number;
+}
+
+export interface CardThemeUpdate {
+  name?: string;
+  bgDark?: string;
+  bgPanel?: string;
+  accent?: string;
+  textLight?: string;
+  /** @nullable */
+  backgroundImageUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  isDefault?: boolean;
   displayOrder?: number;
 }
 

@@ -144,6 +144,7 @@ router.post("/players", requireAdmin, async (req, res): Promise<void> => {
       surname: parsed.data.surname,
       givenName: parsed.data.givenName,
       deceased: parsed.data.deceased ?? false,
+      imageUrl: parsed.data.imageUrl ?? null,
     })
     .returning();
   res.status(201).json(player);

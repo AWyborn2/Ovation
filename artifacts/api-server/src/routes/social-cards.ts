@@ -6,6 +6,7 @@ import {
   socialSettingsTable,
   milestoneBoardSettingsTable,
   captionTemplatesTable,
+  cardThemesTable,
 } from "@workspace/db";
 import {
   CreateSponsorBody,
@@ -15,6 +16,10 @@ import {
   UpdateSocialSettingsBody,
   UpdateMilestoneBoardSettingsBody,
   UpsertCaptionTemplateBody,
+  CreateCardThemeBody,
+  UpdateCardThemeBody,
+  UpdateCardThemeParams,
+  DeleteCardThemeParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
@@ -183,6 +188,141 @@ router.delete("/sponsors/:id", requireAdmin, async (req, res): Promise<void> => 
   if (result.length === 0) {
     res.status(404).json({ error: "Sponsor not found" });
     return;
+  }
+  res.status(204).end();
+});
+
+async function ensureThemes() {
+  const [existing] = await db.select().from(cardThemesTable).limit(1);
+  if (existing) return;
+  await db.insert(cardThemesTable).values({
+    name: "Club Classic",
+    bgDark: "#322F3D",
+    bgPanel: "#3F3C4C",
+    accent: "#FBD039",
+    textLight: "#F5F2E8",
+    isDefault: true,
+    displayOrder: 0,
+  });
+}
+
+router.get("/card-themes", async (_req, res): Promise<void> => {
+  await ensureThemes();
+  const rows = await db
+    .select()
+    .from(cardThemesTable)
+    .orderBy(asc(cardThemesTable.displayOrder), asc(cardThemesTable.id));
+  res.json(rows);
+});
+
+router.post("/card-themes", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = CreateCardThemeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const row = await db.transaction(async (tx) => {
+    if (parsed.data.isDefault) {
+      await tx.update(cardThemesTable).set({ isDefault: false });
+    }
+    const [created] = await tx
+      .insert(cardThemesTable)
+      .values({
+        name: parsed.data.name,
+        bgDark: parsed.data.bgDark,
+        bgPanel: parsed.data.bgPanel,
+        accent: parsed.data.accent,
+        textLight: parsed.data.textLight,
+        backgroundImageUrl: parsed.data.backgroundImageUrl ?? null,
+        logoUrl: parsed.data.logoUrl ?? null,
+        isDefault: parsed.data.isDefault ?? false,
+        displayOrder: parsed.data.displayOrder ?? 0,
+      })
+      .returning();
+    return created;
+  });
+  res.status(201).json(row);
+});
+
+router.patch("/card-themes/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateCardThemeParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpdateCardThemeBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const row = await db.transaction(async (tx) => {
+    if (body.data.isDefault === true) {
+      await tx.update(cardThemesTable).set({ isDefault: false });
+    }
+    const [updated] = await tx
+      .update(cardThemesTable)
+      .set(body.data)
+      .where(eq(cardThemesTable.id, params.data.id))
+      .returning();
+    if (!updated) return undefined;
+    // Never leave zero defaults: if this update unset the last default, promote
+    // the first remaining theme.
+    if (body.data.isDefault === false) {
+      const remaining = await tx
+        .select({ id: cardThemesTable.id })
+        .from(cardThemesTable)
+        .where(eq(cardThemesTable.isDefault, true));
+      if (remaining.length === 0) {
+        const [first] = await tx
+          .select()
+          .from(cardThemesTable)
+          .orderBy(asc(cardThemesTable.displayOrder), asc(cardThemesTable.id))
+          .limit(1);
+        if (first) {
+          await tx
+            .update(cardThemesTable)
+            .set({ isDefault: true })
+            .where(eq(cardThemesTable.id, first.id));
+          if (first.id === updated.id) updated.isDefault = true;
+        }
+      }
+    }
+    return updated;
+  });
+  if (!row) {
+    res.status(404).json({ error: "Card theme not found" });
+    return;
+  }
+  res.json(row);
+});
+
+router.delete("/card-themes/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeleteCardThemeParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const result = await db
+    .delete(cardThemesTable)
+    .where(eq(cardThemesTable.id, params.data.id))
+    .returning({ id: cardThemesTable.id, isDefault: cardThemesTable.isDefault });
+  if (result.length === 0) {
+    res.status(404).json({ error: "Card theme not found" });
+    return;
+  }
+  // If we deleted the default, promote the first remaining theme to default.
+  if (result[0]?.isDefault) {
+    const [first] = await db
+      .select()
+      .from(cardThemesTable)
+      .orderBy(asc(cardThemesTable.displayOrder), asc(cardThemesTable.id))
+      .limit(1);
+    if (first) {
+      await db
+        .update(cardThemesTable)
+        .set({ isDefault: true })
+        .where(eq(cardThemesTable.id, first.id));
+    }
   }
   res.status(204).end();
 });

@@ -13,6 +13,7 @@ export interface MilestoneShareInput {
   currentValue: number;
   threshold?: number | null;
   headline?: string;
+  photoUrl?: string | null;
 }
 
 const BG_DARK = "#322F3D";
@@ -139,24 +140,73 @@ export const generateMilestoneCard = async (input: MilestoneShareInput): Promise
   const badgeCx = W / 2;
   const badgeCy = 510;
   const badgeR = 140;
-  ctx.beginPath();
-  ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
-  ctx.fillStyle = GOLD_SOFT;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = 4;
-  ctx.stroke();
 
-  // Draw tier icon SVG
-  try {
-    const svg = iconSvgString(input.tierIndex, GOLD, 256, 1.75);
-    const iconImg = await loadImage(svgToDataUrl(svg));
-    const iconSize = 160;
-    ctx.drawImage(iconImg, badgeCx - iconSize / 2, badgeCy - iconSize / 2, iconSize, iconSize);
-  } catch {
-    // ignore
+  let photoImg: HTMLImageElement | null = null;
+  if (input.photoUrl) {
+    try {
+      photoImg = await loadImage(input.photoUrl);
+    } catch {
+      photoImg = null;
+    }
+  }
+
+  if (photoImg) {
+    // Circular headshot fills the medallion; tier icon shown as a small overlay badge.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    const scale = Math.max((badgeR * 2) / photoImg.width, (badgeR * 2) / photoImg.height);
+    const dw = photoImg.width * scale;
+    const dh = photoImg.height * scale;
+    ctx.drawImage(photoImg, badgeCx - dw / 2, badgeCy - dh / 2, dw, dh);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    // Small tier icon badge bottom-right
+    const miniCx = badgeCx + badgeR * 0.72;
+    const miniCy = badgeCy + badgeR * 0.72;
+    const miniR = 44;
+    ctx.beginPath();
+    ctx.arc(miniCx, miniCy, miniR, 0, Math.PI * 2);
+    ctx.fillStyle = BG_DARK;
+    ctx.fill();
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    try {
+      const svg = iconSvgString(input.tierIndex, GOLD, 256, 1.75);
+      const iconImg = await loadImage(svgToDataUrl(svg));
+      const iconSize = 52;
+      ctx.drawImage(iconImg, miniCx - iconSize / 2, miniCy - iconSize / 2, iconSize, iconSize);
+    } catch {
+      // ignore
+    }
+  } else {
+    ctx.beginPath();
+    ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD_SOFT;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Draw tier icon SVG
+    try {
+      const svg = iconSvgString(input.tierIndex, GOLD, 256, 1.75);
+      const iconImg = await loadImage(svgToDataUrl(svg));
+      const iconSize = 160;
+      ctx.drawImage(iconImg, badgeCx - iconSize / 2, badgeCy - iconSize / 2, iconSize, iconSize);
+    } catch {
+      // ignore
+    }
   }
 
   // Tier label
