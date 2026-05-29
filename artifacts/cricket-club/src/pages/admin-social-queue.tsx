@@ -78,8 +78,31 @@ export default function AdminSocialQueue() {
   };
 
   const [previewDraft, setPreviewDraft] = useState<SocialDraft | null>(null);
+  const [approveMode, setApproveMode] = useState(false);
   const [grade, setGrade] = useState("A Grade");
   const [season, setSeason] = useState<number>(new Date().getFullYear());
+
+  // Approving a pending draft: mint its tracked-link slug (so the caption
+  // carries the /go/ short link), then open the modal in approve mode where the
+  // admin downloads the card + caption bundle and confirms — which marks the
+  // draft and its linked milestone event as posted.
+  const startApproval = async (d: SocialDraft) => {
+    let draft = d;
+    if (d.status === "pending" && !d.trackedSlug) {
+      try {
+        draft = (await approveM.mutateAsync({ id: d.id })) as SocialDraft;
+      } catch {
+        draft = d;
+      }
+    }
+    setApproveMode(true);
+    setPreviewDraft(draft);
+  };
+
+  const openPreview = (d: SocialDraft) => {
+    setApproveMode(false);
+    setPreviewDraft(d);
+  };
 
   const drafts = (draftsQ.data ?? []) as SocialDraft[];
   const byStatus = useMemo(() => {
@@ -154,7 +177,7 @@ export default function AdminSocialQueue() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => setPreviewDraft(d)}
+                    onClick={() => openPreview(d)}
                     disabled={!input}
                   >
                     Preview & download
@@ -164,10 +187,15 @@ export default function AdminSocialQueue() {
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => approveM.mutate({ id: d.id })}
-                        disabled={approveM.isPending}
+                        onClick={() => startApproval(d)}
+                        disabled={approveM.isPending || !input}
                       >
-                        <Check className="h-3.5 w-3.5 mr-1" /> Approve
+                        {approveM.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5 mr-1" />
+                        )}{" "}
+                        Approve &amp; download
                       </Button>
                       <Button
                         type="button"
@@ -176,7 +204,7 @@ export default function AdminSocialQueue() {
                         onClick={() => dismissM.mutate({ id: d.id })}
                         disabled={dismissM.isPending}
                       >
-                        <X className="h-3.5 w-3.5 mr-1" /> Dismiss
+                        <X className="h-3.5 w-3.5 mr-1" /> Skip
                       </Button>
                     </>
                   )}
@@ -311,11 +339,22 @@ export default function AdminSocialQueue() {
 
       <ShareCardModal
         open={!!previewDraft}
-        onOpenChange={(o) => !o && setPreviewDraft(null)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setPreviewDraft(null);
+            setApproveMode(false);
+          }
+        }}
         input={(previewDraft?.cardInput as ShareCardInput | null) ?? null}
         engine={(previewDraft?.engine as "ondemand" | "milestone" | "roundup" | "recap") ?? "ondemand"}
         appPath={previewDraft?.appPath ?? undefined}
         trackedSlug={previewDraft?.trackedSlug ?? null}
+        onApprove={
+          approveMode && previewDraft
+            ? () => markPosted(previewDraft.id)
+            : undefined
+        }
+        approveLabel="Approve & mark posted"
       />
     </div>
   );

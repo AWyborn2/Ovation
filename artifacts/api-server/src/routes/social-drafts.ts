@@ -5,6 +5,7 @@ import {
   socialDraftsTable,
   trackedLinksTable,
   importsTable,
+  milestoneEventsTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
@@ -69,6 +70,14 @@ router.post("/social-drafts/:id/posted", requireAdmin, async (req, res): Promise
     res.status(404).json({ error: "Not found" });
     return;
   }
+  // Stamp the linked milestone event so other features (push notifications,
+  // "just posted" feeds) and re-detection know this moment has been shared.
+  if (updated.milestoneEventId) {
+    await db
+      .update(milestoneEventsTable)
+      .set({ postedAt: new Date() })
+      .where(eq(milestoneEventsTable.id, updated.milestoneEventId));
+  }
   res.json(updated);
 });
 
@@ -78,10 +87,17 @@ router.post("/social-drafts/:id/dismiss", requireAdmin, async (req, res): Promis
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  await db
+  const [updated] = await db
     .update(socialDraftsTable)
     .set({ status: "dismissed", reviewedAt: new Date() })
-    .where(eq(socialDraftsTable.id, id));
+    .where(eq(socialDraftsTable.id, id))
+    .returning();
+  if (updated?.milestoneEventId) {
+    await db
+      .update(milestoneEventsTable)
+      .set({ dismissedAt: new Date() })
+      .where(eq(milestoneEventsTable.id, updated.milestoneEventId));
+  }
   res.status(204).end();
 });
 

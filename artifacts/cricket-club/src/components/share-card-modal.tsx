@@ -44,6 +44,14 @@ type Props = {
   engine?: EngineKey;
   appPath?: string; // e.g. "/players/123"
   trackedSlug?: string | null;
+  /**
+   * When provided, the modal becomes an approval surface: it shows an
+   * "Approve & download" button that renders the full card + caption bundle,
+   * downloads the zip, then runs this callback (used by the social queue to
+   * mark a draft + its milestone event as posted).
+   */
+  onApprove?: () => Promise<void> | void;
+  approveLabel?: string;
 };
 
 const PLATFORMS: { value: Platform; label: string }[] = [
@@ -59,6 +67,8 @@ export function ShareCardModal({
   engine = "ondemand",
   appPath,
   trackedSlug,
+  onApprove,
+  approveLabel = "Approve & download",
 }: Props) {
   const settingsQ = useGetSocialSettings({
     query: { enabled: open, queryKey: getGetSocialSettingsQueryKey() },
@@ -84,8 +94,14 @@ export function ShareCardModal({
   });
   const [rendering, setRendering] = useState(false);
   const [zipping, setZipping] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [captionDraft, setCaptionDraft] = useState("");
+  const [captionDrafts, setCaptionDrafts] = useState<Record<Platform, string>>({
+    instagram: "",
+    facebook: "",
+    twitter: "",
+  });
+  const captionDraft = captionDrafts[platform];
 
   useEffect(() => {
     if (open && enabledSizes.length > 0 && !enabledSizes.includes(activeSize)) {
@@ -140,17 +156,26 @@ export function ShareCardModal({
     return tpl?.template ?? `{player.name} • {stat.value} {stat.label} ${appLink} ${hashtag}`;
   };
 
-  // Reset caption when input/platform/bundle changes.
+  // Rebuild every platform's caption from its template when the card data or
+  // settings change. Keeping a draft per platform means edits survive switching
+  // tabs and the zip can carry a caption file for each platform.
   useEffect(() => {
     if (!input || !bundle) return;
-    const raw = renderCaption(templateFor(platform), input, {
-      clubUrl,
-      hashtag,
-      appLink,
-    });
-    setCaptionDraft(truncateForPlatform(raw, platform));
+    const next = {} as Record<Platform, string>;
+    for (const p of PLATFORMS) {
+      const raw = renderCaption(templateFor(p.value), input, {
+        clubUrl,
+        hashtag,
+        appLink,
+      });
+      next[p.value] = truncateForPlatform(raw, p.value);
+    }
+    setCaptionDrafts(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input, platform, bundle, appLink, clubUrl, hashtag]);
+  }, [input, bundle, appLink, clubUrl, hashtag]);
+
+  const setCaptionDraft = (value: string) =>
+    setCaptionDrafts((prev) => ({ ...prev, [platform]: value }));
 
   // Render preview when size/sponsors/input changes.
   useEffect(() => {
@@ -220,12 +245,27 @@ export function ShareCardModal({
         zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.png`, blob);
       }
       if (bundle?.settings.captionsEnabled) {
-        zip.file("caption.txt", captionDraft);
+        for (const p of PLATFORMS) {
+          const caption = captionDrafts[p.value];
+          if (caption) zip.file(`caption-${p.value}.txt`, caption);
+        }
       }
       const zipBlob = await zip.generateAsync({ type: "blob" });
       downloadBlob(zipBlob, `${cardBaseFilename(input)}-all.zip`);
     } finally {
       setZipping(false);
+    }
+  };
+
+  const handleApproveAndDownload = async () => {
+    if (!input || !onApprove) return;
+    setApproving(true);
+    try {
+      await handleDownloadAll();
+      await onApprove();
+      onOpenChange(false);
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -346,10 +386,29 @@ export function ShareCardModal({
             <Download className="h-4 w-4 mr-2" />
             Download {SIZES[activeSize].label}
           </Button>
-          <Button type="button" onClick={handleDownloadAll} disabled={zipping}>
+          <Button
+            type="button"
+            variant={onApprove ? "secondary" : "default"}
+            onClick={handleDownloadAll}
+            disabled={zipping || approving}
+          >
             {zipping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Download all sizes (zip)
           </Button>
+          {onApprove && (
+            <Button
+              type="button"
+              onClick={handleApproveAndDownload}
+              disabled={approving || zipping}
+            >
+              {approving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              {approveLabel}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

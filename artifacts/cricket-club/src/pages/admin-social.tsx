@@ -26,9 +26,9 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 
 const ENGINES: { value: "ondemand" | "milestone" | "roundup" | "recap"; label: string; desc: string }[] = [
   { value: "ondemand", label: "On-demand share", desc: "Share buttons on player, record and leaderboard pages." },
-  { value: "milestone", label: "Auto-milestone (coming soon)", desc: "Detect tier-crossings after each import and queue cards." },
-  { value: "roundup", label: "Round-up (coming soon)", desc: "Top performers per grade after each import." },
-  { value: "recap", label: "Season recap (coming soon)", desc: "Manual season-end recap per grade." },
+  { value: "milestone", label: "Auto-milestone", desc: "Detect tier-crossings after each import and queue cards." },
+  { value: "roundup", label: "Round-up", desc: "Top performers per grade after each import." },
+  { value: "recap", label: "Season recap", desc: "Manual season-end recap per grade." },
 ];
 
 const PLATFORMS: { value: Platform; label: string }[] = [
