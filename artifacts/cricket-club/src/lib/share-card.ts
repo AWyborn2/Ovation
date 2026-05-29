@@ -56,6 +56,15 @@ export type ShareCardInput =
       playerName: string;
       value: string | number;
       headline?: string;
+    }
+  | {
+      kind: "premiership";
+      grade: string;
+      year: number; // start year, e.g. 2024 for the 2024/25 season
+      competition: string;
+      result?: string | null;
+      mom?: string | null;
+      headline?: string;
     };
 
 const BG_DARK = "#322F3D";
@@ -120,8 +129,13 @@ const headlineFor = (input: ShareCardInput): string => {
       return `Club Record • ${input.title}`;
     case "gradeLeader":
       return `${input.grade} • Leader`;
+    case "premiership":
+      return `${input.grade} • Premiers`;
   }
 };
+
+const seasonLabel = (year: number) =>
+  `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
 
 const drawBackground = (ctx: CanvasRenderingContext2D, W: number, H: number) => {
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
@@ -427,6 +441,58 @@ export const renderShareCard = async (
     ctx.fillStyle = TEXT_MUTED;
     ctx.font = `600 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
     ctx.fillText(input.category.toUpperCase(), W / 2, y + Math.round(170 * scale));
+  } else if (input.kind === "premiership") {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    // Trophy badge.
+    const badgeR = Math.round(110 * scale);
+    const badgeCy = bodyTop + badgeR + Math.round(20 * scale);
+    ctx.beginPath();
+    ctx.arc(W / 2, badgeCy, badgeR, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD_SOFT;
+    ctx.fill();
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    try {
+      const svg = iconSvgString(1, GOLD, 256, 1.75); // Trophy
+      const iconImg = await loadImage(svgToDataUrl(svg));
+      const iconSize = Math.round(120 * scale);
+      ctx.drawImage(iconImg, W / 2 - iconSize / 2, badgeCy - iconSize / 2, iconSize, iconSize);
+    } catch {}
+
+    let y = badgeCy + badgeR + Math.round(28 * scale);
+
+    ctx.fillStyle = GOLD;
+    ctx.font = `800 ${Math.round(110 * scale)}px Georgia, 'Times New Roman', serif`;
+    ctx.fillText("PREMIERS", W / 2, y);
+    y += Math.round(130 * scale);
+
+    ctx.fillStyle = TEXT_LIGHT;
+    ctx.font = `700 ${Math.round(52 * scale)}px Georgia, 'Times New Roman', serif`;
+    ctx.fillText(`${input.grade.toUpperCase()} • ${seasonLabel(input.year)}`, W / 2, y);
+    y += Math.round(64 * scale);
+
+    ctx.fillStyle = TEXT_MUTED;
+    ctx.font = `600 ${Math.round(24 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+    const compLines = wrapText(ctx, input.competition, W - Math.round(200 * scale));
+    compLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * Math.round(32 * scale)));
+    y += compLines.length * Math.round(32 * scale) + Math.round(16 * scale);
+
+    if (input.result) {
+      ctx.fillStyle = TEXT_LIGHT;
+      ctx.font = `600 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      const resLines = wrapText(ctx, input.result, W - Math.round(220 * scale));
+      resLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * Math.round(30 * scale)));
+      y += resLines.length * Math.round(30 * scale) + Math.round(12 * scale);
+    }
+
+    if (input.mom) {
+      ctx.fillStyle = GOLD;
+      ctx.font = `700 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.fillText(`PLAYER OF THE MATCH: ${input.mom.toUpperCase()}`, W / 2, y);
+    }
   }
 
   drawFooter(
@@ -467,5 +533,7 @@ export const cardBaseFilename = (input: ShareCardInput): string => {
       return `hhcc-record-${slugify(input.title)}-${slugify(input.playerName)}`;
     case "gradeLeader":
       return `hhcc-${slugify(input.grade)}-${slugify(input.category)}-${slugify(input.playerName)}`;
+    case "premiership":
+      return `hhcc-premiership-${slugify(input.grade)}-${input.year}`;
   }
 };

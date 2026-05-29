@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListImports,
@@ -47,6 +48,7 @@ export default function AdminImport() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [committed, setCommitted] = useState<{ season: number } | null>(null);
 
   const { data: imports, refetch: refetchImports } = useListImports();
   const commit = useCommitImport();
@@ -112,6 +114,7 @@ export default function AdminImport() {
       { id: preview.importId },
       {
         onSuccess: () => {
+          setCommitted({ season: preview.season });
           setPreview(null);
           setFile(null);
           invalidateAggregates();
@@ -164,6 +167,24 @@ export default function AdminImport() {
           The preview shows what will change; nothing is applied until you Confirm.
         </p>
       </div>
+
+      {committed && !preview && (
+        <div className="rounded-md border border-green-600/40 bg-green-600/10 p-4 text-sm space-y-2">
+          <p className="font-medium">
+            Import applied for the {seasonLabel(committed.season)} season. Aggregates have been
+            re-derived.
+          </p>
+          <p className="text-muted-foreground">
+            Round-up and season-recap share cards can now be generated from this season's stats.
+          </p>
+          <Link
+            href="/admin/social/queue"
+            className="inline-flex items-center text-green-700 dark:text-green-400 font-medium hover:underline"
+          >
+            Open the social card queue →
+          </Link>
+        </div>
+      )}
 
       {!preview && (
         <Card>

@@ -62,6 +62,17 @@ const valueOf = (input: ShareCardInput, key: string): string => {
       };
       return map[key] ?? "";
     }
+    case "premiership": {
+      const map: Record<string, string> = {
+        "player.name": input.mom ?? "",
+        "stat.value": `${input.year}/${String((input.year + 1) % 100).padStart(2, "0")}`,
+        "stat.label": "premiers",
+        "stat.tier": "Premiers",
+        "stat.threshold": "",
+        "grade.name": input.grade,
+      };
+      return map[key] ?? "";
+    }
   }
 };
 
