@@ -20,5 +20,12 @@ ALTER TABLE <table> RENAME COLUMN <old> TO <new>;
 TTY. Plain column add/drop/type changes push fine non-interactively; only
 ambiguous rename-vs-recreate decisions trigger the blocking prompt.
 
-**How to apply:** any task that renames a Drizzle column. Do the SQL rename
-first, then `push` to verify sync — don't try to pipe answers into push.
+**Also fires for brand-new tables:** adding a whole new table can still trip the
+same `promptColumnsConflicts` prompt (drizzle suspects its columns are renames of
+another table's). Same fix: `CREATE TABLE IF NOT EXISTS ...` (+ seed any singleton
+row) via `executeSql`, then `push` to confirm. Note `push` may *still* report the
+prompt afterward if other unrelated ambiguous diffs exist — the raw SQL is what
+actually applies your change; treat a clean `executeSql` + verified row as success.
+
+**How to apply:** any task that renames a Drizzle column or adds a new table. Do
+the SQL first, then `push` to verify sync — don't try to pipe answers into push.

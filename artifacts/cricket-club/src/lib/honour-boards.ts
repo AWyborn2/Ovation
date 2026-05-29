@@ -448,17 +448,36 @@ const getPlayerValue = (
 export const MILESTONE_BOARDS: BoardKey[] = ["games", "runs", "wickets", "dismissals"];
 
 /**
- * Minimum tier thresholds for a milestone to count as "significant" in the
- * "Just promoted" feed. Boards not listed here are excluded entirely.
+ * Configurable thresholds (admin-editable) that define what counts as a
+ * "significant" club for each board. A milestone tier counts as significant
+ * when its minimum is at least the configured threshold for that board.
  */
-const SIGNIFICANT_MIN: Partial<Record<BoardKey, number>> = {
+export interface MilestoneThresholds {
+  games: number;
+  runs: number;
+  wickets: number;
+}
+
+export const DEFAULT_MILESTONE_THRESHOLDS: MilestoneThresholds = {
   games: 100,
   runs: 1000,
   wickets: 100,
 };
 
-const isSignificant = (key: BoardKey, threshold: number): boolean => {
-  const min = SIGNIFICANT_MIN[key];
+/** Boards whose thresholds the admin can configure / that drive the board. */
+export const CONFIGURABLE_MILESTONE_BOARDS: ("games" | "runs" | "wickets")[] = [
+  "games",
+  "runs",
+  "wickets",
+];
+
+const isSignificant = (
+  key: BoardKey,
+  threshold: number,
+  thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
+): boolean => {
+  if (key !== "games" && key !== "runs" && key !== "wickets") return false;
+  const min = thresholds[key];
   return typeof min === "number" && threshold >= min;
 };
 
@@ -541,6 +560,7 @@ export interface SeasonCrossing {
 export const getSeasonCrossings = (
   before: AggregatedPlayer,
   after: AggregatedPlayer,
+  thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
 ): SeasonCrossing[] => {
   const out: SeasonCrossing[] = [];
   for (const key of MILESTONE_BOARDS) {
@@ -551,7 +571,7 @@ export const getSeasonCrossings = (
     for (let i = 0; i < tiers.length; i++) {
       const t = tiers[i];
       if (t.min <= 0) continue;
-      if (!isSignificant(key, t.min)) continue;
+      if (!isSignificant(key, t.min, thresholds)) continue;
       if (t.min > bVal && t.min <= aVal) {
         out.push({
           key,
@@ -580,6 +600,7 @@ export const getSeasonPromotions = (
   allStats: Stat[],
   season: number,
   limit = 5,
+  thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
 ): PromotionEntry[] => {
   const beforeStats = allStats.filter(
     (s) => typeof s.season !== "number" || s.season < season,
@@ -604,7 +625,7 @@ export const getSeasonPromotions = (
       stumpings: 0,
       runOuts: 0,
     };
-    const crossings = getSeasonCrossings(before, after);
+    const crossings = getSeasonCrossings(before, after, thresholds);
     for (const c of crossings) {
       const excess = c.afterValue - c.threshold;
       entries.push({
@@ -632,6 +653,7 @@ export const getSeasonPromotions = (
 export const getPlayerSeasonCrossings = (
   playerStats: Stat[],
   season: number,
+  thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
 ): SeasonCrossing[] => {
   const before = aggregateCareer(
     playerStats.filter((s) => typeof s.season !== "number" || s.season < season),
@@ -658,7 +680,7 @@ export const getPlayerSeasonCrossings = (
     bestBowlingWkts: 0,
     bestBowlingRuns: 0,
   };
-  return getSeasonCrossings(zero, after);
+  return getSeasonCrossings(zero, after, thresholds);
 };
 
 export interface PromotionEntry {
@@ -675,7 +697,11 @@ export interface PromotionEntry {
   recencyScore: number;
 }
 
-export const getRecentPromotions = (players: AggregatedPlayer[], limit = 5): PromotionEntry[] => {
+export const getRecentPromotions = (
+  players: AggregatedPlayer[],
+  limit = 5,
+  thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
+): PromotionEntry[] => {
   const entries: PromotionEntry[] = [];
   const tiersByKey = new Map<BoardKey, TierDef[]>();
   for (const key of MILESTONE_BOARDS) tiersByKey.set(key, buildTiers(key, players));
@@ -687,7 +713,7 @@ export const getRecentPromotions = (players: AggregatedPlayer[], limit = 5): Pro
       if (idx === -1) continue;
       const tier = tiers[idx];
       if (tier.min <= 0) continue;
-      if (!isSignificant(key, tier.min)) continue;
+      if (!isSignificant(key, tier.min, thresholds)) continue;
       const excess = value - tier.min;
       const board = BOARDS.find((b) => b.key === key)!;
       entries.push({
@@ -707,6 +733,71 @@ export const getRecentPromotions = (players: AggregatedPlayer[], limit = 5): Pro
   }
   entries.sort((a, b) => {
     if (a.recencyScore !== b.recencyScore) return a.recencyScore - b.recencyScore;
+    return a.surname.localeCompare(b.surname);
+  });
+  return entries.slice(0, limit);
+};
+
+export interface ApproachingEntry {
+  playerId: number;
+  surname: string;
+  givenName: string;
+  boardKey: BoardKey;
+  boardLabel: string;
+  /** Label of the club the player is approaching, e.g. "100 Games Club". */
+  tierLabel: string;
+  /** Index of the target tier (for tier badge styling). */
+  tierIndex: number;
+  /** The player's current value for this board. */
+  currentValue: number;
+  /** The minimum value of the club they're approaching. */
+  threshold: number;
+  /** How many more they need (threshold - currentValue), always > 0. */
+  gap: number;
+}
+
+/**
+ * Finds players who are closest to — but not yet at — a significant club for
+ * each configurable board (games / runs / wickets), using the admin-configured
+ * thresholds. Returns the top candidates sorted by smallest remaining gap.
+ */
+export const getApproachingMilestones = (
+  players: AggregatedPlayer[],
+  limit = 5,
+  thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
+): ApproachingEntry[] => {
+  const entries: ApproachingEntry[] = [];
+  for (const key of CONFIGURABLE_MILESTONE_BOARDS) {
+    const tiers = buildTiers(key, players);
+    // Significant tiers, paired with their index, sorted ascending by min so we
+    // can find the lowest one a player has not yet reached.
+    const sigTiers = tiers
+      .map((t, i) => ({ t, i }))
+      .filter((x) => x.t.min > 0 && isSignificant(key, x.t.min, thresholds))
+      .sort((a, b) => a.t.min - b.t.min);
+    if (sigTiers.length === 0) continue;
+    const board = BOARDS.find((b) => b.key === key)!;
+    for (const p of players) {
+      const value = milestoneValue(p, key);
+      if (value <= 0) continue;
+      const next = sigTiers.find((x) => x.t.min > value);
+      if (!next) continue;
+      entries.push({
+        playerId: p.playerId,
+        surname: p.surname,
+        givenName: p.givenName,
+        boardKey: key,
+        boardLabel: board.label,
+        tierLabel: next.t.label,
+        tierIndex: next.i,
+        currentValue: value,
+        threshold: next.t.min,
+        gap: next.t.min - value,
+      });
+    }
+  }
+  entries.sort((a, b) => {
+    if (a.gap !== b.gap) return a.gap - b.gap;
     return a.surname.localeCompare(b.surname);
   });
   return entries.slice(0, limit);

@@ -6,6 +6,7 @@ import {
   useListPlayers,
   useGetPlayer,
   useListPremierships,
+  useGetMilestoneBoardSettings,
   getGetGradeLeaderboardQueryOptions,
   getGetPlayerQueryKey,
   getListPlayersQueryKey,
@@ -21,11 +22,15 @@ import {
   type BoardKey,
   type BoardTier,
   type PromotionEntry,
+  type ApproachingEntry,
+  type MilestoneThresholds,
+  DEFAULT_MILESTONE_THRESHOLDS,
   aggregateCareer,
   computeBoard,
   getAvailableSeasons,
   getRecentPromotions,
   getSeasonPromotions,
+  getApproachingMilestones,
   statToAggregated,
 } from "@/lib/honour-boards";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
@@ -180,6 +185,30 @@ const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
   );
 };
 
+const ApproachingCard = ({ entry: p }: { entry: ApproachingEntry }) => {
+  return (
+    <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
+      <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+            {p.tierLabel}
+          </span>
+        </div>
+        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+          {p.surname}
+          <span className="font-sans font-normal text-foreground/80 normal-case"> {p.givenName}</span>
+        </div>
+        <div className="text-xs text-muted-foreground mt-auto">
+          <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
+          {p.boardLabel.toLowerCase()} •{" "}
+          <span className="font-bold text-primary whitespace-nowrap">{p.gap.toLocaleString()} to go</span>
+        </div>
+      </Link>
+    </div>
+  );
+};
+
 const SearchResultCard = ({ playerId }: { playerId: number }) => {
   const { data: player } = useGetPlayer(playerId, {
     query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) },
@@ -327,18 +356,45 @@ export default function HonourBoards() {
     }
   }, [availableSeasons, selectedSeason]);
 
-  const recentPromotions = useMemo(() => {
-    if (scope !== "career") return [];
-    if (selectedSeason === "all") return getRecentPromotions(aggregatedPlayers, 5);
-    return getSeasonPromotions(allStats, selectedSeason, 5);
-  }, [aggregatedPlayers, allStats, scope, selectedSeason]);
+  const { data: milestoneSettings } = useGetMilestoneBoardSettings();
+  const milestoneMode = milestoneSettings?.displayMode ?? "recent";
+  const milestoneThresholds: MilestoneThresholds = useMemo(
+    () => ({
+      games: milestoneSettings?.gamesThreshold ?? DEFAULT_MILESTONE_THRESHOLDS.games,
+      runs: milestoneSettings?.runsThreshold ?? DEFAULT_MILESTONE_THRESHOLDS.runs,
+      wickets: milestoneSettings?.wicketsThreshold ?? DEFAULT_MILESTONE_THRESHOLDS.wickets,
+    }),
+    [milestoneSettings],
+  );
+  const showRecent = milestoneMode === "recent" || milestoneMode === "both";
+  const showApproaching = milestoneMode === "approaching" || milestoneMode === "both";
 
+  const recentPromotions = useMemo(() => {
+    if (scope !== "career" || !showRecent) return [];
+    if (selectedSeason === "all") return getRecentPromotions(aggregatedPlayers, 5, milestoneThresholds);
+    return getSeasonPromotions(allStats, selectedSeason, 5, milestoneThresholds);
+  }, [aggregatedPlayers, allStats, scope, selectedSeason, showRecent, milestoneThresholds]);
+
+  const approachingMilestones = useMemo(() => {
+    if (scope !== "career" || !showApproaching) return [];
+    return getApproachingMilestones(aggregatedPlayers, 5, milestoneThresholds);
+  }, [aggregatedPlayers, scope, showApproaching, milestoneThresholds]);
+
+  const thresholdSummary = `${milestoneThresholds.games.toLocaleString()}+ games, ${milestoneThresholds.runs.toLocaleString()}+ runs and ${milestoneThresholds.wickets.toLocaleString()}+ wickets clubs`;
   const promotionHeading =
-    selectedSeason === "all" ? "Significant milestones" : `Significant milestones in ${selectedSeason}`;
+    milestoneMode === "approaching"
+      ? "Approaching milestones"
+      : selectedSeason === "all" || !showRecent
+        ? "Significant milestones"
+        : `Significant milestones in ${selectedSeason}`;
   const promotionSubheading =
-    selectedSeason === "all"
-      ? "100+ games, 1,000+ runs and 100+ wickets clubs"
-      : `Players who reached 100+ games, 1,000+ runs or 100+ wickets in ${selectedSeason}`;
+    milestoneMode === "approaching"
+      ? `Players closing in on the ${thresholdSummary}`
+      : milestoneMode === "both"
+        ? `Recent achievers and players approaching the ${thresholdSummary}`
+        : selectedSeason === "all"
+          ? thresholdSummary
+          : `Players who reached the ${thresholdSummary} in ${selectedSeason}`;
 
   // Search
   const searchParams = { search: searchTerm, page: 1, limit: 12 };
@@ -386,37 +442,77 @@ export default function HonourBoards() {
               <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">{promotionHeading}</h2>
               <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{promotionSubheading}</div>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
-              <select
-                value={selectedSeason === "all" ? "all" : String(selectedSeason)}
-                onChange={(e) =>
-                  setSelectedSeason(e.target.value === "all" ? "all" : parseInt(e.target.value, 10))
-                }
-                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-              >
-                <option value="all">All-time</option>
-                {availableSeasons.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {showRecent && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+                <select
+                  value={selectedSeason === "all" ? "all" : String(selectedSeason)}
+                  onChange={(e) =>
+                    setSelectedSeason(e.target.value === "all" ? "all" : parseInt(e.target.value, 10))
+                  }
+                  className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+                >
+                  <option value="all">All-time</option>
+                  {availableSeasons.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div className="w-12 h-[2px] bg-primary" />
-          {recentPromotions.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic">
-              {selectedSeason === "all"
-                ? "No significant milestones to show yet."
-                : `No players reached a significant milestone in ${selectedSeason}.`}
+
+          {/* Recent achievers */}
+          {showRecent && (
+            <div className="space-y-3">
+              {milestoneMode === "both" && (
+                <div className="text-xs font-bold uppercase tracking-widest text-primary/80">
+                  Just achieved
+                </div>
+              )}
+              {recentPromotions.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic">
+                  {selectedSeason === "all"
+                    ? "No significant milestones to show yet."
+                    : `No players reached a significant milestone in ${selectedSeason}.`}
+                </div>
+              ) : (
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                  {recentPromotions.map((p) => (
+                    <PromotionCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-            {recentPromotions.map((p) => (
-              <PromotionCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
-            ))}
-          </div>
+          )}
+
+          {/* Visual divider between the two sub-boards */}
+          {milestoneMode === "both" && (
+            <div className="border-t border-dashed border-border" />
+          )}
+
+          {/* Approaching */}
+          {showApproaching && (
+            <div className="space-y-3">
+              {milestoneMode === "both" && (
+                <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Approaching
+                </div>
+              )}
+              {approachingMilestones.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic">
+                  No players approaching a significant milestone right now.
+                </div>
+              ) : (
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                  {approachingMilestones.map((p) => (
+                    <ApproachingCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

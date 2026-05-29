@@ -562,6 +562,57 @@ export interface SocialSettingsUpdate {
   clubUrl?: string;
 }
 
+/**
+ * What the public Significant Milestones section shows.
+ */
+export type MilestoneBoardSettingsDisplayMode = typeof MilestoneBoardSettingsDisplayMode[keyof typeof MilestoneBoardSettingsDisplayMode];
+
+
+export const MilestoneBoardSettingsDisplayMode = {
+  recent: 'recent',
+  approaching: 'approaching',
+  both: 'both',
+} as const;
+
+export interface MilestoneBoardSettings {
+  /** What the public Significant Milestones section shows. */
+  displayMode: MilestoneBoardSettingsDisplayMode;
+  /**
+     * Minimum games for a significant club (default 100).
+     * @minimum 1
+     */
+  gamesThreshold: number;
+  /**
+     * Minimum runs for a significant club (default 1000).
+     * @minimum 1
+     */
+  runsThreshold: number;
+  /**
+     * Minimum wickets for a significant club (default 100).
+     * @minimum 1
+     */
+  wicketsThreshold: number;
+}
+
+export type MilestoneBoardSettingsUpdateDisplayMode = typeof MilestoneBoardSettingsUpdateDisplayMode[keyof typeof MilestoneBoardSettingsUpdateDisplayMode];
+
+
+export const MilestoneBoardSettingsUpdateDisplayMode = {
+  recent: 'recent',
+  approaching: 'approaching',
+  both: 'both',
+} as const;
+
+export interface MilestoneBoardSettingsUpdate {
+  displayMode?: MilestoneBoardSettingsUpdateDisplayMode;
+  /** @minimum 1 */
+  gamesThreshold?: number;
+  /** @minimum 1 */
+  runsThreshold?: number;
+  /** @minimum 1 */
+  wicketsThreshold?: number;
+}
+
 export interface CaptionTemplate {
   engine: string;
   platform: string;

@@ -25,6 +25,7 @@ import AdminCaps from "@/pages/admin-caps";
 import AdminLifeMembers from "@/pages/admin-life-members";
 import AdminSocial from "@/pages/admin-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
+import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ function AdminRoutes() {
           <Route path="/admin/players" component={AdminPlayers} />
           <Route path="/admin/premierships" component={AdminPremierships} />
           <Route path="/admin/honour-boards" component={AdminHonourBoards} />
+          <Route path="/admin/milestone-board" component={AdminMilestoneBoard} />
           <Route path="/admin/import" component={AdminImport} />
           <Route path="/admin/caps" component={AdminCaps} />
           <Route path="/admin/life-members" component={AdminLifeMembers} />

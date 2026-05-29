@@ -46,6 +46,8 @@ import type {
   ListPlayersParams,
   ListStatsParams,
   LoginRequest,
+  MilestoneBoardSettings,
+  MilestoneBoardSettingsUpdate,
   Player,
   PlayerDetail,
   PlayerInput,
@@ -3926,6 +3928,154 @@ export const useUpdateSocialSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSocialSettingsMutationOptions(options));
+    }
+
+export const getGetMilestoneBoardSettingsUrl = () => {
+
+
+
+
+  return `/api/milestone-board-settings`
+}
+
+/**
+ * @summary Get the public Significant Milestones board configuration
+ */
+export const getMilestoneBoardSettings = async ( options?: RequestInit): Promise<MilestoneBoardSettings> => {
+
+  return customFetch<MilestoneBoardSettings>(getGetMilestoneBoardSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMilestoneBoardSettingsQueryKey = () => {
+    return [
+    `/api/milestone-board-settings`
+    ] as const;
+    }
+
+
+export const getGetMilestoneBoardSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMilestoneBoardSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMilestoneBoardSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMilestoneBoardSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMilestoneBoardSettings>>> = ({ signal }) => getMilestoneBoardSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMilestoneBoardSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMilestoneBoardSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMilestoneBoardSettings>>>
+export type GetMilestoneBoardSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the public Significant Milestones board configuration
+ */
+
+export function useGetMilestoneBoardSettings<TData = Awaited<ReturnType<typeof getMilestoneBoardSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMilestoneBoardSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMilestoneBoardSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateMilestoneBoardSettingsUrl = () => {
+
+
+
+
+  return `/api/milestone-board-settings`
+}
+
+/**
+ * @summary Update the Significant Milestones board configuration
+ */
+export const updateMilestoneBoardSettings = async (milestoneBoardSettingsUpdate: MilestoneBoardSettingsUpdate, options?: RequestInit): Promise<MilestoneBoardSettings> => {
+
+  return customFetch<MilestoneBoardSettings>(getUpdateMilestoneBoardSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      milestoneBoardSettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateMilestoneBoardSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMilestoneBoardSettings>>, TError,{data: BodyType<MilestoneBoardSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMilestoneBoardSettings>>, TError,{data: BodyType<MilestoneBoardSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateMilestoneBoardSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMilestoneBoardSettings>>, {data: BodyType<MilestoneBoardSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMilestoneBoardSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMilestoneBoardSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateMilestoneBoardSettings>>>
+    export type UpdateMilestoneBoardSettingsMutationBody = BodyType<MilestoneBoardSettingsUpdate>
+    export type UpdateMilestoneBoardSettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the Significant Milestones board configuration
+ */
+export const useUpdateMilestoneBoardSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMilestoneBoardSettings>>, TError,{data: BodyType<MilestoneBoardSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMilestoneBoardSettings>>,
+        TError,
+        {data: BodyType<MilestoneBoardSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMilestoneBoardSettingsMutationOptions(options));
     }
 
 export const getUpsertCaptionTemplateUrl = () => {

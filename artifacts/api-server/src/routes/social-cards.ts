@@ -4,6 +4,7 @@ import {
   db,
   sponsorsTable,
   socialSettingsTable,
+  milestoneBoardSettingsTable,
   captionTemplatesTable,
 } from "@workspace/db";
 import {
@@ -12,6 +13,7 @@ import {
   UpdateSponsorParams,
   DeleteSponsorParams,
   UpdateSocialSettingsBody,
+  UpdateMilestoneBoardSettingsBody,
   UpsertCaptionTemplateBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -223,6 +225,49 @@ router.patch("/social-settings", requireAdmin, async (req, res): Promise<void> =
     .where(eq(socialSettingsTable.id, SETTINGS_ID))
     .returning();
   res.json(row);
+});
+
+async function ensureMilestoneBoardSettings() {
+  const [existing] = await db
+    .select()
+    .from(milestoneBoardSettingsTable)
+    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID));
+  if (existing) return existing;
+  const [created] = await db
+    .insert(milestoneBoardSettingsTable)
+    .values({ id: SETTINGS_ID })
+    .returning();
+  return created;
+}
+
+router.get("/milestone-board-settings", async (_req, res): Promise<void> => {
+  const settings = await ensureMilestoneBoardSettings();
+  res.json({
+    displayMode: settings.displayMode,
+    gamesThreshold: settings.gamesThreshold,
+    runsThreshold: settings.runsThreshold,
+    wicketsThreshold: settings.wicketsThreshold,
+  });
+});
+
+router.patch("/milestone-board-settings", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = UpdateMilestoneBoardSettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  await ensureMilestoneBoardSettings();
+  const [row] = await db
+    .update(milestoneBoardSettingsTable)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID))
+    .returning();
+  res.json({
+    displayMode: row.displayMode,
+    gamesThreshold: row.gamesThreshold,
+    runsThreshold: row.runsThreshold,
+    wicketsThreshold: row.wicketsThreshold,
+  });
 });
 
 router.put("/caption-templates", requireAdmin, async (req, res): Promise<void> => {

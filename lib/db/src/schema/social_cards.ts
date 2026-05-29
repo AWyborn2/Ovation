@@ -41,6 +41,21 @@ export const socialSettingsTable = pgTable("social_settings", {
 
 export type SocialSettingsRow = typeof socialSettingsTable.$inferSelect;
 
+// Singleton settings for the public "Significant Milestones" section on the
+// Honour Boards page. Controls whether the board shows recent achievers,
+// players approaching a club, or both, plus the configurable thresholds that
+// define what counts as a "significant" club for games / runs / wickets.
+export const milestoneBoardSettingsTable = pgTable("milestone_board_settings", {
+  id: serial("id").primaryKey(),
+  displayMode: text("display_mode").notNull().default("recent"), // "recent" | "approaching" | "both"
+  gamesThreshold: integer("games_threshold").notNull().default(100),
+  runsThreshold: integer("runs_threshold").notNull().default(1000),
+  wicketsThreshold: integer("wickets_threshold").notNull().default(100),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type MilestoneBoardSettingsRow = typeof milestoneBoardSettingsTable.$inferSelect;
+
 // One template per (engine, platform).
 export const captionTemplatesTable = pgTable(
   "caption_templates",

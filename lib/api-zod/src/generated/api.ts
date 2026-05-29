@@ -1214,6 +1214,50 @@ export const UpdateSocialSettingsResponse = zod.object({
 
 
 /**
+ * @summary Get the public Significant Milestones board configuration
+ */
+
+
+
+
+
+export const GetMilestoneBoardSettingsResponse = zod.object({
+  "displayMode": zod.enum(['recent', 'approaching', 'both']).describe('What the public Significant Milestones section shows.'),
+  "gamesThreshold": zod.number().min(1).describe('Minimum games for a significant club (default 100).'),
+  "runsThreshold": zod.number().min(1).describe('Minimum runs for a significant club (default 1000).'),
+  "wicketsThreshold": zod.number().min(1).describe('Minimum wickets for a significant club (default 100).')
+})
+
+
+/**
+ * @summary Update the Significant Milestones board configuration
+ */
+
+
+
+
+
+export const UpdateMilestoneBoardSettingsBody = zod.object({
+  "displayMode": zod.enum(['recent', 'approaching', 'both']).optional(),
+  "gamesThreshold": zod.number().min(1).optional(),
+  "runsThreshold": zod.number().min(1).optional(),
+  "wicketsThreshold": zod.number().min(1).optional()
+})
+
+
+
+
+
+
+export const UpdateMilestoneBoardSettingsResponse = zod.object({
+  "displayMode": zod.enum(['recent', 'approaching', 'both']).describe('What the public Significant Milestones section shows.'),
+  "gamesThreshold": zod.number().min(1).describe('Minimum games for a significant club (default 100).'),
+  "runsThreshold": zod.number().min(1).describe('Minimum runs for a significant club (default 1000).'),
+  "wicketsThreshold": zod.number().min(1).describe('Minimum wickets for a significant club (default 100).')
+})
+
+
+/**
  * @summary Upsert a caption template for an engine+platform
  */
 export const UpsertCaptionTemplateBody = zod.object({

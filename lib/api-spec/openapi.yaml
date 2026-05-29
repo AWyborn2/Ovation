@@ -1072,6 +1072,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/SocialSettings"
 
+  /milestone-board-settings:
+    get:
+      operationId: getMilestoneBoardSettings
+      tags: [socialCards]
+      summary: Get the public Significant Milestones board configuration
+      responses:
+        "200":
+          description: Milestone board settings (display mode + thresholds)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MilestoneBoardSettings"
+    patch:
+      operationId: updateMilestoneBoardSettings
+      tags: [socialCards]
+      summary: Update the Significant Milestones board configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MilestoneBoardSettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MilestoneBoardSettings"
+
   /caption-templates:
     put:
       operationId: upsertCaptionTemplate
@@ -2223,6 +2253,47 @@ components:
           type: string
         clubUrl:
           type: string
+
+    MilestoneBoardSettings:
+      type: object
+      required:
+        - displayMode
+        - gamesThreshold
+        - runsThreshold
+        - wicketsThreshold
+      properties:
+        displayMode:
+          type: string
+          enum: [recent, approaching, both]
+          description: What the public Significant Milestones section shows.
+        gamesThreshold:
+          type: integer
+          minimum: 1
+          description: Minimum games for a significant club (default 100).
+        runsThreshold:
+          type: integer
+          minimum: 1
+          description: Minimum runs for a significant club (default 1000).
+        wicketsThreshold:
+          type: integer
+          minimum: 1
+          description: Minimum wickets for a significant club (default 100).
+
+    MilestoneBoardSettingsUpdate:
+      type: object
+      properties:
+        displayMode:
+          type: string
+          enum: [recent, approaching, both]
+        gamesThreshold:
+          type: integer
+          minimum: 1
+        runsThreshold:
+          type: integer
+          minimum: 1
+        wicketsThreshold:
+          type: integer
+          minimum: 1
 
     CaptionTemplate:
       type: object
