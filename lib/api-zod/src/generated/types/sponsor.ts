@@ -9,7 +9,7 @@
 export interface Sponsor {
   id: number;
   name: string;
-  logoDataUrl: string;
+  logoUrl: string;
   link: string;
   /** @nullable */
   activeFrom?: string | null;

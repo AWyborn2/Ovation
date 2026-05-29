@@ -503,7 +503,7 @@ export interface HonourBoardOverrideInput {
 export interface Sponsor {
   id: number;
   name: string;
-  logoDataUrl: string;
+  logoUrl: string;
   link: string;
   /** @nullable */
   activeFrom?: string | null;
@@ -514,7 +514,7 @@ export interface Sponsor {
 
 export interface SponsorInput {
   name: string;
-  logoDataUrl: string;
+  logoUrl: string;
   link?: string;
   /** @nullable */
   activeFrom?: string | null;
@@ -525,7 +525,7 @@ export interface SponsorInput {
 
 export interface SponsorUpdate {
   name?: string;
-  logoDataUrl?: string;
+  logoUrl?: string;
   link?: string;
   /** @nullable */
   activeFrom?: string | null;
@@ -622,6 +622,36 @@ export interface TrackedLink {
   /** @nullable */
   lastClickedAt?: string | null;
   createdAt: string;
+}
+
+export interface UploadUrlRequest {
+  /**
+     * Original file name.
+     * @minLength 1
+     */
+  name: string;
+  /**
+     * File size in bytes.
+     * @minimum 1
+     */
+  size: number;
+  /**
+     * MIME type of the file (e.g. `image/jpeg`).
+     * @minLength 1
+     */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  /** Presigned GCS URL for PUT upload. */
+  uploadURL: string;
+  /** Normalized object path (e.g. `/objects/uploads/uuid`). Store this in your database. */
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export interface ErrorEnvelope {
+  error: string;
 }
 
 export type ListPlayersParams = {

@@ -13,6 +13,7 @@ import {
   type SocialSettings,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -235,30 +236,34 @@ function SponsorsCard({
   const [link, setLink] = useState("");
   const [activeFrom, setActiveFrom] = useState("");
   const [activeTo, setActiveTo] = useState("");
-  const [logoDataUrl, setLogoDataUrl] = useState<string>("");
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (file: File) => {
-    if (file.size > 500 * 1024) {
-      setError("Logo file must be under 500KB. Use a smaller PNG/SVG.");
-      return;
+  const { uploadFile, isUploading } = useUpload({
+    onError: (e) => setError(e.message),
+  });
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    setPreviewUrl(URL.createObjectURL(file));
+    const result = await uploadFile(file);
+    if (result) {
+      setLogoUrl(`/api/storage${result.objectPath}`);
     }
-    const reader = new FileReader();
-    reader.onload = () => setLogoDataUrl(String(reader.result));
-    reader.onerror = () => setError("Failed to read file.");
-    reader.readAsDataURL(file);
   };
 
   const add = () => {
     setError(null);
     if (!name.trim()) return setError("Name required.");
-    if (!logoDataUrl) return setError("Logo required.");
+    if (isUploading) return setError("Logo is still uploading.");
+    if (!logoUrl) return setError("Logo required.");
     create.mutate(
       {
         data: {
           name: name.trim(),
-          logoDataUrl,
+          logoUrl,
           link: link.trim(),
           activeFrom: activeFrom || null,
           activeTo: activeTo || null,
@@ -271,7 +276,8 @@ function SponsorsCard({
           setLink("");
           setActiveFrom("");
           setActiveTo("");
-          setLogoDataUrl("");
+          setLogoUrl("");
+          setPreviewUrl("");
           if (fileRef.current) fileRef.current.value = "";
         },
       },
@@ -306,10 +312,10 @@ function SponsorsCard({
             </div>
           </div>
           <div className="space-y-3">
-            <Label>Logo (PNG / SVG, transparent, &lt; 500KB)</Label>
+            <Label>Logo (PNG / SVG, transparent)</Label>
             <div className="border border-dashed rounded p-4 flex flex-col items-center gap-3">
-              {logoDataUrl ? (
-                <img src={logoDataUrl} alt="logo" className="max-h-24 object-contain" />
+              {previewUrl ? (
+                <img src={previewUrl} alt="logo" className="max-h-24 object-contain" />
               ) : (
                 <Upload className="h-8 w-8 text-muted-foreground" />
               )}
@@ -318,11 +324,17 @@ function SponsorsCard({
                 type="file"
                 accept="image/png,image/svg+xml,image/webp,image/jpeg"
                 onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                disabled={isUploading}
                 className="text-xs"
               />
+              {isUploading && (
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Uploading…
+                </div>
+              )}
             </div>
             {error && <div className="text-sm text-destructive">{error}</div>}
-            <Button onClick={add} disabled={create.isPending} className="w-full">
+            <Button onClick={add} disabled={create.isPending || isUploading} className="w-full">
               Add sponsor
             </Button>
           </div>
@@ -334,7 +346,7 @@ function SponsorsCard({
           ) : (
             sponsors.map((s) => (
               <div key={s.id} className="flex items-center gap-3 border rounded p-2">
-                <img src={s.logoDataUrl} alt={s.name} className="h-10 w-16 object-contain bg-muted rounded" />
+                <img src={s.logoUrl} alt={s.name} className="h-10 w-16 object-contain bg-muted rounded" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{s.name}</div>
                   <div className="text-xs text-muted-foreground truncate">

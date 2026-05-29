@@ -15,6 +15,7 @@ import {
   UpsertCaptionTemplateBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
 
 const router: IRouter = Router();
 
@@ -112,12 +113,12 @@ async function ensureSettings() {
   return created;
 }
 
-router.get("/sponsors", async (_req, res): Promise<void> => {
+router.get("/sponsors", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(sponsorsTable)
     .orderBy(asc(sponsorsTable.displayOrder), asc(sponsorsTable.id));
-  res.json(rows);
+  res.json(await migrateSponsorLogos(rows, req.log));
 });
 
 router.post("/sponsors", requireAdmin, async (req, res): Promise<void> => {
@@ -130,7 +131,7 @@ router.post("/sponsors", requireAdmin, async (req, res): Promise<void> => {
     .insert(sponsorsTable)
     .values({
       name: parsed.data.name,
-      logoDataUrl: parsed.data.logoDataUrl,
+      logoUrl: parsed.data.logoUrl,
       link: parsed.data.link ?? "",
       activeFrom: parsed.data.activeFrom ?? null,
       activeTo: parsed.data.activeTo ?? null,
@@ -184,7 +185,7 @@ router.delete("/sponsors/:id", requireAdmin, async (req, res): Promise<void> => 
   res.status(204).end();
 });
 
-router.get("/social-settings", async (_req, res): Promise<void> => {
+router.get("/social-settings", async (req, res): Promise<void> => {
   const settings = await ensureSettings();
   const captionTemplates = await db.select().from(captionTemplatesTable);
   const today = new Date().toISOString().slice(0, 10);
@@ -205,7 +206,7 @@ router.get("/social-settings", async (_req, res): Promise<void> => {
       platform: t.platform,
       template: t.template,
     })),
-    activeSponsors,
+    activeSponsors: await migrateSponsorLogos(activeSponsors, req.log),
   });
 });
 

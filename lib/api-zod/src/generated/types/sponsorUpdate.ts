@@ -8,7 +8,7 @@
 
 export interface SponsorUpdate {
   name?: string;
-  logoDataUrl?: string;
+  logoUrl?: string;
   link?: string;
   /** @nullable */
   activeFrom?: string | null;

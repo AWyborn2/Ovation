@@ -13,7 +13,7 @@ import {
 export const sponsorsTable = pgTable("sponsors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  logoDataUrl: text("logo_data_url").notNull(),
+  logoUrl: text("logo_url").notNull(),
   link: text("link").notNull().default(""),
   activeFrom: date("active_from"),
   activeTo: date("active_to"),

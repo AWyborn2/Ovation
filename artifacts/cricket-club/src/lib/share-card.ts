@@ -15,7 +15,7 @@ export type CardSize = keyof typeof SIZES;
 
 export type CardSponsor = {
   name: string;
-  logoDataUrl: string;
+  logoUrl: string;
 };
 
 export type StatLine = {
@@ -233,7 +233,7 @@ const drawSponsors = async (
   const baseY = stripY + Math.round(36 * scale);
   for (const s of sponsors.slice(0, 4)) {
     try {
-      const img = await loadImage(s.logoDataUrl);
+      const img = await loadImage(s.logoUrl);
       const w = (img.width / img.height) * logoH;
       ctx.drawImage(img, cursorX, baseY, w, logoH);
       cursorX += w + gap;

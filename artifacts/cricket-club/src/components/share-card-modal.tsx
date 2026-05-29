@@ -113,7 +113,7 @@ export function ShareCardModal({
     if (!bundle?.settings.sponsorsEnabled || !includeSponsors) return [];
     return (bundle?.activeSponsors ?? []).map((s) => ({
       name: s.name,
-      logoDataUrl: s.logoDataUrl,
+      logoUrl: s.logoUrl,
     }));
   }, [bundle, includeSponsors]);
 
