@@ -1113,6 +1113,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
@@ -1127,6 +1128,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership'])).optional(),
   "displayOrder": zod.number().optional()
 })
 
@@ -1144,6 +1146,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership'])).optional(),
   "displayOrder": zod.number().optional()
 })
 
@@ -1154,6 +1157,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })
 
@@ -1270,6 +1274,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 }))
 })

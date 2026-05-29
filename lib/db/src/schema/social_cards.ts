@@ -17,6 +17,9 @@ export const sponsorsTable = pgTable("sponsors", {
   link: text("link").notNull().default(""),
   activeFrom: date("active_from"),
   activeTo: date("active_to"),
+  // Which social card types this sponsor's logo may appear on. Empty = all cards.
+  // Values match ShareCardInput["kind"]: milestone | player | record | gradeLeader | premiership.
+  cardKinds: text("card_kinds").array().notNull().default([]),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

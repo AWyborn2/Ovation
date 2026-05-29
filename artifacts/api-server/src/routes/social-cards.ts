@@ -142,6 +142,7 @@ router.post("/sponsors", requireAdmin, async (req, res): Promise<void> => {
       link: parsed.data.link ?? "",
       activeFrom: parsed.data.activeFrom ?? null,
       activeTo: parsed.data.activeTo ?? null,
+      cardKinds: parsed.data.cardKinds ?? [],
       displayOrder: parsed.data.displayOrder ?? 0,
     })
     .returning();

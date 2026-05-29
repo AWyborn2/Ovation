@@ -542,6 +542,17 @@ export interface HonourBoardOverrideInput {
   note?: string;
 }
 
+export type CardKind = typeof CardKind[keyof typeof CardKind];
+
+
+export const CardKind = {
+  milestone: 'milestone',
+  player: 'player',
+  record: 'record',
+  gradeLeader: 'gradeLeader',
+  premiership: 'premiership',
+} as const;
+
 export interface Sponsor {
   id: number;
   name: string;
@@ -551,6 +562,8 @@ export interface Sponsor {
   activeFrom?: string | null;
   /** @nullable */
   activeTo?: string | null;
+  /** Card types this sponsor may appear on. Empty = all cards. */
+  cardKinds: CardKind[];
   displayOrder: number;
 }
 
@@ -562,6 +575,7 @@ export interface SponsorInput {
   activeFrom?: string | null;
   /** @nullable */
   activeTo?: string | null;
+  cardKinds?: CardKind[];
   displayOrder?: number;
 }
 
@@ -573,6 +587,7 @@ export interface SponsorUpdate {
   activeFrom?: string | null;
   /** @nullable */
   activeTo?: string | null;
+  cardKinds?: CardKind[];
   displayOrder?: number;
 }
 

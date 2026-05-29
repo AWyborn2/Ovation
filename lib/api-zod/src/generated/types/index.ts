@@ -16,6 +16,7 @@ export * from './capEntryUpdate';
 export * from './capSyncSummary';
 export * from './captionTemplate';
 export * from './captionTemplateInput';
+export * from './cardKind';
 export * from './cardTheme';
 export * from './cardThemeInput';
 export * from './cardThemeUpdate';

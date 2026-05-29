@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Trash2, Upload, Save, Loader2 } from "lucide-react";
 import { KNOWN_TOKENS, type Platform } from "@/lib/captions";
+import type { CardKind } from "@/lib/share-card";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 
 const ENGINES: { value: "ondemand" | "milestone" | "roundup" | "recap"; label: string; desc: string }[] = [
@@ -49,6 +50,56 @@ const SIZE_KEYS: { key: "sizeSquare" | "sizePortrait" | "sizeStory"; label: stri
   { key: "sizePortrait", label: "Feed portrait", code: "1080×1350" },
   { key: "sizeStory", label: "Story / TikTok", code: "1080×1920" },
 ];
+
+const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
+  { value: "milestone", label: "Milestone" },
+  { value: "player", label: "Player" },
+  { value: "record", label: "Record" },
+  { value: "gradeLeader", label: "Leaderboard" },
+  { value: "premiership", label: "Premiership" },
+];
+
+// Chip picker for the card types a sponsor's logo may appear on.
+// An empty selection means "all card types".
+function CardKindPicker({
+  value,
+  onChange,
+}: {
+  value: string[] | null | undefined;
+  onChange: (next: CardKind[]) => void;
+}) {
+  const selected = value ?? [];
+  const isAll = selected.length === 0;
+  const toggle = (kind: CardKind) => {
+    const next = selected.includes(kind)
+      ? selected.filter((k) => k !== kind)
+      : [...selected, kind];
+    onChange(next as CardKind[]);
+  };
+  const chip = (active: boolean) =>
+    `text-xs px-2 py-0.5 rounded-full border transition-colors ${
+      active
+        ? "bg-primary text-primary-foreground border-primary"
+        : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+    }`;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button type="button" className={chip(isAll)} onClick={() => onChange([])}>
+        All cards
+      </button>
+      {CARD_KIND_OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          className={chip(!isAll && selected.includes(o.value))}
+          onClick={() => toggle(o.value)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function AdminSocial() {
   const qc = useQueryClient();
@@ -250,6 +301,7 @@ function SponsorsCard({
   const [activeTo, setActiveTo] = useState("");
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -282,6 +334,7 @@ function SponsorsCard({
           link: link.trim(),
           activeFrom: activeFrom || null,
           activeTo: activeTo || null,
+          cardKinds,
           displayOrder: sponsors.length,
         },
       },
@@ -293,6 +346,7 @@ function SponsorsCard({
           setActiveTo("");
           setLogoUrl("");
           setPreviewUrl("");
+          setCardKinds([]);
           if (fileRef.current) fileRef.current.value = "";
         },
       },
@@ -324,6 +378,13 @@ function SponsorsCard({
                 <Label htmlFor="sp-to">Active to</Label>
                 <Input id="sp-to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Show on card types</Label>
+              <CardKindPicker value={cardKinds} onChange={setCardKinds} />
+              <p className="text-xs text-muted-foreground">
+                No specific types selected = logo shows on all card types.
+              </p>
             </div>
           </div>
           <div className="space-y-3">
@@ -379,34 +440,42 @@ function SponsorsCard({
             <div className="text-sm text-muted-foreground">No sponsors yet.</div>
           ) : (
             sponsors.map((s) => (
-              <div key={s.id} className="flex items-center gap-3 border rounded p-2">
-                <img src={s.logoUrl} alt={s.name} className="h-10 w-16 object-contain bg-muted rounded" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{s.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {s.link || "no link"} • {s.activeFrom ?? "no start"} → {s.activeTo ?? "no end"}
+              <div key={s.id} className="border rounded p-2 space-y-2">
+                <div className="flex items-center gap-3">
+                  <img src={s.logoUrl} alt={s.name} className="h-10 w-16 object-contain bg-muted rounded" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{s.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {s.link || "no link"} • {s.activeFrom ?? "no start"} → {s.activeTo ?? "no end"}
+                    </div>
                   </div>
+                  <Input
+                    type="number"
+                    className="w-16"
+                    defaultValue={s.displayOrder}
+                    onBlur={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!isNaN(v) && v !== s.displayOrder) {
+                        update.mutate({ id: s.id, data: { displayOrder: v } });
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      if (confirm(`Delete sponsor "${s.name}"?`)) remove.mutate({ id: s.id });
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
-                <Input
-                  type="number"
-                  className="w-16"
-                  defaultValue={s.displayOrder}
-                  onBlur={(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    if (!isNaN(v) && v !== s.displayOrder) {
-                      update.mutate({ id: s.id, data: { displayOrder: v } });
-                    }
-                  }}
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    if (confirm(`Delete sponsor "${s.name}"?`)) remove.mutate({ id: s.id });
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="pl-[4.75rem]">
+                  <CardKindPicker
+                    value={s.cardKinds}
+                    onChange={(next) => update.mutate({ id: s.id, data: { cardKinds: next } })}
+                  />
+                </div>
               </div>
             ))
           )}

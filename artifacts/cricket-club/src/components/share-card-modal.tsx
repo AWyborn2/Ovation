@@ -27,6 +27,7 @@ import {
   renderShareCard,
   downloadBlob,
   cardBaseFilename,
+  sponsorAppliesToKind,
   type CardSize,
   type CardSponsor,
   type ShareCardInput,
@@ -129,12 +130,14 @@ export function ShareCardModal({
   }, [open, enabledSizes, activeSize]);
 
   const sponsors: CardSponsor[] = useMemo(() => {
-    if (!bundle?.settings.sponsorsEnabled || !includeSponsors) return [];
-    return (bundle?.activeSponsors ?? []).map((s) => ({
-      name: s.name,
-      logoUrl: s.logoUrl,
-    }));
-  }, [bundle, includeSponsors]);
+    if (!bundle?.settings.sponsorsEnabled || !includeSponsors || !input) return [];
+    return (bundle?.activeSponsors ?? [])
+      .filter((s) => sponsorAppliesToKind(s.cardKinds, input.kind))
+      .map((s) => ({
+        name: s.name,
+        logoUrl: s.logoUrl,
+      }));
+  }, [bundle, includeSponsors, input]);
 
   const clubUrl = bundle?.settings.clubUrl ?? "hallsheadcricket.com.au";
   const hashtag = bundle?.settings.clubHashtag ?? "#HHCC";
@@ -227,6 +230,13 @@ export function ShareCardModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme]);
 
+  // Stable signature of the resolved sponsor set so previews re-render when the
+  // sponsor list loads async or its card-kind filtering changes the result.
+  const sponsorSig = useMemo(
+    () => sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~"),
+    [sponsors],
+  );
+
   // Invalidate cached previews when sponsors flip or the theme changes.
   useEffect(() => {
     setPreviewUrls((prev) => {
@@ -236,7 +246,7 @@ export function ShareCardModal({
       return { square: null, portrait: null, story: null };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeSponsors, input, selectedThemeId]);
+  }, [includeSponsors, input, selectedThemeId, sponsorSig]);
 
   // Cleanup URLs on close.
   useEffect(() => {

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardKind } from './cardKind';
 
 export interface Sponsor {
   id: number;
@@ -15,5 +16,7 @@ export interface Sponsor {
   activeFrom?: string | null;
   /** @nullable */
   activeTo?: string | null;
+  /** Card types this sponsor may appear on. Empty = all cards. */
+  cardKinds: CardKind[];
   displayOrder: number;
 }

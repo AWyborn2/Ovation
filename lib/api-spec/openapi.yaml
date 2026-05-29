@@ -2268,9 +2268,13 @@ components:
         note:
           type: string
 
+    CardKind:
+      type: string
+      enum: [milestone, player, record, gradeLeader, premiership]
+
     Sponsor:
       type: object
-      required: [id, name, logoUrl, link, displayOrder]
+      required: [id, name, logoUrl, link, displayOrder, cardKinds]
       properties:
         id:
           type: integer
@@ -2284,6 +2288,11 @@ components:
           type: ["string", "null"]
         activeTo:
           type: ["string", "null"]
+        cardKinds:
+          type: array
+          description: Card types this sponsor may appear on. Empty = all cards.
+          items:
+            $ref: "#/components/schemas/CardKind"
         displayOrder:
           type: integer
 
@@ -2301,6 +2310,10 @@ components:
           type: ["string", "null"]
         activeTo:
           type: ["string", "null"]
+        cardKinds:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardKind"
         displayOrder:
           type: integer
 
@@ -2317,6 +2330,10 @@ components:
           type: ["string", "null"]
         activeTo:
           type: ["string", "null"]
+        cardKinds:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardKind"
         displayOrder:
           type: integer
 

@@ -71,6 +71,23 @@ export type ShareCardInput =
       headline?: string;
     };
 
+export type CardKind = ShareCardInput["kind"];
+
+export const CARD_KINDS: CardKind[] = [
+  "milestone",
+  "player",
+  "record",
+  "gradeLeader",
+  "premiership",
+];
+
+// A sponsor with an empty cardKinds list applies to every card type; otherwise
+// it only appears on the listed kinds.
+export const sponsorAppliesToKind = (
+  cardKinds: string[] | null | undefined,
+  kind: CardKind,
+): boolean => !cardKinds || cardKinds.length === 0 || cardKinds.includes(kind);
+
 // Theme as delivered by the API (`CardTheme`). Colors are hex strings; the two
 // optional URLs add a background image and a custom logo. The renderer derives
 // the muted / soft accent variants from these base colors.
