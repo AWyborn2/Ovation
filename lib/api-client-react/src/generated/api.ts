@@ -29,6 +29,7 @@ import type {
   CaptionTemplate,
   CaptionTemplateInput,
   ClubRecords,
+  CommitImportResult,
   Dashboard,
   ErrorEnvelope,
   GradeSummary,
@@ -1314,9 +1315,9 @@ export const getCommitImportUrl = (id: number,) => {
 /**
  * @summary Commit a previously-previewed import
  */
-export const commitImport = async (id: number, options?: RequestInit): Promise<ImportRecord> => {
+export const commitImport = async (id: number, options?: RequestInit): Promise<CommitImportResult> => {
 
-  return customFetch<ImportRecord>(getCommitImportUrl(id),
+  return customFetch<CommitImportResult>(getCommitImportUrl(id),
   {
     ...options,
     method: 'POST'

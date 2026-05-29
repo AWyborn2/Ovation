@@ -7,14 +7,9 @@
  */
 import type { CapCategory } from './capCategory';
 
-export interface CapEntry {
-  id: number;
-  capNumber: number;
+export interface CapSyncSummary {
+  grade: string;
   category: CapCategory;
-  name: string;
-  deceased: boolean;
-  inStats: boolean;
-  gamesAGrade: number;
-  /** @nullable */
-  playerId?: number | null;
+  updated: number;
+  created: number;
 }

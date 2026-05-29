@@ -243,6 +243,37 @@ export interface ImportRecord {
   importedAt: string;
 }
 
+/**
+ * Which A Grade cap list this entry belongs to.
+ */
+export type CapCategory = typeof CapCategory[keyof typeof CapCategory];
+
+
+export const CapCategory = {
+  male: 'male',
+  female: 'female',
+} as const;
+
+export interface CapSyncSummary {
+  grade: string;
+  category: CapCategory;
+  updated: number;
+  created: number;
+}
+
+export interface CommitImportResult {
+  id: number;
+  filename: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  season?: number | null;
+  rowCount: number;
+  status: string;
+  importedAt: string;
+  capsSync: CapSyncSummary[];
+}
+
 export type ImportPreviewPlayerStatus = typeof ImportPreviewPlayerStatus[keyof typeof ImportPreviewPlayerStatus];
 
 
@@ -309,6 +340,7 @@ export interface PlayerRecord {
 export interface CapEntry {
   id: number;
   capNumber: number;
+  category: CapCategory;
   name: string;
   deceased: boolean;
   inStats: boolean;
@@ -319,6 +351,7 @@ export interface CapEntry {
 
 export interface CapEntryInput {
   capNumber: number;
+  category?: CapCategory;
   name: string;
   deceased?: boolean;
   inStats?: boolean;
@@ -329,6 +362,7 @@ export interface CapEntryInput {
 
 export interface CapEntryUpdate {
   capNumber?: number;
+  category?: CapCategory;
   name?: string;
   deceased?: boolean;
   inStats?: boolean;

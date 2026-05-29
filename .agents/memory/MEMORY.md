@@ -3,3 +3,4 @@
 - [Social milestone engine gating](social-milestone-engine.md) — milestone auto-detection only runs when socialSettings.engineMilestone is ON (defaults OFF); milestone events stamped via social-drafts posted/dismiss endpoints, not directly.
 - [Drizzle push column rename](drizzle-push-column-rename.md) — `drizzle-kit push` blocks on a TTY prompt for renames; do the rename via raw SQL ALTER, then push to confirm sync.
 - [Round-up & recap cards](social-roundup-recap.md) — no partnership data exists (don't re-attempt); milestones have no grade/season (join via imports); card_input is opaque jsonb so new kinds need no codegen.
+- [A Grade cap categories](cap-register-category.md) — cap_register split male/female via composite (category, cap_number) unique; auto-synced from A Grade / Female A Grade imports (idempotent, matches on playerId).

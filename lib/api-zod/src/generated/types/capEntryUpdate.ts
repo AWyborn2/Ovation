@@ -5,9 +5,11 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CapCategory } from './capCategory';
 
 export interface CapEntryUpdate {
   capNumber?: number;
+  category?: CapCategory;
   name?: string;
   deceased?: boolean;
   inStats?: boolean;

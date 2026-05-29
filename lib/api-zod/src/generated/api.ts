@@ -491,7 +491,13 @@ export const CommitImportResponse = zod.object({
   "season": zod.number().nullish(),
   "rowCount": zod.number(),
   "status": zod.string(),
-  "importedAt": zod.coerce.date()
+  "importedAt": zod.coerce.date(),
+  "capsSync": zod.array(zod.object({
+  "grade": zod.string(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "updated": zod.number(),
+  "created": zod.number()
+}))
 })
 
 
@@ -601,6 +607,7 @@ export const GetRecordsResponse = zod.object({
 export const ListCapsResponseItem = zod.object({
   "id": zod.number(),
   "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "name": zod.string(),
   "deceased": zod.boolean(),
   "inStats": zod.boolean(),
@@ -615,6 +622,7 @@ export const ListCapsResponse = zod.array(ListCapsResponseItem)
  */
 export const CreateCapBody = zod.object({
   "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).optional().describe('Which A Grade cap list this entry belongs to.'),
   "name": zod.string(),
   "deceased": zod.boolean().optional(),
   "inStats": zod.boolean().optional(),
@@ -632,6 +640,7 @@ export const UpdateCapParams = zod.object({
 
 export const UpdateCapBody = zod.object({
   "capNumber": zod.number().optional(),
+  "category": zod.enum(['male', 'female']).optional().describe('Which A Grade cap list this entry belongs to.'),
   "name": zod.string().optional(),
   "deceased": zod.boolean().optional(),
   "inStats": zod.boolean().optional(),
@@ -642,6 +651,7 @@ export const UpdateCapBody = zod.object({
 export const UpdateCapResponse = zod.object({
   "id": zod.number(),
   "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "name": zod.string(),
   "deceased": zod.boolean(),
   "inStats": zod.boolean(),

@@ -9,7 +9,7 @@ import {
   useListPlayers,
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
-import type { CapEntry } from "@workspace/api-client-react";
+import type { CapEntry, CapCategory } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export default function AdminCaps() {
   const updateCap = useUpdateCap();
   const deleteCap = useDeleteCap();
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<CapCategory>("male");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,19 +32,23 @@ export default function AdminCaps() {
     queryClient.invalidateQueries({ queryKey: getListCapsQueryKey() });
   };
 
+  const inCategory = useMemo(
+    () => (caps ?? []).filter((c) => (c.category ?? "male") === category),
+    [caps, category],
+  );
+
   const nextCapNumber = useMemo(() => {
-    if (!caps || caps.length === 0) return 1;
-    return Math.max(...caps.map((c) => c.capNumber)) + 1;
-  }, [caps]);
+    if (inCategory.length === 0) return 1;
+    return Math.max(...inCategory.map((c) => c.capNumber)) + 1;
+  }, [inCategory]);
 
   const filtered = useMemo(() => {
-    if (!caps) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return caps;
-    return caps.filter(
+    if (!q) return inCategory;
+    return inCategory.filter(
       (c) => c.name.toLowerCase().includes(q) || String(c.capNumber).includes(q),
     );
-  }, [caps, search]);
+  }, [inCategory, search]);
 
   const onMutationError = (e: unknown) => {
     const msg = handleAdminMutationError(e);
@@ -52,19 +57,37 @@ export default function AdminCaps() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold">Admin · Cap Register</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage the A Grade Cap Register. Changes apply immediately to the public honour boards page.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-serif font-bold">Admin · A Grade Caps</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage the A Grade cap lists. Changes apply immediately to the public honour boards page.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="admin-cap-category">List</Label>
+          <select
+            id="admin-cap-category"
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value as CapCategory);
+              setEditingId(null);
+            }}
+            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+          >
+            <option value="male">A Grade Male</option>
+            <option value="female">A Grade Female</option>
+          </select>
+        </div>
       </div>
 
       <AddCapForm
+        key={category}
         nextCapNumber={nextCapNumber}
         onCreate={(values) => {
           setError(null);
           createCap.mutate(
-            { data: values },
+            { data: { ...values, category } },
             {
               onSuccess: invalidate,
               onError: onMutationError,
@@ -76,7 +99,10 @@ export default function AdminCaps() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Cap Register {caps && <span className="text-muted-foreground text-sm font-normal">({caps.length} entries)</span>}</CardTitle>
+          <CardTitle>
+            {category === "female" ? "A Grade Female" : "A Grade Male"}{" "}
+            <span className="text-muted-foreground text-sm font-normal">({inCategory.length} entries)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
@@ -98,6 +124,7 @@ export default function AdminCaps() {
                     <th className="py-2 pr-4 w-20">Cap #</th>
                     <th className="py-2 pr-4">Name</th>
                     <th className="py-2 pr-4">Linked player</th>
+                    <th className="py-2 pr-4 w-20">Games</th>
                     <th className="py-2 pr-4 w-24">Status</th>
                     <th className="py-2 pr-4 w-40 text-right">Actions</th>
                   </tr>
@@ -138,6 +165,7 @@ export default function AdminCaps() {
                             <span className="text-muted-foreground italic">— unmatched —</span>
                           )}
                         </td>
+                        <td className="py-2 pr-4 font-mono">{cap.inStats ? cap.gamesAGrade : "—"}</td>
                         <td className="py-2 pr-4">
                           {cap.playerId != null ? (
                             <span className="text-green-700 dark:text-green-400">✓ matched</span>
@@ -187,19 +215,30 @@ function LinkedPlayerLabel({ playerId }: { playerId: number }) {
   return <span className="font-mono text-xs text-muted-foreground">player #{playerId}</span>;
 }
 
+type CapFormValues = {
+  capNumber: number;
+  name: string;
+  deceased: boolean;
+  playerId: number | null;
+  gamesAGrade: number;
+  inStats: boolean;
+};
+
 function AddCapForm({
   nextCapNumber,
   onCreate,
   pending,
 }: {
   nextCapNumber: number;
-  onCreate: (v: { capNumber: number; name: string; deceased: boolean; playerId: number | null }) => void;
+  onCreate: (v: CapFormValues) => void;
   pending: boolean;
 }) {
   const [capNumber, setCapNumber] = useState<number>(nextCapNumber);
   const [name, setName] = useState("");
   const [deceased, setDeceased] = useState(false);
   const [player, setPlayer] = useState<SelectedPlayer | null>(null);
+  const [gamesAGrade, setGamesAGrade] = useState<number>(0);
+  const [inStats, setInStats] = useState(false);
 
   // Keep capNumber synced with computed next when user hasn't typed
   useMemo(() => setCapNumber(nextCapNumber), [nextCapNumber]);
@@ -207,10 +246,19 @@ function AddCapForm({
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onCreate({ capNumber, name: name.trim(), deceased, playerId: player?.id ?? null });
+    onCreate({
+      capNumber,
+      name: name.trim(),
+      deceased,
+      playerId: player?.id ?? null,
+      gamesAGrade: Number.isFinite(gamesAGrade) ? gamesAGrade : 0,
+      inStats,
+    });
     setName("");
     setDeceased(false);
     setPlayer(null);
+    setGamesAGrade(0);
+    setInStats(false);
   };
 
   return (
@@ -219,7 +267,7 @@ function AddCapForm({
         <CardTitle>Add cap entry</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-[100px_1fr_1fr_auto] md:items-end">
+        <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-[100px_1fr_1fr_120px_auto] md:items-end">
           <div className="space-y-2">
             <Label htmlFor="cap-number">Cap #</Label>
             <Input
@@ -239,6 +287,16 @@ function AddCapForm({
             <Label>Linked player (optional)</Label>
             <PlayerTypeahead value={player} onChange={setPlayer} />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="cap-games">Games</Label>
+            <Input
+              id="cap-games"
+              type="number"
+              value={gamesAGrade}
+              onChange={(e) => setGamesAGrade(parseInt(e.target.value, 10))}
+              min={0}
+            />
+          </div>
           <div className="flex flex-col gap-2">
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -247,6 +305,14 @@ function AddCapForm({
                 onChange={(e) => setDeceased(e.target.checked)}
               />
               Deceased
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={inStats}
+                onChange={(e) => setInStats(e.target.checked)}
+              />
+              On record
             </label>
             <Button type="submit" disabled={pending || !name.trim()}>
               {pending ? "Adding…" : "Add cap"}
@@ -267,7 +333,7 @@ function EditCapRow({
   cap: CapEntry;
   pending: boolean;
   onCancel: () => void;
-  onSave: (v: { capNumber: number; name: string; deceased: boolean; playerId: number | null }) => void;
+  onSave: (v: CapFormValues) => void;
 }) {
   const [capNumber, setCapNumber] = useState(cap.capNumber);
   const [name, setName] = useState(cap.name);
@@ -275,6 +341,8 @@ function EditCapRow({
   const [player, setPlayer] = useState<SelectedPlayer | null>(
     cap.playerId != null ? { id: cap.playerId, surname: "Linked", givenName: "player" } : null,
   );
+  const [gamesAGrade, setGamesAGrade] = useState(cap.gamesAGrade);
+  const [inStats, setInStats] = useState(cap.inStats);
 
   return (
     <tr className="border-b last:border-0 bg-muted/30">
@@ -293,20 +361,46 @@ function EditCapRow({
         <PlayerTypeahead value={player} onChange={setPlayer} />
       </td>
       <td className="py-2 pr-4">
-        <label className="flex items-center gap-1 text-sm">
-          <input
-            type="checkbox"
-            checked={deceased}
-            onChange={(e) => setDeceased(e.target.checked)}
-          />
-          Deceased
-        </label>
+        <Input
+          type="number"
+          value={gamesAGrade}
+          onChange={(e) => setGamesAGrade(parseInt(e.target.value, 10))}
+          min={0}
+          className="w-20"
+        />
+      </td>
+      <td className="py-2 pr-4">
+        <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="checkbox"
+              checked={deceased}
+              onChange={(e) => setDeceased(e.target.checked)}
+            />
+            Deceased
+          </label>
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="checkbox"
+              checked={inStats}
+              onChange={(e) => setInStats(e.target.checked)}
+            />
+            On record
+          </label>
+        </div>
       </td>
       <td className="py-2 pr-4 text-right space-x-2">
         <Button
           size="sm"
           onClick={() =>
-            onSave({ capNumber, name: name.trim(), deceased, playerId: player?.id ?? null })
+            onSave({
+              capNumber,
+              name: name.trim(),
+              deceased,
+              playerId: player?.id ?? null,
+              gamesAGrade: Number.isFinite(gamesAGrade) ? gamesAGrade : 0,
+              inStats,
+            })
           }
           disabled={pending || !name.trim()}
         >

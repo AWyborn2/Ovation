@@ -413,7 +413,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ImportRecord"
+                $ref: "#/components/schemas/CommitImportResult"
         "404":
           description: Not found
 
@@ -1686,6 +1686,43 @@ components:
           type: string
           format: date-time
 
+    CapSyncSummary:
+      type: object
+      required: [grade, category, updated, created]
+      properties:
+        grade:
+          type: string
+        category:
+          $ref: "#/components/schemas/CapCategory"
+        updated:
+          type: integer
+        created:
+          type: integer
+
+    CommitImportResult:
+      type: object
+      required: [id, filename, status, rowCount, importedAt, capsSync]
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        grade:
+          type: ["string", "null"]
+        season:
+          type: ["integer", "null"]
+        rowCount:
+          type: integer
+        status:
+          type: string
+        importedAt:
+          type: string
+          format: date-time
+        capsSync:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapSyncSummary"
+
     ImportPreviewPlayer:
       type: object
       required: [surname, givenName, status]
@@ -1811,14 +1848,21 @@ components:
         value:
           type: integer
 
+    CapCategory:
+      type: string
+      enum: [male, female]
+      description: Which A Grade cap list this entry belongs to.
+
     CapEntry:
       type: object
-      required: [id, capNumber, name, deceased, inStats, gamesAGrade]
+      required: [id, capNumber, category, name, deceased, inStats, gamesAGrade]
       properties:
         id:
           type: integer
         capNumber:
           type: integer
+        category:
+          $ref: "#/components/schemas/CapCategory"
         name:
           type: string
         deceased:
@@ -1836,6 +1880,8 @@ components:
       properties:
         capNumber:
           type: integer
+        category:
+          $ref: "#/components/schemas/CapCategory"
         name:
           type: string
         deceased:
@@ -1852,6 +1898,8 @@ components:
       properties:
         capNumber:
           type: integer
+        category:
+          $ref: "#/components/schemas/CapCategory"
         name:
           type: string
         deceased:

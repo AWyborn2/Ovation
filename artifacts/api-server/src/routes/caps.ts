@@ -26,12 +26,16 @@ router.post("/caps", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
   try {
+    const category = parsed.data.category ?? "male";
     const [row] = await db
       .insert(capRegisterTable)
       .values({
         capNumber: parsed.data.capNumber,
+        category,
         name: parsed.data.name,
         deceased: parsed.data.deceased ?? false,
+        inStats: parsed.data.inStats ?? false,
+        gamesAGrade: parsed.data.gamesAGrade ?? 0,
         playerId: parsed.data.playerId ?? null,
       })
       .returning();
@@ -39,7 +43,9 @@ router.post("/caps", requireAdmin, async (req, res): Promise<void> => {
   } catch (e) {
     const msg = (e as Error).message ?? "Insert failed";
     if (/duplicate|unique/i.test(msg)) {
-      res.status(409).json({ error: `Cap #${parsed.data.capNumber} already exists.` });
+      const category = parsed.data.category ?? "male";
+      const label = category === "female" ? "Female A Grade" : "A Grade Male";
+      res.status(409).json({ error: `Cap #${parsed.data.capNumber} already exists in the ${label} list.` });
       return;
     }
     res.status(500).json({ error: msg });

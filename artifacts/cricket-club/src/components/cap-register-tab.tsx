@@ -1,34 +1,66 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useListCaps } from "@workspace/api-client-react";
+import type { CapCategory } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
+
+const CATEGORY_LABEL: Record<CapCategory, string> = {
+  male: "A Grade Male",
+  female: "A Grade Female",
+};
 
 export function CapRegisterTab() {
   const { data: caps, isLoading } = useListCaps();
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<CapCategory>("male");
+
+  const inCategory = useMemo(
+    () => (caps ?? []).filter((c) => (c.category ?? "male") === category),
+    [caps, category],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return caps ?? [];
-    return (caps ?? []).filter(
+    if (!q) return inCategory;
+    return inCategory.filter(
       (c) =>
         c.name.toLowerCase().includes(q) || String(c.capNumber) === q,
     );
-  }, [caps, search]);
+  }, [inCategory, search]);
 
-  const onRecord = caps?.filter((c) => c.inStats).length ?? 0;
-  const deceased = caps?.filter((c) => c.deceased).length ?? 0;
+  const onRecord = inCategory.filter((c) => c.inStats).length;
+  const deceased = inCategory.filter((c) => c.deceased).length;
+  const categoryLabel = CATEGORY_LABEL[category];
 
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
-          A Grade Cap Register
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
+            A Grade Caps
+          </h2>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="cap-category"
+              className="text-xs font-bold uppercase tracking-widest text-primary"
+            >
+              List
+            </label>
+            <select
+              id="cap-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as CapCategory)}
+              className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+            >
+              <option value="male">A Grade Male</option>
+              <option value="female">A Grade Female</option>
+            </select>
+          </div>
+        </div>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Every player to wear the cap for Halls Head Cricket Club in A Grade
-          competition, in chronological order of debut. {caps?.length ?? 0}{" "}
+          Every player to wear the {categoryLabel} cap for Halls Head Cricket
+          Club, in chronological order of debut. {inCategory.length}{" "}
           caps issued — {onRecord} with stats on record, {deceased} since
           deceased.
         </p>
@@ -76,7 +108,9 @@ export function CapRegisterTab() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-          No caps matched "{search}".
+          {search.trim()
+            ? `No caps matched "${search}".`
+            : `No ${categoryLabel} caps have been recorded yet.`}
         </div>
       ) : (
         <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">

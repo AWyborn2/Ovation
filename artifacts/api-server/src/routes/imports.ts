@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
 import { recomputeAggregates } from "../lib/recompute";
+import { syncCapsFromStats, type CapSyncResult } from "../lib/cap-sync";
 import {
   detectCrossings,
   BOARD_STAT_LABEL,
@@ -239,6 +240,8 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     });
   }
 
+  const capsSync: CapSyncResult[] = [];
+
   await db.transaction(async (tx) => {
     // Wipe any prior snapshots for (grade, season) so re-importing is idempotent.
     for (const grade of affectedGrades) {
@@ -280,6 +283,19 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     // Recompute aggregates in the SAME transaction so readers never see
     // half-applied state and the temp/connection-state caveat doesn't apply.
     await recomputeAggregates(tx, affectedGrades);
+
+    // Auto-sync A Grade cap lists from the freshly-recomputed stats. Only
+    // A Grade (male) and Female A Grade (female) map to a cap category; other
+    // grades are ignored. New caps are numbered in batting order, which the
+    // PlayCricket CSV does not carry, so we fall back to CSV row order (the
+    // order rows appear in `resolved`).
+    for (const grade of affectedGrades) {
+      const orderedPlayerIds = resolved
+        .filter((r) => r.grade === grade)
+        .map((r) => r.playerId);
+      const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
+      if (result) capsSync.push(result);
+    }
   });
 
   // Load social settings once to gate auto-generation engines.
@@ -381,10 +397,11 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     .from(importsTable)
     .where(eq(importsTable.id, id));
 
-  res.json(updated satisfies Pick<
+  const importFields = updated satisfies Pick<
     ImportRecord,
     "id" | "filename" | "grade" | "season" | "rowCount" | "status" | "importedAt"
-  >);
+  >;
+  res.json({ ...importFields, capsSync });
 });
 
 router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {

@@ -540,7 +540,7 @@ export default function HonourBoards() {
               : "text-muted-foreground hover:bg-muted hover:text-primary"
           }`}
         >
-          A Grade Cap Register
+          A Grade Caps
         </button>
         <button
           onClick={() => setActiveTab("life-members")}
