@@ -1084,3 +1084,229 @@ export const DeleteHonourBoardOverrideParams = zod.object({
 })
 
 
+/**
+ * @summary List all sponsors
+ */
+export const ListSponsorsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoDataUrl": zod.string(),
+  "link": zod.string(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "displayOrder": zod.number()
+})
+export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
+
+
+/**
+ * @summary Create a sponsor
+ */
+export const CreateSponsorBody = zod.object({
+  "name": zod.string(),
+  "logoDataUrl": zod.string(),
+  "link": zod.string().optional(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a sponsor
+ */
+export const UpdateSponsorParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSponsorBody = zod.object({
+  "name": zod.string().optional(),
+  "logoDataUrl": zod.string().optional(),
+  "link": zod.string().optional(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateSponsorResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoDataUrl": zod.string(),
+  "link": zod.string(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Delete a sponsor
+ */
+export const DeleteSponsorParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get social card settings (engines, sizes, sponsors, captions)
+ */
+export const GetSocialSettingsResponse = zod.object({
+  "settings": zod.object({
+  "engineOnDemand": zod.boolean(),
+  "engineMilestone": zod.boolean(),
+  "engineRoundUp": zod.boolean(),
+  "engineRecap": zod.boolean(),
+  "sizeSquare": zod.boolean(),
+  "sizePortrait": zod.boolean(),
+  "sizeStory": zod.boolean(),
+  "sponsorsEnabled": zod.boolean(),
+  "captionsEnabled": zod.boolean(),
+  "clubHashtag": zod.string(),
+  "clubUrl": zod.string()
+}),
+  "captionTemplates": zod.array(zod.object({
+  "engine": zod.string(),
+  "platform": zod.string(),
+  "template": zod.string()
+})),
+  "activeSponsors": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoDataUrl": zod.string(),
+  "link": zod.string(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "displayOrder": zod.number()
+}))
+})
+
+
+/**
+ * @summary Update social card settings
+ */
+export const UpdateSocialSettingsBody = zod.object({
+  "engineOnDemand": zod.boolean().optional(),
+  "engineMilestone": zod.boolean().optional(),
+  "engineRoundUp": zod.boolean().optional(),
+  "engineRecap": zod.boolean().optional(),
+  "sizeSquare": zod.boolean().optional(),
+  "sizePortrait": zod.boolean().optional(),
+  "sizeStory": zod.boolean().optional(),
+  "sponsorsEnabled": zod.boolean().optional(),
+  "captionsEnabled": zod.boolean().optional(),
+  "clubHashtag": zod.string().optional(),
+  "clubUrl": zod.string().optional()
+})
+
+export const UpdateSocialSettingsResponse = zod.object({
+  "engineOnDemand": zod.boolean(),
+  "engineMilestone": zod.boolean(),
+  "engineRoundUp": zod.boolean(),
+  "engineRecap": zod.boolean(),
+  "sizeSquare": zod.boolean(),
+  "sizePortrait": zod.boolean(),
+  "sizeStory": zod.boolean(),
+  "sponsorsEnabled": zod.boolean(),
+  "captionsEnabled": zod.boolean(),
+  "clubHashtag": zod.string(),
+  "clubUrl": zod.string()
+})
+
+
+/**
+ * @summary Upsert a caption template for an engine+platform
+ */
+export const UpsertCaptionTemplateBody = zod.object({
+  "engine": zod.string(),
+  "platform": zod.string(),
+  "template": zod.string()
+})
+
+export const UpsertCaptionTemplateResponse = zod.object({
+  "engine": zod.string(),
+  "platform": zod.string(),
+  "template": zod.string()
+})
+
+
+/**
+ * @summary List queued social card drafts (pending + reviewed history)
+ */
+export const ListSocialDraftsResponseItem = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish()
+})
+export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
+
+
+export const ApproveSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApproveSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish()
+})
+
+
+export const DismissSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Generate top-performer drafts from the most recent import for a grade
+ */
+export const GenerateRoundUpBody = zod.object({
+  "grade": zod.string(),
+  "season": zod.number()
+})
+
+export const GenerateRoundUpResponseItem = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish()
+})
+export const GenerateRoundUpResponse = zod.array(GenerateRoundUpResponseItem)
+
+
+/**
+ * @summary List tracked short links with click counts
+ */
+export const ListTrackedLinksResponseItem = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "targetUrl": zod.string(),
+  "label": zod.string(),
+  "engine": zod.string(),
+  "platform": zod.string(),
+  "clickCount": zod.number(),
+  "lastClickedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListTrackedLinksResponse = zod.array(ListTrackedLinksResponseItem)
+
+

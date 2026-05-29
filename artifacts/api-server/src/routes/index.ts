@@ -10,6 +10,8 @@ import importsRouter from "./imports";
 import capsRouter from "./caps";
 import lifeMembersRouter from "./life-members";
 import honourBoardsRouter from "./honour-boards";
+import socialCardsRouter from "./social-cards";
+import socialDraftsRouter from "./social-drafts";
 
 const router: IRouter = Router();
 
@@ -24,5 +26,7 @@ router.use(importsRouter);
 router.use(capsRouter);
 router.use(lifeMembersRouter);
 router.use(honourBoardsRouter);
+router.use(socialCardsRouter);
+router.use(socialDraftsRouter);
 
 export default router;

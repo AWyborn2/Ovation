@@ -23,6 +23,8 @@ import AdminHonourBoards from "@/pages/admin-honour-boards";
 import AdminImport from "@/pages/admin-import";
 import AdminCaps from "@/pages/admin-caps";
 import AdminLifeMembers from "@/pages/admin-life-members";
+import AdminSocial from "@/pages/admin-social";
+import AdminSocialQueue from "@/pages/admin-social-queue";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -60,6 +62,8 @@ function AdminRoutes() {
           <Route path="/admin/import" component={AdminImport} />
           <Route path="/admin/caps" component={AdminCaps} />
           <Route path="/admin/life-members" component={AdminLifeMembers} />
+          <Route path="/admin/social" component={AdminSocial} />
+          <Route path="/admin/social/queue" component={AdminSocialQueue} />
           <Route component={NotFound} />
         </Switch>
       </AdminShell>

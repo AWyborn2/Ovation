@@ -16,6 +16,8 @@ import {
   type MilestoneStatus,
 } from "@/lib/honour-boards";
 import { downloadMilestoneCard } from "@/lib/milestone-share";
+import { ShareButton } from "@/components/share-card-modal";
+import type { ShareCardInput } from "@/lib/share-card";
 
 const fmtNum = (n: number) => n.toLocaleString();
 
@@ -148,7 +150,30 @@ export default function PlayerDetail() {
             <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="md" />
           </div>
         </div>
-        <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
+        <div className="flex items-center gap-2">
+          {(() => {
+            const fullName = `${player.givenName} ${player.surname}`.trim();
+            const career = aggregateCareer(player.stats)[0];
+            const stats: { label: string; value: number | string }[] = career
+              ? [
+                  { label: "Games", value: career.games ?? 0 },
+                  { label: "Runs", value: career.runs ?? 0 },
+                  { label: "Wickets", value: career.wickets ?? 0 },
+                ]
+              : [];
+            if ((player.premiershipsWon ?? 0) > 0) {
+              stats.push({ label: "Premierships", value: player.premiershipsWon ?? 0 });
+            }
+            const input: ShareCardInput = {
+              kind: "player",
+              playerName: fullName,
+              gradesPlayed: player.gradesPlayed,
+              stats,
+            };
+            return <ShareButton input={input} appPath={`/players/${player.id}`} label="Share profile" />;
+          })()}
+          <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
+        </div>
       </div>
 
       {premsWon > 0 && (

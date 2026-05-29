@@ -6,10 +6,24 @@ import {
   importsTable,
   playersTable,
   playerGradeSeasonStatsTable,
+  playerGradeStatsTable,
+  milestoneEventsTable,
+  socialDraftsTable,
   type ImportRecord,
 } from "@workspace/db";
 import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
 import { recomputeAggregates } from "../lib/recompute";
+import {
+  detectCrossings,
+  BOARD_STAT_LABEL,
+  TIER_THRESHOLDS,
+  type BoardKey,
+} from "../lib/milestone-detector";
+import { generateRoundUpDrafts } from "../lib/roundup";
+import {
+  db as _db,
+  socialSettingsTable,
+} from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
@@ -204,6 +218,27 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
 
   const affectedGrades = Array.from(new Set(resolved.map((r) => r.grade)));
 
+  // Snapshot per-player totals BEFORE the import so we can detect tier crossings.
+  const beforeTotalsRows = await db
+    .select({
+      playerId: playerGradeStatsTable.playerId,
+      games: sql<number>`coalesce(sum(${playerGradeStatsTable.games}), 0)`,
+      runs: sql<number>`coalesce(sum(${playerGradeStatsTable.runs}), 0)`,
+      wickets: sql<number>`coalesce(sum(${playerGradeStatsTable.wickets}), 0)`,
+      dismissals: sql<number>`coalesce(sum(${playerGradeStatsTable.catches} + ${playerGradeStatsTable.stumpings}), 0)`,
+    })
+    .from(playerGradeStatsTable)
+    .groupBy(playerGradeStatsTable.playerId);
+  const beforeMap = new Map<number, { games: number; runs: number; wickets: number; dismissals: number }>();
+  for (const r of beforeTotalsRows) {
+    beforeMap.set(r.playerId, {
+      games: Number(r.games),
+      runs: Number(r.runs),
+      wickets: Number(r.wickets),
+      dismissals: Number(r.dismissals),
+    });
+  }
+
   await db.transaction(async (tx) => {
     // Wipe any prior snapshots for (grade, season) so re-importing is idempotent.
     for (const grade of affectedGrades) {
@@ -246,6 +281,92 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     // half-applied state and the temp/connection-state caveat doesn't apply.
     await recomputeAggregates(tx, affectedGrades);
   });
+
+  // Load social settings once to gate auto-generation engines.
+  const [socialSettings] = await db.select().from(socialSettingsTable).limit(1);
+
+  // Milestone detection: compare post-recompute totals to before and queue drafts.
+  try {
+    if (!socialSettings?.engineMilestone) throw new Error("__skip_milestone__");
+    const afterTotalsRows = await db
+      .select({
+        playerId: playerGradeStatsTable.playerId,
+        games: sql<number>`coalesce(sum(${playerGradeStatsTable.games}), 0)`,
+        runs: sql<number>`coalesce(sum(${playerGradeStatsTable.runs}), 0)`,
+        wickets: sql<number>`coalesce(sum(${playerGradeStatsTable.wickets}), 0)`,
+        dismissals: sql<number>`coalesce(sum(${playerGradeStatsTable.catches} + ${playerGradeStatsTable.stumpings}), 0)`,
+      })
+      .from(playerGradeStatsTable)
+      .groupBy(playerGradeStatsTable.playerId);
+    const afterMap = new Map<number, { games: number; runs: number; wickets: number; dismissals: number }>();
+    for (const r of afterTotalsRows) {
+      afterMap.set(r.playerId, {
+        games: Number(r.games),
+        runs: Number(r.runs),
+        wickets: Number(r.wickets),
+        dismissals: Number(r.dismissals),
+      });
+    }
+    const crossings = detectCrossings(beforeMap, afterMap);
+    if (crossings.length > 0) {
+      const playerIds = Array.from(new Set(crossings.map((c) => c.playerId)));
+      const playerRows = await db
+        .select({ id: playersTable.id, surname: playersTable.surname, givenName: playersTable.givenName })
+        .from(playersTable)
+        .where(sql`${playersTable.id} = ANY(${playerIds})`);
+      const nameById = new Map(playerRows.map((p) => [p.id, `${p.givenName} ${p.surname}`.trim()]));
+      for (const c of crossings) {
+        const name = nameById.get(c.playerId) ?? "Unknown";
+        const [event] = await db
+          .insert(milestoneEventsTable)
+          .values({
+            playerId: c.playerId,
+            boardKey: c.boardKey,
+            tierIndex: c.tierIndex,
+            tierLabel: c.tierLabel,
+            value: c.value,
+            threshold: c.threshold,
+            source: "import",
+            sourceImportId: imp.id,
+            payload: { name },
+          })
+          .returning();
+        await db.insert(socialDraftsTable).values({
+          engine: "milestone",
+          status: "pending",
+          cardInput: {
+            kind: "milestone",
+            playerName: name,
+            tierLabel: c.tierLabel,
+            tierIndex: c.tierIndex,
+            milestoneLabel: BOARD_STAT_LABEL[c.boardKey as BoardKey],
+            currentValue: c.value,
+            threshold: c.threshold,
+          },
+          appPath: `/players/${c.playerId}`,
+          milestoneEventId: event.id,
+          sourceImportId: imp.id,
+        });
+      }
+    }
+  } catch (err) {
+    if (!(err instanceof Error) || err.message !== "__skip_milestone__") {
+      req.log.error({ err }, "milestone detection failed");
+    }
+  }
+  void TIER_THRESHOLDS;
+
+  // Auto-generate round-up drafts per affected grade, gated on engineRoundUp.
+  try {
+    if (socialSettings?.engineRoundUp) {
+      for (const grade of affectedGrades) {
+        await generateRoundUpDrafts(grade, season, imp.id);
+      }
+    }
+  } catch (err) {
+    req.log.error({ err }, "auto roundup failed");
+  }
+  void _db;
 
   const [updated] = await db
     .select({

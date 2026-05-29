@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Award } from "lucide-react";
 import { GradeBadge } from "@/components/grade-badge";
+import { ShareButton } from "@/components/share-card-modal";
+import type { ShareCardInput } from "@/lib/share-card";
 
 type Tab = "total" | "by-grade";
 
@@ -90,33 +92,52 @@ const computeGradeRecords = (stats: Stat[]): RecordRow[] => {
   ];
 };
 
-const RecordCard = ({ row }: { row: RecordRow }) => (
-  <Card className="hover:border-primary transition-colors group">
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{row.title}</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-3xl font-serif font-bold text-primary mb-1 group-hover:scale-105 transition-transform origin-left">
-        {typeof row.value === "number" ? row.value.toLocaleString() : row.value}
-      </div>
-      {row.stat ? (
-        <>
-          <Link href={`/players/${row.stat.playerId}`} className="text-sm font-medium hover:underline text-foreground">
-            {row.stat.givenName} {row.stat.surname}
-          </Link>
-          {row.stat.grade && (
-            <div className="mt-1 flex items-center gap-2">
-              <GradeBadge grade={row.stat.grade} size="sm" />
-              <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-sm text-muted-foreground italic">No data</div>
-      )}
-    </CardContent>
-  </Card>
-);
+const RecordCard = ({ row }: { row: RecordRow }) => {
+  const shareInput: ShareCardInput | null = row.stat
+    ? {
+        kind: "record",
+        title: row.title,
+        playerName: `${row.stat.givenName} ${row.stat.surname}`.trim(),
+        value: row.value,
+        grade: row.stat.grade ?? null,
+      }
+    : null;
+  return (
+    <Card className="hover:border-primary transition-colors group">
+      <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2 space-y-0">
+        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{row.title}</CardTitle>
+        {shareInput && (
+          <ShareButton
+            input={shareInput}
+            appPath={`/players/${row.stat!.playerId}`}
+            variant="ghost"
+            label=""
+          />
+        )}
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-serif font-bold text-primary mb-1 group-hover:scale-105 transition-transform origin-left">
+          {typeof row.value === "number" ? row.value.toLocaleString() : row.value}
+        </div>
+        {row.stat ? (
+          <>
+            <Link href={`/players/${row.stat.playerId}`} className="text-sm font-medium hover:underline text-foreground">
+              {row.stat.givenName} {row.stat.surname}
+            </Link>
+            {row.stat.grade && (
+              <div className="mt-1 flex items-center gap-2">
+                <GradeBadge grade={row.stat.grade} size="sm" />
+                <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-muted-foreground italic">No data</div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function Records() {
   const [tab, setTab] = useState<Tab>("total");

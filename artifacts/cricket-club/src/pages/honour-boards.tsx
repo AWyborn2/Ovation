@@ -14,8 +14,7 @@ import { Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
-import { downloadMilestoneCard } from "@/lib/milestone-share";
-import { Share2 } from "lucide-react";
+import { ShareButton } from "@/components/share-card-modal";
 import { useEffect, useMemo, useState } from "react";
 import {
   BOARDS,
@@ -138,29 +137,6 @@ const BoardView = ({ tiers, board, premMap }: { tiers: BoardTier[]; board: (type
 );
 
 const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
-  const [sharing, setSharing] = useState(false);
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (sharing) return;
-    setSharing(true);
-    try {
-      await downloadMilestoneCard({
-        playerName: `${p.givenName} ${p.surname}`.trim(),
-        tierLabel: p.tierLabel,
-        tierIndex: p.tierIndex,
-        milestoneLabel: p.boardLabel,
-        currentValue: p.currentValue,
-        threshold: p.threshold,
-        headline: "Just Promoted",
-      });
-    } catch (err) {
-      console.error("Failed to generate milestone card", err);
-      alert("Could not generate the share image. Please try again.");
-    } finally {
-      setSharing(false);
-    }
-  };
   return (
     <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
       <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2 pr-8">
@@ -179,16 +155,27 @@ const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
           {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
         </div>
       </Link>
-      <button
-        type="button"
-        onClick={handleShare}
-        disabled={sharing}
-        aria-label={`Share ${p.givenName} ${p.surname} milestone`}
-        title="Share milestone"
-        className="absolute top-2 right-2 p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-      >
-        <Share2 className="h-4 w-4" />
-      </button>
+      <div className="absolute top-2 right-2">
+        <ShareButton
+          engine="milestone"
+          appPath={`/players/${p.playerId}`}
+          iconOnly
+          variant="ghost"
+          size="icon"
+          label={`Share ${p.givenName} ${p.surname} milestone`}
+          className="h-7 w-7"
+          input={{
+            kind: "milestone",
+            playerName: `${p.givenName} ${p.surname}`.trim(),
+            tierLabel: p.tierLabel,
+            tierIndex: p.tierIndex,
+            milestoneLabel: p.boardLabel,
+            currentValue: p.currentValue,
+            threshold: p.threshold,
+            headline: "Just Promoted",
+          }}
+        />
+      </div>
     </div>
   );
 };

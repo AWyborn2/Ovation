@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin } from "./lib/auth";
 
@@ -33,6 +34,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+app.use(goRedirectRouter);
 
 // Seed first admin from ADMIN_PASSWORD if no admins exist.
 ensureSeedAdmin().catch((err) => {

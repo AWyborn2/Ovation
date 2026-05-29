@@ -7,6 +7,7 @@ import {
   getListCapsQueryKey,
 } from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
+import { ShareButton } from "@/components/share-card-modal";
 
 const STAT_COLUMN_COUNT = 13;
 
@@ -93,6 +94,7 @@ export default function GradeLeaderboard() {
               <th className="text-right font-medium p-4">Avg</th>
               <th className="text-right font-medium p-4">BB</th>
               <th className="text-right font-medium p-4">5WI</th>
+              <th className="text-right font-medium p-4">Share</th>
             </tr>
           </thead>
           <tbody>
@@ -116,6 +118,20 @@ export default function GradeLeaderboard() {
                 <td className="p-4 text-right font-mono">{stat.bowlAvg?.toFixed(2) || "-"}</td>
                 <td className="p-4 text-right font-mono">{stat.bestBowling || "-"}</td>
                 <td className="p-4 text-right font-mono">{stat.fiveWickets || "-"}</td>
+                <td className="p-4 text-right">
+                  <ShareButton
+                    input={{
+                      kind: "gradeLeader",
+                      grade: decodedGrade,
+                      category: (stat.wickets ?? 0) >= (stat.runs ?? 0) / 10 ? "Wickets" : "Runs",
+                      playerName: `${stat.givenName} ${stat.surname}`.trim(),
+                      value: (stat.wickets ?? 0) >= (stat.runs ?? 0) / 10 ? stat.wickets ?? 0 : stat.runs ?? 0,
+                    }}
+                    appPath={`/players/${stat.playerId}`}
+                    variant="ghost"
+                    label=""
+                  />
+                </td>
               </tr>
             ))}
             {unstattedCaps.map((c) => {
@@ -134,7 +150,7 @@ export default function GradeLeaderboard() {
               return (
                 <tr key={`cap-${c.id}`} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                   <td className="p-4">{nameNode}</td>
-                  <td colSpan={STAT_COLUMN_COUNT} className="p-4 text-center">
+                  <td colSpan={STAT_COLUMN_COUNT + 1} className="p-4 text-center">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       No A Grade stats available
                     </span>

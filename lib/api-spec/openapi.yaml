@@ -28,6 +28,8 @@ tags:
     description: Admin user operations
   - name: honourBoards
     description: Honour board configuration and overrides
+  - name: socialCards
+    description: Social share card settings, sponsors, and caption templates
 paths:
   /healthz:
     get:
@@ -964,6 +966,210 @@ paths:
         "404":
           description: Not found
 
+  /sponsors:
+    get:
+      operationId: listSponsors
+      tags: [socialCards]
+      summary: List all sponsors
+      responses:
+        "200":
+          description: Sponsor list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sponsor"
+    post:
+      operationId: createSponsor
+      tags: [socialCards]
+      summary: Create a sponsor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SponsorInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsor"
+
+  /sponsors/{id}:
+    patch:
+      operationId: updateSponsor
+      tags: [socialCards]
+      summary: Update a sponsor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SponsorUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsor"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteSponsor
+      tags: [socialCards]
+      summary: Delete a sponsor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /social-settings:
+    get:
+      operationId: getSocialSettings
+      tags: [socialCards]
+      summary: Get social card settings (engines, sizes, sponsors, captions)
+      responses:
+        "200":
+          description: Settings + caption templates + active sponsors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialSettingsBundle"
+    patch:
+      operationId: updateSocialSettings
+      tags: [socialCards]
+      summary: Update social card settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SocialSettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialSettings"
+
+  /caption-templates:
+    put:
+      operationId: upsertCaptionTemplate
+      tags: [socialCards]
+      summary: Upsert a caption template for an engine+platform
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptionTemplateInput"
+      responses:
+        "200":
+          description: Upserted template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptionTemplate"
+
+  /social-drafts:
+    get:
+      operationId: listSocialDrafts
+      tags: [socialCards]
+      summary: List queued social card drafts (pending + reviewed history)
+      responses:
+        "200":
+          description: Drafts grouped by status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialDraft"
+
+  /social-drafts/{id}/approve:
+    post:
+      operationId: approveSocialDraft
+      tags: [socialCards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Approved draft with tracked link slug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+
+  /social-drafts/{id}/dismiss:
+    post:
+      operationId: dismissSocialDraft
+      tags: [socialCards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Dismissed
+
+  /social-roundups:
+    post:
+      operationId: generateRoundUp
+      tags: [socialCards]
+      summary: Generate top-performer drafts from the most recent import for a grade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoundUpInput"
+      responses:
+        "200":
+          description: Drafts created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialDraft"
+
+  /tracked-links:
+    get:
+      operationId: listTrackedLinks
+      tags: [socialCards]
+      summary: List tracked short links with click counts
+      responses:
+        "200":
+          description: Links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackedLink"
+
 components:
   schemas:
     HealthStatus:
@@ -1795,3 +2001,192 @@ components:
           type: boolean
         note:
           type: string
+
+    Sponsor:
+      type: object
+      required: [id, name, logoDataUrl, link, displayOrder]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        logoDataUrl:
+          type: string
+        link:
+          type: string
+        activeFrom:
+          type: ["string", "null"]
+        activeTo:
+          type: ["string", "null"]
+        displayOrder:
+          type: integer
+
+    SponsorInput:
+      type: object
+      required: [name, logoDataUrl]
+      properties:
+        name:
+          type: string
+        logoDataUrl:
+          type: string
+        link:
+          type: string
+        activeFrom:
+          type: ["string", "null"]
+        activeTo:
+          type: ["string", "null"]
+        displayOrder:
+          type: integer
+
+    SponsorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        logoDataUrl:
+          type: string
+        link:
+          type: string
+        activeFrom:
+          type: ["string", "null"]
+        activeTo:
+          type: ["string", "null"]
+        displayOrder:
+          type: integer
+
+    SocialSettings:
+      type: object
+      required:
+        - engineOnDemand
+        - engineMilestone
+        - engineRoundUp
+        - engineRecap
+        - sizeSquare
+        - sizePortrait
+        - sizeStory
+        - sponsorsEnabled
+        - captionsEnabled
+        - clubHashtag
+        - clubUrl
+      properties:
+        engineOnDemand:
+          type: boolean
+        engineMilestone:
+          type: boolean
+        engineRoundUp:
+          type: boolean
+        engineRecap:
+          type: boolean
+        sizeSquare:
+          type: boolean
+        sizePortrait:
+          type: boolean
+        sizeStory:
+          type: boolean
+        sponsorsEnabled:
+          type: boolean
+        captionsEnabled:
+          type: boolean
+        clubHashtag:
+          type: string
+        clubUrl:
+          type: string
+
+    SocialSettingsUpdate:
+      type: object
+      properties:
+        engineOnDemand:
+          type: boolean
+        engineMilestone:
+          type: boolean
+        engineRoundUp:
+          type: boolean
+        engineRecap:
+          type: boolean
+        sizeSquare:
+          type: boolean
+        sizePortrait:
+          type: boolean
+        sizeStory:
+          type: boolean
+        sponsorsEnabled:
+          type: boolean
+        captionsEnabled:
+          type: boolean
+        clubHashtag:
+          type: string
+        clubUrl:
+          type: string
+
+    CaptionTemplate:
+      type: object
+      required: [engine, platform, template]
+      properties:
+        engine:
+          type: string
+        platform:
+          type: string
+        template:
+          type: string
+
+    CaptionTemplateInput:
+      type: object
+      required: [engine, platform, template]
+      properties:
+        engine:
+          type: string
+        platform:
+          type: string
+        template:
+          type: string
+
+    SocialSettingsBundle:
+      type: object
+      required: [settings, captionTemplates, activeSponsors]
+      properties:
+        settings:
+          $ref: "#/components/schemas/SocialSettings"
+        captionTemplates:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptionTemplate"
+        activeSponsors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sponsor"
+
+    SocialDraft:
+      type: object
+      required: [id, engine, status, cardInput, appPath, createdAt]
+      properties:
+        id: { type: integer }
+        engine: { type: string }
+        status: { type: string, enum: [pending, approved, dismissed] }
+        cardInput: {}
+        appPath: { type: string }
+        trackedSlug: { type: ["string", "null"] }
+        milestoneEventId: { type: ["integer", "null"] }
+        sourceImportId: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+
+    RoundUpInput:
+      type: object
+      required: [grade, season]
+      properties:
+        grade: { type: string }
+        season: { type: integer }
+
+    TrackedLink:
+      type: object
+      required: [id, slug, targetUrl, label, engine, platform, clickCount, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        targetUrl: { type: string }
+        label: { type: string }
+        engine: { type: string }
+        platform: { type: string }
+        clickCount: { type: integer }
+        lastClickedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }

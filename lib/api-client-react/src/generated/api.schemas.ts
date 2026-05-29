@@ -500,6 +500,130 @@ export interface HonourBoardOverrideInput {
   note?: string;
 }
 
+export interface Sponsor {
+  id: number;
+  name: string;
+  logoDataUrl: string;
+  link: string;
+  /** @nullable */
+  activeFrom?: string | null;
+  /** @nullable */
+  activeTo?: string | null;
+  displayOrder: number;
+}
+
+export interface SponsorInput {
+  name: string;
+  logoDataUrl: string;
+  link?: string;
+  /** @nullable */
+  activeFrom?: string | null;
+  /** @nullable */
+  activeTo?: string | null;
+  displayOrder?: number;
+}
+
+export interface SponsorUpdate {
+  name?: string;
+  logoDataUrl?: string;
+  link?: string;
+  /** @nullable */
+  activeFrom?: string | null;
+  /** @nullable */
+  activeTo?: string | null;
+  displayOrder?: number;
+}
+
+export interface SocialSettings {
+  engineOnDemand: boolean;
+  engineMilestone: boolean;
+  engineRoundUp: boolean;
+  engineRecap: boolean;
+  sizeSquare: boolean;
+  sizePortrait: boolean;
+  sizeStory: boolean;
+  sponsorsEnabled: boolean;
+  captionsEnabled: boolean;
+  clubHashtag: string;
+  clubUrl: string;
+}
+
+export interface SocialSettingsUpdate {
+  engineOnDemand?: boolean;
+  engineMilestone?: boolean;
+  engineRoundUp?: boolean;
+  engineRecap?: boolean;
+  sizeSquare?: boolean;
+  sizePortrait?: boolean;
+  sizeStory?: boolean;
+  sponsorsEnabled?: boolean;
+  captionsEnabled?: boolean;
+  clubHashtag?: string;
+  clubUrl?: string;
+}
+
+export interface CaptionTemplate {
+  engine: string;
+  platform: string;
+  template: string;
+}
+
+export interface CaptionTemplateInput {
+  engine: string;
+  platform: string;
+  template: string;
+}
+
+export interface SocialSettingsBundle {
+  settings: SocialSettings;
+  captionTemplates: CaptionTemplate[];
+  activeSponsors: Sponsor[];
+}
+
+export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
+
+
+export const SocialDraftStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  dismissed: 'dismissed',
+} as const;
+
+export interface SocialDraft {
+  id: number;
+  engine: string;
+  status: SocialDraftStatus;
+  cardInput: unknown;
+  appPath: string;
+  /** @nullable */
+  trackedSlug?: string | null;
+  /** @nullable */
+  milestoneEventId?: number | null;
+  /** @nullable */
+  sourceImportId?: number | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt?: string | null;
+}
+
+export interface RoundUpInput {
+  grade: string;
+  season: number;
+}
+
+export interface TrackedLink {
+  id: number;
+  slug: string;
+  targetUrl: string;
+  label: string;
+  engine: string;
+  platform: string;
+  clickCount: number;
+  /** @nullable */
+  lastClickedAt?: string | null;
+  createdAt: string;
+}
+
 export type ListPlayersParams = {
 /**
  * Search by name
