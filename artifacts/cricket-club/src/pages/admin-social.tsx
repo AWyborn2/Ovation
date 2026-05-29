@@ -251,6 +251,7 @@ function SponsorsCard({
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { uploadFile, isUploading } = useUpload({
@@ -259,7 +260,9 @@ function SponsorsCard({
 
   const handleFile = async (file: File) => {
     setError(null);
-    setPreviewUrl(URL.createObjectURL(file));
+    if (file.type.startsWith("image/")) {
+      setPreviewUrl(URL.createObjectURL(file));
+    }
     const result = await uploadFile(file);
     if (result) {
       setLogoUrl(`/api/storage${result.objectPath}`);
@@ -325,7 +328,26 @@ function SponsorsCard({
           </div>
           <div className="space-y-3">
             <Label>Logo (PNG / SVG, transparent)</Label>
-            <div className="border border-dashed rounded p-4 flex flex-col items-center gap-3">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!isUploading) setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                if (isUploading) return;
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFile(file);
+              }}
+              className={`border border-dashed rounded p-4 flex flex-col items-center gap-3 transition-colors ${
+                isDragging ? "border-primary bg-primary/5" : ""
+              }`}
+            >
               {previewUrl ? (
                 <img src={previewUrl} alt="logo" className="max-h-24 object-contain" />
               ) : (
