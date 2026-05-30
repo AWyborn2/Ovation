@@ -25,10 +25,28 @@ are the only representational normalisations recompute introduces).
 reduces to identity; `high_score`/`best_bowling` MAX/best-of picks that single row;
 `bat_avg`/`bowl_avg` re-derived by the same formula (verified 0 off).
 
+**Production status (verified May 2026): no live prod DB exists yet.** The app
+has never been published, so there is no production Neon database to carry the
+landmine. `executeSql({environment:"production"})` returns `PRODUCTION_DATABASE_ERROR`
+("Deploy your app first to create a production database"). Agent CANNOT write to
+prod anyway: prod access is read-only and prod schema is owned by the Publish flow
+(never run DDL/INSERT against prod — see database-migrations-on-publish).
+
+**Why prod is already safe for the first publish:** prod is created/seeded from
+dev on Publish. Dev is now fully consistent — snapshot table populated (1628 rows)
+and replaying recompute against dev yields 0 real diffs across player_grade_stats
+(counting + high_score + best_bowling + averages), players career totals, and
+grade_summaries. Dev schema already carries all three migrations (players.image_url,
+card_themes table, sponsors.card_kinds). So publishing dev → prod produces a
+consistent prod with NO empty-snapshot landmine. User just needs to publish (and
+include data / choose overwrite-data on first publish so the populated snapshot
+reaches prod).
+
 **How to apply / still TODO:**
-- **Production has the identical empty-snapshot landmine.** Before any import runs
-  against prod, run the same backfill there (after the outstanding schema
-  migrations land). Do NOT let an import/delete hit prod first.
+- Re-verify after any future change that adds derived rows without snapshot rows.
+- Do NOT let an import/delete hit a prod that was seeded schema-only with
+  pre-existing derived data (that recreates the landmine); first publish from
+  consistent dev avoids this.
 - Benign side-effects a future recompute will introduce for touched grades:
   zero-valued totals stored as `0` become `NULL` (display-equal), and
   `grades_played` re-sorts alphabetically (e.g. "Colts" moves from last to after
