@@ -50,6 +50,24 @@ the everyday name — acceptable). Left-behind B-grade-only records (454 Josh Pe
 312 Mick Stanley) are *possible* duplicates of their A-grade namesakes but have no
 A-grade games, so they're out of cap scope; flagged for separate hygiene review.
 
+## 4. Lower-grade duplicate cleanup (club-confirmed, done)
+The B-grade twins flagged above were club-confirmed same-person and merged:
+Josh Peterson(46, survivor) + Josh Petersen(454, deleted); Mick Stanley(312, survivor)
++ Mick Staney(334, deleted). Survivor = lower-id record; caps now linked to survivors.
+Cap #85 "C Mills" confirmed a **distinct early player** (different cap number from
+Chris Mills #218 ⇒ different debut ⇒ different person) — left unlinked as-is. Club
+speculated #85 might actually be Trevor Allen (a hand-number candidate) but chose to
+leave it; not acted on.
+**Overlap-merge lesson:** when both halves share a grade, the survivor would end up
+with two `season=NULL` baseline snapshot rows for that grade. Don't just repoint —
+**sum the numeric columns into the survivor's existing baseline row and delete the
+dup's row**, keeping high_score/best_bowling = the max already present. Preserves the
+one-row-per-(player,grade,season) snapshot invariant. premiership_players has no
+unique(player_id,premiership_id), so repointing never conflicts; its `name` column is
+historical team-sheet text — leave it (may keep the dup's spelling). After repointing
+season_stats/premierships/cap, delete the player (cascades grade_stats), then recompute
+the affected grades.
+
 **Female A-grade caps are a separate, unstarted job:** the female `cap_register` list
 is essentially empty — ~25 Female A Grade players have no female cap at all. Auto-sync
 only issues caps on import, so historical female A-graders were never seeded.
