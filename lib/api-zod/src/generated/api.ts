@@ -809,6 +809,24 @@ export const ListRecentDebutantsResponse = zod.array(ListRecentDebutantsResponse
 
 
 /**
+ * Refresh every linked cap's A Grade / Female A Grade game count and
+on-record flag from the current per-grade stats aggregate, without
+needing an import. Lets caps that were linked to a player by hand pick
+up that player's real grade games. Admin only.
+
+ * @summary Recompute cap games + on-record status from current stats
+ */
+export const RecomputeCapsResponse = zod.object({
+  "updated": zod.number().describe('Total linked caps whose games or on-record value changed.'),
+  "categories": zod.array(zod.object({
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "grade": zod.string(),
+  "updated": zod.number()
+}))
+}).describe('Result of recomputing linked caps\' games \/ on-record from stats.')
+
+
+/**
  * @summary Update a cap register entry
  */
 export const UpdateCapParams = zod.object({

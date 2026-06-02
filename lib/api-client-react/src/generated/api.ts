@@ -40,6 +40,7 @@ import type {
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
+  CapRecomputeSummary,
   Captain,
   CaptainInput,
   CaptainLoginRequest,
@@ -2016,6 +2017,81 @@ export function useListRecentDebutants<TData = Awaited<ReturnType<typeof listRec
 
 
 
+
+export const getRecomputeCapsUrl = () => {
+
+
+
+
+  return `/api/caps/recompute`
+}
+
+/**
+ * Refresh every linked cap's A Grade / Female A Grade game count and
+on-record flag from the current per-grade stats aggregate, without
+needing an import. Lets caps that were linked to a player by hand pick
+up that player's real grade games. Admin only.
+
+ * @summary Recompute cap games + on-record status from current stats
+ */
+export const recomputeCaps = async ( options?: RequestInit): Promise<CapRecomputeSummary> => {
+
+  return customFetch<CapRecomputeSummary>(getRecomputeCapsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRecomputeCapsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recomputeCaps>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recomputeCaps>>, TError,void, TContext> => {
+
+const mutationKey = ['recomputeCaps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recomputeCaps>>, void> = () => {
+
+
+          return  recomputeCaps(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecomputeCapsMutationResult = NonNullable<Awaited<ReturnType<typeof recomputeCaps>>>
+
+    export type RecomputeCapsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Recompute cap games + on-record status from current stats
+ */
+export const useRecomputeCaps = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recomputeCaps>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recomputeCaps>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRecomputeCapsMutationOptions(options));
+    }
 
 export const getUpdateCapUrl = (id: number,) => {
 

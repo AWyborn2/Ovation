@@ -19,6 +19,84 @@ export const GRADE_TO_CAP_CATEGORY: Record<string, "male" | "female"> = {
   "Female A Grade": "female",
 };
 
+/** The cap-bearing grade for each cap-register category (inverse of the above). */
+export const CAP_CATEGORY_TO_GRADE: Record<"male" | "female", string> = {
+  male: "A Grade",
+  female: "Female A Grade",
+};
+
+export type CapRecomputeResult = {
+  category: "male" | "female";
+  grade: string;
+  /** Linked caps in this category whose games/on-record value actually changed. */
+  updated: number;
+};
+
+/**
+ * Refresh `gamesAGrade` + `inStats` for every LINKED cap in the given
+ * categories from the current per-grade stats aggregate.
+ *
+ * Import-independent: unlike `syncCapsFromStats` this needs no import player
+ * list and never creates or deletes caps — it only reconciles the cached game
+ * counts of caps that are already linked to a player record. This lets a cap
+ * that an admin linked by hand pick up that player's real grade games without a
+ * re-import.
+ *
+ * Rules (mirroring how `syncCapsFromStats` matches — by linked `playerId` and
+ * the cap's grade):
+ *  - A linked player with > 0 games for the cap's grade is "on record":
+ *    `inStats = true`, `gamesAGrade` = that per-grade total.
+ *  - A linked player with no games on record for the grade is NOT on record:
+ *    `inStats = false`, `gamesAGrade = 0`.
+ *  - Unlinked caps (no `playerId`) are left untouched — pre-digital caps keep
+ *    their hand-entered state.
+ *
+ * Safe to run inside or outside an import transaction.
+ */
+export async function recomputeCapsFromStats(
+  tx: CapSyncTx,
+  categories: ("male" | "female")[] = ["male", "female"],
+): Promise<CapRecomputeResult[]> {
+  const results: CapRecomputeResult[] = [];
+
+  for (const category of categories) {
+    const grade = CAP_CATEGORY_TO_GRADE[category];
+
+    const statRows = await tx
+      .select({
+        playerId: playerGradeStatsTable.playerId,
+        games: playerGradeStatsTable.games,
+      })
+      .from(playerGradeStatsTable)
+      .where(eq(playerGradeStatsTable.grade, grade));
+    const gamesByPlayer = new Map<number, number>();
+    for (const r of statRows) gamesByPlayer.set(r.playerId, r.games ?? 0);
+
+    const caps = await tx
+      .select()
+      .from(capRegisterTable)
+      .where(eq(capRegisterTable.category, category));
+
+    let updated = 0;
+    for (const cap of caps) {
+      if (cap.playerId == null) continue;
+      const games = gamesByPlayer.get(cap.playerId) ?? 0;
+      const inStats = games > 0;
+      if (cap.gamesAGrade !== games || cap.inStats !== inStats) {
+        await tx
+          .update(capRegisterTable)
+          .set({ gamesAGrade: games, inStats })
+          .where(eq(capRegisterTable.id, cap.id));
+        updated++;
+      }
+    }
+
+    results.push({ category, grade, updated });
+  }
+
+  return results;
+}
+
 /**
  * Player ids that already hold a cap in the given category. Used by the import
  * preview to flag debuts: a player appearing in a cap-eligible grade who is NOT

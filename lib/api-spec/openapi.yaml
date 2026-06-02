@@ -592,6 +592,24 @@ paths:
                 items:
                   $ref: "#/components/schemas/DebutEntry"
 
+  /caps/recompute:
+    post:
+      operationId: recomputeCaps
+      tags: [caps]
+      summary: Recompute cap games + on-record status from current stats
+      description: |
+        Refresh every linked cap's A Grade / Female A Grade game count and
+        on-record flag from the current per-grade stats aggregate, without
+        needing an import. Lets caps that were linked to a player by hand pick
+        up that player's real grade games. Admin only.
+      responses:
+        "200":
+          description: Recompute summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapRecomputeSummary"
+
   /caps/{id}:
     patch:
       operationId: updateCap
@@ -2891,6 +2909,30 @@ components:
         round:
           type: ["integer", "null"]
           description: Debut round, or null for seeded caps with no match record.
+
+    CapRecomputeSummary:
+      type: object
+      required: [updated, categories]
+      description: Result of recomputing linked caps' games / on-record from stats.
+      properties:
+        updated:
+          type: integer
+          description: Total linked caps whose games or on-record value changed.
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapRecomputeCategory"
+
+    CapRecomputeCategory:
+      type: object
+      required: [category, grade, updated]
+      properties:
+        category:
+          $ref: "#/components/schemas/CapCategory"
+        grade:
+          type: string
+        updated:
+          type: integer
 
     CapEntry:
       type: object

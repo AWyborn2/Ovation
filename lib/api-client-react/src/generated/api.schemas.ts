@@ -607,6 +607,21 @@ export interface DebutEntry {
   round?: number | null;
 }
 
+export interface CapRecomputeCategory {
+  category: CapCategory;
+  grade: string;
+  updated: number;
+}
+
+/**
+ * Result of recomputing linked caps' games / on-record from stats.
+ */
+export interface CapRecomputeSummary {
+  /** Total linked caps whose games or on-record value changed. */
+  updated: number;
+  categories: CapRecomputeCategory[];
+}
+
 export interface CapEntry {
   id: number;
   capNumber: number;

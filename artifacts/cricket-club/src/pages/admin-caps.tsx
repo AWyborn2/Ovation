@@ -5,6 +5,7 @@ import {
   useCreateCap,
   useUpdateCap,
   useDeleteCap,
+  useRecomputeCaps,
   getListCapsQueryKey,
   useListPlayers,
   getListPlayersQueryKey,
@@ -23,13 +24,31 @@ export default function AdminCaps() {
   const createCap = useCreateCap();
   const updateCap = useUpdateCap();
   const deleteCap = useDeleteCap();
+  const recomputeCaps = useRecomputeCaps();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CapCategory>("male");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListCapsQueryKey() });
+  };
+
+  const onRecompute = () => {
+    setError(null);
+    setNotice(null);
+    recomputeCaps.mutate(undefined, {
+      onSuccess: (res) => {
+        invalidate();
+        setNotice(
+          res.updated > 0
+            ? `Refreshed ${res.updated} cap${res.updated === 1 ? "" : "s"} from stats.`
+            : "All caps already up to date with stats.",
+        );
+      },
+      onError: onMutationError,
+    });
   };
 
   const inCategory = useMemo(
@@ -65,6 +84,14 @@ export default function AdminCaps() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={onRecompute}
+            disabled={recomputeCaps.isPending}
+            title="Refresh every linked cap's games and on-record status from the current stats"
+          >
+            {recomputeCaps.isPending ? "Refreshing…" : "Refresh from stats"}
+          </Button>
           <Label htmlFor="admin-cap-category">List</Label>
           <select
             id="admin-cap-category"
@@ -80,6 +107,10 @@ export default function AdminCaps() {
           </select>
         </div>
       </div>
+
+      {notice && (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>
+      )}
 
       <AddCapForm
         key={category}

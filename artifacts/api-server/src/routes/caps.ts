@@ -14,13 +14,9 @@ import {
   DeleteCapParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { CAP_CATEGORY_TO_GRADE, recomputeCapsFromStats } from "../lib/cap-sync";
 
 const router: IRouter = Router();
-
-const CAP_CATEGORY_TO_GRADE: Record<"male" | "female", string> = {
-  male: "A Grade",
-  female: "Female A Grade",
-};
 
 router.get("/caps", async (_req, res): Promise<void> => {
   const rows = await db
@@ -155,18 +151,35 @@ router.post("/caps", requireAdmin, async (req, res): Promise<void> => {
   }
   try {
     const category = parsed.data.category ?? "male";
-    const [row] = await db
-      .insert(capRegisterTable)
-      .values({
-        capNumber: parsed.data.capNumber,
-        category,
-        name: parsed.data.name,
-        deceased: parsed.data.deceased ?? false,
-        inStats: parsed.data.inStats ?? false,
-        gamesAGrade: parsed.data.gamesAGrade ?? 0,
-        playerId: parsed.data.playerId ?? null,
-      })
-      .returning();
+    const playerId = parsed.data.playerId ?? null;
+    const row = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(capRegisterTable)
+        .values({
+          capNumber: parsed.data.capNumber,
+          category,
+          name: parsed.data.name,
+          deceased: parsed.data.deceased ?? false,
+          inStats: parsed.data.inStats ?? false,
+          gamesAGrade: parsed.data.gamesAGrade ?? 0,
+          playerId,
+        })
+        .returning();
+
+      // A cap created already linked to a player should immediately reflect that
+      // player's real grade games / on-record status from the existing stats,
+      // rather than the (often 0) hand-entered values.
+      if (playerId != null) {
+        await recomputeCapsFromStats(tx, [category === "female" ? "female" : "male"]);
+        const [fresh] = await tx
+          .select()
+          .from(capRegisterTable)
+          .where(eq(capRegisterTable.id, created.id));
+        return fresh ?? created;
+      }
+
+      return created;
+    });
     res.status(201).json(row);
   } catch (e) {
     const msg = (e as Error).message ?? "Insert failed";
@@ -192,11 +205,38 @@ router.patch("/caps/:id", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [row] = await db
-      .update(capRegisterTable)
-      .set(body.data)
-      .where(eq(capRegisterTable.id, params.data.id))
-      .returning();
+    const row = await db.transaction(async (tx) => {
+      const [updatedRow] = await tx
+        .update(capRegisterTable)
+        .set(body.data)
+        .where(eq(capRegisterTable.id, params.data.id))
+        .returning();
+      if (!updatedRow) return null;
+
+      // When the player link is part of this update, refresh the cap's cached
+      // games / on-record status from the existing stats so a manual link picks
+      // up the linked player's real grade games (and an unlink clears them).
+      if (body.data.playerId !== undefined) {
+        if (updatedRow.playerId == null) {
+          await tx
+            .update(capRegisterTable)
+            .set({ inStats: false, gamesAGrade: 0 })
+            .where(eq(capRegisterTable.id, updatedRow.id));
+        } else {
+          const category =
+            updatedRow.category === "female" ? "female" : "male";
+          await recomputeCapsFromStats(tx, [category]);
+        }
+        const [fresh] = await tx
+          .select()
+          .from(capRegisterTable)
+          .where(eq(capRegisterTable.id, updatedRow.id));
+        return fresh ?? updatedRow;
+      }
+
+      return updatedRow;
+    });
+
     if (!row) {
       res.status(404).json({ error: "Cap entry not found" });
       return;
@@ -210,6 +250,17 @@ router.patch("/caps/:id", requireAdmin, async (req, res): Promise<void> => {
     }
     res.status(500).json({ error: msg });
   }
+});
+
+/**
+ * Admin: recompute every linked cap's games + on-record status from the current
+ * stats, across both A Grade lists. Import-independent reconciliation so manual
+ * cap additions/links can be refreshed in one click.
+ */
+router.post("/caps/recompute", requireAdmin, async (_req, res): Promise<void> => {
+  const categories = await db.transaction((tx) => recomputeCapsFromStats(tx));
+  const updated = categories.reduce((sum, c) => sum + c.updated, 0);
+  res.json({ updated, categories });
 });
 
 router.delete("/caps/:id", requireAdmin, async (req, res): Promise<void> => {

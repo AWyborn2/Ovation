@@ -27,6 +27,8 @@ export * from './capCategory';
 export * from './capEntry';
 export * from './capEntryInput';
 export * from './capEntryUpdate';
+export * from './capRecomputeCategory';
+export * from './capRecomputeSummary';
 export * from './capSyncSummary';
 export * from './captain';
 export * from './captainInput';

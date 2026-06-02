@@ -34,6 +34,20 @@ data/callers keep behaving as the men's list. Only `A Grade` and `Female A Grade
 map to a cap category — see `GRADE_TO_CAP_CATEGORY` in
 `artifacts/api-server/src/lib/cap-sync.ts`.
 
+## Cap games/inStats are CACHED — every link path must refresh them
+`cap_register.gamesAGrade` and `inStats` are cached columns, NOT a live join,
+so they go stale the instant a cap's `playerId` changes outside an import (the
+original bug: a hand-linked Female A Grade cap showed 0 games though stats
+existed). **Rule:** ANY code path that links/unlinks a player to a cap must
+recompute the cached values from `player_grade_stats` in the same transaction —
+this includes create, edit, import sync, and rollback. The import-independent
+helper is `recomputeCapsFromStats` in `cap-sync.ts`; there's also an admin
+on-demand recompute endpoint and a `reconcile-caps` post-merge backfill for
+already-stale rows. **Why:** there is no live join, so a missed refresh silently
+ships wrong numbers to the public board. **Semantics:** `inStats` means the
+linked player has **> 0** games in the cap's grade (male→A Grade,
+female→Female A Grade) — a linked player with 0 grade games is NOT on record.
+
 ## Auto-sync on import
 `syncCapsFromStats(tx, grade, orderedPlayerIds)` runs inside the import's DB
 transaction, AFTER `recomputeAggregates`. For the grade's category it flips
