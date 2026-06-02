@@ -11,6 +11,7 @@
     "remove-a-grade-2025-26": "tsx ./src/remove-a-grade-2025-26.ts",
     "fix-a-grade-cap-duplicates": "tsx ./src/fix-a-grade-cap-duplicates.ts",
     "seed-honours": "tsx ./src/seed-honours.ts",
+    "seed-awards": "tsx ./src/seed-awards.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

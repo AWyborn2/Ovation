@@ -1251,6 +1251,132 @@ export const DeleteHonourBoardOverrideParams = zod.object({
 
 
 /**
+ * Full list of club awards ordered by display order then id. Each award
+includes its roll of past winners inline (season descending) so the
+public page can render without a second round-trip.
+
+ * @summary List all awards with their winners
+ */
+export const ListAwardsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "displayOrder": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "winners": zod.array(zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number()
+}))
+})
+export const ListAwardsResponse = zod.array(ListAwardsResponseItem)
+
+
+/**
+ * @summary Create an award
+ */
+export const CreateAwardBody = zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().optional(),
+  "displayOrder": zod.number().optional(),
+  "votingEnabled": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update an award
+ */
+export const UpdateAwardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAwardBody = zod.object({
+  "key": zod.string().optional(),
+  "title": zod.string().optional(),
+  "description": zod.string().optional(),
+  "displayOrder": zod.number().optional(),
+  "votingEnabled": zod.boolean().optional()
+})
+
+export const UpdateAwardResponse = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "displayOrder": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "winners": zod.array(zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number()
+}))
+})
+
+
+/**
+ * @summary Delete an award and its winners
+ */
+export const DeleteAwardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a winner entry to an award
+ */
+export const CreateAwardWinnerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreateAwardWinnerBody = zod.object({
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a winner entry
+ */
+export const UpdateAwardWinnerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAwardWinnerBody = zod.object({
+  "season": zod.number().optional(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateAwardWinnerResponse = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Remove a winner entry
+ */
+export const DeleteAwardWinnerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all sponsors
  */
 export const ListSponsorsResponseItem = zod.object({

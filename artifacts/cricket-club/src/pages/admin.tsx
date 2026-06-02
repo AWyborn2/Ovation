@@ -11,6 +11,7 @@ const TILES = [
   { href: "/admin/import", title: "Import CSV", body: "Upload a PlayCricket combined CSV for a season." },
   { href: "/admin/caps", title: "Cap register", body: "A Grade cap numbers and links." },
   { href: "/admin/life-members", title: "Life members", body: "Honour-board life members." },
+  { href: "/admin/awards", title: "Awards", body: "Create club awards and record past winners." },
   { href: "/admin/social", title: "Social cards", body: "Share-card factory: sizes, sponsors, captions." },
   { href: "/admin/social/queue", title: "Social queue", body: "Auto-detected milestones, round-ups, tracked links." },
 ];

@@ -23,6 +23,7 @@ import AdminHonourBoards from "@/pages/admin-honour-boards";
 import AdminImport from "@/pages/admin-import";
 import AdminCaps from "@/pages/admin-caps";
 import AdminLifeMembers from "@/pages/admin-life-members";
+import AdminAwards from "@/pages/admin-awards";
 import AdminSocial from "@/pages/admin-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
@@ -64,6 +65,7 @@ function AdminRoutes() {
           <Route path="/admin/import" component={AdminImport} />
           <Route path="/admin/caps" component={AdminCaps} />
           <Route path="/admin/life-members" component={AdminLifeMembers} />
+          <Route path="/admin/awards" component={AdminAwards} />
           <Route path="/admin/social" component={AdminSocial} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
           <Route component={NotFound} />

@@ -13,3 +13,4 @@
 - [Per-match xlsx import design](match-import-design.md) — match commit re-derives season snapshot (DELETE+INSERT importId=NULL rows) summing all match lines; one ingestion method per grade+season or they clobber each other.
 - [Per-match milestone dedup](per-match-milestone-dedup.md) — debut/cap fire-once structurally; century/5-for need explicit milestone_events check (events persist across undo); CardKind enum in openapi.yaml must list every card kind.
 - [Import resolution keying](import-resolution-keying.md) — frontend rowKey MUST normalize names identically to server nameKey or admin per-row link/create decisions silently mis-apply.
+- [Honour-boards tab guards](honour-boards-tab-guards.md) — adding a non-leaderboard tab to public honour-boards.tsx means updating every scattered `activeTab !==` negative-list guard, not just adding a button.

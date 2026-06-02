@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/import", label: "Import CSV" },
   { href: "/admin/caps", label: "Cap register" },
   { href: "/admin/life-members", label: "Life members" },
+  { href: "/admin/awards", label: "Awards" },
 ];
 
 export function AdminLayout({ admin, children }: { admin: Admin; children: ReactNode }) {

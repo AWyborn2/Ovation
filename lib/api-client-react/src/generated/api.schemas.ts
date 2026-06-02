@@ -782,6 +782,58 @@ export interface HonourBoardOverrideInput {
   note?: string;
 }
 
+export interface AwardWinner {
+  id: number;
+  awardId: number;
+  season: number;
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  displayOrder: number;
+}
+
+export interface Award {
+  id: number;
+  key: string;
+  title: string;
+  description: string;
+  displayOrder: number;
+  votingEnabled: boolean;
+  winners: AwardWinner[];
+}
+
+export interface AwardInput {
+  key: string;
+  title: string;
+  description?: string;
+  displayOrder?: number;
+  votingEnabled?: boolean;
+}
+
+export interface AwardUpdate {
+  key?: string;
+  title?: string;
+  description?: string;
+  displayOrder?: number;
+  votingEnabled?: boolean;
+}
+
+export interface AwardWinnerInput {
+  season: number;
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  displayOrder?: number;
+}
+
+export interface AwardWinnerUpdate {
+  season?: number;
+  /** @nullable */
+  playerId?: number | null;
+  name?: string;
+  displayOrder?: number;
+}
+
 export type CardKind = typeof CardKind[keyof typeof CardKind];
 
 

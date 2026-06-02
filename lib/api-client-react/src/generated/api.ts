@@ -23,6 +23,12 @@ import type {
   Admin,
   AdminInput,
   AdminUpdate,
+  Award,
+  AwardInput,
+  AwardUpdate,
+  AwardWinner,
+  AwardWinnerInput,
+  AwardWinnerUpdate,
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
@@ -3734,6 +3740,514 @@ export const useDeleteHonourBoardOverride = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteHonourBoardOverrideMutationOptions(options));
+    }
+
+export const getListAwardsUrl = () => {
+
+
+
+
+  return `/api/awards`
+}
+
+/**
+ * Full list of club awards ordered by display order then id. Each award
+includes its roll of past winners inline (season descending) so the
+public page can render without a second round-trip.
+
+ * @summary List all awards with their winners
+ */
+export const listAwards = async ( options?: RequestInit): Promise<Award[]> => {
+
+  return customFetch<Award[]>(getListAwardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAwardsQueryKey = () => {
+    return [
+    `/api/awards`
+    ] as const;
+    }
+
+
+export const getListAwardsQueryOptions = <TData = Awaited<ReturnType<typeof listAwards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAwards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAwardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAwards>>> = ({ signal }) => listAwards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAwards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAwardsQueryResult = NonNullable<Awaited<ReturnType<typeof listAwards>>>
+export type ListAwardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all awards with their winners
+ */
+
+export function useListAwards<TData = Awaited<ReturnType<typeof listAwards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAwards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAwardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAwardUrl = () => {
+
+
+
+
+  return `/api/awards`
+}
+
+/**
+ * @summary Create an award
+ */
+export const createAward = async (awardInput: AwardInput, options?: RequestInit): Promise<Award> => {
+
+  return customFetch<Award>(getCreateAwardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      awardInput,)
+  }
+);}
+
+
+
+
+export const getCreateAwardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAward>>, TError,{data: BodyType<AwardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAward>>, TError,{data: BodyType<AwardInput>}, TContext> => {
+
+const mutationKey = ['createAward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAward>>, {data: BodyType<AwardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAward(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAwardMutationResult = NonNullable<Awaited<ReturnType<typeof createAward>>>
+    export type CreateAwardMutationBody = BodyType<AwardInput>
+    export type CreateAwardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an award
+ */
+export const useCreateAward = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAward>>, TError,{data: BodyType<AwardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAward>>,
+        TError,
+        {data: BodyType<AwardInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAwardMutationOptions(options));
+    }
+
+export const getUpdateAwardUrl = (id: number,) => {
+
+
+
+
+  return `/api/awards/${id}`
+}
+
+/**
+ * @summary Update an award
+ */
+export const updateAward = async (id: number,
+    awardUpdate: AwardUpdate, options?: RequestInit): Promise<Award> => {
+
+  return customFetch<Award>(getUpdateAwardUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      awardUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateAwardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAward>>, TError,{id: number;data: BodyType<AwardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAward>>, TError,{id: number;data: BodyType<AwardUpdate>}, TContext> => {
+
+const mutationKey = ['updateAward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAward>>, {id: number;data: BodyType<AwardUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAward(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAwardMutationResult = NonNullable<Awaited<ReturnType<typeof updateAward>>>
+    export type UpdateAwardMutationBody = BodyType<AwardUpdate>
+    export type UpdateAwardMutationError = ErrorType<void>
+
+    /**
+ * @summary Update an award
+ */
+export const useUpdateAward = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAward>>, TError,{id: number;data: BodyType<AwardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAward>>,
+        TError,
+        {id: number;data: BodyType<AwardUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAwardMutationOptions(options));
+    }
+
+export const getDeleteAwardUrl = (id: number,) => {
+
+
+
+
+  return `/api/awards/${id}`
+}
+
+/**
+ * @summary Delete an award and its winners
+ */
+export const deleteAward = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAwardUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAwardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAward>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAward>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAward>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAward(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAwardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAward>>>
+
+    export type DeleteAwardMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete an award and its winners
+ */
+export const useDeleteAward = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAward>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAward>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAwardMutationOptions(options));
+    }
+
+export const getCreateAwardWinnerUrl = (id: number,) => {
+
+
+
+
+  return `/api/awards/${id}/winners`
+}
+
+/**
+ * @summary Add a winner entry to an award
+ */
+export const createAwardWinner = async (id: number,
+    awardWinnerInput: AwardWinnerInput, options?: RequestInit): Promise<AwardWinner> => {
+
+  return customFetch<AwardWinner>(getCreateAwardWinnerUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      awardWinnerInput,)
+  }
+);}
+
+
+
+
+export const getCreateAwardWinnerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAwardWinner>>, TError,{id: number;data: BodyType<AwardWinnerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAwardWinner>>, TError,{id: number;data: BodyType<AwardWinnerInput>}, TContext> => {
+
+const mutationKey = ['createAwardWinner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAwardWinner>>, {id: number;data: BodyType<AwardWinnerInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createAwardWinner(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAwardWinnerMutationResult = NonNullable<Awaited<ReturnType<typeof createAwardWinner>>>
+    export type CreateAwardWinnerMutationBody = BodyType<AwardWinnerInput>
+    export type CreateAwardWinnerMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a winner entry to an award
+ */
+export const useCreateAwardWinner = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAwardWinner>>, TError,{id: number;data: BodyType<AwardWinnerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAwardWinner>>,
+        TError,
+        {id: number;data: BodyType<AwardWinnerInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAwardWinnerMutationOptions(options));
+    }
+
+export const getUpdateAwardWinnerUrl = (id: number,) => {
+
+
+
+
+  return `/api/award-winners/${id}`
+}
+
+/**
+ * @summary Update a winner entry
+ */
+export const updateAwardWinner = async (id: number,
+    awardWinnerUpdate: AwardWinnerUpdate, options?: RequestInit): Promise<AwardWinner> => {
+
+  return customFetch<AwardWinner>(getUpdateAwardWinnerUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      awardWinnerUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateAwardWinnerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAwardWinner>>, TError,{id: number;data: BodyType<AwardWinnerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAwardWinner>>, TError,{id: number;data: BodyType<AwardWinnerUpdate>}, TContext> => {
+
+const mutationKey = ['updateAwardWinner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAwardWinner>>, {id: number;data: BodyType<AwardWinnerUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAwardWinner(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAwardWinnerMutationResult = NonNullable<Awaited<ReturnType<typeof updateAwardWinner>>>
+    export type UpdateAwardWinnerMutationBody = BodyType<AwardWinnerUpdate>
+    export type UpdateAwardWinnerMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a winner entry
+ */
+export const useUpdateAwardWinner = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAwardWinner>>, TError,{id: number;data: BodyType<AwardWinnerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAwardWinner>>,
+        TError,
+        {id: number;data: BodyType<AwardWinnerUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAwardWinnerMutationOptions(options));
+    }
+
+export const getDeleteAwardWinnerUrl = (id: number,) => {
+
+
+
+
+  return `/api/award-winners/${id}`
+}
+
+/**
+ * @summary Remove a winner entry
+ */
+export const deleteAwardWinner = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAwardWinnerUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAwardWinnerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAwardWinner>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAwardWinner>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAwardWinner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAwardWinner>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAwardWinner(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAwardWinnerMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAwardWinner>>>
+
+    export type DeleteAwardWinnerMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a winner entry
+ */
+export const useDeleteAwardWinner = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAwardWinner>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAwardWinner>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAwardWinnerMutationOptions(options));
     }
 
 export const getListSponsorsUrl = () => {

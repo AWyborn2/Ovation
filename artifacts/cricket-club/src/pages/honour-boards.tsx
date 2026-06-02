@@ -36,9 +36,10 @@ import {
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
 import { CapRegisterTab } from "@/components/cap-register-tab";
 import { LifeMembersTab } from "@/components/life-members-tab";
+import { AwardsTab } from "@/components/awards-tab";
 
 type Scope = "career" | "by-grade";
-type ExtraTab = "caps" | "life-members" | "search";
+type ExtraTab = "caps" | "life-members" | "awards" | "search";
 type ActiveTab = BoardKey | ExtraTab;
 
 const SummaryStat = ({ label, value }: { label: string; value: string | number }) => (
@@ -435,7 +436,7 @@ export default function HonourBoards() {
       )}
 
       {/* Season selector + Recent promotions */}
-      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && scope === "career" && (
+      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && scope === "career" && (
         <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
             <div>
@@ -553,6 +554,16 @@ export default function HonourBoards() {
           Life Members
         </button>
         <button
+          onClick={() => setActiveTab("awards")}
+          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "awards"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-primary"
+          }`}
+        >
+          Awards
+        </button>
+        <button
           onClick={() => setActiveTab("search")}
           className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
             activeTab === "search"
@@ -565,7 +576,7 @@ export default function HonourBoards() {
       </div>
 
       {/* Scope control (hidden in search / caps / life-members) */}
-      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && (
+      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
           <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
@@ -610,6 +621,8 @@ export default function HonourBoards() {
         <CapRegisterTab />
       ) : activeTab === "life-members" ? (
         <LifeMembersTab />
+      ) : activeTab === "awards" ? (
+        <AwardsTab />
       ) : activeTab === "search" ? (
         <div className="space-y-4">
           <Input

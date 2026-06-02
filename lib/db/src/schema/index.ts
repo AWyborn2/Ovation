@@ -10,4 +10,5 @@ export * from "./cap_register";
 export * from "./life_members";
 export * from "./admins";
 export * from "./honour_boards";
+export * from "./awards";
 export * from "./social_cards";

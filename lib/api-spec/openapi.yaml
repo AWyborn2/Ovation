@@ -28,6 +28,8 @@ tags:
     description: Admin user operations
   - name: honourBoards
     description: Honour board configuration and overrides
+  - name: awards
+    description: Club awards and their manually-recorded past winners
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
   - name: Storage
@@ -1044,6 +1046,153 @@ paths:
           schema:
             type: string
         - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /awards:
+    get:
+      operationId: listAwards
+      tags: [awards]
+      summary: List all awards with their winners
+      description: |
+        Full list of club awards ordered by display order then id. Each award
+        includes its roll of past winners inline (season descending) so the
+        public page can render without a second round-trip.
+      responses:
+        "200":
+          description: Awards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Award"
+    post:
+      operationId: createAward
+      tags: [awards]
+      summary: Create an award
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Award"
+
+  /awards/{id}:
+    patch:
+      operationId: updateAward
+      tags: [awards]
+      summary: Update an award
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Award"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAward
+      tags: [awards]
+      summary: Delete an award and its winners
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /awards/{id}/winners:
+    post:
+      operationId: createAwardWinner
+      tags: [awards]
+      summary: Add a winner entry to an award
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardWinnerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardWinner"
+        "404":
+          description: Award not found
+
+  /award-winners/{id}:
+    patch:
+      operationId: updateAwardWinner
+      tags: [awards]
+      summary: Update a winner entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardWinnerUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardWinner"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAwardWinner
+      tags: [awards]
+      summary: Remove a winner entry
+      parameters:
+        - name: id
           in: path
           required: true
           schema:
@@ -2639,6 +2788,98 @@ components:
           type: boolean
         note:
           type: string
+
+    AwardWinner:
+      type: object
+      required: [id, awardId, season, name, displayOrder]
+      properties:
+        id:
+          type: integer
+        awardId:
+          type: integer
+        season:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        displayOrder:
+          type: integer
+
+    Award:
+      type: object
+      required: [id, key, title, description, displayOrder, votingEnabled, winners]
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        votingEnabled:
+          type: boolean
+        winners:
+          type: array
+          items:
+            $ref: "#/components/schemas/AwardWinner"
+
+    AwardInput:
+      type: object
+      required: [key, title]
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        votingEnabled:
+          type: boolean
+
+    AwardUpdate:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        votingEnabled:
+          type: boolean
+
+    AwardWinnerInput:
+      type: object
+      required: [season, name]
+      properties:
+        season:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        displayOrder:
+          type: integer
+
+    AwardWinnerUpdate:
+      type: object
+      properties:
+        season:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        displayOrder:
+          type: integer
 
     CardKind:
       type: string
