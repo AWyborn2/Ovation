@@ -14,3 +14,4 @@
 - [Per-match milestone dedup](per-match-milestone-dedup.md) — debut/cap fire-once structurally; century/5-for need explicit milestone_events check (events persist across undo); CardKind enum in openapi.yaml must list every card kind.
 - [Import resolution keying](import-resolution-keying.md) — frontend rowKey MUST normalize names identically to server nameKey or admin per-row link/create decisions silently mis-apply.
 - [Honour-boards tab guards](honour-boards-tab-guards.md) — adding a non-leaderboard tab to public honour-boards.tsx means updating every scattered `activeTab !==` negative-list guard, not just adding a button.
+- [Dating debuts from matches](debut-dating-from-matches.md) — earliest match ≠ debut; only date a first cap when player has 0 prior grade games (NULL baseline counts as prior), else a whole XI mis-dates as debutants.

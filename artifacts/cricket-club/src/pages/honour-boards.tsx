@@ -7,11 +7,13 @@ import {
   useGetPlayer,
   useListPremierships,
   useGetMilestoneBoardSettings,
+  useListRecentDebutants,
   getGetGradeLeaderboardQueryOptions,
   getGetPlayerQueryKey,
   getListPlayersQueryKey,
+  type DebutEntry,
 } from "@workspace/api-client-react";
-import { Trophy } from "lucide-react";
+import { Trophy, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
@@ -41,6 +43,15 @@ import { AwardsTab } from "@/components/awards-tab";
 type Scope = "career" | "by-grade";
 type ExtraTab = "caps" | "life-members" | "awards" | "search";
 type ActiveTab = BoardKey | ExtraTab;
+
+// A card in the "Just achieved" list: either a career-total milestone promotion
+// or an A Grade / Female A Grade debut.
+type RecentItem =
+  | { kind: "debut"; key: string; debut: DebutEntry }
+  | { kind: "promotion"; key: string; promotion: PromotionEntry };
+
+// Max cards shown in the "Just achieved" grid (debuts first, then milestones).
+const RECENT_ITEMS_LIMIT = 5;
 
 const SummaryStat = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-card border border-border rounded-md p-5 shadow-md">
@@ -182,6 +193,29 @@ const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
           }}
         />
       </div>
+    </div>
+  );
+};
+
+const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
+  const subline =
+    d.season != null
+      ? `${d.grade} Cap #${d.capNumber} • ${d.round != null ? `Round ${d.round}, ` : ""}${d.season}`
+      : `${d.grade} Cap #${d.capNumber}`;
+  return (
+    <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
+      <Link href={`/players/${d.playerId}`} className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Star className="h-5 w-5 text-primary shrink-0" strokeWidth={2.25} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+            Debut
+          </span>
+        </div>
+        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+          {d.name}
+        </div>
+        <div className="text-xs text-muted-foreground mt-auto">{subline}</div>
+      </Link>
     </div>
   );
 };
@@ -376,6 +410,34 @@ export default function HonourBoards() {
     return getSeasonPromotions(allStats, selectedSeason, 5, milestoneThresholds);
   }, [aggregatedPlayers, allStats, scope, selectedSeason, showRecent, milestoneThresholds]);
 
+  // Recent A Grade / Female A Grade debutants — derived from the cap register
+  // (ungated by the milestone engine). Only dated debuts (those with a matched
+  // per-match record) surface here; older seeded caps with no match record are
+  // historical and never "just achieved". The endpoint returns freshest first.
+  const { data: debutants } = useListRecentDebutants();
+  const recentDebuts = useMemo<DebutEntry[]>(() => {
+    if (scope !== "career" || !showRecent) return [];
+    const dated = (debutants ?? []).filter((d) => d.season != null);
+    if (selectedSeason === "all") return dated;
+    return dated.filter((d) => d.season === selectedSeason);
+  }, [debutants, scope, showRecent, selectedSeason]);
+
+  // Merge debuts into the "Just achieved" list, giving the freshest debuts
+  // priority so older career-total milestones can't crowd them out.
+  const recentItems = useMemo<RecentItem[]>(() => {
+    const debutItems: RecentItem[] = recentDebuts.map((d) => ({
+      kind: "debut",
+      key: `debut-${d.playerId}-${d.capNumber}`,
+      debut: d,
+    }));
+    const promoItems: RecentItem[] = recentPromotions.map((p) => ({
+      kind: "promotion",
+      key: `promo-${p.playerId}-${p.boardKey}`,
+      promotion: p,
+    }));
+    return [...debutItems, ...promoItems].slice(0, RECENT_ITEMS_LIMIT);
+  }, [recentDebuts, recentPromotions]);
+
   const approachingMilestones = useMemo(() => {
     if (scope !== "career" || !showApproaching) return [];
     return getApproachingMilestones(aggregatedPlayers, 5, milestoneThresholds);
@@ -473,7 +535,7 @@ export default function HonourBoards() {
                   Just achieved
                 </div>
               )}
-              {recentPromotions.length === 0 ? (
+              {recentItems.length === 0 ? (
                 <div className="text-sm text-muted-foreground italic">
                   {selectedSeason === "all"
                     ? "No significant milestones to show yet."
@@ -481,9 +543,13 @@ export default function HonourBoards() {
                 </div>
               ) : (
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-                  {recentPromotions.map((p) => (
-                    <PromotionCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
-                  ))}
+                  {recentItems.map((item) =>
+                    item.kind === "debut" ? (
+                      <DebutCard key={item.key} entry={item.debut} />
+                    ) : (
+                      <PromotionCard key={item.key} entry={item.promotion} />
+                    ),
+                  )}
                 </div>
               )}
             </div>

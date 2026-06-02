@@ -787,6 +787,28 @@ export const CreateCapBody = zod.object({
 
 
 /**
+ * Recent first-cap debutants derived directly from the cap register
+(ungated by the social-milestone engine). Each capped player appears
+once with their grade (from the cap category), cap number, and — when a
+matching per-match record exists — the season and round they debuted.
+Older seeded caps with no match record have null season/round. Ordered
+freshest debut first (dated debuts by season/round, then by cap number).
+
+ * @summary Recent A Grade / Female A Grade debutants
+ */
+export const ListRecentDebutantsResponseItem = zod.object({
+  "playerId": zod.number(),
+  "name": zod.string(),
+  "grade": zod.string().describe('The cap grade — \"A Grade\" (male) or \"Female A Grade\" (female).'),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "capNumber": zod.number(),
+  "season": zod.number().nullish().describe('Debut season start year, or null for seeded caps with no match record.'),
+  "round": zod.number().nullish().describe('Debut round, or null for seeded caps with no match record.')
+}).describe('A player\'s first-cap debut in A Grade or Female A Grade.')
+export const ListRecentDebutantsResponse = zod.array(ListRecentDebutantsResponseItem)
+
+
+/**
  * @summary Update a cap register entry
  */
 export const UpdateCapParams = zod.object({

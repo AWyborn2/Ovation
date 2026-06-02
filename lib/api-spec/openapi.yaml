@@ -568,6 +568,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/CapEntry"
 
+  /caps/debutants:
+    get:
+      operationId: listRecentDebutants
+      tags: [caps]
+      summary: Recent A Grade / Female A Grade debutants
+      description: |
+        Recent first-cap debutants derived directly from the cap register
+        (ungated by the social-milestone engine). Each capped player appears
+        once with their grade (from the cap category), cap number, and — when a
+        matching per-match record exists — the season and round they debuted.
+        Older seeded caps with no match record have null season/round. Ordered
+        freshest debut first (dated debuts by season/round, then by cap number).
+      responses:
+        "200":
+          description: Recent debutants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DebutEntry"
+
   /caps/{id}:
     patch:
       operationId: updateCap
@@ -2455,6 +2477,29 @@ components:
       type: string
       enum: [male, female]
       description: Which A Grade cap list this entry belongs to.
+
+    DebutEntry:
+      type: object
+      required: [playerId, name, grade, category, capNumber]
+      description: A player's first-cap debut in A Grade or Female A Grade.
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
+        grade:
+          type: string
+          description: The cap grade — "A Grade" (male) or "Female A Grade" (female).
+        category:
+          $ref: "#/components/schemas/CapCategory"
+        capNumber:
+          type: integer
+        season:
+          type: ["integer", "null"]
+          description: Debut season start year, or null for seeded caps with no match record.
+        round:
+          type: ["integer", "null"]
+          description: Debut round, or null for seeded caps with no match record.
 
     CapEntry:
       type: object

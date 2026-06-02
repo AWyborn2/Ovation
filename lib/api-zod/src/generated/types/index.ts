@@ -30,6 +30,7 @@ export * from './clubRecords';
 export * from './commitImportInput';
 export * from './commitImportResult';
 export * from './dashboard';
+export * from './debutEntry';
 export * from './errorEnvelope';
 export * from './gradeSummary';
 export * from './healthStatus';

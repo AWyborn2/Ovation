@@ -585,6 +585,28 @@ export interface PlayerRecord {
   value: number;
 }
 
+/**
+ * A player's first-cap debut in A Grade or Female A Grade.
+ */
+export interface DebutEntry {
+  playerId: number;
+  name: string;
+  /** The cap grade — "A Grade" (male) or "Female A Grade" (female). */
+  grade: string;
+  category: CapCategory;
+  capNumber: number;
+  /**
+     * Debut season start year, or null for seeded caps with no match record.
+     * @nullable
+     */
+  season?: number | null;
+  /**
+     * Debut round, or null for seeded caps with no match record.
+     * @nullable
+     */
+  round?: number | null;
+}
+
 export interface CapEntry {
   id: number;
   capNumber: number;

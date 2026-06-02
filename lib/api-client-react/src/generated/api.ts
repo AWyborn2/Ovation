@@ -41,6 +41,7 @@ import type {
   CommitImportInput,
   CommitImportResult,
   Dashboard,
+  DebutEntry,
   ErrorEnvelope,
   GradeSummary,
   HealthStatus,
@@ -1918,6 +1919,90 @@ export const useCreateCap = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateCapMutationOptions(options));
     }
+
+export const getListRecentDebutantsUrl = () => {
+
+
+
+
+  return `/api/caps/debutants`
+}
+
+/**
+ * Recent first-cap debutants derived directly from the cap register
+(ungated by the social-milestone engine). Each capped player appears
+once with their grade (from the cap category), cap number, and — when a
+matching per-match record exists — the season and round they debuted.
+Older seeded caps with no match record have null season/round. Ordered
+freshest debut first (dated debuts by season/round, then by cap number).
+
+ * @summary Recent A Grade / Female A Grade debutants
+ */
+export const listRecentDebutants = async ( options?: RequestInit): Promise<DebutEntry[]> => {
+
+  return customFetch<DebutEntry[]>(getListRecentDebutantsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRecentDebutantsQueryKey = () => {
+    return [
+    `/api/caps/debutants`
+    ] as const;
+    }
+
+
+export const getListRecentDebutantsQueryOptions = <TData = Awaited<ReturnType<typeof listRecentDebutants>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRecentDebutants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRecentDebutantsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRecentDebutants>>> = ({ signal }) => listRecentDebutants({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRecentDebutants>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRecentDebutantsQueryResult = NonNullable<Awaited<ReturnType<typeof listRecentDebutants>>>
+export type ListRecentDebutantsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recent A Grade / Female A Grade debutants
+ */
+
+export function useListRecentDebutants<TData = Awaited<ReturnType<typeof listRecentDebutants>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRecentDebutants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRecentDebutantsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getUpdateCapUrl = (id: number,) => {
 
