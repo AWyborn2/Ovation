@@ -128,6 +128,7 @@ export default function GradeLeaderboard() {
                       value: (stat.wickets ?? 0) >= (stat.runs ?? 0) / 10 ? stat.wickets ?? 0 : stat.runs ?? 0,
                     }}
                     appPath={`/players/${stat.playerId}`}
+                    playerId={stat.playerId}
                     variant="ghost"
                     label=""
                   />

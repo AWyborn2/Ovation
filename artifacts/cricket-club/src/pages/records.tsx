@@ -110,6 +110,7 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
           <ShareButton
             input={shareInput}
             appPath={`/players/${row.stat!.playerId}`}
+            playerId={row.stat!.playerId}
             variant="ghost"
             label=""
           />

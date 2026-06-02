@@ -253,7 +253,7 @@ export default function PlayerDetail() {
               stats,
               photoUrl: player.imageUrl,
             };
-            return <ShareButton input={input} appPath={`/players/${player.id}`} label="Share profile" />;
+            return <ShareButton input={input} appPath={`/players/${player.id}`} playerId={player.id} label="Share profile" />;
           })()}
           <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
         </div>

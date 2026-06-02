@@ -317,13 +317,24 @@ const drawBackground = (
   H: number,
   p: Palette,
   bgImg: HTMLImageElement | null,
+  feature = false,
 ) => {
   if (bgImg) {
     // Photo background + dark overlay so foreground text stays legible.
     drawImageCover(ctx, bgImg, 0, 0, W, H);
     const ov = ctx.createLinearGradient(0, 0, 0, H);
-    ov.addColorStop(0, rgba(p.bgPanel, 0.82));
-    ov.addColorStop(1, rgba(p.bgDark, 0.92));
+    if (feature) {
+      // A feature photo is the hero: keep a lighter veil over the top/middle so
+      // the photo reads through, and ramp to a strong scrim at the bottom where
+      // the headline, name and stat text sit.
+      ov.addColorStop(0, rgba(p.bgDark, 0.5));
+      ov.addColorStop(0.45, rgba(p.bgDark, 0.42));
+      ov.addColorStop(0.7, rgba(p.bgDark, 0.62));
+      ov.addColorStop(1, rgba(p.bgDark, 0.92));
+    } else {
+      ov.addColorStop(0, rgba(p.bgPanel, 0.82));
+      ov.addColorStop(1, rgba(p.bgDark, 0.92));
+    }
     ctx.fillStyle = ov;
     ctx.fillRect(0, 0, W, H);
   } else {
@@ -475,12 +486,24 @@ const drawFooter = (
   );
 };
 
+export type PhotoPlacement = "feature" | "headshot";
+
 export type RenderOptions = {
   size: CardSize;
   sponsors?: CardSponsor[];
   clubUrl?: string;
   hashtag?: string;
   theme?: CardTheme | null;
+  /**
+   * Overrides the photo baked into the input. When omitted, the renderer falls
+   * back to the input's own `photoUrl`; pass `null` to force no photo.
+   */
+  photoUrl?: string | null;
+  /**
+   * "headshot" (default) keeps the existing small circular portrait; "feature"
+   * promotes the photo to a full-bleed hero/background with a dark scrim.
+   */
+  photoPlacement?: PhotoPlacement;
 };
 
 export const renderShareCard = async (
@@ -506,11 +529,23 @@ export const renderShareCard = async (
   const bgImg = opts.theme?.backgroundImageUrl
     ? await loadImage(opts.theme.backgroundImageUrl).catch(() => null)
     : null;
-  const photoUrl = "photoUrl" in input ? input.photoUrl : null;
-  const photoImg = photoUrl ? await loadImage(photoUrl).catch(() => null) : null;
+  const placement: PhotoPlacement = opts.photoPlacement ?? "headshot";
+  // opts.photoUrl overrides the input's baked photo; `undefined` means "use the
+  // input's own photo", while an explicit `null` forces no photo.
+  const photoUrl =
+    opts.photoUrl !== undefined
+      ? opts.photoUrl
+      : "photoUrl" in input
+        ? input.photoUrl
+        : null;
+  const loadedPhoto = photoUrl ? await loadImage(photoUrl).catch(() => null) : null;
+  // In feature mode the photo becomes the background hero; otherwise it is the
+  // small circular headshot the per-kind body draws.
+  const featureImg = placement === "feature" ? loadedPhoto : null;
+  const photoImg = placement === "feature" ? null : loadedPhoto;
   const logoSrc = opts.theme?.logoUrl || logoUrl;
 
-  drawBackground(ctx, W, H, p, bgImg);
+  drawBackground(ctx, W, H, p, featureImg ?? bgImg, !!featureImg);
   const headerEnd = await drawHeader(ctx, W, Math.round(80 * scale), scale, p, logoSrc);
   const ribbonEnd = drawRibbon(ctx, W, headerEnd, headlineFor(input), scale, p);
 

@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUpload } from "@workspace/object-storage-web";
 import {
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useGetPlayer,
+  getGetPlayerQueryKey,
+  useUpdatePlayer,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
 } from "@workspace/api-client-react";
@@ -21,7 +26,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Download, Copy, Check } from "lucide-react";
+import { Loader2, Download, Copy, Check, Upload, ImageOff, User, ImageIcon } from "lucide-react";
 import {
   SIZES,
   renderShareCard,
@@ -31,6 +36,7 @@ import {
   type CardSize,
   type CardSponsor,
   type ShareCardInput,
+  type PhotoPlacement,
 } from "@/lib/share-card";
 import {
   renderCaption,
@@ -48,6 +54,13 @@ type Props = {
   engine?: EngineKey;
   appPath?: string; // e.g. "/players/123"
   trackedSlug?: string | null;
+  /**
+   * The player this tile is about, when there is one. Drives the photo control:
+   * it lets the modal load the player's saved profile photo as the default and
+   * save a freshly uploaded photo back to that profile. Omit for player-less
+   * cards (e.g. premiership) to hide the photo control entirely.
+   */
+  playerId?: number | null;
   /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,
@@ -71,6 +84,7 @@ export function ShareCardModal({
   engine = "ondemand",
   appPath,
   trackedSlug,
+  playerId,
   onApprove,
   approveLabel = "Approve & download",
 }: Props) {
@@ -78,6 +92,83 @@ export function ShareCardModal({
     query: { enabled: open, queryKey: getGetSocialSettingsQueryKey() },
   });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
+
+  // Photo control state. We only surface it when the tile is about a player.
+  const showPhotoControls = playerId != null;
+  const queryClient = useQueryClient();
+  const updatePlayer = useUpdatePlayer();
+  const playerQ = useGetPlayer(playerId ?? 0, {
+    query: { enabled: open && showPhotoControls, queryKey: getGetPlayerQueryKey(playerId ?? 0) },
+  });
+  // The player's saved profile photo (when present) is the default, falling back
+  // to whatever photo the input was built with.
+  const profilePhotoUrl: string | null =
+    (showPhotoControls ? playerQ.data?.imageUrl ?? null : null) ??
+    (input && "photoUrl" in input ? input.photoUrl ?? null : null);
+
+  type PhotoSource = "profile" | "uploaded" | "none";
+  const [photoSource, setPhotoSource] = useState<PhotoSource>("none");
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [photoPlacement, setPhotoPlacement] = useState<PhotoPlacement>("headshot");
+  const [saveToProfile, setSaveToProfile] = useState(true);
+  const [photoTouched, setPhotoTouched] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, isUploading } = useUpload({
+    onError: (e) => setPhotoError(e.message),
+  });
+
+  // Reset photo controls each time the modal opens.
+  useEffect(() => {
+    if (open) {
+      setPhotoSource("none");
+      setUploadedUrl(null);
+      setPhotoPlacement("headshot");
+      setSaveToProfile(true);
+      setPhotoTouched(false);
+      setPhotoError(null);
+    }
+  }, [open]);
+
+  // Once the profile photo is known (it loads async), default to using it —
+  // unless the club has already interacted with the photo control.
+  useEffect(() => {
+    if (open && !photoTouched && photoSource === "none" && uploadedUrl === null && profilePhotoUrl) {
+      setPhotoSource("profile");
+    }
+  }, [open, photoTouched, photoSource, uploadedUrl, profilePhotoUrl]);
+
+  const effectivePhotoUrl: string | null =
+    photoSource === "profile"
+      ? profilePhotoUrl
+      : photoSource === "uploaded"
+        ? uploadedUrl
+        : null;
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoError(null);
+    const result = await uploadFile(file);
+    if (!result) return;
+    const url = `/api/storage${result.objectPath}`;
+    setUploadedUrl(url);
+    setPhotoSource("uploaded");
+    setPhotoTouched(true);
+    // Save to the player's profile so it's the default next time (opt-out).
+    if (saveToProfile && playerId != null) {
+      updatePlayer.mutate(
+        { id: playerId, data: { imageUrl: url } },
+        {
+          onSuccess: () =>
+            queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(playerId) }),
+          onError: (err) =>
+            setPhotoError((err as Error)?.message ?? "Could not save photo to profile"),
+        },
+      );
+    }
+  };
 
   const themesQ = useListCardThemes({
     query: { enabled: open, queryKey: getListCardThemesQueryKey() },
@@ -213,6 +304,8 @@ export function ShareCardModal({
           clubUrl,
           hashtag,
           theme: selectedTheme,
+          photoUrl: effectivePhotoUrl,
+          photoPlacement,
         });
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
@@ -228,7 +321,7 @@ export function ShareCardModal({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme]);
+  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, effectivePhotoUrl, photoPlacement]);
 
   // Stable signature of the resolved sponsor set so previews re-render when the
   // sponsor list loads async or its card-kind filtering changes the result.
@@ -246,7 +339,7 @@ export function ShareCardModal({
       return { square: null, portrait: null, story: null };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeSponsors, input, selectedThemeId, sponsorSig]);
+  }, [includeSponsors, input, selectedThemeId, sponsorSig, effectivePhotoUrl, photoPlacement]);
 
   // Cleanup URLs on close.
   useEffect(() => {
@@ -261,7 +354,15 @@ export function ShareCardModal({
 
   const handleDownload = async (size: CardSize) => {
     if (!input) return;
-    const blob = await renderShareCard(input, { size, sponsors, clubUrl, hashtag, theme: selectedTheme });
+    const blob = await renderShareCard(input, {
+      size,
+      sponsors,
+      clubUrl,
+      hashtag,
+      theme: selectedTheme,
+      photoUrl: effectivePhotoUrl,
+      photoPlacement,
+    });
     downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
   };
 
@@ -271,7 +372,15 @@ export function ShareCardModal({
     try {
       const zip = new JSZip();
       for (const size of enabledSizes) {
-        const blob = await renderShareCard(input, { size, sponsors, clubUrl, hashtag, theme: selectedTheme });
+        const blob = await renderShareCard(input, {
+          size,
+          sponsors,
+          clubUrl,
+          hashtag,
+          theme: selectedTheme,
+          photoUrl: effectivePhotoUrl,
+          photoPlacement,
+        });
         zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.png`, blob);
       }
       if (bundle?.settings.captionsEnabled) {
@@ -382,6 +491,105 @@ export function ShareCardModal({
                 />
               </div>
             )}
+
+            {showPhotoControls && (
+              <div className="space-y-2.5 rounded border px-3 py-2.5">
+                <Label className="text-sm">Photo</Label>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {profilePhotoUrl && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={photoSource === "profile" ? "default" : "outline"}
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        setPhotoSource("profile");
+                        setPhotoTouched(true);
+                      }}
+                    >
+                      <User className="h-3.5 w-3.5 mr-1" />
+                      Profile photo
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={photoSource === "uploaded" ? "default" : "outline"}
+                    className="h-8 text-xs"
+                    disabled={isUploading}
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    {uploadedUrl ? "Replace photo" : "Upload photo"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={photoSource === "none" ? "default" : "outline"}
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      setPhotoSource("none");
+                      setPhotoTouched(true);
+                    }}
+                  >
+                    <ImageOff className="h-3.5 w-3.5 mr-1" />
+                    No photo
+                  </Button>
+                </div>
+
+                {effectivePhotoUrl && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Placement</Label>
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={photoPlacement === "feature" ? "default" : "outline"}
+                        className="h-8 flex-1 text-xs"
+                        onClick={() => setPhotoPlacement("feature")}
+                      >
+                        <ImageIcon className="h-3.5 w-3.5 mr-1" />
+                        Feature
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={photoPlacement === "headshot" ? "default" : "outline"}
+                        className="h-8 flex-1 text-xs"
+                        onClick={() => setPhotoPlacement("headshot")}
+                      >
+                        <User className="h-3.5 w-3.5 mr-1" />
+                        Headshot
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-0.5">
+                  <Label htmlFor="save-profile-toggle" className="text-xs text-muted-foreground">
+                    Save uploads to player profile
+                  </Label>
+                  <Switch
+                    id="save-profile-toggle"
+                    checked={saveToProfile}
+                    onCheckedChange={setSaveToProfile}
+                  />
+                </div>
+
+                {photoError && <p className="text-xs text-destructive">{photoError}</p>}
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -471,6 +679,7 @@ export function ShareButton({
   engine = "ondemand",
   appPath,
   trackedSlug,
+  playerId,
   size = "sm",
   variant = "outline",
   label = "Share",
@@ -481,6 +690,7 @@ export function ShareButton({
   engine?: EngineKey;
   appPath?: string;
   trackedSlug?: string | null;
+  playerId?: number | null;
   size?: "sm" | "default" | "icon";
   variant?: "default" | "outline" | "ghost" | "secondary";
   label?: string;
@@ -528,6 +738,7 @@ export function ShareButton({
         engine={engine}
         appPath={appPath}
         trackedSlug={trackedSlug ?? null}
+        playerId={playerId ?? null}
       />
     </>
   );

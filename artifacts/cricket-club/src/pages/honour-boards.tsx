@@ -176,6 +176,7 @@ const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
         <ShareButton
           engine="milestone"
           appPath={`/players/${p.playerId}`}
+          playerId={p.playerId}
           iconOnly
           variant="ghost"
           size="icon"
@@ -220,6 +221,7 @@ const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
         <ShareButton
           engine="milestone"
           appPath={`/players/${d.playerId}`}
+          playerId={d.playerId}
           iconOnly
           variant="ghost"
           size="icon"
