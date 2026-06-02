@@ -1,0 +1,132 @@
+
+
+Filters
+
+Plans
+
+Tasks
+
+ME
+Created by me
+
+
+Open task board
+Library
+
+File tree
+Search
+
+New
+Apps
+Halls Head Cricket Club
+Halls Head Cricket Club
+Website
+
+HHCC Mobile
+Mobile
+
+Images
+cricket club icon
+cricket club icon
+Image
+
+
+
+All Databases
+
+Refresh
+Databases
+Development Database
+31.26MB / 20GB
+Production Database
+30.77MB / 100GB
+Billing Period
+Renews monthly, Jun 13
+Hours of Compute Used
+0.93 hours
+Correct player data to merge duplicates and fix misspellings
+
+
+
+Show previous messages
+
+21 messages & 35 actions
+
+Checkpoint made
+1 hour ago
+
+Worked for 17 minutes
+What happened to the merging and duplicate players in the A Grade caps?
+
+1 hour ago
+
+3 messages & 9 actions
+
+Worked for 1 minute
+
+Attached Image
+
+Attached Image
+
+Attached Image
+
+Attached Image
+
+Attached Image
+Wes and Wesley are the same person, Jeff and Jeffrey are the same person. Mick Stanley and Mick Staney are the same person . we discussed this We replaced C Mills with Trevor Allen but these dublicated have been aggregated to the caps list. and Ben Higton, Mitchell Caine, Jeff Petrie and Luca Doyle were not removed after deleting the 2025.26 season.
+
+59 minutes ago
+
+4 messages & 9 actions
+Cap #225 'Jake Patterson' is linked to a different player record — DEAN Patterson (86 games, no A Grade). The real Jake is 'Jake Pattison' (#250). How should I handle it?
+
+Delete the stray 'Jake Patterson' cap #225 (Dean has no A Grade games anyway); keep Jake Pattison's cap. Don't touch Dean's record.
+Jake Pattison is A Grade cap 225 the Patterson was a typo.
+54 minutes ago
+
+Worked for 4 minutes
+
+3 messages & 6 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+Mick O'Brien is Michael O'Brien #248, Samuel Evans never actually played A Grade his Borther Joel did I an not sure why there is a mix up with them both this is a data error, Trevor Anning is actually Trevor Allen , Alan Bermingham - Alan Birmingham are teh same player
+
+34 minutes ago
+
+3 messages & 6 actions
+
+Proposed 1 task
+
+Worked for 3 minutes
+Merge mick and michael o'brien it should be cap 38
+
+25 minutes ago
+
+2 messages & 12 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+
+Started task
+Merge duplicate A Grade caps and clear leftovers
+The 2025/26 A Grade import auto-created brand-new cap entries (numbers in the 240s–250s) for players who already held a cap under a slightly different spelling of their name, so the same person now appears twice in the A Grade Caps (Male) list. There are also a few source-data errors (a game credited to the wrong brother, two historic caps misspelled). Separately, four players who only ever appeared in the now-deleted 2025/26 A Grade season still have leftover A Grade caps and stale career totals. This task consolidates each duplicate down to a single correct cap, fixes the data errors, and clears the four leftovers — without losing any career stats.
+
+
+View plan
+
+Checkpoint made
+23 minutes ago
+
+13 messages & 36 actions
+
+Worked for 10 minutes
+
+Attached Image
+
+Attached Image
+
+Attached Image
+So now, when I upload an A Grade game from round 2 the club had multiple debuts it is only idenifiying one and that player is mitchell Felton who is in the system as Mitch Felton. but it is not identifiying the other 3 debuts
