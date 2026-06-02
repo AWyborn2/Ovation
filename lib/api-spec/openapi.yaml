@@ -1191,6 +1191,64 @@ paths:
         "404":
           description: Not found
 
+  /voting-configs/{id}/ballots/{ballotId}:
+    patch:
+      operationId: updateConfigBallot
+      tags: [awards]
+      summary: Edit a captain's 3-2-1 ballot for a round (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: ballotId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BallotUpdate"
+      responses:
+        "200":
+          description: Updated ballot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BallotReview"
+        "400":
+          description: Invalid ballot
+        "404":
+          description: Not found
+        "409":
+          description: Voting finalised
+    delete:
+      operationId: deleteConfigBallot
+      tags: [awards]
+      summary: Clear a captain's ballot for a round (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: ballotId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: Voting finalised
+
   /voting-configs/{id}/finalise:
     post:
       operationId: finaliseVotingConfig
@@ -3165,6 +3223,17 @@ components:
           type: string
         round:
           type: integer
+        pick1PlayerId:
+          type: integer
+        pick2PlayerId:
+          type: integer
+        pick3PlayerId:
+          type: integer
+
+    BallotUpdate:
+      type: object
+      required: [pick1PlayerId, pick2PlayerId, pick3PlayerId]
+      properties:
         pick1PlayerId:
           type: integer
         pick2PlayerId:

@@ -793,6 +793,12 @@ export interface BallotInput {
   pick3PlayerId: number;
 }
 
+export interface BallotUpdate {
+  pick1PlayerId: number;
+  pick2PlayerId: number;
+  pick3PlayerId: number;
+}
+
 export interface VotableRoundPlayer {
   playerId: number;
   name: string;

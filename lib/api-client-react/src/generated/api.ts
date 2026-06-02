@@ -36,6 +36,7 @@ import type {
   Ballot,
   BallotInput,
   BallotReview,
+  BallotUpdate,
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
@@ -4280,6 +4281,152 @@ export function useListVotingConfigBallots<TData = Awaited<ReturnType<typeof lis
 
 
 
+
+export const getUpdateConfigBallotUrl = (id: number,
+    ballotId: number,) => {
+
+
+
+
+  return `/api/voting-configs/${id}/ballots/${ballotId}`
+}
+
+/**
+ * @summary Edit a captain's 3-2-1 ballot for a round (admin)
+ */
+export const updateConfigBallot = async (id: number,
+    ballotId: number,
+    ballotUpdate: BallotUpdate, options?: RequestInit): Promise<BallotReview> => {
+
+  return customFetch<BallotReview>(getUpdateConfigBallotUrl(id,ballotId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ballotUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateConfigBallotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateConfigBallot>>, TError,{id: number;ballotId: number;data: BodyType<BallotUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateConfigBallot>>, TError,{id: number;ballotId: number;data: BodyType<BallotUpdate>}, TContext> => {
+
+const mutationKey = ['updateConfigBallot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateConfigBallot>>, {id: number;ballotId: number;data: BodyType<BallotUpdate>}> = (props) => {
+          const {id,ballotId,data} = props ?? {};
+
+          return  updateConfigBallot(id,ballotId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateConfigBallotMutationResult = NonNullable<Awaited<ReturnType<typeof updateConfigBallot>>>
+    export type UpdateConfigBallotMutationBody = BodyType<BallotUpdate>
+    export type UpdateConfigBallotMutationError = ErrorType<void>
+
+    /**
+ * @summary Edit a captain's 3-2-1 ballot for a round (admin)
+ */
+export const useUpdateConfigBallot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateConfigBallot>>, TError,{id: number;ballotId: number;data: BodyType<BallotUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateConfigBallot>>,
+        TError,
+        {id: number;ballotId: number;data: BodyType<BallotUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateConfigBallotMutationOptions(options));
+    }
+
+export const getDeleteConfigBallotUrl = (id: number,
+    ballotId: number,) => {
+
+
+
+
+  return `/api/voting-configs/${id}/ballots/${ballotId}`
+}
+
+/**
+ * @summary Clear a captain's ballot for a round (admin)
+ */
+export const deleteConfigBallot = async (id: number,
+    ballotId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteConfigBallotUrl(id,ballotId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteConfigBallotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConfigBallot>>, TError,{id: number;ballotId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteConfigBallot>>, TError,{id: number;ballotId: number}, TContext> => {
+
+const mutationKey = ['deleteConfigBallot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteConfigBallot>>, {id: number;ballotId: number}> = (props) => {
+          const {id,ballotId} = props ?? {};
+
+          return  deleteConfigBallot(id,ballotId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteConfigBallotMutationResult = NonNullable<Awaited<ReturnType<typeof deleteConfigBallot>>>
+
+    export type DeleteConfigBallotMutationError = ErrorType<void>
+
+    /**
+ * @summary Clear a captain's ballot for a round (admin)
+ */
+export const useDeleteConfigBallot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConfigBallot>>, TError,{id: number;ballotId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteConfigBallot>>,
+        TError,
+        {id: number;ballotId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteConfigBallotMutationOptions(options));
+    }
 
 export const getFinaliseVotingConfigUrl = (id: number,) => {
 

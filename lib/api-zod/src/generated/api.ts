@@ -1382,6 +1382,45 @@ export const ListVotingConfigBallotsResponse = zod.array(ListVotingConfigBallots
 
 
 /**
+ * @summary Edit a captain's 3-2-1 ballot for a round (admin)
+ */
+export const UpdateConfigBallotParams = zod.object({
+  "id": zod.coerce.number(),
+  "ballotId": zod.coerce.number()
+})
+
+export const UpdateConfigBallotBody = zod.object({
+  "pick1PlayerId": zod.number(),
+  "pick2PlayerId": zod.number(),
+  "pick3PlayerId": zod.number()
+})
+
+export const UpdateConfigBallotResponse = zod.object({
+  "id": zod.number(),
+  "captainId": zod.number(),
+  "captainName": zod.string(),
+  "grade": zod.string(),
+  "round": zod.number(),
+  "pick1PlayerId": zod.number(),
+  "pick2PlayerId": zod.number(),
+  "pick3PlayerId": zod.number(),
+  "pick1Name": zod.string(),
+  "pick2Name": zod.string(),
+  "pick3Name": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Clear a captain's ballot for a round (admin)
+ */
+export const DeleteConfigBallotParams = zod.object({
+  "id": zod.coerce.number(),
+  "ballotId": zod.coerce.number()
+})
+
+
+/**
  * @summary Finalise season winner(s) into the award's roll of past winners (admin)
  */
 export const FinaliseVotingConfigParams = zod.object({

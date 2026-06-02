@@ -14,6 +14,8 @@ import {
   useDeleteAwardVotingConfig,
   useGetVotingConfigTally,
   useListVotingConfigBallots,
+  useUpdateConfigBallot,
+  useDeleteConfigBallot,
   useFinaliseVotingConfig,
   getListAwardsQueryKey,
   getListAwardVotingConfigsQueryKey,
@@ -586,7 +588,7 @@ function VotingConfigCard({
       </div>
 
       {showTally && <TallyView configId={config.id} />}
-      {showBallots && <BallotsView configId={config.id} />}
+      {showBallots && <BallotsView configId={config.id} finalised={finalised} />}
     </div>
   );
 }
@@ -635,8 +637,17 @@ function TallyView({ configId }: { configId: number }) {
   );
 }
 
-function BallotsView({ configId }: { configId: number }) {
+function splitName(id: number, fullName: string): SelectedPlayer {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 1) return { id, givenName: fullName.trim(), surname: "" };
+  const surname = parts[parts.length - 1];
+  const givenName = parts.slice(0, -1).join(" ");
+  return { id, givenName, surname };
+}
+
+function BallotsView({ configId, finalised }: { configId: number; finalised: boolean }) {
   const { data, isLoading } = useListVotingConfigBallots(configId);
+  const [editingId, setEditingId] = useState<number | null>(null);
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading ballots…</p>;
   if (!data || data.length === 0) {
     return <p className="text-sm text-muted-foreground italic">No ballots submitted yet.</p>;
@@ -650,22 +661,195 @@ function BallotsView({ configId }: { configId: number }) {
             <th className="text-left px-3 py-2">Grade</th>
             <th className="text-right px-3 py-2">Rd</th>
             <th className="text-left px-3 py-2">3 / 2 / 1</th>
+            {!finalised && <th className="px-3 py-2" />}
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {data.map((b) => (
-            <tr key={b.id}>
-              <td className="px-3 py-2">{b.captainName}</td>
-              <td className="px-3 py-2">{b.grade}</td>
-              <td className="px-3 py-2 text-right">{b.round}</td>
-              <td className="px-3 py-2">
-                {b.pick1Name} / {b.pick2Name} / {b.pick3Name}
-              </td>
-            </tr>
-          ))}
+          {data.map((b) =>
+            editingId === b.id ? (
+              <BallotEditRow
+                key={b.id}
+                configId={configId}
+                ballot={b}
+                onClose={() => setEditingId(null)}
+              />
+            ) : (
+              <tr key={b.id}>
+                <td className="px-3 py-2">{b.captainName}</td>
+                <td className="px-3 py-2">{b.grade}</td>
+                <td className="px-3 py-2 text-right">{b.round}</td>
+                <td className="px-3 py-2">
+                  {b.pick1Name} / {b.pick2Name} / {b.pick3Name}
+                </td>
+                {!finalised && (
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mr-2"
+                      onClick={() => setEditingId(b.id)}
+                    >
+                      Edit
+                    </Button>
+                    <ClearBallotButton configId={configId} ballotId={b.id} />
+                  </td>
+                )}
+              </tr>
+            ),
+          )}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function invalidateBallotsAndTally(
+  queryClient: ReturnType<typeof useQueryClient>,
+  configId: number,
+) {
+  queryClient.invalidateQueries({
+    queryKey: getListVotingConfigBallotsQueryKey(configId),
+  });
+  queryClient.invalidateQueries({
+    queryKey: getGetVotingConfigTallyQueryKey(configId),
+  });
+}
+
+function ClearBallotButton({
+  configId,
+  ballotId,
+}: {
+  configId: number;
+  ballotId: number;
+}) {
+  const queryClient = useQueryClient();
+  const remove = useDeleteConfigBallot();
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={remove.isPending}
+      onClick={() => {
+        if (!confirm("Clear this captain's ballot for this round?")) return;
+        remove.mutate(
+          { id: configId, ballotId },
+          {
+            onSuccess: () => invalidateBallotsAndTally(queryClient, configId),
+            onError: (e) => {
+              const msg = handleAdminMutationError(e);
+              if (msg) alert(msg);
+            },
+          },
+        );
+      }}
+    >
+      Clear
+    </Button>
+  );
+}
+
+function BallotEditRow({
+  configId,
+  ballot,
+  onClose,
+}: {
+  configId: number;
+  ballot: {
+    id: number;
+    captainName: string;
+    grade: string;
+    round: number;
+    pick1PlayerId: number;
+    pick2PlayerId: number;
+    pick3PlayerId: number;
+    pick1Name: string;
+    pick2Name: string;
+    pick3Name: string;
+  };
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const update = useUpdateConfigBallot();
+  const [pick1, setPick1] = useState<SelectedPlayer | null>(
+    splitName(ballot.pick1PlayerId, ballot.pick1Name),
+  );
+  const [pick2, setPick2] = useState<SelectedPlayer | null>(
+    splitName(ballot.pick2PlayerId, ballot.pick2Name),
+  );
+  const [pick3, setPick3] = useState<SelectedPlayer | null>(
+    splitName(ballot.pick3PlayerId, ballot.pick3Name),
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const save = () => {
+    setError(null);
+    if (!pick1 || !pick2 || !pick3) {
+      setError("Pick three players.");
+      return;
+    }
+    if (new Set([pick1.id, pick2.id, pick3.id]).size !== 3) {
+      setError("The three picks must be different players.");
+      return;
+    }
+    update.mutate(
+      {
+        id: configId,
+        ballotId: ballot.id,
+        data: {
+          pick1PlayerId: pick1.id,
+          pick2PlayerId: pick2.id,
+          pick3PlayerId: pick3.id,
+        },
+      },
+      {
+        onSuccess: () => {
+          invalidateBallotsAndTally(queryClient, configId);
+          onClose();
+        },
+        onError: (e) => {
+          const msg = handleAdminMutationError(e);
+          if (msg) setError(msg);
+        },
+      },
+    );
+  };
+
+  return (
+    <tr>
+      <td className="px-3 py-2 align-top">{ballot.captainName}</td>
+      <td className="px-3 py-2 align-top">{ballot.grade}</td>
+      <td className="px-3 py-2 text-right align-top">{ballot.round}</td>
+      <td className="px-3 py-2" colSpan={2}>
+        <div className="space-y-2">
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label className="text-xs">3 votes</Label>
+              <PlayerTypeahead value={pick1} onChange={setPick1} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">2 votes</Label>
+              <PlayerTypeahead value={pick2} onChange={setPick2} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">1 vote</Label>
+              <PlayerTypeahead value={pick3} onChange={setPick3} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Picks must be players who played that match.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" disabled={update.isPending} onClick={save}>
+              {update.isPending ? "Saving…" : "Save ballot"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </td>
+    </tr>
   );
 }
 

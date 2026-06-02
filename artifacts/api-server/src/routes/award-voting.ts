@@ -19,6 +19,9 @@ import {
   ListAwardVotingConfigsParams,
   GetVotingConfigTallyParams,
   ListVotingConfigBallotsParams,
+  UpdateConfigBallotParams,
+  UpdateConfigBallotBody,
+  DeleteConfigBallotParams,
   FinaliseVotingConfigParams,
   SubmitBallotBody,
 } from "@workspace/api-zod";
@@ -272,6 +275,134 @@ router.get("/voting-configs/:id/ballots", requireAdmin, async (req, res): Promis
     })),
   );
 });
+
+router.patch(
+  "/voting-configs/:id/ballots/:ballotId",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = UpdateConfigBallotParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateConfigBallotBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const { pick1PlayerId, pick2PlayerId, pick3PlayerId } = body.data;
+    const picks = [pick1PlayerId, pick2PlayerId, pick3PlayerId];
+    if (new Set(picks).size !== 3) {
+      res.status(400).json({ error: "The three picks must be different players" });
+      return;
+    }
+
+    const [config] = await db
+      .select()
+      .from(awardVotingConfigTable)
+      .where(eq(awardVotingConfigTable.id, params.data.id));
+    if (!config) {
+      res.status(404).json({ error: "Config not found" });
+      return;
+    }
+    if (config.finalisedAt != null) {
+      res.status(409).json({ error: "Voting is finalised; ballots can no longer be changed" });
+      return;
+    }
+
+    const [ballot] = await db
+      .select()
+      .from(awardBallotsTable)
+      .where(
+        and(
+          eq(awardBallotsTable.id, params.data.ballotId),
+          eq(awardBallotsTable.configId, params.data.id),
+        ),
+      );
+    if (!ballot) {
+      res.status(404).json({ error: "Ballot not found" });
+      return;
+    }
+
+    // Every pick must be a player who actually played that grade+round.
+    const eligible = await loadRoundsForGrade(ballot.grade, config.season);
+    const thisRound = eligible.find((rd) => rd.round === ballot.round);
+    const eligibleIds = new Set((thisRound?.players ?? []).map((p) => p.playerId));
+    if (!picks.every((id) => eligibleIds.has(id))) {
+      res.status(400).json({ error: "All picks must be players who played that match" });
+      return;
+    }
+
+    const [row] = await db
+      .update(awardBallotsTable)
+      .set({ pick1PlayerId, pick2PlayerId, pick3PlayerId, updatedAt: new Date() })
+      .where(eq(awardBallotsTable.id, ballot.id))
+      .returning();
+
+    const [captain] = await db
+      .select({ displayName: captainsTable.displayName })
+      .from(captainsTable)
+      .where(eq(captainsTable.id, row.captainId));
+    const names = await loadPlayerNames([
+      row.pick1PlayerId,
+      row.pick2PlayerId,
+      row.pick3PlayerId,
+    ]);
+    const nameOf = (id: number) => names.get(id) ?? `#${id}`;
+    res.json({
+      id: row.id,
+      captainId: row.captainId,
+      captainName: captain?.displayName ?? `#${row.captainId}`,
+      grade: row.grade,
+      round: row.round,
+      pick1PlayerId: row.pick1PlayerId,
+      pick2PlayerId: row.pick2PlayerId,
+      pick3PlayerId: row.pick3PlayerId,
+      pick1Name: nameOf(row.pick1PlayerId),
+      pick2Name: nameOf(row.pick2PlayerId),
+      pick3Name: nameOf(row.pick3PlayerId),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.delete(
+  "/voting-configs/:id/ballots/:ballotId",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = DeleteConfigBallotParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [config] = await db
+      .select()
+      .from(awardVotingConfigTable)
+      .where(eq(awardVotingConfigTable.id, params.data.id));
+    if (!config) {
+      res.status(404).json({ error: "Config not found" });
+      return;
+    }
+    if (config.finalisedAt != null) {
+      res.status(409).json({ error: "Voting is finalised; ballots can no longer be changed" });
+      return;
+    }
+    const [row] = await db
+      .delete(awardBallotsTable)
+      .where(
+        and(
+          eq(awardBallotsTable.id, params.data.ballotId),
+          eq(awardBallotsTable.configId, params.data.id),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Ballot not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 router.post("/voting-configs/:id/finalise", requireAdmin, async (req, res): Promise<void> => {
   const params = FinaliseVotingConfigParams.safeParse(req.params);

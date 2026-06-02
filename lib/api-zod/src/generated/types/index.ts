@@ -22,6 +22,7 @@ export * from './awardWinnerUpdate';
 export * from './ballot';
 export * from './ballotInput';
 export * from './ballotReview';
+export * from './ballotUpdate';
 export * from './capCategory';
 export * from './capEntry';
 export * from './capEntryInput';
