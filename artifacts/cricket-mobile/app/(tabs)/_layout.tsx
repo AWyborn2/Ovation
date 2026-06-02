@@ -85,6 +85,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="captain"
+        options={{
+          title: "CAPTAIN VOTING",
+          tabBarLabel: "Captain",
+          tabBarIcon: ({ color }) => (
+            <Feather name="check-square" size={22} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
