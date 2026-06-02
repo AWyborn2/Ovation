@@ -33,11 +33,14 @@ import {
   downloadBlob,
   cardBaseFilename,
   sponsorAppliesToKind,
+  DEFAULT_PHOTO_TRANSFORM,
   type CardSize,
   type CardSponsor,
   type ShareCardInput,
   type PhotoPlacement,
+  type PhotoTransform,
 } from "@/lib/share-card";
+import { PhotoReposition } from "@/components/photo-reposition";
 import {
   renderCaption,
   truncateForPlatform,
@@ -110,6 +113,11 @@ export function ShareCardModal({
   const [photoSource, setPhotoSource] = useState<PhotoSource>("none");
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [photoPlacement, setPhotoPlacement] = useState<PhotoPlacement>("headshot");
+  // Focal point + zoom for a feature photo. `photoTransform` updates live as the
+  // user drags; `renderTransform` is debounced and drives the (heavier) full
+  // card preview so dragging stays smooth.
+  const [photoTransform, setPhotoTransform] = useState<PhotoTransform>(DEFAULT_PHOTO_TRANSFORM);
+  const [renderTransform, setRenderTransform] = useState<PhotoTransform>(DEFAULT_PHOTO_TRANSFORM);
   const [saveToProfile, setSaveToProfile] = useState(true);
   const [photoTouched, setPhotoTouched] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -124,6 +132,8 @@ export function ShareCardModal({
       setPhotoSource("none");
       setUploadedUrl(null);
       setPhotoPlacement("headshot");
+      setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
+      setRenderTransform(DEFAULT_PHOTO_TRANSFORM);
       setSaveToProfile(true);
       setPhotoTouched(false);
       setPhotoError(null);
@@ -144,6 +154,19 @@ export function ShareCardModal({
       : photoSource === "uploaded"
         ? uploadedUrl
         : null;
+
+  // A different photo means a fresh crop — re-centre the focal point + zoom.
+  useEffect(() => {
+    setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
+    setRenderTransform(DEFAULT_PHOTO_TRANSFORM);
+  }, [effectivePhotoUrl]);
+
+  // Debounce the transform that drives the full card preview so dragging the
+  // focal point stays smooth (the reposition control gives instant feedback).
+  useEffect(() => {
+    const id = setTimeout(() => setRenderTransform(photoTransform), 160);
+    return () => clearTimeout(id);
+  }, [photoTransform]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -306,6 +329,7 @@ export function ShareCardModal({
           theme: selectedTheme,
           photoUrl: effectivePhotoUrl,
           photoPlacement,
+          photoTransform: renderTransform,
         });
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
@@ -321,7 +345,7 @@ export function ShareCardModal({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, effectivePhotoUrl, photoPlacement]);
+  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, effectivePhotoUrl, photoPlacement, renderTransform]);
 
   // Stable signature of the resolved sponsor set so previews re-render when the
   // sponsor list loads async or its card-kind filtering changes the result.
@@ -339,7 +363,7 @@ export function ShareCardModal({
       return { square: null, portrait: null, story: null };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeSponsors, input, selectedThemeId, sponsorSig, effectivePhotoUrl, photoPlacement]);
+  }, [includeSponsors, input, selectedThemeId, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform]);
 
   // Cleanup URLs on close.
   useEffect(() => {
@@ -362,6 +386,7 @@ export function ShareCardModal({
       theme: selectedTheme,
       photoUrl: effectivePhotoUrl,
       photoPlacement,
+      photoTransform,
     });
     downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
   };
@@ -380,6 +405,7 @@ export function ShareCardModal({
           theme: selectedTheme,
           photoUrl: effectivePhotoUrl,
           photoPlacement,
+          photoTransform,
         });
         zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.png`, blob);
       }
@@ -573,6 +599,14 @@ export function ShareCardModal({
                         Headshot
                       </Button>
                     </div>
+                    {photoPlacement === "feature" && (
+                      <PhotoReposition
+                        src={effectivePhotoUrl}
+                        aspect={{ w: SIZES[activeSize].w, h: SIZES[activeSize].h }}
+                        value={photoTransform}
+                        onChange={setPhotoTransform}
+                      />
+                    )}
                   </div>
                 )}
 

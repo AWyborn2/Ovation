@@ -17,3 +17,4 @@
 - [Dating debuts from matches](debut-dating-from-matches.md) — earliest match ≠ debut; only date a first cap when player has 0 prior grade games (NULL baseline counts as prior), else a whole XI mis-dates as debutants.
 - [Award 3-2-1 voting & captain role](award-voting-321.md) — captain auth under /captain-auth/* (separate cookie), actions under /captain/*; tally visibility + autoHide rule; voting query hooks take positional id, mutations take {id,data}.
 - [api-server testing setup](api-server-testing.md) — vitest runs against the live dev DB (clean up uniquely-suffixed rows); supertest + forged HMAC cookies; build libs before per-package typecheck.
+- [Share-card photo crop coupling](share-card-photo-crop.md) — feature-photo focal/zoom is size-independent; the CSS reposition control must mirror the canvas cover math or preview/crop diverge.

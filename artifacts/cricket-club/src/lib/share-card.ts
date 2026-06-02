@@ -265,6 +265,41 @@ const headlineFor = (input: ShareCardInput): string => {
 const seasonLabel = (year: number) =>
   `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
 
+// Draw `img` so it covers the rect (object-fit: cover) honouring a focal point
+// and zoom. `focalX`/`focalY` are 0-1 (0.5 = centred) and select the point of
+// the source image that stays in view; `zoom` (>= 1) crops in tighter. With the
+// defaults this is a plain centred cover.
+const drawImageCoverFocal = (
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  focalX = 0.5,
+  focalY = 0.5,
+  zoom = 1,
+) => {
+  const ir = img.width / img.height;
+  const rr = dw / dh;
+  // Source window at zoom = 1 (object-fit: cover).
+  let sw0: number, sh0: number;
+  if (ir > rr) {
+    sh0 = img.height;
+    sw0 = img.height * rr;
+  } else {
+    sw0 = img.width;
+    sh0 = img.width / rr;
+  }
+  const z = Math.max(1, zoom);
+  const sw = sw0 / z;
+  const sh = sh0 / z;
+  // Centre the window on the focal point, clamped so it stays inside the image.
+  const sx = Math.max(0, Math.min(img.width - sw, focalX * img.width - sw / 2));
+  const sy = Math.max(0, Math.min(img.height - sh, focalY * img.height - sh / 2));
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+};
+
 // Draw `img` so it covers the rect (object-fit: cover), centred.
 const drawImageCover = (
   ctx: CanvasRenderingContext2D,
@@ -273,19 +308,7 @@ const drawImageCover = (
   dy: number,
   dw: number,
   dh: number,
-) => {
-  const ir = img.width / img.height;
-  const rr = dw / dh;
-  let sx = 0, sy = 0, sw = img.width, sh = img.height;
-  if (ir > rr) {
-    sw = img.height * rr;
-    sx = (img.width - sw) / 2;
-  } else {
-    sh = img.width / rr;
-    sy = (img.height - sh) / 2;
-  }
-  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-};
+) => drawImageCoverFocal(ctx, img, dx, dy, dw, dh, 0.5, 0.5, 1);
 
 // Clip to a circle and draw `img` as cover, then stroke a ring.
 const drawCircularImage = (
@@ -318,10 +341,15 @@ const drawBackground = (
   p: Palette,
   bgImg: HTMLImageElement | null,
   feature = false,
+  transform?: PhotoTransform | null,
 ) => {
   if (bgImg) {
     // Photo background + dark overlay so foreground text stays legible.
-    drawImageCover(ctx, bgImg, 0, 0, W, H);
+    if (feature && transform) {
+      drawImageCoverFocal(ctx, bgImg, 0, 0, W, H, transform.focalX, transform.focalY, transform.zoom);
+    } else {
+      drawImageCover(ctx, bgImg, 0, 0, W, H);
+    }
     const ov = ctx.createLinearGradient(0, 0, 0, H);
     if (feature) {
       // A feature photo is the hero: keep a lighter veil over the top/middle so
@@ -488,6 +516,20 @@ const drawFooter = (
 
 export type PhotoPlacement = "feature" | "headshot";
 
+// Focal point (0-1, 0.5 = centred) + zoom (>= 1) for a feature photo. Lets the
+// club drag/zoom to choose what stays in frame across every card size.
+export type PhotoTransform = {
+  focalX: number;
+  focalY: number;
+  zoom: number;
+};
+
+export const DEFAULT_PHOTO_TRANSFORM: PhotoTransform = {
+  focalX: 0.5,
+  focalY: 0.5,
+  zoom: 1,
+};
+
 export type RenderOptions = {
   size: CardSize;
   sponsors?: CardSponsor[];
@@ -504,6 +546,11 @@ export type RenderOptions = {
    * promotes the photo to a full-bleed hero/background with a dark scrim.
    */
   photoPlacement?: PhotoPlacement;
+  /**
+   * Focal point + zoom for a "feature" photo so the club can drag/zoom to keep
+   * the subject in frame. Ignored for headshot placement and theme backgrounds.
+   */
+  photoTransform?: PhotoTransform | null;
 };
 
 export const renderShareCard = async (
@@ -545,7 +592,7 @@ export const renderShareCard = async (
   const photoImg = placement === "feature" ? null : loadedPhoto;
   const logoSrc = opts.theme?.logoUrl || logoUrl;
 
-  drawBackground(ctx, W, H, p, featureImg ?? bgImg, !!featureImg);
+  drawBackground(ctx, W, H, p, featureImg ?? bgImg, !!featureImg, featureImg ? opts.photoTransform : undefined);
   const headerEnd = await drawHeader(ctx, W, Math.round(80 * scale), scale, p, logoSrc);
   const ribbonEnd = drawRibbon(ctx, W, headerEnd, headlineFor(input), scale, p);
 
