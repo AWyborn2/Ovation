@@ -711,6 +711,157 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface CaptainLoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface Captain {
+  id: number;
+  username: string;
+  displayName: string;
+  grades: string[];
+  createdAt: string;
+}
+
+export interface CaptainInput {
+  username: string;
+  displayName: string;
+  password: string;
+  grades: string[];
+}
+
+export interface CaptainUpdate {
+  username?: string;
+  displayName?: string;
+  password?: string;
+  grades?: string[];
+}
+
+export interface AwardVotingConfig {
+  id: number;
+  awardId: number;
+  season: number;
+  votingEnabled: boolean;
+  votingOpen: boolean;
+  grades: string[];
+  tallyVisible: boolean;
+  /** @nullable */
+  autoHideAfterRounds?: number | null;
+  /** @nullable */
+  finalisedAt?: string | null;
+  createdAt: string;
+}
+
+export interface AwardVotingConfigInput {
+  season: number;
+  votingEnabled?: boolean;
+  votingOpen?: boolean;
+  grades: string[];
+  tallyVisible?: boolean;
+  /** @nullable */
+  autoHideAfterRounds?: number | null;
+}
+
+export interface AwardVotingConfigUpdate {
+  votingEnabled?: boolean;
+  votingOpen?: boolean;
+  grades?: string[];
+  tallyVisible?: boolean;
+  /** @nullable */
+  autoHideAfterRounds?: number | null;
+}
+
+export interface Ballot {
+  id: number;
+  configId: number;
+  captainId: number;
+  grade: string;
+  round: number;
+  pick1PlayerId: number;
+  pick2PlayerId: number;
+  pick3PlayerId: number;
+  updatedAt: string;
+}
+
+export interface BallotInput {
+  configId: number;
+  grade: string;
+  round: number;
+  pick1PlayerId: number;
+  pick2PlayerId: number;
+  pick3PlayerId: number;
+}
+
+export interface VotableRoundPlayer {
+  playerId: number;
+  name: string;
+}
+
+export interface VotableRound {
+  round: number;
+  matchId: number;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  players: VotableRoundPlayer[];
+  ballot?: Ballot | null;
+  locked: boolean;
+}
+
+export interface VotableGrade {
+  grade: string;
+  rounds: VotableRound[];
+}
+
+export interface VotableAward {
+  configId: number;
+  awardId: number;
+  awardTitle: string;
+  season: number;
+  votingOpen: boolean;
+  grades: VotableGrade[];
+}
+
+export interface TallyEntry {
+  playerId: number;
+  name: string;
+  points: number;
+  firstPlaces: number;
+  secondPlaces: number;
+  thirdPlaces: number;
+}
+
+export interface AwardTally {
+  configId: number;
+  awardId: number;
+  awardKey: string;
+  awardTitle: string;
+  season: number;
+  visible: boolean;
+  votingOpen: boolean;
+  finalised: boolean;
+  roundsPlayed: number;
+  entries: TallyEntry[];
+  winnerPlayerIds: number[];
+}
+
+export interface BallotReview {
+  id: number;
+  captainId: number;
+  captainName: string;
+  grade: string;
+  round: number;
+  pick1PlayerId: number;
+  pick2PlayerId: number;
+  pick3PlayerId: number;
+  pick1Name: string;
+  pick2Name: string;
+  pick3Name: string;
+  updatedAt: string;
+}
+
 export interface PlayerMergeRequest {
   keeperId: number;
 }

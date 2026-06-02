@@ -1156,6 +1156,346 @@ export const DeleteAdminParams = zod.object({
 
 
 /**
+ * @summary Log in as a grade captain
+ */
+export const CaptainLoginBody = zod.object({
+  "username": zod.string(),
+  "password": zod.string()
+})
+
+export const CaptainLoginResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "grades": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Get the currently signed-in captain
+ */
+export const GetCurrentCaptainResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "grades": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all captain accounts (admin)
+ */
+export const ListCaptainsResponseItem = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "grades": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+export const ListCaptainsResponse = zod.array(ListCaptainsResponseItem)
+
+
+/**
+ * @summary Create a captain account with grade permissions (admin)
+ */
+export const CreateCaptainBody = zod.object({
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "password": zod.string(),
+  "grades": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Update a captain (admin)
+ */
+export const UpdateCaptainParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCaptainBody = zod.object({
+  "username": zod.string().optional(),
+  "displayName": zod.string().optional(),
+  "password": zod.string().optional(),
+  "grades": zod.array(zod.string()).optional()
+})
+
+export const UpdateCaptainResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "grades": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a captain (admin)
+ */
+export const DeleteCaptainParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List per-season voting configs for an award (admin)
+ */
+export const ListAwardVotingConfigsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListAwardVotingConfigsResponseItem = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "votingOpen": zod.boolean(),
+  "grades": zod.array(zod.string()),
+  "tallyVisible": zod.boolean(),
+  "autoHideAfterRounds": zod.number().nullish(),
+  "finalisedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAwardVotingConfigsResponse = zod.array(ListAwardVotingConfigsResponseItem)
+
+
+/**
+ * @summary Create or update the voting config for an award+season (admin)
+ */
+export const UpsertAwardVotingConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpsertAwardVotingConfigBody = zod.object({
+  "season": zod.number(),
+  "votingEnabled": zod.boolean().optional(),
+  "votingOpen": zod.boolean().optional(),
+  "grades": zod.array(zod.string()),
+  "tallyVisible": zod.boolean().optional(),
+  "autoHideAfterRounds": zod.number().nullish()
+})
+
+export const UpsertAwardVotingConfigResponse = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "votingOpen": zod.boolean(),
+  "grades": zod.array(zod.string()),
+  "tallyVisible": zod.boolean(),
+  "autoHideAfterRounds": zod.number().nullish(),
+  "finalisedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a voting config (admin)
+ */
+export const UpdateAwardVotingConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAwardVotingConfigBody = zod.object({
+  "votingEnabled": zod.boolean().optional(),
+  "votingOpen": zod.boolean().optional(),
+  "grades": zod.array(zod.string()).optional(),
+  "tallyVisible": zod.boolean().optional(),
+  "autoHideAfterRounds": zod.number().nullish()
+})
+
+export const UpdateAwardVotingConfigResponse = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "votingOpen": zod.boolean(),
+  "grades": zod.array(zod.string()),
+  "tallyVisible": zod.boolean(),
+  "autoHideAfterRounds": zod.number().nullish(),
+  "finalisedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a voting config and its ballots (admin)
+ */
+export const DeleteAwardVotingConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Live tally for a voting config, always visible to admin
+ */
+export const GetVotingConfigTallyParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetVotingConfigTallyResponse = zod.object({
+  "configId": zod.number(),
+  "awardId": zod.number(),
+  "awardKey": zod.string(),
+  "awardTitle": zod.string(),
+  "season": zod.number(),
+  "visible": zod.boolean(),
+  "votingOpen": zod.boolean(),
+  "finalised": zod.boolean(),
+  "roundsPlayed": zod.number(),
+  "entries": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string(),
+  "points": zod.number(),
+  "firstPlaces": zod.number(),
+  "secondPlaces": zod.number(),
+  "thirdPlaces": zod.number()
+})),
+  "winnerPlayerIds": zod.array(zod.number())
+})
+
+
+/**
+ * @summary All submitted ballots for a voting config (admin)
+ */
+export const ListVotingConfigBallotsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListVotingConfigBallotsResponseItem = zod.object({
+  "id": zod.number(),
+  "captainId": zod.number(),
+  "captainName": zod.string(),
+  "grade": zod.string(),
+  "round": zod.number(),
+  "pick1PlayerId": zod.number(),
+  "pick2PlayerId": zod.number(),
+  "pick3PlayerId": zod.number(),
+  "pick1Name": zod.string(),
+  "pick2Name": zod.string(),
+  "pick3Name": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListVotingConfigBallotsResponse = zod.array(ListVotingConfigBallotsResponseItem)
+
+
+/**
+ * @summary Finalise season winner(s) into the award's roll of past winners (admin)
+ */
+export const FinaliseVotingConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FinaliseVotingConfigResponse = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "displayOrder": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "winners": zod.array(zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number()
+}))
+})
+
+
+/**
+ * @summary Votable awards/rounds for the signed-in captain
+ */
+export const GetCaptainVotingBoardResponseItem = zod.object({
+  "configId": zod.number(),
+  "awardId": zod.number(),
+  "awardTitle": zod.string(),
+  "season": zod.number(),
+  "votingOpen": zod.boolean(),
+  "grades": zod.array(zod.object({
+  "grade": zod.string(),
+  "rounds": zod.array(zod.object({
+  "round": zod.number(),
+  "matchId": zod.number(),
+  "opponent": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "players": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})),
+  "ballot": zod.union([zod.object({
+  "id": zod.number(),
+  "configId": zod.number(),
+  "captainId": zod.number(),
+  "grade": zod.string(),
+  "round": zod.number(),
+  "pick1PlayerId": zod.number(),
+  "pick2PlayerId": zod.number(),
+  "pick3PlayerId": zod.number(),
+  "updatedAt": zod.string()
+}),zod.null()]).optional(),
+  "locked": zod.boolean()
+}))
+}))
+})
+export const GetCaptainVotingBoardResponse = zod.array(GetCaptainVotingBoardResponseItem)
+
+
+/**
+ * @summary Submit or edit a captain's 3-2-1 ballot for a round
+ */
+export const SubmitBallotBody = zod.object({
+  "configId": zod.number(),
+  "grade": zod.string(),
+  "round": zod.number(),
+  "pick1PlayerId": zod.number(),
+  "pick2PlayerId": zod.number(),
+  "pick3PlayerId": zod.number()
+})
+
+export const SubmitBallotResponse = zod.object({
+  "id": zod.number(),
+  "configId": zod.number(),
+  "captainId": zod.number(),
+  "grade": zod.string(),
+  "round": zod.number(),
+  "pick1PlayerId": zod.number(),
+  "pick2PlayerId": zod.number(),
+  "pick3PlayerId": zod.number(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Public live tallies for all currently-visible voted awards
+ */
+export const ListPublicTalliesResponseItem = zod.object({
+  "configId": zod.number(),
+  "awardId": zod.number(),
+  "awardKey": zod.string(),
+  "awardTitle": zod.string(),
+  "season": zod.number(),
+  "visible": zod.boolean(),
+  "votingOpen": zod.boolean(),
+  "finalised": zod.boolean(),
+  "roundsPlayed": zod.number(),
+  "entries": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string(),
+  "points": zod.number(),
+  "firstPlaces": zod.number(),
+  "secondPlaces": zod.number(),
+  "thirdPlaces": zod.number()
+})),
+  "winnerPlayerIds": zod.array(zod.number())
+})
+export const ListPublicTalliesResponse = zod.array(ListPublicTalliesResponseItem)
+
+
+/**
  * @summary List all honour board definitions
  */
 export const ListHonourBoardsResponseItem = zod.object({

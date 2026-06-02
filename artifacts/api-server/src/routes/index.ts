@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import captainAuthRouter from "./captain-auth";
 import adminsRouter from "./admins";
+import captainsRouter from "./captains";
+import awardVotingRouter from "./award-voting";
 import playersRouter from "./players";
 import statsRouter from "./stats";
 import gradesRouter from "./grades";
@@ -19,7 +22,10 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(captainAuthRouter);
 router.use(adminsRouter);
+router.use(captainsRouter);
+router.use(awardVotingRouter);
 router.use(playersRouter);
 router.use(statsRouter);
 router.use(gradesRouter);

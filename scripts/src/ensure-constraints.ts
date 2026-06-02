@@ -27,6 +27,21 @@ const CONSTRAINTS: ConstraintSpec[] = [
     name: "cap_register_category_cap_number_unique",
     columns: ["category", "cap_number"],
   },
+  {
+    table: "captain_grade_permissions",
+    name: "captain_grade_permissions_captain_grade_unique",
+    columns: ["captain_id", "grade"],
+  },
+  {
+    table: "award_voting_config",
+    name: "award_voting_config_award_season_unique",
+    columns: ["award_id", "season"],
+  },
+  {
+    table: "award_ballots",
+    name: "award_ballots_config_captain_grade_round_unique",
+    columns: ["config_id", "captain_id", "grade", "round"],
+  },
 ];
 
 async function main() {

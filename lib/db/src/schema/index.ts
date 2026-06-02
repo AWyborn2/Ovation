@@ -11,4 +11,6 @@ export * from "./life_members";
 export * from "./admins";
 export * from "./honour_boards";
 export * from "./awards";
+export * from "./captains";
+export * from "./award_voting";
 export * from "./social_cards";

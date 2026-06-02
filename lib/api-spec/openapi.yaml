@@ -26,6 +26,8 @@ tags:
     description: Authentication operations
   - name: admins
     description: Admin user operations
+  - name: captains
+    description: Grade captain accounts and 3-2-1 voting operations
   - name: honourBoards
     description: Honour board configuration and overrides
   - name: awards
@@ -937,6 +939,337 @@ paths:
           description: Cannot delete the last remaining admin
         "404":
           description: Not found
+
+  /captain-auth/login:
+    post:
+      operationId: captainLogin
+      tags: [captains]
+      summary: Log in as a grade captain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Captain"
+        "401":
+          description: Invalid credentials
+
+  /captain-auth/logout:
+    post:
+      operationId: captainLogout
+      tags: [captains]
+      summary: Log out the current captain
+      responses:
+        "204":
+          description: Logged out
+
+  /captain-auth/me:
+    get:
+      operationId: getCurrentCaptain
+      tags: [captains]
+      summary: Get the currently signed-in captain
+      responses:
+        "200":
+          description: Current captain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Captain"
+        "401":
+          description: Not signed in
+
+  /captains:
+    get:
+      operationId: listCaptains
+      tags: [captains]
+      summary: List all captain accounts (admin)
+      responses:
+        "200":
+          description: List of captains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Captain"
+    post:
+      operationId: createCaptain
+      tags: [captains]
+      summary: Create a captain account with grade permissions (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainInput"
+      responses:
+        "201":
+          description: Created captain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Captain"
+        "409":
+          description: Username already taken
+
+  /captains/{id}:
+    patch:
+      operationId: updateCaptain
+      tags: [captains]
+      summary: Update a captain (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainUpdate"
+      responses:
+        "200":
+          description: Updated captain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Captain"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCaptain
+      tags: [captains]
+      summary: Delete a captain (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /awards/{id}/voting:
+    get:
+      operationId: listAwardVotingConfigs
+      tags: [awards]
+      summary: List per-season voting configs for an award (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Voting configs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AwardVotingConfig"
+    post:
+      operationId: upsertAwardVotingConfig
+      tags: [awards]
+      summary: Create or update the voting config for an award+season (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardVotingConfigInput"
+      responses:
+        "200":
+          description: Saved config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardVotingConfig"
+
+  /voting-configs/{id}:
+    patch:
+      operationId: updateAwardVotingConfig
+      tags: [awards]
+      summary: Update a voting config (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardVotingConfigUpdate"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardVotingConfig"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAwardVotingConfig
+      tags: [awards]
+      summary: Delete a voting config and its ballots (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /voting-configs/{id}/tally:
+    get:
+      operationId: getVotingConfigTally
+      tags: [awards]
+      summary: Live tally for a voting config, always visible to admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tally
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardTally"
+        "404":
+          description: Not found
+
+  /voting-configs/{id}/ballots:
+    get:
+      operationId: listVotingConfigBallots
+      tags: [awards]
+      summary: All submitted ballots for a voting config (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ballots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BallotReview"
+        "404":
+          description: Not found
+
+  /voting-configs/{id}/finalise:
+    post:
+      operationId: finaliseVotingConfig
+      tags: [awards]
+      summary: Finalise season winner(s) into the award's roll of past winners (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated award with the newly recorded winners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Award"
+        "404":
+          description: Not found
+
+  /captain/voting:
+    get:
+      operationId: getCaptainVotingBoard
+      tags: [captains]
+      summary: Votable awards/rounds for the signed-in captain
+      responses:
+        "200":
+          description: Votable awards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VotableAward"
+        "401":
+          description: Not signed in
+
+  /captain/ballots:
+    post:
+      operationId: submitBallot
+      tags: [captains]
+      summary: Submit or edit a captain's 3-2-1 ballot for a round
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BallotInput"
+      responses:
+        "200":
+          description: Saved ballot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ballot"
+        "400":
+          description: Invalid ballot
+        "401":
+          description: Not signed in
+        "403":
+          description: Not permitted for this grade
+        "409":
+          description: Voting closed or round locked
+
+  /award-tallies:
+    get:
+      operationId: listPublicTallies
+      tags: [awards]
+      summary: Public live tallies for all currently-visible voted awards
+      responses:
+        "200":
+          description: Visible tallies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AwardTally"
 
   /honour-boards:
     get:
@@ -2677,6 +3010,307 @@ components:
         username:
           type: string
         password:
+          type: string
+
+    CaptainLoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    Captain:
+      type: object
+      required: [id, username, displayName, grades, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        grades:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+
+    CaptainInput:
+      type: object
+      required: [username, displayName, password, grades]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        password:
+          type: string
+        grades:
+          type: array
+          items:
+            type: string
+
+    CaptainUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        password:
+          type: string
+        grades:
+          type: array
+          items:
+            type: string
+
+    AwardVotingConfig:
+      type: object
+      required:
+        [id, awardId, season, votingEnabled, votingOpen, grades, tallyVisible, createdAt]
+      properties:
+        id:
+          type: integer
+        awardId:
+          type: integer
+        season:
+          type: integer
+        votingEnabled:
+          type: boolean
+        votingOpen:
+          type: boolean
+        grades:
+          type: array
+          items:
+            type: string
+        tallyVisible:
+          type: boolean
+        autoHideAfterRounds:
+          type: ["integer", "null"]
+        finalisedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AwardVotingConfigInput:
+      type: object
+      required: [season, grades]
+      properties:
+        season:
+          type: integer
+        votingEnabled:
+          type: boolean
+        votingOpen:
+          type: boolean
+        grades:
+          type: array
+          items:
+            type: string
+        tallyVisible:
+          type: boolean
+        autoHideAfterRounds:
+          type: ["integer", "null"]
+
+    AwardVotingConfigUpdate:
+      type: object
+      properties:
+        votingEnabled:
+          type: boolean
+        votingOpen:
+          type: boolean
+        grades:
+          type: array
+          items:
+            type: string
+        tallyVisible:
+          type: boolean
+        autoHideAfterRounds:
+          type: ["integer", "null"]
+
+    Ballot:
+      type: object
+      required:
+        [id, configId, captainId, grade, round, pick1PlayerId, pick2PlayerId, pick3PlayerId, updatedAt]
+      properties:
+        id:
+          type: integer
+        configId:
+          type: integer
+        captainId:
+          type: integer
+        grade:
+          type: string
+        round:
+          type: integer
+        pick1PlayerId:
+          type: integer
+        pick2PlayerId:
+          type: integer
+        pick3PlayerId:
+          type: integer
+        updatedAt:
+          type: string
+
+    BallotInput:
+      type: object
+      required:
+        [configId, grade, round, pick1PlayerId, pick2PlayerId, pick3PlayerId]
+      properties:
+        configId:
+          type: integer
+        grade:
+          type: string
+        round:
+          type: integer
+        pick1PlayerId:
+          type: integer
+        pick2PlayerId:
+          type: integer
+        pick3PlayerId:
+          type: integer
+
+    VotableRoundPlayer:
+      type: object
+      required: [playerId, name]
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
+
+    VotableRound:
+      type: object
+      required: [round, matchId, players, locked]
+      properties:
+        round:
+          type: integer
+        matchId:
+          type: integer
+        opponent:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/VotableRoundPlayer"
+        ballot:
+          oneOf:
+            - $ref: "#/components/schemas/Ballot"
+            - type: "null"
+        locked:
+          type: boolean
+
+    VotableGrade:
+      type: object
+      required: [grade, rounds]
+      properties:
+        grade:
+          type: string
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/VotableRound"
+
+    VotableAward:
+      type: object
+      required: [configId, awardId, awardTitle, season, votingOpen, grades]
+      properties:
+        configId:
+          type: integer
+        awardId:
+          type: integer
+        awardTitle:
+          type: string
+        season:
+          type: integer
+        votingOpen:
+          type: boolean
+        grades:
+          type: array
+          items:
+            $ref: "#/components/schemas/VotableGrade"
+
+    TallyEntry:
+      type: object
+      required: [playerId, name, points, firstPlaces, secondPlaces, thirdPlaces]
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
+        points:
+          type: integer
+        firstPlaces:
+          type: integer
+        secondPlaces:
+          type: integer
+        thirdPlaces:
+          type: integer
+
+    AwardTally:
+      type: object
+      required:
+        [configId, awardId, awardKey, awardTitle, season, visible, votingOpen, finalised, roundsPlayed, entries, winnerPlayerIds]
+      properties:
+        configId:
+          type: integer
+        awardId:
+          type: integer
+        awardKey:
+          type: string
+        awardTitle:
+          type: string
+        season:
+          type: integer
+        visible:
+          type: boolean
+        votingOpen:
+          type: boolean
+        finalised:
+          type: boolean
+        roundsPlayed:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TallyEntry"
+        winnerPlayerIds:
+          type: array
+          items:
+            type: integer
+
+    BallotReview:
+      type: object
+      required:
+        [id, captainId, captainName, grade, round, pick1Name, pick2Name, pick3Name, pick1PlayerId, pick2PlayerId, pick3PlayerId, updatedAt]
+      properties:
+        id:
+          type: integer
+        captainId:
+          type: integer
+        captainName:
+          type: string
+        grade:
+          type: string
+        round:
+          type: integer
+        pick1PlayerId:
+          type: integer
+        pick2PlayerId:
+          type: integer
+        pick3PlayerId:
+          type: integer
+        pick1Name:
+          type: string
+        pick2Name:
+          type: string
+        pick3Name:
+          type: string
+        updatedAt:
           type: string
 
     PlayerMergeRequest:

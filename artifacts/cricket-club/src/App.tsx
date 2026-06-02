@@ -27,6 +27,8 @@ import AdminAwards from "@/pages/admin-awards";
 import AdminSocial from "@/pages/admin-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
+import AdminCaptains from "@/pages/admin-captains";
+import CaptainPage from "@/pages/captain";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -66,6 +68,7 @@ function AdminRoutes() {
           <Route path="/admin/caps" component={AdminCaps} />
           <Route path="/admin/life-members" component={AdminLifeMembers} />
           <Route path="/admin/awards" component={AdminAwards} />
+          <Route path="/admin/captains" component={AdminCaptains} />
           <Route path="/admin/social" component={AdminSocial} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
           <Route component={NotFound} />
@@ -75,11 +78,20 @@ function AdminRoutes() {
   );
 }
 
+function CaptainRoutes() {
+  return (
+    <Layout>
+      <CaptainPage />
+    </Layout>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/admin/:rest*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
+      <Route path="/captain" component={CaptainRoutes} />
       <Route component={PublicRoutes} />
     </Switch>
   );

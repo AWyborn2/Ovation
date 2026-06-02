@@ -1,5 +1,11 @@
 import { Link } from "wouter";
-import { useListAwards, type Award, type AwardWinner } from "@workspace/api-client-react";
+import {
+  useListAwards,
+  useListPublicTallies,
+  type Award,
+  type AwardWinner,
+  type AwardTally,
+} from "@workspace/api-client-react";
 
 function formatSeason(year: number): string {
   const next = (year + 1) % 100;
@@ -36,7 +42,68 @@ const WinnerName = ({ winner }: { winner: AwardWinner }) =>
     <span className="font-semibold text-foreground">{winner.name}</span>
   );
 
-const AwardBoardCard = ({ award }: { award: Award }) => {
+function formatSeasonRange(year: number): string {
+  const next = (year + 1) % 100;
+  return `${year}/${next.toString().padStart(2, "0")}`;
+}
+
+const LiveTally = ({ tally }: { tally: AwardTally }) => {
+  const winners = new Set(tally.winnerPlayerIds);
+  const top = tally.entries.slice(0, 10);
+  return (
+    <div className="px-4 md:px-6 pt-4 pb-1">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+          </span>
+          Live {formatSeasonRange(tally.season)} tally
+        </span>
+        {tally.finalised && (
+          <span className="text-xs text-muted-foreground">· finalised</span>
+        )}
+      </div>
+      {top.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">
+          No votes counted yet.
+        </p>
+      ) : (
+        <div className="divide-y divide-border/60">
+          {top.map((e, i) => (
+            <div
+              key={e.playerId}
+              className="flex items-baseline justify-between gap-3 py-1.5"
+            >
+              <span className="flex items-baseline gap-3 min-w-0">
+                <span className="font-mono text-xs text-muted-foreground w-5 shrink-0">
+                  {i + 1}
+                </span>
+                <span
+                  className={`truncate ${winners.has(e.playerId) ? "font-bold text-primary" : "font-medium"}`}
+                >
+                  {e.name}
+                  {winners.has(e.playerId) && tally.votingOpen && (
+                    <span className="ml-2 text-xs font-normal">● leading</span>
+                  )}
+                </span>
+              </span>
+              <span className="font-mono font-bold shrink-0">{e.points}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AwardBoardCard = ({
+  award,
+  tally,
+}: {
+  award: Award;
+  tally?: AwardTally;
+}) => {
   const groups = groupBySeason(award.winners);
   return (
     <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
@@ -51,6 +118,7 @@ const AwardBoardCard = ({ award }: { award: Award }) => {
           {award.description}
         </p>
       )}
+      {tally && <LiveTally tally={tally} />}
       {groups.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground italic text-sm">
           No winners recorded yet.
@@ -87,6 +155,10 @@ const AwardBoardCard = ({ award }: { award: Award }) => {
 
 export function AwardsTab() {
   const { data: awards, isLoading } = useListAwards();
+  const { data: tallies } = useListPublicTallies();
+
+  const tallyByAward = new Map<number, AwardTally>();
+  for (const t of tallies ?? []) tallyByAward.set(t.awardId, t);
 
   const sorted = [...(awards ?? [])].sort(
     (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
@@ -116,7 +188,7 @@ export function AwardsTab() {
       ) : (
         <div className="grid gap-4">
           {sorted.map((a) => (
-            <AwardBoardCard key={a.id} award={a} />
+            <AwardBoardCard key={a.id} award={a} tally={tallyByAward.get(a.id)} />
           ))}
         </div>
       )}

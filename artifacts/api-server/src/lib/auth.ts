@@ -1,9 +1,10 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { db, adminsTable, type AdminRow } from "@workspace/db";
+import { db, adminsTable, captainsTable, type AdminRow, type CaptainRow } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const COOKIE_NAME = "hhcc_session";
+const CAPTAIN_COOKIE_NAME = "hhcc_captain_session";
 const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function getSessionSecret(): string {
@@ -107,4 +108,53 @@ export async function ensureSeedAdmin(): Promise<void> {
 
 export function generateRandomPassword(): string {
   return randomBytes(9).toString("base64").replace(/[+/=]/g, "").slice(0, 12);
+}
+
+// ---- Captain sessions (a separate login role from admins) ----
+
+export interface CaptainSessionPayload {
+  captainId: number;
+  issuedAt: number;
+}
+
+export function encodeCaptainSession(p: CaptainSessionPayload): string {
+  const body = b64urlEncode(Buffer.from(JSON.stringify(p), "utf8"));
+  return `${body}.${sign(body)}`;
+}
+
+export function decodeCaptainSession(
+  token: string | undefined | null,
+): CaptainSessionPayload | null {
+  if (!token) return null;
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return null;
+  const expected = sign(body);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const obj = JSON.parse(b64urlDecode(body).toString("utf8"));
+    if (typeof obj?.captainId !== "number" || typeof obj?.issuedAt !== "number") {
+      return null;
+    }
+    if (Date.now() - obj.issuedAt > COOKIE_MAX_AGE_MS) return null;
+    return obj as CaptainSessionPayload;
+  } catch {
+    return null;
+  }
+}
+
+export const CAPTAIN_SESSION_COOKIE = CAPTAIN_COOKIE_NAME;
+
+export async function getCaptainById(id: number): Promise<CaptainRow | null> {
+  const [row] = await db.select().from(captainsTable).where(eq(captainsTable.id, id));
+  return row ?? null;
+}
+
+export async function getCaptainByUsername(username: string): Promise<CaptainRow | null> {
+  const [row] = await db
+    .select()
+    .from(captainsTable)
+    .where(eq(captainsTable.username, username.toLowerCase()));
+  return row ?? null;
 }
