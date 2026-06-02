@@ -169,6 +169,9 @@ export async function detectAndQueueMatchMilestones(
           kind: "debut",
           playerName: name,
           grade,
+          capNumber:
+            createdCaps.find((c) => c.playerId === l.playerId)?.capNumber ?? null,
+          season: season != null ? String(season) : null,
           opponent: opponent ?? null,
           round: round ?? null,
           photoUrl: photoFor(l.playerId),

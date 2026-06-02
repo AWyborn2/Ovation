@@ -74,6 +74,8 @@ export type ShareCardInput =
       kind: "debut";
       playerName: string;
       grade: string;
+      capNumber?: number | null;
+      season?: string | null;
       opponent?: string | null;
       round?: number | null;
       headline?: string;
@@ -765,10 +767,17 @@ export const renderShareCard = async (
     let subtitle = "";
     let iconIndex = 4;
     if (input.kind === "debut") {
-      badgeLabel = `${input.grade} Debut`;
+      badgeLabel =
+        input.capNumber != null
+          ? `${input.grade} Cap #${input.capNumber}`
+          : `${input.grade} Debut`;
       bigValue = "DEBUT";
       caption = `First game for the ${input.grade} side`;
-      subtitle = matchSubtitle(input.opponent, input.round);
+      const debutParts: string[] = [];
+      const matchPart = matchSubtitle(input.opponent, input.round);
+      if (matchPart) debutParts.push(matchPart);
+      if (input.season) debutParts.push(input.season);
+      subtitle = debutParts.join(" • ");
       iconIndex = 4; // Star
     } else if (input.kind === "newCap") {
       badgeLabel = `${input.grade} Cap`;

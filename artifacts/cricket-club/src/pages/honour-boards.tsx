@@ -204,7 +204,7 @@ const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
       : `${d.grade} Cap #${d.capNumber}`;
   return (
     <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
-      <Link href={`/players/${d.playerId}`} className="flex flex-col gap-2">
+      <Link href={`/players/${d.playerId}`} className="flex flex-col gap-2 pr-8">
         <div className="flex items-center gap-2">
           <Star className="h-5 w-5 text-primary shrink-0" strokeWidth={2.25} />
           <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
@@ -216,6 +216,25 @@ const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
         </div>
         <div className="text-xs text-muted-foreground mt-auto">{subline}</div>
       </Link>
+      <div className="absolute top-2 right-2">
+        <ShareButton
+          engine="milestone"
+          appPath={`/players/${d.playerId}`}
+          iconOnly
+          variant="ghost"
+          size="icon"
+          label={`Share ${d.name} debut`}
+          className="h-7 w-7"
+          input={{
+            kind: "debut",
+            playerName: d.name,
+            grade: d.grade,
+            capNumber: d.capNumber,
+            season: d.season != null ? String(d.season) : null,
+            round: d.round ?? null,
+          }}
+        />
+      </div>
     </div>
   );
 };
