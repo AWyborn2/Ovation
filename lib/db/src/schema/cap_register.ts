@@ -18,6 +18,9 @@ export const capRegisterTable = pgTable(
     deceased: boolean("deceased").notNull().default(false),
     inStats: boolean("in_stats").notNull().default(false),
     gamesAGrade: integer("games_a_grade").notNull().default(0),
+    // True when cap-sync created this row from imported stats (so rollback can
+    // safely remove it). False for caps entered/edited by the club by hand.
+    autoCreated: boolean("auto_created").notNull().default(false),
     playerId: integer("player_id").references(() => playersTable.id, {
       onDelete: "set null",
     }),

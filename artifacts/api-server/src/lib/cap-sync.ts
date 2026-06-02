@@ -142,6 +142,7 @@ export async function syncCapsFromStats(
         name: nameByPlayer.get(playerId) ?? `Player #${playerId}`,
         inStats: true,
         gamesAGrade: games,
+        autoCreated: true,
         playerId,
       });
       nextCapNumber++;

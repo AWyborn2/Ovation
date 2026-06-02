@@ -39,7 +39,9 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - **player_grade_stats** — derived per-(player, grade) aggregate, recomputed by summing snapshots after each import / delete.
 - **players** — one row per player; career aggregates (totalGames, totalRuns, totalWickets, gradesPlayed) are derived from player_grade_stats.
 - **grade_summaries** — derived from player_grade_stats (one row per grade).
-- **imports** — audit row per CSV upload (filename, grade, season, row_count, status, imported_at). Snapshot rows reference it via `import_id` and cascade-delete with it.
+- **imports** — audit row per upload (filename, grade, season, round, kind, row_count, status, imported_at). `kind` is `'csv'` (whole-season) or `'match'` (per-match); `round` is set for match imports. Snapshot rows reference it via `import_id` and cascade-delete with it.
+- **matches** — permanent per-match history, one row per (grade, season, round): opponent, date, venue, result, abandoned flag. Cascades from its `import_id`.
+- **match_player_lines** — one row per player per match: per-innings batting/bowling/fielding figures. Cascades from `matches`.
 
 Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Female B Grade, PPL, Colts
 
@@ -60,7 +62,10 @@ Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Fe
 - **Grade Leaderboard** (`/grades/:grade`) — full sortable stats table for a specific grade
 - **Records** (`/records`) — all-time club records across all categories
 - **Stat Edit** (`/stats/:id`) — inline edit/delete a stat record
-- **Admin Import** (`/admin/import`) — upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a single grade+season, preview matched/new players and totals, confirm to commit; list and delete past imports. PlayCricket grade-name mapping lives in `artifacts/api-server/src/lib/playcricket-csv.ts` (`PLAYCRICKET_GRADE_MAP`). No auth yet — single-user club portal.
+- **Admin Import** (`/admin/import`) — two modes:
+  - **Whole-season CSV** — upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a single grade+season, preview matched/new players and totals, confirm to commit; list and delete past imports. PlayCricket grade-name mapping lives in `artifacts/api-server/src/lib/playcricket-csv.ts` (`PLAYCRICKET_GRADE_MAP`).
+  - **Per-match xlsx** — upload one match scorecard `.xlsx`, preview header + parsed batting/bowling/fielding (matched/new players, abandoned flag), commit to ADD that match to the running season total and store permanent per-match history. Undo a whole season (rolls back stats, auto-created caps, and orphan players) via the Undo Season card. Parser: `artifacts/api-server/src/lib/match-scorecard.ts`. **Use CSV or per-match for a given grade+season, not both** (see Gotchas).
+  - Admin auth required (session cookie); single-club portal.
 
 ## User preferences
 
@@ -72,6 +77,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 - Don't add query params to `getGradeLeaderboard` — Orval naming collision with params schema
 - The spreadsheet has a "CLUB TOTAL" summary row that must be filtered out during seeding (null given_name)
 - Seeding via `pnpm --filter @workspace/scripts run seed` fails (drizzle-orm not available in scripts at runtime); use executeSql callback or install drizzle-orm in scripts/package.json dependencies
+- **One ingestion method per (grade, season).** Match commit re-derives the season snapshot by DELETE+INSERT of `player_grade_season_stats` rows with `import_id IS NULL` for that grade+season; a whole-season CSV import writes the same kind of rows. Mixing both for the SAME grade+season lets one clobber the other. Different grades/seasons are independent and safe.
 
 ## Pointers
 

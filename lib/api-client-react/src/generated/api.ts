@@ -50,12 +50,14 @@ import type {
   ListPlayersParams,
   ListStatsParams,
   LoginRequest,
+  MatchImportPreview,
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
   Player,
   PlayerDetail,
   PlayerInput,
   PlayerListResponse,
+  PlayerMatchLine,
   PlayerMergeRequest,
   PlayerUpdate,
   Premiership,
@@ -74,6 +76,9 @@ import type {
   StatListResponse,
   StatUpdate,
   TrackedLink,
+  UndoSeasonInput,
+  UndoSeasonResult,
+  UploadMatchScorecardBody,
   UploadPlaycricketCsvBody,
   UploadUrlRequest,
   UploadUrlResponse
@@ -542,6 +547,83 @@ export const useDeletePlayer = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeletePlayerMutationOptions(options));
     }
+
+export const getGetPlayerMatchesUrl = (id: number,) => {
+
+
+
+
+  return `/api/players/${id}/matches`
+}
+
+/**
+ * @summary Per-match scorecard lines for a player
+ */
+export const getPlayerMatches = async (id: number, options?: RequestInit): Promise<PlayerMatchLine[]> => {
+
+  return customFetch<PlayerMatchLine[]>(getGetPlayerMatchesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlayerMatchesQueryKey = (id: number,) => {
+    return [
+    `/api/players/${id}/matches`
+    ] as const;
+    }
+
+
+export const getGetPlayerMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getPlayerMatches>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayerMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlayerMatchesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerMatches>>> = ({ signal }) => getPlayerMatches(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlayerMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlayerMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getPlayerMatches>>>
+export type GetPlayerMatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Per-match scorecard lines for a player
+ */
+
+export function useGetPlayerMatches<TData = Awaited<ReturnType<typeof getPlayerMatches>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayerMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlayerMatchesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListStatsUrl = (params?: ListStatsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1445,6 +1527,161 @@ export const useDeleteImport = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteImportMutationOptions(options));
+    }
+
+export const getUploadMatchScorecardUrl = () => {
+
+
+
+
+  return `/api/imports/match-xlsx`
+}
+
+/**
+ * Upload a PlayCricket per-match scorecard export (.xlsx) for one grade and
+round. Server parses the file, creates a pending match import row, and
+returns a preview of the parsed batting/bowling/fielding lines plus
+matched/new players. Nothing is added to season totals until
+`commitImport` is called. Generated clients should treat the file as
+`Blob`; the cricket-club frontend posts FormData via raw `fetch`.
+
+ * @summary Upload a single-match scorecard .xlsx for preview
+ */
+export const uploadMatchScorecard = async (uploadMatchScorecardBody: UploadMatchScorecardBody, options?: RequestInit): Promise<MatchImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, uploadMatchScorecardBody.file);
+
+  return customFetch<MatchImportPreview>(getUploadMatchScorecardUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadMatchScorecardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMatchScorecard>>, TError,{data: BodyType<UploadMatchScorecardBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadMatchScorecard>>, TError,{data: BodyType<UploadMatchScorecardBody>}, TContext> => {
+
+const mutationKey = ['uploadMatchScorecard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadMatchScorecard>>, {data: BodyType<UploadMatchScorecardBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadMatchScorecard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadMatchScorecardMutationResult = NonNullable<Awaited<ReturnType<typeof uploadMatchScorecard>>>
+    export type UploadMatchScorecardMutationBody = BodyType<UploadMatchScorecardBody>
+    export type UploadMatchScorecardMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a single-match scorecard .xlsx for preview
+ */
+export const useUploadMatchScorecard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMatchScorecard>>, TError,{data: BodyType<UploadMatchScorecardBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadMatchScorecard>>,
+        TError,
+        {data: BodyType<UploadMatchScorecardBody>},
+        TContext
+      > => {
+      return useMutation(getUploadMatchScorecardMutationOptions(options));
+    }
+
+export const getUndoSeasonUrl = () => {
+
+
+
+
+  return `/api/imports/undo-season`
+}
+
+/**
+ * Delete all per-match imports (and their lines) for the given grade and
+season, re-derive the season snapshot and aggregates, reverse any
+auto-created caps, and remove players left without any data.
+
+ * @summary Undo every match import for a grade + season
+ */
+export const undoSeason = async (undoSeasonInput: UndoSeasonInput, options?: RequestInit): Promise<UndoSeasonResult> => {
+
+  return customFetch<UndoSeasonResult>(getUndoSeasonUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      undoSeasonInput,)
+  }
+);}
+
+
+
+
+export const getUndoSeasonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoSeason>>, TError,{data: BodyType<UndoSeasonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoSeason>>, TError,{data: BodyType<UndoSeasonInput>}, TContext> => {
+
+const mutationKey = ['undoSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoSeason>>, {data: BodyType<UndoSeasonInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  undoSeason(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof undoSeason>>>
+    export type UndoSeasonMutationBody = BodyType<UndoSeasonInput>
+    export type UndoSeasonMutationError = ErrorType<void>
+
+    /**
+ * @summary Undo every match import for a grade + season
+ */
+export const useUndoSeason = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoSeason>>, TError,{data: BodyType<UndoSeasonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof undoSeason>>,
+        TError,
+        {data: BodyType<UndoSeasonInput>},
+        TContext
+      > => {
+      return useMutation(getUndoSeasonMutationOptions(options));
     }
 
 export const getGetRecordsUrl = () => {

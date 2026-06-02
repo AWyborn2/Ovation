@@ -246,6 +246,10 @@ export interface ImportRecord {
   grade?: string | null;
   /** @nullable */
   season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  /** csv (whole-season) or match (per-match scorecard) */
+  kind: string;
   rowCount: number;
   status: string;
   importedAt: string;
@@ -276,6 +280,9 @@ export interface CommitImportResult {
   grade?: string | null;
   /** @nullable */
   season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  kind: string;
   rowCount: number;
   status: string;
   importedAt: string;
@@ -316,6 +323,133 @@ export interface ImportPreview {
   unmappedGrades: string[];
   gradeTotals: ImportPreviewGradeTotal[];
   players: ImportPreviewPlayer[];
+}
+
+export type MatchPreviewPlayerStatus = typeof MatchPreviewPlayerStatus[keyof typeof MatchPreviewPlayerStatus];
+
+
+export const MatchPreviewPlayerStatus = {
+  matched: 'matched',
+  new: 'new',
+} as const;
+
+export interface MatchPreviewPlayer {
+  surname: string;
+  givenName: string;
+  status: MatchPreviewPlayerStatus;
+  /** @nullable */
+  playerId?: number | null;
+  batted: boolean;
+  /** @nullable */
+  battingPos?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  notOut?: boolean;
+  /** @nullable */
+  dismissal?: string | null;
+  bowled: boolean;
+  /** @nullable */
+  overs?: string | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  runsConceded?: number | null;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
+export interface MatchImportPreview {
+  importId: number;
+  filename: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  result?: string | null;
+  abandoned: boolean;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  hhccScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  /** True if this grade+season+round was already imported. */
+  matchExists: boolean;
+  matchedPlayers: number;
+  newPlayers: number;
+  warnings: string[];
+  players: MatchPreviewPlayer[];
+}
+
+export interface PlayerMatchLine {
+  matchId: number;
+  grade: string;
+  /** @nullable */
+  season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  result?: string | null;
+  batted: boolean;
+  /** @nullable */
+  battingPos?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  notOut?: boolean;
+  /** @nullable */
+  dismissal?: string | null;
+  bowled: boolean;
+  /** @nullable */
+  overs?: string | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runsConceded?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
+export interface UndoSeasonInput {
+  grade: string;
+  season: number;
+}
+
+export interface UndoSeasonResult {
+  grade: string;
+  season: number;
+  matchesDeleted: number;
+  playersRemoved: number;
 }
 
 export interface LifeMemberStats {
@@ -880,5 +1014,10 @@ export type UploadPlaycricketCsvBody = {
   file: Blob;
   /** Starting year of the season (e.g. 2025 for 2025/26) */
   season: number;
+};
+
+export type UploadMatchScorecardBody = {
+  /** The PlayCricket match scorecard .xlsx export */
+  file: Blob;
 };
 

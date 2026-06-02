@@ -9,6 +9,8 @@ import {
   premiershipPlayersTable,
   capRegisterTable,
   lifeMembersTable,
+  matchesTable,
+  matchPlayerLinesTable,
 } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -190,6 +192,50 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     stats,
     premierships: premRows,
   });
+});
+
+router.get("/players/:id/matches", async (req, res): Promise<void> => {
+  const params = GetPlayerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      matchId: matchesTable.id,
+      grade: matchesTable.grade,
+      season: matchesTable.season,
+      round: matchesTable.round,
+      matchDate: matchesTable.matchDate,
+      opponent: matchesTable.opponent,
+      venue: matchesTable.venue,
+      result: matchesTable.result,
+      batted: matchPlayerLinesTable.batted,
+      battingPos: matchPlayerLinesTable.battingPos,
+      runs: matchPlayerLinesTable.runs,
+      balls: matchPlayerLinesTable.balls,
+      fours: matchPlayerLinesTable.fours,
+      sixes: matchPlayerLinesTable.sixes,
+      notOut: matchPlayerLinesTable.notOut,
+      dismissal: matchPlayerLinesTable.dismissal,
+      bowled: matchPlayerLinesTable.bowled,
+      overs: matchPlayerLinesTable.overs,
+      maidens: matchPlayerLinesTable.maidens,
+      runsConceded: matchPlayerLinesTable.runsConceded,
+      wickets: matchPlayerLinesTable.wickets,
+      wides: matchPlayerLinesTable.wides,
+      noBalls: matchPlayerLinesTable.noBalls,
+      catches: matchPlayerLinesTable.catches,
+      stumpings: matchPlayerLinesTable.stumpings,
+      runOuts: matchPlayerLinesTable.runOuts,
+    })
+    .from(matchPlayerLinesTable)
+    .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
+    .where(eq(matchPlayerLinesTable.playerId, params.data.id))
+    .orderBy(desc(matchesTable.season), desc(matchesTable.round));
+
+  res.json(rows);
 });
 
 router.patch("/players/:id", requireAdmin, async (req, res): Promise<void> => {

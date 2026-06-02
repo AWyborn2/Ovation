@@ -3,6 +3,8 @@ export * from "./player_grade_stats";
 export * from "./grade_summaries";
 export * from "./premierships";
 export * from "./imports";
+export * from "./matches";
+export * from "./match_player_lines";
 export * from "./player_grade_season_stats";
 export * from "./cap_register";
 export * from "./life_members";

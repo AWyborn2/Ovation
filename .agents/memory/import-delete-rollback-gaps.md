@@ -39,3 +39,15 @@ zeroed and zero-stat players created by the import are cleaned up.
 
 Note: ~6 male caps with `in_stats=true` but no A Grade stats are PRE-EXISTING seed
 data-quality issues (see cap-data-quality.md), not caused by import/delete.
+
+**Update — the match-import path closes both gaps (CSV path still has them).**
+The per-match xlsx import adds an `undo-season` flow (and per-match delete) that
+calls a shared `rollback.ts`: `reverseCaps` deletes `auto_created` caps whose
+player has lost ALL games in that grade, and `cleanupOrphanPlayers` removes
+players whose only appearance was the undone match. Verified e2e: commit two
+matches (R2 stats + R1 abandoned) for A Grade 2025, then undo-season → matches,
+match lines, NULL-importId season snapshot rows, match imports, the new orphan
+player, AND the 10 auto-created caps all rolled back to baseline. The legacy
+whole-season **CSV delete** still only restores stats (gaps 1 & 2 above remain
+for that path) — if you ever want CSV delete to fully roll back, reuse
+`rollback.ts` there too.

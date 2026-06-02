@@ -13,6 +13,10 @@ export interface ImportRecord {
   grade?: string | null;
   /** @nullable */
   season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  /** csv (whole-season) or match (per-match scorecard) */
+  kind: string;
   rowCount: number;
   status: string;
   importedAt: Date;

@@ -152,6 +152,44 @@ export const DeletePlayerParams = zod.object({
 
 
 /**
+ * @summary Per-match scorecard lines for a player
+ */
+export const GetPlayerMatchesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPlayerMatchesResponseItem = zod.object({
+  "matchId": zod.number(),
+  "grade": zod.string(),
+  "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "matchDate": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "batted": zod.boolean(),
+  "battingPos": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "notOut": zod.boolean().optional(),
+  "dismissal": zod.string().nullish(),
+  "bowled": zod.boolean(),
+  "overs": zod.string().nullish(),
+  "maidens": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+})
+export const GetPlayerMatchesResponse = zod.array(GetPlayerMatchesResponseItem)
+
+
+/**
  * @summary List per-grade stats records
  */
 export const ListStatsQueryParams = zod.object({
@@ -438,6 +476,8 @@ export const ListImportsResponseItem = zod.object({
   "filename": zod.string(),
   "grade": zod.string().nullish(),
   "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "kind": zod.string().describe('csv (whole-season) or match (per-match scorecard)'),
   "rowCount": zod.number(),
   "status": zod.string(),
   "importedAt": zod.coerce.date()
@@ -497,6 +537,8 @@ export const CommitImportResponse = zod.object({
   "filename": zod.string(),
   "grade": zod.string().nullish(),
   "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "kind": zod.string(),
   "rowCount": zod.number(),
   "status": zod.string(),
   "importedAt": zod.coerce.date(),
@@ -514,6 +556,80 @@ export const CommitImportResponse = zod.object({
  */
 export const DeleteImportParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * Upload a PlayCricket per-match scorecard export (.xlsx) for one grade and
+round. Server parses the file, creates a pending match import row, and
+returns a preview of the parsed batting/bowling/fielding lines plus
+matched/new players. Nothing is added to season totals until
+`commitImport` is called. Generated clients should treat the file as
+`Blob`; the cricket-club frontend posts FormData via raw `fetch`.
+
+ * @summary Upload a single-match scorecard .xlsx for preview
+ */
+export const UploadMatchScorecardBody = zod.object({
+  "file": zod.instanceof(File).describe('The PlayCricket match scorecard .xlsx export')
+})
+
+export const UploadMatchScorecardResponse = zod.object({
+  "importId": zod.number(),
+  "filename": zod.string(),
+  "grade": zod.string().nullish(),
+  "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "competition": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "abandoned": zod.boolean(),
+  "opponent": zod.string().nullish(),
+  "hhccScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "matchExists": zod.boolean().describe('True if this grade+season+round was already imported.'),
+  "matchedPlayers": zod.number(),
+  "newPlayers": zod.number(),
+  "warnings": zod.array(zod.string()),
+  "players": zod.array(zod.object({
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "status": zod.enum(['matched', 'new']),
+  "playerId": zod.number().nullish(),
+  "batted": zod.boolean(),
+  "battingPos": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "notOut": zod.boolean().optional(),
+  "dismissal": zod.string().nullish(),
+  "bowled": zod.boolean(),
+  "overs": zod.string().nullish(),
+  "wickets": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+}))
+})
+
+
+/**
+ * Delete all per-match imports (and their lines) for the given grade and
+season, re-derive the season snapshot and aggregates, reverse any
+auto-created caps, and remove players left without any data.
+
+ * @summary Undo every match import for a grade + season
+ */
+export const UndoSeasonBody = zod.object({
+  "grade": zod.string(),
+  "season": zod.number()
+})
+
+export const UndoSeasonResponse = zod.object({
+  "grade": zod.string(),
+  "season": zod.number(),
+  "matchesDeleted": zod.number(),
+  "playersRemoved": zod.number()
 })
 
 

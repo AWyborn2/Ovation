@@ -7,6 +7,9 @@ export const importsTable = pgTable("imports", {
   filename: text("filename").notNull(),
   grade: text("grade"),
   season: integer("season"),
+  // "csv" = whole-season PlayCricket export; "match" = single-round xlsx scorecard.
+  kind: text("kind").notNull().default("csv"),
+  round: integer("round"),
   rowCount: integer("row_count").notNull().default(0),
   status: text("status").notNull().default("pending"),
   payload: jsonb("payload"),

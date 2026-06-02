@@ -168,6 +168,27 @@ paths:
         "404":
           description: Not found
 
+  /players/{id}/matches:
+    get:
+      operationId: getPlayerMatches
+      tags: [players]
+      summary: Per-match scorecard lines for a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match lines, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerMatchLine"
+
   /stats:
     get:
       operationId: listStats
@@ -433,6 +454,65 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /imports/match-xlsx:
+    post:
+      operationId: uploadMatchScorecard
+      tags: [imports]
+      summary: Upload a single-match scorecard .xlsx for preview
+      description: |
+        Upload a PlayCricket per-match scorecard export (.xlsx) for one grade and
+        round. Server parses the file, creates a pending match import row, and
+        returns a preview of the parsed batting/bowling/fielding lines plus
+        matched/new players. Nothing is added to season totals until
+        `commitImport` is called. Generated clients should treat the file as
+        `Blob`; the cricket-club frontend posts FormData via raw `fetch`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The PlayCricket match scorecard .xlsx export
+      responses:
+        "200":
+          description: Match preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchImportPreview"
+        "400":
+          description: Invalid file or unmappable grade
+
+  /imports/undo-season:
+    post:
+      operationId: undoSeason
+      tags: [imports]
+      summary: Undo every match import for a grade + season
+      description: |
+        Delete all per-match imports (and their lines) for the given grade and
+        season, re-derive the season snapshot and aggregates, reverse any
+        auto-created caps, and remove players left without any data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UndoSeasonInput"
+      responses:
+        "200":
+          description: Undo summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UndoSeasonResult"
+        "400":
+          description: Invalid grade or season
 
   /records:
     get:
@@ -1750,7 +1830,7 @@ components:
 
     ImportRecord:
       type: object
-      required: [id, filename, status, rowCount, importedAt]
+      required: [id, filename, status, rowCount, importedAt, kind]
       properties:
         id:
           type: integer
@@ -1760,6 +1840,11 @@ components:
           type: ["string", "null"]
         season:
           type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        kind:
+          type: string
+          description: "csv (whole-season) or match (per-match scorecard)"
         rowCount:
           type: integer
         status:
@@ -1783,7 +1868,7 @@ components:
 
     CommitImportResult:
       type: object
-      required: [id, filename, status, rowCount, importedAt, capsSync]
+      required: [id, filename, status, rowCount, importedAt, kind, capsSync]
       properties:
         id:
           type: integer
@@ -1793,6 +1878,10 @@ components:
           type: ["string", "null"]
         season:
           type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        kind:
+          type: string
         rowCount:
           type: integer
         status:
@@ -1862,6 +1951,183 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ImportPreviewPlayer"
+
+    MatchPreviewPlayer:
+      type: object
+      required:
+        [surname, givenName, status, batted, bowled, catches, stumpings, runOuts]
+      properties:
+        surname:
+          type: string
+        givenName:
+          type: string
+        status:
+          type: string
+          enum: [matched, new]
+        playerId:
+          type: ["integer", "null"]
+        batted:
+          type: boolean
+        battingPos:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        notOut:
+          type: boolean
+        dismissal:
+          type: ["string", "null"]
+        bowled:
+          type: boolean
+        overs:
+          type: ["string", "null"]
+        wickets:
+          type: ["integer", "null"]
+        runsConceded:
+          type: ["integer", "null"]
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+
+    MatchImportPreview:
+      type: object
+      required:
+        [
+          importId,
+          filename,
+          abandoned,
+          matchExists,
+          matchedPlayers,
+          newPlayers,
+          warnings,
+          players,
+        ]
+      properties:
+        importId:
+          type: integer
+        filename:
+          type: string
+        grade:
+          type: ["string", "null"]
+        season:
+          type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        competition:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        abandoned:
+          type: boolean
+        opponent:
+          type: ["string", "null"]
+        hhccScore:
+          type: ["string", "null"]
+        opponentScore:
+          type: ["string", "null"]
+        matchExists:
+          type: boolean
+          description: True if this grade+season+round was already imported.
+        matchedPlayers:
+          type: integer
+        newPlayers:
+          type: integer
+        warnings:
+          type: array
+          items:
+            type: string
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchPreviewPlayer"
+
+    PlayerMatchLine:
+      type: object
+      required:
+        [matchId, grade, batted, bowled, catches, stumpings, runOuts]
+      properties:
+        matchId:
+          type: integer
+        grade:
+          type: string
+        season:
+          type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        matchDate:
+          type: ["string", "null"]
+        opponent:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        batted:
+          type: boolean
+        battingPos:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        notOut:
+          type: boolean
+        dismissal:
+          type: ["string", "null"]
+        bowled:
+          type: boolean
+        overs:
+          type: ["string", "null"]
+        maidens:
+          type: ["integer", "null"]
+        runsConceded:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+
+    UndoSeasonInput:
+      type: object
+      required: [grade, season]
+      properties:
+        grade:
+          type: string
+        season:
+          type: integer
+
+    UndoSeasonResult:
+      type: object
+      required: [grade, season, matchesDeleted, playersRemoved]
+      properties:
+        grade:
+          type: string
+        season:
+          type: integer
+        matchesDeleted:
+          type: integer
+        playersRemoved:
+          type: integer
 
     LifeMemberStats:
       type: object

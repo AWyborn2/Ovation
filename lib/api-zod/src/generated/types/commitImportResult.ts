@@ -14,6 +14,9 @@ export interface CommitImportResult {
   grade?: string | null;
   /** @nullable */
   season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  kind: string;
   rowCount: number;
   status: string;
   importedAt: Date;

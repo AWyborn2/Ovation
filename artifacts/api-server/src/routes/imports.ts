@@ -1,30 +1,31 @@
 import { Router, type IRouter, type Request } from "express";
 import multer from "multer";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
   db,
   importsTable,
   playersTable,
   playerGradeSeasonStatsTable,
-  playerGradeStatsTable,
-  milestoneEventsTable,
-  socialDraftsTable,
+  matchesTable,
+  matchPlayerLinesTable,
   type ImportRecord,
 } from "@workspace/db";
 import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
+import {
+  parseMatchScorecard,
+  type ParsedMatch,
+} from "../lib/match-scorecard";
 import { recomputeAggregates } from "../lib/recompute";
 import { syncCapsFromStats, type CapSyncResult } from "../lib/cap-sync";
+import { deriveSeasonSnapshotFromMatches } from "../lib/match-aggregate";
 import {
-  detectCrossings,
-  BOARD_STAT_LABEL,
-  TIER_THRESHOLDS,
-  type BoardKey,
-} from "../lib/milestone-detector";
-import { generateRoundUpDrafts } from "../lib/roundup";
+  snapshotCareerTotals,
+  runPostCommitSocial,
+} from "../lib/post-commit-social";
 import {
-  db as _db,
-  socialSettingsTable,
-} from "@workspace/db";
+  reverseCapsAfterRollback,
+  cleanupOrphanPlayers,
+} from "../lib/rollback";
 import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
@@ -43,6 +44,8 @@ router.get("/imports", async (_req, res): Promise<void> => {
       filename: importsTable.filename,
       grade: importsTable.grade,
       season: importsTable.season,
+      round: importsTable.round,
+      kind: importsTable.kind,
       rowCount: importsTable.rowCount,
       status: importsTable.status,
       importedAt: importsTable.importedAt,
@@ -180,6 +183,12 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     res.status(400).json({ error: `Import is already ${imp.status}` });
     return;
   }
+
+  if (imp.kind === "match") {
+    await commitMatchImport(req, res, imp);
+    return;
+  }
+
   const payload = imp.payload as { rows?: ParsedCsvRow[] } | null;
   const rows = payload?.rows;
   if (!rows || rows.length === 0) {
@@ -220,25 +229,7 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
   const affectedGrades = Array.from(new Set(resolved.map((r) => r.grade)));
 
   // Snapshot per-player totals BEFORE the import so we can detect tier crossings.
-  const beforeTotalsRows = await db
-    .select({
-      playerId: playerGradeStatsTable.playerId,
-      games: sql<number>`coalesce(sum(${playerGradeStatsTable.games}), 0)`,
-      runs: sql<number>`coalesce(sum(${playerGradeStatsTable.runs}), 0)`,
-      wickets: sql<number>`coalesce(sum(${playerGradeStatsTable.wickets}), 0)`,
-      dismissals: sql<number>`coalesce(sum(${playerGradeStatsTable.catches} + ${playerGradeStatsTable.stumpings}), 0)`,
-    })
-    .from(playerGradeStatsTable)
-    .groupBy(playerGradeStatsTable.playerId);
-  const beforeMap = new Map<number, { games: number; runs: number; wickets: number; dismissals: number }>();
-  for (const r of beforeTotalsRows) {
-    beforeMap.set(r.playerId, {
-      games: Number(r.games),
-      runs: Number(r.runs),
-      wickets: Number(r.wickets),
-      dismissals: Number(r.dismissals),
-    });
-  }
+  const beforeMap = await snapshotCareerTotals();
 
   const capsSync: CapSyncResult[] = [];
 
@@ -298,91 +289,14 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     }
   });
 
-  // Load social settings once to gate auto-generation engines.
-  const [socialSettings] = await db.select().from(socialSettingsTable).limit(1);
-
-  // Milestone detection: compare post-recompute totals to before and queue drafts.
-  try {
-    if (!socialSettings?.engineMilestone) throw new Error("__skip_milestone__");
-    const afterTotalsRows = await db
-      .select({
-        playerId: playerGradeStatsTable.playerId,
-        games: sql<number>`coalesce(sum(${playerGradeStatsTable.games}), 0)`,
-        runs: sql<number>`coalesce(sum(${playerGradeStatsTable.runs}), 0)`,
-        wickets: sql<number>`coalesce(sum(${playerGradeStatsTable.wickets}), 0)`,
-        dismissals: sql<number>`coalesce(sum(${playerGradeStatsTable.catches} + ${playerGradeStatsTable.stumpings}), 0)`,
-      })
-      .from(playerGradeStatsTable)
-      .groupBy(playerGradeStatsTable.playerId);
-    const afterMap = new Map<number, { games: number; runs: number; wickets: number; dismissals: number }>();
-    for (const r of afterTotalsRows) {
-      afterMap.set(r.playerId, {
-        games: Number(r.games),
-        runs: Number(r.runs),
-        wickets: Number(r.wickets),
-        dismissals: Number(r.dismissals),
-      });
-    }
-    const crossings = detectCrossings(beforeMap, afterMap);
-    if (crossings.length > 0) {
-      const playerIds = Array.from(new Set(crossings.map((c) => c.playerId)));
-      const playerRows = await db
-        .select({ id: playersTable.id, surname: playersTable.surname, givenName: playersTable.givenName })
-        .from(playersTable)
-        .where(sql`${playersTable.id} = ANY(${playerIds})`);
-      const nameById = new Map(playerRows.map((p) => [p.id, `${p.givenName} ${p.surname}`.trim()]));
-      for (const c of crossings) {
-        const name = nameById.get(c.playerId) ?? "Unknown";
-        const [event] = await db
-          .insert(milestoneEventsTable)
-          .values({
-            playerId: c.playerId,
-            boardKey: c.boardKey,
-            tierIndex: c.tierIndex,
-            tierLabel: c.tierLabel,
-            value: c.value,
-            threshold: c.threshold,
-            source: "import",
-            sourceImportId: imp.id,
-            payload: { name },
-          })
-          .returning();
-        await db.insert(socialDraftsTable).values({
-          engine: "milestone",
-          status: "pending",
-          cardInput: {
-            kind: "milestone",
-            playerName: name,
-            tierLabel: c.tierLabel,
-            tierIndex: c.tierIndex,
-            milestoneLabel: BOARD_STAT_LABEL[c.boardKey as BoardKey],
-            currentValue: c.value,
-            threshold: c.threshold,
-          },
-          appPath: `/players/${c.playerId}`,
-          milestoneEventId: event.id,
-          sourceImportId: imp.id,
-        });
-      }
-    }
-  } catch (err) {
-    if (!(err instanceof Error) || err.message !== "__skip_milestone__") {
-      req.log.error({ err }, "milestone detection failed");
-    }
-  }
-  void TIER_THRESHOLDS;
-
-  // Auto-generate round-up drafts per affected grade, gated on engineRoundUp.
-  try {
-    if (socialSettings?.engineRoundUp) {
-      for (const grade of affectedGrades) {
-        await generateRoundUpDrafts(grade, season, imp.id);
-      }
-    }
-  } catch (err) {
-    req.log.error({ err }, "auto roundup failed");
-  }
-  void _db;
+  // Milestone detection + round-up drafts (shared with the per-match import path).
+  await runPostCommitSocial({
+    importId: imp.id,
+    affectedGrades,
+    season,
+    beforeMap,
+    logger: req.log,
+  });
 
   const [updated] = await db
     .select({
@@ -390,6 +304,8 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
       filename: importsTable.filename,
       grade: importsTable.grade,
       season: importsTable.season,
+      round: importsTable.round,
+      kind: importsTable.kind,
       rowCount: importsTable.rowCount,
       status: importsTable.status,
       importedAt: importsTable.importedAt,
@@ -399,7 +315,15 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
 
   const importFields = updated satisfies Pick<
     ImportRecord,
-    "id" | "filename" | "grade" | "season" | "rowCount" | "status" | "importedAt"
+    | "id"
+    | "filename"
+    | "grade"
+    | "season"
+    | "round"
+    | "kind"
+    | "rowCount"
+    | "status"
+    | "importedAt"
   >;
   res.json({ ...importFields, capsSync });
 });
@@ -416,22 +340,468 @@ router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
-  // Find which grades were touched before we drop the snapshots.
+  if (imp.kind === "match") {
+    await deleteMatchImport(req, res, id);
+    return;
+  }
+
+  // Find which grades + players were touched before we drop the snapshots.
   const affected = await db
-    .selectDistinct({ grade: playerGradeSeasonStatsTable.grade })
+    .selectDistinct({
+      grade: playerGradeSeasonStatsTable.grade,
+      playerId: playerGradeSeasonStatsTable.playerId,
+    })
     .from(playerGradeSeasonStatsTable)
     .where(eq(playerGradeSeasonStatsTable.importId, id));
-  const affectedGrades = affected.map((r) => r.grade);
+  const affectedGrades = Array.from(new Set(affected.map((r) => r.grade)));
+  const candidatePlayerIds = Array.from(new Set(affected.map((r) => r.playerId)));
 
   await db.transaction(async (tx) => {
     // Snapshots cascade-delete via FK when the import row goes.
     await tx.delete(importsTable).where(eq(importsTable.id, id));
     if (affectedGrades.length > 0) {
       await recomputeAggregates(tx, affectedGrades);
+      await reverseCapsAfterRollback(tx, affectedGrades);
+      await cleanupOrphanPlayers(tx, candidatePlayerIds);
     }
   });
 
   res.sendStatus(204);
 });
+
+// ---------------------------------------------------------------------------
+// Per-match .xlsx scorecard import
+// ---------------------------------------------------------------------------
+
+type MatchCommitReq = Request & { log: import("pino").Logger };
+
+/**
+ * Resolve every parsed match player to a player id, creating new players as
+ * needed. Returns the parsed players augmented with their `playerId`.
+ */
+async function resolveMatchPlayers(
+  players: ParsedMatch["players"],
+): Promise<Array<ParsedMatch["players"][number] & { playerId: number }>> {
+  const allPlayers = await db
+    .select({
+      id: playersTable.id,
+      surname: playersTable.surname,
+      givenName: playersTable.givenName,
+    })
+    .from(playersTable);
+  const playerByKey = new Map<string, number>();
+  for (const p of allPlayers) {
+    playerByKey.set(
+      `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`,
+      p.id,
+    );
+  }
+
+  const resolved: Array<
+    ParsedMatch["players"][number] & { playerId: number }
+  > = [];
+  for (const p of players) {
+    const key = `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`;
+    let pid = playerByKey.get(key);
+    if (!pid) {
+      const [created] = await db
+        .insert(playersTable)
+        .values({ surname: p.surname, givenName: p.givenName })
+        .returning({ id: playersTable.id });
+      pid = created.id;
+      playerByKey.set(key, pid);
+    }
+    resolved.push({ ...p, playerId: pid });
+  }
+  return resolved;
+}
+
+router.post(
+  "/imports/match-xlsx",
+  requireAdmin,
+  upload.single("file"),
+  async (req: MulterRequest, res): Promise<void> => {
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: "Missing file field" });
+      return;
+    }
+
+    let parsed: ParsedMatch;
+    try {
+      parsed = parseMatchScorecard(file.buffer);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
+      return;
+    }
+
+    if (!parsed.abandoned && (!parsed.grade || parsed.season == null)) {
+      res.status(400).json({
+        error:
+          "Could not determine grade and season from the scorecard. " +
+          "Check the file header.",
+      });
+      return;
+    }
+
+    // Match parsed players against the roster (case-insensitive surname+given).
+    const allPlayers = await db
+      .select({
+        id: playersTable.id,
+        surname: playersTable.surname,
+        givenName: playersTable.givenName,
+      })
+      .from(playersTable);
+    const playerByKey = new Map<string, number>();
+    for (const p of allPlayers) {
+      playerByKey.set(
+        `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`,
+        p.id,
+      );
+    }
+
+    let matched = 0;
+    let created = 0;
+    const previewPlayers = parsed.players.map((p) => {
+      const key = `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`;
+      const existing = playerByKey.get(key) ?? null;
+      if (existing) matched++;
+      else created++;
+      return {
+        surname: p.surname,
+        givenName: p.givenName,
+        status: existing ? ("matched" as const) : ("new" as const),
+        playerId: existing,
+        batted: p.batted,
+        battingPos: p.battingPos ?? null,
+        runs: p.runs ?? null,
+        balls: p.balls ?? null,
+        notOut: p.notOut,
+        dismissal: p.dismissal ?? null,
+        bowled: p.bowled,
+        overs: p.overs ?? null,
+        wickets: p.wickets ?? null,
+        runsConceded: p.runsConceded ?? null,
+        catches: p.catches,
+        stumpings: p.stumpings,
+        runOuts: p.runOuts,
+      };
+    });
+
+    // Was this grade+season+round already imported?
+    let matchExists = false;
+    if (parsed.grade && parsed.season != null) {
+      const existingMatch = await db
+        .select({ id: matchesTable.id })
+        .from(matchesTable)
+        .where(
+          and(
+            eq(matchesTable.grade, parsed.grade),
+            eq(matchesTable.season, parsed.season),
+            parsed.round == null
+              ? sql`${matchesTable.round} IS NULL`
+              : eq(matchesTable.round, parsed.round),
+          ),
+        );
+      matchExists = existingMatch.length > 0;
+    }
+
+    const warnings: string[] = [];
+    if (parsed.abandoned) {
+      warnings.push(
+        "This match looks abandoned — it will be recorded for history but adds no stats.",
+      );
+    }
+    if (matchExists) {
+      warnings.push(
+        "A match for this grade, season and round already exists. Committing will replace it.",
+      );
+    }
+
+    const [imp] = await db
+      .insert(importsTable)
+      .values({
+        filename: file.originalname,
+        kind: "match",
+        grade: parsed.grade,
+        season: parsed.season,
+        round: parsed.round,
+        rowCount: parsed.players.length,
+        status: "pending",
+        payload: parsed as unknown as Record<string, unknown>,
+      })
+      .returning();
+
+    res.json({
+      importId: imp.id,
+      filename: imp.filename,
+      grade: parsed.grade,
+      season: parsed.season,
+      round: parsed.round,
+      competition: parsed.competition,
+      matchDate: parsed.matchDate,
+      venue: parsed.venue,
+      result: parsed.result,
+      abandoned: parsed.abandoned,
+      opponent: parsed.opponent,
+      hhccScore: parsed.hhccScore,
+      opponentScore: parsed.opponentScore,
+      matchExists,
+      matchedPlayers: matched,
+      newPlayers: created,
+      warnings,
+      players: previewPlayers,
+    });
+  },
+);
+
+async function commitMatchImport(
+  req: MatchCommitReq,
+  res: Parameters<Parameters<typeof router.post>[1]>[1],
+  imp: typeof importsTable.$inferSelect,
+): Promise<void> {
+  const parsed = imp.payload as ParsedMatch | null;
+  if (!parsed) {
+    res.status(400).json({ error: "Import payload is empty" });
+    return;
+  }
+  const grade = parsed.grade ?? imp.grade;
+  const season = parsed.season ?? imp.season;
+  const round = parsed.round ?? imp.round ?? null;
+
+  if (!grade || season == null) {
+    res
+      .status(400)
+      .json({ error: "Match import has no grade/season; cannot commit." });
+    return;
+  }
+
+  const resolvedLines = await resolveMatchPlayers(parsed.players);
+
+  const beforeMap = await snapshotCareerTotals();
+  const capsSync: CapSyncResult[] = [];
+
+  await db.transaction(async (tx) => {
+    // Replace any existing match for this grade+season+round so re-importing a
+    // round is idempotent.
+    await tx
+      .delete(matchesTable)
+      .where(
+        and(
+          eq(matchesTable.grade, grade),
+          eq(matchesTable.season, season),
+          round == null
+            ? sql`${matchesTable.round} IS NULL`
+            : eq(matchesTable.round, round),
+        ),
+      );
+
+    const [match] = await tx
+      .insert(matchesTable)
+      .values({
+        importId: imp.id,
+        grade,
+        season,
+        round,
+        competition: parsed.competition ?? null,
+        matchDate: parsed.matchDate ?? null,
+        venue: parsed.venue ?? null,
+        result: parsed.result ?? null,
+        opponent: parsed.opponent ?? null,
+        hhccScore: parsed.hhccScore ?? null,
+        opponentScore: parsed.opponentScore ?? null,
+        abandoned: parsed.abandoned,
+      })
+      .returning();
+
+    if (resolvedLines.length > 0) {
+      await tx.insert(matchPlayerLinesTable).values(
+        resolvedLines.map((l) => ({
+          matchId: match.id,
+          playerId: l.playerId,
+          batted: l.batted,
+          battingPos: l.battingPos ?? null,
+          runs: l.runs ?? null,
+          balls: l.balls ?? null,
+          fours: l.fours ?? null,
+          sixes: l.sixes ?? null,
+          notOut: l.notOut,
+          dismissal: l.dismissal ?? null,
+          bowled: l.bowled,
+          overs: l.overs ?? null,
+          maidens: l.maidens ?? null,
+          runsConceded: l.runsConceded ?? null,
+          wickets: l.wickets ?? null,
+          wides: l.wides ?? null,
+          noBalls: l.noBalls ?? null,
+          catches: l.catches,
+          stumpings: l.stumpings,
+          runOuts: l.runOuts,
+        })),
+      );
+    }
+
+    await tx
+      .update(importsTable)
+      .set({ status: "committed", payload: null })
+      .where(eq(importsTable.id, imp.id));
+
+    // Re-derive the season snapshot from every match in this grade+season and
+    // recompute the downstream aggregates in the same transaction.
+    const { orderedPlayerIds } = await deriveSeasonSnapshotFromMatches(
+      tx,
+      grade,
+      season,
+    );
+    await recomputeAggregates(tx, [grade]);
+    const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
+    if (result) capsSync.push(result);
+  });
+
+  await runPostCommitSocial({
+    importId: imp.id,
+    affectedGrades: [grade],
+    season,
+    beforeMap,
+    logger: req.log,
+  });
+
+  const [updated] = await db
+    .select({
+      id: importsTable.id,
+      filename: importsTable.filename,
+      grade: importsTable.grade,
+      season: importsTable.season,
+      round: importsTable.round,
+      kind: importsTable.kind,
+      rowCount: importsTable.rowCount,
+      status: importsTable.status,
+      importedAt: importsTable.importedAt,
+    })
+    .from(importsTable)
+    .where(eq(importsTable.id, imp.id));
+
+  const importFields = updated satisfies Pick<
+    ImportRecord,
+    | "id"
+    | "filename"
+    | "grade"
+    | "season"
+    | "round"
+    | "kind"
+    | "rowCount"
+    | "status"
+    | "importedAt"
+  >;
+  res.json({ ...importFields, capsSync });
+}
+
+/**
+ * Delete a single match import. Cascades the match + its lines, then re-derives
+ * the season snapshot from the remaining matches (if any) and rolls back any
+ * caps / orphan players that no longer have a basis.
+ */
+async function deleteMatchImport(
+  _req: Request,
+  res: Parameters<Parameters<typeof router.delete>[1]>[1],
+  id: number,
+): Promise<void> {
+  const matchRows = await db
+    .select({ grade: matchesTable.grade, season: matchesTable.season })
+    .from(matchesTable)
+    .where(eq(matchesTable.importId, id));
+
+  // Players who appeared in this import's matches — candidates for orphan
+  // cleanup once their lines are gone.
+  const matchIdRows = await db
+    .select({ id: matchesTable.id })
+    .from(matchesTable)
+    .where(eq(matchesTable.importId, id));
+  const matchIds = matchIdRows.map((m) => m.id);
+  let candidatePlayerIds: number[] = [];
+  if (matchIds.length > 0) {
+    const lineRows = await db
+      .selectDistinct({ playerId: matchPlayerLinesTable.playerId })
+      .from(matchPlayerLinesTable)
+      .where(inArray(matchPlayerLinesTable.matchId, matchIds));
+    candidatePlayerIds = lineRows.map((l) => l.playerId);
+  }
+
+  const affectedGrades = Array.from(new Set(matchRows.map((m) => m.grade)));
+
+  await db.transaction(async (tx) => {
+    // Cascades matches + match_player_lines for this import.
+    await tx.delete(importsTable).where(eq(importsTable.id, id));
+    for (const { grade, season } of matchRows) {
+      await deriveSeasonSnapshotFromMatches(tx, grade, season);
+    }
+    if (affectedGrades.length > 0) {
+      await recomputeAggregates(tx, affectedGrades);
+      await reverseCapsAfterRollback(tx, affectedGrades);
+      await cleanupOrphanPlayers(tx, candidatePlayerIds);
+    }
+  });
+
+  res.sendStatus(204);
+}
+
+router.post(
+  "/imports/undo-season",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const grade = typeof req.body?.grade === "string" ? req.body.grade : "";
+    const seasonRaw = req.body?.season;
+    const season =
+      seasonRaw != null ? parseInt(String(seasonRaw), 10) : NaN;
+    if (!grade || !Number.isInteger(season)) {
+      res
+        .status(400)
+        .json({ error: "grade (string) and season (year) are required" });
+      return;
+    }
+
+    const matchRows = await db
+      .select({ id: matchesTable.id, importId: matchesTable.importId })
+      .from(matchesTable)
+      .where(and(eq(matchesTable.grade, grade), eq(matchesTable.season, season)));
+
+    if (matchRows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `No matches found for ${grade} ${season}` });
+      return;
+    }
+
+    const matchIds = matchRows.map((m) => m.id);
+    const importIds = Array.from(new Set(matchRows.map((m) => m.importId)));
+
+    const lineRows = await db
+      .selectDistinct({ playerId: matchPlayerLinesTable.playerId })
+      .from(matchPlayerLinesTable)
+      .where(inArray(matchPlayerLinesTable.matchId, matchIds));
+    const candidatePlayerIds = lineRows.map((l) => l.playerId);
+
+    let playersRemoved = 0;
+    await db.transaction(async (tx) => {
+      // Deleting the import rows cascades their matches + lines away.
+      await tx.delete(importsTable).where(inArray(importsTable.id, importIds));
+      // Derived season snapshot rows carry import_id = NULL, so drop them too.
+      await tx.execute(sql`
+        DELETE FROM player_grade_season_stats
+        WHERE grade = ${grade} AND season = ${season}
+      `);
+      await recomputeAggregates(tx, [grade]);
+      await reverseCapsAfterRollback(tx, [grade]);
+      playersRemoved = await cleanupOrphanPlayers(tx, candidatePlayerIds);
+    });
+
+    res.json({
+      grade,
+      season,
+      matchesDeleted: matchIds.length,
+      playersRemoved,
+    });
+  },
+);
 
 export default router;

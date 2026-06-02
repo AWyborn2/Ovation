@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps } from "@workspace/api-client-react";
+import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps, useGetPlayerMatches, getGetPlayerMatchesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +94,7 @@ export default function PlayerDetail() {
   const playerId = parseInt(id, 10);
   const { data: player, isLoading } = useGetPlayer(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) } });
   const { data: caps } = useListCaps();
+  const { data: matchLines } = useGetPlayerMatches(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerMatchesQueryKey(playerId) } });
 
   const queryClient = useQueryClient();
   const deletePlayer = useDeletePlayer();
@@ -373,6 +374,67 @@ export default function PlayerDetail() {
             Played between 1 and 9 A Grade games for the club. Individual stats were not recorded
             prior to MyCricket and PlayHQ for players with fewer than 10 games.
           </p>
+        </div>
+      )}
+
+      {matchLines && matchLines.length > 0 && (
+        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+          <div className="flex items-baseline justify-between gap-3 mb-1">
+            <h2 className="text-lg font-serif font-bold text-primary m-0">Match by match</h2>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">
+              {matchLines.length} game{matchLines.length === 1 ? "" : "s"} recorded
+            </span>
+          </div>
+          <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left font-medium p-3">Season</th>
+                  <th className="text-left font-medium p-3">Rnd</th>
+                  <th className="text-left font-medium p-3">Grade</th>
+                  <th className="text-left font-medium p-3">Opponent</th>
+                  <th className="text-left font-medium p-3">Batting</th>
+                  <th className="text-left font-medium p-3">Bowling</th>
+                  <th className="text-left font-medium p-3">Field</th>
+                </tr>
+              </thead>
+              <tbody>
+                {matchLines.map((m) => {
+                  const fieldParts = [
+                    m.catches ? `${m.catches}c` : "",
+                    m.stumpings ? `${m.stumpings}st` : "",
+                    m.runOuts ? `${m.runOuts}ro` : "",
+                  ].filter(Boolean);
+                  return (
+                    <tr key={m.matchId} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="p-3 font-mono">
+                        {m.season != null
+                          ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
+                          : "—"}
+                      </td>
+                      <td className="p-3 font-mono">{m.round ?? "—"}</td>
+                      <td className="p-3">
+                        <GradeBadge grade={m.grade} size="sm" />
+                      </td>
+                      <td className="p-3">{m.opponent ?? "—"}</td>
+                      <td className="p-3 font-mono">
+                        {m.batted
+                          ? `${m.runs ?? 0}${m.notOut ? "*" : ""}${m.balls != null ? ` (${m.balls})` : ""}`
+                          : "—"}
+                      </td>
+                      <td className="p-3 font-mono">
+                        {m.bowled
+                          ? `${m.wickets ?? 0}/${m.runsConceded ?? 0}${m.overs ? ` (${m.overs})` : ""}`
+                          : "—"}
+                      </td>
+                      <td className="p-3 font-mono">{fieldParts.length ? fieldParts.join(" ") : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
