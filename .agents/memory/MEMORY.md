@@ -9,3 +9,4 @@
 - [Sponsor per-card-type filtering](sponsor-card-kind-filtering.md) — sponsors.cardKinds: empty=all; filter lives in the shared share-card modal (covers on-demand + queue); preview cache must include sponsor signature; picker must tolerate undefined.
 - [Card themes & player photos](card-themes-and-photos.md) — selectable card_themes (single-default enforced) + players.image_url drive branded share cards; photo placement decided per card kind; renderers degrade gracefully.
 - [Import delete rollback gaps](import-delete-rollback-gaps.md) — e2e season upload/commit/delete restores STATS tables exactly, but cap_register and new-player career totals are NOT rolled back on delete.
+- [A Grade 2025/26 baseline reversal](a-grade-2025-26-baseline-reversal.md) — subtracted 2025/26 out of season=NULL A Grade baseline so it can be re-imported per-match; 8 players zero out, only 3 named debutants lose caps; DEV only.
