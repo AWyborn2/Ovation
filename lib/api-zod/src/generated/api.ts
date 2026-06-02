@@ -508,6 +508,10 @@ export const UploadPlaycricketCsvResponse = zod.object({
   "rowsParsed": zod.number(),
   "matchedPlayers": zod.number(),
   "newPlayers": zod.number(),
+  "suggestedPlayers": zod.number().describe('Count of names with a fuzzy suggestion awaiting confirmation.'),
+  "debuts": zod.number().describe('Count of players who would earn a first cap on commit.'),
+  "capCategory": zod.union([zod.literal('male'),zod.literal('female'),zod.literal(null)]).nullable().describe('Cap category of the import\'s grade, or null if not cap-eligible.'),
+  "cappedPlayerIds": zod.array(zod.number()).describe('Player ids already holding a cap in `capCategory` (for live debut recompute).'),
   "unmappedGrades": zod.array(zod.string()),
   "gradeTotals": zod.array(zod.object({
   "grade": zod.string(),
@@ -519,8 +523,15 @@ export const UploadPlaycricketCsvResponse = zod.object({
   "players": zod.array(zod.object({
   "surname": zod.string(),
   "givenName": zod.string(),
-  "status": zod.enum(['matched', 'new']),
-  "playerId": zod.number().nullish()
+  "status": zod.enum(['matched', 'suggested', 'new']),
+  "playerId": zod.number().nullish(),
+  "candidates": zod.array(zod.object({
+  "playerId": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "reason": zod.string()
+}).describe('A likely the-same-person suggestion for a scorecard\/CSV name that has no\nexact roster match (first-name variant, nickname, or surname spelling).\nSurfaced for explicit admin confirmation; never linked automatically.\n')).describe('Suggested existing players when status is `suggested`.'),
+  "debut": zod.boolean().describe('True if committing would issue this player their first cap in the\nimport\'s cap-eligible grade (A Grade \/ Female A Grade).\n')
 }))
 })
 
@@ -531,6 +542,15 @@ export const UploadPlaycricketCsvResponse = zod.object({
 export const CommitImportParams = zod.object({
   "id": zod.coerce.number()
 })
+
+export const CommitImportBody = zod.object({
+  "resolutions": zod.array(zod.object({
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "action": zod.enum(['link', 'create']),
+  "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
+}).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional()
+}).describe('Optional per-name resolutions chosen in the preview. Names without a\nresolution fall back to exact-match-or-create.\n')
 
 export const CommitImportResponse = zod.object({
   "id": zod.number(),
@@ -590,12 +610,23 @@ export const UploadMatchScorecardResponse = zod.object({
   "matchExists": zod.boolean().describe('True if this grade+season+round was already imported.'),
   "matchedPlayers": zod.number(),
   "newPlayers": zod.number(),
+  "suggestedPlayers": zod.number().describe('Count of names with a fuzzy suggestion awaiting confirmation.'),
+  "debuts": zod.number().describe('Count of players who would earn a first cap on commit.'),
+  "capCategory": zod.union([zod.literal('male'),zod.literal('female'),zod.literal(null)]).nullable().describe('Cap category of the match\'s grade, or null if not cap-eligible.'),
+  "cappedPlayerIds": zod.array(zod.number()).describe('Player ids already holding a cap in `capCategory` (for live debut recompute).'),
   "warnings": zod.array(zod.string()),
   "players": zod.array(zod.object({
   "surname": zod.string(),
   "givenName": zod.string(),
-  "status": zod.enum(['matched', 'new']),
+  "status": zod.enum(['matched', 'suggested', 'new']),
   "playerId": zod.number().nullish(),
+  "candidates": zod.array(zod.object({
+  "playerId": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "reason": zod.string()
+}).describe('A likely the-same-person suggestion for a scorecard\/CSV name that has no\nexact roster match (first-name variant, nickname, or surname spelling).\nSurfaced for explicit admin confirmation; never linked automatically.\n')).describe('Suggested existing players when status is `suggested`.'),
+  "debut": zod.boolean().describe('True if committing would issue this player their first cap in the\nmatch\'s cap-eligible grade (A Grade \/ Female A Grade).\n'),
   "batted": zod.boolean(),
   "battingPos": zod.number().nullish(),
   "runs": zod.number().nullish(),

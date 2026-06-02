@@ -19,6 +19,24 @@ export const GRADE_TO_CAP_CATEGORY: Record<string, "male" | "female"> = {
   "Female A Grade": "female",
 };
 
+/**
+ * Player ids that already hold a cap in the given category. Used by the import
+ * preview to flag debuts: a player appearing in a cap-eligible grade who is NOT
+ * in this set will be issued their first cap on commit. Mirrors the
+ * `playerId`-based rule `syncCapsFromStats` uses to decide who needs a new cap.
+ */
+export async function getCappedPlayerIds(
+  category: "male" | "female",
+): Promise<Set<number>> {
+  const rows = await db
+    .select({ playerId: capRegisterTable.playerId })
+    .from(capRegisterTable)
+    .where(eq(capRegisterTable.category, category));
+  const ids = new Set<number>();
+  for (const r of rows) if (r.playerId != null) ids.add(r.playerId);
+  return ids;
+}
+
 export type CapSyncResult = {
   grade: string;
   category: "male" | "female";

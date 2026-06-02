@@ -11,5 +11,6 @@ export type MatchPreviewPlayerStatus = typeof MatchPreviewPlayerStatus[keyof typ
 
 export const MatchPreviewPlayerStatus = {
   matched: 'matched',
+  suggested: 'suggested',
   new: 'new',
 } as const;

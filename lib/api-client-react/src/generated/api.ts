@@ -32,6 +32,7 @@ import type {
   CardThemeInput,
   CardThemeUpdate,
   ClubRecords,
+  CommitImportInput,
   CommitImportResult,
   Dashboard,
   ErrorEnvelope,
@@ -1400,14 +1401,16 @@ export const getCommitImportUrl = (id: number,) => {
 /**
  * @summary Commit a previously-previewed import
  */
-export const commitImport = async (id: number, options?: RequestInit): Promise<CommitImportResult> => {
+export const commitImport = async (id: number,
+    commitImportInput?: CommitImportInput, options?: RequestInit): Promise<CommitImportResult> => {
 
   return customFetch<CommitImportResult>(getCommitImportUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      commitImportInput,)
   }
 );}
 
@@ -1415,8 +1418,8 @@ export const commitImport = async (id: number, options?: RequestInit): Promise<C
 
 
 export const getCommitImportMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number;data?: BodyType<CommitImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number;data?: BodyType<CommitImportInput>}, TContext> => {
 
 const mutationKey = ['commitImport'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1428,10 +1431,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitImport>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitImport>>, {id: number;data?: BodyType<CommitImportInput>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  commitImport(id,requestOptions)
+          return  commitImport(id,data,requestOptions)
         }
 
 
@@ -1442,18 +1445,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CommitImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitImport>>>
-
+    export type CommitImportMutationBody = BodyType<CommitImportInput> | undefined
     export type CommitImportMutationError = ErrorType<void>
 
     /**
  * @summary Commit a previously-previewed import
  */
 export const useCommitImport = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitImport>>, TError,{id: number;data?: BodyType<CommitImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof commitImport>>,
         TError,
-        {id: number},
+        {id: number;data?: BodyType<CommitImportInput>},
         TContext
       > => {
       return useMutation(getCommitImportMutationOptions(options));

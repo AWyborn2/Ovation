@@ -12,26 +12,105 @@ import {
   getListGradesQueryKey,
   getGetRecordsQueryKey,
 } from "@workspace/api-client-react";
-import type { MatchImportPreview } from "@workspace/api-client-react";
+import type {
+  ImportPreview,
+  MatchImportPreview,
+  NameMatchCandidate,
+  PlayerResolution,
+} from "@workspace/api-client-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
+import {
+  PlayerTypeahead,
+  type SelectedPlayer,
+} from "@/components/player-typeahead";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-type CsvPreview = {
-  importId: number;
-  filename: string;
-  season: number;
-  rowsParsed: number;
-  matchedPlayers: number;
-  newPlayers: number;
-  unmappedGrades: string[];
-  gradeTotals: Array<{ grade: string; rows: number; games: number; runs: number; wickets: number }>;
-  players: Array<{ surname: string; givenName: string; status: "matched" | "new"; playerId: number | null }>;
-};
-
 type Mode = "csv" | "match";
+
+/** An admin's decision for a previewed name, held in local state. */
+type RowResolution =
+  | { action: "link"; player: SelectedPlayer }
+  | { action: "create" };
+
+/**
+ * Normalise a name part the same way the server's `nameKey` does (lowercase,
+ * strip accents and any non-letter characters) so a row's resolution lines up
+ * with the parsed row the server resolves it against. Keeping this in sync
+ * prevents punctuation/diacritic variants (e.g. "O'Brien" vs "Obrien") from
+ * holding divergent UI state that the server would silently collapse.
+ */
+const normName = (s: string) =>
+  s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+
+/** A stable key for a previewed name, used to index resolution state. */
+const rowKey = (surname: string, givenName: string) =>
+  `${normName(surname)}|${normName(givenName)}`;
+
+/**
+ * The player id a row would resolve to given the admin's current choice, or
+ * null when it would create a brand-new player. Used for live debut recompute.
+ */
+function resolvedPlayerId(
+  status: "matched" | "suggested" | "new",
+  playerId: number | null | undefined,
+  candidates: NameMatchCandidate[],
+  resolution: RowResolution | undefined,
+): number | null {
+  if (resolution) return resolution.action === "link" ? resolution.player.id : null;
+  if (status === "matched") return playerId ?? null;
+  if (status === "suggested") return candidates[0]?.playerId ?? null;
+  return null;
+}
+
+/**
+ * Whether a row is a debut: cap-eligible import and the resolved player holds
+ * no existing cap in the category (a new player always debuts).
+ */
+function isDebut(
+  capCategory: string | null,
+  cappedIds: Set<number>,
+  resolvedId: number | null,
+): boolean {
+  if (capCategory == null) return false;
+  return resolvedId == null || !cappedIds.has(resolvedId);
+}
+
+/** Count `suggested` rows the admin has not yet decided (link or create). */
+function unresolvedSuggestions(
+  players: Array<{ surname: string; givenName: string; status: string }>,
+  map: Record<string, RowResolution>,
+): number {
+  let n = 0;
+  for (const p of players) {
+    if (p.status === "suggested" && !map[rowKey(p.surname, p.givenName)]) n++;
+  }
+  return n;
+}
+
+/** Build the commit body from the admin's resolution choices. */
+function buildResolutions(
+  map: Record<string, RowResolution>,
+  players: Array<{ surname: string; givenName: string }>,
+): PlayerResolution[] {
+  const out: PlayerResolution[] = [];
+  for (const p of players) {
+    const r = map[rowKey(p.surname, p.givenName)];
+    if (!r) continue;
+    if (r.action === "link") {
+      out.push({ surname: p.surname, givenName: p.givenName, action: "link", playerId: r.player.id });
+    } else {
+      out.push({ surname: p.surname, givenName: p.givenName, action: "create" });
+    }
+  }
+  return out;
+}
 
 const GRADES = [
   "A Grade",
@@ -63,11 +142,36 @@ export default function AdminImport() {
   const [mode, setMode] = useState<Mode>("csv");
   const [file, setFile] = useState<File | null>(null);
   const [season, setSeason] = useState<number>(new Date().getFullYear());
-  const [preview, setPreview] = useState<CsvPreview | null>(null);
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [matchPreview, setMatchPreview] = useState<MatchImportPreview | null>(null);
+  const [resolutions, setResolutions] = useState<Record<string, RowResolution>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [committed, setCommitted] = useState<{ label: string } | null>(null);
+
+  const setRowResolution = (key: string, r: RowResolution | undefined) =>
+    setResolutions((prev) => {
+      if (!r) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: r };
+    });
+
+  /** Seed default resolutions: `new` rows default to create; `suggested` rows
+   * are left undecided so the admin must confirm a link or a create. */
+  const seedResolutions = (
+    players: Array<{ surname: string; givenName: string; status: string }>,
+  ) => {
+    const seed: Record<string, RowResolution> = {};
+    for (const p of players) {
+      if (p.status === "new") {
+        seed[rowKey(p.surname, p.givenName)] = { action: "create" };
+      }
+    }
+    setResolutions(seed);
+  };
 
   const { data: imports, refetch: refetchImports } = useListImports();
   const commit = useCommitImport();
@@ -85,6 +189,7 @@ export default function AdminImport() {
   const resetPreviews = () => {
     setPreview(null);
     setMatchPreview(null);
+    setResolutions({});
     setFile(null);
   };
 
@@ -122,7 +227,9 @@ export default function AdminImport() {
         setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
         return;
       }
-      setPreview(body as CsvPreview);
+      const data = body as ImportPreview;
+      setPreview(data);
+      seedResolutions(data.players);
       refetchImports();
     } catch (err) {
       setError((err as Error).message);
@@ -157,7 +264,9 @@ export default function AdminImport() {
         setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
         return;
       }
-      setMatchPreview(body as MatchImportPreview);
+      const data = body as MatchImportPreview;
+      setMatchPreview(data);
+      seedResolutions(data.players);
       refetchImports();
     } catch (err) {
       setError((err as Error).message);
@@ -179,7 +288,10 @@ export default function AdminImport() {
   const onConfirmCsv = () => {
     if (!preview) return;
     commit.mutate(
-      { id: preview.importId },
+      {
+        id: preview.importId,
+        data: { resolutions: buildResolutions(resolutions, preview.players) },
+      },
       {
         onSuccess: () => {
           setCommitted({ label: `the ${seasonLabel(preview.season)} season` });
@@ -197,7 +309,10 @@ export default function AdminImport() {
   const onConfirmMatch = () => {
     if (!matchPreview) return;
     commit.mutate(
-      { id: matchPreview.importId },
+      {
+        id: matchPreview.importId,
+        data: { resolutions: buildResolutions(resolutions, matchPreview.players) },
+      },
       {
         onSuccess: () => {
           const r = matchPreview.round != null ? `Round ${matchPreview.round}, ` : "";
@@ -371,10 +486,17 @@ export default function AdminImport() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat label="Rows parsed" value={preview.rowsParsed} />
-              <Stat label="Season" value={seasonLabel(preview.season)} />
               <Stat label="Matched players" value={preview.matchedPlayers} />
+              <Stat label="Suggested" value={preview.suggestedPlayers} />
               <Stat label="New players" value={preview.newPlayers} />
             </div>
+            {preview.capCategory && (
+              <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+                This is a cap-eligible grade ({preview.capCategory}). Players earning
+                their first cap are flagged{" "}
+                <DebutBadge /> below.
+              </div>
+            )}
 
             {preview.unmappedGrades.length > 0 && (
               <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm">
@@ -414,32 +536,54 @@ export default function AdminImport() {
 
             <div>
               <h3 className="font-semibold mb-2">Players in this CSV</h3>
-              <div className="max-h-72 overflow-y-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {preview.players.map((p, i) => (
-                      <tr key={i} className="border-b last:border-0">
-                        <td className="py-2 px-3">
-                          {p.surname}, {p.givenName}
-                        </td>
-                        <td className="py-2 px-3 text-right">
-                          {p.status === "matched" ? (
-                            <span className="text-green-700 dark:text-green-400">matched</span>
-                          ) : (
-                            <span className="text-blue-700 dark:text-blue-400">will create</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {preview.suggestedPlayers > 0 && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  Some names look like existing players. Confirm a link or choose to
+                  create a new player for each suggestion before applying.
+                </p>
+              )}
+              <div className="max-h-96 overflow-y-auto rounded-md border divide-y">
+                {preview.players.map((p, i) => (
+                  <PlayerResolutionRow
+                    key={i}
+                    surname={p.surname}
+                    givenName={p.givenName}
+                    status={p.status}
+                    candidates={p.candidates}
+                    resolution={resolutions[rowKey(p.surname, p.givenName)]}
+                    onChange={(r) => setRowResolution(rowKey(p.surname, p.givenName), r)}
+                    debut={isDebut(
+                      preview.capCategory,
+                      new Set(preview.cappedPlayerIds),
+                      resolvedPlayerId(
+                        p.status,
+                        p.playerId,
+                        p.candidates,
+                        resolutions[rowKey(p.surname, p.givenName)],
+                      ),
+                    )}
+                  />
+                ))}
               </div>
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
+            {unresolvedSuggestions(preview.players, resolutions) > 0 && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                {unresolvedSuggestions(preview.players, resolutions)} suggested name(s)
+                still need a decision before you can apply.
+              </p>
+            )}
+
             <div className="flex gap-3">
-              <Button onClick={onConfirmCsv} disabled={commit.isPending}>
+              <Button
+                onClick={onConfirmCsv}
+                disabled={
+                  commit.isPending ||
+                  unresolvedSuggestions(preview.players, resolutions) > 0
+                }
+              >
                 {commit.isPending ? "Applying…" : "Confirm & Apply"}
               </Button>
               <Button variant="outline" onClick={onCancelPreview} disabled={del.isPending}>
@@ -488,77 +632,107 @@ export default function AdminImport() {
 
             {!matchPreview.abandoned && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Stat label="Players" value={matchPreview.players.length} />
                 <Stat label="Matched" value={matchPreview.matchedPlayers} />
+                <Stat label="Suggested" value={matchPreview.suggestedPlayers} />
                 <Stat label="New players" value={matchPreview.newPlayers} />
                 <Stat label="Venue" value={matchPreview.venue ?? "—"} />
+              </div>
+            )}
+
+            {matchPreview.capCategory && (
+              <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+                This is a cap-eligible grade ({matchPreview.capCategory}). Players
+                earning their first cap are flagged <DebutBadge /> below.
               </div>
             )}
 
             {matchPreview.players.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">Player lines</h3>
-                <div className="max-h-80 overflow-y-auto rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left border-b">
-                        <th className="py-2 px-3">Player</th>
-                        <th className="py-2 px-3">Batting</th>
-                        <th className="py-2 px-3">Bowling</th>
-                        <th className="py-2 px-3">Field</th>
-                        <th className="py-2 px-3 text-right"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {matchPreview.players.map((p, i) => (
-                        <tr key={i} className="border-b last:border-0">
-                          <td className="py-2 px-3">
-                            {p.surname}, {p.givenName}
-                          </td>
-                          <td className="py-2 px-3">
-                            {p.batted
-                              ? `${p.runs ?? 0}${p.notOut ? "*" : ""}${
-                                  p.balls != null ? ` (${p.balls})` : ""
-                                }`
-                              : "—"}
-                          </td>
-                          <td className="py-2 px-3">
-                            {p.bowled
-                              ? `${p.wickets ?? 0}/${p.runsConceded ?? 0}${
-                                  p.overs ? ` (${p.overs})` : ""
-                                }`
-                              : "—"}
-                          </td>
-                          <td className="py-2 px-3">
-                            {p.catches + p.stumpings + p.runOuts > 0
-                              ? [
-                                  p.catches ? `${p.catches}c` : "",
-                                  p.stumpings ? `${p.stumpings}st` : "",
-                                  p.runOuts ? `${p.runOuts}ro` : "",
-                                ]
-                                  .filter(Boolean)
-                                  .join(" ")
-                              : "—"}
-                          </td>
-                          <td className="py-2 px-3 text-right">
-                            {p.status === "matched" ? (
-                              <span className="text-green-700 dark:text-green-400">matched</span>
-                            ) : (
-                              <span className="text-blue-700 dark:text-blue-400">will create</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {matchPreview.suggestedPlayers > 0 && (
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Some names look like existing players. Confirm a link or choose to
+                    create a new player for each suggestion before applying.
+                  </p>
+                )}
+                <div className="max-h-96 overflow-y-auto rounded-md border divide-y">
+                  {matchPreview.players.map((p, i) => {
+                    const bat = p.batted
+                      ? `${p.runs ?? 0}${p.notOut ? "*" : ""}${
+                          p.balls != null ? ` (${p.balls})` : ""
+                        }`
+                      : null;
+                    const bowl = p.bowled
+                      ? `${p.wickets ?? 0}/${p.runsConceded ?? 0}${
+                          p.overs ? ` (${p.overs})` : ""
+                        }`
+                      : null;
+                    const field =
+                      p.catches + p.stumpings + p.runOuts > 0
+                        ? [
+                            p.catches ? `${p.catches}c` : "",
+                            p.stumpings ? `${p.stumpings}st` : "",
+                            p.runOuts ? `${p.runOuts}ro` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                        : null;
+                    return (
+                      <PlayerResolutionRow
+                        key={i}
+                        surname={p.surname}
+                        givenName={p.givenName}
+                        status={p.status}
+                        candidates={p.candidates}
+                        resolution={resolutions[rowKey(p.surname, p.givenName)]}
+                        onChange={(r) =>
+                          setRowResolution(rowKey(p.surname, p.givenName), r)
+                        }
+                        meta={
+                          <span className="text-xs text-muted-foreground">
+                            {[
+                              bat ? `Bat ${bat}` : null,
+                              bowl ? `Bowl ${bowl}` : null,
+                              field ? `Field ${field}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "Did not bat/bowl/field"}
+                          </span>
+                        }
+                        debut={isDebut(
+                          matchPreview.capCategory,
+                          new Set(matchPreview.cappedPlayerIds),
+                          resolvedPlayerId(
+                            p.status,
+                            p.playerId,
+                            p.candidates,
+                            resolutions[rowKey(p.surname, p.givenName)],
+                          ),
+                        )}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
+            {unresolvedSuggestions(matchPreview.players, resolutions) > 0 && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                {unresolvedSuggestions(matchPreview.players, resolutions)} suggested
+                name(s) still need a decision before you can apply.
+              </p>
+            )}
+
             <div className="flex gap-3">
-              <Button onClick={onConfirmMatch} disabled={commit.isPending}>
+              <Button
+                onClick={onConfirmMatch}
+                disabled={
+                  commit.isPending ||
+                  unresolvedSuggestions(matchPreview.players, resolutions) > 0
+                }
+              >
                 {commit.isPending
                   ? "Applying…"
                   : matchPreview.matchExists
@@ -746,6 +920,150 @@ function Stat({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-md border p-3">
       <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="text-2xl font-serif">{value}</div>
+    </div>
+  );
+}
+
+function DebutBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+      Debut
+    </span>
+  );
+}
+
+/**
+ * One previewed name with its match status and the controls an admin uses to
+ * resolve it: confirm a suggested link, link to a different existing player, or
+ * create a new player. Matched names need no decision.
+ */
+function PlayerResolutionRow({
+  surname,
+  givenName,
+  status,
+  candidates,
+  resolution,
+  onChange,
+  debut,
+  meta,
+}: {
+  surname: string;
+  givenName: string;
+  status: "matched" | "suggested" | "new";
+  candidates: NameMatchCandidate[];
+  resolution: RowResolution | undefined;
+  onChange: (r: RowResolution | undefined) => void;
+  debut: boolean;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">
+            {surname}, {givenName}
+          </span>
+          {debut && <DebutBadge />}
+        </div>
+        {meta && <div className="mt-0.5">{meta}</div>}
+      </div>
+      <div className="sm:text-right sm:min-w-[18rem]">
+        {status === "matched" ? (
+          <span className="text-sm text-green-700 dark:text-green-400">
+            matched to existing player
+          </span>
+        ) : resolution?.action === "link" ? (
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <span className="text-sm">
+              Link to{" "}
+              <span className="font-semibold">
+                {resolution.player.surname}, {resolution.player.givenName}
+              </span>{" "}
+              <span className="text-muted-foreground">#{resolution.player.id}</span>
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onChange(status === "new" ? { action: "create" } : undefined)}
+            >
+              Change
+            </Button>
+          </div>
+        ) : resolution?.action === "create" && status === "new" ? (
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            <span className="text-sm text-blue-700 dark:text-blue-400">
+              will create new player
+            </span>
+            <div className="w-full sm:w-72">
+              <PlayerTypeahead
+                value={null}
+                placeholder="Or link to an existing player…"
+                onChange={(p) => p && onChange({ action: "link", player: p })}
+              />
+            </div>
+          </div>
+        ) : (
+          // suggested + undecided
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            {candidates.length > 0 && (
+              <div className="flex flex-col items-stretch gap-1 sm:items-end">
+                {candidates.map((c) => (
+                  <Button
+                    key={c.playerId}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="justify-start sm:justify-end"
+                    onClick={() =>
+                      onChange({
+                        action: "link",
+                        player: {
+                          id: c.playerId,
+                          surname: c.surname,
+                          givenName: c.givenName,
+                        },
+                      })
+                    }
+                  >
+                    Link to {c.surname}, {c.givenName} ({c.reason})
+                  </Button>
+                ))}
+              </div>
+            )}
+            <div className="w-full sm:w-72">
+              <PlayerTypeahead
+                value={null}
+                placeholder="Search a different player…"
+                onChange={(p) => p && onChange({ action: "link", player: p })}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onChange({ action: "create" })}
+            >
+              Create new player instead
+            </Button>
+          </div>
+        )}
+        {resolution?.action === "create" && status === "suggested" && (
+          <div className="mt-1 flex items-center gap-2 sm:justify-end">
+            <span className="text-sm text-blue-700 dark:text-blue-400">
+              will create new player
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onChange(undefined)}
+            >
+              Change
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -16,7 +16,18 @@ import {
   type ParsedMatch,
 } from "../lib/match-scorecard";
 import { recomputeAggregates } from "../lib/recompute";
-import { syncCapsFromStats, type CapSyncResult } from "../lib/cap-sync";
+import {
+  syncCapsFromStats,
+  getCappedPlayerIds,
+  GRADE_TO_CAP_CATEGORY,
+  type CapSyncResult,
+} from "../lib/cap-sync";
+import {
+  buildNameMatcher,
+  nameKey,
+  type NameCandidate,
+  type RosterPlayer,
+} from "../lib/name-match";
 import { deriveSeasonSnapshotFromMatches } from "../lib/match-aggregate";
 import {
   snapshotCareerTotals,
@@ -38,6 +49,48 @@ const upload = multer({
 });
 
 type MulterRequest = Request & { file?: Express.Multer.File };
+
+/** An admin's per-name decision sent in the commit body. */
+type PlayerResolution =
+  | { action: "link"; playerId: number }
+  | { action: "create" };
+
+/**
+ * Parse the optional `resolutions` array from a commit request body into a map
+ * keyed by the canonical name key, so the parsed row a resolution refers to can
+ * be looked up unambiguously. Invalid/partial entries are ignored.
+ */
+function buildResolutionMap(body: unknown): Map<string, PlayerResolution> {
+  const map = new Map<string, PlayerResolution>();
+  const list = (body as { resolutions?: unknown } | null)?.resolutions;
+  if (!Array.isArray(list)) return map;
+  for (const r of list) {
+    if (!r || typeof r !== "object") continue;
+    const { surname, givenName, action, playerId } = r as Record<
+      string,
+      unknown
+    >;
+    if (typeof surname !== "string" || typeof givenName !== "string") continue;
+    const key = nameKey(surname, givenName);
+    if (action === "link" && typeof playerId === "number") {
+      map.set(key, { action: "link", playerId });
+    } else if (action === "create") {
+      map.set(key, { action: "create" });
+    }
+  }
+  return map;
+}
+
+/** Load the full roster as matcher input. */
+async function loadRoster(): Promise<RosterPlayer[]> {
+  return db
+    .select({
+      id: playersTable.id,
+      surname: playersTable.surname,
+      givenName: playersTable.givenName,
+    })
+    .from(playersTable);
+}
 
 router.get("/imports", async (_req, res): Promise<void> => {
   const rows = await db
@@ -93,36 +146,61 @@ router.post(
       return;
     }
 
-    // Match against existing players (case-insensitive surname+givenName).
-    const allPlayers = await db
-      .select({ id: playersTable.id, surname: playersTable.surname, givenName: playersTable.givenName })
-      .from(playersTable);
-    const playerByKey = new Map<string, number>();
-    for (const p of allPlayers) {
-      playerByKey.set(`${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`, p.id);
-    }
+    // For now we assume a single-grade CSV (the PlayCricket export is per-grade).
+    // If multiple grades appear, we still proceed and record `grade=null` on the
+    // import row, but each snapshot row is keyed by its own grade.
+    const importGrade = parsed.grades.length === 1 ? parsed.grades[0] : null;
+
+    // Cap-eligibility for debut detection (A Grade / Female A Grade only).
+    const capCategory = importGrade
+      ? (GRADE_TO_CAP_CATEGORY[importGrade] ?? null)
+      : null;
+    const cappedIds = capCategory
+      ? await getCappedPlayerIds(capCategory)
+      : new Set<number>();
+
+    // Match parsed names against the roster: exact, fuzzy suggestion, or new.
+    const matcher = buildNameMatcher(await loadRoster());
 
     const previewPlayers: Array<{
       surname: string;
       givenName: string;
-      status: "matched" | "new";
+      status: "matched" | "suggested" | "new";
       playerId: number | null;
+      candidates: NameCandidate[];
+      debut: boolean;
     }> = [];
     const seenKeys = new Set<string>();
     let matched = 0;
+    let suggested = 0;
     let created = 0;
+    let debuts = 0;
     for (const row of parsed.rows) {
-      const key = `${row.surname.toLowerCase()}|${row.givenName.toLowerCase()}`;
+      const key = nameKey(row.surname, row.givenName);
       if (seenKeys.has(key)) continue;
       seenKeys.add(key);
-      const existing = playerByKey.get(key);
-      if (existing) {
-        matched++;
-        previewPlayers.push({ surname: row.surname, givenName: row.givenName, status: "matched", playerId: existing });
-      } else {
-        created++;
-        previewPlayers.push({ surname: row.surname, givenName: row.givenName, status: "new", playerId: null });
-      }
+      const m = matcher.resolve(row.surname, row.givenName);
+      if (m.status === "matched") matched++;
+      else if (m.status === "suggested") suggested++;
+      else created++;
+      // Best-guess resolved id for the initial debut flag: the exact match, the
+      // top suggestion, or null (a brand-new player is always a debut).
+      const resolvedId =
+        m.status === "matched"
+          ? m.playerId
+          : (m.candidates[0]?.playerId ?? null);
+      const debut =
+        capCategory != null &&
+        (resolvedId == null || !cappedIds.has(resolvedId));
+      if (debut) debuts++;
+      previewPlayers.push({
+        surname: row.surname,
+        givenName: row.givenName,
+        status: m.status,
+        playerId: m.status === "matched" ? m.playerId : null,
+        candidates: m.candidates,
+        debut,
+      });
     }
 
     const gradeTotalsMap = new Map<string, { rows: number; games: number; runs: number; wickets: number }>();
@@ -137,11 +215,6 @@ router.post(
     const gradeTotals = Array.from(gradeTotalsMap.entries())
       .map(([grade, v]) => ({ grade, ...v }))
       .sort((a, b) => a.grade.localeCompare(b.grade));
-
-    // For now we assume a single-grade CSV (the PlayCricket export is per-grade).
-    // If multiple grades appear, we still proceed and record `grade=null` on the
-    // import row, but each snapshot row is keyed by its own grade.
-    const importGrade = parsed.grades.length === 1 ? parsed.grades[0] : null;
 
     const [imp] = await db
       .insert(importsTable)
@@ -162,6 +235,10 @@ router.post(
       rowsParsed: parsed.rows.length,
       matchedPlayers: matched,
       newPlayers: created,
+      suggestedPlayers: suggested,
+      debuts,
+      capCategory,
+      cappedPlayerIds: [...cappedIds],
       unmappedGrades: parsed.unmappedGrades,
       gradeTotals,
       players: previewPlayers,
@@ -203,27 +280,42 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
   }
   const season = imp.season;
 
+  // Admin's per-name resolutions chosen in the preview (link to existing player
+  // or create new). Names without a resolution fall back to exact-match-or-create.
+  const resolutions = buildResolutionMap(req.body);
+
   // Resolve / create players. Done outside the transaction is fine — newly
   // created players that aren't subsequently used are harmless.
-  const allPlayers = await db
-    .select({ id: playersTable.id, surname: playersTable.surname, givenName: playersTable.givenName })
-    .from(playersTable);
+  const allPlayers = await loadRoster();
   const playerByKey = new Map<string, number>();
   for (const p of allPlayers) {
-    playerByKey.set(`${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`, p.id);
+    playerByKey.set(nameKey(p.surname, p.givenName), p.id);
   }
+  // Created-player cache so the same name across multiple rows reuses one id.
+  const createdByKey = new Map<string, number>();
+  const createPlayer = async (surname: string, givenName: string, key: string) => {
+    const cached = createdByKey.get(key);
+    if (cached != null) return cached;
+    const [created] = await db
+      .insert(playersTable)
+      .values({ surname, givenName })
+      .returning({ id: playersTable.id });
+    createdByKey.set(key, created.id);
+    return created.id;
+  };
 
   const resolved: Array<ParsedCsvRow & { playerId: number }> = [];
   for (const r of rows) {
-    const key = `${r.surname.toLowerCase()}|${r.givenName.toLowerCase()}`;
-    let pid = playerByKey.get(key);
-    if (!pid) {
-      const [created] = await db
-        .insert(playersTable)
-        .values({ surname: r.surname, givenName: r.givenName })
-        .returning({ id: playersTable.id });
-      pid = created.id;
-      playerByKey.set(key, pid);
+    const key = nameKey(r.surname, r.givenName);
+    const resolution = resolutions.get(key);
+    let pid: number;
+    if (resolution?.action === "link") {
+      pid = resolution.playerId;
+    } else if (resolution?.action === "create") {
+      pid = await createPlayer(r.surname, r.givenName, key);
+    } else {
+      // No explicit resolution: exact match, else create.
+      pid = playerByKey.get(key) ?? (await createPlayer(r.surname, r.givenName, key));
     }
     resolved.push({ ...r, playerId: pid });
   }
@@ -378,40 +470,45 @@ router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
 type MatchCommitReq = Request & { log: import("pino").Logger };
 
 /**
- * Resolve every parsed match player to a player id, creating new players as
- * needed. Returns the parsed players augmented with their `playerId`.
+ * Resolve every parsed match player to a player id, honouring the admin's
+ * preview resolutions (link to existing / create new); names without a
+ * resolution fall back to exact-match-or-create. Returns the parsed players
+ * augmented with their `playerId`.
  */
 async function resolveMatchPlayers(
   players: ParsedMatch["players"],
+  resolutions: Map<string, PlayerResolution>,
 ): Promise<Array<ParsedMatch["players"][number] & { playerId: number }>> {
-  const allPlayers = await db
-    .select({
-      id: playersTable.id,
-      surname: playersTable.surname,
-      givenName: playersTable.givenName,
-    })
-    .from(playersTable);
+  const allPlayers = await loadRoster();
   const playerByKey = new Map<string, number>();
   for (const p of allPlayers) {
-    playerByKey.set(
-      `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`,
-      p.id,
-    );
+    playerByKey.set(nameKey(p.surname, p.givenName), p.id);
   }
+  const createdByKey = new Map<string, number>();
+  const createPlayer = async (surname: string, givenName: string, key: string) => {
+    const cached = createdByKey.get(key);
+    if (cached != null) return cached;
+    const [created] = await db
+      .insert(playersTable)
+      .values({ surname, givenName })
+      .returning({ id: playersTable.id });
+    createdByKey.set(key, created.id);
+    return created.id;
+  };
 
   const resolved: Array<
     ParsedMatch["players"][number] & { playerId: number }
   > = [];
   for (const p of players) {
-    const key = `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`;
-    let pid = playerByKey.get(key);
-    if (!pid) {
-      const [created] = await db
-        .insert(playersTable)
-        .values({ surname: p.surname, givenName: p.givenName })
-        .returning({ id: playersTable.id });
-      pid = created.id;
-      playerByKey.set(key, pid);
+    const key = nameKey(p.surname, p.givenName);
+    const resolution = resolutions.get(key);
+    let pid: number;
+    if (resolution?.action === "link") {
+      pid = resolution.playerId;
+    } else if (resolution?.action === "create") {
+      pid = await createPlayer(p.surname, p.givenName, key);
+    } else {
+      pid = playerByKey.get(key) ?? (await createPlayer(p.surname, p.givenName, key));
     }
     resolved.push({ ...p, playerId: pid });
   }
@@ -446,34 +543,41 @@ router.post(
       return;
     }
 
-    // Match parsed players against the roster (case-insensitive surname+given).
-    const allPlayers = await db
-      .select({
-        id: playersTable.id,
-        surname: playersTable.surname,
-        givenName: playersTable.givenName,
-      })
-      .from(playersTable);
-    const playerByKey = new Map<string, number>();
-    for (const p of allPlayers) {
-      playerByKey.set(
-        `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`,
-        p.id,
-      );
-    }
+    // Cap-eligibility for debut detection (A Grade / Female A Grade only).
+    const capCategory = parsed.grade
+      ? (GRADE_TO_CAP_CATEGORY[parsed.grade] ?? null)
+      : null;
+    const cappedIds = capCategory
+      ? await getCappedPlayerIds(capCategory)
+      : new Set<number>();
+
+    // Match parsed players against the roster: exact, fuzzy suggestion, or new.
+    const matcher = buildNameMatcher(await loadRoster());
 
     let matched = 0;
+    let suggested = 0;
     let created = 0;
+    let debuts = 0;
     const previewPlayers = parsed.players.map((p) => {
-      const key = `${p.surname.toLowerCase()}|${p.givenName.toLowerCase()}`;
-      const existing = playerByKey.get(key) ?? null;
-      if (existing) matched++;
+      const m = matcher.resolve(p.surname, p.givenName);
+      if (m.status === "matched") matched++;
+      else if (m.status === "suggested") suggested++;
       else created++;
+      const resolvedId =
+        m.status === "matched"
+          ? m.playerId
+          : (m.candidates[0]?.playerId ?? null);
+      const debut =
+        capCategory != null &&
+        (resolvedId == null || !cappedIds.has(resolvedId));
+      if (debut) debuts++;
       return {
         surname: p.surname,
         givenName: p.givenName,
-        status: existing ? ("matched" as const) : ("new" as const),
-        playerId: existing,
+        status: m.status,
+        playerId: m.status === "matched" ? m.playerId : null,
+        candidates: m.candidates,
+        debut,
         batted: p.batted,
         battingPos: p.battingPos ?? null,
         runs: p.runs ?? null,
@@ -551,6 +655,10 @@ router.post(
       matchExists,
       matchedPlayers: matched,
       newPlayers: created,
+      suggestedPlayers: suggested,
+      debuts,
+      capCategory,
+      cappedPlayerIds: [...cappedIds],
       warnings,
       players: previewPlayers,
     });
@@ -578,7 +686,8 @@ async function commitMatchImport(
     return;
   }
 
-  const resolvedLines = await resolveMatchPlayers(parsed.players);
+  const resolutions = buildResolutionMap(req.body);
+  const resolvedLines = await resolveMatchPlayers(parsed.players, resolutions);
 
   const beforeMap = await snapshotCareerTotals();
   // Per-grade game counts before the commit — debut detection compares these to

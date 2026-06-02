@@ -289,11 +289,25 @@ export interface CommitImportResult {
   capsSync: CapSyncSummary[];
 }
 
+/**
+ * A likely the-same-person suggestion for a scorecard/CSV name that has no
+exact roster match (first-name variant, nickname, or surname spelling).
+Surfaced for explicit admin confirmation; never linked automatically.
+
+ */
+export interface NameMatchCandidate {
+  playerId: number;
+  surname: string;
+  givenName: string;
+  reason: string;
+}
+
 export type ImportPreviewPlayerStatus = typeof ImportPreviewPlayerStatus[keyof typeof ImportPreviewPlayerStatus];
 
 
 export const ImportPreviewPlayerStatus = {
   matched: 'matched',
+  suggested: 'suggested',
   new: 'new',
 } as const;
 
@@ -303,6 +317,12 @@ export interface ImportPreviewPlayer {
   status: ImportPreviewPlayerStatus;
   /** @nullable */
   playerId?: number | null;
+  /** Suggested existing players when status is `suggested`. */
+  candidates: NameMatchCandidate[];
+  /** True if committing would issue this player their first cap in the
+  import's cap-eligible grade (A Grade / Female A Grade).
+   */
+  debut: boolean;
 }
 
 export interface ImportPreviewGradeTotal {
@@ -313,6 +333,18 @@ export interface ImportPreviewGradeTotal {
   wickets: number;
 }
 
+/**
+ * Cap category of the import's grade, or null if not cap-eligible.
+ * @nullable
+ */
+export type ImportPreviewCapCategory = typeof ImportPreviewCapCategory[keyof typeof ImportPreviewCapCategory] | null;
+
+
+export const ImportPreviewCapCategory = {
+  male: 'male',
+  female: 'female',
+} as const;
+
 export interface ImportPreview {
   importId: number;
   filename: string;
@@ -320,6 +352,17 @@ export interface ImportPreview {
   rowsParsed: number;
   matchedPlayers: number;
   newPlayers: number;
+  /** Count of names with a fuzzy suggestion awaiting confirmation. */
+  suggestedPlayers: number;
+  /** Count of players who would earn a first cap on commit. */
+  debuts: number;
+  /**
+     * Cap category of the import's grade, or null if not cap-eligible.
+     * @nullable
+     */
+  capCategory: ImportPreviewCapCategory;
+  /** Player ids already holding a cap in `capCategory` (for live debut recompute). */
+  cappedPlayerIds: number[];
   unmappedGrades: string[];
   gradeTotals: ImportPreviewGradeTotal[];
   players: ImportPreviewPlayer[];
@@ -330,6 +373,7 @@ export type MatchPreviewPlayerStatus = typeof MatchPreviewPlayerStatus[keyof typ
 
 export const MatchPreviewPlayerStatus = {
   matched: 'matched',
+  suggested: 'suggested',
   new: 'new',
 } as const;
 
@@ -339,6 +383,12 @@ export interface MatchPreviewPlayer {
   status: MatchPreviewPlayerStatus;
   /** @nullable */
   playerId?: number | null;
+  /** Suggested existing players when status is `suggested`. */
+  candidates: NameMatchCandidate[];
+  /** True if committing would issue this player their first cap in the
+  match's cap-eligible grade (A Grade / Female A Grade).
+   */
+  debut: boolean;
   batted: boolean;
   /** @nullable */
   battingPos?: number | null;
@@ -360,6 +410,18 @@ export interface MatchPreviewPlayer {
   stumpings: number;
   runOuts: number;
 }
+
+/**
+ * Cap category of the match's grade, or null if not cap-eligible.
+ * @nullable
+ */
+export type MatchImportPreviewCapCategory = typeof MatchImportPreviewCapCategory[keyof typeof MatchImportPreviewCapCategory] | null;
+
+
+export const MatchImportPreviewCapCategory = {
+  male: 'male',
+  female: 'female',
+} as const;
 
 export interface MatchImportPreview {
   importId: number;
@@ -389,8 +451,52 @@ export interface MatchImportPreview {
   matchExists: boolean;
   matchedPlayers: number;
   newPlayers: number;
+  /** Count of names with a fuzzy suggestion awaiting confirmation. */
+  suggestedPlayers: number;
+  /** Count of players who would earn a first cap on commit. */
+  debuts: number;
+  /**
+     * Cap category of the match's grade, or null if not cap-eligible.
+     * @nullable
+     */
+  capCategory: MatchImportPreviewCapCategory;
+  /** Player ids already holding a cap in `capCategory` (for live debut recompute). */
+  cappedPlayerIds: number[];
   warnings: string[];
   players: MatchPreviewPlayer[];
+}
+
+export type PlayerResolutionAction = typeof PlayerResolutionAction[keyof typeof PlayerResolutionAction];
+
+
+export const PlayerResolutionAction = {
+  link: 'link',
+  create: 'create',
+} as const;
+
+/**
+ * An admin's decision for one previewed name: link it to an existing
+player or create a new one. Keyed back to the parsed row by name.
+
+ */
+export interface PlayerResolution {
+  surname: string;
+  givenName: string;
+  action: PlayerResolutionAction;
+  /**
+     * Existing player to link to (required when action is `link`).
+     * @nullable
+     */
+  playerId?: number | null;
+}
+
+/**
+ * Optional per-name resolutions chosen in the preview. Names without a
+resolution fall back to exact-match-or-create.
+
+ */
+export interface CommitImportInput {
+  resolutions?: PlayerResolution[];
 }
 
 export interface PlayerMatchLine {

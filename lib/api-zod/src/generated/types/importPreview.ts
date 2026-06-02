@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ImportPreviewCapCategory } from './importPreviewCapCategory';
 import type { ImportPreviewGradeTotal } from './importPreviewGradeTotal';
 import type { ImportPreviewPlayer } from './importPreviewPlayer';
 
@@ -15,6 +16,17 @@ export interface ImportPreview {
   rowsParsed: number;
   matchedPlayers: number;
   newPlayers: number;
+  /** Count of names with a fuzzy suggestion awaiting confirmation. */
+  suggestedPlayers: number;
+  /** Count of players who would earn a first cap on commit. */
+  debuts: number;
+  /**
+     * Cap category of the import's grade, or null if not cap-eligible.
+     * @nullable
+     */
+  capCategory: ImportPreviewCapCategory;
+  /** Player ids already holding a cap in `capCategory` (for live debut recompute). */
+  cappedPlayerIds: number[];
   unmappedGrades: string[];
   gradeTotals: ImportPreviewGradeTotal[];
   players: ImportPreviewPlayer[];

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ImportPreviewPlayerStatus } from './importPreviewPlayerStatus';
+import type { NameMatchCandidate } from './nameMatchCandidate';
 
 export interface ImportPreviewPlayer {
   surname: string;
@@ -13,4 +14,10 @@ export interface ImportPreviewPlayer {
   status: ImportPreviewPlayerStatus;
   /** @nullable */
   playerId?: number | null;
+  /** Suggested existing players when status is `suggested`. */
+  candidates: NameMatchCandidate[];
+  /** True if committing would issue this player their first cap in the
+  import's cap-eligible grade (A Grade / Female A Grade).
+   */
+  debut: boolean;
 }

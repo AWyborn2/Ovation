@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MatchPreviewPlayerStatus } from './matchPreviewPlayerStatus';
+import type { NameMatchCandidate } from './nameMatchCandidate';
 
 export interface MatchPreviewPlayer {
   surname: string;
@@ -13,6 +14,12 @@ export interface MatchPreviewPlayer {
   status: MatchPreviewPlayerStatus;
   /** @nullable */
   playerId?: number | null;
+  /** Suggested existing players when status is `suggested`. */
+  candidates: NameMatchCandidate[];
+  /** True if committing would issue this player their first cap in the
+  match's cap-eligible grade (A Grade / Female A Grade).
+   */
+  debut: boolean;
   batted: boolean;
   /** @nullable */
   battingPos?: number | null;

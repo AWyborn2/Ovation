@@ -428,6 +428,12 @@ paths:
           required: true
           schema:
             type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitImportInput"
       responses:
         "200":
           description: Committed import record
@@ -1894,9 +1900,26 @@ components:
           items:
             $ref: "#/components/schemas/CapSyncSummary"
 
+    NameMatchCandidate:
+      type: object
+      required: [playerId, surname, givenName, reason]
+      description: |
+        A likely the-same-person suggestion for a scorecard/CSV name that has no
+        exact roster match (first-name variant, nickname, or surname spelling).
+        Surfaced for explicit admin confirmation; never linked automatically.
+      properties:
+        playerId:
+          type: integer
+        surname:
+          type: string
+        givenName:
+          type: string
+        reason:
+          type: string
+
     ImportPreviewPlayer:
       type: object
-      required: [surname, givenName, status]
+      required: [surname, givenName, status, candidates, debut]
       properties:
         surname:
           type: string
@@ -1904,9 +1927,19 @@ components:
           type: string
         status:
           type: string
-          enum: [matched, new]
+          enum: [matched, suggested, new]
         playerId:
           type: ["integer", "null"]
+        candidates:
+          type: array
+          description: Suggested existing players when status is `suggested`.
+          items:
+            $ref: "#/components/schemas/NameMatchCandidate"
+        debut:
+          type: boolean
+          description: |
+            True if committing would issue this player their first cap in the
+            import's cap-eligible grade (A Grade / Female A Grade).
 
     ImportPreviewGradeTotal:
       type: object
@@ -1925,7 +1958,7 @@ components:
 
     ImportPreview:
       type: object
-      required: [importId, filename, season, rowsParsed, matchedPlayers, newPlayers, gradeTotals, unmappedGrades, players]
+      required: [importId, filename, season, rowsParsed, matchedPlayers, newPlayers, suggestedPlayers, debuts, gradeTotals, unmappedGrades, players, capCategory, cappedPlayerIds]
       properties:
         importId:
           type: integer
@@ -1939,6 +1972,21 @@ components:
           type: integer
         newPlayers:
           type: integer
+        suggestedPlayers:
+          type: integer
+          description: Count of names with a fuzzy suggestion awaiting confirmation.
+        debuts:
+          type: integer
+          description: Count of players who would earn a first cap on commit.
+        capCategory:
+          type: ["string", "null"]
+          enum: [male, female, null]
+          description: Cap category of the import's grade, or null if not cap-eligible.
+        cappedPlayerIds:
+          type: array
+          description: Player ids already holding a cap in `capCategory` (for live debut recompute).
+          items:
+            type: integer
         unmappedGrades:
           type: array
           items:
@@ -1955,7 +2003,7 @@ components:
     MatchPreviewPlayer:
       type: object
       required:
-        [surname, givenName, status, batted, bowled, catches, stumpings, runOuts]
+        [surname, givenName, status, candidates, debut, batted, bowled, catches, stumpings, runOuts]
       properties:
         surname:
           type: string
@@ -1963,9 +2011,19 @@ components:
           type: string
         status:
           type: string
-          enum: [matched, new]
+          enum: [matched, suggested, new]
         playerId:
           type: ["integer", "null"]
+        candidates:
+          type: array
+          description: Suggested existing players when status is `suggested`.
+          items:
+            $ref: "#/components/schemas/NameMatchCandidate"
+        debut:
+          type: boolean
+          description: |
+            True if committing would issue this player their first cap in the
+            match's cap-eligible grade (A Grade / Female A Grade).
         batted:
           type: boolean
         battingPos:
@@ -2003,6 +2061,10 @@ components:
           matchExists,
           matchedPlayers,
           newPlayers,
+          suggestedPlayers,
+          debuts,
+          capCategory,
+          cappedPlayerIds,
           warnings,
           players,
         ]
@@ -2040,6 +2102,21 @@ components:
           type: integer
         newPlayers:
           type: integer
+        suggestedPlayers:
+          type: integer
+          description: Count of names with a fuzzy suggestion awaiting confirmation.
+        debuts:
+          type: integer
+          description: Count of players who would earn a first cap on commit.
+        capCategory:
+          type: ["string", "null"]
+          enum: [male, female, null]
+          description: Cap category of the match's grade, or null if not cap-eligible.
+        cappedPlayerIds:
+          type: array
+          description: Player ids already holding a cap in `capCategory` (for live debut recompute).
+          items:
+            type: integer
         warnings:
           type: array
           items:
@@ -2048,6 +2125,35 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchPreviewPlayer"
+
+    PlayerResolution:
+      type: object
+      required: [surname, givenName, action]
+      description: |
+        An admin's decision for one previewed name: link it to an existing
+        player or create a new one. Keyed back to the parsed row by name.
+      properties:
+        surname:
+          type: string
+        givenName:
+          type: string
+        action:
+          type: string
+          enum: [link, create]
+        playerId:
+          type: ["integer", "null"]
+          description: Existing player to link to (required when action is `link`).
+
+    CommitImportInput:
+      type: object
+      description: |
+        Optional per-name resolutions chosen in the preview. Names without a
+        resolution fall back to exact-match-or-create.
+      properties:
+        resolutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerResolution"
 
     PlayerMatchLine:
       type: object

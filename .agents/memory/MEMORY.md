@@ -12,3 +12,4 @@
 - [A Grade 2025/26 baseline reversal](a-grade-2025-26-baseline-reversal.md) — subtracted 2025/26 out of season=NULL A Grade baseline so it can be re-imported per-match; 8 players zero out, only 3 named debutants lose caps; DEV only.
 - [Per-match xlsx import design](match-import-design.md) — match commit re-derives season snapshot (DELETE+INSERT importId=NULL rows) summing all match lines; one ingestion method per grade+season or they clobber each other.
 - [Per-match milestone dedup](per-match-milestone-dedup.md) — debut/cap fire-once structurally; century/5-for need explicit milestone_events check (events persist across undo); CardKind enum in openapi.yaml must list every card kind.
+- [Import resolution keying](import-resolution-keying.md) — frontend rowKey MUST normalize names identically to server nameKey or admin per-row link/create decisions silently mis-apply.
