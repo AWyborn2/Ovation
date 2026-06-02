@@ -11,6 +11,21 @@ The `cap_register` carries a `category` column (`male` | `female`), defaulting t
 (male #1 and female #1 coexist). The original global unique on `cap_number` was
 dropped via raw SQL (drizzle-kit push can't do this non-interactively).
 
+## drizzle-kit can't manage this composite unique (push hangs post-merge)
+drizzle-kit 0.31's `push` cannot detect an *existing* multi-column unique
+constraint, so it re-proposes ADDing it on **every** run, which renders an
+interactive "truncate cap_register?" Select. `--force` does NOT skip that Select,
+and post-merge has no TTY → every push (i.e. every schema migration) silently
+fails. **Fix:** the constraint is intentionally NOT declared in the Drizzle
+schema (`lib/db/src/schema/cap_register.ts`). push then drops/ignores it without
+prompting, and `scripts/src/ensure-constraints.ts` (run from `scripts/post-merge.sh`
+right after `pnpm --filter db push`) idempotently re-adds it via raw SQL.
+**Why:** keeping it out of the schema is the only way push runs non-interactively
+while the real constraint stays enforced in Postgres. **How to apply:** add any
+future un-manageable constraint to the `CONSTRAINTS` list in
+`ensure-constraints.ts` rather than to the Drizzle schema; never re-add this
+`unique()` to the schema.
+
 **Why:** the club wanted one public "A Grade Caps" tab with a Male/Female
 drop-down, each list maintained independently.
 

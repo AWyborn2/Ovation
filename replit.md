@@ -77,6 +77,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 - Don't add query params to `getGradeLeaderboard` — Orval naming collision with params schema
 - The spreadsheet has a "CLUB TOTAL" summary row that must be filtered out during seeding (null given_name)
 - Seeding via `pnpm --filter @workspace/scripts run seed` fails (drizzle-orm not available in scripts at runtime); use executeSql callback or install drizzle-orm in scripts/package.json dependencies
+- **Don't re-add the `cap_register` composite unique to the Drizzle schema.** drizzle-kit 0.31 can't detect the existing `(category, cap_number)` unique, so it re-proposes it every `push`, rendering a truncate prompt that has no TTY in post-merge → silent migration failure. The constraint is left out of `lib/db/src/schema/cap_register.ts` on purpose and re-created idempotently by `scripts/src/ensure-constraints.ts` (run from `scripts/post-merge.sh` after `pnpm --filter db push`). Add any future un-manageable constraint to that script, not the schema.
 - **One ingestion method per (grade, season).** Match commit re-derives the season snapshot by DELETE+INSERT of `player_grade_season_stats` rows with `import_id IS NULL` for that grade+season; a whole-season CSV import writes the same kind of rows. Mixing both for the SAME grade+season lets one clobber the other. Different grades/seasons are independent and safe.
 
 ## Pointers
