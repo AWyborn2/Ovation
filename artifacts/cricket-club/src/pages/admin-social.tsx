@@ -57,6 +57,10 @@ const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "record", label: "Record" },
   { value: "gradeLeader", label: "Leaderboard" },
   { value: "premiership", label: "Premiership" },
+  { value: "debut", label: "Debut" },
+  { value: "newCap", label: "New Cap" },
+  { value: "century", label: "Century" },
+  { value: "fiveFor", label: "Five-for" },
 ];
 
 // Chip picker for the card types a sponsor's logo may appear on.

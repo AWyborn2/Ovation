@@ -140,6 +140,7 @@ export default function AdminSocialQueue() {
           const sub =
             (input && (input as { tierLabel?: string }).tierLabel) ??
             (input && (input as { category?: string }).category) ??
+            (input && (input as { grade?: string }).grade) ??
             d.appPath;
           return (
             <Card key={d.id}>

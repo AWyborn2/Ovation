@@ -69,6 +69,49 @@ export type ShareCardInput =
       result?: string | null;
       mom?: string | null;
       headline?: string;
+    }
+  | {
+      kind: "debut";
+      playerName: string;
+      grade: string;
+      opponent?: string | null;
+      round?: number | null;
+      headline?: string;
+      photoUrl?: string | null;
+    }
+  | {
+      kind: "newCap";
+      playerName: string;
+      grade: string;
+      category: string; // "male" | "female"
+      capNumber: number;
+      headline?: string;
+      photoUrl?: string | null;
+    }
+  | {
+      kind: "century";
+      playerName: string;
+      grade: string;
+      runs: number;
+      balls?: number | null;
+      notOut?: boolean;
+      opponent?: string | null;
+      round?: number | null;
+      headline?: string;
+      photoUrl?: string | null;
+    }
+  | {
+      kind: "fiveFor";
+      playerName: string;
+      grade: string;
+      wickets: number;
+      runsConceded?: number | null;
+      overs?: string | null;
+      figures?: string | null;
+      opponent?: string | null;
+      round?: number | null;
+      headline?: string;
+      photoUrl?: string | null;
     };
 
 export type CardKind = ShareCardInput["kind"];
@@ -79,6 +122,10 @@ export const CARD_KINDS: CardKind[] = [
   "record",
   "gradeLeader",
   "premiership",
+  "debut",
+  "newCap",
+  "century",
+  "fiveFor",
 ];
 
 // A sponsor with an empty cardKinds list applies to every card type; otherwise
@@ -202,6 +249,14 @@ const headlineFor = (input: ShareCardInput): string => {
       return `${input.grade} • Leader`;
     case "premiership":
       return `${input.grade} • Premiers`;
+    case "debut":
+      return `${input.grade} • Debut`;
+    case "newCap":
+      return `${input.grade} • Cap #${input.capNumber}`;
+    case "century":
+      return `${input.grade} • Century`;
+    case "fiveFor":
+      return `${input.grade} • Five-For`;
   }
 };
 
@@ -685,6 +740,130 @@ export const renderShareCard = async (
       ctx.font = `700 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
       ctx.fillText(`PLAYER OF THE MATCH: ${input.mom.toUpperCase()}`, W / 2, y);
     }
+  } else if (
+    input.kind === "debut" ||
+    input.kind === "newCap" ||
+    input.kind === "century" ||
+    input.kind === "fiveFor"
+  ) {
+    // Per-match highlight cards share one layout: a gold badge label, a circular
+    // headshot (or icon badge fallback), the player's name in serif, a big serif
+    // hero value, then a muted caption + "vs X • Round N" subtitle.
+    const matchSubtitle = (
+      opponent?: string | null,
+      round?: number | null,
+    ): string => {
+      const parts: string[] = [];
+      if (opponent) parts.push(`vs ${opponent}`);
+      if (round != null) parts.push(`Round ${round}`);
+      return parts.join(" • ");
+    };
+
+    let badgeLabel = "";
+    let bigValue = "";
+    let caption = "";
+    let subtitle = "";
+    let iconIndex = 4;
+    if (input.kind === "debut") {
+      badgeLabel = `${input.grade} Debut`;
+      bigValue = "DEBUT";
+      caption = `First game for the ${input.grade} side`;
+      subtitle = matchSubtitle(input.opponent, input.round);
+      iconIndex = 4; // Star
+    } else if (input.kind === "newCap") {
+      badgeLabel = `${input.grade} Cap`;
+      bigValue = `#${input.capNumber}`;
+      caption = `${input.grade} cap number ${input.capNumber}`;
+      subtitle = input.category === "female" ? "Female A Grade" : "A Grade";
+      iconIndex = 0; // Crown
+    } else if (input.kind === "century") {
+      badgeLabel = "Century";
+      bigValue = `${input.runs}${input.notOut ? "*" : ""}`;
+      caption =
+        input.balls != null
+          ? `${input.runs}${input.notOut ? " not out" : ""} off ${input.balls} balls`
+          : `${input.runs}${input.notOut ? " not out" : ""} runs`;
+      subtitle = matchSubtitle(input.opponent, input.round);
+      iconIndex = 1; // Trophy
+    } else {
+      badgeLabel = "Five-Wicket Haul";
+      bigValue = input.figures ?? `${input.wickets}/-`;
+      caption =
+        input.overs != null
+          ? `${input.wickets} wickets off ${input.overs} overs`
+          : `${input.wickets} wickets`;
+      subtitle = matchSubtitle(input.opponent, input.round);
+      iconIndex = 2; // Medal
+    }
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    const badgeR = Math.round(130 * scale);
+    const badgeCy = bodyTop + badgeR + Math.round(30 * scale);
+    if (photoImg) {
+      drawCircularImage(ctx, photoImg, W / 2, badgeCy, badgeR, GOLD, Math.round(6 * scale));
+      const miniR = Math.round(46 * scale);
+      const miniCx = W / 2 + badgeR * 0.72;
+      const miniCy = badgeCy + badgeR * 0.72;
+      ctx.beginPath();
+      ctx.arc(miniCx, miniCy, miniR, 0, Math.PI * 2);
+      ctx.fillStyle = p.bgDark;
+      ctx.fill();
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = Math.round(3 * scale);
+      ctx.stroke();
+      try {
+        const svg = iconSvgString(iconIndex, GOLD, 256, 1.75);
+        const iconImg = await loadImage(svgToDataUrl(svg));
+        const iconSize = Math.round(52 * scale);
+        ctx.drawImage(iconImg, miniCx - iconSize / 2, miniCy - iconSize / 2, iconSize, iconSize);
+      } catch {}
+    } else {
+      ctx.beginPath();
+      ctx.arc(W / 2, badgeCy, badgeR, 0, Math.PI * 2);
+      ctx.fillStyle = GOLD_SOFT;
+      ctx.fill();
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      try {
+        const svg = iconSvgString(iconIndex, GOLD, 256, 1.75);
+        const iconImg = await loadImage(svgToDataUrl(svg));
+        const iconSize = Math.round(150 * scale);
+        ctx.drawImage(iconImg, W / 2 - iconSize / 2, badgeCy - iconSize / 2, iconSize, iconSize);
+      } catch {}
+    }
+
+    ctx.fillStyle = GOLD;
+    ctx.font = `800 ${Math.round(34 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+    const labelY = badgeCy + badgeR + Math.round(28 * scale);
+    ctx.fillText(badgeLabel.toUpperCase(), W / 2, labelY);
+
+    ctx.fillStyle = TEXT_LIGHT;
+    ctx.font = `700 ${Math.round(58 * scale)}px Georgia, 'Times New Roman', serif`;
+    const nameLines = wrapText(ctx, input.playerName.toUpperCase(), W - Math.round(200 * scale));
+    const lineH = Math.round(68 * scale);
+    const nameY = labelY + Math.round(56 * scale);
+    nameLines.forEach((line, i) => ctx.fillText(line, W / 2, nameY + i * lineH));
+
+    const valueY = nameY + nameLines.length * lineH + Math.round(20 * scale);
+    ctx.fillStyle = GOLD;
+    ctx.font = `900 ${Math.round(130 * scale)}px Georgia, 'Times New Roman', serif`;
+    ctx.fillText(bigValue, W / 2, valueY);
+
+    let cY = valueY + Math.round(150 * scale);
+    if (caption) {
+      ctx.fillStyle = TEXT_LIGHT;
+      ctx.font = `600 ${Math.round(26 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.fillText(caption, W / 2, cY);
+      cY += Math.round(40 * scale);
+    }
+    if (subtitle) {
+      ctx.fillStyle = TEXT_MUTED;
+      ctx.font = `500 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.fillText(subtitle, W / 2, cY);
+    }
   }
 
   drawFooter(
@@ -728,5 +907,13 @@ export const cardBaseFilename = (input: ShareCardInput): string => {
       return `hhcc-${slugify(input.grade)}-${slugify(input.category)}-${slugify(input.playerName)}`;
     case "premiership":
       return `hhcc-premiership-${slugify(input.grade)}-${input.year}`;
+    case "debut":
+      return `hhcc-debut-${slugify(input.grade)}-${slugify(input.playerName)}`;
+    case "newCap":
+      return `hhcc-cap-${slugify(input.grade)}-${input.capNumber}-${slugify(input.playerName)}`;
+    case "century":
+      return `hhcc-century-${slugify(input.playerName)}-${input.runs}`;
+    case "fiveFor":
+      return `hhcc-fivefor-${slugify(input.playerName)}-${input.wickets}`;
   }
 };

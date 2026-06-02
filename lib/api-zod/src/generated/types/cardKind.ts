@@ -15,4 +15,8 @@ export const CardKind = {
   record: 'record',
   gradeLeader: 'gradeLeader',
   premiership: 'premiership',
+  debut: 'debut',
+  newCap: 'newCap',
+  century: 'century',
+  fiveFor: 'fiveFor',
 } as const;

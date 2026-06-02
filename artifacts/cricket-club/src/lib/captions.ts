@@ -73,6 +73,50 @@ const valueOf = (input: ShareCardInput, key: string): string => {
       };
       return map[key] ?? "";
     }
+    case "debut": {
+      const map: Record<string, string> = {
+        "player.name": input.playerName,
+        "stat.value": "",
+        "stat.label": "debut",
+        "stat.tier": `${input.grade} Debut`,
+        "stat.threshold": "",
+        "grade.name": input.grade,
+      };
+      return map[key] ?? "";
+    }
+    case "newCap": {
+      const map: Record<string, string> = {
+        "player.name": input.playerName,
+        "stat.value": String(input.capNumber),
+        "stat.label": "cap",
+        "stat.tier": `${input.grade} Cap #${input.capNumber}`,
+        "stat.threshold": "",
+        "grade.name": input.grade,
+      };
+      return map[key] ?? "";
+    }
+    case "century": {
+      const map: Record<string, string> = {
+        "player.name": input.playerName,
+        "stat.value": `${input.runs}${input.notOut ? "*" : ""}`,
+        "stat.label": "runs",
+        "stat.tier": "Century",
+        "stat.threshold": "100",
+        "grade.name": input.grade,
+      };
+      return map[key] ?? "";
+    }
+    case "fiveFor": {
+      const map: Record<string, string> = {
+        "player.name": input.playerName,
+        "stat.value": input.figures ?? String(input.wickets),
+        "stat.label": "wickets",
+        "stat.tier": "Five-Wicket Haul",
+        "stat.threshold": "5",
+        "grade.name": input.grade,
+      };
+      return map[key] ?? "";
+    }
   }
 };
 

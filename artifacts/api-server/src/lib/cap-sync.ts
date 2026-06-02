@@ -24,6 +24,8 @@ export type CapSyncResult = {
   category: "male" | "female";
   updated: number;
   created: number;
+  /** Caps freshly issued by this sync run (for per-match new-cap milestones). */
+  createdCaps: { capNumber: number; playerId: number; name: string }[];
 };
 
 /**
@@ -69,7 +71,7 @@ export async function syncCapsFromStats(
     gamesByPlayer.set(r.playerId, r.games ?? 0);
   }
   if (gamesByPlayer.size === 0) {
-    return { grade, category, updated: 0, created: 0 };
+    return { grade, category, updated: 0, created: 0, createdCaps: [] };
   }
 
   // Existing caps in this category.
@@ -87,6 +89,7 @@ export async function syncCapsFromStats(
 
   let updated = 0;
   let created = 0;
+  const createdCaps: { capNumber: number; playerId: number; name: string }[] = [];
 
   // Build the deterministic ordering of players in the stats: caller-provided
   // order first (batting / CSV row order), then any stats-only players by id.
@@ -136,19 +139,21 @@ export async function syncCapsFromStats(
         .where(eq(capRegisterTable.id, existing.id));
       updated++;
     } else {
+      const name = nameByPlayer.get(playerId) ?? `Player #${playerId}`;
       await tx.insert(capRegisterTable).values({
         capNumber: nextCapNumber,
         category,
-        name: nameByPlayer.get(playerId) ?? `Player #${playerId}`,
+        name,
         inStats: true,
         gamesAGrade: games,
         autoCreated: true,
         playerId,
       });
+      createdCaps.push({ capNumber: nextCapNumber, playerId, name });
       nextCapNumber++;
       created++;
     }
   }
 
-  return { grade, category, updated, created };
+  return { grade, category, updated, created, createdCaps };
 }

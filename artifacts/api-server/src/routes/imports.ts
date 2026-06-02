@@ -20,8 +20,10 @@ import { syncCapsFromStats, type CapSyncResult } from "../lib/cap-sync";
 import { deriveSeasonSnapshotFromMatches } from "../lib/match-aggregate";
 import {
   snapshotCareerTotals,
+  snapshotGradeGames,
   runPostCommitSocial,
 } from "../lib/post-commit-social";
+import type { CreatedCap } from "../lib/match-milestone-detector";
 import {
   reverseCapsAfterRollback,
   cleanupOrphanPlayers,
@@ -579,6 +581,9 @@ async function commitMatchImport(
   const resolvedLines = await resolveMatchPlayers(parsed.players);
 
   const beforeMap = await snapshotCareerTotals();
+  // Per-grade game counts before the commit — debut detection compares these to
+  // who appears in the match (0→1 in a cap-register grade = a debut).
+  const gradeGamesBefore = await snapshotGradeGames(grade);
   const capsSync: CapSyncResult[] = [];
 
   await db.transaction(async (tx) => {
@@ -658,12 +663,39 @@ async function commitMatchImport(
     if (result) capsSync.push(result);
   });
 
+  const createdCaps: CreatedCap[] = capsSync.flatMap((r) =>
+    r.createdCaps.map((c) => ({
+      capNumber: c.capNumber,
+      category: r.category,
+      playerId: c.playerId,
+      name: c.name,
+    })),
+  );
+
   await runPostCommitSocial({
     importId: imp.id,
     affectedGrades: [grade],
     season,
     beforeMap,
     logger: req.log,
+    matchContext: {
+      importId: imp.id,
+      grade,
+      season,
+      round,
+      opponent: parsed.opponent ?? null,
+      lines: resolvedLines.map((l) => ({
+        playerId: l.playerId,
+        runs: l.runs ?? null,
+        balls: l.balls ?? null,
+        notOut: l.notOut,
+        wickets: l.wickets ?? null,
+        runsConceded: l.runsConceded ?? null,
+        overs: l.overs ?? null,
+      })),
+      createdCaps,
+      gradeGamesBefore,
+    },
   });
 
   const [updated] = await db

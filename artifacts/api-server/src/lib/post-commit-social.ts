@@ -6,12 +6,16 @@ import {
   socialDraftsTable,
   socialSettingsTable,
 } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   detectCrossings,
   BOARD_STAT_LABEL,
   type BoardKey,
 } from "./milestone-detector";
+import {
+  detectAndQueueMatchMilestones,
+  type MatchMilestoneContext,
+} from "./match-milestone-detector";
 import { generateRoundUpDrafts } from "./roundup";
 
 export type CareerTotals = {
@@ -52,6 +56,26 @@ export async function snapshotCareerTotals(): Promise<Map<number, CareerTotals>>
 }
 
 /**
+ * Per-player game count in a single grade from `player_grade_stats`. Capture
+ * this BEFORE a match commit so debut detection can see who crossed 0→1 in the
+ * grade.
+ */
+export async function snapshotGradeGames(
+  grade: string,
+): Promise<Map<number, number>> {
+  const rows = await db
+    .select({
+      playerId: playerGradeStatsTable.playerId,
+      games: playerGradeStatsTable.games,
+    })
+    .from(playerGradeStatsTable)
+    .where(eq(playerGradeStatsTable.grade, grade));
+  const map = new Map<number, number>();
+  for (const r of rows) map.set(r.playerId, Number(r.games ?? 0));
+  return map;
+}
+
+/**
  * Shared post-commit social generation, used by both the CSV and per-match
  * import commit paths. Runs AFTER the commit transaction so social drafts are
  * never created for a rolled-back import.
@@ -68,8 +92,11 @@ export async function runPostCommitSocial(opts: {
   season: number;
   beforeMap: Map<number, CareerTotals>;
   logger: Logger;
+  /** Present only for per-match commits; drives debut/cap/century/5-for cards. */
+  matchContext?: MatchMilestoneContext;
 }): Promise<void> {
-  const { importId, affectedGrades, season, beforeMap, logger } = opts;
+  const { importId, affectedGrades, season, beforeMap, logger, matchContext } =
+    opts;
   const [socialSettings] = await db.select().from(socialSettingsTable).limit(1);
 
   try {
@@ -126,6 +153,14 @@ export async function runPostCommitSocial(opts: {
   } catch (err) {
     if (!(err instanceof Error) || err.message !== "__skip_milestone__") {
       logger.error({ err }, "milestone detection failed");
+    }
+  }
+
+  if (matchContext && socialSettings?.engineMilestone) {
+    try {
+      await detectAndQueueMatchMilestones(matchContext);
+    } catch (err) {
+      logger.error({ err }, "match milestone detection failed");
     }
   }
 
