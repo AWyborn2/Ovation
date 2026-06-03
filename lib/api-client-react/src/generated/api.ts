@@ -102,6 +102,7 @@ import type {
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
+  RecordsLeaderboards,
   RoundUpInput,
   SocialDraft,
   SocialSettings,
@@ -7871,6 +7872,91 @@ export const useDeleteClubRole = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteClubRoleMutationOptions(options));
     }
+
+export const getGetRecordsLeaderboardsUrl = () => {
+
+
+
+
+  return `/api/records-leaderboards`
+}
+
+/**
+ * Public, auto-derived "Notable Honour Board Records": ranked
+leaderboards for most seasons in each club office-bearer role and most
+wins of each club award. Derived only from PUBLISHED club roles and
+PUBLISHED award winners (of published awards), so unpublished drafts
+never appear. Entries are tallied per person (grouped by normalized
+name, linked to a player when unambiguous) and ranked by count
+descending.
+
+ * @summary Derived notable honour-board records
+ */
+export const getRecordsLeaderboards = async ( options?: RequestInit): Promise<RecordsLeaderboards> => {
+
+  return customFetch<RecordsLeaderboards>(getGetRecordsLeaderboardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecordsLeaderboardsQueryKey = () => {
+    return [
+    `/api/records-leaderboards`
+    ] as const;
+    }
+
+
+export const getGetRecordsLeaderboardsQueryOptions = <TData = Awaited<ReturnType<typeof getRecordsLeaderboards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordsLeaderboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecordsLeaderboardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecordsLeaderboards>>> = ({ signal }) => getRecordsLeaderboards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecordsLeaderboards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecordsLeaderboardsQueryResult = NonNullable<Awaited<ReturnType<typeof getRecordsLeaderboards>>>
+export type GetRecordsLeaderboardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Derived notable honour-board records
+ */
+
+export function useGetRecordsLeaderboards<TData = Awaited<ReturnType<typeof getRecordsLeaderboards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordsLeaderboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecordsLeaderboardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListSponsorsUrl = () => {
 

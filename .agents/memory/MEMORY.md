@@ -25,3 +25,4 @@
 - [Awards mechanisms & public points board](awards-mechanisms.md) — awards have mechanism voted/points/manual + published flag; public points leaderboards live at GET /api/award-points (hook useListPublicPointsLeaderboards).
 - [HHCC history xlsx stacked blocks](history-xlsx-stacked-blocks.md) — Grade Records sheet stacks GRADE CAPTAINS over GRADE CRICKETERS OF THE YEAR (same layout); stop at second header or you double-import.
 - [Committee/captain role linking](committee-role-linking.md) — settled which club_roles role-holders stay plain text (office bearers w/ no player + joint captains) vs. the Sommers↔Somers matcher fix.
+- [Notable records derivation](notable-records-derivation.md) — committee/award leaderboards auto-derived from PUBLISHED roles/winners, name-grouped; tallies intentionally diverge from the stale hand-kept sheet.

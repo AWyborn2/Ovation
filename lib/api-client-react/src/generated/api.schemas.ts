@@ -1714,6 +1714,31 @@ export interface ClubRoleUpdate {
   published?: boolean;
 }
 
+export interface RecordLeaderboardEntry {
+  rank: number;
+  name: string;
+  /** @nullable */
+  playerId?: number | null;
+  count: number;
+}
+
+export interface RecordLeaderboard {
+  /** Stable identifier (role name or award key). */
+  key: string;
+  /** Display heading, e.g. "Most Seasons as President". */
+  title: string;
+  /** Plural unit counted, e.g. "seasons" or "awards". */
+  unit: string;
+  entries: RecordLeaderboardEntry[];
+}
+
+export interface RecordsLeaderboards {
+  /** Most seasons in each club office-bearer role. */
+  roleRecords: RecordLeaderboard[];
+  /** Most wins of each repeat-winnable club award. */
+  awardRecords: RecordLeaderboard[];
+}
+
 export type CardKind = typeof CardKind[keyof typeof CardKind];
 
 

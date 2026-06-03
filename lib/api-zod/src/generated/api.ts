@@ -2882,6 +2882,43 @@ export const DeleteClubRoleParams = zod.object({
 
 
 /**
+ * Public, auto-derived "Notable Honour Board Records": ranked
+leaderboards for most seasons in each club office-bearer role and most
+wins of each club award. Derived only from PUBLISHED club roles and
+PUBLISHED award winners (of published awards), so unpublished drafts
+never appear. Entries are tallied per person (grouped by normalized
+name, linked to a player when unambiguous) and ranked by count
+descending.
+
+ * @summary Derived notable honour-board records
+ */
+export const GetRecordsLeaderboardsResponse = zod.object({
+  "roleRecords": zod.array(zod.object({
+  "key": zod.string().describe('Stable identifier (role name or award key).'),
+  "title": zod.string().describe('Display heading, e.g. \"Most Seasons as President\".'),
+  "unit": zod.string().describe('Plural unit counted, e.g. \"seasons\" or \"awards\".'),
+  "entries": zod.array(zod.object({
+  "rank": zod.number(),
+  "name": zod.string(),
+  "playerId": zod.number().nullish(),
+  "count": zod.number()
+}))
+})).describe('Most seasons in each club office-bearer role.'),
+  "awardRecords": zod.array(zod.object({
+  "key": zod.string().describe('Stable identifier (role name or award key).'),
+  "title": zod.string().describe('Display heading, e.g. \"Most Seasons as President\".'),
+  "unit": zod.string().describe('Plural unit counted, e.g. \"seasons\" or \"awards\".'),
+  "entries": zod.array(zod.object({
+  "rank": zod.number(),
+  "name": zod.string(),
+  "playerId": zod.number().nullish(),
+  "count": zod.number()
+}))
+})).describe('Most wins of each repeat-winnable club award.')
+})
+
+
+/**
  * @summary List all sponsors
  */
 export const ListSponsorsResponseItem = zod.object({

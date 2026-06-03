@@ -38,6 +38,8 @@ tags:
     description: Curated Team of the Decade honour boards (best XI per team/period)
   - name: clubRoles
     description: Season-by-season club office bearers and grade captains
+  - name: records
+    description: Derived notable honour-board records (role tenures, award counts)
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
   - name: Storage
@@ -2248,6 +2250,27 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /records-leaderboards:
+    get:
+      operationId: getRecordsLeaderboards
+      tags: [records]
+      summary: Derived notable honour-board records
+      description: |
+        Public, auto-derived "Notable Honour Board Records": ranked
+        leaderboards for most seasons in each club office-bearer role and most
+        wins of each club award. Derived only from PUBLISHED club roles and
+        PUBLISHED award winners (of published awards), so unpublished drafts
+        never appear. Entries are tallied per person (grouped by normalized
+        name, linked to a player when unambiguous) and ranked by count
+        descending.
+      responses:
+        "200":
+          description: Derived records leaderboards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordsLeaderboards"
 
   /sponsors:
     get:
@@ -5269,6 +5292,52 @@ components:
           type: integer
         published:
           type: boolean
+
+    RecordsLeaderboards:
+      type: object
+      required: [roleRecords, awardRecords]
+      properties:
+        roleRecords:
+          type: array
+          description: Most seasons in each club office-bearer role.
+          items:
+            $ref: "#/components/schemas/RecordLeaderboard"
+        awardRecords:
+          type: array
+          description: Most wins of each repeat-winnable club award.
+          items:
+            $ref: "#/components/schemas/RecordLeaderboard"
+
+    RecordLeaderboard:
+      type: object
+      required: [key, title, unit, entries]
+      properties:
+        key:
+          type: string
+          description: Stable identifier (role name or award key).
+        title:
+          type: string
+          description: Display heading, e.g. "Most Seasons as President".
+        unit:
+          type: string
+          description: Plural unit counted, e.g. "seasons" or "awards".
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordLeaderboardEntry"
+
+    RecordLeaderboardEntry:
+      type: object
+      required: [rank, name, count]
+      properties:
+        rank:
+          type: integer
+        name:
+          type: string
+        playerId:
+          type: ["integer", "null"]
+        count:
+          type: integer
 
     CardKind:
       type: string
