@@ -62,6 +62,7 @@ Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Fe
 - **Grades** (`/grades`) — summary cards for each grade
 - **Grade Leaderboard** (`/grades/:grade`) — full sortable stats table for a specific grade
 - **Records** (`/records`) — all-time club records across all categories
+- **Team of the Decade** — curated best-XI honour boards. Public view is a self-contained tab on the Honour Boards page (`/`), showing only published boards; admin management at `/admin/team-of-decade` (draft/publish toggle, reorder, lineup with optional player link via PlayerTypeahead, role + captain/VC/keeper flags). Schema: `team_of_decade_boards` + `team_of_decade_members`; routes in `artifacts/api-server/src/routes/team-of-decade.ts`.
 - **Stat Edit** (`/stats/:id`) — inline edit/delete a stat record
 - **Admin Import** (`/admin/import`) — two modes:
   - **Whole-season CSV** — upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a single grade+season, preview matched/new players and totals, confirm to commit; list and delete past imports. PlayCricket grade-name mapping lives in `artifacts/api-server/src/lib/playcricket-csv.ts` (`PLAYCRICKET_GRADE_MAP`).

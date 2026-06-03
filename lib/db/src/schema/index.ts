@@ -16,3 +16,4 @@ export * from "./awards";
 export * from "./captains";
 export * from "./award_voting";
 export * from "./social_cards";
+export * from "./team_of_decade";

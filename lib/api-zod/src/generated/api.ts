@@ -2204,6 +2204,191 @@ export const DeleteAwardWinnerParams = zod.object({
 
 
 /**
+ * Public list of published Team of the Decade boards, ordered by display
+order then id. Each board includes its lineup inline (batting order then
+display order) so the public page renders without a second round-trip.
+
+ * @summary List published Team of the Decade boards
+ */
+export const ListTeamOfDecadeBoardsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "teamLabel": zod.string(),
+  "periodLabel": zod.string(),
+  "subtitle": zod.string(),
+  "published": zod.boolean(),
+  "displayOrder": zod.number(),
+  "members": zod.array(zod.object({
+  "id": zod.number(),
+  "boardId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "battingOrder": zod.number(),
+  "role": zod.string(),
+  "isCaptain": zod.boolean(),
+  "isViceCaptain": zod.boolean(),
+  "isWicketkeeper": zod.boolean(),
+  "displayOrder": zod.number()
+}))
+})
+export const ListTeamOfDecadeBoardsResponse = zod.array(ListTeamOfDecadeBoardsResponseItem)
+
+
+/**
+ * @summary Create a Team of the Decade board
+ */
+export const CreateTeamOfDecadeBoardBody = zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "teamLabel": zod.string().optional(),
+  "periodLabel": zod.string().optional(),
+  "subtitle": zod.string().optional(),
+  "published": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * Admin-only. Returns every board (published and draft) with its lineup so
+the admin honours area can manage them.
+
+ * @summary List all Team of the Decade boards including drafts (admin)
+ */
+export const ListAdminTeamOfDecadeBoardsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "teamLabel": zod.string(),
+  "periodLabel": zod.string(),
+  "subtitle": zod.string(),
+  "published": zod.boolean(),
+  "displayOrder": zod.number(),
+  "members": zod.array(zod.object({
+  "id": zod.number(),
+  "boardId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "battingOrder": zod.number(),
+  "role": zod.string(),
+  "isCaptain": zod.boolean(),
+  "isViceCaptain": zod.boolean(),
+  "isWicketkeeper": zod.boolean(),
+  "displayOrder": zod.number()
+}))
+})
+export const ListAdminTeamOfDecadeBoardsResponse = zod.array(ListAdminTeamOfDecadeBoardsResponseItem)
+
+
+/**
+ * @summary Update a Team of the Decade board
+ */
+export const UpdateTeamOfDecadeBoardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateTeamOfDecadeBoardBody = zod.object({
+  "key": zod.string().optional(),
+  "title": zod.string().optional(),
+  "teamLabel": zod.string().optional(),
+  "periodLabel": zod.string().optional(),
+  "subtitle": zod.string().optional(),
+  "published": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateTeamOfDecadeBoardResponse = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "teamLabel": zod.string(),
+  "periodLabel": zod.string(),
+  "subtitle": zod.string(),
+  "published": zod.boolean(),
+  "displayOrder": zod.number(),
+  "members": zod.array(zod.object({
+  "id": zod.number(),
+  "boardId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "battingOrder": zod.number(),
+  "role": zod.string(),
+  "isCaptain": zod.boolean(),
+  "isViceCaptain": zod.boolean(),
+  "isWicketkeeper": zod.boolean(),
+  "displayOrder": zod.number()
+}))
+})
+
+
+/**
+ * @summary Delete a Team of the Decade board and its members
+ */
+export const DeleteTeamOfDecadeBoardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a member to a Team of the Decade board
+ */
+export const CreateTeamOfDecadeMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreateTeamOfDecadeMemberBody = zod.object({
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "battingOrder": zod.number().optional(),
+  "role": zod.string().optional(),
+  "isCaptain": zod.boolean().optional(),
+  "isViceCaptain": zod.boolean().optional(),
+  "isWicketkeeper": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a Team of the Decade member
+ */
+export const UpdateTeamOfDecadeMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateTeamOfDecadeMemberBody = zod.object({
+  "playerId": zod.number().nullish(),
+  "name": zod.string().optional(),
+  "battingOrder": zod.number().optional(),
+  "role": zod.string().optional(),
+  "isCaptain": zod.boolean().optional(),
+  "isViceCaptain": zod.boolean().optional(),
+  "isWicketkeeper": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateTeamOfDecadeMemberResponse = zod.object({
+  "id": zod.number(),
+  "boardId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "battingOrder": zod.number(),
+  "role": zod.string(),
+  "isCaptain": zod.boolean(),
+  "isViceCaptain": zod.boolean(),
+  "isWicketkeeper": zod.boolean(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Remove a Team of the Decade member
+ */
+export const DeleteTeamOfDecadeMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all sponsors
  */
 export const ListSponsorsResponseItem = zod.object({

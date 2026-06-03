@@ -107,6 +107,12 @@ import type {
   StatInput,
   StatListResponse,
   StatUpdate,
+  TeamOfDecadeBoard,
+  TeamOfDecadeBoardInput,
+  TeamOfDecadeBoardUpdate,
+  TeamOfDecadeMember,
+  TeamOfDecadeMemberInput,
+  TeamOfDecadeMemberUpdate,
   TrackedLink,
   UndoSeasonInput,
   UndoSeasonResult,
@@ -6305,6 +6311,594 @@ export const useDeleteAwardWinner = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteAwardWinnerMutationOptions(options));
+    }
+
+export const getListTeamOfDecadeBoardsUrl = () => {
+
+
+
+
+  return `/api/team-of-decade-boards`
+}
+
+/**
+ * Public list of published Team of the Decade boards, ordered by display
+order then id. Each board includes its lineup inline (batting order then
+display order) so the public page renders without a second round-trip.
+
+ * @summary List published Team of the Decade boards
+ */
+export const listTeamOfDecadeBoards = async ( options?: RequestInit): Promise<TeamOfDecadeBoard[]> => {
+
+  return customFetch<TeamOfDecadeBoard[]>(getListTeamOfDecadeBoardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTeamOfDecadeBoardsQueryKey = () => {
+    return [
+    `/api/team-of-decade-boards`
+    ] as const;
+    }
+
+
+export const getListTeamOfDecadeBoardsQueryOptions = <TData = Awaited<ReturnType<typeof listTeamOfDecadeBoards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTeamOfDecadeBoards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTeamOfDecadeBoardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTeamOfDecadeBoards>>> = ({ signal }) => listTeamOfDecadeBoards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTeamOfDecadeBoards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTeamOfDecadeBoardsQueryResult = NonNullable<Awaited<ReturnType<typeof listTeamOfDecadeBoards>>>
+export type ListTeamOfDecadeBoardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List published Team of the Decade boards
+ */
+
+export function useListTeamOfDecadeBoards<TData = Awaited<ReturnType<typeof listTeamOfDecadeBoards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTeamOfDecadeBoards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTeamOfDecadeBoardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTeamOfDecadeBoardUrl = () => {
+
+
+
+
+  return `/api/team-of-decade-boards`
+}
+
+/**
+ * @summary Create a Team of the Decade board
+ */
+export const createTeamOfDecadeBoard = async (teamOfDecadeBoardInput: TeamOfDecadeBoardInput, options?: RequestInit): Promise<TeamOfDecadeBoard> => {
+
+  return customFetch<TeamOfDecadeBoard>(getCreateTeamOfDecadeBoardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamOfDecadeBoardInput,)
+  }
+);}
+
+
+
+
+export const getCreateTeamOfDecadeBoardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTeamOfDecadeBoard>>, TError,{data: BodyType<TeamOfDecadeBoardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTeamOfDecadeBoard>>, TError,{data: BodyType<TeamOfDecadeBoardInput>}, TContext> => {
+
+const mutationKey = ['createTeamOfDecadeBoard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTeamOfDecadeBoard>>, {data: BodyType<TeamOfDecadeBoardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTeamOfDecadeBoard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTeamOfDecadeBoardMutationResult = NonNullable<Awaited<ReturnType<typeof createTeamOfDecadeBoard>>>
+    export type CreateTeamOfDecadeBoardMutationBody = BodyType<TeamOfDecadeBoardInput>
+    export type CreateTeamOfDecadeBoardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a Team of the Decade board
+ */
+export const useCreateTeamOfDecadeBoard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTeamOfDecadeBoard>>, TError,{data: BodyType<TeamOfDecadeBoardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTeamOfDecadeBoard>>,
+        TError,
+        {data: BodyType<TeamOfDecadeBoardInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTeamOfDecadeBoardMutationOptions(options));
+    }
+
+export const getListAdminTeamOfDecadeBoardsUrl = () => {
+
+
+
+
+  return `/api/admin/team-of-decade-boards`
+}
+
+/**
+ * Admin-only. Returns every board (published and draft) with its lineup so
+the admin honours area can manage them.
+
+ * @summary List all Team of the Decade boards including drafts (admin)
+ */
+export const listAdminTeamOfDecadeBoards = async ( options?: RequestInit): Promise<TeamOfDecadeBoard[]> => {
+
+  return customFetch<TeamOfDecadeBoard[]>(getListAdminTeamOfDecadeBoardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminTeamOfDecadeBoardsQueryKey = () => {
+    return [
+    `/api/admin/team-of-decade-boards`
+    ] as const;
+    }
+
+
+export const getListAdminTeamOfDecadeBoardsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminTeamOfDecadeBoardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>> = ({ signal }) => listAdminTeamOfDecadeBoards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminTeamOfDecadeBoardsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>>
+export type ListAdminTeamOfDecadeBoardsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List all Team of the Decade boards including drafts (admin)
+ */
+
+export function useListAdminTeamOfDecadeBoards<TData = Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminTeamOfDecadeBoards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminTeamOfDecadeBoardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateTeamOfDecadeBoardUrl = (id: number,) => {
+
+
+
+
+  return `/api/team-of-decade-boards/${id}`
+}
+
+/**
+ * @summary Update a Team of the Decade board
+ */
+export const updateTeamOfDecadeBoard = async (id: number,
+    teamOfDecadeBoardUpdate: TeamOfDecadeBoardUpdate, options?: RequestInit): Promise<TeamOfDecadeBoard> => {
+
+  return customFetch<TeamOfDecadeBoard>(getUpdateTeamOfDecadeBoardUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamOfDecadeBoardUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTeamOfDecadeBoardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTeamOfDecadeBoard>>, TError,{id: number;data: BodyType<TeamOfDecadeBoardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTeamOfDecadeBoard>>, TError,{id: number;data: BodyType<TeamOfDecadeBoardUpdate>}, TContext> => {
+
+const mutationKey = ['updateTeamOfDecadeBoard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTeamOfDecadeBoard>>, {id: number;data: BodyType<TeamOfDecadeBoardUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTeamOfDecadeBoard(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTeamOfDecadeBoardMutationResult = NonNullable<Awaited<ReturnType<typeof updateTeamOfDecadeBoard>>>
+    export type UpdateTeamOfDecadeBoardMutationBody = BodyType<TeamOfDecadeBoardUpdate>
+    export type UpdateTeamOfDecadeBoardMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a Team of the Decade board
+ */
+export const useUpdateTeamOfDecadeBoard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTeamOfDecadeBoard>>, TError,{id: number;data: BodyType<TeamOfDecadeBoardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTeamOfDecadeBoard>>,
+        TError,
+        {id: number;data: BodyType<TeamOfDecadeBoardUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTeamOfDecadeBoardMutationOptions(options));
+    }
+
+export const getDeleteTeamOfDecadeBoardUrl = (id: number,) => {
+
+
+
+
+  return `/api/team-of-decade-boards/${id}`
+}
+
+/**
+ * @summary Delete a Team of the Decade board and its members
+ */
+export const deleteTeamOfDecadeBoard = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTeamOfDecadeBoardUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTeamOfDecadeBoardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTeamOfDecadeBoard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTeamOfDecadeBoard>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTeamOfDecadeBoard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTeamOfDecadeBoard>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTeamOfDecadeBoard(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTeamOfDecadeBoardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTeamOfDecadeBoard>>>
+
+    export type DeleteTeamOfDecadeBoardMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a Team of the Decade board and its members
+ */
+export const useDeleteTeamOfDecadeBoard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTeamOfDecadeBoard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTeamOfDecadeBoard>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTeamOfDecadeBoardMutationOptions(options));
+    }
+
+export const getCreateTeamOfDecadeMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/team-of-decade-boards/${id}/members`
+}
+
+/**
+ * @summary Add a member to a Team of the Decade board
+ */
+export const createTeamOfDecadeMember = async (id: number,
+    teamOfDecadeMemberInput: TeamOfDecadeMemberInput, options?: RequestInit): Promise<TeamOfDecadeMember> => {
+
+  return customFetch<TeamOfDecadeMember>(getCreateTeamOfDecadeMemberUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamOfDecadeMemberInput,)
+  }
+);}
+
+
+
+
+export const getCreateTeamOfDecadeMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTeamOfDecadeMember>>, TError,{id: number;data: BodyType<TeamOfDecadeMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTeamOfDecadeMember>>, TError,{id: number;data: BodyType<TeamOfDecadeMemberInput>}, TContext> => {
+
+const mutationKey = ['createTeamOfDecadeMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTeamOfDecadeMember>>, {id: number;data: BodyType<TeamOfDecadeMemberInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createTeamOfDecadeMember(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTeamOfDecadeMemberMutationResult = NonNullable<Awaited<ReturnType<typeof createTeamOfDecadeMember>>>
+    export type CreateTeamOfDecadeMemberMutationBody = BodyType<TeamOfDecadeMemberInput>
+    export type CreateTeamOfDecadeMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a member to a Team of the Decade board
+ */
+export const useCreateTeamOfDecadeMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTeamOfDecadeMember>>, TError,{id: number;data: BodyType<TeamOfDecadeMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTeamOfDecadeMember>>,
+        TError,
+        {id: number;data: BodyType<TeamOfDecadeMemberInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTeamOfDecadeMemberMutationOptions(options));
+    }
+
+export const getUpdateTeamOfDecadeMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/team-of-decade-members/${id}`
+}
+
+/**
+ * @summary Update a Team of the Decade member
+ */
+export const updateTeamOfDecadeMember = async (id: number,
+    teamOfDecadeMemberUpdate: TeamOfDecadeMemberUpdate, options?: RequestInit): Promise<TeamOfDecadeMember> => {
+
+  return customFetch<TeamOfDecadeMember>(getUpdateTeamOfDecadeMemberUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamOfDecadeMemberUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTeamOfDecadeMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTeamOfDecadeMember>>, TError,{id: number;data: BodyType<TeamOfDecadeMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTeamOfDecadeMember>>, TError,{id: number;data: BodyType<TeamOfDecadeMemberUpdate>}, TContext> => {
+
+const mutationKey = ['updateTeamOfDecadeMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTeamOfDecadeMember>>, {id: number;data: BodyType<TeamOfDecadeMemberUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTeamOfDecadeMember(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTeamOfDecadeMemberMutationResult = NonNullable<Awaited<ReturnType<typeof updateTeamOfDecadeMember>>>
+    export type UpdateTeamOfDecadeMemberMutationBody = BodyType<TeamOfDecadeMemberUpdate>
+    export type UpdateTeamOfDecadeMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a Team of the Decade member
+ */
+export const useUpdateTeamOfDecadeMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTeamOfDecadeMember>>, TError,{id: number;data: BodyType<TeamOfDecadeMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTeamOfDecadeMember>>,
+        TError,
+        {id: number;data: BodyType<TeamOfDecadeMemberUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTeamOfDecadeMemberMutationOptions(options));
+    }
+
+export const getDeleteTeamOfDecadeMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/team-of-decade-members/${id}`
+}
+
+/**
+ * @summary Remove a Team of the Decade member
+ */
+export const deleteTeamOfDecadeMember = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTeamOfDecadeMemberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTeamOfDecadeMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTeamOfDecadeMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTeamOfDecadeMember>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTeamOfDecadeMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTeamOfDecadeMember>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTeamOfDecadeMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTeamOfDecadeMemberMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTeamOfDecadeMember>>>
+
+    export type DeleteTeamOfDecadeMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a Team of the Decade member
+ */
+export const useDeleteTeamOfDecadeMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTeamOfDecadeMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTeamOfDecadeMember>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTeamOfDecadeMemberMutationOptions(options));
     }
 
 export const getListSponsorsUrl = () => {

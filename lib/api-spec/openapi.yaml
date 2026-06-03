@@ -34,6 +34,8 @@ tags:
     description: Honour board configuration and overrides
   - name: awards
     description: Club awards and their manually-recorded past winners
+  - name: teamOfDecade
+    description: Curated Team of the Decade honour boards (best XI per team/period)
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
   - name: Storage
@@ -1814,6 +1816,173 @@ paths:
       operationId: deleteAwardWinner
       tags: [awards]
       summary: Remove a winner entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /team-of-decade-boards:
+    get:
+      operationId: listTeamOfDecadeBoards
+      tags: [teamOfDecade]
+      summary: List published Team of the Decade boards
+      description: |
+        Public list of published Team of the Decade boards, ordered by display
+        order then id. Each board includes its lineup inline (batting order then
+        display order) so the public page renders without a second round-trip.
+      responses:
+        "200":
+          description: Published boards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamOfDecadeBoard"
+    post:
+      operationId: createTeamOfDecadeBoard
+      tags: [teamOfDecade]
+      summary: Create a Team of the Decade board
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamOfDecadeBoardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamOfDecadeBoard"
+
+  /admin/team-of-decade-boards:
+    get:
+      operationId: listAdminTeamOfDecadeBoards
+      tags: [teamOfDecade]
+      summary: List all Team of the Decade boards including drafts (admin)
+      description: |
+        Admin-only. Returns every board (published and draft) with its lineup so
+        the admin honours area can manage them.
+      responses:
+        "200":
+          description: All boards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamOfDecadeBoard"
+        "401":
+          description: Not authenticated as admin
+
+  /team-of-decade-boards/{id}:
+    patch:
+      operationId: updateTeamOfDecadeBoard
+      tags: [teamOfDecade]
+      summary: Update a Team of the Decade board
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamOfDecadeBoardUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamOfDecadeBoard"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTeamOfDecadeBoard
+      tags: [teamOfDecade]
+      summary: Delete a Team of the Decade board and its members
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /team-of-decade-boards/{id}/members:
+    post:
+      operationId: createTeamOfDecadeMember
+      tags: [teamOfDecade]
+      summary: Add a member to a Team of the Decade board
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamOfDecadeMemberInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamOfDecadeMember"
+        "404":
+          description: Board not found
+
+  /team-of-decade-members/{id}:
+    patch:
+      operationId: updateTeamOfDecadeMember
+      tags: [teamOfDecade]
+      summary: Update a Team of the Decade member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamOfDecadeMemberUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamOfDecadeMember"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTeamOfDecadeMember
+      tags: [teamOfDecade]
+      summary: Remove a Team of the Decade member
       parameters:
         - name: id
           in: path
@@ -4489,6 +4658,136 @@ components:
           type: ["integer", "null"]
         name:
           type: string
+        displayOrder:
+          type: integer
+
+    TeamOfDecadeMember:
+      type: object
+      required:
+        [id, boardId, name, battingOrder, role, isCaptain, isViceCaptain, isWicketkeeper, displayOrder]
+      properties:
+        id:
+          type: integer
+        boardId:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        battingOrder:
+          type: integer
+        role:
+          type: string
+        isCaptain:
+          type: boolean
+        isViceCaptain:
+          type: boolean
+        isWicketkeeper:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    TeamOfDecadeBoard:
+      type: object
+      required:
+        [id, key, title, teamLabel, periodLabel, subtitle, published, displayOrder, members]
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        title:
+          type: string
+        teamLabel:
+          type: string
+        periodLabel:
+          type: string
+        subtitle:
+          type: string
+        published:
+          type: boolean
+        displayOrder:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamOfDecadeMember"
+
+    TeamOfDecadeBoardInput:
+      type: object
+      required: [key, title]
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        teamLabel:
+          type: string
+        periodLabel:
+          type: string
+        subtitle:
+          type: string
+        published:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    TeamOfDecadeBoardUpdate:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        teamLabel:
+          type: string
+        periodLabel:
+          type: string
+        subtitle:
+          type: string
+        published:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    TeamOfDecadeMemberInput:
+      type: object
+      required: [name]
+      properties:
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        battingOrder:
+          type: integer
+        role:
+          type: string
+        isCaptain:
+          type: boolean
+        isViceCaptain:
+          type: boolean
+        isWicketkeeper:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    TeamOfDecadeMemberUpdate:
+      type: object
+      properties:
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        battingOrder:
+          type: integer
+        role:
+          type: string
+        isCaptain:
+          type: boolean
+        isViceCaptain:
+          type: boolean
+        isWicketkeeper:
+          type: boolean
         displayOrder:
           type: integer
 

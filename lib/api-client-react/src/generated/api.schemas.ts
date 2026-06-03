@@ -1512,6 +1512,76 @@ export interface AwardWinnerUpdate {
   displayOrder?: number;
 }
 
+export interface TeamOfDecadeMember {
+  id: number;
+  boardId: number;
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  battingOrder: number;
+  role: string;
+  isCaptain: boolean;
+  isViceCaptain: boolean;
+  isWicketkeeper: boolean;
+  displayOrder: number;
+}
+
+export interface TeamOfDecadeBoard {
+  id: number;
+  key: string;
+  title: string;
+  teamLabel: string;
+  periodLabel: string;
+  subtitle: string;
+  published: boolean;
+  displayOrder: number;
+  members: TeamOfDecadeMember[];
+}
+
+export interface TeamOfDecadeBoardInput {
+  key: string;
+  title: string;
+  teamLabel?: string;
+  periodLabel?: string;
+  subtitle?: string;
+  published?: boolean;
+  displayOrder?: number;
+}
+
+export interface TeamOfDecadeBoardUpdate {
+  key?: string;
+  title?: string;
+  teamLabel?: string;
+  periodLabel?: string;
+  subtitle?: string;
+  published?: boolean;
+  displayOrder?: number;
+}
+
+export interface TeamOfDecadeMemberInput {
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  battingOrder?: number;
+  role?: string;
+  isCaptain?: boolean;
+  isViceCaptain?: boolean;
+  isWicketkeeper?: boolean;
+  displayOrder?: number;
+}
+
+export interface TeamOfDecadeMemberUpdate {
+  /** @nullable */
+  playerId?: number | null;
+  name?: string;
+  battingOrder?: number;
+  role?: string;
+  isCaptain?: boolean;
+  isViceCaptain?: boolean;
+  isWicketkeeper?: boolean;
+  displayOrder?: number;
+}
+
 export type CardKind = typeof CardKind[keyof typeof CardKind];
 
 
