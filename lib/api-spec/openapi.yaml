@@ -36,6 +36,8 @@ tags:
     description: Club awards and their manually-recorded past winners
   - name: teamOfDecade
     description: Curated Team of the Decade honour boards (best XI per team/period)
+  - name: clubRoles
+    description: Season-by-season club office bearers and grade captains
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
   - name: Storage
@@ -2141,6 +2143,100 @@ paths:
       operationId: deleteTeamOfDecadeMember
       tags: [teamOfDecade]
       summary: Remove a Team of the Decade member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /club-roles:
+    get:
+      operationId: listClubRoles
+      tags: [clubRoles]
+      summary: List published club roles (office bearers + grade captains)
+      description: |
+        Public list of role records that are published, ordered by season
+        descending, then displayOrder, then id. Includes both club office
+        bearers (grade is null) and grade captains (role = "Grade Captain",
+        grade set).
+      responses:
+        "200":
+          description: Club roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubRole"
+    post:
+      operationId: createClubRole
+      tags: [clubRoles]
+      summary: Create a club role record (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubRoleInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubRole"
+
+  /club-roles/all:
+    get:
+      operationId: listAllClubRoles
+      tags: [clubRoles]
+      summary: List every club role record including unpublished (admin)
+      responses:
+        "200":
+          description: Club roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubRole"
+
+  /club-roles/{id}:
+    patch:
+      operationId: updateClubRole
+      tags: [clubRoles]
+      summary: Update a club role record (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubRoleUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubRole"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteClubRole
+      tags: [clubRoles]
+      summary: Delete a club role record (admin)
       parameters:
         - name: id
           in: path
@@ -5115,6 +5211,64 @@ components:
           type: boolean
         displayOrder:
           type: integer
+
+    ClubRole:
+      type: object
+      required: [id, season, role, name, displayOrder, published]
+      properties:
+        id:
+          type: integer
+        season:
+          type: integer
+        role:
+          type: string
+        grade:
+          type: ["string", "null"]
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        displayOrder:
+          type: integer
+        published:
+          type: boolean
+
+    ClubRoleInput:
+      type: object
+      required: [season, role, name]
+      properties:
+        season:
+          type: integer
+        role:
+          type: string
+        grade:
+          type: ["string", "null"]
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        displayOrder:
+          type: integer
+        published:
+          type: boolean
+
+    ClubRoleUpdate:
+      type: object
+      properties:
+        season:
+          type: integer
+        role:
+          type: string
+        grade:
+          type: ["string", "null"]
+        playerId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        displayOrder:
+          type: integer
+        published:
+          type: boolean
 
     CardKind:
       type: string

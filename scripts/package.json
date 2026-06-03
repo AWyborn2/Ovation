@@ -14,6 +14,7 @@
     "seed-honours": "tsx ./src/seed-honours.ts",
     "seed-awards": "tsx ./src/seed-awards.ts",
     "load-award-history": "tsx ./src/load-award-history.ts",
+    "seed-committee": "tsx ./src/seed-committee.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

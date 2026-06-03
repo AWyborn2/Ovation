@@ -5,6 +5,7 @@ import {
   getGetGradeLeaderboardQueryKey,
   useListCaps,
   getListCapsQueryKey,
+  useListClubRoles,
 } from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
@@ -37,6 +38,13 @@ export default function GradeLeaderboard() {
     query: { enabled: !!decodedGrade && isValid, queryKey: getGetGradeLeaderboardQueryKey(decodedGrade) },
   });
   const { data: caps } = useListCaps({ query: { enabled: isAGrade, queryKey: getListCapsQueryKey() } });
+  const { data: clubRoles } = useListClubRoles();
+
+  const captainHistory = useMemo(() => {
+    return (clubRoles ?? [])
+      .filter((r) => r.role === "Grade Captain" && r.grade === decodedGrade)
+      .sort((a, b) => b.season - a.season || a.displayOrder - b.displayOrder);
+  }, [clubRoles, decodedGrade]);
 
   const unstattedCaps = useMemo(() => {
     if (!isAGrade || !caps) return [];
@@ -162,6 +170,45 @@ export default function GradeLeaderboard() {
           </tbody>
         </table>
       </div>
+
+      {captainHistory.length > 0 && (
+        <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm">
+            {decodedGrade} Captains
+          </div>
+          <div className="p-4 md:p-6">
+            <div className="divide-y divide-border/60">
+              {captainHistory.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0"
+                >
+                  <span className="font-mono font-bold text-primary w-20 shrink-0">
+                    {formatSeasonRange(c.season)}
+                  </span>
+                  <span>
+                    {c.playerId != null ? (
+                      <Link
+                        href={`/players/${c.playerId}`}
+                        className="font-semibold text-primary hover:underline"
+                      >
+                        {c.name}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-foreground">{c.name}</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function formatSeasonRange(year: number): string {
+  const next = (year + 1) % 100;
+  return `${year}/${next.toString().padStart(2, "0")}`;
 }

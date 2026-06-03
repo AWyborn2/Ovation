@@ -17,6 +17,7 @@ const NAV = [
   { href: "/admin/life-members", label: "Life members" },
   { href: "/admin/awards", label: "Awards" },
   { href: "/admin/team-of-decade", label: "Team of the Decade" },
+  { href: "/admin/committee", label: "Committee" },
   { href: "/admin/captains", label: "Captains" },
 ];
 

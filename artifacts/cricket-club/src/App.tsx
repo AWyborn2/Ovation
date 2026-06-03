@@ -31,6 +31,7 @@ import AdminSocial from "@/pages/admin-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminCaptains from "@/pages/admin-captains";
+import AdminCommittee from "@/pages/admin-committee";
 import CaptainPage from "@/pages/captain";
 import NotFound from "@/pages/not-found";
 
@@ -75,6 +76,7 @@ function AdminRoutes() {
           <Route path="/admin/awards" component={AdminAwards} />
           <Route path="/admin/team-of-decade" component={AdminTeamOfDecade} />
           <Route path="/admin/captains" component={AdminCaptains} />
+          <Route path="/admin/committee" component={AdminCommittee} />
           <Route path="/admin/social" component={AdminSocial} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
           <Route component={NotFound} />

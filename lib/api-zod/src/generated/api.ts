@@ -2794,6 +2794,94 @@ export const DeleteTeamOfDecadeMemberParams = zod.object({
 
 
 /**
+ * Public list of role records that are published, ordered by season
+descending, then displayOrder, then id. Includes both club office
+bearers (grade is null) and grade captains (role = "Grade Captain",
+grade set).
+
+ * @summary List published club roles (office bearers + grade captains)
+ */
+export const ListClubRolesResponseItem = zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "role": zod.string(),
+  "grade": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+})
+export const ListClubRolesResponse = zod.array(ListClubRolesResponseItem)
+
+
+/**
+ * @summary Create a club role record (admin)
+ */
+export const CreateClubRoleBody = zod.object({
+  "season": zod.number(),
+  "role": zod.string(),
+  "grade": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number().optional(),
+  "published": zod.boolean().optional()
+})
+
+
+/**
+ * @summary List every club role record including unpublished (admin)
+ */
+export const ListAllClubRolesResponseItem = zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "role": zod.string(),
+  "grade": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+})
+export const ListAllClubRolesResponse = zod.array(ListAllClubRolesResponseItem)
+
+
+/**
+ * @summary Update a club role record (admin)
+ */
+export const UpdateClubRoleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateClubRoleBody = zod.object({
+  "season": zod.number().optional(),
+  "role": zod.string().optional(),
+  "grade": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string().optional(),
+  "displayOrder": zod.number().optional(),
+  "published": zod.boolean().optional()
+})
+
+export const UpdateClubRoleResponse = zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "role": zod.string(),
+  "grade": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a club role record (admin)
+ */
+export const DeleteClubRoleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all sponsors
  */
 export const ListSponsorsResponseItem = zod.object({

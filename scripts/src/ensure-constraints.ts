@@ -56,6 +56,12 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["award_id", "season"],
   },
   {
+    table: "club_roles",
+    name: "club_roles_season_role_grade_unique",
+    columns: ["season", "role", "grade"],
+    nullsNotDistinct: true,
+  },
+  {
     table: "matches",
     name: "matches_grade_season_round_stage_unique",
     columns: ["grade", "season", "round", "stage"],

@@ -61,6 +61,7 @@ Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Fe
 - **Player Detail** (`/players/:id`) — all grades played, per-grade stats breakdown
 - **Grades** (`/grades`) — summary cards for each grade
 - **Grade Leaderboard** (`/grades/:grade`) — full sortable stats table for a specific grade
+- **Committee & Captains** — season-by-season office bearers (Committee tab on Honour Boards) and grade captains (history section on each grade leaderboard), from `club_roles`. Admin CRUD at `/admin/committee` with publish/visibility toggle; names link to players where confident, plain text otherwise. Seeded from `artifacts/api-server/src/data/club-roles.json` via `scripts/src/seed-committee.ts`.
 - **Records** (`/records`) — all-time club records across all categories
 - **Team of the Decade** — curated best-XI honour boards. Public view is a self-contained tab on the Honour Boards page (`/`), showing only published boards; admin management at `/admin/team-of-decade` (draft/publish toggle, reorder, lineup with optional player link via PlayerTypeahead, role + captain/VC/keeper flags). Schema: `team_of_decade_boards` + `team_of_decade_members`; routes in `artifacts/api-server/src/routes/team-of-decade.ts`.
 - **Stat Edit** (`/stats/:id`) — inline edit/delete a stat record

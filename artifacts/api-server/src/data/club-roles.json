@@ -1,0 +1,2361 @@
+[
+  {
+    "season": 1991,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1991,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1991,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1991,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 5
+  },
+  {
+    "season": 1992,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1992,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1992,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1992,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 5
+  },
+  {
+    "season": 1993,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1993,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1993,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1993,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 5
+  },
+  {
+    "season": 1994,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1994,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1994,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1994,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 5
+  },
+  {
+    "season": 1995,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1995,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1995,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1995,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 5
+  },
+  {
+    "season": 1996,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1996,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1996,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1996,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 5
+  },
+  {
+    "season": 1997,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1997,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1997,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1997,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 5
+  },
+  {
+    "season": 1998,
+    "role": "President",
+    "grade": null,
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1998,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Shane Shanahan",
+    "displayOrder": 2
+  },
+  {
+    "season": 1998,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 3
+  },
+  {
+    "season": 1998,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 5
+  },
+  {
+    "season": 1999,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 1999,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Raquel Willey",
+    "displayOrder": 2
+  },
+  {
+    "season": 1999,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Raquel Willey",
+    "displayOrder": 3
+  },
+  {
+    "season": 1999,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 5
+  },
+  {
+    "season": 2000,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2000,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Raquel Willey",
+    "displayOrder": 2
+  },
+  {
+    "season": 2000,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Raquel Willey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2000,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Leigh Burns",
+    "displayOrder": 5
+  },
+  {
+    "season": 2001,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2001,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 2
+  },
+  {
+    "season": 2001,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 3
+  },
+  {
+    "season": 2001,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Leigh Burns",
+    "displayOrder": 5
+  },
+  {
+    "season": 2002,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2002,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 2
+  },
+  {
+    "season": 2002,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 3
+  },
+  {
+    "season": 2002,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Leigh Burns",
+    "displayOrder": 5
+  },
+  {
+    "season": 2003,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2003,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Jodie Grant",
+    "displayOrder": 2
+  },
+  {
+    "season": 2003,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Chris Baker",
+    "displayOrder": 3
+  },
+  {
+    "season": 2003,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Dale Burns",
+    "displayOrder": 5
+  },
+  {
+    "season": 2004,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2004,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Chris Hickman",
+    "displayOrder": 2
+  },
+  {
+    "season": 2004,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Chris Baker",
+    "displayOrder": 3
+  },
+  {
+    "season": 2004,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Brendon King",
+    "displayOrder": 5
+  },
+  {
+    "season": 2005,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2005,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ray Smedley",
+    "displayOrder": 1
+  },
+  {
+    "season": 2005,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 2
+  },
+  {
+    "season": 2005,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Chris Baker",
+    "displayOrder": 3
+  },
+  {
+    "season": 2005,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Brendon King",
+    "displayOrder": 5
+  },
+  {
+    "season": 2006,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2006,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ray Smedley",
+    "displayOrder": 1
+  },
+  {
+    "season": 2006,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 2
+  },
+  {
+    "season": 2006,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Chris Baker",
+    "displayOrder": 3
+  },
+  {
+    "season": 2006,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Chris Phelps",
+    "displayOrder": 5
+  },
+  {
+    "season": 2007,
+    "role": "President",
+    "grade": null,
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 2007,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ian Bray",
+    "displayOrder": 1
+  },
+  {
+    "season": 2007,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Jamie Woods",
+    "displayOrder": 2
+  },
+  {
+    "season": 2007,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Chris Baker",
+    "displayOrder": 3
+  },
+  {
+    "season": 2007,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Chris Phelps",
+    "displayOrder": 5
+  },
+  {
+    "season": 2008,
+    "role": "President",
+    "grade": null,
+    "name": "Ian Bray",
+    "displayOrder": 0
+  },
+  {
+    "season": 2008,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Dean Finlay",
+    "displayOrder": 1
+  },
+  {
+    "season": 2008,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Jamie Woods",
+    "displayOrder": 2
+  },
+  {
+    "season": 2008,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Darren Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2008,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Chris Phelps",
+    "displayOrder": 5
+  },
+  {
+    "season": 2008,
+    "role": "Coach",
+    "grade": null,
+    "name": "Brendon King",
+    "displayOrder": 6
+  },
+  {
+    "season": 2009,
+    "role": "President",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 0
+  },
+  {
+    "season": 2009,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 1
+  },
+  {
+    "season": 2009,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Jamie Woods",
+    "displayOrder": 2
+  },
+  {
+    "season": 2009,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Darren Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2009,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Chris Phelps",
+    "displayOrder": 5
+  },
+  {
+    "season": 2009,
+    "role": "Coach",
+    "grade": null,
+    "name": "Brendon King",
+    "displayOrder": 6
+  },
+  {
+    "season": 2010,
+    "role": "President",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 0
+  },
+  {
+    "season": 2010,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 1
+  },
+  {
+    "season": 2010,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Andy White",
+    "displayOrder": 2
+  },
+  {
+    "season": 2010,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Darren Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2010,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Cary Green",
+    "displayOrder": 5
+  },
+  {
+    "season": 2010,
+    "role": "Coach",
+    "grade": null,
+    "name": "Brendon King",
+    "displayOrder": 6
+  },
+  {
+    "season": 2011,
+    "role": "President",
+    "grade": null,
+    "name": "Paul Gillam",
+    "displayOrder": 0
+  },
+  {
+    "season": 2011,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Michael Griffiths",
+    "displayOrder": 1
+  },
+  {
+    "season": 2011,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Andy White",
+    "displayOrder": 2
+  },
+  {
+    "season": 2011,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Matt Lloyd",
+    "displayOrder": 3
+  },
+  {
+    "season": 2011,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Michael Griffiths",
+    "displayOrder": 5
+  },
+  {
+    "season": 2011,
+    "role": "Coach",
+    "grade": null,
+    "name": "Brendon King",
+    "displayOrder": 6
+  },
+  {
+    "season": 2012,
+    "role": "President",
+    "grade": null,
+    "name": "Andy White",
+    "displayOrder": 0
+  },
+  {
+    "season": 2012,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Michael Griffiths",
+    "displayOrder": 1
+  },
+  {
+    "season": 2012,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Ashley Wyborn",
+    "displayOrder": 2
+  },
+  {
+    "season": 2012,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Jamie Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2012,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Michael Griffiths",
+    "displayOrder": 5
+  },
+  {
+    "season": 2012,
+    "role": "Coach",
+    "grade": null,
+    "name": "Tim Lees",
+    "displayOrder": 6
+  },
+  {
+    "season": 2013,
+    "role": "President",
+    "grade": null,
+    "name": "Andy White",
+    "displayOrder": 0
+  },
+  {
+    "season": 2013,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Matthew Guyton",
+    "displayOrder": 1
+  },
+  {
+    "season": 2013,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Ashley Wyborn",
+    "displayOrder": 2
+  },
+  {
+    "season": 2013,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Matt Newton",
+    "displayOrder": 3
+  },
+  {
+    "season": 2013,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Brad Wiseman",
+    "displayOrder": 5
+  },
+  {
+    "season": 2013,
+    "role": "Coach",
+    "grade": null,
+    "name": "Tim Lees",
+    "displayOrder": 6
+  },
+  {
+    "season": 2014,
+    "role": "President",
+    "grade": null,
+    "name": "James Woods",
+    "displayOrder": 0
+  },
+  {
+    "season": 2014,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Matthew Guyton",
+    "displayOrder": 1
+  },
+  {
+    "season": 2014,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Felicity Tatterson",
+    "displayOrder": 2
+  },
+  {
+    "season": 2014,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Matthew Newton",
+    "displayOrder": 3
+  },
+  {
+    "season": 2014,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Andrew Tatterson",
+    "displayOrder": 5
+  },
+  {
+    "season": 2014,
+    "role": "Coach",
+    "grade": null,
+    "name": "Grant Matthews",
+    "displayOrder": 6
+  },
+  {
+    "season": 2015,
+    "role": "President",
+    "grade": null,
+    "name": "James Woods",
+    "displayOrder": 0
+  },
+  {
+    "season": 2015,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Matt Newton",
+    "displayOrder": 1
+  },
+  {
+    "season": 2015,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Felicity Tatterson",
+    "displayOrder": 2
+  },
+  {
+    "season": 2015,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Rebecca Quaid",
+    "displayOrder": 3
+  },
+  {
+    "season": 2015,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Andrew Tatterson",
+    "displayOrder": 5
+  },
+  {
+    "season": 2015,
+    "role": "Coach",
+    "grade": null,
+    "name": "Grant Matthews",
+    "displayOrder": 6
+  },
+  {
+    "season": 2016,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2016,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Chris Thomas",
+    "displayOrder": 1
+  },
+  {
+    "season": 2016,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Paige Buglass",
+    "displayOrder": 2
+  },
+  {
+    "season": 2016,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Felicity Tatterson",
+    "displayOrder": 3
+  },
+  {
+    "season": 2016,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Josh Petersen",
+    "displayOrder": 5
+  },
+  {
+    "season": 2016,
+    "role": "Coach",
+    "grade": null,
+    "name": "Josh Petersen",
+    "displayOrder": 6
+  },
+  {
+    "season": 2017,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2017,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Chris Thomas",
+    "displayOrder": 1
+  },
+  {
+    "season": 2017,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Paige Buglass",
+    "displayOrder": 2
+  },
+  {
+    "season": 2017,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Felicity Tatterson",
+    "displayOrder": 3
+  },
+  {
+    "season": 2017,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Chris Phelps",
+    "displayOrder": 5
+  },
+  {
+    "season": 2017,
+    "role": "Coach",
+    "grade": null,
+    "name": "Grant Matthews",
+    "displayOrder": 6
+  },
+  {
+    "season": 2018,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2018,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2018,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 2
+  },
+  {
+    "season": 2018,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Michael Chappell",
+    "displayOrder": 3
+  },
+  {
+    "season": 2018,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Lachlan Kinna",
+    "displayOrder": 5
+  },
+  {
+    "season": 2018,
+    "role": "Coach",
+    "grade": null,
+    "name": "Grant Matthews",
+    "displayOrder": 6
+  },
+  {
+    "season": 2019,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2019,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2019,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 2
+  },
+  {
+    "season": 2019,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Wes Naidoo",
+    "displayOrder": 3
+  },
+  {
+    "season": 2019,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Scott Martin",
+    "displayOrder": 5
+  },
+  {
+    "season": 2019,
+    "role": "Coach",
+    "grade": null,
+    "name": "Will Eason",
+    "displayOrder": 6
+  },
+  {
+    "season": 2020,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2020,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2020,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Suelee Christie",
+    "displayOrder": 2
+  },
+  {
+    "season": 2020,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Gaynor Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2020,
+    "role": "Director of Cricket",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 4
+  },
+  {
+    "season": 2020,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Scott Martin",
+    "displayOrder": 5
+  },
+  {
+    "season": 2020,
+    "role": "Coach",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 6
+  },
+  {
+    "season": 2021,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2021,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2021,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Danni Render",
+    "displayOrder": 2
+  },
+  {
+    "season": 2021,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 3
+  },
+  {
+    "season": 2021,
+    "role": "Director of Cricket",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 4
+  },
+  {
+    "season": 2021,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 5
+  },
+  {
+    "season": 2021,
+    "role": "Coach",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 6
+  },
+  {
+    "season": 2022,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2022,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2022,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Danni Render",
+    "displayOrder": 2
+  },
+  {
+    "season": 2022,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Gaynor Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2022,
+    "role": "Director of Cricket",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 4
+  },
+  {
+    "season": 2022,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 5
+  },
+  {
+    "season": 2022,
+    "role": "Coach",
+    "grade": null,
+    "name": "James Rudge",
+    "displayOrder": 6
+  },
+  {
+    "season": 2023,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2023,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2023,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Danni Render",
+    "displayOrder": 2
+  },
+  {
+    "season": 2023,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Gaynor Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2023,
+    "role": "Director of Cricket",
+    "grade": null,
+    "name": "Brad Malingre",
+    "displayOrder": 4
+  },
+  {
+    "season": 2023,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 5
+  },
+  {
+    "season": 2023,
+    "role": "Coach",
+    "grade": null,
+    "name": "Angus Beattie",
+    "displayOrder": 6
+  },
+  {
+    "season": 2024,
+    "role": "President",
+    "grade": null,
+    "name": "Ash Wyborn",
+    "displayOrder": 0
+  },
+  {
+    "season": 2024,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 1
+  },
+  {
+    "season": 2024,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Danni Render",
+    "displayOrder": 2
+  },
+  {
+    "season": 2024,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Gaynor Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2024,
+    "role": "Director of Cricket",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 4
+  },
+  {
+    "season": 2024,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 5
+  },
+  {
+    "season": 2024,
+    "role": "Coach",
+    "grade": null,
+    "name": "Oliver Davidson",
+    "displayOrder": 6
+  },
+  {
+    "season": 2025,
+    "role": "President",
+    "grade": null,
+    "name": "Ben Dreckow",
+    "displayOrder": 0
+  },
+  {
+    "season": 2025,
+    "role": "Vice President",
+    "grade": null,
+    "name": "Sara Walsh",
+    "displayOrder": 1
+  },
+  {
+    "season": 2025,
+    "role": "Secretary",
+    "grade": null,
+    "name": "Jason Young",
+    "displayOrder": 2
+  },
+  {
+    "season": 2025,
+    "role": "Treasurer",
+    "grade": null,
+    "name": "Gaynor Jeffrey",
+    "displayOrder": 3
+  },
+  {
+    "season": 2025,
+    "role": "Director of Cricket",
+    "grade": null,
+    "name": "Peter Wyllie",
+    "displayOrder": 4
+  },
+  {
+    "season": 2025,
+    "role": "Club Captain",
+    "grade": null,
+    "name": "Josh Rudge",
+    "displayOrder": 5
+  },
+  {
+    "season": 1991,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1991,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Steve Doyle",
+    "displayOrder": 1
+  },
+  {
+    "season": 1992,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Mark Rowe",
+    "displayOrder": 0
+  },
+  {
+    "season": 1992,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Ian Wallace",
+    "displayOrder": 1
+  },
+  {
+    "season": 1993,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Peter Wyllie",
+    "displayOrder": 0
+  },
+  {
+    "season": 1993,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Ian Wallace",
+    "displayOrder": 1
+  },
+  {
+    "season": 1994,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Peter Wyllie",
+    "displayOrder": 0
+  },
+  {
+    "season": 1994,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Ian Wallace",
+    "displayOrder": 1
+  },
+  {
+    "season": 1995,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Peter Wyllie",
+    "displayOrder": 0
+  },
+  {
+    "season": 1995,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Martin Crump",
+    "displayOrder": 1
+  },
+  {
+    "season": 1996,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Peter Wyllie",
+    "displayOrder": 0
+  },
+  {
+    "season": 1996,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Martin Crump",
+    "displayOrder": 1
+  },
+  {
+    "season": 1997,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Dale Burns",
+    "displayOrder": 0
+  },
+  {
+    "season": 1997,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Martin Crump",
+    "displayOrder": 1
+  },
+  {
+    "season": 1998,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Dale Burns",
+    "displayOrder": 0
+  },
+  {
+    "season": 1998,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Justin Lockyer",
+    "displayOrder": 1
+  },
+  {
+    "season": 1998,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Steve Cox",
+    "displayOrder": 2
+  },
+  {
+    "season": 1999,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Roger Wren",
+    "displayOrder": 0
+  },
+  {
+    "season": 1999,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Justin Lockyer",
+    "displayOrder": 1
+  },
+  {
+    "season": 1999,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Andrew Harris",
+    "displayOrder": 2
+  },
+  {
+    "season": 2000,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Leigh Burns",
+    "displayOrder": 0
+  },
+  {
+    "season": 2000,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Justin Lockyer",
+    "displayOrder": 1
+  },
+  {
+    "season": 2000,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Andrew Harris",
+    "displayOrder": 2
+  },
+  {
+    "season": 2001,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Leigh Burns",
+    "displayOrder": 0
+  },
+  {
+    "season": 2001,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Justin Lockyer",
+    "displayOrder": 1
+  },
+  {
+    "season": 2001,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Glen Cruickshank",
+    "displayOrder": 2
+  },
+  {
+    "season": 2002,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Leigh Burns",
+    "displayOrder": 0
+  },
+  {
+    "season": 2002,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Justin Lockyer",
+    "displayOrder": 1
+  },
+  {
+    "season": 2002,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Glen Cruickshank",
+    "displayOrder": 2
+  },
+  {
+    "season": 2003,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Dale Burns",
+    "displayOrder": 0
+  },
+  {
+    "season": 2003,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Justin Lockyer",
+    "displayOrder": 1
+  },
+  {
+    "season": 2003,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Dean Patterson",
+    "displayOrder": 2
+  },
+  {
+    "season": 2004,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Brendon King",
+    "displayOrder": 0
+  },
+  {
+    "season": 2004,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Chris Hickman",
+    "displayOrder": 1
+  },
+  {
+    "season": 2004,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Dean Patterson",
+    "displayOrder": 2
+  },
+  {
+    "season": 2005,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Brendon King",
+    "displayOrder": 0
+  },
+  {
+    "season": 2005,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Chris Hickman",
+    "displayOrder": 1
+  },
+  {
+    "season": 2005,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "D. Patterson / R. Smedley",
+    "displayOrder": 2
+  },
+  {
+    "season": 2005,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Jay Deeming",
+    "displayOrder": 3
+  },
+  {
+    "season": 2006,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Chris Phelps",
+    "displayOrder": 0
+  },
+  {
+    "season": 2006,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Chris Hickman",
+    "displayOrder": 1
+  },
+  {
+    "season": 2006,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Ray Smedley",
+    "displayOrder": 2
+  },
+  {
+    "season": 2006,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2007,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Chris Phelps",
+    "displayOrder": 0
+  },
+  {
+    "season": 2007,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Ian Bray",
+    "displayOrder": 1
+  },
+  {
+    "season": 2007,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Darren Jeffrey",
+    "displayOrder": 2
+  },
+  {
+    "season": 2007,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2008,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Chris Phelps",
+    "displayOrder": 0
+  },
+  {
+    "season": 2008,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Roger Wren",
+    "displayOrder": 1
+  },
+  {
+    "season": 2008,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Darren Jeffrey",
+    "displayOrder": 2
+  },
+  {
+    "season": 2008,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2009,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Chris Phelps",
+    "displayOrder": 0
+  },
+  {
+    "season": 2009,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Roger Wren",
+    "displayOrder": 1
+  },
+  {
+    "season": 2009,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Darren Jeffrey",
+    "displayOrder": 2
+  },
+  {
+    "season": 2009,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2009,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Dan Rackham",
+    "displayOrder": 4
+  },
+  {
+    "season": 2010,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Cary Green",
+    "displayOrder": 0
+  },
+  {
+    "season": 2010,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Roger Wren",
+    "displayOrder": 1
+  },
+  {
+    "season": 2010,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Darren Jeffrey",
+    "displayOrder": 2
+  },
+  {
+    "season": 2010,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2010,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Ash Wyborn",
+    "displayOrder": 4
+  },
+  {
+    "season": 2011,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Michael Griffiths",
+    "displayOrder": 0
+  },
+  {
+    "season": 2011,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Chris Hickman",
+    "displayOrder": 1
+  },
+  {
+    "season": 2011,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Andy White",
+    "displayOrder": 2
+  },
+  {
+    "season": 2011,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2011,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Ash Wyborn",
+    "displayOrder": 4
+  },
+  {
+    "season": 2012,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Michael Griffiths",
+    "displayOrder": 0
+  },
+  {
+    "season": 2012,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Ryan Burns",
+    "displayOrder": 1
+  },
+  {
+    "season": 2012,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Andy White",
+    "displayOrder": 2
+  },
+  {
+    "season": 2012,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "James Woods",
+    "displayOrder": 3
+  },
+  {
+    "season": 2012,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Matt Newton",
+    "displayOrder": 4
+  },
+  {
+    "season": 2013,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Brad Wiseman",
+    "displayOrder": 0
+  },
+  {
+    "season": 2013,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Jason Young",
+    "displayOrder": 1
+  },
+  {
+    "season": 2013,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Matthew Guyton",
+    "displayOrder": 2
+  },
+  {
+    "season": 2013,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Jeff Dillon",
+    "displayOrder": 3
+  },
+  {
+    "season": 2013,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Matt Newton",
+    "displayOrder": 4
+  },
+  {
+    "season": 2013,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Ash Wyborn",
+    "displayOrder": 5
+  },
+  {
+    "season": 2014,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Andrew Tatterson",
+    "displayOrder": 0
+  },
+  {
+    "season": 2014,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Jason Young",
+    "displayOrder": 1
+  },
+  {
+    "season": 2014,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Dean Finlay",
+    "displayOrder": 2
+  },
+  {
+    "season": 2014,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Andy White",
+    "displayOrder": 3
+  },
+  {
+    "season": 2014,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Matt Newton",
+    "displayOrder": 4
+  },
+  {
+    "season": 2014,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Ash Wyborn",
+    "displayOrder": 5
+  },
+  {
+    "season": 2015,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Andrew Tatterson",
+    "displayOrder": 0
+  },
+  {
+    "season": 2015,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Grant Matthews",
+    "displayOrder": 1
+  },
+  {
+    "season": 2015,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Dale Burns",
+    "displayOrder": 2
+  },
+  {
+    "season": 2015,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Dean Finlay",
+    "displayOrder": 3
+  },
+  {
+    "season": 2015,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Rick Mulcahy",
+    "displayOrder": 4
+  },
+  {
+    "season": 2015,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Ash Wyborn",
+    "displayOrder": 5
+  },
+  {
+    "season": 2016,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Josh Petersen",
+    "displayOrder": 0
+  },
+  {
+    "season": 2016,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Grant Matthews",
+    "displayOrder": 1
+  },
+  {
+    "season": 2016,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Dale Burns",
+    "displayOrder": 2
+  },
+  {
+    "season": 2016,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Corbin Little",
+    "displayOrder": 3
+  },
+  {
+    "season": 2016,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Dave Sommers",
+    "displayOrder": 4
+  },
+  {
+    "season": 2016,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Matthew Guyton",
+    "displayOrder": 5
+  },
+  {
+    "season": 2017,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Chris Phelps",
+    "displayOrder": 0
+  },
+  {
+    "season": 2017,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Declan Chappell",
+    "displayOrder": 1
+  },
+  {
+    "season": 2017,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Dale Burns",
+    "displayOrder": 2
+  },
+  {
+    "season": 2017,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Matthew Lloyd",
+    "displayOrder": 3
+  },
+  {
+    "season": 2017,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "James Reid",
+    "displayOrder": 4
+  },
+  {
+    "season": 2018,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Lachlan Kinna",
+    "displayOrder": 0
+  },
+  {
+    "season": 2018,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Corbin Little",
+    "displayOrder": 1
+  },
+  {
+    "season": 2018,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Peter Knight",
+    "displayOrder": 3
+  },
+  {
+    "season": 2019,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Scott Martin",
+    "displayOrder": 0
+  },
+  {
+    "season": 2019,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Scott Martin",
+    "displayOrder": 8
+  },
+  {
+    "season": 2019,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Wes Naidoo",
+    "displayOrder": 1
+  },
+  {
+    "season": 2019,
+    "role": "Grade Captain",
+    "grade": "Female B Grade",
+    "name": "Brooke Burns",
+    "displayOrder": 7
+  },
+  {
+    "season": 2019,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Jason Young",
+    "displayOrder": 3
+  },
+  {
+    "season": 2020,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Scott Martin",
+    "displayOrder": 0
+  },
+  {
+    "season": 2020,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Scott Martin",
+    "displayOrder": 8
+  },
+  {
+    "season": 2020,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "James Skeels",
+    "displayOrder": 1
+  },
+  {
+    "season": 2020,
+    "role": "Grade Captain",
+    "grade": "Female B Grade",
+    "name": "Brooke Burns",
+    "displayOrder": 7
+  },
+  {
+    "season": 2020,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Jason Young",
+    "displayOrder": 3
+  },
+  {
+    "season": 2020,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Simon King",
+    "displayOrder": 5
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Josh Rudge",
+    "displayOrder": 0
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Jack Manuel",
+    "displayOrder": 8
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "James Skeels",
+    "displayOrder": 1
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "Female B Grade",
+    "name": "Danni Render",
+    "displayOrder": 7
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Brad Malingre",
+    "displayOrder": 3
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Simon King",
+    "displayOrder": 4
+  },
+  {
+    "season": 2021,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Cameron Hill",
+    "displayOrder": 5
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Josh Rudge",
+    "displayOrder": 0
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Jack Manuel",
+    "displayOrder": 8
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Dustin Robinson",
+    "displayOrder": 1
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "Female B Grade",
+    "name": "Danni Render",
+    "displayOrder": 7
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "C Grade",
+    "name": "Alec Smith",
+    "displayOrder": 2
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Matthew Lloyd",
+    "displayOrder": 3
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Andrew Geeraets",
+    "displayOrder": 4
+  },
+  {
+    "season": 2022,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Cameron Hill",
+    "displayOrder": 5
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Josh Rudge",
+    "displayOrder": 0
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Jack Manuel",
+    "displayOrder": 8
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "Female A Grade",
+    "name": "Danni Render",
+    "displayOrder": 6
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Dustin Robinson",
+    "displayOrder": 1
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "Colts",
+    "name": "Zac Dreckow",
+    "displayOrder": 9
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Alec Smith",
+    "displayOrder": 3
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Michael Niven",
+    "displayOrder": 4
+  },
+  {
+    "season": 2023,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Stuart Ball",
+    "displayOrder": 5
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Josh Rudge",
+    "displayOrder": 0
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Jack Manuel",
+    "displayOrder": 8
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "Female A Grade",
+    "name": "Jessica Bradley",
+    "displayOrder": 6
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Craig Ford",
+    "displayOrder": 1
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "Colts",
+    "name": "Zac Dreckow",
+    "displayOrder": 9
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Michael Niven",
+    "displayOrder": 3
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Matthew Guyton",
+    "displayOrder": 4
+  },
+  {
+    "season": 2024,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Phil Head",
+    "displayOrder": 5
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "A Grade",
+    "name": "Josh Rudge",
+    "displayOrder": 0
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "PPL",
+    "name": "Jack Manuel",
+    "displayOrder": 8
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "Female A Grade",
+    "name": "Jessica Bradley",
+    "displayOrder": 6
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "B Grade",
+    "name": "Craig Ford",
+    "displayOrder": 1
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "Colts",
+    "name": "Zac Dreckow / Travis Caine",
+    "displayOrder": 9
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "D Grade",
+    "name": "Russell Moffat",
+    "displayOrder": 3
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "E Grade",
+    "name": "Matthew Guyton",
+    "displayOrder": 4
+  },
+  {
+    "season": 2025,
+    "role": "Grade Captain",
+    "grade": "F Grade",
+    "name": "Phil Head",
+    "displayOrder": 5
+  }
+]

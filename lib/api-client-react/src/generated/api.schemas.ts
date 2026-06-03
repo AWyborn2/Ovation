@@ -1677,6 +1677,43 @@ export interface TeamOfDecadeMemberUpdate {
   displayOrder?: number;
 }
 
+export interface ClubRole {
+  id: number;
+  season: number;
+  role: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  displayOrder: number;
+  published: boolean;
+}
+
+export interface ClubRoleInput {
+  season: number;
+  role: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  playerId?: number | null;
+  name: string;
+  displayOrder?: number;
+  published?: boolean;
+}
+
+export interface ClubRoleUpdate {
+  season?: number;
+  role?: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  playerId?: number | null;
+  name?: string;
+  displayOrder?: number;
+  published?: boolean;
+}
+
 export type CardKind = typeof CardKind[keyof typeof CardKind];
 
 

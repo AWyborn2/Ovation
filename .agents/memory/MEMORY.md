@@ -23,3 +23,4 @@
 - [Animated social tiles](animated-social-tiles.md) — motion presets (countUp degrades to fadeIn on built-ins) + video/gif template bg; client-side captureStream+MediaRecorder export (mp4 else webm); `animated` memo must follow `activeSize` decl.
 - [Award history reconciliation](award-history-reconciliation.md) — loading historical award winners: exact + confident links via CORRECTIONS map, uncertain/non-roster stay free-text (playerId NULL) for admin to link later.
 - [Awards mechanisms & public points board](awards-mechanisms.md) — awards have mechanism voted/points/manual + published flag; public points leaderboards live at GET /api/award-points (hook useListPublicPointsLeaderboards).
+- [HHCC history xlsx stacked blocks](history-xlsx-stacked-blocks.md) — Grade Records sheet stacks GRADE CAPTAINS over GRADE CRICKETERS OF THE YEAR (same layout); stop at second header or you double-import.

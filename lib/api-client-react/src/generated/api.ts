@@ -59,6 +59,9 @@ import type {
   CardThemeInput,
   CardThemeUpdate,
   ClubRecords,
+  ClubRole,
+  ClubRoleInput,
+  ClubRoleUpdate,
   CommitImportInput,
   CommitImportResult,
   Dashboard,
@@ -7495,6 +7498,378 @@ export const useDeleteTeamOfDecadeMember = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteTeamOfDecadeMemberMutationOptions(options));
+    }
+
+export const getListClubRolesUrl = () => {
+
+
+
+
+  return `/api/club-roles`
+}
+
+/**
+ * Public list of role records that are published, ordered by season
+descending, then displayOrder, then id. Includes both club office
+bearers (grade is null) and grade captains (role = "Grade Captain",
+grade set).
+
+ * @summary List published club roles (office bearers + grade captains)
+ */
+export const listClubRoles = async ( options?: RequestInit): Promise<ClubRole[]> => {
+
+  return customFetch<ClubRole[]>(getListClubRolesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubRolesQueryKey = () => {
+    return [
+    `/api/club-roles`
+    ] as const;
+    }
+
+
+export const getListClubRolesQueryOptions = <TData = Awaited<ReturnType<typeof listClubRoles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubRolesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubRoles>>> = ({ signal }) => listClubRoles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubRoles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubRolesQueryResult = NonNullable<Awaited<ReturnType<typeof listClubRoles>>>
+export type ListClubRolesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List published club roles (office bearers + grade captains)
+ */
+
+export function useListClubRoles<TData = Awaited<ReturnType<typeof listClubRoles>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubRolesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateClubRoleUrl = () => {
+
+
+
+
+  return `/api/club-roles`
+}
+
+/**
+ * @summary Create a club role record (admin)
+ */
+export const createClubRole = async (clubRoleInput: ClubRoleInput, options?: RequestInit): Promise<ClubRole> => {
+
+  return customFetch<ClubRole>(getCreateClubRoleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubRoleInput,)
+  }
+);}
+
+
+
+
+export const getCreateClubRoleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubRole>>, TError,{data: BodyType<ClubRoleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubRole>>, TError,{data: BodyType<ClubRoleInput>}, TContext> => {
+
+const mutationKey = ['createClubRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubRole>>, {data: BodyType<ClubRoleInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubRole(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubRoleMutationResult = NonNullable<Awaited<ReturnType<typeof createClubRole>>>
+    export type CreateClubRoleMutationBody = BodyType<ClubRoleInput>
+    export type CreateClubRoleMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a club role record (admin)
+ */
+export const useCreateClubRole = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubRole>>, TError,{data: BodyType<ClubRoleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubRole>>,
+        TError,
+        {data: BodyType<ClubRoleInput>},
+        TContext
+      > => {
+      return useMutation(getCreateClubRoleMutationOptions(options));
+    }
+
+export const getListAllClubRolesUrl = () => {
+
+
+
+
+  return `/api/club-roles/all`
+}
+
+/**
+ * @summary List every club role record including unpublished (admin)
+ */
+export const listAllClubRoles = async ( options?: RequestInit): Promise<ClubRole[]> => {
+
+  return customFetch<ClubRole[]>(getListAllClubRolesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAllClubRolesQueryKey = () => {
+    return [
+    `/api/club-roles/all`
+    ] as const;
+    }
+
+
+export const getListAllClubRolesQueryOptions = <TData = Awaited<ReturnType<typeof listAllClubRoles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllClubRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAllClubRolesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAllClubRoles>>> = ({ signal }) => listAllClubRoles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAllClubRoles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAllClubRolesQueryResult = NonNullable<Awaited<ReturnType<typeof listAllClubRoles>>>
+export type ListAllClubRolesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List every club role record including unpublished (admin)
+ */
+
+export function useListAllClubRoles<TData = Awaited<ReturnType<typeof listAllClubRoles>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllClubRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAllClubRolesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateClubRoleUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-roles/${id}`
+}
+
+/**
+ * @summary Update a club role record (admin)
+ */
+export const updateClubRole = async (id: number,
+    clubRoleUpdate: ClubRoleUpdate, options?: RequestInit): Promise<ClubRole> => {
+
+  return customFetch<ClubRole>(getUpdateClubRoleUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubRoleUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateClubRoleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClubRole>>, TError,{id: number;data: BodyType<ClubRoleUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateClubRole>>, TError,{id: number;data: BodyType<ClubRoleUpdate>}, TContext> => {
+
+const mutationKey = ['updateClubRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateClubRole>>, {id: number;data: BodyType<ClubRoleUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateClubRole(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateClubRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateClubRole>>>
+    export type UpdateClubRoleMutationBody = BodyType<ClubRoleUpdate>
+    export type UpdateClubRoleMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a club role record (admin)
+ */
+export const useUpdateClubRole = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClubRole>>, TError,{id: number;data: BodyType<ClubRoleUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateClubRole>>,
+        TError,
+        {id: number;data: BodyType<ClubRoleUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateClubRoleMutationOptions(options));
+    }
+
+export const getDeleteClubRoleUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-roles/${id}`
+}
+
+/**
+ * @summary Delete a club role record (admin)
+ */
+export const deleteClubRole = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteClubRoleUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteClubRoleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubRole>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubRole>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteClubRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubRole>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteClubRole(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubRoleMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubRole>>>
+
+    export type DeleteClubRoleMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a club role record (admin)
+ */
+export const useDeleteClubRole = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubRole>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubRole>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClubRoleMutationOptions(options));
     }
 
 export const getListSponsorsUrl = () => {
