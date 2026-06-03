@@ -64,7 +64,7 @@ Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Fe
 - **Stat Edit** (`/stats/:id`) — inline edit/delete a stat record
 - **Admin Import** (`/admin/import`) — two modes:
   - **Whole-season CSV** — upload a PlayCricket "Combined Batting/Bowling/Fielding" CSV for a single grade+season, preview matched/new players and totals, confirm to commit; list and delete past imports. PlayCricket grade-name mapping lives in `artifacts/api-server/src/lib/playcricket-csv.ts` (`PLAYCRICKET_GRADE_MAP`).
-  - **Per-match xlsx** — upload one match scorecard `.xlsx`, preview header + parsed batting/bowling/fielding (matched/new players, abandoned flag), commit to ADD that match to the running season total and store permanent per-match history. Undo a whole season (rolls back stats, auto-created caps, and orphan players) via the Undo Season card. Parser: `artifacts/api-server/src/lib/match-scorecard.ts`. **Use CSV or per-match for a given grade+season, not both** (see Gotchas).
+  - **Per-match xlsx** — upload one match scorecard `.xlsx`, preview header + parsed batting/bowling/fielding (matched/new players, abandoned flag). The round is pre-filled from the scorecard header but is editable in the preview (sent in the commit body as `round`); the admin-entered value is what gets written. Commit to ADD that match to the running season total and store permanent per-match history. Undo a whole season (rolls back stats, auto-created caps, and orphan players) via the Undo Season card. Parser: `artifacts/api-server/src/lib/match-scorecard.ts`. **Use CSV or per-match for a given grade+season, not both** (see Gotchas).
   - Admin auth required (session cookie); single-club portal.
 
 ## User preferences

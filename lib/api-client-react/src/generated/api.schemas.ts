@@ -629,12 +629,22 @@ export interface PlayerResolution {
 }
 
 /**
- * Optional per-name resolutions chosen in the preview. Names without a
-resolution fall back to exact-match-or-create.
+ * Optional per-name resolutions chosen in the preview, plus an optional
+round for per-match imports. Names without a resolution fall back to
+exact-match-or-create.
 
  */
 export interface CommitImportInput {
   resolutions?: PlayerResolution[];
+  /**
+     * For per-match (.xlsx) imports: the round to assign to the committed
+  match. Overrides the value parsed from the scorecard header (and
+  supplies one when the header had none). Ignored for whole-season
+  CSV imports.
+
+     * @nullable
+     */
+  round?: number | null;
 }
 
 export interface PlayerMatchLine {

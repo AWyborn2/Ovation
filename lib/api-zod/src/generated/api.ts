@@ -623,8 +623,9 @@ export const CommitImportBody = zod.object({
   "givenName": zod.string(),
   "action": zod.enum(['link', 'create']),
   "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
-}).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional()
-}).describe('Optional per-name resolutions chosen in the preview. Names without a\nresolution fall back to exact-match-or-create.\n')
+}).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional(),
+  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n')
+}).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
 export const CommitImportResponse = zod.object({
   "id": zod.number(),
@@ -799,8 +800,9 @@ export const CommitMatchBatchBody = zod.object({
   "givenName": zod.string(),
   "action": zod.enum(['link', 'create']),
   "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
-}).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional()
-}).describe('Optional per-name resolutions chosen in the preview. Names without a\nresolution fall back to exact-match-or-create.\n')
+}).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional(),
+  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n')
+}).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
 export const CommitMatchBatchResponse = zod.object({
   "committed": zod.number(),

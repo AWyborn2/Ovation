@@ -93,6 +93,20 @@ function buildResolutionMap(body: unknown): Map<string, PlayerResolution> {
   return map;
 }
 
+/**
+ * Read an optional `round` override from a commit request body.
+ * Returns `undefined` when the field is absent (caller should fall back to the
+ * parsed/header value), `null` when explicitly cleared, or the integer round.
+ * Non-integer junk is treated as absent.
+ */
+function parseCommitRound(body: unknown): number | null | undefined {
+  if (!body || typeof body !== "object" || !("round" in body)) return undefined;
+  const r = (body as { round?: unknown }).round;
+  if (r == null) return null;
+  const n = typeof r === "number" ? r : parseInt(String(r), 10);
+  return Number.isInteger(n) ? n : undefined;
+}
+
 /** Load the full roster as matcher input. */
 async function loadRoster(): Promise<RosterPlayer[]> {
   return db
@@ -1040,7 +1054,13 @@ async function commitMatchImport(
   }
   const grade = parsed.grade ?? imp.grade;
   const season = parsed.season ?? imp.season;
-  const round = parsed.round ?? imp.round ?? null;
+  // The admin can set/correct the round in the preview before committing. Use
+  // their value when supplied, otherwise fall back to the parsed/header value.
+  const overrideRound = parseCommitRound(req.body);
+  const round =
+    overrideRound !== undefined
+      ? overrideRound
+      : (parsed.round ?? imp.round ?? null);
 
   if (!grade || season == null) {
     res
@@ -1120,7 +1140,7 @@ async function commitMatchImport(
 
     await tx
       .update(importsTable)
-      .set({ status: "committed", payload: null })
+      .set({ status: "committed", payload: null, round })
       .where(eq(importsTable.id, imp.id));
 
     // Re-derive the season snapshot from every match in this grade+season and

@@ -147,6 +147,7 @@ export default function AdminImport() {
   const [matchPreview, setMatchPreview] = useState<MatchImportPreview | null>(null);
   const [batchPreview, setBatchPreview] = useState<BatchImportPreview | null>(null);
   const [batchFiles, setBatchFiles] = useState<FileList | null>(null);
+  const [matchRound, setMatchRound] = useState<string>("");
   const [resolutions, setResolutions] = useState<Record<string, RowResolution>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,6 +195,7 @@ export default function AdminImport() {
     setMatchPreview(null);
     setBatchPreview(null);
     setBatchFiles(null);
+    setMatchRound("");
     setResolutions({});
     setFile(null);
   };
@@ -271,6 +273,7 @@ export default function AdminImport() {
       }
       const data = body as MatchImportPreview;
       setMatchPreview(data);
+      setMatchRound(data.round != null ? String(data.round) : "");
       seedResolutions(data.players);
       refetchImports();
     } catch (err) {
@@ -350,14 +353,19 @@ export default function AdminImport() {
 
   const onConfirmMatch = () => {
     if (!matchPreview) return;
+    const trimmed = matchRound.trim();
+    const round = trimmed === "" ? null : parseInt(trimmed, 10);
     commit.mutate(
       {
         id: matchPreview.importId,
-        data: { resolutions: buildResolutions(resolutions, matchPreview.players) },
+        data: {
+          resolutions: buildResolutions(resolutions, matchPreview.players),
+          round,
+        },
       },
       {
         onSuccess: () => {
-          const r = matchPreview.round != null ? `Round ${matchPreview.round}, ` : "";
+          const r = round != null ? `Round ${round}, ` : "";
           setCommitted({
             label: `${r}${matchPreview.grade ?? ""} ${seasonLabel(matchPreview.season)}`.trim(),
           });
@@ -555,8 +563,9 @@ export default function AdminImport() {
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  The grade, season and round are read from the scorecard header. Committing adds
-                  this match to the running season totals.
+                  The grade, season and round are read from the scorecard header — you can
+                  confirm or correct the round in the preview before committing. Committing
+                  adds this match to the running season totals.
                 </p>
               </div>
               <Button type="submit" disabled={uploading}>
@@ -724,7 +733,24 @@ export default function AdminImport() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat label="Grade" value={matchPreview.grade ?? "—"} />
               <Stat label="Season" value={seasonLabel(matchPreview.season)} />
-              <Stat label="Round" value={matchPreview.round ?? "—"} />
+              <div className="rounded-md border p-3">
+                <Label
+                  htmlFor="match-round"
+                  className="text-xs uppercase tracking-wider text-muted-foreground font-normal"
+                >
+                  Round
+                </Label>
+                <Input
+                  id="match-round"
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={matchRound}
+                  onChange={(e) => setMatchRound(e.target.value)}
+                  placeholder="e.g. 5"
+                  className="mt-1 h-8"
+                />
+              </div>
               <Stat label="Result" value={matchPreview.result ?? "—"} />
             </div>
 
