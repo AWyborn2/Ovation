@@ -1,7 +1,15 @@
 import { useParams, Link } from "wouter";
-import { useGetMatch, getGetMatchQueryKey, type MatchScorecardLine } from "@workspace/api-client-react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetMatch,
+  getGetMatchQueryKey,
+  useUpdateMatchRound,
+  type MatchScorecardLine,
+} from "@workspace/api-client-react";
+import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
-import { CalendarDays, MapPin, ChevronLeft } from "lucide-react";
+import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X } from "lucide-react";
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
@@ -18,6 +26,48 @@ export default function MatchDetail() {
   const { data: match, isLoading } = useGetMatch(matchId, {
     query: { enabled: !!matchId, queryKey: getGetMatchQueryKey(matchId) },
   });
+
+  const me = useCurrentAdmin();
+  const isAdmin = !!me.data;
+  const queryClient = useQueryClient();
+  const updateRound = useUpdateMatchRound();
+
+  const [editingRound, setEditingRound] = useState(false);
+  const [roundValue, setRoundValue] = useState("");
+  const [roundError, setRoundError] = useState<string | null>(null);
+
+  const startEditRound = () => {
+    setRoundValue(match?.round != null ? String(match.round) : "");
+    setRoundError(null);
+    setEditingRound(true);
+  };
+
+  const cancelEditRound = () => {
+    setEditingRound(false);
+    setRoundError(null);
+  };
+
+  const saveRound = () => {
+    const parsed = parseInt(roundValue, 10);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      setRoundError("Enter a round number of 1 or more.");
+      return;
+    }
+    setRoundError(null);
+    updateRound.mutate(
+      { id: matchId, data: { round: parsed } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
+          queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+          setEditingRound(false);
+        },
+        onError: (e) => {
+          setRoundError(handleAdminMutationError(e) ?? "Could not update the round.");
+        },
+      },
+    );
+  };
 
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
   if (!match) return <div className="p-8 text-center text-muted-foreground">Match not found.</div>;
@@ -50,10 +100,61 @@ export default function MatchDetail() {
             <h1 className="text-2xl font-serif font-bold text-primary">
               Halls Head vs {match.opponent ?? "Unknown"}
             </h1>
-            <div className="text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
-              {match.grade} · {fmtSeason(match.season)}
-              {match.round != null ? ` · Round ${match.round}` : ""}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
+              <span>
+                {match.grade} · {fmtSeason(match.season)}
+                {!editingRound && (match.round != null ? ` · Round ${match.round}` : "")}
+              </span>
+              {isAdmin && !editingRound && (
+                <button
+                  type="button"
+                  onClick={startEditRound}
+                  className="inline-flex items-center gap-1 normal-case text-xs font-medium text-primary hover:underline"
+                  data-testid="button-edit-round"
+                >
+                  <Pencil className="h-3 w-3" />
+                  {match.round != null ? "Edit round" : "Set round"}
+                </button>
+              )}
+              {isAdmin && editingRound && (
+                <span className="inline-flex items-center gap-1.5 normal-case">
+                  <span className="text-foreground">· Round</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={roundValue}
+                    onChange={(e) => setRoundValue(e.target.value)}
+                    disabled={updateRound.isPending}
+                    autoFocus
+                    className="w-16 px-2 py-0.5 rounded border border-border bg-background text-foreground text-sm"
+                    data-testid="input-round"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveRound}
+                    disabled={updateRound.isPending}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:underline disabled:opacity-50"
+                    data-testid="button-save-round"
+                  >
+                    <Check className="h-3.5 w-3.5" /> Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditRound}
+                    disabled={updateRound.isPending}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:underline disabled:opacity-50"
+                    data-testid="button-cancel-round"
+                  >
+                    <X className="h-3.5 w-3.5" /> Cancel
+                  </button>
+                </span>
+              )}
             </div>
+            {isAdmin && roundError && (
+              <div className="text-xs text-destructive normal-case mt-1" data-testid="text-round-error">
+                {roundError}
+              </div>
+            )}
             {match.competition && (
               <div className="text-xs text-muted-foreground mt-0.5">{match.competition}</div>
             )}

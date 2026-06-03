@@ -1,14 +1,75 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, asc, count, type SQL } from "drizzle-orm";
+import { eq, and, ne, desc, asc, count, type SQL } from "drizzle-orm";
 import {
   db,
   matchesTable,
   matchPlayerLinesTable,
   playersTable,
+  importsTable,
 } from "@workspace/db";
-import { ListMatchesQueryParams, GetMatchParams } from "@workspace/api-zod";
+import {
+  ListMatchesQueryParams,
+  GetMatchParams,
+  UpdateMatchRoundParams,
+  UpdateMatchRoundBody,
+} from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
+
+async function loadMatchDetail(matchId: number) {
+  const [match] = await db
+    .select()
+    .from(matchesTable)
+    .where(eq(matchesTable.id, matchId));
+  if (!match) return null;
+
+  const lines = await db
+    .select({
+      id: matchPlayerLinesTable.id,
+      playerId: matchPlayerLinesTable.playerId,
+      surname: playersTable.surname,
+      givenName: playersTable.givenName,
+      batted: matchPlayerLinesTable.batted,
+      battingPos: matchPlayerLinesTable.battingPos,
+      runs: matchPlayerLinesTable.runs,
+      balls: matchPlayerLinesTable.balls,
+      fours: matchPlayerLinesTable.fours,
+      sixes: matchPlayerLinesTable.sixes,
+      notOut: matchPlayerLinesTable.notOut,
+      dismissal: matchPlayerLinesTable.dismissal,
+      bowled: matchPlayerLinesTable.bowled,
+      overs: matchPlayerLinesTable.overs,
+      maidens: matchPlayerLinesTable.maidens,
+      runsConceded: matchPlayerLinesTable.runsConceded,
+      wickets: matchPlayerLinesTable.wickets,
+      wides: matchPlayerLinesTable.wides,
+      noBalls: matchPlayerLinesTable.noBalls,
+      catches: matchPlayerLinesTable.catches,
+      stumpings: matchPlayerLinesTable.stumpings,
+      runOuts: matchPlayerLinesTable.runOuts,
+    })
+    .from(matchPlayerLinesTable)
+    .innerJoin(playersTable, eq(playersTable.id, matchPlayerLinesTable.playerId))
+    .where(eq(matchPlayerLinesTable.matchId, matchId))
+    .orderBy(asc(matchPlayerLinesTable.battingPos), asc(playersTable.surname));
+
+  return {
+    id: match.id,
+    grade: match.grade,
+    season: match.season,
+    round: match.round,
+    competition: match.competition,
+    matchDate: match.matchDate,
+    venue: match.venue,
+    result: match.result,
+    opponent: match.opponent,
+    hhccScore: match.hhccScore,
+    opponentScore: match.opponentScore,
+    abandoned: match.abandoned,
+    lines,
+  };
+}
 
 router.get("/matches", async (req, res): Promise<void> => {
   const query = ListMatchesQueryParams.safeParse(req.query);
@@ -57,60 +118,90 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [match] = await db
-    .select()
-    .from(matchesTable)
-    .where(eq(matchesTable.id, params.data.id));
-  if (!match) {
+  const detail = await loadMatchDetail(params.data.id);
+  if (!detail) {
     res.status(404).json({ error: "Match not found" });
     return;
   }
 
-  const lines = await db
-    .select({
-      id: matchPlayerLinesTable.id,
-      playerId: matchPlayerLinesTable.playerId,
-      surname: playersTable.surname,
-      givenName: playersTable.givenName,
-      batted: matchPlayerLinesTable.batted,
-      battingPos: matchPlayerLinesTable.battingPos,
-      runs: matchPlayerLinesTable.runs,
-      balls: matchPlayerLinesTable.balls,
-      fours: matchPlayerLinesTable.fours,
-      sixes: matchPlayerLinesTable.sixes,
-      notOut: matchPlayerLinesTable.notOut,
-      dismissal: matchPlayerLinesTable.dismissal,
-      bowled: matchPlayerLinesTable.bowled,
-      overs: matchPlayerLinesTable.overs,
-      maidens: matchPlayerLinesTable.maidens,
-      runsConceded: matchPlayerLinesTable.runsConceded,
-      wickets: matchPlayerLinesTable.wickets,
-      wides: matchPlayerLinesTable.wides,
-      noBalls: matchPlayerLinesTable.noBalls,
-      catches: matchPlayerLinesTable.catches,
-      stumpings: matchPlayerLinesTable.stumpings,
-      runOuts: matchPlayerLinesTable.runOuts,
-    })
-    .from(matchPlayerLinesTable)
-    .innerJoin(playersTable, eq(playersTable.id, matchPlayerLinesTable.playerId))
-    .where(eq(matchPlayerLinesTable.matchId, params.data.id))
-    .orderBy(asc(matchPlayerLinesTable.battingPos), asc(playersTable.surname));
-
-  res.json({
-    id: match.id,
-    grade: match.grade,
-    season: match.season,
-    round: match.round,
-    competition: match.competition,
-    matchDate: match.matchDate,
-    venue: match.venue,
-    result: match.result,
-    opponent: match.opponent,
-    hhccScore: match.hhccScore,
-    opponentScore: match.opponentScore,
-    abandoned: match.abandoned,
-    lines,
-  });
+  res.json(detail);
 });
+
+router.patch(
+  "/matches/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = UpdateMatchRoundParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateMatchRoundBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+
+    const [match] = await db
+      .select()
+      .from(matchesTable)
+      .where(eq(matchesTable.id, params.data.id));
+    if (!match) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+
+    const newRound = body.data.round;
+
+    if (match.round !== newRound) {
+      // Rounds are unique per (grade, season). Check before writing so we can
+      // return a clear 409 rather than a raw DB constraint error.
+      const [conflict] = await db
+        .select({ id: matchesTable.id })
+        .from(matchesTable)
+        .where(
+          and(
+            eq(matchesTable.grade, match.grade),
+            eq(matchesTable.season, match.season),
+            eq(matchesTable.round, newRound),
+            ne(matchesTable.id, match.id),
+          ),
+        );
+      if (conflict) {
+        res.status(409).json({
+          error: `Round ${newRound} is already used by another ${match.grade} match in ${match.season}/${String((match.season + 1) % 100).padStart(2, "0")}.`,
+        });
+        return;
+      }
+
+      try {
+        await db.transaction(async (tx) => {
+          await tx
+            .update(matchesTable)
+            .set({ round: newRound })
+            .where(eq(matchesTable.id, match.id));
+          // Keep the originating import row's round in sync so the admin
+          // imports list doesn't show a stale round.
+          await tx
+            .update(importsTable)
+            .set({ round: newRound })
+            .where(eq(importsTable.id, match.importId));
+        });
+      } catch (err) {
+        // Safety net for a concurrent insert racing past the check above.
+        if ((err as { code?: string }).code === "23505") {
+          res.status(409).json({
+            error: `Round ${newRound} is already used by another ${match.grade} match in ${match.season}/${String((match.season + 1) % 100).padStart(2, "0")}.`,
+          });
+          return;
+        }
+        throw err;
+      }
+    }
+
+    const detail = await loadMatchDetail(match.id);
+    res.json(detail);
+  },
+);
 
 export default router;

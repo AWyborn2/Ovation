@@ -242,6 +242,41 @@ paths:
                 $ref: "#/components/schemas/MatchDetail"
         "404":
           description: Not found
+    patch:
+      operationId: updateMatchRound
+      tags: [matches]
+      summary: Update the round of an existing match
+      description: |
+        Admin-only. Corrects the round number of an already-imported match and
+        keeps the originating import row's round in sync. Rounds are unique per
+        (grade, season); a colliding round returns 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchRoundUpdate"
+      responses:
+        "200":
+          description: Updated match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not authenticated as admin
+        "404":
+          description: Not found
+        "409":
+          description: Round already used by another match in this grade and season
 
   /stats:
     get:
@@ -3199,6 +3234,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchScorecardLine"
+
+    MatchRoundUpdate:
+      type: object
+      required: [round]
+      properties:
+        round:
+          type: integer
+          minimum: 1
+          description: New round number for the match (unique per grade + season)
 
     UndoSeasonInput:
       type: object

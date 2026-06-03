@@ -779,6 +779,14 @@ export interface MatchDetail {
   lines: MatchScorecardLine[];
 }
 
+export interface MatchRoundUpdate {
+  /**
+     * New round number for the match (unique per grade + season)
+     * @minimum 1
+     */
+  round: number;
+}
+
 export interface UndoSeasonInput {
   grade: string;
   season: number;

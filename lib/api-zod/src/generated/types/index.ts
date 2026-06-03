@@ -84,6 +84,7 @@ export * from './matchImportPreview';
 export * from './matchImportPreviewCapCategory';
 export * from './matchPreviewPlayer';
 export * from './matchPreviewPlayerStatus';
+export * from './matchRoundUpdate';
 export * from './matchScorecardLine';
 export * from './matchSummary';
 export * from './milestoneBoardSettings';

@@ -76,6 +76,7 @@ import type {
   LoginRequest,
   MatchDetail,
   MatchImportPreview,
+  MatchRoundUpdate,
   MatchSummary,
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
@@ -814,6 +815,82 @@ export function useGetMatch<TData = Awaited<ReturnType<typeof getMatch>>, TError
 
 
 
+
+export const getUpdateMatchRoundUrl = (id: number,) => {
+
+
+
+
+  return `/api/matches/${id}`
+}
+
+/**
+ * Admin-only. Corrects the round number of an already-imported match and
+keeps the originating import row's round in sync. Rounds are unique per
+(grade, season); a colliding round returns 409.
+
+ * @summary Update the round of an existing match
+ */
+export const updateMatchRound = async (id: number,
+    matchRoundUpdate: MatchRoundUpdate, options?: RequestInit): Promise<MatchDetail> => {
+
+  return customFetch<MatchDetail>(getUpdateMatchRoundUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      matchRoundUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateMatchRoundMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMatchRound>>, TError,{id: number;data: BodyType<MatchRoundUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMatchRound>>, TError,{id: number;data: BodyType<MatchRoundUpdate>}, TContext> => {
+
+const mutationKey = ['updateMatchRound'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMatchRound>>, {id: number;data: BodyType<MatchRoundUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMatchRound(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMatchRoundMutationResult = NonNullable<Awaited<ReturnType<typeof updateMatchRound>>>
+    export type UpdateMatchRoundMutationBody = BodyType<MatchRoundUpdate>
+    export type UpdateMatchRoundMutationError = ErrorType<void>
+
+    /**
+ * @summary Update the round of an existing match
+ */
+export const useUpdateMatchRound = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMatchRound>>, TError,{id: number;data: BodyType<MatchRoundUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMatchRound>>,
+        TError,
+        {id: number;data: BodyType<MatchRoundUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMatchRoundMutationOptions(options));
+    }
 
 export const getListStatsUrl = (params?: ListStatsParams,) => {
   const normalizedParams = new URLSearchParams();
