@@ -149,6 +149,31 @@ export default function PlayerDetail() {
     [playerStats, selectedSeason],
   );
 
+  const [matchSeasonFilter, setMatchSeasonFilter] = useState<string>("all");
+  const [matchGradeFilter, setMatchGradeFilter] = useState<string>("all");
+  const matchSeasonOptions = useMemo(() => {
+    const set = new Set<number>();
+    (matchLines ?? []).forEach((m) => {
+      if (m.season != null) set.add(m.season);
+    });
+    return Array.from(set).sort((a, b) => b - a);
+  }, [matchLines]);
+  const matchGradeOptions = useMemo(() => {
+    const set = new Set<string>();
+    (matchLines ?? []).forEach((m) => {
+      if (m.grade) set.add(m.grade);
+    });
+    return Array.from(set).sort();
+  }, [matchLines]);
+  const filteredMatchLines = useMemo(() => {
+    return (matchLines ?? []).filter((m) => {
+      if (matchSeasonFilter !== "all" && String(m.season) !== matchSeasonFilter) return false;
+      if (matchGradeFilter !== "all" && m.grade !== matchGradeFilter) return false;
+      return true;
+    });
+  }, [matchLines, matchSeasonFilter, matchGradeFilter]);
+  const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
+
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this player?")) {
       deletePlayer.mutate({ id: playerId }, {
@@ -379,13 +404,46 @@ export default function PlayerDetail() {
 
       {matchLines && matchLines.length > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <div className="flex items-baseline justify-between gap-3 mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
             <h2 className="text-lg font-serif font-bold text-primary m-0">Match by match</h2>
             <span className="text-xs uppercase tracking-widest text-muted-foreground">
-              {matchLines.length} game{matchLines.length === 1 ? "" : "s"} recorded
+              {filteredMatchLines.length === matchLines.length
+                ? `${matchLines.length} game${matchLines.length === 1 ? "" : "s"} recorded`
+                : `${filteredMatchLines.length} of ${matchLines.length} games`}
             </span>
           </div>
           <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+              <select
+                value={matchSeasonFilter}
+                onChange={(e) => setMatchSeasonFilter(e.target.value)}
+                className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+              >
+                <option value="all">All seasons</option>
+                {matchSeasonOptions.map((s) => (
+                  <option key={s} value={String(s)}>{fmtSeason(s)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">Grade</label>
+              <select
+                value={matchGradeFilter}
+                onChange={(e) => setMatchGradeFilter(e.target.value)}
+                className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+              >
+                <option value="all">All grades</option>
+                {matchGradeOptions.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {filteredMatchLines.length === 0 ? (
+            <div className="text-sm text-muted-foreground italic">No matches for the selected filters.</div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -400,7 +458,7 @@ export default function PlayerDetail() {
                 </tr>
               </thead>
               <tbody>
-                {matchLines.map((m) => {
+                {filteredMatchLines.map((m) => {
                   const fieldParts = [
                     m.catches ? `${m.catches}c` : "",
                     m.stumpings ? `${m.stumpings}st` : "",
@@ -439,6 +497,7 @@ export default function PlayerDetail() {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 
