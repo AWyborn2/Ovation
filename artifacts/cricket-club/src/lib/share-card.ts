@@ -2,6 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles, type LucideIcon } from "lucide-react";
 import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import type { CardTemplate } from "@workspace/api-client-react";
+import {
+  resolveTextField,
+  resolvePhotoField,
+  type TemplateContext,
+} from "./card-template";
 
 const TIER_ICONS: LucideIcon[] = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
 
@@ -551,6 +557,139 @@ export type RenderOptions = {
    * the subject in frame. Ignored for headshot placement and theme backgrounds.
    */
   photoTransform?: PhotoTransform | null;
+  /**
+   * A custom uploaded "bring your own" template. When provided, the card is
+   * rendered from the template's flattened background + data-bound slots
+   * instead of the built-in layout. The sponsor strip is still overlaid.
+   */
+  template?: CardTemplate | null;
+};
+
+// Draw `img` so it fits inside the rect (object-fit: contain), centred.
+const drawImageContain = (
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+) => {
+  const ir = img.width / img.height;
+  const rr = dw / dh;
+  let w: number, h: number;
+  if (ir > rr) {
+    w = dw;
+    h = dw / ir;
+  } else {
+    h = dh;
+    w = dh * ir;
+  }
+  ctx.drawImage(img, dx + (dw - w) / 2, dy + (dh - h) / 2, w, h);
+};
+
+// Render a custom template card: draw the uploaded background with object-fit
+// cover onto the target size, then map each slot's background-fraction geometry
+// through that same cover transform so slots stay glued to the design. The
+// sponsor strip is overlaid afterwards when sponsors are enabled.
+const renderTemplateCard = async (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
+  input: ShareCardInput,
+  template: CardTemplate,
+  opts: RenderOptions,
+  p: Palette,
+) => {
+  const tctx: TemplateContext = {
+    clubUrl: opts.clubUrl,
+    hashtag: opts.hashtag,
+    photoUrl: opts.photoUrl,
+  };
+
+  // Cover transform of the background image into the target frame.
+  const iw = template.bgWidth || 1080;
+  const ih = template.bgHeight || 1080;
+  const cover = Math.max(W / iw, H / ih);
+  const drawnW = iw * cover;
+  const drawnH = ih * cover;
+  const offX = (W - drawnW) / 2;
+  const offY = (H - drawnH) / 2;
+  const toX = (fx: number) => offX + fx * drawnW;
+  const toY = (fy: number) => offY + fy * drawnH;
+
+  const bg = await loadImage(template.backgroundImageUrl).catch(() => null);
+  if (bg) {
+    drawImageCover(ctx, bg, 0, 0, W, H);
+  } else {
+    // Background failed to load: fall back to a flat panel so slots are legible.
+    ctx.fillStyle = p.bgDark;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  for (const slot of template.slots) {
+    const cx = toX(slot.x);
+    const cy = toY(slot.y);
+    const cw = slot.w * drawnW;
+    const ch = slot.h * drawnH;
+    if (slot.type === "photo") {
+      const url = resolvePhotoField(input, tctx);
+      if (!url) continue;
+      const img = await loadImage(url).catch(() => null);
+      if (!img) continue;
+      const t = opts.photoTransform ?? DEFAULT_PHOTO_TRANSFORM;
+      ctx.save();
+      if (slot.shape === "circle") {
+        const r = Math.min(cw, ch) / 2;
+        const ccx = cx + cw / 2;
+        const ccy = cy + ch / 2;
+        ctx.beginPath();
+        ctx.arc(ccx, ccy, r, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        drawImageCoverFocal(ctx, img, ccx - r, ccy - r, r * 2, r * 2, t.focalX, t.focalY, t.zoom);
+      } else if (slot.photoFit === "contain") {
+        drawImageContain(ctx, img, cx, cy, cw, ch);
+      } else {
+        ctx.beginPath();
+        ctx.rect(cx, cy, cw, ch);
+        ctx.closePath();
+        ctx.clip();
+        drawImageCoverFocal(ctx, img, cx, cy, cw, ch, t.focalX, t.focalY, t.zoom);
+      }
+      ctx.restore();
+      continue;
+    }
+
+    // Text slot.
+    let text = resolveTextField(input, slot.field, tctx);
+    if (!text) continue;
+    if (slot.uppercase) text = text.toUpperCase();
+    const fontPx = Math.max(8, (slot.fontSize ?? 0.05) * drawnH);
+    const family =
+      slot.fontFamily === "serif"
+        ? "Georgia, 'Times New Roman', serif"
+        : "'Helvetica Neue', Arial, sans-serif";
+    const weight = slot.fontWeight ?? 700;
+    ctx.font = `${weight} ${fontPx}px ${family}`;
+    ctx.fillStyle = slot.color || p.textLight;
+    ctx.textBaseline = "middle";
+    const align = slot.align ?? "left";
+    ctx.textAlign = align;
+    const lines = wrapText(ctx, text, cw);
+    const lineH = fontPx * 1.15;
+    const totalH = lines.length * lineH;
+    let ty = cy + ch / 2 - totalH / 2 + lineH / 2;
+    const tx = align === "center" ? cx + cw / 2 : align === "right" ? cx + cw : cx;
+    for (const line of lines) {
+      ctx.fillText(line, tx, ty);
+      ty += lineH;
+    }
+  }
+
+  // Sponsors strip still overlays the bottom when enabled.
+  const sponsors = opts.sponsors ?? [];
+  await drawSponsors(ctx, W, H, sponsors, scale, p);
 };
 
 export const renderShareCard = async (
@@ -566,6 +705,19 @@ export const renderShareCard = async (
   if (!ctx) throw new Error("Could not get canvas 2D context");
 
   const p = resolvePalette(opts.theme);
+
+  // Custom uploaded template path: render the bg + data-bound slots and bail
+  // out before any built-in chrome. Sponsors are overlaid inside the helper.
+  if (opts.template) {
+    await renderTemplateCard(ctx, W, H, scale, input, opts.template, opts, p);
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Could not export canvas to blob"));
+      }, "image/png");
+    });
+  }
+
   // Local aliases keep the per-kind body code below theme-agnostic.
   const GOLD = p.accent;
   const GOLD_SOFT = p.accentSoft;

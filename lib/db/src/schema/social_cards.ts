@@ -44,6 +44,54 @@ export const cardThemesTable = pgTable("card_themes", {
 
 export type CardThemeRow = typeof cardThemesTable.$inferSelect;
 
+// One labelled, data-bound region painted over a custom uploaded design.
+// All geometry is stored as a fraction (0-1) of the BACKGROUND image so the
+// renderer can map it through an object-fit:cover transform onto any card size
+// and keep the slot glued to the design element it was placed over.
+export type CardTemplateSlot = {
+  id: string;
+  type: "text" | "photo";
+  /** Data field key bound to this slot (see card-template.ts CARD_FIELD_CATALOG). */
+  field: string;
+  /** Geometry as fractions (0-1) of the background image. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  // Text styling (text slots only).
+  /** Font size as a fraction (0-1) of the background image height. */
+  fontSize?: number;
+  color?: string;
+  fontWeight?: number; // 400-900
+  align?: "left" | "center" | "right";
+  fontFamily?: "sans" | "serif";
+  uppercase?: boolean;
+  // Photo styling (photo slots only).
+  photoFit?: "cover" | "contain";
+  shape?: "rect" | "circle";
+};
+
+// Admin-uploaded "bring your own" tile designs (Canva/Figma exports). The
+// flattened image is the background; slots bind data fields onto it per card
+// kind. Cards fall back to the built-in layout when no template applies.
+export const cardTemplatesTable = pgTable("card_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  // Which ShareCardInput["kind"] values this template may be used for.
+  // Empty = applies to every card kind.
+  cardKinds: text("card_kinds").array().notNull().default([]),
+  backgroundImageUrl: text("background_image_url").notNull(),
+  bgWidth: integer("bg_width").notNull().default(1080),
+  bgHeight: integer("bg_height").notNull().default(1080),
+  slots: jsonb("slots").$type<CardTemplateSlot[]>().notNull().default([]),
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CardTemplateRow = typeof cardTemplatesTable.$inferSelect;
+
 export const socialSettingsTable = pgTable("social_settings", {
   id: serial("id").primaryKey(),
   engineOnDemand: boolean("engine_on_demand").notNull().default(true),

@@ -2346,6 +2346,145 @@ export const DeleteCardThemeParams = zod.object({
 
 
 /**
+ * @summary List all custom card templates (ordered)
+ */
+export const ListCardTemplatesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cardKinds": zod.array(zod.string()),
+  "backgroundImageUrl": zod.string(),
+  "bgWidth": zod.number(),
+  "bgHeight": zod.number(),
+  "slots": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['text', 'photo']),
+  "field": zod.string(),
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number(),
+  "fontSize": zod.number().optional(),
+  "color": zod.string().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional(),
+  "photoFit": zod.enum(['cover', 'contain']).optional(),
+  "shape": zod.enum(['rect', 'circle']).optional()
+})),
+  "isActive": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "displayOrder": zod.number()
+})
+export const ListCardTemplatesResponse = zod.array(ListCardTemplatesResponseItem)
+
+
+/**
+ * @summary Create a custom card template
+ */
+export const CreateCardTemplateBody = zod.object({
+  "name": zod.string(),
+  "cardKinds": zod.array(zod.string()).optional(),
+  "backgroundImageUrl": zod.string(),
+  "bgWidth": zod.number(),
+  "bgHeight": zod.number(),
+  "slots": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['text', 'photo']),
+  "field": zod.string(),
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number(),
+  "fontSize": zod.number().optional(),
+  "color": zod.string().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional(),
+  "photoFit": zod.enum(['cover', 'contain']).optional(),
+  "shape": zod.enum(['rect', 'circle']).optional()
+})).optional(),
+  "isActive": zod.boolean().optional(),
+  "isDefault": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a custom card template
+ */
+export const UpdateCardTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCardTemplateBody = zod.object({
+  "name": zod.string().optional(),
+  "cardKinds": zod.array(zod.string()).optional(),
+  "backgroundImageUrl": zod.string().optional(),
+  "bgWidth": zod.number().optional(),
+  "bgHeight": zod.number().optional(),
+  "slots": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['text', 'photo']),
+  "field": zod.string(),
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number(),
+  "fontSize": zod.number().optional(),
+  "color": zod.string().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional(),
+  "photoFit": zod.enum(['cover', 'contain']).optional(),
+  "shape": zod.enum(['rect', 'circle']).optional()
+})).optional(),
+  "isActive": zod.boolean().optional(),
+  "isDefault": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateCardTemplateResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cardKinds": zod.array(zod.string()),
+  "backgroundImageUrl": zod.string(),
+  "bgWidth": zod.number(),
+  "bgHeight": zod.number(),
+  "slots": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['text', 'photo']),
+  "field": zod.string(),
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number(),
+  "fontSize": zod.number().optional(),
+  "color": zod.string().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional(),
+  "photoFit": zod.enum(['cover', 'contain']).optional(),
+  "shape": zod.enum(['rect', 'circle']).optional()
+})),
+  "isActive": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Delete a custom card template
+ */
+export const DeleteCardTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get social card settings (engines, sizes, sponsors, captions)
  */
 export const GetSocialSettingsResponse = zod.object({

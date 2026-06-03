@@ -1608,6 +1608,102 @@ export interface CardThemeUpdate {
   displayOrder?: number;
 }
 
+export type CardTemplateSlotType = typeof CardTemplateSlotType[keyof typeof CardTemplateSlotType];
+
+
+export const CardTemplateSlotType = {
+  text: 'text',
+  photo: 'photo',
+} as const;
+
+export type CardTemplateSlotAlign = typeof CardTemplateSlotAlign[keyof typeof CardTemplateSlotAlign];
+
+
+export const CardTemplateSlotAlign = {
+  left: 'left',
+  center: 'center',
+  right: 'right',
+} as const;
+
+export type CardTemplateSlotFontFamily = typeof CardTemplateSlotFontFamily[keyof typeof CardTemplateSlotFontFamily];
+
+
+export const CardTemplateSlotFontFamily = {
+  sans: 'sans',
+  serif: 'serif',
+} as const;
+
+export type CardTemplateSlotPhotoFit = typeof CardTemplateSlotPhotoFit[keyof typeof CardTemplateSlotPhotoFit];
+
+
+export const CardTemplateSlotPhotoFit = {
+  cover: 'cover',
+  contain: 'contain',
+} as const;
+
+export type CardTemplateSlotShape = typeof CardTemplateSlotShape[keyof typeof CardTemplateSlotShape];
+
+
+export const CardTemplateSlotShape = {
+  rect: 'rect',
+  circle: 'circle',
+} as const;
+
+export interface CardTemplateSlot {
+  id: string;
+  type: CardTemplateSlotType;
+  field: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  fontSize?: number;
+  color?: string;
+  fontWeight?: number;
+  align?: CardTemplateSlotAlign;
+  fontFamily?: CardTemplateSlotFontFamily;
+  uppercase?: boolean;
+  photoFit?: CardTemplateSlotPhotoFit;
+  shape?: CardTemplateSlotShape;
+}
+
+export interface CardTemplate {
+  id: number;
+  name: string;
+  cardKinds: string[];
+  backgroundImageUrl: string;
+  bgWidth: number;
+  bgHeight: number;
+  slots: CardTemplateSlot[];
+  isActive: boolean;
+  isDefault: boolean;
+  displayOrder: number;
+}
+
+export interface CardTemplateInput {
+  name: string;
+  cardKinds?: string[];
+  backgroundImageUrl: string;
+  bgWidth: number;
+  bgHeight: number;
+  slots?: CardTemplateSlot[];
+  isActive?: boolean;
+  isDefault?: boolean;
+  displayOrder?: number;
+}
+
+export interface CardTemplateUpdate {
+  name?: string;
+  cardKinds?: string[];
+  backgroundImageUrl?: string;
+  bgWidth?: number;
+  bgHeight?: number;
+  slots?: CardTemplateSlot[];
+  isActive?: boolean;
+  isDefault?: boolean;
+  displayOrder?: number;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;

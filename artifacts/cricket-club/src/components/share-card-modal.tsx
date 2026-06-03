@@ -7,11 +7,14 @@ import {
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useListCardTemplates,
+  getListCardTemplatesQueryKey,
   useGetPlayer,
   getGetPlayerQueryKey,
   useUpdatePlayer,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
+  type CardTemplate,
 } from "@workspace/api-client-react";
 import {
   Dialog,
@@ -41,6 +44,7 @@ import {
   type PhotoTransform,
 } from "@/lib/share-card";
 import { PhotoReposition } from "@/components/photo-reposition";
+import { templateAppliesToKind } from "@/lib/card-template";
 import {
   renderCaption,
   truncateForPlatform,
@@ -209,6 +213,40 @@ export function ShareCardModal({
     [themes, selectedThemeId],
   );
 
+  // Custom "bring your own" templates that apply to this card kind.
+  const templatesQ = useListCardTemplates({
+    query: { enabled: open, queryKey: getListCardTemplatesQueryKey() },
+  });
+  const applicableTemplates = useMemo<CardTemplate[]>(() => {
+    if (!input) return [];
+    return (templatesQ.data ?? []).filter((t) =>
+      templateAppliesToKind(t, input.kind),
+    );
+  }, [templatesQ.data, input]);
+  // `null` = built-in layout; otherwise a template id.
+  const [layoutId, setLayoutId] = useState<number | null>(null);
+  const [layoutTouched, setLayoutTouched] = useState(false);
+  // Pre-select the default template when it applies; otherwise keep built-in.
+  useEffect(() => {
+    if (!open || layoutTouched) return;
+    const def = applicableTemplates.find((t) => t.isDefault);
+    if (def) setLayoutId(def.id);
+  }, [open, layoutTouched, applicableTemplates]);
+  // Reset the layout choice each time the modal opens or the card changes.
+  useEffect(() => {
+    if (open) {
+      setLayoutId(null);
+      setLayoutTouched(false);
+    }
+  }, [open, input]);
+  const selectedTemplate = useMemo<CardTemplate | null>(
+    () =>
+      layoutId === null
+        ? null
+        : applicableTemplates.find((t) => t.id === layoutId) ?? null,
+    [layoutId, applicableTemplates],
+  );
+
   const enabledSizes: CardSize[] = useMemo(() => {
     const s = bundle?.settings;
     const out: CardSize[] = [];
@@ -327,6 +365,7 @@ export function ShareCardModal({
           clubUrl,
           hashtag,
           theme: selectedTheme,
+          template: selectedTemplate,
           photoUrl: effectivePhotoUrl,
           photoPlacement,
           photoTransform: renderTransform,
@@ -345,7 +384,7 @@ export function ShareCardModal({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, effectivePhotoUrl, photoPlacement, renderTransform]);
+  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, selectedTemplate, effectivePhotoUrl, photoPlacement, renderTransform]);
 
   // Stable signature of the resolved sponsor set so previews re-render when the
   // sponsor list loads async or its card-kind filtering changes the result.
@@ -363,7 +402,7 @@ export function ShareCardModal({
       return { square: null, portrait: null, story: null };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeSponsors, input, selectedThemeId, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform]);
+  }, [includeSponsors, input, selectedThemeId, layoutId, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform]);
 
   // Cleanup URLs on close.
   useEffect(() => {
@@ -384,6 +423,7 @@ export function ShareCardModal({
       clubUrl,
       hashtag,
       theme: selectedTheme,
+      template: selectedTemplate,
       photoUrl: effectivePhotoUrl,
       photoPlacement,
       photoTransform,
@@ -403,6 +443,7 @@ export function ShareCardModal({
           clubUrl,
           hashtag,
           theme: selectedTheme,
+          template: selectedTemplate,
           photoUrl: effectivePhotoUrl,
           photoPlacement,
           photoTransform,
@@ -484,7 +525,32 @@ export function ShareCardModal({
               ))}
             </Tabs>
 
-            {themes.length > 1 && (
+            {applicableTemplates.length > 0 && (
+              <div className="space-y-1.5 rounded border px-3 py-2">
+                <Label htmlFor="layout-select" className="text-sm">
+                  Layout
+                </Label>
+                <select
+                  id="layout-select"
+                  value={layoutId ?? ""}
+                  onChange={(e) => {
+                    setLayoutTouched(true);
+                    setLayoutId(e.target.value === "" ? null : Number(e.target.value));
+                  }}
+                  className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                >
+                  <option value="">Built-in design</option>
+                  {applicableTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.isDefault ? " (default)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {selectedTemplate === null && themes.length > 1 && (
               <div className="space-y-1.5 rounded border px-3 py-2">
                 <Label htmlFor="theme-select" className="text-sm">
                   Card theme

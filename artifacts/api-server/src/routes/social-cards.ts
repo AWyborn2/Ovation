@@ -7,6 +7,7 @@ import {
   milestoneBoardSettingsTable,
   captionTemplatesTable,
   cardThemesTable,
+  cardTemplatesTable,
 } from "@workspace/db";
 import {
   CreateSponsorBody,
@@ -20,6 +21,10 @@ import {
   UpdateCardThemeBody,
   UpdateCardThemeParams,
   DeleteCardThemeParams,
+  CreateCardTemplateBody,
+  UpdateCardTemplateBody,
+  UpdateCardTemplateParams,
+  DeleteCardTemplateParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
@@ -324,6 +329,91 @@ router.delete("/card-themes/:id", requireAdmin, async (req, res): Promise<void> 
         .set({ isDefault: true })
         .where(eq(cardThemesTable.id, first.id));
     }
+  }
+  res.status(204).end();
+});
+
+// --- Custom "bring your own" card templates -------------------------------
+
+router.get("/card-templates", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(cardTemplatesTable)
+    .orderBy(asc(cardTemplatesTable.displayOrder), asc(cardTemplatesTable.id));
+  res.json(rows);
+});
+
+router.post("/card-templates", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = CreateCardTemplateBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const row = await db.transaction(async (tx) => {
+    if (parsed.data.isDefault) {
+      await tx.update(cardTemplatesTable).set({ isDefault: false });
+    }
+    const [created] = await tx
+      .insert(cardTemplatesTable)
+      .values({
+        name: parsed.data.name,
+        cardKinds: parsed.data.cardKinds ?? [],
+        backgroundImageUrl: parsed.data.backgroundImageUrl,
+        bgWidth: parsed.data.bgWidth,
+        bgHeight: parsed.data.bgHeight,
+        slots: parsed.data.slots ?? [],
+        isActive: parsed.data.isActive ?? true,
+        isDefault: parsed.data.isDefault ?? false,
+        displayOrder: parsed.data.displayOrder ?? 0,
+      })
+      .returning();
+    return created;
+  });
+  res.status(201).json(row);
+});
+
+router.patch("/card-templates/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateCardTemplateParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpdateCardTemplateBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const row = await db.transaction(async (tx) => {
+    if (body.data.isDefault === true) {
+      await tx.update(cardTemplatesTable).set({ isDefault: false });
+    }
+    const [updated] = await tx
+      .update(cardTemplatesTable)
+      .set(body.data)
+      .where(eq(cardTemplatesTable.id, params.data.id))
+      .returning();
+    return updated;
+  });
+  if (!row) {
+    res.status(404).json({ error: "Card template not found" });
+    return;
+  }
+  res.json(row);
+});
+
+router.delete("/card-templates/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeleteCardTemplateParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const result = await db
+    .delete(cardTemplatesTable)
+    .where(eq(cardTemplatesTable.id, params.data.id))
+    .returning({ id: cardTemplatesTable.id });
+  if (result.length === 0) {
+    res.status(404).json({ error: "Card template not found" });
+    return;
   }
   res.status(204).end();
 });

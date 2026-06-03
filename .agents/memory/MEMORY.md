@@ -19,3 +19,4 @@
 - [api-server testing setup](api-server-testing.md) — vitest runs against the live dev DB (clean up uniquely-suffixed rows); supertest + forged HMAC cookies; build libs before per-package typecheck.
 - [Share-card photo crop coupling](share-card-photo-crop.md) — feature-photo focal/zoom is size-independent; the CSS reposition control must mirror the canvas cover math or preview/crop diverge.
 - [Backfill peel vs add](backfill-peel-add.md) — previous-season imports reconcile vs the season=NULL baseline; peel keeps career invariant (stores deltas for reversal), add is additive; suppress social, never mint caps.
+- [BYO social tile templates](card-templates-byo.md) — custom-upload card designs: slot geom+fontSize are fractions of the BG image, mapped through one object-fit cover transform so they hold across all export sizes.

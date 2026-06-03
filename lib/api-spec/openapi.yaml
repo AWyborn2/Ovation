@@ -1974,6 +1974,80 @@ paths:
         "404":
           description: Not found
 
+  /card-templates:
+    get:
+      operationId: listCardTemplates
+      tags: [socialCards]
+      summary: List all custom card templates (ordered)
+      responses:
+        "200":
+          description: Card template list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardTemplate"
+    post:
+      operationId: createCardTemplate
+      tags: [socialCards]
+      summary: Create a custom card template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardTemplateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardTemplate"
+
+  /card-templates/{id}:
+    patch:
+      operationId: updateCardTemplate
+      tags: [socialCards]
+      summary: Update a custom card template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardTemplateUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardTemplate"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCardTemplate
+      tags: [socialCards]
+      summary: Delete a custom card template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /social-settings:
     get:
       operationId: getSocialSettings
@@ -4552,6 +4626,129 @@ components:
           type: ["string", "null"]
         logoUrl:
           type: ["string", "null"]
+        isDefault:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardTemplateSlot:
+      type: object
+      required: [id, type, field, x, y, w, h]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [text, photo]
+        field:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+        w:
+          type: number
+        h:
+          type: number
+        fontSize:
+          type: number
+        color:
+          type: string
+        fontWeight:
+          type: integer
+        align:
+          type: string
+          enum: [left, center, right]
+        fontFamily:
+          type: string
+          enum: [sans, serif]
+        uppercase:
+          type: boolean
+        photoFit:
+          type: string
+          enum: [cover, contain]
+        shape:
+          type: string
+          enum: [rect, circle]
+
+    CardTemplate:
+      type: object
+      required:
+        [id, name, cardKinds, backgroundImageUrl, bgWidth, bgHeight, slots, isActive, isDefault, displayOrder]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        cardKinds:
+          type: array
+          items:
+            type: string
+        backgroundImageUrl:
+          type: string
+        bgWidth:
+          type: integer
+        bgHeight:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardTemplateSlot"
+        isActive:
+          type: boolean
+        isDefault:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardTemplateInput:
+      type: object
+      required: [name, backgroundImageUrl, bgWidth, bgHeight]
+      properties:
+        name:
+          type: string
+        cardKinds:
+          type: array
+          items:
+            type: string
+        backgroundImageUrl:
+          type: string
+        bgWidth:
+          type: integer
+        bgHeight:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardTemplateSlot"
+        isActive:
+          type: boolean
+        isDefault:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardTemplateUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        cardKinds:
+          type: array
+          items:
+            type: string
+        backgroundImageUrl:
+          type: string
+        bgWidth:
+          type: integer
+        bgHeight:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardTemplateSlot"
+        isActive:
+          type: boolean
         isDefault:
           type: boolean
         displayOrder:
