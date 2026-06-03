@@ -24,3 +24,4 @@
 - [Award history reconciliation](award-history-reconciliation.md) — loading historical award winners: exact + confident links via CORRECTIONS map, uncertain/non-roster stay free-text (playerId NULL) for admin to link later.
 - [Awards mechanisms & public points board](awards-mechanisms.md) — awards have mechanism voted/points/manual + published flag; public points leaderboards live at GET /api/award-points (hook useListPublicPointsLeaderboards).
 - [HHCC history xlsx stacked blocks](history-xlsx-stacked-blocks.md) — Grade Records sheet stacks GRADE CAPTAINS over GRADE CRICKETERS OF THE YEAR (same layout); stop at second header or you double-import.
+- [Committee/captain role linking](committee-role-linking.md) — settled which club_roles role-holders stay plain text (office bearers w/ no player + joint captains) vs. the Sommers↔Somers matcher fix.

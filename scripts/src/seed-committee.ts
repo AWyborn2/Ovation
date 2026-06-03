@@ -77,6 +77,8 @@ const GIVEN_VARIANTS: Record<string, string> = {
 const SURNAME_VARIANTS: Record<string, string> = {
   clark: "clarke",
   clarke: "clark",
+  sommers: "somers",
+  somers: "sommers",
 };
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
