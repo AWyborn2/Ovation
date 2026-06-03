@@ -42,6 +42,7 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - **imports** — audit row per upload (filename, grade, season, round, kind, row_count, status, imported_at). `kind` is `'csv'` (whole-season) or `'match'` (per-match); `round` is set for match imports. Snapshot rows reference it via `import_id` and cascade-delete with it.
 - **matches** — permanent per-match history, one row per (grade, season, round): opponent, date, venue, result, abandoned flag. Cascades from its `import_id`.
 - **match_player_lines** — one row per player per match: per-innings batting/bowling/fielding figures. Cascades from `matches`.
+- **match_opposition_lines** — display-only opposition innings: one row per opposition player per match (plain-text `name`, NO player FK, full batting/bowling/fielding columns). Captured at import from the scorecard's opposition block (batting), our bowlers (their bowling), and our batsmen's dismissal text (their fielding). NEVER contributes to any club stat/record/leaderboard/milestone; rendered as a second innings on the match page. Abandoned matches store none. Cascades from `matches`.
 
 Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Female B Grade, PPL, Colts
 

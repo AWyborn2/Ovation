@@ -46,6 +46,32 @@ export type ParsedMatchPlayer = {
   runOuts: number;
 };
 
+/**
+ * A display-only line for an opposition player. These are NEVER created as club
+ * players and never contribute to any club aggregate — the name is plain text.
+ */
+export type ParsedOppositionLine = {
+  name: string;
+  batted: boolean;
+  battingPos: number | null;
+  runs: number | null;
+  balls: number | null;
+  fours: number | null;
+  sixes: number | null;
+  notOut: boolean;
+  dismissal: string | null;
+  bowled: boolean;
+  overs: string | null;
+  maidens: number | null;
+  runsConceded: number | null;
+  wickets: number | null;
+  wides: number | null;
+  noBalls: number | null;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+};
+
 export type ParsedMatch = {
   competition: string | null;
   grade: string | null;
@@ -59,6 +85,7 @@ export type ParsedMatch = {
   hhccScore: string | null;
   opponentScore: string | null;
   players: ParsedMatchPlayer[];
+  opposition: ParsedOppositionLine[];
   warnings: string[];
 };
 
@@ -305,6 +332,7 @@ export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
       hhccScore,
       opponentScore,
       players: [],
+      opposition: [],
       warnings,
     };
   }
@@ -397,6 +425,98 @@ export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
     }
   }
 
+  // --- Opposition lines (display only — mirror of the HHCC merge) ---
+  // Opposition batting = batsmen in the OPPOSITION block.
+  // Opposition bowling = bowlers in the HHCC block (they bowled to us).
+  // Opposition fielding = derived from HHCC batsmen dismissal text.
+  const oppByKey = new Map<string, ParsedOppositionLine>();
+  const fullName = (surname: string, givenName: string) =>
+    `${givenName} ${surname}`.trim();
+  const oppBlank = (name: string): ParsedOppositionLine => ({
+    name,
+    batted: false,
+    battingPos: null,
+    runs: null,
+    balls: null,
+    fours: null,
+    sixes: null,
+    notOut: false,
+    dismissal: null,
+    bowled: false,
+    overs: null,
+    maidens: null,
+    runsConceded: null,
+    wickets: null,
+    wides: null,
+    noBalls: null,
+    catches: 0,
+    stumpings: 0,
+    runOuts: 0,
+  });
+  const oppEnsure = (surname: string, givenName: string): ParsedOppositionLine => {
+    const k = keyFor(surname, givenName);
+    let line = oppByKey.get(k);
+    if (!line) {
+      line = oppBlank(fullName(surname, givenName));
+      oppByKey.set(k, line);
+    }
+    return line;
+  };
+
+  if (oppBlock) {
+    for (const b of oppBlock.batsmen) {
+      const line = oppEnsure(b.surname, b.givenName);
+      line.batted = true;
+      line.battingPos = b.pos;
+      line.runs = b.runs;
+      line.balls = b.balls;
+      line.fours = b.fours;
+      line.sixes = b.sixes;
+      line.notOut = b.notOut;
+      line.dismissal = b.dismissal;
+    }
+  }
+  if (hhccBlock) {
+    for (const bw of hhccBlock.bowlers) {
+      const line = oppEnsure(bw.surname, bw.givenName);
+      line.bowled = true;
+      line.overs = bw.overs;
+      line.maidens = bw.maidens;
+      line.runsConceded = bw.runsConceded;
+      line.wickets = bw.wickets;
+      line.wides = bw.wides;
+      line.noBalls = bw.noBalls;
+    }
+  }
+
+  // Opposition fielding index keyed by givenInitial+surname.
+  const oppFieldingIndex = new Map<string, ParsedOppositionLine>();
+  for (const line of oppByKey.values()) {
+    const initial = line.name.split(/\s+/)[0]?.[0]?.toLowerCase() ?? "";
+    const surname = line.name.split(/\s+/).pop()?.toLowerCase() ?? "";
+    oppFieldingIndex.set(`${initial}|${surname}`, line);
+  }
+  if (hhccBlock) {
+    for (const hb of hhccBlock.batsmen) {
+      if (!hb.dismissal) continue;
+      for (const ref of parseFielders(hb.dismissal)) {
+        const fk = `${ref.initial.toLowerCase()}|${ref.surname.toLowerCase()}`;
+        let line = oppFieldingIndex.get(fk);
+        if (!line) {
+          // A fielder who neither batted nor bowled for the opposition; only the
+          // initial + surname is known from the dismissal text.
+          line = oppBlank(`${ref.initial} ${ref.surname}`);
+          const k = keyFor(ref.surname, ref.initial);
+          oppByKey.set(k, line);
+          oppFieldingIndex.set(fk, line);
+        }
+        if (ref.type === "c") line.catches += 1;
+        else if (ref.type === "st") line.stumpings += 1;
+        else line.runOuts += 1;
+      }
+    }
+  }
+
   return {
     competition,
     grade,
@@ -410,6 +530,7 @@ export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
     hhccScore,
     opponentScore,
     players: Array.from(lineByKey.values()),
+    opposition: Array.from(oppByKey.values()),
     warnings,
   };
 }

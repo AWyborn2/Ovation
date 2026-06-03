@@ -867,6 +867,41 @@ export interface MatchScorecardLine {
   runOuts: number;
 }
 
+export interface MatchOppositionLine {
+  id: number;
+  name: string;
+  batted: boolean;
+  /** @nullable */
+  battingPos?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  notOut: boolean;
+  /** @nullable */
+  dismissal?: string | null;
+  bowled: boolean;
+  /** @nullable */
+  overs?: string | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runsConceded?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
 export interface MatchDetail {
   id: number;
   grade: string;
@@ -889,6 +924,7 @@ export interface MatchDetail {
   opponentScore?: string | null;
   abandoned: boolean;
   lines: MatchScorecardLine[];
+  oppositionLines?: MatchOppositionLine[];
 }
 
 export interface MatchRoundUpdate {

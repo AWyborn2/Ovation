@@ -4,6 +4,7 @@ import {
   db,
   matchesTable,
   matchPlayerLinesTable,
+  matchOppositionLinesTable,
   playersTable,
   importsTable,
 } from "@workspace/db";
@@ -54,6 +55,34 @@ async function loadMatchDetail(matchId: number) {
     .where(eq(matchPlayerLinesTable.matchId, matchId))
     .orderBy(asc(matchPlayerLinesTable.battingPos), asc(playersTable.surname));
 
+  // Display-only opposition lines (plain-text names, no player link).
+  const oppositionLines = await db
+    .select({
+      id: matchOppositionLinesTable.id,
+      name: matchOppositionLinesTable.name,
+      batted: matchOppositionLinesTable.batted,
+      battingPos: matchOppositionLinesTable.battingPos,
+      runs: matchOppositionLinesTable.runs,
+      balls: matchOppositionLinesTable.balls,
+      fours: matchOppositionLinesTable.fours,
+      sixes: matchOppositionLinesTable.sixes,
+      notOut: matchOppositionLinesTable.notOut,
+      dismissal: matchOppositionLinesTable.dismissal,
+      bowled: matchOppositionLinesTable.bowled,
+      overs: matchOppositionLinesTable.overs,
+      maidens: matchOppositionLinesTable.maidens,
+      runsConceded: matchOppositionLinesTable.runsConceded,
+      wickets: matchOppositionLinesTable.wickets,
+      wides: matchOppositionLinesTable.wides,
+      noBalls: matchOppositionLinesTable.noBalls,
+      catches: matchOppositionLinesTable.catches,
+      stumpings: matchOppositionLinesTable.stumpings,
+      runOuts: matchOppositionLinesTable.runOuts,
+    })
+    .from(matchOppositionLinesTable)
+    .where(eq(matchOppositionLinesTable.matchId, matchId))
+    .orderBy(asc(matchOppositionLinesTable.battingPos), asc(matchOppositionLinesTable.id));
+
   return {
     id: match.id,
     grade: match.grade,
@@ -68,6 +97,7 @@ async function loadMatchDetail(matchId: number) {
     opponentScore: match.opponentScore,
     abandoned: match.abandoned,
     lines,
+    oppositionLines,
   };
 }
 

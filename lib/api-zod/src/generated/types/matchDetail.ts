@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchOppositionLine } from './matchOppositionLine';
 import type { MatchScorecardLine } from './matchScorecardLine';
 
 export interface MatchDetail {
@@ -29,4 +30,5 @@ export interface MatchDetail {
   opponentScore?: string | null;
   abandoned: boolean;
   lines: MatchScorecardLine[];
+  oppositionLines?: MatchOppositionLine[];
 }

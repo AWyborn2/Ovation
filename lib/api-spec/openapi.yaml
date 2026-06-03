@@ -3329,6 +3329,55 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchScorecardLine"
+        oppositionLines:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchOppositionLine"
+
+    MatchOppositionLine:
+      type: object
+      required: [id, name, batted, bowled, notOut, catches, stumpings, runOuts]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        batted:
+          type: boolean
+        battingPos:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        notOut:
+          type: boolean
+        dismissal:
+          type: ["string", "null"]
+        bowled:
+          type: boolean
+        overs:
+          type: ["string", "null"]
+        maidens:
+          type: ["integer", "null"]
+        runsConceded:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
 
     MatchRoundUpdate:
       type: object

@@ -259,7 +259,29 @@ export const GetMatchResponse = zod.object({
   "catches": zod.number(),
   "stumpings": zod.number(),
   "runOuts": zod.number()
-}))
+})),
+  "oppositionLines": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "batted": zod.boolean(),
+  "battingPos": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "notOut": zod.boolean(),
+  "dismissal": zod.string().nullish(),
+  "bowled": zod.boolean(),
+  "overs": zod.string().nullish(),
+  "maidens": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+})).optional()
 })
 
 
@@ -317,7 +339,29 @@ export const UpdateMatchRoundResponse = zod.object({
   "catches": zod.number(),
   "stumpings": zod.number(),
   "runOuts": zod.number()
-}))
+})),
+  "oppositionLines": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "batted": zod.boolean(),
+  "battingPos": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "notOut": zod.boolean(),
+  "dismissal": zod.string().nullish(),
+  "bowled": zod.boolean(),
+  "overs": zod.string().nullish(),
+  "maidens": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+})).optional()
 })
 
 

@@ -6,6 +6,7 @@ import {
   getGetMatchQueryKey,
   useUpdateMatchRound,
   type MatchScorecardLine,
+  type MatchOppositionLine,
 } from "@workspace/api-client-react";
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
@@ -80,10 +81,24 @@ export default function MatchDetail() {
     (l) => (l.catches ?? 0) + (l.stumpings ?? 0) + (l.runOuts ?? 0) > 0,
   );
 
+  const oppLines = match.oppositionLines ?? [];
+  const oppBatting = oppLines
+    .filter((l) => l.batted)
+    .sort((a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99));
+  const oppBowling = oppLines.filter((l) => l.bowled);
+  const oppFielding = oppLines.filter(
+    (l) => (l.catches ?? 0) + (l.stumpings ?? 0) + (l.runOuts ?? 0) > 0,
+  );
+  const hasOpposition = oppBatting.length + oppBowling.length + oppFielding.length > 0;
+
   const playerLink = (l: MatchScorecardLine) => (
     <Link href={`/players/${l.playerId}`} className="font-medium text-primary hover:underline">
       {l.givenName} {l.surname}
     </Link>
+  );
+
+  const oppName = (l: MatchOppositionLine) => (
+    <span className="font-medium text-foreground">{l.name}</span>
   );
 
   return (
@@ -200,6 +215,13 @@ export default function MatchDetail() {
         )}
       </div>
 
+      {/* Halls Head innings */}
+      <TeamHeading
+        name="Halls Head"
+        score={match.hhccScore}
+        hidden={match.abandoned}
+      />
+
       {/* Batting */}
       <ScorecardSection title="Batting">
         <table className="w-full text-sm">
@@ -291,6 +313,119 @@ export default function MatchDetail() {
           </table>
         </ScorecardSection>
       )}
+
+      {/* Opposition innings (display only — plain-text names) */}
+      {hasOpposition && (
+        <>
+          <TeamHeading
+            name={match.opponent ?? "Opposition"}
+            score={match.opponentScore}
+          />
+
+          {oppBatting.length > 0 && (
+            <ScorecardSection title="Batting">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="text-left font-medium p-3">Batter</th>
+                    <th className="text-left font-medium p-3">Dismissal</th>
+                    <th className="text-right font-medium p-3">R</th>
+                    <th className="text-right font-medium p-3">B</th>
+                    <th className="text-right font-medium p-3">4s</th>
+                    <th className="text-right font-medium p-3">6s</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {oppBatting.map((l) => (
+                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="p-3">{oppName(l)}{l.notOut && <span className="text-primary font-bold"> *</span>}</td>
+                      <td className="p-3 text-muted-foreground">{l.dismissal || "—"}</td>
+                      <td className="p-3 text-right font-mono font-bold">{l.runs ?? 0}</td>
+                      <td className="p-3 text-right font-mono">{l.balls ?? "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.fours ?? "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.sixes ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScorecardSection>
+          )}
+
+          {oppBowling.length > 0 && (
+            <ScorecardSection title="Bowling">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="text-left font-medium p-3">Bowler</th>
+                    <th className="text-right font-medium p-3">O</th>
+                    <th className="text-right font-medium p-3">M</th>
+                    <th className="text-right font-medium p-3">R</th>
+                    <th className="text-right font-medium p-3">W</th>
+                    <th className="text-right font-medium p-3">Wd</th>
+                    <th className="text-right font-medium p-3">Nb</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {oppBowling.map((l) => (
+                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="p-3">{oppName(l)}</td>
+                      <td className="p-3 text-right font-mono">{l.overs || "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.maidens ?? "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.runsConceded ?? "—"}</td>
+                      <td className="p-3 text-right font-mono font-bold">{l.wickets ?? 0}</td>
+                      <td className="p-3 text-right font-mono">{l.wides ?? "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.noBalls ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScorecardSection>
+          )}
+
+          {oppFielding.length > 0 && (
+            <ScorecardSection title="Fielding">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="text-left font-medium p-3">Fielder</th>
+                    <th className="text-right font-medium p-3">Ct</th>
+                    <th className="text-right font-medium p-3">St</th>
+                    <th className="text-right font-medium p-3">RO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {oppFielding.map((l) => (
+                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="p-3">{oppName(l)}</td>
+                      <td className="p-3 text-right font-mono">{l.catches || "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.stumpings || "—"}</td>
+                      <td className="p-3 text-right font-mono">{l.runOuts || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScorecardSection>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TeamHeading({
+  name,
+  score,
+  hidden,
+}: {
+  name: string;
+  score?: string | null;
+  hidden?: boolean;
+}) {
+  if (hidden) return null;
+  return (
+    <div className="flex items-baseline justify-between gap-3 pt-2">
+      <h2 className="text-xl font-serif font-bold text-foreground m-0">{name}</h2>
+      {score && <span className="font-mono font-bold text-primary text-lg">{score}</span>}
     </div>
   );
 }

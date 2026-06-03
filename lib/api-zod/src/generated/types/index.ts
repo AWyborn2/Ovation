@@ -86,6 +86,7 @@ export * from './loginRequest';
 export * from './matchDetail';
 export * from './matchImportPreview';
 export * from './matchImportPreviewCapCategory';
+export * from './matchOppositionLine';
 export * from './matchPreviewPlayer';
 export * from './matchPreviewPlayerStatus';
 export * from './matchRoundUpdate';

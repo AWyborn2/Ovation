@@ -40,6 +40,15 @@ delete use shared `rollback.ts` (reverseCaps + cleanupOrphanPlayers).
 Parser: `artifacts/api-server/src/lib/match-scorecard.ts` (fielding is derived
 from opposition dismissal text via initial+surname matching).
 
+**Opposition scorecard (display-only):** the parser ALSO emits `opposition`
+(`ParsedOppositionLine[]`) — the opposition's batting (their block), bowling
+(HHCC block's bowlers), and fielding (derived from HHCC batsmen dismissal text,
+incl. fielders known only by initial+surname). Stored in `match_opposition_lines`
+(name as plain TEXT, NO player FK, cascades via match). **Display only — never
+summed into any club aggregate/record/milestone.** Both commit paths insert it;
+GET /matches/:id returns `oppositionLines`; rendered as a second innings on
+match-detail.tsx (plain text, no links). Abandoned matches store none.
+
 ## Season batch upload (many scorecards / .zip at once)
 
 Extends the single-match flow: admin uploads multiple `.xlsx` and/or a `.zip` →

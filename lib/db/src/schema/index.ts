@@ -5,6 +5,7 @@ export * from "./premierships";
 export * from "./imports";
 export * from "./matches";
 export * from "./match_player_lines";
+export * from "./match_opposition_lines";
 export * from "./player_grade_season_stats";
 export * from "./baseline_adjustments";
 export * from "./cap_register";

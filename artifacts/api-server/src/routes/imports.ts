@@ -9,6 +9,7 @@ import {
   playerGradeSeasonStatsTable,
   matchesTable,
   matchPlayerLinesTable,
+  matchOppositionLinesTable,
   type ImportRecord,
 } from "@workspace/db";
 import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
@@ -1375,6 +1376,34 @@ async function commitMatchImport(
       );
     }
 
+    // Opposition lines: display-only, no player FK, cascade with the match.
+    if (parsed.opposition.length > 0) {
+      await tx.insert(matchOppositionLinesTable).values(
+        parsed.opposition.map((o) => ({
+          matchId: match.id,
+          name: o.name,
+          batted: o.batted,
+          battingPos: o.battingPos ?? null,
+          runs: o.runs ?? null,
+          balls: o.balls ?? null,
+          fours: o.fours ?? null,
+          sixes: o.sixes ?? null,
+          notOut: o.notOut,
+          dismissal: o.dismissal ?? null,
+          bowled: o.bowled,
+          overs: o.overs ?? null,
+          maidens: o.maidens ?? null,
+          runsConceded: o.runsConceded ?? null,
+          wickets: o.wickets ?? null,
+          wides: o.wides ?? null,
+          noBalls: o.noBalls ?? null,
+          catches: o.catches,
+          stumpings: o.stumpings,
+          runOuts: o.runOuts,
+        })),
+      );
+    }
+
     await tx
       .update(importsTable)
       .set({ status: "committed", payload: null, round })
@@ -1673,6 +1702,34 @@ router.post(
               catches: l.catches,
               stumpings: l.stumpings,
               runOuts: l.runOuts,
+            })),
+          );
+        }
+
+        // Opposition lines: display-only, no player FK, cascade with the match.
+        if (pm.parsed.opposition.length > 0) {
+          await tx.insert(matchOppositionLinesTable).values(
+            pm.parsed.opposition.map((o) => ({
+              matchId: match.id,
+              name: o.name,
+              batted: o.batted,
+              battingPos: o.battingPos ?? null,
+              runs: o.runs ?? null,
+              balls: o.balls ?? null,
+              fours: o.fours ?? null,
+              sixes: o.sixes ?? null,
+              notOut: o.notOut,
+              dismissal: o.dismissal ?? null,
+              bowled: o.bowled,
+              overs: o.overs ?? null,
+              maidens: o.maidens ?? null,
+              runsConceded: o.runsConceded ?? null,
+              wickets: o.wickets ?? null,
+              wides: o.wides ?? null,
+              noBalls: o.noBalls ?? null,
+              catches: o.catches,
+              stumpings: o.stumpings,
+              runOuts: o.runOuts,
             })),
           );
         }
