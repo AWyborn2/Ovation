@@ -18,6 +18,8 @@ tags:
     description: Grade summary operations
   - name: imports
     description: CSV import operations
+  - name: matches
+    description: Match scorecard read operations
   - name: caps
     description: A Grade Cap Register operations
   - name: lifeMembers
@@ -192,6 +194,54 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PlayerMatchLine"
+
+  /matches:
+    get:
+      operationId: listMatches
+      tags: [matches]
+      summary: List matches, filterable by grade and season
+      description: Returns matches ordered most-recent first (by season, then round).
+      parameters:
+        - name: grade
+          in: query
+          schema:
+            type: string
+          description: Filter by grade
+        - name: season
+          in: query
+          schema:
+            type: integer
+          description: Filter by season starting year
+      responses:
+        "200":
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchSummary"
+
+  /matches/{id}:
+    get:
+      operationId: getMatch
+      tags: [matches]
+      summary: Get a single match with its full scorecard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match detail with all player lines
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "404":
+          description: Not found
 
   /stats:
     get:
@@ -3027,6 +3077,120 @@ components:
           type: integer
         runOuts:
           type: integer
+
+    MatchSummary:
+      type: object
+      required: [id, grade, season, abandoned, playerCount]
+      properties:
+        id:
+          type: integer
+        grade:
+          type: string
+        season:
+          type: integer
+        round:
+          type: ["integer", "null"]
+        competition:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        opponent:
+          type: ["string", "null"]
+        hhccScore:
+          type: ["string", "null"]
+        opponentScore:
+          type: ["string", "null"]
+        abandoned:
+          type: boolean
+        playerCount:
+          type: integer
+
+    MatchScorecardLine:
+      type: object
+      required:
+        [id, playerId, surname, givenName, batted, bowled, notOut, catches, stumpings, runOuts]
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        surname:
+          type: string
+        givenName:
+          type: string
+        batted:
+          type: boolean
+        battingPos:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        notOut:
+          type: boolean
+        dismissal:
+          type: ["string", "null"]
+        bowled:
+          type: boolean
+        overs:
+          type: ["string", "null"]
+        maidens:
+          type: ["integer", "null"]
+        runsConceded:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+
+    MatchDetail:
+      type: object
+      required: [id, grade, season, abandoned, lines]
+      properties:
+        id:
+          type: integer
+        grade:
+          type: string
+        season:
+          type: integer
+        round:
+          type: ["integer", "null"]
+        competition:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        opponent:
+          type: ["string", "null"]
+        hhccScore:
+          type: ["string", "null"]
+        opponentScore:
+          type: ["string", "null"]
+        abandoned:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchScorecardLine"
 
     UndoSeasonInput:
       type: object

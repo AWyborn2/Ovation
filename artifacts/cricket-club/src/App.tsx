@@ -8,6 +8,8 @@ import { AdminShell } from "@/components/admin-shell";
 import HonourBoards from "@/pages/honour-boards";
 import Players from "@/pages/players";
 import PlayerDetail from "@/pages/player-detail";
+import Matches from "@/pages/matches";
+import MatchDetail from "@/pages/match-detail";
 import Grades from "@/pages/grades";
 import GradeLeaderboard from "@/pages/grade-leaderboard";
 import Records from "@/pages/records";
@@ -40,6 +42,8 @@ function PublicRoutes() {
         <Route path="/" component={HonourBoards} />
         <Route path="/players" component={Players} />
         <Route path="/players/:id" component={PlayerDetail} />
+        <Route path="/matches" component={Matches} />
+        <Route path="/matches/:id" component={MatchDetail} />
         <Route path="/grades" component={Grades} />
         <Route path="/grades/:grade" component={GradeLeaderboard} />
         <Route path="/records" component={Records} />

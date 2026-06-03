@@ -66,6 +66,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="matches"
+        options={{
+          title: "MATCHES",
+          tabBarLabel: "Matches",
+          tabBarIcon: ({ color }) => (
+            <Feather name="clipboard" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="honours"
         options={{
           title: "HONOUR BOARDS",

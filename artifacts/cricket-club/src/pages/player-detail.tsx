@@ -407,7 +407,7 @@ export default function PlayerDetail() {
                     m.runOuts ? `${m.runOuts}ro` : "",
                   ].filter(Boolean);
                   return (
-                    <tr key={m.matchId} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                    <tr key={m.matchId} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => { window.location.href = `/matches/${m.matchId}`; }}>
                       <td className="p-3 font-mono">
                         {m.season != null
                           ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
@@ -417,7 +417,11 @@ export default function PlayerDetail() {
                       <td className="p-3">
                         <GradeBadge grade={m.grade} size="sm" />
                       </td>
-                      <td className="p-3">{m.opponent ?? "—"}</td>
+                      <td className="p-3">
+                        <Link href={`/matches/${m.matchId}`} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
+                          {m.opponent ?? "—"}
+                        </Link>
+                      </td>
                       <td className="p-3 font-mono">
                         {m.batted
                           ? `${m.runs ?? 0}${m.notOut ? "*" : ""}${m.balls != null ? ` (${m.balls})` : ""}`

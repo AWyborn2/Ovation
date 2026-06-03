@@ -684,6 +684,91 @@ export interface PlayerMatchLine {
   runOuts: number;
 }
 
+export interface MatchSummary {
+  id: number;
+  grade: string;
+  season: number;
+  /** @nullable */
+  round?: number | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  hhccScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  abandoned: boolean;
+  playerCount: number;
+}
+
+export interface MatchScorecardLine {
+  id: number;
+  playerId: number;
+  surname: string;
+  givenName: string;
+  batted: boolean;
+  /** @nullable */
+  battingPos?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  notOut: boolean;
+  /** @nullable */
+  dismissal?: string | null;
+  bowled: boolean;
+  /** @nullable */
+  overs?: string | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runsConceded?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
+export interface MatchDetail {
+  id: number;
+  grade: string;
+  season: number;
+  /** @nullable */
+  round?: number | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  hhccScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  abandoned: boolean;
+  lines: MatchScorecardLine[];
+}
+
 export interface UndoSeasonInput {
   grade: string;
   season: number;
@@ -1469,6 +1554,17 @@ export const ListPlayersSortOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type ListMatchesParams = {
+/**
+ * Filter by grade
+ */
+grade?: string;
+/**
+ * Filter by season starting year
+ */
+season?: number;
+};
 
 export type ListStatsParams = {
 search?: string;

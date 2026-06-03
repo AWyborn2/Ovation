@@ -47,6 +47,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Back", ...headerStyle }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="players/[id]" options={{ title: "PLAYER" }} />
+      <Stack.Screen name="matches/[id]" options={{ title: "SCORECARD" }} />
       <Stack.Screen name="grades/[grade]" options={{ title: "LEADERBOARD" }} />
       <Stack.Screen name="honours/[board]" options={{ title: "HONOUR BOARD" }} />
       <Stack.Screen name="honours/awards" options={{ title: "AWARDS" }} />
