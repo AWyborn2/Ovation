@@ -5,9 +5,11 @@ import { Feather } from "@expo/vector-icons";
 import {
   useListAwards,
   useListPublicTallies,
+  useListPublicPointsLeaderboards,
   type Award,
   type AwardWinner,
   type AwardTally,
+  type PointsLeaderboard,
 } from "@workspace/api-client-react";
 
 import { Body, Card, Heading, Loading, styles } from "@/components/ui";
@@ -121,7 +123,79 @@ function LiveTally({ tally }: { tally: AwardTally }) {
   );
 }
 
-function AwardCard({ award, tally }: { award: Award; tally?: AwardTally }) {
+function LivePointsBoard({ board }: { board: PointsLeaderboard }) {
+  const colors = useColors();
+  const winners = new Set(board.winnerPlayerIds);
+  const top = board.entries.slice(0, 10);
+  return (
+    <View
+      style={{
+        paddingHorizontal: 14,
+        paddingTop: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        paddingBottom: 12,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: colors.primary,
+          }}
+        />
+        <Body bold size={11} style={{ color: colors.primary, letterSpacing: 0.5 }}>
+          LIVE {formatSeason(board.season)} LEADERBOARD
+          {board.finalised ? " · FINALISED" : ""}
+        </Body>
+      </View>
+      {top.length === 0 ? (
+        <Body muted size={12} style={{ fontStyle: "italic" }}>
+          No stats counted yet.
+        </Body>
+      ) : (
+        <View style={{ gap: 4 }}>
+          {top.map((e, i) => {
+            const isLeader = winners.has(e.playerId);
+            return (
+              <View
+                key={e.playerId}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
+                <Body muted size={11} style={{ width: 18 }}>
+                  {i + 1}
+                </Body>
+                <Body
+                  bold={isLeader}
+                  size={13}
+                  style={{ flex: 1, color: isLeader ? colors.primary : colors.foreground }}
+                >
+                  {e.name}
+                  {isLeader ? " ● leading" : ""}
+                </Body>
+                <Body bold size={13}>
+                  {e.points}
+                </Body>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function AwardCard({
+  award,
+  tally,
+  board,
+}: {
+  award: Award;
+  tally?: AwardTally;
+  board?: PointsLeaderboard;
+}) {
   const colors = useColors();
   const groups = groupBySeason(award.winners);
   return (
@@ -152,6 +226,7 @@ function AwardCard({ award, tally }: { award: Award; tally?: AwardTally }) {
       ) : null}
 
       {tally ? <LiveTally tally={tally} /> : null}
+      {board ? <LivePointsBoard board={board} /> : null}
 
       {groups.length === 0 ? (
         <Body muted size={12} style={{ padding: 16, fontStyle: "italic" }}>
@@ -184,9 +259,13 @@ export default function AwardsScreen() {
   const colors = useColors();
   const { data: awards, isLoading } = useListAwards();
   const { data: tallies } = useListPublicTallies();
+  const { data: boards } = useListPublicPointsLeaderboards();
 
   const tallyByAward = new Map<number, AwardTally>();
   for (const t of tallies ?? []) tallyByAward.set(t.awardId, t);
+
+  const boardByAward = new Map<number, PointsLeaderboard>();
+  for (const b of boards ?? []) boardByAward.set(b.awardId, b);
 
   const sorted = [...(awards ?? [])].sort(
     (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
@@ -213,7 +292,12 @@ export default function AwardsScreen() {
           </View>
         ) : (
           sorted.map((a) => (
-            <AwardCard key={a.id} award={a} tally={tallyByAward.get(a.id)} />
+            <AwardCard
+              key={a.id}
+              award={a}
+              tally={tallyByAward.get(a.id)}
+              board={boardByAward.get(a.id)}
+            />
           ))
         )}
       </ScrollView>

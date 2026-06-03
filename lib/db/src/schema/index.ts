@@ -15,5 +15,6 @@ export * from "./honour_boards";
 export * from "./awards";
 export * from "./captains";
 export * from "./award_voting";
+export * from "./award_points_config";
 export * from "./social_cards";
 export * from "./team_of_decade";

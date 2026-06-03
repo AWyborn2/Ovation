@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { AwardMechanism } from './awardMechanism';
 
 export interface AwardInput {
   key: string;
@@ -12,4 +13,8 @@ export interface AwardInput {
   description?: string;
   displayOrder?: number;
   votingEnabled?: boolean;
+  mechanism?: AwardMechanism;
+  published?: boolean;
+  /** @nullable */
+  pointsGrade?: string | null;
 }

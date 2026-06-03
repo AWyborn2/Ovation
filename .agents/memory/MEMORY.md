@@ -21,3 +21,5 @@
 - [Backfill peel vs add](backfill-peel-add.md) — previous-season imports reconcile vs the season=NULL baseline; peel keeps career invariant (stores deltas for reversal), add is additive; suppress social, never mint caps.
 - [BYO social tile templates](card-templates-byo.md) — custom-upload card designs: slot geom+fontSize are fractions of the BG image, mapped through one object-fit cover transform so they hold across all export sizes.
 - [Animated social tiles](animated-social-tiles.md) — motion presets (countUp degrades to fadeIn on built-ins) + video/gif template bg; client-side captureStream+MediaRecorder export (mp4 else webm); `animated` memo must follow `activeSize` decl.
+- [Award history reconciliation](award-history-reconciliation.md) — loading historical award winners: exact + confident links via CORRECTIONS map, uncertain/non-roster stay free-text (playerId NULL) for admin to link later.
+- [Awards mechanisms & public points board](awards-mechanisms.md) — awards have mechanism voted/points/manual + published flag; public points leaderboards live at GET /api/award-points (hook useListPublicPointsLeaderboards).

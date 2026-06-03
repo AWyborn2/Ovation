@@ -1541,6 +1541,164 @@ paths:
                 items:
                   $ref: "#/components/schemas/AwardTally"
 
+  /admin/awards:
+    get:
+      operationId: listAdminAwards
+      tags: [awards]
+      summary: List all awards incl. drafts and unpublished winners (admin)
+      responses:
+        "200":
+          description: All awards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Award"
+
+  /awards/{id}/points-config:
+    get:
+      operationId: listAwardPointsConfigs
+      tags: [awards]
+      summary: List per-season points configs for an award (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Points configs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AwardPointsConfig"
+    post:
+      operationId: upsertAwardPointsConfig
+      tags: [awards]
+      summary: Create or update the points config for an award+season (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PointsConfigInput"
+      responses:
+        "200":
+          description: Saved config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardPointsConfig"
+
+  /points-configs/{id}:
+    patch:
+      operationId: updateAwardPointsConfig
+      tags: [awards]
+      summary: Update a points config (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PointsConfigUpdate"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardPointsConfig"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAwardPointsConfig
+      tags: [awards]
+      summary: Delete a points config (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /points-configs/{id}/leaderboard:
+    get:
+      operationId: getPointsConfigLeaderboard
+      tags: [awards]
+      summary: Live points leaderboard for a config, always visible to admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PointsLeaderboard"
+        "404":
+          description: Not found
+
+  /points-configs/{id}/finalise:
+    post:
+      operationId: finalisePointsConfig
+      tags: [awards]
+      summary: Finalise the leader(s) into the award's roll of winners (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated award with the newly recorded winners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Award"
+        "404":
+          description: Not found
+
+  /award-points:
+    get:
+      operationId: listPublicPointsLeaderboards
+      tags: [awards]
+      summary: Public live leaderboards for currently-visible points awards
+      responses:
+        "200":
+          description: Visible leaderboards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PointsLeaderboard"
+
   /honour-boards:
     get:
       operationId: listHonourBoards
@@ -4569,9 +4727,13 @@ components:
         note:
           type: string
 
+    AwardMechanism:
+      type: string
+      enum: [voted, points, manual]
+
     AwardWinner:
       type: object
-      required: [id, awardId, season, name, displayOrder]
+      required: [id, awardId, season, name, displayOrder, published]
       properties:
         id:
           type: integer
@@ -4585,10 +4747,13 @@ components:
           type: string
         displayOrder:
           type: integer
+        published:
+          type: boolean
 
     Award:
       type: object
-      required: [id, key, title, description, displayOrder, votingEnabled, winners]
+      required:
+        [id, key, title, description, displayOrder, votingEnabled, mechanism, published, winners]
       properties:
         id:
           type: integer
@@ -4602,6 +4767,12 @@ components:
           type: integer
         votingEnabled:
           type: boolean
+        mechanism:
+          $ref: "#/components/schemas/AwardMechanism"
+        published:
+          type: boolean
+        pointsGrade:
+          type: ["string", "null"]
         winners:
           type: array
           items:
@@ -4621,6 +4792,12 @@ components:
           type: integer
         votingEnabled:
           type: boolean
+        mechanism:
+          $ref: "#/components/schemas/AwardMechanism"
+        published:
+          type: boolean
+        pointsGrade:
+          type: ["string", "null"]
 
     AwardUpdate:
       type: object
@@ -4635,6 +4812,12 @@ components:
           type: integer
         votingEnabled:
           type: boolean
+        mechanism:
+          $ref: "#/components/schemas/AwardMechanism"
+        published:
+          type: boolean
+        pointsGrade:
+          type: ["string", "null"]
 
     AwardWinnerInput:
       type: object
@@ -4648,6 +4831,8 @@ components:
           type: string
         displayOrder:
           type: integer
+        published:
+          type: boolean
 
     AwardWinnerUpdate:
       type: object
@@ -4660,6 +4845,146 @@ components:
           type: string
         displayOrder:
           type: integer
+        published:
+          type: boolean
+
+    AwardPointsConfig:
+      type: object
+      required:
+        [id, awardId, season, includeFinals, leaderboardVisible, categories, createdAt]
+      properties:
+        id:
+          type: integer
+        awardId:
+          type: integer
+        season:
+          type: integer
+        includeFinals:
+          type: boolean
+        leaderboardVisible:
+          type: boolean
+        categories:
+          $ref: "#/components/schemas/PointsCategories"
+        finalisedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PointsCategory:
+      type: object
+      required: [enabled, value]
+      properties:
+        enabled:
+          type: boolean
+        value:
+          type: number
+
+    PointsCategories:
+      type: object
+      required:
+        [runs, wickets, catches, stumpings, runOuts, games, fifties, hundreds, fiveWickets]
+      properties:
+        runs:
+          $ref: "#/components/schemas/PointsCategory"
+        wickets:
+          $ref: "#/components/schemas/PointsCategory"
+        catches:
+          $ref: "#/components/schemas/PointsCategory"
+        stumpings:
+          $ref: "#/components/schemas/PointsCategory"
+        runOuts:
+          $ref: "#/components/schemas/PointsCategory"
+        games:
+          $ref: "#/components/schemas/PointsCategory"
+        fifties:
+          $ref: "#/components/schemas/PointsCategory"
+        hundreds:
+          $ref: "#/components/schemas/PointsCategory"
+        fiveWickets:
+          $ref: "#/components/schemas/PointsCategory"
+
+    PointsConfigInput:
+      type: object
+      required: [season]
+      properties:
+        season:
+          type: integer
+        includeFinals:
+          type: boolean
+        leaderboardVisible:
+          type: boolean
+        categories:
+          $ref: "#/components/schemas/PointsCategories"
+
+    PointsConfigUpdate:
+      type: object
+      properties:
+        includeFinals:
+          type: boolean
+        leaderboardVisible:
+          type: boolean
+        categories:
+          $ref: "#/components/schemas/PointsCategories"
+
+    PointsLeaderboardEntry:
+      type: object
+      required:
+        [playerId, name, points, runs, wickets, catches, stumpings, runOuts, games, fifties, hundreds, fiveWickets]
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
+        points:
+          type: number
+        runs:
+          type: integer
+        wickets:
+          type: integer
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+        games:
+          type: integer
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        fiveWickets:
+          type: integer
+
+    PointsLeaderboard:
+      type: object
+      required:
+        [configId, awardId, awardKey, awardTitle, season, grade, visible, finalised, entries, winnerPlayerIds]
+      properties:
+        configId:
+          type: integer
+        awardId:
+          type: integer
+        awardKey:
+          type: string
+        awardTitle:
+          type: string
+        season:
+          type: integer
+        grade:
+          type: ["string", "null"]
+        visible:
+          type: boolean
+        finalised:
+          type: boolean
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/PointsLeaderboardEntry"
+        winnerPlayerIds:
+          type: array
+          items:
+            type: integer
 
     TeamOfDecadeMember:
       type: object

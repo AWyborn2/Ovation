@@ -1460,6 +1460,15 @@ export interface HonourBoardOverrideInput {
   note?: string;
 }
 
+export type AwardMechanism = typeof AwardMechanism[keyof typeof AwardMechanism];
+
+
+export const AwardMechanism = {
+  voted: 'voted',
+  points: 'points',
+  manual: 'manual',
+} as const;
+
 export interface AwardWinner {
   id: number;
   awardId: number;
@@ -1468,6 +1477,7 @@ export interface AwardWinner {
   playerId?: number | null;
   name: string;
   displayOrder: number;
+  published: boolean;
 }
 
 export interface Award {
@@ -1477,6 +1487,10 @@ export interface Award {
   description: string;
   displayOrder: number;
   votingEnabled: boolean;
+  mechanism: AwardMechanism;
+  published: boolean;
+  /** @nullable */
+  pointsGrade?: string | null;
   winners: AwardWinner[];
 }
 
@@ -1486,6 +1500,10 @@ export interface AwardInput {
   description?: string;
   displayOrder?: number;
   votingEnabled?: boolean;
+  mechanism?: AwardMechanism;
+  published?: boolean;
+  /** @nullable */
+  pointsGrade?: string | null;
 }
 
 export interface AwardUpdate {
@@ -1494,6 +1512,10 @@ export interface AwardUpdate {
   description?: string;
   displayOrder?: number;
   votingEnabled?: boolean;
+  mechanism?: AwardMechanism;
+  published?: boolean;
+  /** @nullable */
+  pointsGrade?: string | null;
 }
 
 export interface AwardWinnerInput {
@@ -1502,6 +1524,7 @@ export interface AwardWinnerInput {
   playerId?: number | null;
   name: string;
   displayOrder?: number;
+  published?: boolean;
 }
 
 export interface AwardWinnerUpdate {
@@ -1510,6 +1533,78 @@ export interface AwardWinnerUpdate {
   playerId?: number | null;
   name?: string;
   displayOrder?: number;
+  published?: boolean;
+}
+
+export interface PointsCategory {
+  enabled: boolean;
+  value: number;
+}
+
+export interface PointsCategories {
+  runs: PointsCategory;
+  wickets: PointsCategory;
+  catches: PointsCategory;
+  stumpings: PointsCategory;
+  runOuts: PointsCategory;
+  games: PointsCategory;
+  fifties: PointsCategory;
+  hundreds: PointsCategory;
+  fiveWickets: PointsCategory;
+}
+
+export interface AwardPointsConfig {
+  id: number;
+  awardId: number;
+  season: number;
+  includeFinals: boolean;
+  leaderboardVisible: boolean;
+  categories: PointsCategories;
+  /** @nullable */
+  finalisedAt?: string | null;
+  createdAt: string;
+}
+
+export interface PointsConfigInput {
+  season: number;
+  includeFinals?: boolean;
+  leaderboardVisible?: boolean;
+  categories?: PointsCategories;
+}
+
+export interface PointsConfigUpdate {
+  includeFinals?: boolean;
+  leaderboardVisible?: boolean;
+  categories?: PointsCategories;
+}
+
+export interface PointsLeaderboardEntry {
+  playerId: number;
+  name: string;
+  points: number;
+  runs: number;
+  wickets: number;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+  games: number;
+  fifties: number;
+  hundreds: number;
+  fiveWickets: number;
+}
+
+export interface PointsLeaderboard {
+  configId: number;
+  awardId: number;
+  awardKey: string;
+  awardTitle: string;
+  season: number;
+  /** @nullable */
+  grade: string | null;
+  visible: boolean;
+  finalised: boolean;
+  entries: PointsLeaderboardEntry[];
+  winnerPlayerIds: number[];
 }
 
 export interface TeamOfDecadeMember {

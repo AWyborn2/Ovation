@@ -13,11 +13,13 @@
     "fix-a-grade-cap-duplicates": "tsx ./src/fix-a-grade-cap-duplicates.ts",
     "seed-honours": "tsx ./src/seed-honours.ts",
     "seed-awards": "tsx ./src/seed-awards.ts",
+    "load-award-history": "tsx ./src/load-award-history.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "catalog:",

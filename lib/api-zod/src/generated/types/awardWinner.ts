@@ -14,4 +14,5 @@ export interface AwardWinner {
   playerId?: number | null;
   name: string;
   displayOrder: number;
+  published: boolean;
 }

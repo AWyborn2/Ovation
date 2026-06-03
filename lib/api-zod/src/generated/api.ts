@@ -1860,13 +1860,17 @@ export const FinaliseVotingConfigResponse = zod.object({
   "description": zod.string(),
   "displayOrder": zod.number(),
   "votingEnabled": zod.boolean(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']),
+  "published": zod.boolean(),
+  "pointsGrade": zod.string().nullish(),
   "winners": zod.array(zod.object({
   "id": zod.number(),
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
   "name": zod.string(),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
 }))
 })
 
@@ -1958,6 +1962,390 @@ export const ListPublicTalliesResponseItem = zod.object({
   "winnerPlayerIds": zod.array(zod.number())
 })
 export const ListPublicTalliesResponse = zod.array(ListPublicTalliesResponseItem)
+
+
+/**
+ * @summary List all awards incl. drafts and unpublished winners (admin)
+ */
+export const ListAdminAwardsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "displayOrder": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']),
+  "published": zod.boolean(),
+  "pointsGrade": zod.string().nullish(),
+  "winners": zod.array(zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+}))
+})
+export const ListAdminAwardsResponse = zod.array(ListAdminAwardsResponseItem)
+
+
+/**
+ * @summary List per-season points configs for an award (admin)
+ */
+export const ListAwardPointsConfigsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListAwardPointsConfigsResponseItem = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "includeFinals": zod.boolean(),
+  "leaderboardVisible": zod.boolean(),
+  "categories": zod.object({
+  "runs": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "wickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "catches": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "stumpings": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "runOuts": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "games": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fifties": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "hundreds": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fiveWickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+})
+}),
+  "finalisedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAwardPointsConfigsResponse = zod.array(ListAwardPointsConfigsResponseItem)
+
+
+/**
+ * @summary Create or update the points config for an award+season (admin)
+ */
+export const UpsertAwardPointsConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpsertAwardPointsConfigBody = zod.object({
+  "season": zod.number(),
+  "includeFinals": zod.boolean().optional(),
+  "leaderboardVisible": zod.boolean().optional(),
+  "categories": zod.object({
+  "runs": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "wickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "catches": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "stumpings": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "runOuts": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "games": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fifties": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "hundreds": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fiveWickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+})
+}).optional()
+})
+
+export const UpsertAwardPointsConfigResponse = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "includeFinals": zod.boolean(),
+  "leaderboardVisible": zod.boolean(),
+  "categories": zod.object({
+  "runs": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "wickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "catches": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "stumpings": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "runOuts": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "games": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fifties": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "hundreds": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fiveWickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+})
+}),
+  "finalisedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a points config (admin)
+ */
+export const UpdateAwardPointsConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAwardPointsConfigBody = zod.object({
+  "includeFinals": zod.boolean().optional(),
+  "leaderboardVisible": zod.boolean().optional(),
+  "categories": zod.object({
+  "runs": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "wickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "catches": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "stumpings": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "runOuts": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "games": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fifties": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "hundreds": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fiveWickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+})
+}).optional()
+})
+
+export const UpdateAwardPointsConfigResponse = zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "includeFinals": zod.boolean(),
+  "leaderboardVisible": zod.boolean(),
+  "categories": zod.object({
+  "runs": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "wickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "catches": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "stumpings": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "runOuts": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "games": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fifties": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "hundreds": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+}),
+  "fiveWickets": zod.object({
+  "enabled": zod.boolean(),
+  "value": zod.number()
+})
+}),
+  "finalisedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a points config (admin)
+ */
+export const DeleteAwardPointsConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Live points leaderboard for a config, always visible to admin
+ */
+export const GetPointsConfigLeaderboardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPointsConfigLeaderboardResponse = zod.object({
+  "configId": zod.number(),
+  "awardId": zod.number(),
+  "awardKey": zod.string(),
+  "awardTitle": zod.string(),
+  "season": zod.number(),
+  "grade": zod.string().nullable(),
+  "visible": zod.boolean(),
+  "finalised": zod.boolean(),
+  "entries": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string(),
+  "points": zod.number(),
+  "runs": zod.number(),
+  "wickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "games": zod.number(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "fiveWickets": zod.number()
+})),
+  "winnerPlayerIds": zod.array(zod.number())
+})
+
+
+/**
+ * @summary Finalise the leader(s) into the award's roll of winners (admin)
+ */
+export const FinalisePointsConfigParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FinalisePointsConfigResponse = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "displayOrder": zod.number(),
+  "votingEnabled": zod.boolean(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']),
+  "published": zod.boolean(),
+  "pointsGrade": zod.string().nullish(),
+  "winners": zod.array(zod.object({
+  "id": zod.number(),
+  "awardId": zod.number(),
+  "season": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Public live leaderboards for currently-visible points awards
+ */
+export const ListPublicPointsLeaderboardsResponseItem = zod.object({
+  "configId": zod.number(),
+  "awardId": zod.number(),
+  "awardKey": zod.string(),
+  "awardTitle": zod.string(),
+  "season": zod.number(),
+  "grade": zod.string().nullable(),
+  "visible": zod.boolean(),
+  "finalised": zod.boolean(),
+  "entries": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string(),
+  "points": zod.number(),
+  "runs": zod.number(),
+  "wickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "games": zod.number(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "fiveWickets": zod.number()
+})),
+  "winnerPlayerIds": zod.array(zod.number())
+})
+export const ListPublicPointsLeaderboardsResponse = zod.array(ListPublicPointsLeaderboardsResponseItem)
 
 
 /**
@@ -2091,13 +2479,17 @@ export const ListAwardsResponseItem = zod.object({
   "description": zod.string(),
   "displayOrder": zod.number(),
   "votingEnabled": zod.boolean(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']),
+  "published": zod.boolean(),
+  "pointsGrade": zod.string().nullish(),
   "winners": zod.array(zod.object({
   "id": zod.number(),
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
   "name": zod.string(),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
 }))
 })
 export const ListAwardsResponse = zod.array(ListAwardsResponseItem)
@@ -2111,7 +2503,10 @@ export const CreateAwardBody = zod.object({
   "title": zod.string(),
   "description": zod.string().optional(),
   "displayOrder": zod.number().optional(),
-  "votingEnabled": zod.boolean().optional()
+  "votingEnabled": zod.boolean().optional(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']).optional(),
+  "published": zod.boolean().optional(),
+  "pointsGrade": zod.string().nullish()
 })
 
 
@@ -2127,7 +2522,10 @@ export const UpdateAwardBody = zod.object({
   "title": zod.string().optional(),
   "description": zod.string().optional(),
   "displayOrder": zod.number().optional(),
-  "votingEnabled": zod.boolean().optional()
+  "votingEnabled": zod.boolean().optional(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']).optional(),
+  "published": zod.boolean().optional(),
+  "pointsGrade": zod.string().nullish()
 })
 
 export const UpdateAwardResponse = zod.object({
@@ -2137,13 +2535,17 @@ export const UpdateAwardResponse = zod.object({
   "description": zod.string(),
   "displayOrder": zod.number(),
   "votingEnabled": zod.boolean(),
+  "mechanism": zod.enum(['voted', 'points', 'manual']),
+  "published": zod.boolean(),
+  "pointsGrade": zod.string().nullish(),
   "winners": zod.array(zod.object({
   "id": zod.number(),
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
   "name": zod.string(),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
 }))
 })
 
@@ -2167,7 +2569,8 @@ export const CreateAwardWinnerBody = zod.object({
   "season": zod.number(),
   "playerId": zod.number().nullish(),
   "name": zod.string(),
-  "displayOrder": zod.number().optional()
+  "displayOrder": zod.number().optional(),
+  "published": zod.boolean().optional()
 })
 
 
@@ -2182,7 +2585,8 @@ export const UpdateAwardWinnerBody = zod.object({
   "season": zod.number().optional(),
   "playerId": zod.number().nullish(),
   "name": zod.string().optional(),
-  "displayOrder": zod.number().optional()
+  "displayOrder": zod.number().optional(),
+  "published": zod.boolean().optional()
 })
 
 export const UpdateAwardWinnerResponse = zod.object({
@@ -2191,7 +2595,8 @@ export const UpdateAwardWinnerResponse = zod.object({
   "season": zod.number(),
   "playerId": zod.number().nullish(),
   "name": zod.string(),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
 })
 
 

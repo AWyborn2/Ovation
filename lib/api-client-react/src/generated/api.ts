@@ -25,6 +25,7 @@ import type {
   AdminUpdate,
   Award,
   AwardInput,
+  AwardPointsConfig,
   AwardTally,
   AwardUpdate,
   AwardVotingConfig,
@@ -92,6 +93,9 @@ import type {
   PlayerMatchLine,
   PlayerMergeRequest,
   PlayerUpdate,
+  PointsConfigInput,
+  PointsConfigUpdate,
+  PointsLeaderboard,
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
@@ -5282,6 +5286,598 @@ export function useListPublicTallies<TData = Awaited<ReturnType<typeof listPubli
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListPublicTalliesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAdminAwardsUrl = () => {
+
+
+
+
+  return `/api/admin/awards`
+}
+
+/**
+ * @summary List all awards incl. drafts and unpublished winners (admin)
+ */
+export const listAdminAwards = async ( options?: RequestInit): Promise<Award[]> => {
+
+  return customFetch<Award[]>(getListAdminAwardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAwardsQueryKey = () => {
+    return [
+    `/api/admin/awards`
+    ] as const;
+    }
+
+
+export const getListAdminAwardsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAwards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAwards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAwardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAwards>>> = ({ signal }) => listAdminAwards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAwards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAwardsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAwards>>>
+export type ListAdminAwardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all awards incl. drafts and unpublished winners (admin)
+ */
+
+export function useListAdminAwards<TData = Awaited<ReturnType<typeof listAdminAwards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAwards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAwardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAwardPointsConfigsUrl = (id: number,) => {
+
+
+
+
+  return `/api/awards/${id}/points-config`
+}
+
+/**
+ * @summary List per-season points configs for an award (admin)
+ */
+export const listAwardPointsConfigs = async (id: number, options?: RequestInit): Promise<AwardPointsConfig[]> => {
+
+  return customFetch<AwardPointsConfig[]>(getListAwardPointsConfigsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAwardPointsConfigsQueryKey = (id: number,) => {
+    return [
+    `/api/awards/${id}/points-config`
+    ] as const;
+    }
+
+
+export const getListAwardPointsConfigsQueryOptions = <TData = Awaited<ReturnType<typeof listAwardPointsConfigs>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAwardPointsConfigs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAwardPointsConfigsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAwardPointsConfigs>>> = ({ signal }) => listAwardPointsConfigs(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAwardPointsConfigs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAwardPointsConfigsQueryResult = NonNullable<Awaited<ReturnType<typeof listAwardPointsConfigs>>>
+export type ListAwardPointsConfigsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List per-season points configs for an award (admin)
+ */
+
+export function useListAwardPointsConfigs<TData = Awaited<ReturnType<typeof listAwardPointsConfigs>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAwardPointsConfigs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAwardPointsConfigsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertAwardPointsConfigUrl = (id: number,) => {
+
+
+
+
+  return `/api/awards/${id}/points-config`
+}
+
+/**
+ * @summary Create or update the points config for an award+season (admin)
+ */
+export const upsertAwardPointsConfig = async (id: number,
+    pointsConfigInput: PointsConfigInput, options?: RequestInit): Promise<AwardPointsConfig> => {
+
+  return customFetch<AwardPointsConfig>(getUpsertAwardPointsConfigUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pointsConfigInput,)
+  }
+);}
+
+
+
+
+export const getUpsertAwardPointsConfigMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertAwardPointsConfig>>, TError,{id: number;data: BodyType<PointsConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertAwardPointsConfig>>, TError,{id: number;data: BodyType<PointsConfigInput>}, TContext> => {
+
+const mutationKey = ['upsertAwardPointsConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertAwardPointsConfig>>, {id: number;data: BodyType<PointsConfigInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  upsertAwardPointsConfig(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertAwardPointsConfigMutationResult = NonNullable<Awaited<ReturnType<typeof upsertAwardPointsConfig>>>
+    export type UpsertAwardPointsConfigMutationBody = BodyType<PointsConfigInput>
+    export type UpsertAwardPointsConfigMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create or update the points config for an award+season (admin)
+ */
+export const useUpsertAwardPointsConfig = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertAwardPointsConfig>>, TError,{id: number;data: BodyType<PointsConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertAwardPointsConfig>>,
+        TError,
+        {id: number;data: BodyType<PointsConfigInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertAwardPointsConfigMutationOptions(options));
+    }
+
+export const getUpdateAwardPointsConfigUrl = (id: number,) => {
+
+
+
+
+  return `/api/points-configs/${id}`
+}
+
+/**
+ * @summary Update a points config (admin)
+ */
+export const updateAwardPointsConfig = async (id: number,
+    pointsConfigUpdate: PointsConfigUpdate, options?: RequestInit): Promise<AwardPointsConfig> => {
+
+  return customFetch<AwardPointsConfig>(getUpdateAwardPointsConfigUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pointsConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateAwardPointsConfigMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAwardPointsConfig>>, TError,{id: number;data: BodyType<PointsConfigUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAwardPointsConfig>>, TError,{id: number;data: BodyType<PointsConfigUpdate>}, TContext> => {
+
+const mutationKey = ['updateAwardPointsConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAwardPointsConfig>>, {id: number;data: BodyType<PointsConfigUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAwardPointsConfig(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAwardPointsConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateAwardPointsConfig>>>
+    export type UpdateAwardPointsConfigMutationBody = BodyType<PointsConfigUpdate>
+    export type UpdateAwardPointsConfigMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a points config (admin)
+ */
+export const useUpdateAwardPointsConfig = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAwardPointsConfig>>, TError,{id: number;data: BodyType<PointsConfigUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAwardPointsConfig>>,
+        TError,
+        {id: number;data: BodyType<PointsConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAwardPointsConfigMutationOptions(options));
+    }
+
+export const getDeleteAwardPointsConfigUrl = (id: number,) => {
+
+
+
+
+  return `/api/points-configs/${id}`
+}
+
+/**
+ * @summary Delete a points config (admin)
+ */
+export const deleteAwardPointsConfig = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAwardPointsConfigUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAwardPointsConfigMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAwardPointsConfig>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAwardPointsConfig>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAwardPointsConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAwardPointsConfig>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAwardPointsConfig(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAwardPointsConfigMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAwardPointsConfig>>>
+
+    export type DeleteAwardPointsConfigMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a points config (admin)
+ */
+export const useDeleteAwardPointsConfig = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAwardPointsConfig>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAwardPointsConfig>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAwardPointsConfigMutationOptions(options));
+    }
+
+export const getGetPointsConfigLeaderboardUrl = (id: number,) => {
+
+
+
+
+  return `/api/points-configs/${id}/leaderboard`
+}
+
+/**
+ * @summary Live points leaderboard for a config, always visible to admin
+ */
+export const getPointsConfigLeaderboard = async (id: number, options?: RequestInit): Promise<PointsLeaderboard> => {
+
+  return customFetch<PointsLeaderboard>(getGetPointsConfigLeaderboardUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPointsConfigLeaderboardQueryKey = (id: number,) => {
+    return [
+    `/api/points-configs/${id}/leaderboard`
+    ] as const;
+    }
+
+
+export const getGetPointsConfigLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getPointsConfigLeaderboard>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPointsConfigLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPointsConfigLeaderboardQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPointsConfigLeaderboard>>> = ({ signal }) => getPointsConfigLeaderboard(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPointsConfigLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPointsConfigLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof getPointsConfigLeaderboard>>>
+export type GetPointsConfigLeaderboardQueryError = ErrorType<void>
+
+
+/**
+ * @summary Live points leaderboard for a config, always visible to admin
+ */
+
+export function useGetPointsConfigLeaderboard<TData = Awaited<ReturnType<typeof getPointsConfigLeaderboard>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPointsConfigLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPointsConfigLeaderboardQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getFinalisePointsConfigUrl = (id: number,) => {
+
+
+
+
+  return `/api/points-configs/${id}/finalise`
+}
+
+/**
+ * @summary Finalise the leader(s) into the award's roll of winners (admin)
+ */
+export const finalisePointsConfig = async (id: number, options?: RequestInit): Promise<Award> => {
+
+  return customFetch<Award>(getFinalisePointsConfigUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getFinalisePointsConfigMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalisePointsConfig>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finalisePointsConfig>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['finalisePointsConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finalisePointsConfig>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  finalisePointsConfig(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinalisePointsConfigMutationResult = NonNullable<Awaited<ReturnType<typeof finalisePointsConfig>>>
+
+    export type FinalisePointsConfigMutationError = ErrorType<void>
+
+    /**
+ * @summary Finalise the leader(s) into the award's roll of winners (admin)
+ */
+export const useFinalisePointsConfig = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalisePointsConfig>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof finalisePointsConfig>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getFinalisePointsConfigMutationOptions(options));
+    }
+
+export const getListPublicPointsLeaderboardsUrl = () => {
+
+
+
+
+  return `/api/award-points`
+}
+
+/**
+ * @summary Public live leaderboards for currently-visible points awards
+ */
+export const listPublicPointsLeaderboards = async ( options?: RequestInit): Promise<PointsLeaderboard[]> => {
+
+  return customFetch<PointsLeaderboard[]>(getListPublicPointsLeaderboardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPublicPointsLeaderboardsQueryKey = () => {
+    return [
+    `/api/award-points`
+    ] as const;
+    }
+
+
+export const getListPublicPointsLeaderboardsQueryOptions = <TData = Awaited<ReturnType<typeof listPublicPointsLeaderboards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPointsLeaderboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPublicPointsLeaderboardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublicPointsLeaderboards>>> = ({ signal }) => listPublicPointsLeaderboards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPublicPointsLeaderboards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPublicPointsLeaderboardsQueryResult = NonNullable<Awaited<ReturnType<typeof listPublicPointsLeaderboards>>>
+export type ListPublicPointsLeaderboardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public live leaderboards for currently-visible points awards
+ */
+
+export function useListPublicPointsLeaderboards<TData = Awaited<ReturnType<typeof listPublicPointsLeaderboards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPointsLeaderboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPublicPointsLeaderboardsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

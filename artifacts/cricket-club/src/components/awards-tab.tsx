@@ -2,9 +2,11 @@ import { Link } from "wouter";
 import {
   useListAwards,
   useListPublicTallies,
+  useListPublicPointsLeaderboards,
   type Award,
   type AwardWinner,
   type AwardTally,
+  type PointsLeaderboard,
 } from "@workspace/api-client-react";
 
 function formatSeason(year: number): string {
@@ -97,12 +99,69 @@ const LiveTally = ({ tally }: { tally: AwardTally }) => {
   );
 };
 
+const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
+  const winners = new Set(board.winnerPlayerIds);
+  const top = board.entries.slice(0, 10);
+  return (
+    <div className="px-4 md:px-6 pt-4 pb-1">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+          </span>
+          Live {formatSeasonRange(board.season)} leaderboard
+        </span>
+        {board.finalised && (
+          <span className="text-xs text-muted-foreground">· finalised</span>
+        )}
+      </div>
+      {top.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">
+          No stats counted yet.
+        </p>
+      ) : (
+        <div className="divide-y divide-border/60">
+          {top.map((e, i) => (
+            <div
+              key={e.playerId}
+              className="flex items-baseline justify-between gap-3 py-1.5"
+            >
+              <span className="flex items-baseline gap-3 min-w-0">
+                <span className="font-mono text-xs text-muted-foreground w-5 shrink-0">
+                  {i + 1}
+                </span>
+                <Link
+                  href={`/players/${e.playerId}`}
+                  className={`truncate hover:underline ${
+                    winners.has(e.playerId)
+                      ? "font-bold text-primary"
+                      : "font-medium"
+                  }`}
+                >
+                  {e.name}
+                  {winners.has(e.playerId) && (
+                    <span className="ml-2 text-xs font-normal">● leading</span>
+                  )}
+                </Link>
+              </span>
+              <span className="font-mono font-bold shrink-0">{e.points}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AwardBoardCard = ({
   award,
   tally,
+  board,
 }: {
   award: Award;
   tally?: AwardTally;
+  board?: PointsLeaderboard;
 }) => {
   const groups = groupBySeason(award.winners);
   return (
@@ -119,6 +178,7 @@ const AwardBoardCard = ({
         </p>
       )}
       {tally && <LiveTally tally={tally} />}
+      {board && <LivePointsBoard board={board} />}
       {groups.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground italic text-sm">
           No winners recorded yet.
@@ -156,9 +216,13 @@ const AwardBoardCard = ({
 export function AwardsTab() {
   const { data: awards, isLoading } = useListAwards();
   const { data: tallies } = useListPublicTallies();
+  const { data: boards } = useListPublicPointsLeaderboards();
 
   const tallyByAward = new Map<number, AwardTally>();
   for (const t of tallies ?? []) tallyByAward.set(t.awardId, t);
+
+  const boardByAward = new Map<number, PointsLeaderboard>();
+  for (const b of boards ?? []) boardByAward.set(b.awardId, b);
 
   const sorted = [...(awards ?? [])].sort(
     (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
@@ -188,7 +252,12 @@ export function AwardsTab() {
       ) : (
         <div className="grid gap-4">
           {sorted.map((a) => (
-            <AwardBoardCard key={a.id} award={a} tally={tallyByAward.get(a.id)} />
+            <AwardBoardCard
+              key={a.id}
+              award={a}
+              tally={tallyByAward.get(a.id)}
+              board={boardByAward.get(a.id)}
+            />
           ))}
         </div>
       )}

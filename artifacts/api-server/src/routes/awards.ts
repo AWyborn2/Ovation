@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db, awardsTable, awardWinnersTable } from "@workspace/db";
 import {
   CreateAwardBody,
@@ -16,12 +16,15 @@ import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
 
-async function loadWinners(awardIds: number[]) {
+async function loadWinners(awardIds: number[], publishedOnly: boolean) {
   if (awardIds.length === 0) return new Map<number, (typeof awardWinnersTable.$inferSelect)[]>();
+  const where = publishedOnly
+    ? and(inArray(awardWinnersTable.awardId, awardIds), eq(awardWinnersTable.published, true))
+    : inArray(awardWinnersTable.awardId, awardIds);
   const rows = await db
     .select()
     .from(awardWinnersTable)
-    .where(inArray(awardWinnersTable.awardId, awardIds))
+    .where(where)
     .orderBy(
       desc(awardWinnersTable.season),
       asc(awardWinnersTable.displayOrder),
@@ -35,13 +38,26 @@ async function loadWinners(awardIds: number[]) {
   return byAward;
 }
 
+// Public: only published awards, with only their published winners.
 router.get("/awards", async (_req, res): Promise<void> => {
+  const awards = await db
+    .select()
+    .from(awardsTable)
+    .where(eq(awardsTable.published, true))
+    .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
+
+  const byAward = await loadWinners(awards.map((a) => a.id), true);
+  res.json(awards.map((a) => ({ ...a, winners: byAward.get(a.id) ?? [] })));
+});
+
+// Admin: every award (incl. drafts) with every winner (incl. unpublished).
+router.get("/admin/awards", requireAdmin, async (_req, res): Promise<void> => {
   const awards = await db
     .select()
     .from(awardsTable)
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
-  const byAward = await loadWinners(awards.map((a) => a.id));
+  const byAward = await loadWinners(awards.map((a) => a.id), false);
   res.json(awards.map((a) => ({ ...a, winners: byAward.get(a.id) ?? [] })));
 });
 
@@ -59,6 +75,9 @@ router.post("/awards", requireAdmin, async (req, res): Promise<void> => {
       description: parsed.data.description ?? "",
       displayOrder: parsed.data.displayOrder ?? 0,
       votingEnabled: parsed.data.votingEnabled ?? false,
+      mechanism: parsed.data.mechanism ?? "manual",
+      published: parsed.data.published ?? false,
+      pointsGrade: parsed.data.pointsGrade ?? null,
     })
     .returning();
   res.status(201).json({ ...row, winners: [] });
@@ -84,7 +103,7 @@ router.patch("/awards/:id", requireAdmin, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Award not found" });
     return;
   }
-  const byAward = await loadWinners([row.id]);
+  const byAward = await loadWinners([row.id], false);
   res.json({ ...row, winners: byAward.get(row.id) ?? [] });
 });
 
@@ -135,6 +154,7 @@ router.post(
         playerId: body.data.playerId ?? null,
         name: body.data.name,
         displayOrder: body.data.displayOrder ?? 0,
+        published: body.data.published ?? true,
       })
       .returning();
     res.status(201).json(row);
