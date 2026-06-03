@@ -28,6 +28,7 @@ type FormValues = {
   grade: string;
   competition: string;
   venue: string;
+  matchDate: string;
   result: string;
   mom: string;
   notes: string;
@@ -39,6 +40,7 @@ const emptyForm = (): FormValues => ({
   grade: "A Grade",
   competition: "Grand Final",
   venue: "",
+  matchDate: "",
   result: "",
   mom: "",
   notes: "",
@@ -145,6 +147,7 @@ export default function AdminPremierships() {
                 />
               ) : (
                 <div className="text-sm text-muted-foreground">
+                  {p.matchDate && <div>Date: {p.matchDate}</div>}
                   {p.venue && <div>{p.venue}</div>}
                   {p.result && <div>Result: {p.result}</div>}
                   {p.mom && <div>MOM: {p.mom}</div>}
@@ -170,6 +173,7 @@ function toForm(p: Premiership): FormValues {
     grade: p.grade,
     competition: p.competition,
     venue: p.venue ?? "",
+    matchDate: p.matchDate ?? "",
     result: p.result ?? "",
     mom: p.mom ?? "",
     notes: p.notes ?? "",
@@ -188,6 +192,7 @@ function toPayload(v: FormValues) {
     grade: v.grade,
     competition: v.competition,
     venue: v.venue || null,
+    matchDate: v.matchDate || null,
     result: v.result || null,
     mom: v.mom || null,
     notes: v.notes || null,
@@ -237,8 +242,20 @@ function PremForm({
           <Input value={v.competition} onChange={(e) => setF("competition", e.target.value)} />
         </div>
         <div className="space-y-1">
-          <Label>Venue</Label>
-          <Input value={v.venue} onChange={(e) => setF("venue", e.target.value)} />
+          <Label>Venue (ground)</Label>
+          <Input
+            value={v.venue}
+            placeholder="e.g. Lark Hill Sportsplex"
+            onChange={(e) => setF("venue", e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Match date</Label>
+          <Input
+            type="date"
+            value={v.matchDate}
+            onChange={(e) => setF("matchDate", e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Result</Label>
