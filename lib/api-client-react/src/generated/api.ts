@@ -37,6 +37,8 @@ import type {
   BallotInput,
   BallotReview,
   BallotUpdate,
+  BatchCommitResult,
+  BatchImportPreview,
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
@@ -99,6 +101,7 @@ import type {
   TrackedLink,
   UndoSeasonInput,
   UndoSeasonResult,
+  UploadMatchBatchBody,
   UploadMatchScorecardBody,
   UploadPlaycricketCsvBody,
   UploadUrlRequest,
@@ -1631,6 +1634,166 @@ export const useUploadMatchScorecard = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUploadMatchScorecardMutationOptions(options));
+    }
+
+export const getUploadMatchBatchUrl = () => {
+
+
+
+
+  return `/api/imports/match-batch`
+}
+
+/**
+ * Upload several PlayCricket per-match scorecard .xlsx files at once (or a
+single .zip containing them). Each file is parsed into a candidate match;
+player names are resolved once across the whole batch. Server creates one
+pending holder import row and returns a batch preview listing every
+detected match plus per-file problems (parse failure, missing round,
+duplicate of a stored match, abandoned). Nothing is written to season
+totals until `commitMatchBatch` is called. Generated clients should treat
+the files as `Blob`; the cricket-club frontend posts FormData via raw
+`fetch`.
+
+ * @summary Upload many match scorecards (a whole season) for batch preview
+ */
+export const uploadMatchBatch = async (uploadMatchBatchBody: UploadMatchBatchBody, options?: RequestInit): Promise<BatchImportPreview> => {
+    const formData = new FormData();
+uploadMatchBatchBody.files.forEach(value => formData.append(`files`, value));
+
+  return customFetch<BatchImportPreview>(getUploadMatchBatchUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadMatchBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMatchBatch>>, TError,{data: BodyType<UploadMatchBatchBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadMatchBatch>>, TError,{data: BodyType<UploadMatchBatchBody>}, TContext> => {
+
+const mutationKey = ['uploadMatchBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadMatchBatch>>, {data: BodyType<UploadMatchBatchBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadMatchBatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadMatchBatchMutationResult = NonNullable<Awaited<ReturnType<typeof uploadMatchBatch>>>
+    export type UploadMatchBatchMutationBody = BodyType<UploadMatchBatchBody>
+    export type UploadMatchBatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload many match scorecards (a whole season) for batch preview
+ */
+export const useUploadMatchBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMatchBatch>>, TError,{data: BodyType<UploadMatchBatchBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadMatchBatch>>,
+        TError,
+        {data: BodyType<UploadMatchBatchBody>},
+        TContext
+      > => {
+      return useMutation(getUploadMatchBatchMutationOptions(options));
+    }
+
+export const getCommitMatchBatchUrl = (id: number,) => {
+
+
+
+
+  return `/api/imports/match-batch/${id}/commit`
+}
+
+/**
+ * Commit every committable match in the batch. Each match becomes its own
+per-match import row (so it can be deleted or undone individually exactly
+like a single-match import); the holder row is removed. Affected season
+snapshots, career totals and caps are re-derived once.
+
+ * @summary Commit a previously-previewed match batch
+ */
+export const commitMatchBatch = async (id: number,
+    commitImportInput?: CommitImportInput, options?: RequestInit): Promise<BatchCommitResult> => {
+
+  return customFetch<BatchCommitResult>(getCommitMatchBatchUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      commitImportInput,)
+  }
+);}
+
+
+
+
+export const getCommitMatchBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitMatchBatch>>, TError,{id: number;data?: BodyType<CommitImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitMatchBatch>>, TError,{id: number;data?: BodyType<CommitImportInput>}, TContext> => {
+
+const mutationKey = ['commitMatchBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitMatchBatch>>, {id: number;data?: BodyType<CommitImportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitMatchBatch(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitMatchBatchMutationResult = NonNullable<Awaited<ReturnType<typeof commitMatchBatch>>>
+    export type CommitMatchBatchMutationBody = BodyType<CommitImportInput> | undefined
+    export type CommitMatchBatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Commit a previously-previewed match batch
+ */
+export const useCommitMatchBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitMatchBatch>>, TError,{id: number;data?: BodyType<CommitImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitMatchBatch>>,
+        TError,
+        {id: number;data?: BodyType<CommitImportInput>},
+        TContext
+      > => {
+      return useMutation(getCommitMatchBatchMutationOptions(options));
     }
 
 export const getUndoSeasonUrl = () => {

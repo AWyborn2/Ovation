@@ -466,6 +466,144 @@ export interface MatchImportPreview {
   players: MatchPreviewPlayer[];
 }
 
+/**
+ * ready/abandoned/duplicate are committable; duplicate replaces a stored
+match. duplicateInBatch (a later file for the same grade+season+round),
+missingRound, unmappableGrade and parseError are excluded.
+
+ */
+export type BatchImportFileStatus = typeof BatchImportFileStatus[keyof typeof BatchImportFileStatus];
+
+
+export const BatchImportFileStatus = {
+  ready: 'ready',
+  abandoned: 'abandoned',
+  duplicate: 'duplicate',
+  duplicateInBatch: 'duplicateInBatch',
+  missingRound: 'missingRound',
+  unmappableGrade: 'unmappableGrade',
+  parseError: 'parseError',
+} as const;
+
+/**
+ * One candidate match in a batch upload — the parsed scorecard header plus
+the per-file status that decides whether it will be committed.
+
+ */
+export interface BatchImportFile {
+  filename: string;
+  /** ready/abandoned/duplicate are committable; duplicate replaces a stored
+  match. duplicateInBatch (a later file for the same grade+season+round),
+  missingRound, unmappableGrade and parseError are excluded.
+   */
+  status: BatchImportFileStatus;
+  committable: boolean;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  hhccScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  abandoned: boolean;
+  /** True if this grade+season+round was already stored (will replace). */
+  matchExists: boolean;
+  playerCount: number;
+  warnings: string[];
+  /**
+     * Parse error message when status is parseError.
+     * @nullable
+     */
+  error?: string | null;
+}
+
+export type BatchImportPlayerStatus = typeof BatchImportPlayerStatus[keyof typeof BatchImportPlayerStatus];
+
+
+export const BatchImportPlayerStatus = {
+  matched: 'matched',
+  suggested: 'suggested',
+  new: 'new',
+} as const;
+
+/**
+ * Cap category relevant to this player, or null if not cap-eligible.
+ * @nullable
+ */
+export type BatchImportPlayerCapCategory = typeof BatchImportPlayerCapCategory[keyof typeof BatchImportPlayerCapCategory] | null;
+
+
+export const BatchImportPlayerCapCategory = {
+  male: 'male',
+  female: 'female',
+} as const;
+
+/**
+ * A unique player name across the whole batch, resolved once. The admin's
+link/create decision applies to every match the name appears in.
+
+ */
+export interface BatchImportPlayer {
+  surname: string;
+  givenName: string;
+  status: BatchImportPlayerStatus;
+  /** @nullable */
+  playerId?: number | null;
+  candidates: NameMatchCandidate[];
+  /** True if committing would issue this player a first cap in a
+  cap-eligible grade (A Grade / Female A Grade) they appear in.
+   */
+  debut: boolean;
+  /**
+     * Cap category relevant to this player, or null if not cap-eligible.
+     * @nullable
+     */
+  capCategory: BatchImportPlayerCapCategory;
+}
+
+export interface BatchImportPreview {
+  /** The pending holder import row id; pass it to commitMatchBatch. */
+  importId: number;
+  files: BatchImportFile[];
+  players: BatchImportPlayer[];
+  matchedPlayers: number;
+  newPlayers: number;
+  suggestedPlayers: number;
+  debuts: number;
+  committableMatches: number;
+  /** Player ids already capped (union of male+female) for live debut recompute. */
+  cappedPlayerIds: number[];
+  warnings: string[];
+}
+
+export interface BatchCommittedMatch {
+  importId: number;
+  filename: string;
+  grade: string;
+  season: number;
+  /** @nullable */
+  round?: number | null;
+}
+
+export interface BatchCommitResult {
+  committed: number;
+  matches: BatchCommittedMatch[];
+  capsSync: CapSyncSummary[];
+}
+
 export type PlayerResolutionAction = typeof PlayerResolutionAction[keyof typeof PlayerResolutionAction];
 
 
@@ -1375,5 +1513,10 @@ export type UploadPlaycricketCsvBody = {
 export type UploadMatchScorecardBody = {
   /** The PlayCricket match scorecard .xlsx export */
   file: Blob;
+};
+
+export type UploadMatchBatchBody = {
+  /** One or more .xlsx scorecards, and/or a .zip of them */
+  files: Blob[];
 };
 

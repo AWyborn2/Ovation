@@ -499,6 +499,79 @@ paths:
         "400":
           description: Invalid file or unmappable grade
 
+  /imports/match-batch:
+    post:
+      operationId: uploadMatchBatch
+      tags: [imports]
+      summary: Upload many match scorecards (a whole season) for batch preview
+      description: |
+        Upload several PlayCricket per-match scorecard .xlsx files at once (or a
+        single .zip containing them). Each file is parsed into a candidate match;
+        player names are resolved once across the whole batch. Server creates one
+        pending holder import row and returns a batch preview listing every
+        detected match plus per-file problems (parse failure, missing round,
+        duplicate of a stored match, abandoned). Nothing is written to season
+        totals until `commitMatchBatch` is called. Generated clients should treat
+        the files as `Blob`; the cricket-club frontend posts FormData via raw
+        `fetch`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: One or more .xlsx scorecards, and/or a .zip of them
+      responses:
+        "200":
+          description: Batch preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportPreview"
+        "400":
+          description: No usable files
+
+  /imports/match-batch/{id}/commit:
+    post:
+      operationId: commitMatchBatch
+      tags: [imports]
+      summary: Commit a previously-previewed match batch
+      description: |
+        Commit every committable match in the batch. Each match becomes its own
+        per-match import row (so it can be deleted or undone individually exactly
+        like a single-match import); the holder row is removed. Affected season
+        snapshots, career totals and caps are re-derived once.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitImportInput"
+      responses:
+        "200":
+          description: Batch commit summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchCommitResult"
+        "400":
+          description: Nothing committable
+        "404":
+          description: Not found
+
   /imports/undo-season:
     post:
       operationId: undoSeason
@@ -2705,6 +2778,168 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchPreviewPlayer"
+
+    BatchImportFile:
+      type: object
+      description: |
+        One candidate match in a batch upload — the parsed scorecard header plus
+        the per-file status that decides whether it will be committed.
+      required:
+        [filename, status, committable, abandoned, matchExists, playerCount, warnings]
+      properties:
+        filename:
+          type: string
+        status:
+          type: string
+          enum:
+            [ready, abandoned, duplicate, duplicateInBatch, missingRound, unmappableGrade, parseError]
+          description: |
+            ready/abandoned/duplicate are committable; duplicate replaces a stored
+            match. duplicateInBatch (a later file for the same grade+season+round),
+            missingRound, unmappableGrade and parseError are excluded.
+        committable:
+          type: boolean
+        grade:
+          type: ["string", "null"]
+        season:
+          type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        competition:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        opponent:
+          type: ["string", "null"]
+        hhccScore:
+          type: ["string", "null"]
+        opponentScore:
+          type: ["string", "null"]
+        abandoned:
+          type: boolean
+        matchExists:
+          type: boolean
+          description: True if this grade+season+round was already stored (will replace).
+        playerCount:
+          type: integer
+        warnings:
+          type: array
+          items:
+            type: string
+        error:
+          type: ["string", "null"]
+          description: Parse error message when status is parseError.
+
+    BatchImportPlayer:
+      type: object
+      description: |
+        A unique player name across the whole batch, resolved once. The admin's
+        link/create decision applies to every match the name appears in.
+      required: [surname, givenName, status, candidates, debut, capCategory]
+      properties:
+        surname:
+          type: string
+        givenName:
+          type: string
+        status:
+          type: string
+          enum: [matched, suggested, new]
+        playerId:
+          type: ["integer", "null"]
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/NameMatchCandidate"
+        debut:
+          type: boolean
+          description: |
+            True if committing would issue this player a first cap in a
+            cap-eligible grade (A Grade / Female A Grade) they appear in.
+        capCategory:
+          type: ["string", "null"]
+          enum: [male, female, null]
+          description: Cap category relevant to this player, or null if not cap-eligible.
+
+    BatchImportPreview:
+      type: object
+      required:
+        [
+          importId,
+          files,
+          players,
+          matchedPlayers,
+          newPlayers,
+          suggestedPlayers,
+          debuts,
+          committableMatches,
+          cappedPlayerIds,
+          warnings,
+        ]
+      properties:
+        importId:
+          type: integer
+          description: The pending holder import row id; pass it to commitMatchBatch.
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchImportFile"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchImportPlayer"
+        matchedPlayers:
+          type: integer
+        newPlayers:
+          type: integer
+        suggestedPlayers:
+          type: integer
+        debuts:
+          type: integer
+        committableMatches:
+          type: integer
+        cappedPlayerIds:
+          type: array
+          description: Player ids already capped (union of male+female) for live debut recompute.
+          items:
+            type: integer
+        warnings:
+          type: array
+          items:
+            type: string
+
+    BatchCommittedMatch:
+      type: object
+      required: [importId, filename, grade, season]
+      properties:
+        importId:
+          type: integer
+        filename:
+          type: string
+        grade:
+          type: string
+        season:
+          type: integer
+        round:
+          type: ["integer", "null"]
+
+    BatchCommitResult:
+      type: object
+      required: [committed, matches, capsSync]
+      properties:
+        committed:
+          type: integer
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchCommittedMatch"
+        capsSync:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapSyncSummary"
 
     PlayerResolution:
       type: object

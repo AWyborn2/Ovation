@@ -645,6 +645,108 @@ export const UploadMatchScorecardResponse = zod.object({
 
 
 /**
+ * Upload several PlayCricket per-match scorecard .xlsx files at once (or a
+single .zip containing them). Each file is parsed into a candidate match;
+player names are resolved once across the whole batch. Server creates one
+pending holder import row and returns a batch preview listing every
+detected match plus per-file problems (parse failure, missing round,
+duplicate of a stored match, abandoned). Nothing is written to season
+totals until `commitMatchBatch` is called. Generated clients should treat
+the files as `Blob`; the cricket-club frontend posts FormData via raw
+`fetch`.
+
+ * @summary Upload many match scorecards (a whole season) for batch preview
+ */
+export const UploadMatchBatchBody = zod.object({
+  "files": zod.array(zod.instanceof(File)).describe('One or more .xlsx scorecards, and\/or a .zip of them')
+})
+
+export const UploadMatchBatchResponse = zod.object({
+  "importId": zod.number().describe('The pending holder import row id; pass it to commitMatchBatch.'),
+  "files": zod.array(zod.object({
+  "filename": zod.string(),
+  "status": zod.enum(['ready', 'abandoned', 'duplicate', 'duplicateInBatch', 'missingRound', 'unmappableGrade', 'parseError']).describe('ready\/abandoned\/duplicate are committable; duplicate replaces a stored\nmatch. duplicateInBatch (a later file for the same grade+season+round),\nmissingRound, unmappableGrade and parseError are excluded.\n'),
+  "committable": zod.boolean(),
+  "grade": zod.string().nullish(),
+  "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "competition": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "hhccScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "abandoned": zod.boolean(),
+  "matchExists": zod.boolean().describe('True if this grade+season+round was already stored (will replace).'),
+  "playerCount": zod.number(),
+  "warnings": zod.array(zod.string()),
+  "error": zod.string().nullish().describe('Parse error message when status is parseError.')
+}).describe('One candidate match in a batch upload — the parsed scorecard header plus\nthe per-file status that decides whether it will be committed.\n')),
+  "players": zod.array(zod.object({
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "status": zod.enum(['matched', 'suggested', 'new']),
+  "playerId": zod.number().nullish(),
+  "candidates": zod.array(zod.object({
+  "playerId": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "reason": zod.string()
+}).describe('A likely the-same-person suggestion for a scorecard\/CSV name that has no\nexact roster match (first-name variant, nickname, or surname spelling).\nSurfaced for explicit admin confirmation; never linked automatically.\n')),
+  "debut": zod.boolean().describe('True if committing would issue this player a first cap in a\ncap-eligible grade (A Grade \/ Female A Grade) they appear in.\n'),
+  "capCategory": zod.union([zod.literal('male'),zod.literal('female'),zod.literal(null)]).nullable().describe('Cap category relevant to this player, or null if not cap-eligible.')
+}).describe('A unique player name across the whole batch, resolved once. The admin\'s\nlink\/create decision applies to every match the name appears in.\n')),
+  "matchedPlayers": zod.number(),
+  "newPlayers": zod.number(),
+  "suggestedPlayers": zod.number(),
+  "debuts": zod.number(),
+  "committableMatches": zod.number(),
+  "cappedPlayerIds": zod.array(zod.number()).describe('Player ids already capped (union of male+female) for live debut recompute.'),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
+ * Commit every committable match in the batch. Each match becomes its own
+per-match import row (so it can be deleted or undone individually exactly
+like a single-match import); the holder row is removed. Affected season
+snapshots, career totals and caps are re-derived once.
+
+ * @summary Commit a previously-previewed match batch
+ */
+export const CommitMatchBatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitMatchBatchBody = zod.object({
+  "resolutions": zod.array(zod.object({
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "action": zod.enum(['link', 'create']),
+  "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
+}).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional()
+}).describe('Optional per-name resolutions chosen in the preview. Names without a\nresolution fall back to exact-match-or-create.\n')
+
+export const CommitMatchBatchResponse = zod.object({
+  "committed": zod.number(),
+  "matches": zod.array(zod.object({
+  "importId": zod.number(),
+  "filename": zod.string(),
+  "grade": zod.string(),
+  "season": zod.number(),
+  "round": zod.number().nullish()
+})),
+  "capsSync": zod.array(zod.object({
+  "grade": zod.string(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "updated": zod.number(),
+  "created": zod.number()
+}))
+})
+
+
+/**
  * Delete all per-match imports (and their lines) for the given grade and
 season, re-derive the season snapshot and aggregates, reverse any
 auto-created caps, and remove players left without any data.

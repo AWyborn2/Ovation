@@ -15,6 +15,7 @@ import {
 import type {
   ImportPreview,
   MatchImportPreview,
+  BatchImportPreview,
   NameMatchCandidate,
   PlayerResolution,
 } from "@workspace/api-client-react";
@@ -28,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-type Mode = "csv" | "match";
+type Mode = "csv" | "match" | "batch";
 
 /** An admin's decision for a previewed name, held in local state. */
 type RowResolution =
@@ -144,6 +145,8 @@ export default function AdminImport() {
   const [season, setSeason] = useState<number>(new Date().getFullYear());
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [matchPreview, setMatchPreview] = useState<MatchImportPreview | null>(null);
+  const [batchPreview, setBatchPreview] = useState<BatchImportPreview | null>(null);
+  const [batchFiles, setBatchFiles] = useState<FileList | null>(null);
   const [resolutions, setResolutions] = useState<Record<string, RowResolution>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -189,6 +192,8 @@ export default function AdminImport() {
   const resetPreviews = () => {
     setPreview(null);
     setMatchPreview(null);
+    setBatchPreview(null);
+    setBatchFiles(null);
     setResolutions({});
     setFile(null);
   };
@@ -275,6 +280,43 @@ export default function AdminImport() {
     }
   };
 
+  const onUploadBatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!batchFiles || batchFiles.length === 0) {
+      setError("Please choose one or more .xlsx scorecards, or a .zip.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const form = new FormData();
+      for (const f of Array.from(batchFiles)) form.append("files", f);
+      const res = await fetch("/api/imports/match-batch", {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        invalidateAdmin();
+        setError("Your session has expired — please sign in again.");
+        return;
+      }
+      const body = await res.json();
+      if (!res.ok) {
+        setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
+        return;
+      }
+      const data = body as BatchImportPreview;
+      setBatchPreview(data);
+      seedResolutions(data.players);
+      refetchImports();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleMutationError = (e: unknown): boolean => {
     const status = (e as { status?: number } | null)?.status;
     if (status === 401) {
@@ -330,8 +372,47 @@ export default function AdminImport() {
     );
   };
 
+  const onConfirmBatch = async () => {
+    if (!batchPreview) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/imports/match-batch/${batchPreview.importId}/commit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            resolutions: buildResolutions(resolutions, batchPreview.players),
+          }),
+          credentials: "include",
+        },
+      );
+      if (res.status === 401) {
+        invalidateAdmin();
+        setError("Your session has expired — please sign in again.");
+        return;
+      }
+      const body = await res.json();
+      if (!res.ok) {
+        setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
+        return;
+      }
+      const committedCount = (body?.committed as number) ?? 0;
+      setCommitted({
+        label: `${committedCount} match${committedCount === 1 ? "" : "es"}`,
+      });
+      resetPreviews();
+      invalidateAggregates();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const onCancelPreview = () => {
-    const id = preview?.importId ?? matchPreview?.importId;
+    const id = preview?.importId ?? matchPreview?.importId ?? batchPreview?.importId;
     if (id == null) return;
     del.mutate(
       { id },
@@ -372,7 +453,7 @@ export default function AdminImport() {
         </p>
       </div>
 
-      {committed && !preview && !matchPreview && (
+      {committed && !preview && !matchPreview && !batchPreview && (
         <div className="rounded-md border border-green-600/40 bg-green-600/10 p-4 text-sm space-y-2">
           <p className="font-medium">
             Import applied for {committed.label}. Aggregates have been re-derived.
@@ -386,7 +467,7 @@ export default function AdminImport() {
         </div>
       )}
 
-      {!preview && !matchPreview && (
+      {!preview && !matchPreview && !batchPreview && (
         <div className="inline-flex rounded-md border p-1 bg-muted/40">
           <button
             type="button"
@@ -406,10 +487,19 @@ export default function AdminImport() {
           >
             Single match (.xlsx)
           </button>
+          <button
+            type="button"
+            onClick={() => switchMode("batch")}
+            className={`px-4 py-1.5 text-sm rounded ${
+              mode === "batch" ? "bg-background shadow font-medium" : "text-muted-foreground"
+            }`}
+          >
+            Season batch (.xlsx/.zip)
+          </button>
         </div>
       )}
 
-      {!preview && !matchPreview && mode === "csv" && (
+      {!preview && !matchPreview && !batchPreview && mode === "csv" && (
         <Card>
           <CardHeader>
             <CardTitle>Upload season CSV</CardTitle>
@@ -449,7 +539,7 @@ export default function AdminImport() {
         </Card>
       )}
 
-      {!preview && !matchPreview && mode === "match" && (
+      {!preview && !matchPreview && !batchPreview && mode === "match" && (
         <Card>
           <CardHeader>
             <CardTitle>Upload match scorecard</CardTitle>
@@ -467,6 +557,37 @@ export default function AdminImport() {
                 <p className="text-xs text-muted-foreground">
                   The grade, season and round are read from the scorecard header. Committing adds
                   this match to the running season totals.
+                </p>
+              </div>
+              <Button type="submit" disabled={uploading}>
+                {uploading ? "Parsing…" : "Upload & Preview"}
+              </Button>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {!preview && !matchPreview && !batchPreview && mode === "batch" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload a season of scorecards</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onUploadBatch} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="batch">Scorecards (.xlsx files and/or a .zip)</Label>
+                <Input
+                  id="batch"
+                  type="file"
+                  multiple
+                  accept=".xlsx,.zip,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={(e) => setBatchFiles(e.target.files)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Select every match scorecard for the season (or a single .zip of them). The grade,
+                  season and round are read from each scorecard's header. Player names are matched
+                  once across the whole batch, then all valid matches are committed together.
                 </p>
               </div>
               <Button type="submit" disabled={uploading}>
@@ -747,6 +868,142 @@ export default function AdminImport() {
         </Card>
       )}
 
+      {batchPreview && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Season batch preview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Stat label="Files" value={batchPreview.files.length} />
+              <Stat label="Committable matches" value={batchPreview.committableMatches} />
+              <Stat label="Matched players" value={batchPreview.matchedPlayers} />
+              <Stat label="New players" value={batchPreview.newPlayers} />
+            </div>
+
+            {batchPreview.warnings.length > 0 && (
+              <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm space-y-1">
+                {batchPreview.warnings.map((w, i) => (
+                  <p key={i}>{w}</p>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold mb-2">Matches in this batch</h3>
+              <div className="max-h-96 overflow-y-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-background">
+                    <tr className="text-left border-b">
+                      <th className="py-2 px-3">File</th>
+                      <th className="py-2 px-3">Grade</th>
+                      <th className="py-2 px-3">Season</th>
+                      <th className="py-2 px-3">Round</th>
+                      <th className="py-2 px-3">Opponent</th>
+                      <th className="py-2 px-3">Result</th>
+                      <th className="py-2 px-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batchPreview.files.map((f, i) => (
+                      <tr
+                        key={i}
+                        className={`border-b last:border-0 ${
+                          f.committable ? "" : "opacity-60"
+                        }`}
+                      >
+                        <td className="py-2 px-3 max-w-[16rem] truncate" title={f.filename}>
+                          {f.filename}
+                        </td>
+                        <td className="py-2 px-3">{f.grade ?? "—"}</td>
+                        <td className="py-2 px-3">{seasonLabel(f.season)}</td>
+                        <td className="py-2 px-3">{f.round ?? "—"}</td>
+                        <td className="py-2 px-3">{f.opponent ?? "—"}</td>
+                        <td className="py-2 px-3">{f.result ?? "—"}</td>
+                        <td className="py-2 px-3">
+                          <BatchStatusBadge status={f.status} />
+                          {f.error && (
+                            <span className="block text-xs text-destructive" title={f.error}>
+                              {f.error}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {batchPreview.players.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Players across the batch</h3>
+                {batchPreview.suggestedPlayers > 0 && (
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Some names look like existing players. Confirm a link or choose to
+                    create a new player for each suggestion before applying.
+                  </p>
+                )}
+                <div className="max-h-96 overflow-y-auto rounded-md border divide-y">
+                  {batchPreview.players.map((p, i) => (
+                    <PlayerResolutionRow
+                      key={i}
+                      surname={p.surname}
+                      givenName={p.givenName}
+                      status={p.status}
+                      candidates={p.candidates}
+                      resolution={resolutions[rowKey(p.surname, p.givenName)]}
+                      onChange={(r) =>
+                        setRowResolution(rowKey(p.surname, p.givenName), r)
+                      }
+                      debut={isDebut(
+                        p.capCategory ?? null,
+                        new Set(batchPreview.cappedPlayerIds),
+                        resolvedPlayerId(
+                          p.status,
+                          p.playerId,
+                          p.candidates,
+                          resolutions[rowKey(p.surname, p.givenName)],
+                        ),
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            {unresolvedSuggestions(batchPreview.players, resolutions) > 0 && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                {unresolvedSuggestions(batchPreview.players, resolutions)} suggested
+                name(s) still need a decision before you can apply.
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                onClick={onConfirmBatch}
+                disabled={
+                  uploading ||
+                  batchPreview.committableMatches === 0 ||
+                  unresolvedSuggestions(batchPreview.players, resolutions) > 0
+                }
+              >
+                {uploading
+                  ? "Applying…"
+                  : `Confirm & Add ${batchPreview.committableMatches} match${
+                      batchPreview.committableMatches === 1 ? "" : "es"
+                    }`}
+              </Button>
+              <Button variant="outline" onClick={onCancelPreview} disabled={del.isPending}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <UndoSeasonCard
         disabled={undoSeason.isPending}
         onUndo={(grade, s) =>
@@ -928,6 +1185,30 @@ function DebutBadge() {
   return (
     <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
       Debut
+    </span>
+  );
+}
+
+/** Per-file outcome badge in the season-batch preview table. */
+function BatchStatusBadge({ status }: { status: string }) {
+  const labels: Record<string, string> = {
+    ready: "Ready",
+    abandoned: "Abandoned",
+    duplicate: "Replaces existing",
+    duplicateInBatch: "Duplicate in batch",
+    missingRound: "No round",
+    unmappableGrade: "Unknown grade",
+    parseError: "Parse error",
+  };
+  const ok = status === "ready" || status === "abandoned" || status === "duplicate";
+  const cls = ok
+    ? "bg-green-600/15 text-green-700 dark:text-green-400"
+    : "bg-destructive/15 text-destructive";
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}
+    >
+      {labels[status] ?? status}
     </span>
   );
 }

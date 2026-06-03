@@ -39,3 +39,29 @@ delete use shared `rollback.ts` (reverseCaps + cleanupOrphanPlayers).
 
 Parser: `artifacts/api-server/src/lib/match-scorecard.ts` (fielding is derived
 from opposition dismissal text via initial+surname matching).
+
+## Season batch upload (many scorecards / .zip at once)
+
+Extends the single-match flow: admin uploads multiple `.xlsx` and/or a `.zip` →
+one preview of every candidate match → resolve player names ONCE across the
+whole batch → commit all valid matches together.
+
+- **Holder pattern:** upload creates ONE pending `imports` row `kind='match-batch'`,
+  `payload={files:[{filename,parsed?,error?}]}` — NO stats/match/player writes yet.
+  Commit writes one real `kind='match'` row PER match and DELETEs the holder, so
+  the existing per-match delete / undo-season works unchanged. Cancelling a
+  pending batch just deletes the holder row (delete branch in imports.ts).
+- **Per-file status** (classifyBatchFiles): `ready | abandoned | duplicate`
+  (committable) vs `duplicateInBatch | missingRound | unmappableGrade | parseError`
+  (excluded). First file for a given grade+season+round wins; later copies become
+  `duplicateInBatch`. `duplicate` = already in DB → replaces it.
+- **Commit derives ONCE:** shared resolver creates each new player once; after all
+  matches inserted, `deriveSeasonSnapshotFromMatches` runs once per distinct
+  (grade,season), `recomputeAggregates` once for all affected grades, caps sync
+  once per grade (debut order concatenated across that grade's seasons, first-seen
+  wins). Social via `runBatchPostCommitSocial`; created caps attach only to the
+  earliest-round match per grade (detector's fire-once de-dup handles the rest).
+- Same **one-method-per-(grade,season)** constraint as single-match still applies.
+- `.zip` expansion uses `jszip` (expandUploads skips `__MACOSX`/non-xlsx).
+- Tests: `artifacts/api-server/src/routes/imports-batch.test.ts` (upload/preview/zip/
+  dedup/cancel against real A Grade fixtures in attached_assets/).

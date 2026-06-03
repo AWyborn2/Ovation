@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import multer from "multer";
+import JSZip from "jszip";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
   db,
@@ -33,8 +34,12 @@ import {
   snapshotCareerTotals,
   snapshotGradeGames,
   runPostCommitSocial,
+  runBatchPostCommitSocial,
 } from "../lib/post-commit-social";
-import type { CreatedCap } from "../lib/match-milestone-detector";
+import type {
+  CreatedCap,
+  MatchMilestoneContext,
+} from "../lib/match-milestone-detector";
 import {
   reverseCapsAfterRollback,
   cleanupOrphanPlayers,
@@ -48,7 +53,14 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
+// A whole-season batch can be many scorecards (or a .zip of them) at once.
+const uploadBatch = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 80 },
+});
+
 type MulterRequest = Request & { file?: Express.Multer.File };
+type MulterArrayRequest = Request & { files?: Express.Multer.File[] };
 
 /** An admin's per-name decision sent in the commit body. */
 type PlayerResolution =
@@ -439,6 +451,14 @@ router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
+  // A pending batch holder owns no snapshot/match rows yet — cancelling it is
+  // just dropping the holder row.
+  if (imp.kind === "match-batch") {
+    await db.delete(importsTable).where(eq(importsTable.id, id));
+    res.sendStatus(204);
+    return;
+  }
+
   // Find which grades + players were touched before we drop the snapshots.
   const affected = await db
     .selectDistinct({
@@ -665,6 +685,349 @@ router.post(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Whole-season batch .xlsx (or .zip) scorecard import
+// ---------------------------------------------------------------------------
+
+/** Per-file outcome in a batch. Committable: ready | abandoned | duplicate. */
+type BatchFileStatus =
+  | "ready"
+  | "abandoned"
+  | "duplicate"
+  | "duplicateInBatch"
+  | "missingRound"
+  | "unmappableGrade"
+  | "parseError";
+
+/** A single uploaded scorecard, parsed (or with a parse error). */
+type BatchCandidate = {
+  filename: string;
+  parsed: ParsedMatch | null;
+  error: string | null;
+};
+
+type ClassifiedFile = {
+  candidate: BatchCandidate;
+  status: BatchFileStatus;
+  committable: boolean;
+  matchExists: boolean;
+  grade: string | null;
+  season: number | null;
+  round: number | null;
+};
+
+/**
+ * Expand uploaded files into individual scorecard buffers: a `.zip` is unpacked
+ * to its `.xlsx` entries, a `.xlsx` is taken as-is, anything else is ignored.
+ */
+async function expandUploads(
+  files: Express.Multer.File[],
+): Promise<Array<{ filename: string; buffer: Buffer }>> {
+  const out: Array<{ filename: string; buffer: Buffer }> = [];
+  for (const f of files) {
+    const lower = f.originalname.toLowerCase();
+    if (lower.endsWith(".zip")) {
+      const zip = await JSZip.loadAsync(f.buffer);
+      for (const entry of Object.values(zip.files)) {
+        if (entry.dir) continue;
+        const name = entry.name;
+        if (name.startsWith("__MACOSX")) continue;
+        if (!name.toLowerCase().endsWith(".xlsx")) continue;
+        const buf = await entry.async("nodebuffer");
+        out.push({ filename: name.split("/").pop() || name, buffer: buf });
+      }
+    } else if (lower.endsWith(".xlsx")) {
+      out.push({ filename: f.originalname, buffer: f.buffer });
+    }
+  }
+  return out;
+}
+
+/**
+ * Classify each parsed candidate into a commit decision. A file is committable
+ * when it parsed, maps to a grade+season, carries a round, and isn't a duplicate
+ * of an earlier committable file in the same batch. A file whose grade+season+
+ * round already exists in the DB is "duplicate" (committable — it replaces the
+ * stored match). Ordering matters: the FIRST file for a given round wins; later
+ * ones become `duplicateInBatch`.
+ */
+async function classifyBatchFiles(
+  candidates: BatchCandidate[],
+): Promise<ClassifiedFile[]> {
+  // Existing (grade, season, round) tuples in the DB for fast duplicate checks.
+  const validKeys = new Set<string>();
+  for (const c of candidates) {
+    const p = c.parsed;
+    if (p && p.grade && p.season != null && p.round != null) {
+      validKeys.add(`${p.grade}|${p.season}`);
+    }
+  }
+  const existing = new Set<string>();
+  for (const gs of validKeys) {
+    const [grade, seasonStr] = gs.split("|");
+    const season = parseInt(seasonStr, 10);
+    const rows = await db
+      .select({ round: matchesTable.round })
+      .from(matchesTable)
+      .where(and(eq(matchesTable.grade, grade), eq(matchesTable.season, season)));
+    for (const r of rows) {
+      if (r.round != null) existing.add(`${grade}|${season}|${r.round}`);
+    }
+  }
+
+  const seenInBatch = new Set<string>();
+  const out: ClassifiedFile[] = [];
+  for (const c of candidates) {
+    const p = c.parsed;
+    if (!p || c.error) {
+      out.push({
+        candidate: c,
+        status: "parseError",
+        committable: false,
+        matchExists: false,
+        grade: null,
+        season: null,
+        round: null,
+      });
+      continue;
+    }
+    const grade = p.grade;
+    const season = p.season;
+    const round = p.round;
+    if (!grade || season == null) {
+      out.push({
+        candidate: c,
+        status: "unmappableGrade",
+        committable: false,
+        matchExists: false,
+        grade,
+        season,
+        round,
+      });
+      continue;
+    }
+    if (round == null) {
+      out.push({
+        candidate: c,
+        status: "missingRound",
+        committable: false,
+        matchExists: false,
+        grade,
+        season,
+        round,
+      });
+      continue;
+    }
+    const key = `${grade}|${season}|${round}`;
+    if (seenInBatch.has(key)) {
+      out.push({
+        candidate: c,
+        status: "duplicateInBatch",
+        committable: false,
+        matchExists: existing.has(key),
+        grade,
+        season,
+        round,
+      });
+      continue;
+    }
+    seenInBatch.add(key);
+    const matchExists = existing.has(key);
+    const status: BatchFileStatus = matchExists
+      ? "duplicate"
+      : p.abandoned
+        ? "abandoned"
+        : "ready";
+    out.push({
+      candidate: c,
+      status,
+      committable: true,
+      matchExists,
+      grade,
+      season,
+      round,
+    });
+  }
+  return out;
+}
+
+router.post(
+  "/imports/match-batch",
+  requireAdmin,
+  uploadBatch.array("files", 80),
+  async (req: MulterArrayRequest, res): Promise<void> => {
+    const files = req.files;
+    if (!files || files.length === 0) {
+      res.status(400).json({ error: "Missing files field" });
+      return;
+    }
+
+    let expanded: Array<{ filename: string; buffer: Buffer }>;
+    try {
+      expanded = await expandUploads(files);
+    } catch (e) {
+      res.status(400).json({ error: `Could not read upload: ${(e as Error).message}` });
+      return;
+    }
+    if (expanded.length === 0) {
+      res.status(400).json({ error: "No .xlsx scorecards found in the upload." });
+      return;
+    }
+
+    const candidates: BatchCandidate[] = expanded.map((u) => {
+      try {
+        return { filename: u.filename, parsed: parseMatchScorecard(u.buffer), error: null };
+      } catch (e) {
+        return { filename: u.filename, parsed: null, error: (e as Error).message };
+      }
+    });
+
+    const classified = await classifyBatchFiles(candidates);
+    const committables = classified.filter((c) => c.committable);
+
+    // Which cap categories are in play (drives debut detection + capped sets).
+    const usedCategories = new Set<"male" | "female">();
+    const gradesByKey = new Map<string, Set<string>>();
+    for (const c of committables) {
+      const parsed = c.candidate.parsed;
+      if (!parsed) continue;
+      const cat = c.grade ? GRADE_TO_CAP_CATEGORY[c.grade] : undefined;
+      if (cat) usedCategories.add(cat);
+      for (const pl of parsed.players) {
+        const k = nameKey(pl.surname, pl.givenName);
+        let set = gradesByKey.get(k);
+        if (!set) {
+          set = new Set<string>();
+          gradesByKey.set(k, set);
+        }
+        if (c.grade) set.add(c.grade);
+      }
+    }
+    const cappedMale = usedCategories.has("male")
+      ? await getCappedPlayerIds("male")
+      : new Set<number>();
+    const cappedFemale = usedCategories.has("female")
+      ? await getCappedPlayerIds("female")
+      : new Set<number>();
+
+    const capCategoryFor = (grades: Set<string>): "male" | "female" | null => {
+      for (const g of grades) {
+        const cat = GRADE_TO_CAP_CATEGORY[g];
+        if (cat) return cat;
+      }
+      return null;
+    };
+
+    // Resolve every unique name across the committable matches exactly once.
+    const matcher = buildNameMatcher(await loadRoster());
+    const seenKeys = new Set<string>();
+    let matched = 0;
+    let suggested = 0;
+    let created = 0;
+    let debuts = 0;
+    const previewPlayers: Array<{
+      surname: string;
+      givenName: string;
+      status: "matched" | "suggested" | "new";
+      playerId: number | null;
+      candidates: NameCandidate[];
+      debut: boolean;
+      capCategory: "male" | "female" | null;
+    }> = [];
+    for (const c of committables) {
+      const parsed = c.candidate.parsed;
+      if (!parsed) continue;
+      for (const pl of parsed.players) {
+        const key = nameKey(pl.surname, pl.givenName);
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        const m = matcher.resolve(pl.surname, pl.givenName);
+        if (m.status === "matched") matched++;
+        else if (m.status === "suggested") suggested++;
+        else created++;
+        const capCategory = capCategoryFor(gradesByKey.get(key) ?? new Set());
+        const resolvedId =
+          m.status === "matched" ? m.playerId : (m.candidates[0]?.playerId ?? null);
+        const cappedSet = capCategory === "male" ? cappedMale : cappedFemale;
+        const debut =
+          capCategory != null && (resolvedId == null || !cappedSet.has(resolvedId));
+        if (debut) debuts++;
+        previewPlayers.push({
+          surname: pl.surname,
+          givenName: pl.givenName,
+          status: m.status,
+          playerId: m.status === "matched" ? m.playerId : null,
+          candidates: m.candidates,
+          debut,
+          capCategory,
+        });
+      }
+    }
+
+    const warnings: string[] = [];
+    if (committables.length === 0) {
+      warnings.push("No committable matches in this upload — see the per-file problems below.");
+    }
+    const excluded = classified.length - committables.length;
+    if (excluded > 0) {
+      warnings.push(
+        `${excluded} file(s) will be skipped (parse error, missing round, unmappable grade, or duplicate).`,
+      );
+    }
+
+    const [imp] = await db
+      .insert(importsTable)
+      .values({
+        filename: `Season batch (${committables.length} match${
+          committables.length === 1 ? "" : "es"
+        }, ${expanded.length} file${expanded.length === 1 ? "" : "s"})`,
+        kind: "match-batch",
+        grade: null,
+        season: null,
+        round: null,
+        rowCount: committables.length,
+        status: "pending",
+        payload: { files: candidates } as unknown as Record<string, unknown>,
+      })
+      .returning();
+
+    res.json({
+      importId: imp.id,
+      files: classified.map((c) => {
+        const p = c.candidate.parsed;
+        return {
+          filename: c.candidate.filename,
+          status: c.status,
+          committable: c.committable,
+          grade: p?.grade ?? null,
+          season: p?.season ?? null,
+          round: p?.round ?? null,
+          competition: p?.competition ?? null,
+          matchDate: p?.matchDate ?? null,
+          venue: p?.venue ?? null,
+          result: p?.result ?? null,
+          opponent: p?.opponent ?? null,
+          hhccScore: p?.hhccScore ?? null,
+          opponentScore: p?.opponentScore ?? null,
+          abandoned: p?.abandoned ?? false,
+          matchExists: c.matchExists,
+          playerCount: p?.players.length ?? 0,
+          warnings: p?.warnings ?? [],
+          error: c.candidate.error,
+        };
+      }),
+      players: previewPlayers,
+      matchedPlayers: matched,
+      newPlayers: created,
+      suggestedPlayers: suggested,
+      debuts,
+      committableMatches: committables.length,
+      cappedPlayerIds: [...new Set([...cappedMale, ...cappedFemale])],
+      warnings,
+    });
+  },
+);
+
 async function commitMatchImport(
   req: MatchCommitReq,
   res: Parameters<Parameters<typeof router.post>[1]>[1],
@@ -836,6 +1199,303 @@ async function commitMatchImport(
   >;
   res.json({ ...importFields, capsSync });
 }
+
+router.post(
+  "/imports/match-batch/:id/commit",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [imp] = await db
+      .select()
+      .from(importsTable)
+      .where(eq(importsTable.id, id));
+    if (!imp || imp.kind !== "match-batch") {
+      res.status(404).json({ error: "Batch import not found" });
+      return;
+    }
+    if (imp.status !== "pending") {
+      res.status(400).json({ error: `Import is already ${imp.status}` });
+      return;
+    }
+
+    const payload = imp.payload as { files?: BatchCandidate[] } | null;
+    const candidates = payload?.files ?? [];
+    const classified = await classifyBatchFiles(candidates);
+    const committables = classified.filter((c) => c.committable);
+    if (committables.length === 0) {
+      res.status(400).json({ error: "Nothing committable in this batch." });
+      return;
+    }
+
+    const resolutions = buildResolutionMap(req.body);
+
+    // One shared resolver across the whole batch so a name appearing in many
+    // matches resolves to a single (possibly newly-created) player id.
+    const roster = await loadRoster();
+    const playerByKey = new Map<string, number>();
+    for (const p of roster) playerByKey.set(nameKey(p.surname, p.givenName), p.id);
+    const createdByKey = new Map<string, number>();
+    const resolvePid = async (surname: string, givenName: string): Promise<number> => {
+      const key = nameKey(surname, givenName);
+      const r = resolutions.get(key);
+      if (r?.action === "link") return r.playerId;
+      const cached = createdByKey.get(key);
+      if (cached != null) return cached;
+      if (r?.action === "create" || !playerByKey.has(key)) {
+        const [created] = await db
+          .insert(playersTable)
+          .values({ surname, givenName })
+          .returning({ id: playersTable.id });
+        createdByKey.set(key, created.id);
+        return created.id;
+      }
+      return playerByKey.get(key)!;
+    };
+
+    // Snapshot career + per-grade game counts BEFORE writing anything so social
+    // milestone detection can see crossings and debuts for the whole batch.
+    const beforeMap = await snapshotCareerTotals();
+    const distinctGrades = Array.from(
+      new Set(committables.map((c) => c.grade!)),
+    );
+    const gradeGamesBefore = new Map<string, Map<number, number>>();
+    for (const grade of distinctGrades) {
+      gradeGamesBefore.set(grade, await snapshotGradeGames(grade));
+    }
+
+    // Prepare matches in round order so cap numbering + de-dup are deterministic.
+    type Prepared = {
+      candidate: BatchCandidate;
+      parsed: ParsedMatch;
+      grade: string;
+      season: number;
+      round: number;
+      resolvedLines: Array<ParsedMatch["players"][number] & { playerId: number }>;
+      importId: number;
+    };
+    const prepared: Prepared[] = [];
+    for (const c of committables) {
+      const parsed = c.candidate.parsed!;
+      const resolvedLines: Prepared["resolvedLines"] = [];
+      for (const pl of parsed.players) {
+        const pid = await resolvePid(pl.surname, pl.givenName);
+        resolvedLines.push({ ...pl, playerId: pid });
+      }
+      prepared.push({
+        candidate: c.candidate,
+        parsed,
+        grade: c.grade!,
+        season: c.season!,
+        round: c.round!,
+        resolvedLines,
+        importId: 0,
+      });
+    }
+    prepared.sort(
+      (a, b) => a.grade.localeCompare(b.grade) || a.season - b.season || a.round - b.round,
+    );
+
+    // Distinct (grade, season) pairs and per-grade debut order for cap sync.
+    const affectedMap = new Map<string, { grade: string; season: number }>();
+    for (const pm of prepared) {
+      affectedMap.set(`${pm.grade}|${pm.season}`, {
+        grade: pm.grade,
+        season: pm.season,
+      });
+    }
+    const affected = Array.from(affectedMap.values()).sort(
+      (a, b) => a.grade.localeCompare(b.grade) || a.season - b.season,
+    );
+    const affectedGrades = Array.from(new Set(affected.map((a) => a.grade)));
+
+    const capsSync: CapSyncResult[] = [];
+    const committedMatches: Array<{
+      importId: number;
+      filename: string;
+      grade: string;
+      season: number;
+      round: number | null;
+    }> = [];
+
+    await db.transaction(async (tx) => {
+      for (const pm of prepared) {
+        const [matchImp] = await tx
+          .insert(importsTable)
+          .values({
+            filename: pm.candidate.filename,
+            kind: "match",
+            grade: pm.grade,
+            season: pm.season,
+            round: pm.round,
+            rowCount: pm.parsed.players.length,
+            status: "committed",
+            payload: null,
+          })
+          .returning();
+        pm.importId = matchImp.id;
+
+        // Replace any existing match for this grade+season+round (idempotent).
+        await tx
+          .delete(matchesTable)
+          .where(
+            and(
+              eq(matchesTable.grade, pm.grade),
+              eq(matchesTable.season, pm.season),
+              eq(matchesTable.round, pm.round),
+            ),
+          );
+        const [match] = await tx
+          .insert(matchesTable)
+          .values({
+            importId: matchImp.id,
+            grade: pm.grade,
+            season: pm.season,
+            round: pm.round,
+            competition: pm.parsed.competition ?? null,
+            matchDate: pm.parsed.matchDate ?? null,
+            venue: pm.parsed.venue ?? null,
+            result: pm.parsed.result ?? null,
+            opponent: pm.parsed.opponent ?? null,
+            hhccScore: pm.parsed.hhccScore ?? null,
+            opponentScore: pm.parsed.opponentScore ?? null,
+            abandoned: pm.parsed.abandoned,
+          })
+          .returning();
+
+        if (pm.resolvedLines.length > 0) {
+          await tx.insert(matchPlayerLinesTable).values(
+            pm.resolvedLines.map((l) => ({
+              matchId: match.id,
+              playerId: l.playerId,
+              batted: l.batted,
+              battingPos: l.battingPos ?? null,
+              runs: l.runs ?? null,
+              balls: l.balls ?? null,
+              fours: l.fours ?? null,
+              sixes: l.sixes ?? null,
+              notOut: l.notOut,
+              dismissal: l.dismissal ?? null,
+              bowled: l.bowled,
+              overs: l.overs ?? null,
+              maidens: l.maidens ?? null,
+              runsConceded: l.runsConceded ?? null,
+              wickets: l.wickets ?? null,
+              wides: l.wides ?? null,
+              noBalls: l.noBalls ?? null,
+              catches: l.catches,
+              stumpings: l.stumpings,
+              runOuts: l.runOuts,
+            })),
+          );
+        }
+
+        committedMatches.push({
+          importId: matchImp.id,
+          filename: pm.candidate.filename,
+          grade: pm.grade,
+          season: pm.season,
+          round: pm.round,
+        });
+      }
+
+      // Drop the pending holder now that per-match rows own the data.
+      await tx.delete(importsTable).where(eq(importsTable.id, imp.id));
+
+      // Re-derive each affected season snapshot once, collecting the debut order
+      // per grade (concatenated across that grade's seasons, first-seen wins).
+      const orderedByGrade = new Map<string, number[]>();
+      const seenByGrade = new Map<string, Set<number>>();
+      for (const { grade, season } of affected) {
+        const { orderedPlayerIds } = await deriveSeasonSnapshotFromMatches(
+          tx,
+          grade,
+          season,
+        );
+        let order = orderedByGrade.get(grade);
+        let seen = seenByGrade.get(grade);
+        if (!order) {
+          order = [];
+          seen = new Set<number>();
+          orderedByGrade.set(grade, order);
+          seenByGrade.set(grade, seen);
+        }
+        for (const pid of orderedPlayerIds) {
+          if (!seen!.has(pid)) {
+            seen!.add(pid);
+            order.push(pid);
+          }
+        }
+      }
+
+      // Recompute downstream aggregates for every affected grade once.
+      await recomputeAggregates(tx, affectedGrades);
+
+      // Sync caps once per grade, numbering new caps in batch debut order.
+      for (const grade of affectedGrades) {
+        const result = await syncCapsFromStats(
+          tx,
+          grade,
+          orderedByGrade.get(grade) ?? [],
+        );
+        if (result) capsSync.push(result);
+      }
+    });
+
+    const createdCaps: CreatedCap[] = capsSync.flatMap((r) =>
+      r.createdCaps.map((c) => ({
+        capNumber: c.capNumber,
+        category: r.category,
+        playerId: c.playerId,
+        name: c.name,
+      })),
+    );
+
+    // Attach created caps to the earliest-round match per grade only; the match
+    // milestone detector's fire-once de-dup handles the rest.
+    const earliestImportIdByGrade = new Map<string, number>();
+    for (const pm of prepared) {
+      const cur = earliestImportIdByGrade.get(pm.grade);
+      if (cur == null) earliestImportIdByGrade.set(pm.grade, pm.importId);
+    }
+    const matchContexts: MatchMilestoneContext[] = prepared.map((pm) => {
+      const cat = GRADE_TO_CAP_CATEGORY[pm.grade];
+      const isEarliest = earliestImportIdByGrade.get(pm.grade) === pm.importId;
+      return {
+        importId: pm.importId,
+        grade: pm.grade,
+        season: pm.season,
+        round: pm.round,
+        opponent: pm.parsed.opponent ?? null,
+        lines: pm.resolvedLines.map((l) => ({
+          playerId: l.playerId,
+          runs: l.runs ?? null,
+          balls: l.balls ?? null,
+          notOut: l.notOut,
+          wickets: l.wickets ?? null,
+          runsConceded: l.runsConceded ?? null,
+          overs: l.overs ?? null,
+        })),
+        createdCaps:
+          isEarliest && cat ? createdCaps.filter((c) => c.category === cat) : [],
+        gradeGamesBefore: gradeGamesBefore.get(pm.grade) ?? new Map(),
+      };
+    });
+
+    await runBatchPostCommitSocial({
+      sourceImportId: committedMatches[0]?.importId ?? imp.id,
+      beforeMap,
+      affected,
+      matchContexts,
+      logger: req.log,
+    });
+
+    res.json({ committed: committedMatches.length, matches: committedMatches, capsSync });
+  },
+);
 
 /**
  * Delete a single match import. Cascades the match + its lines, then re-derives
