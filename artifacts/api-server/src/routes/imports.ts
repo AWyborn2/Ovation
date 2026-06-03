@@ -44,7 +44,64 @@ import {
   reverseCapsAfterRollback,
   cleanupOrphanPlayers,
 } from "../lib/rollback";
+import {
+  reconcileBaseline,
+  loadBackfillBaseFigures,
+  type ReconcileMode,
+  type NegativeBaselineWarning,
+} from "../lib/baseline-reconcile";
+import { recomputeCapsFromStats } from "../lib/cap-sync";
 import { requireAdmin } from "../middlewares/require-admin";
+
+/** Per-player backfill net-effect figures returned in import previews. */
+type BackfillFigures = {
+  seasonGames: number;
+  seasonRuns: number;
+  seasonWickets: number;
+  baselineGames: number;
+  baselineRuns: number;
+  baselineWickets: number;
+  careerGames: number;
+  careerRuns: number;
+  careerWickets: number;
+};
+
+/** A committed negative-baseline warning enriched with the player's name. */
+type NamedNegativeWarning = NegativeBaselineWarning & {
+  surname: string;
+  givenName: string;
+};
+
+/**
+ * Parse the optional `reconcileMode` from a commit body. Its presence marks the
+ * import as a PREVIOUS-season backfill (suppress social, no out-of-order caps).
+ */
+function parseReconcileMode(body: unknown): ReconcileMode | undefined {
+  const v = (body as { reconcileMode?: unknown } | null)?.reconcileMode;
+  return v === "peel" || v === "add" ? v : undefined;
+}
+
+/** Look up names for negative-baseline warnings so the UI can show who. */
+async function nameNegativeWarnings(
+  warnings: NegativeBaselineWarning[],
+): Promise<NamedNegativeWarning[]> {
+  if (warnings.length === 0) return [];
+  const ids = Array.from(new Set(warnings.map((w) => w.playerId)));
+  const rows = await db
+    .select({
+      id: playersTable.id,
+      surname: playersTable.surname,
+      givenName: playersTable.givenName,
+    })
+    .from(playersTable)
+    .where(inArray(playersTable.id, ids));
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return warnings.map((w) => ({
+    ...w,
+    surname: byId.get(w.playerId)?.surname ?? "",
+    givenName: byId.get(w.playerId)?.givenName ?? "",
+  }));
+}
 
 const router: IRouter = Router();
 
@@ -188,6 +245,17 @@ router.post(
     // Match parsed names against the roster: exact, fuzzy suggestion, or new.
     const matcher = buildNameMatcher(await loadRoster());
 
+    // Per-name season contribution (for the backfill net-effect preview).
+    const seasonByKey = new Map<string, { games: number; runs: number; wickets: number }>();
+    for (const row of parsed.rows) {
+      const key = nameKey(row.surname, row.givenName);
+      const s = seasonByKey.get(key) ?? { games: 0, runs: 0, wickets: 0 };
+      s.games += row.games;
+      s.runs += row.runs;
+      s.wickets += row.wickets;
+      seasonByKey.set(key, s);
+    }
+
     const previewPlayers: Array<{
       surname: string;
       givenName: string;
@@ -195,6 +263,9 @@ router.post(
       playerId: number | null;
       candidates: NameCandidate[];
       debut: boolean;
+      resolvedId: number | null;
+      key: string;
+      backfill: BackfillFigures | null;
     }> = [];
     const seenKeys = new Set<string>();
     let matched = 0;
@@ -226,7 +297,31 @@ router.post(
         playerId: m.status === "matched" ? m.playerId : null,
         candidates: m.candidates,
         debut,
+        resolvedId,
+        key,
+        backfill: null,
       });
+    }
+
+    // Attach backfill net-effect figures for matched players (single-grade CSV
+    // only; the baseline being peeled is per-grade).
+    if (importGrade != null) {
+      const ids = previewPlayers
+        .map((p) => p.resolvedId)
+        .filter((id): id is number => id != null);
+      const base = await loadBackfillBaseFigures(importGrade, ids);
+      for (const p of previewPlayers) {
+        if (p.resolvedId == null) continue;
+        const b = base.get(p.resolvedId);
+        if (!b) continue;
+        const s = seasonByKey.get(p.key) ?? { games: 0, runs: 0, wickets: 0 };
+        p.backfill = {
+          seasonGames: s.games,
+          seasonRuns: s.runs,
+          seasonWickets: s.wickets,
+          ...b,
+        };
+      }
     }
 
     const gradeTotalsMap = new Map<string, { rows: number; games: number; runs: number; wickets: number }>();
@@ -267,7 +362,15 @@ router.post(
       cappedPlayerIds: [...cappedIds],
       unmappedGrades: parsed.unmappedGrades,
       gradeTotals,
-      players: previewPlayers,
+      players: previewPlayers.map((p) => ({
+        surname: p.surname,
+        givenName: p.givenName,
+        status: p.status,
+        playerId: p.playerId,
+        candidates: p.candidates,
+        debut: p.debut,
+        backfill: p.backfill,
+      })),
     });
   },
 );
@@ -305,6 +408,12 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     return;
   }
   const season = imp.season;
+
+  // Backfill mode: when set, this import is for a PREVIOUS season — reconcile the
+  // grade's season=NULL baseline (peel/add), suppress social/milestones, and only
+  // refresh existing caps (never mint out-of-order caps).
+  const reconcileMode = parseReconcileMode(req.body);
+  const isBackfill = reconcileMode != null;
 
   // Admin's per-name resolutions chosen in the preview (link to existing player
   // or create new). Names without a resolution fall back to exact-match-or-create.
@@ -352,6 +461,7 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
   const beforeMap = await snapshotCareerTotals();
 
   const capsSync: CapSyncResult[] = [];
+  const negativeWarnings: NegativeBaselineWarning[] = [];
 
   await db.transaction(async (tx) => {
     // Wipe any prior snapshots for (grade, season) so re-importing is idempotent.
@@ -391,6 +501,16 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
       .set({ status: "committed", payload: null })
       .where(eq(importsTable.id, imp.id));
 
+    // Backfill: reconcile each affected grade's season=NULL baseline BEFORE
+    // recomputing aggregates so career totals stay invariant (peel) or are left
+    // additive (add). Collect any players whose baseline floored at zero.
+    if (isBackfill) {
+      for (const grade of affectedGrades) {
+        const result = await reconcileBaseline(tx, grade, season, reconcileMode);
+        negativeWarnings.push(...result.negativeWarnings);
+      }
+    }
+
     // Recompute aggregates in the SAME transaction so readers never see
     // half-applied state and the temp/connection-state caveat doesn't apply.
     await recomputeAggregates(tx, affectedGrades);
@@ -400,23 +520,37 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     // grades are ignored. New caps are numbered in batting order, which the
     // PlayCricket CSV does not carry, so we fall back to CSV row order (the
     // order rows appear in `resolved`).
+    //
+    // For a backfill (previous season) NEVER mint out-of-order caps — only
+    // refresh existing linked caps via recomputeCapsFromStats. Debutants are
+    // surfaced in the preview for the club to cap manually.
     for (const grade of affectedGrades) {
-      const orderedPlayerIds = resolved
-        .filter((r) => r.grade === grade)
-        .map((r) => r.playerId);
-      const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
-      if (result) capsSync.push(result);
+      if (isBackfill) {
+        const category = GRADE_TO_CAP_CATEGORY[grade];
+        if (category) await recomputeCapsFromStats(tx, [category]);
+      } else {
+        const orderedPlayerIds = resolved
+          .filter((r) => r.grade === grade)
+          .map((r) => r.playerId);
+        const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
+        if (result) capsSync.push(result);
+      }
     }
   });
 
   // Milestone detection + round-up drafts (shared with the per-match import path).
-  await runPostCommitSocial({
-    importId: imp.id,
-    affectedGrades,
-    season,
-    beforeMap,
-    logger: req.log,
-  });
+  // Suppressed for backfills — previous-season imports must not trigger social.
+  if (!isBackfill) {
+    await runPostCommitSocial({
+      importId: imp.id,
+      affectedGrades,
+      season,
+      beforeMap,
+      logger: req.log,
+    });
+  }
+
+  const namedWarnings = await nameNegativeWarnings(negativeWarnings);
 
   const [updated] = await db
     .select({
@@ -445,7 +579,12 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
     | "status"
     | "importedAt"
   >;
-  res.json({ ...importFields, capsSync });
+  res.json({
+    ...importFields,
+    capsSync,
+    reconcileMode: reconcileMode ?? null,
+    negativeWarnings: namedWarnings,
+  });
 });
 
 router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -488,6 +627,14 @@ router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
     // Snapshots cascade-delete via FK when the import row goes.
     await tx.delete(importsTable).where(eq(importsTable.id, id));
     if (affectedGrades.length > 0) {
+      // Restore any peeled baseline for this (grade, season). The season
+      // snapshots are now gone, so reconcile (no mode) just adds the stored
+      // deltas back and re-peels nothing.
+      if (imp.season != null) {
+        for (const grade of affectedGrades) {
+          await reconcileBaseline(tx, grade, imp.season);
+        }
+      }
       await recomputeAggregates(tx, affectedGrades);
       await reverseCapsAfterRollback(tx, affectedGrades);
       await cleanupOrphanPlayers(tx, candidatePlayerIds);
@@ -612,6 +759,7 @@ router.post(
         playerId: m.status === "matched" ? m.playerId : null,
         candidates: m.candidates,
         debut,
+        resolvedId,
         batted: p.batted,
         battingPos: p.battingPos ?? null,
         runs: p.runs ?? null,
@@ -625,8 +773,30 @@ router.post(
         catches: p.catches,
         stumpings: p.stumpings,
         runOuts: p.runOuts,
+        backfill: null as BackfillFigures | null,
       };
     });
+
+    // Attach backfill net-effect figures (this match's per-player contribution
+    // vs. the current baseline/career) so the UI can preview a peel. The commit
+    // re-derives the full season total and is authoritative.
+    if (parsed.grade != null) {
+      const ids = previewPlayers
+        .map((p) => p.resolvedId)
+        .filter((id): id is number => id != null);
+      const base = await loadBackfillBaseFigures(parsed.grade, ids);
+      for (const p of previewPlayers) {
+        if (p.resolvedId == null) continue;
+        const b = base.get(p.resolvedId);
+        if (!b) continue;
+        p.backfill = {
+          seasonGames: p.batted || p.bowled ? 1 : 0,
+          seasonRuns: p.runs ?? 0,
+          seasonWickets: p.wickets ?? 0,
+          ...b,
+        };
+      }
+    }
 
     // Was this grade+season+round already imported?
     let matchExists = false;
@@ -694,7 +864,7 @@ router.post(
       capCategory,
       cappedPlayerIds: [...cappedIds],
       warnings,
-      players: previewPlayers,
+      players: previewPlayers.map(({ resolvedId: _resolvedId, ...rest }) => rest),
     });
   },
 );
@@ -939,6 +1109,22 @@ router.post(
     let suggested = 0;
     let created = 0;
     let debuts = 0;
+    // Sum each name's season contribution across the batch's committable
+    // matches (games = appearances, runs, wickets) for the backfill preview.
+    const seasonByKey = new Map<string, { games: number; runs: number; wickets: number }>();
+    for (const c of committables) {
+      const parsed = c.candidate.parsed;
+      if (!parsed) continue;
+      for (const pl of parsed.players) {
+        const key = nameKey(pl.surname, pl.givenName);
+        const s = seasonByKey.get(key) ?? { games: 0, runs: 0, wickets: 0 };
+        s.games += pl.batted || pl.bowled ? 1 : 0;
+        s.runs += pl.runs ?? 0;
+        s.wickets += pl.wickets ?? 0;
+        seasonByKey.set(key, s);
+      }
+    }
+
     const previewPlayers: Array<{
       surname: string;
       givenName: string;
@@ -947,6 +1133,10 @@ router.post(
       candidates: NameCandidate[];
       debut: boolean;
       capCategory: "male" | "female" | null;
+      resolvedId: number | null;
+      key: string;
+      grade: string | null;
+      backfill: BackfillFigures | null;
     }> = [];
     for (const c of committables) {
       const parsed = c.candidate.parsed;
@@ -966,6 +1156,7 @@ router.post(
         const debut =
           capCategory != null && (resolvedId == null || !cappedSet.has(resolvedId));
         if (debut) debuts++;
+        const grades = gradesByKey.get(key);
         previewPlayers.push({
           surname: pl.surname,
           givenName: pl.givenName,
@@ -974,8 +1165,39 @@ router.post(
           candidates: m.candidates,
           debut,
           capCategory,
+          resolvedId,
+          key,
+          grade: grades && grades.size > 0 ? [...grades][0] : null,
+          backfill: null,
         });
       }
+    }
+
+    // Attach backfill net-effect figures per matched player, grouped by their
+    // (first) grade for the baseline lookup. The commit re-derives per
+    // (grade, season) and is authoritative.
+    const idsByGrade = new Map<string, number[]>();
+    for (const p of previewPlayers) {
+      if (p.resolvedId == null || p.grade == null) continue;
+      const arr = idsByGrade.get(p.grade) ?? [];
+      arr.push(p.resolvedId);
+      idsByGrade.set(p.grade, arr);
+    }
+    const baseByGrade = new Map<string, Awaited<ReturnType<typeof loadBackfillBaseFigures>>>();
+    for (const [grade, ids] of idsByGrade) {
+      baseByGrade.set(grade, await loadBackfillBaseFigures(grade, ids));
+    }
+    for (const p of previewPlayers) {
+      if (p.resolvedId == null || p.grade == null) continue;
+      const b = baseByGrade.get(p.grade)?.get(p.resolvedId);
+      if (!b) continue;
+      const s = seasonByKey.get(p.key) ?? { games: 0, runs: 0, wickets: 0 };
+      p.backfill = {
+        seasonGames: s.games,
+        seasonRuns: s.runs,
+        seasonWickets: s.wickets,
+        ...b,
+      };
     }
 
     const warnings: string[] = [];
@@ -1030,7 +1252,16 @@ router.post(
           error: c.candidate.error,
         };
       }),
-      players: previewPlayers,
+      players: previewPlayers.map((p) => ({
+        surname: p.surname,
+        givenName: p.givenName,
+        status: p.status,
+        playerId: p.playerId,
+        candidates: p.candidates,
+        debut: p.debut,
+        capCategory: p.capCategory,
+        backfill: p.backfill,
+      })),
       matchedPlayers: matched,
       newPlayers: created,
       suggestedPlayers: suggested,
@@ -1069,6 +1300,11 @@ async function commitMatchImport(
     return;
   }
 
+  // Backfill mode: previous-season match import reconciles the baseline and
+  // suppresses social / out-of-order caps.
+  const reconcileMode = parseReconcileMode(req.body);
+  const isBackfill = reconcileMode != null;
+
   const resolutions = buildResolutionMap(req.body);
   const resolvedLines = await resolveMatchPlayers(parsed.players, resolutions);
 
@@ -1077,6 +1313,7 @@ async function commitMatchImport(
   // who appears in the match (0→1 in a cap-register grade = a debut).
   const gradeGamesBefore = await snapshotGradeGames(grade);
   const capsSync: CapSyncResult[] = [];
+  const negativeWarnings: NegativeBaselineWarning[] = [];
 
   await db.transaction(async (tx) => {
     // Replace any existing match for this grade+season+round so re-importing a
@@ -1150,9 +1387,20 @@ async function commitMatchImport(
       grade,
       season,
     );
+    // Backfill: reconcile the baseline for this grade+season BEFORE recompute.
+    if (isBackfill) {
+      const result = await reconcileBaseline(tx, grade, season, reconcileMode);
+      negativeWarnings.push(...result.negativeWarnings);
+    }
     await recomputeAggregates(tx, [grade]);
-    const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
-    if (result) capsSync.push(result);
+    if (isBackfill) {
+      // Never mint out-of-order caps for a previous season; refresh only.
+      const category = GRADE_TO_CAP_CATEGORY[grade];
+      if (category) await recomputeCapsFromStats(tx, [category]);
+    } else {
+      const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
+      if (result) capsSync.push(result);
+    }
   });
 
   const createdCaps: CreatedCap[] = capsSync.flatMap((r) =>
@@ -1164,31 +1412,37 @@ async function commitMatchImport(
     })),
   );
 
-  await runPostCommitSocial({
-    importId: imp.id,
-    affectedGrades: [grade],
-    season,
-    beforeMap,
-    logger: req.log,
-    matchContext: {
+  // Suppressed for backfills — previous-season match imports must not trigger
+  // milestone detection or social drafts.
+  if (!isBackfill) {
+    await runPostCommitSocial({
       importId: imp.id,
-      grade,
+      affectedGrades: [grade],
       season,
-      round,
-      opponent: parsed.opponent ?? null,
-      lines: resolvedLines.map((l) => ({
-        playerId: l.playerId,
-        runs: l.runs ?? null,
-        balls: l.balls ?? null,
-        notOut: l.notOut,
-        wickets: l.wickets ?? null,
-        runsConceded: l.runsConceded ?? null,
-        overs: l.overs ?? null,
-      })),
-      createdCaps,
-      gradeGamesBefore,
-    },
-  });
+      beforeMap,
+      logger: req.log,
+      matchContext: {
+        importId: imp.id,
+        grade,
+        season,
+        round,
+        opponent: parsed.opponent ?? null,
+        lines: resolvedLines.map((l) => ({
+          playerId: l.playerId,
+          runs: l.runs ?? null,
+          balls: l.balls ?? null,
+          notOut: l.notOut,
+          wickets: l.wickets ?? null,
+          runsConceded: l.runsConceded ?? null,
+          overs: l.overs ?? null,
+        })),
+        createdCaps,
+        gradeGamesBefore,
+      },
+    });
+  }
+
+  const namedWarnings = await nameNegativeWarnings(negativeWarnings);
 
   const [updated] = await db
     .select({
@@ -1217,7 +1471,12 @@ async function commitMatchImport(
     | "status"
     | "importedAt"
   >;
-  res.json({ ...importFields, capsSync });
+  res.json({
+    ...importFields,
+    capsSync,
+    reconcileMode: reconcileMode ?? null,
+    negativeWarnings: namedWarnings,
+  });
 }
 
 router.post(
@@ -1250,6 +1509,10 @@ router.post(
       res.status(400).json({ error: "Nothing committable in this batch." });
       return;
     }
+
+    // Backfill mode applies to the whole batch (all matches are previous-season).
+    const reconcileMode = parseReconcileMode(req.body);
+    const isBackfill = reconcileMode != null;
 
     const resolutions = buildResolutionMap(req.body);
 
@@ -1333,6 +1596,7 @@ router.post(
     const affectedGrades = Array.from(new Set(affected.map((a) => a.grade)));
 
     const capsSync: CapSyncResult[] = [];
+    const negativeWarnings: NegativeBaselineWarning[] = [];
     const committedMatches: Array<{
       importId: number;
       filename: string;
@@ -1451,17 +1715,32 @@ router.post(
         }
       }
 
+      // Backfill: reconcile each affected (grade, season) baseline BEFORE the
+      // recompute so career totals stay invariant (peel) or additive (add).
+      if (isBackfill) {
+        for (const { grade, season } of affected) {
+          const result = await reconcileBaseline(tx, grade, season, reconcileMode);
+          negativeWarnings.push(...result.negativeWarnings);
+        }
+      }
+
       // Recompute downstream aggregates for every affected grade once.
       await recomputeAggregates(tx, affectedGrades);
 
       // Sync caps once per grade, numbering new caps in batch debut order.
+      // Backfill never mints out-of-order caps — refresh existing caps only.
       for (const grade of affectedGrades) {
-        const result = await syncCapsFromStats(
-          tx,
-          grade,
-          orderedByGrade.get(grade) ?? [],
-        );
-        if (result) capsSync.push(result);
+        if (isBackfill) {
+          const category = GRADE_TO_CAP_CATEGORY[grade];
+          if (category) await recomputeCapsFromStats(tx, [category]);
+        } else {
+          const result = await syncCapsFromStats(
+            tx,
+            grade,
+            orderedByGrade.get(grade) ?? [],
+          );
+          if (result) capsSync.push(result);
+        }
       }
     });
 
@@ -1505,15 +1784,26 @@ router.post(
       };
     });
 
-    await runBatchPostCommitSocial({
-      sourceImportId: committedMatches[0]?.importId ?? imp.id,
-      beforeMap,
-      affected,
-      matchContexts,
-      logger: req.log,
-    });
+    // Suppressed for backfills — previous-season batches must not trigger social.
+    if (!isBackfill) {
+      await runBatchPostCommitSocial({
+        sourceImportId: committedMatches[0]?.importId ?? imp.id,
+        beforeMap,
+        affected,
+        matchContexts,
+        logger: req.log,
+      });
+    }
 
-    res.json({ committed: committedMatches.length, matches: committedMatches, capsSync });
+    const namedWarnings = await nameNegativeWarnings(negativeWarnings);
+
+    res.json({
+      committed: committedMatches.length,
+      matches: committedMatches,
+      capsSync,
+      reconcileMode: reconcileMode ?? null,
+      negativeWarnings: namedWarnings,
+    });
   },
 );
 
@@ -1555,6 +1845,9 @@ async function deleteMatchImport(
     await tx.delete(importsTable).where(eq(importsTable.id, id));
     for (const { grade, season } of matchRows) {
       await deriveSeasonSnapshotFromMatches(tx, grade, season);
+      // Re-reconcile any peeled baseline against the (now smaller) season total.
+      // No mode: reverse the prior peel and re-peel the remaining season total.
+      await reconcileBaseline(tx, grade, season);
     }
     if (affectedGrades.length > 0) {
       await recomputeAggregates(tx, affectedGrades);
@@ -1611,6 +1904,9 @@ router.post(
         DELETE FROM player_grade_season_stats
         WHERE grade = ${grade} AND season = ${season}
       `);
+      // Restore any peeled baseline for this (grade, season). The season is now
+      // empty, so reconcile (no mode) just adds the stored deltas back.
+      await reconcileBaseline(tx, grade, season);
       await recomputeAggregates(tx, [grade]);
       await reverseCapsAfterRollback(tx, [grade]);
       playersRemoved = await cleanupOrphanPlayers(tx, candidatePlayerIds);

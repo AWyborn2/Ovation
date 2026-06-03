@@ -663,7 +663,18 @@ export const UploadPlaycricketCsvResponse = zod.object({
   "givenName": zod.string(),
   "reason": zod.string()
 }).describe('A likely the-same-person suggestion for a scorecard\/CSV name that has no\nexact roster match (first-name variant, nickname, or surname spelling).\nSurfaced for explicit admin confirmation; never linked automatically.\n')).describe('Suggested existing players when status is `suggested`.'),
-  "debut": zod.boolean().describe('True if committing would issue this player their first cap in the\nimport\'s cap-eligible grade (A Grade \/ Female A Grade).\n')
+  "debut": zod.boolean().describe('True if committing would issue this player their first cap in the\nimport\'s cap-eligible grade (A Grade \/ Female A Grade).\n'),
+  "backfill": zod.union([zod.object({
+  "seasonGames": zod.number(),
+  "seasonRuns": zod.number(),
+  "seasonWickets": zod.number(),
+  "baselineGames": zod.number(),
+  "baselineRuns": zod.number(),
+  "baselineWickets": zod.number(),
+  "careerGames": zod.number(),
+  "careerRuns": zod.number(),
+  "careerWickets": zod.number()
+}).describe('Per-player figures for previewing a previous-season backfill\'s net effect.\n`season\*` is this import\'s contribution for the resolved player; `baseline\*`\nis the player\'s current season=NULL all-time baseline for the relevant\ngrade; `career\*` is the player\'s current career total. The UI computes the\npeel\/add net effect from these. Present only on matched\/linked players.\n'),zod.null()]).optional().describe('Net-effect figures for previous-season backfill (matched players only).')
 }))
 })
 
@@ -682,7 +693,8 @@ export const CommitImportBody = zod.object({
   "action": zod.enum(['link', 'create']),
   "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
 }).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional(),
-  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n')
+  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n'),
+  "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Marks this as a PREVIOUS-season backfill and how to reconcile it with\ncurrent totals. `peel`: the season is already counted inside the\ngrade\'s all-time baseline, so subtract its per-player contribution\nfrom that baseline (career totals stay invariant, floored at zero).\n`add`: the season is genuinely missing, so add it only. When set,\nsocial\/milestone generation is suppressed and no out-of-order caps are\nminted (existing linked caps are still refreshed). Omit\/null for the\nnormal current-season flow.\n')
 }).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
 export const CommitImportResponse = zod.object({
@@ -700,7 +712,15 @@ export const CommitImportResponse = zod.object({
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "updated": zod.number(),
   "created": zod.number()
-}))
+})),
+  "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Echoes the backfill reconcile mode applied, or null for a normal import.'),
+  "negativeWarnings": zod.array(zod.object({
+  "playerId": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "seasonGames": zod.number(),
+  "baselineGames": zod.number()
+}).describe('A player whose all-time baseline could not absorb the full peel (the\nseason being peeled has more games than the baseline holds), so the\nbaseline floored at zero and the player\'s career total changed. Surfaced\nfor club review; never blocks the commit.\n')).optional().describe('Players whose baseline floored at zero during a peel (career total changed).')
 })
 
 
@@ -760,6 +780,17 @@ export const UploadMatchScorecardResponse = zod.object({
   "reason": zod.string()
 }).describe('A likely the-same-person suggestion for a scorecard\/CSV name that has no\nexact roster match (first-name variant, nickname, or surname spelling).\nSurfaced for explicit admin confirmation; never linked automatically.\n')).describe('Suggested existing players when status is `suggested`.'),
   "debut": zod.boolean().describe('True if committing would issue this player their first cap in the\nmatch\'s cap-eligible grade (A Grade \/ Female A Grade).\n'),
+  "backfill": zod.union([zod.object({
+  "seasonGames": zod.number(),
+  "seasonRuns": zod.number(),
+  "seasonWickets": zod.number(),
+  "baselineGames": zod.number(),
+  "baselineRuns": zod.number(),
+  "baselineWickets": zod.number(),
+  "careerGames": zod.number(),
+  "careerRuns": zod.number(),
+  "careerWickets": zod.number()
+}).describe('Per-player figures for previewing a previous-season backfill\'s net effect.\n`season\*` is this import\'s contribution for the resolved player; `baseline\*`\nis the player\'s current season=NULL all-time baseline for the relevant\ngrade; `career\*` is the player\'s current career total. The UI computes the\npeel\/add net effect from these. Present only on matched\/linked players.\n'),zod.null()]).optional().describe('Net-effect figures for previous-season backfill (matched players only).'),
   "batted": zod.boolean(),
   "battingPos": zod.number().nullish(),
   "runs": zod.number().nullish(),
@@ -828,7 +859,18 @@ export const UploadMatchBatchResponse = zod.object({
   "reason": zod.string()
 }).describe('A likely the-same-person suggestion for a scorecard\/CSV name that has no\nexact roster match (first-name variant, nickname, or surname spelling).\nSurfaced for explicit admin confirmation; never linked automatically.\n')),
   "debut": zod.boolean().describe('True if committing would issue this player a first cap in a\ncap-eligible grade (A Grade \/ Female A Grade) they appear in.\n'),
-  "capCategory": zod.union([zod.literal('male'),zod.literal('female'),zod.literal(null)]).nullable().describe('Cap category relevant to this player, or null if not cap-eligible.')
+  "capCategory": zod.union([zod.literal('male'),zod.literal('female'),zod.literal(null)]).nullable().describe('Cap category relevant to this player, or null if not cap-eligible.'),
+  "backfill": zod.union([zod.object({
+  "seasonGames": zod.number(),
+  "seasonRuns": zod.number(),
+  "seasonWickets": zod.number(),
+  "baselineGames": zod.number(),
+  "baselineRuns": zod.number(),
+  "baselineWickets": zod.number(),
+  "careerGames": zod.number(),
+  "careerRuns": zod.number(),
+  "careerWickets": zod.number()
+}).describe('Per-player figures for previewing a previous-season backfill\'s net effect.\n`season\*` is this import\'s contribution for the resolved player; `baseline\*`\nis the player\'s current season=NULL all-time baseline for the relevant\ngrade; `career\*` is the player\'s current career total. The UI computes the\npeel\/add net effect from these. Present only on matched\/linked players.\n'),zod.null()]).optional().describe('Net-effect figures for previous-season backfill (matched players only).')
 }).describe('A unique player name across the whole batch, resolved once. The admin\'s\nlink\/create decision applies to every match the name appears in.\n')),
   "matchedPlayers": zod.number(),
   "newPlayers": zod.number(),
@@ -859,7 +901,8 @@ export const CommitMatchBatchBody = zod.object({
   "action": zod.enum(['link', 'create']),
   "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
 }).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional(),
-  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n')
+  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n'),
+  "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Marks this as a PREVIOUS-season backfill and how to reconcile it with\ncurrent totals. `peel`: the season is already counted inside the\ngrade\'s all-time baseline, so subtract its per-player contribution\nfrom that baseline (career totals stay invariant, floored at zero).\n`add`: the season is genuinely missing, so add it only. When set,\nsocial\/milestone generation is suppressed and no out-of-order caps are\nminted (existing linked caps are still refreshed). Omit\/null for the\nnormal current-season flow.\n')
 }).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
 export const CommitMatchBatchResponse = zod.object({
@@ -876,7 +919,15 @@ export const CommitMatchBatchResponse = zod.object({
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "updated": zod.number(),
   "created": zod.number()
-}))
+})),
+  "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Echoes the backfill reconcile mode applied, or null for a normal batch.'),
+  "negativeWarnings": zod.array(zod.object({
+  "playerId": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "seasonGames": zod.number(),
+  "baselineGames": zod.number()
+}).describe('A player whose all-time baseline could not absorb the full peel (the\nseason being peeled has more games than the baseline holds), so the\nbaseline floored at zero and the player\'s career total changed. Surfaced\nfor club review; never blocks the commit.\n')).optional().describe('Players whose baseline floored at zero during a peel (career total changed).')
 })
 
 

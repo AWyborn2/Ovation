@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BackfillPlayerFigures } from './backfillPlayerFigures';
 import type { MatchPreviewPlayerStatus } from './matchPreviewPlayerStatus';
 import type { NameMatchCandidate } from './nameMatchCandidate';
 
@@ -20,6 +21,8 @@ export interface MatchPreviewPlayer {
   match's cap-eligible grade (A Grade / Female A Grade).
    */
   debut: boolean;
+  /** Net-effect figures for previous-season backfill (matched players only). */
+  backfill?: BackfillPlayerFigures | null;
   batted: boolean;
   /** @nullable */
   battingPos?: number | null;

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CommitImportInputReconcileMode } from './commitImportInputReconcileMode';
 import type { PlayerResolution } from './playerResolution';
 
 /**
@@ -24,4 +25,17 @@ export interface CommitImportInput {
      * @nullable
      */
   round?: number | null;
+  /**
+     * Marks this as a PREVIOUS-season backfill and how to reconcile it with
+  current totals. `peel`: the season is already counted inside the
+  grade's all-time baseline, so subtract its per-player contribution
+  from that baseline (career totals stay invariant, floored at zero).
+  `add`: the season is genuinely missing, so add it only. When set,
+  social/milestone generation is suppressed and no out-of-order caps are
+  minted (existing linked caps are still refreshed). Omit/null for the
+  normal current-season flow.
+
+     * @nullable
+     */
+  reconcileMode?: CommitImportInputReconcileMode;
 }

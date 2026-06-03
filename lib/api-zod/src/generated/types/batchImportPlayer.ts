@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BackfillPlayerFigures } from './backfillPlayerFigures';
 import type { BatchImportPlayerCapCategory } from './batchImportPlayerCapCategory';
 import type { BatchImportPlayerStatus } from './batchImportPlayerStatus';
 import type { NameMatchCandidate } from './nameMatchCandidate';
@@ -30,4 +31,6 @@ export interface BatchImportPlayer {
      * @nullable
      */
   capCategory: BatchImportPlayerCapCategory;
+  /** Net-effect figures for previous-season backfill (matched players only). */
+  backfill?: BackfillPlayerFigures | null;
 }

@@ -5,11 +5,20 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BatchCommitResultReconcileMode } from './batchCommitResultReconcileMode';
 import type { BatchCommittedMatch } from './batchCommittedMatch';
 import type { CapSyncSummary } from './capSyncSummary';
+import type { NegativeBaselineWarning } from './negativeBaselineWarning';
 
 export interface BatchCommitResult {
   committed: number;
   matches: BatchCommittedMatch[];
   capsSync: CapSyncSummary[];
+  /**
+     * Echoes the backfill reconcile mode applied, or null for a normal batch.
+     * @nullable
+     */
+  reconcileMode?: BatchCommitResultReconcileMode;
+  /** Players whose baseline floored at zero during a peel (career total changed). */
+  negativeWarnings?: NegativeBaselineWarning[];
 }

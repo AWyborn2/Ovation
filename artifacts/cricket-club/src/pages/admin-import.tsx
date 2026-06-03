@@ -18,6 +18,7 @@ import type {
   BatchImportPreview,
   NameMatchCandidate,
   PlayerResolution,
+  BackfillPlayerFigures,
 } from "@workspace/api-client-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import {
@@ -137,6 +138,159 @@ const SEASON_OPTIONS = (() => {
 const seasonLabel = (s: number | null | undefined) =>
   s == null ? "—" : `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
+type ReconcileMode = "peel" | "add";
+
+/**
+ * The backfill controls shown above each preview's action buttons: a toggle
+ * marking this import as a previous-season backfill, and (when on) the
+ * peel-vs-add choice that determines how the season folds into the grade's
+ * all-time baseline.
+ */
+function BackfillControls({
+  isBackfill,
+  setIsBackfill,
+  reconcileMode,
+  setReconcileMode,
+}: {
+  isBackfill: boolean;
+  setIsBackfill: (v: boolean) => void;
+  reconcileMode: ReconcileMode;
+  setReconcileMode: (m: ReconcileMode) => void;
+}) {
+  return (
+    <div className="rounded-md border p-4 space-y-3">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={isBackfill}
+          onChange={(e) => setIsBackfill(e.target.checked)}
+        />
+        This is a previous-season backfill
+      </label>
+      {isBackfill ? (
+        <div className="space-y-2 text-sm">
+          <p className="text-muted-foreground">
+            Choose how this season folds into the grade&rsquo;s all-time baseline:
+          </p>
+          <label className="flex items-start gap-2">
+            <input
+              type="radio"
+              name="reconcileMode"
+              className="mt-1"
+              checked={reconcileMode === "peel"}
+              onChange={() => setReconcileMode("peel")}
+            />
+            <span>
+              <strong>Peel</strong> — subtract this season from the baseline so career
+              totals stay exactly the same. Use when the all-time figures already include
+              this season and you&rsquo;re just itemising it.
+            </span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input
+              type="radio"
+              name="reconcileMode"
+              className="mt-1"
+              checked={reconcileMode === "add"}
+              onChange={() => setReconcileMode("add")}
+            />
+            <span>
+              <strong>Add</strong> — add this season on top of existing totals (career
+              totals increase). Use for genuinely missing history.
+            </span>
+          </label>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Leave off for the current season — totals are added to the running season as
+          normal.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Predicts the net effect of a backfill commit from the per-player figures the
+ * server attaches to matched/linked preview rows. Peel keeps career totals
+ * invariant (it only reduces the baseline); add increases both. Players whose
+ * season contribution exceeds the baseline are flagged — a peel would floor
+ * their baseline at zero and change their career total.
+ */
+function NetEffectPanel({
+  players,
+  reconcileMode,
+}: {
+  players: Array<{
+    surname: string;
+    givenName: string;
+    backfill?: BackfillPlayerFigures | null;
+  }>;
+  reconcileMode: ReconcileMode;
+}) {
+  const withFigures = players.filter(
+    (p): p is typeof p & { backfill: BackfillPlayerFigures } => !!p.backfill,
+  );
+  let seasonGames = 0;
+  let seasonRuns = 0;
+  let seasonWickets = 0;
+  const negatives: Array<{
+    name: string;
+    seasonGames: number;
+    baselineGames: number;
+  }> = [];
+  for (const p of withFigures) {
+    const b = p.backfill;
+    seasonGames += b.seasonGames;
+    seasonRuns += b.seasonRuns;
+    seasonWickets += b.seasonWickets;
+    if (reconcileMode === "peel" && b.seasonGames > b.baselineGames) {
+      negatives.push({
+        name: `${p.givenName} ${p.surname}`.trim(),
+        seasonGames: b.seasonGames,
+        baselineGames: b.baselineGames,
+      });
+    }
+  }
+
+  return (
+    <div className="rounded-md border bg-muted/40 p-4 space-y-3 text-sm">
+      <h3 className="font-semibold">Net effect</h3>
+      {reconcileMode === "peel" ? (
+        <p>
+          Career totals stay the same. The {seasonGames} game(s), {seasonRuns} run(s) and{" "}
+          {seasonWickets} wicket(s) in this import will be subtracted from the grade&rsquo;s
+          all-time baseline so they aren&rsquo;t counted twice.
+        </p>
+      ) : (
+        <p>
+          Career totals increase by {seasonGames} game(s), {seasonRuns} run(s) and{" "}
+          {seasonWickets} wicket(s) — added on top of existing figures.
+        </p>
+      )}
+      {negatives.length > 0 && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-1">
+          <p className="font-medium text-destructive">
+            {negatives.length} player(s) would floor at zero
+          </p>
+          <p className="text-muted-foreground">
+            Their season games exceed what the baseline holds, so a peel would change
+            their career total. Review before applying:
+          </p>
+          <ul className="list-disc pl-5">
+            {negatives.map((n, i) => (
+              <li key={i}>
+                {n.name} — {n.seasonGames} this season vs {n.baselineGames} in baseline
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminImport() {
   const queryClient = useQueryClient();
   const invalidateAdmin = useInvalidateAdmin();
@@ -152,6 +306,8 @@ export default function AdminImport() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [committed, setCommitted] = useState<{ label: string } | null>(null);
+  const [isBackfill, setIsBackfill] = useState(false);
+  const [reconcileMode, setReconcileMode] = useState<ReconcileMode>("peel");
 
   const setRowResolution = (key: string, r: RowResolution | undefined) =>
     setResolutions((prev) => {
@@ -198,6 +354,8 @@ export default function AdminImport() {
     setMatchRound("");
     setResolutions({});
     setFile(null);
+    setIsBackfill(false);
+    setReconcileMode("peel");
   };
 
   const switchMode = (m: Mode) => {
@@ -335,7 +493,10 @@ export default function AdminImport() {
     commit.mutate(
       {
         id: preview.importId,
-        data: { resolutions: buildResolutions(resolutions, preview.players) },
+        data: {
+          resolutions: buildResolutions(resolutions, preview.players),
+          reconcileMode: isBackfill ? reconcileMode : null,
+        },
       },
       {
         onSuccess: () => {
@@ -361,6 +522,7 @@ export default function AdminImport() {
         data: {
           resolutions: buildResolutions(resolutions, matchPreview.players),
           round,
+          reconcileMode: isBackfill ? reconcileMode : null,
         },
       },
       {
@@ -392,6 +554,7 @@ export default function AdminImport() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             resolutions: buildResolutions(resolutions, batchPreview.players),
+            reconcileMode: isBackfill ? reconcileMode : null,
           }),
           credentials: "include",
         },
@@ -697,6 +860,16 @@ export default function AdminImport() {
               </div>
             </div>
 
+            <BackfillControls
+              isBackfill={isBackfill}
+              setIsBackfill={setIsBackfill}
+              reconcileMode={reconcileMode}
+              setReconcileMode={setReconcileMode}
+            />
+            {isBackfill && (
+              <NetEffectPanel players={preview.players} reconcileMode={reconcileMode} />
+            )}
+
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             {unresolvedSuggestions(preview.players, resolutions) > 0 && (
@@ -863,6 +1036,19 @@ export default function AdminImport() {
               </div>
             )}
 
+            <BackfillControls
+              isBackfill={isBackfill}
+              setIsBackfill={setIsBackfill}
+              reconcileMode={reconcileMode}
+              setReconcileMode={setReconcileMode}
+            />
+            {isBackfill && (
+              <NetEffectPanel
+                players={matchPreview.players}
+                reconcileMode={reconcileMode}
+              />
+            )}
+
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             {unresolvedSuggestions(matchPreview.players, resolutions) > 0 && (
@@ -996,6 +1182,19 @@ export default function AdminImport() {
                   ))}
                 </div>
               </div>
+            )}
+
+            <BackfillControls
+              isBackfill={isBackfill}
+              setIsBackfill={setIsBackfill}
+              reconcileMode={reconcileMode}
+              setReconcileMode={setReconcileMode}
+            />
+            {isBackfill && (
+              <NetEffectPanel
+                players={batchPreview.players}
+                reconcileMode={reconcileMode}
+              />
             )}
 
             {error && <p className="text-sm text-destructive">{error}</p>}

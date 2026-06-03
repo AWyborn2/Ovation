@@ -2637,6 +2637,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CapSyncSummary"
+        reconcileMode:
+          type: ["string", "null"]
+          enum: [peel, add, null]
+          description: Echoes the backfill reconcile mode applied, or null for a normal import.
+        negativeWarnings:
+          type: array
+          description: Players whose baseline floored at zero during a peel (career total changed).
+          items:
+            $ref: "#/components/schemas/NegativeBaselineWarning"
 
     NameMatchCandidate:
       type: object
@@ -2678,6 +2687,11 @@ components:
           description: |
             True if committing would issue this player their first cap in the
             import's cap-eligible grade (A Grade / Female A Grade).
+        backfill:
+          oneOf:
+            - $ref: "#/components/schemas/BackfillPlayerFigures"
+            - type: "null"
+          description: Net-effect figures for previous-season backfill (matched players only).
 
     ImportPreviewGradeTotal:
       type: object
@@ -2762,6 +2776,11 @@ components:
           description: |
             True if committing would issue this player their first cap in the
             match's cap-eligible grade (A Grade / Female A Grade).
+        backfill:
+          oneOf:
+            - $ref: "#/components/schemas/BackfillPlayerFigures"
+            - type: "null"
+          description: Net-effect figures for previous-season backfill (matched players only).
         batted:
           type: boolean
         battingPos:
@@ -2948,6 +2967,11 @@ components:
           type: ["string", "null"]
           enum: [male, female, null]
           description: Cap category relevant to this player, or null if not cap-eligible.
+        backfill:
+          oneOf:
+            - $ref: "#/components/schemas/BackfillPlayerFigures"
+            - type: "null"
+          description: Net-effect figures for previous-season backfill (matched players only).
 
     BatchImportPreview:
       type: object
@@ -3025,6 +3049,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CapSyncSummary"
+        reconcileMode:
+          type: ["string", "null"]
+          enum: [peel, add, null]
+          description: Echoes the backfill reconcile mode applied, or null for a normal batch.
+        negativeWarnings:
+          type: array
+          description: Players whose baseline floored at zero during a peel (career total changed).
+          items:
+            $ref: "#/components/schemas/NegativeBaselineWarning"
 
     PlayerResolution:
       type: object
@@ -3044,6 +3077,56 @@ components:
           type: ["integer", "null"]
           description: Existing player to link to (required when action is `link`).
 
+    BackfillPlayerFigures:
+      type: object
+      description: |
+        Per-player figures for previewing a previous-season backfill's net effect.
+        `season*` is this import's contribution for the resolved player; `baseline*`
+        is the player's current season=NULL all-time baseline for the relevant
+        grade; `career*` is the player's current career total. The UI computes the
+        peel/add net effect from these. Present only on matched/linked players.
+      required:
+        [seasonGames, seasonRuns, seasonWickets, baselineGames, baselineRuns, baselineWickets, careerGames, careerRuns, careerWickets]
+      properties:
+        seasonGames:
+          type: integer
+        seasonRuns:
+          type: integer
+        seasonWickets:
+          type: integer
+        baselineGames:
+          type: integer
+        baselineRuns:
+          type: integer
+        baselineWickets:
+          type: integer
+        careerGames:
+          type: integer
+        careerRuns:
+          type: integer
+        careerWickets:
+          type: integer
+
+    NegativeBaselineWarning:
+      type: object
+      description: |
+        A player whose all-time baseline could not absorb the full peel (the
+        season being peeled has more games than the baseline holds), so the
+        baseline floored at zero and the player's career total changed. Surfaced
+        for club review; never blocks the commit.
+      required: [playerId, surname, givenName, seasonGames, baselineGames]
+      properties:
+        playerId:
+          type: integer
+        surname:
+          type: string
+        givenName:
+          type: string
+        seasonGames:
+          type: integer
+        baselineGames:
+          type: integer
+
     CommitImportInput:
       type: object
       description: |
@@ -3062,6 +3145,18 @@ components:
             match. Overrides the value parsed from the scorecard header (and
             supplies one when the header had none). Ignored for whole-season
             CSV imports.
+        reconcileMode:
+          type: ["string", "null"]
+          enum: [peel, add, null]
+          description: |
+            Marks this as a PREVIOUS-season backfill and how to reconcile it with
+            current totals. `peel`: the season is already counted inside the
+            grade's all-time baseline, so subtract its per-player contribution
+            from that baseline (career totals stay invariant, floored at zero).
+            `add`: the season is genuinely missing, so add it only. When set,
+            social/milestone generation is suppressed and no out-of-order caps are
+            minted (existing linked caps are still refreshed). Omit/null for the
+            normal current-season flow.
 
     PlayerMatchLine:
       type: object

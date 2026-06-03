@@ -273,6 +273,33 @@ export interface CapSyncSummary {
   created: number;
 }
 
+/**
+ * Echoes the backfill reconcile mode applied, or null for a normal import.
+ * @nullable
+ */
+export type CommitImportResultReconcileMode = typeof CommitImportResultReconcileMode[keyof typeof CommitImportResultReconcileMode] | null;
+
+
+export const CommitImportResultReconcileMode = {
+  peel: 'peel',
+  add: 'add',
+} as const;
+
+/**
+ * A player whose all-time baseline could not absorb the full peel (the
+season being peeled has more games than the baseline holds), so the
+baseline floored at zero and the player's career total changed. Surfaced
+for club review; never blocks the commit.
+
+ */
+export interface NegativeBaselineWarning {
+  playerId: number;
+  surname: string;
+  givenName: string;
+  seasonGames: number;
+  baselineGames: number;
+}
+
 export interface CommitImportResult {
   id: number;
   filename: string;
@@ -287,6 +314,13 @@ export interface CommitImportResult {
   status: string;
   importedAt: string;
   capsSync: CapSyncSummary[];
+  /**
+     * Echoes the backfill reconcile mode applied, or null for a normal import.
+     * @nullable
+     */
+  reconcileMode?: CommitImportResultReconcileMode;
+  /** Players whose baseline floored at zero during a peel (career total changed). */
+  negativeWarnings?: NegativeBaselineWarning[];
 }
 
 /**
@@ -311,6 +345,26 @@ export const ImportPreviewPlayerStatus = {
   new: 'new',
 } as const;
 
+/**
+ * Per-player figures for previewing a previous-season backfill's net effect.
+`season*` is this import's contribution for the resolved player; `baseline*`
+is the player's current season=NULL all-time baseline for the relevant
+grade; `career*` is the player's current career total. The UI computes the
+peel/add net effect from these. Present only on matched/linked players.
+
+ */
+export interface BackfillPlayerFigures {
+  seasonGames: number;
+  seasonRuns: number;
+  seasonWickets: number;
+  baselineGames: number;
+  baselineRuns: number;
+  baselineWickets: number;
+  careerGames: number;
+  careerRuns: number;
+  careerWickets: number;
+}
+
 export interface ImportPreviewPlayer {
   surname: string;
   givenName: string;
@@ -323,6 +377,8 @@ export interface ImportPreviewPlayer {
   import's cap-eligible grade (A Grade / Female A Grade).
    */
   debut: boolean;
+  /** Net-effect figures for previous-season backfill (matched players only). */
+  backfill?: BackfillPlayerFigures | null;
 }
 
 export interface ImportPreviewGradeTotal {
@@ -389,6 +445,8 @@ export interface MatchPreviewPlayer {
   match's cap-eligible grade (A Grade / Female A Grade).
    */
   debut: boolean;
+  /** Net-effect figures for previous-season backfill (matched players only). */
+  backfill?: BackfillPlayerFigures | null;
   batted: boolean;
   /** @nullable */
   battingPos?: number | null;
@@ -572,6 +630,8 @@ export interface BatchImportPlayer {
      * @nullable
      */
   capCategory: BatchImportPlayerCapCategory;
+  /** Net-effect figures for previous-season backfill (matched players only). */
+  backfill?: BackfillPlayerFigures | null;
 }
 
 export interface BatchImportPreview {
@@ -598,10 +658,29 @@ export interface BatchCommittedMatch {
   round?: number | null;
 }
 
+/**
+ * Echoes the backfill reconcile mode applied, or null for a normal batch.
+ * @nullable
+ */
+export type BatchCommitResultReconcileMode = typeof BatchCommitResultReconcileMode[keyof typeof BatchCommitResultReconcileMode] | null;
+
+
+export const BatchCommitResultReconcileMode = {
+  peel: 'peel',
+  add: 'add',
+} as const;
+
 export interface BatchCommitResult {
   committed: number;
   matches: BatchCommittedMatch[];
   capsSync: CapSyncSummary[];
+  /**
+     * Echoes the backfill reconcile mode applied, or null for a normal batch.
+     * @nullable
+     */
+  reconcileMode?: BatchCommitResultReconcileMode;
+  /** Players whose baseline floored at zero during a peel (career total changed). */
+  negativeWarnings?: NegativeBaselineWarning[];
 }
 
 export type PlayerResolutionAction = typeof PlayerResolutionAction[keyof typeof PlayerResolutionAction];
@@ -629,6 +708,26 @@ export interface PlayerResolution {
 }
 
 /**
+ * Marks this as a PREVIOUS-season backfill and how to reconcile it with
+current totals. `peel`: the season is already counted inside the
+grade's all-time baseline, so subtract its per-player contribution
+from that baseline (career totals stay invariant, floored at zero).
+`add`: the season is genuinely missing, so add it only. When set,
+social/milestone generation is suppressed and no out-of-order caps are
+minted (existing linked caps are still refreshed). Omit/null for the
+normal current-season flow.
+
+ * @nullable
+ */
+export type CommitImportInputReconcileMode = typeof CommitImportInputReconcileMode[keyof typeof CommitImportInputReconcileMode] | null;
+
+
+export const CommitImportInputReconcileMode = {
+  peel: 'peel',
+  add: 'add',
+} as const;
+
+/**
  * Optional per-name resolutions chosen in the preview, plus an optional
 round for per-match imports. Names without a resolution fall back to
 exact-match-or-create.
@@ -645,6 +744,19 @@ export interface CommitImportInput {
      * @nullable
      */
   round?: number | null;
+  /**
+     * Marks this as a PREVIOUS-season backfill and how to reconcile it with
+  current totals. `peel`: the season is already counted inside the
+  grade's all-time baseline, so subtract its per-player contribution
+  from that baseline (career totals stay invariant, floored at zero).
+  `add`: the season is genuinely missing, so add it only. When set,
+  social/milestone generation is suppressed and no out-of-order caps are
+  minted (existing linked caps are still refreshed). Omit/null for the
+  normal current-season flow.
+
+     * @nullable
+     */
+  reconcileMode?: CommitImportInputReconcileMode;
 }
 
 export interface PlayerMatchLine {

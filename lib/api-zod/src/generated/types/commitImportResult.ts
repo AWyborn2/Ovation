@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CapSyncSummary } from './capSyncSummary';
+import type { CommitImportResultReconcileMode } from './commitImportResultReconcileMode';
+import type { NegativeBaselineWarning } from './negativeBaselineWarning';
 
 export interface CommitImportResult {
   id: number;
@@ -21,4 +23,11 @@ export interface CommitImportResult {
   status: string;
   importedAt: Date;
   capsSync: CapSyncSummary[];
+  /**
+     * Echoes the backfill reconcile mode applied, or null for a normal import.
+     * @nullable
+     */
+  reconcileMode?: CommitImportResultReconcileMode;
+  /** Players whose baseline floored at zero during a peel (career total changed). */
+  negativeWarnings?: NegativeBaselineWarning[];
 }
