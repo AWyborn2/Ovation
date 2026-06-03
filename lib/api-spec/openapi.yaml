@@ -657,6 +657,40 @@ paths:
         "404":
           description: Not found
 
+  /imports/match-batch/{id}/revalidate:
+    post:
+      operationId: revalidateMatchBatch
+      tags: [imports]
+      summary: Re-check a previewed match batch with the admin's round/stage fixes
+      description: |
+        Re-classify the pending batch holder against the admin's current per-file
+        round/stage assignments and return the updated per-file statuses and the
+        recomputed committable count. Lets the admin remap a file flagged
+        `duplicateInBatch` (or `duplicate`) onto a distinct round/finals stage and
+        see the collision clear before committing. Reads the parsed scorecards
+        already persisted on the holder — no re-upload is needed. Writes nothing.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchRevalidateInput"
+      responses:
+        "200":
+          description: Re-classified per-file statuses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchRevalidatePreview"
+        "404":
+          description: Not found
+
   /imports/undo-season:
     post:
       operationId: undoSeason
@@ -3033,6 +3067,33 @@ components:
           items:
             type: string
 
+    BatchRevalidateInput:
+      type: object
+      description: |
+        The admin's current per-file round/stage assignments to re-check a
+        previewed batch against. Each entry remaps the named file's identity;
+        files without an entry keep the round/stage parsed from their scorecard.
+      properties:
+        fileResolutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchFileResolution"
+
+    BatchRevalidatePreview:
+      type: object
+      required: [files, committableMatches]
+      description: |
+        Result of re-classifying a pending batch holder with the admin's current
+        round/stage fixes — the same per-file shape as the upload preview, plus
+        the recomputed committable count, so the UI can refresh statuses live.
+      properties:
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchImportFile"
+        committableMatches:
+          type: integer
+
     BatchCommittedMatch:
       type: object
       required: [importId, filename, grade, season]
@@ -3099,8 +3160,10 @@ components:
       type: object
       required: [filename]
       description: |
-        Admin's round/stage assignment for one batch file that parsed without a
-        numeric round or a recognised finals stage. Exactly one of round/stage
+        Admin's round/stage assignment for one batch file. Used both for a file
+        that parsed without a numeric round or a recognised finals stage
+        (status needsResolution) and to remap a file flagged duplicate /
+        duplicateInBatch onto a distinct identity. Exactly one of round/stage
         should be provided; if stage is set it wins and round is ignored.
       properties:
         filename:

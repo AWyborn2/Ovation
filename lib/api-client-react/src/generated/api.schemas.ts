@@ -676,6 +676,45 @@ export interface BatchImportPreview {
   warnings: string[];
 }
 
+/**
+ * Admin's round/stage assignment for one batch file. Used both for a file
+that parsed without a numeric round or a recognised finals stage
+(status needsResolution) and to remap a file flagged duplicate /
+duplicateInBatch onto a distinct identity. Exactly one of round/stage
+should be provided; if stage is set it wins and round is ignored.
+
+ */
+export interface BatchFileResolution {
+  filename: string;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  round?: number | null;
+  stage?: MatchStage | null;
+}
+
+/**
+ * The admin's current per-file round/stage assignments to re-check a
+previewed batch against. Each entry remaps the named file's identity;
+files without an entry keep the round/stage parsed from their scorecard.
+
+ */
+export interface BatchRevalidateInput {
+  fileResolutions?: BatchFileResolution[];
+}
+
+/**
+ * Result of re-classifying a pending batch holder with the admin's current
+round/stage fixes — the same per-file shape as the upload preview, plus
+the recomputed committable count, so the UI can refresh statuses live.
+
+ */
+export interface BatchRevalidatePreview {
+  files: BatchImportFile[];
+  committableMatches: number;
+}
+
 export interface BatchCommittedMatch {
   importId: number;
   filename: string;
@@ -734,22 +773,6 @@ export interface PlayerResolution {
      * @nullable
      */
   playerId?: number | null;
-}
-
-/**
- * Admin's round/stage assignment for one batch file that parsed without a
-numeric round or a recognised finals stage. Exactly one of round/stage
-should be provided; if stage is set it wins and round is ignored.
-
- */
-export interface BatchFileResolution {
-  filename: string;
-  /**
-     * @minimum 1
-     * @nullable
-     */
-  round?: number | null;
-  stage?: MatchStage | null;
 }
 
 /**

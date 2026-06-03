@@ -1135,6 +1135,37 @@ async function classifyBatchFiles(
   return out;
 }
 
+/**
+ * Map a classified batch file to the wire shape returned by the upload preview
+ * and the revalidate endpoint (both must agree so the UI can swap one for the
+ * other). `round`/`stage` reflect the EFFECTIVE identity (after any admin
+ * resolution), while the remaining header fields come from the parsed scorecard.
+ */
+function toBatchFileDto(c: ClassifiedFile) {
+  const p = c.candidate.parsed;
+  return {
+    filename: c.candidate.filename,
+    status: c.status,
+    committable: c.committable,
+    grade: p?.grade ?? null,
+    season: p?.season ?? null,
+    round: c.round,
+    stage: c.stage,
+    competition: p?.competition ?? null,
+    matchDate: p?.matchDate ?? null,
+    venue: p?.venue ?? null,
+    result: p?.result ?? null,
+    opponent: p?.opponent ?? null,
+    hhccScore: p?.hhccScore ?? null,
+    opponentScore: p?.opponentScore ?? null,
+    abandoned: p?.abandoned ?? false,
+    matchExists: c.matchExists,
+    playerCount: p?.players.length ?? 0,
+    warnings: p?.warnings ?? [],
+    error: c.candidate.error,
+  };
+}
+
 router.post(
   "/imports/match-batch",
   requireAdmin,
@@ -1329,30 +1360,7 @@ router.post(
 
     res.json({
       importId: imp.id,
-      files: classified.map((c) => {
-        const p = c.candidate.parsed;
-        return {
-          filename: c.candidate.filename,
-          status: c.status,
-          committable: c.committable,
-          grade: p?.grade ?? null,
-          season: p?.season ?? null,
-          round: c.round,
-          stage: c.stage,
-          competition: p?.competition ?? null,
-          matchDate: p?.matchDate ?? null,
-          venue: p?.venue ?? null,
-          result: p?.result ?? null,
-          opponent: p?.opponent ?? null,
-          hhccScore: p?.hhccScore ?? null,
-          opponentScore: p?.opponentScore ?? null,
-          abandoned: p?.abandoned ?? false,
-          matchExists: c.matchExists,
-          playerCount: p?.players.length ?? 0,
-          warnings: p?.warnings ?? [],
-          error: c.candidate.error,
-        };
-      }),
+      files: classified.map(toBatchFileDto),
       players: previewPlayers.map((p) => ({
         surname: p.surname,
         givenName: p.givenName,
@@ -1616,6 +1624,44 @@ async function commitMatchImport(
     negativeWarnings: namedWarnings,
   });
 }
+
+// Re-classify a pending batch holder against the admin's current per-file
+// round/stage fixes and return the updated statuses + committable count. Reads
+// the parsed scorecards already stored on the holder; writes nothing. Lets the
+// admin remap a duplicate/duplicateInBatch file and see the collision clear
+// before committing.
+router.post(
+  "/imports/match-batch/:id/revalidate",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [imp] = await db
+      .select()
+      .from(importsTable)
+      .where(eq(importsTable.id, id));
+    if (!imp || imp.kind !== "match-batch") {
+      res.status(404).json({ error: "Batch import not found" });
+      return;
+    }
+    if (imp.status !== "pending") {
+      res.status(400).json({ error: `Import is already ${imp.status}` });
+      return;
+    }
+    const payload = imp.payload as { files?: BatchCandidate[] } | null;
+    const candidates = payload?.files ?? [];
+    const fileResolutions = parseFileResolutions(req.body);
+    const classified = await classifyBatchFiles(candidates, fileResolutions);
+    const committableMatches = classified.filter((c) => c.committable).length;
+    res.json({
+      files: classified.map(toBatchFileDto),
+      committableMatches,
+    });
+  },
+);
 
 router.post(
   "/imports/match-batch/:id/commit",

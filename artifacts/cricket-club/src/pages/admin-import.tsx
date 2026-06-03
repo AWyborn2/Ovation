@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -20,6 +20,8 @@ import type {
   NameMatchCandidate,
   PlayerResolution,
   BackfillPlayerFigures,
+  BatchFileResolution,
+  BatchRevalidatePreview,
 } from "@workspace/api-client-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import {
@@ -112,6 +114,38 @@ function buildResolutions(
       out.push({ surname: p.surname, givenName: p.givenName, action: "link", playerId: r.player.id });
     } else {
       out.push({ surname: p.surname, givenName: p.givenName, action: "create" });
+    }
+  }
+  return out;
+}
+
+/**
+ * Batch file statuses that carry a per-file Round / Final resolver. A
+ * `needsResolution` file has no identity yet; `duplicate` / `duplicateInBatch`
+ * already have one but collide, so the admin can remap them onto a distinct
+ * round/stage to import them as their own match instead of skipping/replacing.
+ */
+const RESOLVABLE_STATUSES = new Set([
+  "needsResolution",
+  "duplicate",
+  "duplicateInBatch",
+]);
+
+/**
+ * Turn the admin's per-file round/stage entries into the wire shape. Only
+ * entries that name a round or a finals stage are sent; an empty entry means
+ * "use the round/stage parsed from the scorecard" and is dropped.
+ */
+function buildFileResolutions(
+  map: Record<string, { round: string; stage: string }>,
+): BatchFileResolution[] {
+  const out: BatchFileResolution[] = [];
+  for (const [filename, v] of Object.entries(map)) {
+    if (v.stage) {
+      out.push({ filename, stage: v.stage as MatchStage });
+    } else {
+      const r = parseInt(v.round, 10);
+      if (Number.isInteger(r) && r >= 1) out.push({ filename, round: r });
     }
   }
   return out;
@@ -353,6 +387,58 @@ export default function AdminImport() {
     queryClient.invalidateQueries({ queryKey: getGetRecordsQueryKey() });
   };
 
+  // Monotonic token so only the latest revalidate response is applied — rapid
+  // resolver edits fire overlapping requests that can resolve out of order.
+  const revalidateSeq = useRef(0);
+
+  // Live re-validation: whenever the admin changes a per-file round/stage fix,
+  // re-classify the pending batch holder server-side (debounced) and refresh the
+  // per-file statuses and committable count so a remapped duplicate clears before
+  // they commit. Best-effort — the commit re-validates authoritatively.
+  useEffect(() => {
+    if (mode !== "batch" || !batchPreview) return;
+    if (Object.keys(fileResolutions).length === 0) return;
+    const importId = batchPreview.importId;
+    const controller = new AbortController();
+    const seq = ++revalidateSeq.current;
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/imports/match-batch/${importId}/revalidate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileResolutions: buildFileResolutions(fileResolutions),
+            }),
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as BatchRevalidatePreview;
+        // Drop stale responses that resolved after a newer request was issued.
+        if (seq !== revalidateSeq.current) return;
+        setBatchPreview((prev) =>
+          prev && prev.importId === importId
+            ? {
+                ...prev,
+                files: data.files,
+                committableMatches: data.committableMatches,
+              }
+            : prev,
+        );
+      } catch {
+        // ignore — aborted or best-effort live refresh failed
+      }
+    }, 400);
+    return () => {
+      clearTimeout(handle);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileResolutions, batchPreview?.importId, mode]);
+
   const resetPreviews = () => {
     setPreview(null);
     setMatchPreview(null);
@@ -567,14 +653,7 @@ export default function AdminImport() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             resolutions: buildResolutions(resolutions, batchPreview.players),
-            fileResolutions: Object.entries(fileResolutions)
-              .map(([filename, v]) => {
-                if (v.stage) return { filename, stage: v.stage as MatchStage };
-                const r = parseInt(v.round, 10);
-                if (Number.isInteger(r) && r >= 1) return { filename, round: r };
-                return null;
-              })
-              .filter((x): x is NonNullable<typeof x> => x != null),
+            fileResolutions: buildFileResolutions(fileResolutions),
             reconcileMode: isBackfill ? reconcileMode : null,
           }),
           credentials: "include",
@@ -1153,6 +1232,14 @@ export default function AdminImport() {
 
             <div>
               <h3 className="font-semibold mb-2">Matches in this batch</h3>
+              <p className="text-xs text-muted-foreground mb-2">
+                Files flagged{" "}
+                <span className="font-medium">Replaces existing</span> or{" "}
+                <span className="font-medium">Duplicate in batch</span> collide
+                with another match. Give one a different round or final below to
+                import both as separate matches — statuses and the committable
+                count update automatically.
+              </p>
               <div className="max-h-96 overflow-y-auto rounded-md border">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-background">
@@ -1180,53 +1267,19 @@ export default function AdminImport() {
                         <td className="py-2 px-3">{f.grade ?? "—"}</td>
                         <td className="py-2 px-3">{seasonLabel(f.season)}</td>
                         <td className="py-2 px-3">
-                          {f.status === "needsResolution" ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                min={1}
-                                inputMode="numeric"
-                                placeholder="Rnd"
-                                value={fileResolutions[f.filename]?.round ?? ""}
-                                onChange={(e) =>
-                                  setFileResolutions((prev) => ({
-                                    ...prev,
-                                    [f.filename]: {
-                                      round: e.target.value,
-                                      stage: e.target.value
-                                        ? ""
-                                        : prev[f.filename]?.stage ?? "",
-                                    },
-                                  }))
-                                }
-                                disabled={!!fileResolutions[f.filename]?.stage}
-                                className="h-7 w-16"
-                                data-testid={`input-file-round-${i}`}
-                              />
-                              <select
-                                value={fileResolutions[f.filename]?.stage ?? ""}
-                                onChange={(e) =>
-                                  setFileResolutions((prev) => ({
-                                    ...prev,
-                                    [f.filename]: {
-                                      stage: e.target.value,
-                                      round: e.target.value
-                                        ? ""
-                                        : prev[f.filename]?.round ?? "",
-                                    },
-                                  }))
-                                }
-                                className="h-7 rounded-md border border-input bg-background px-1 text-xs"
-                                data-testid={`select-file-stage-${i}`}
-                              >
-                                <option value="">Final?</option>
-                                {FINALS_STAGES.map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
+                          {RESOLVABLE_STATUSES.has(f.status) ? (
+                            <FileIdentityResolver
+                              index={i}
+                              parsedRound={f.round}
+                              parsedStage={f.stage}
+                              resolution={fileResolutions[f.filename]}
+                              onChange={(r) =>
+                                setFileResolutions((prev) => ({
+                                  ...prev,
+                                  [f.filename]: r,
+                                }))
+                              }
+                            />
                           ) : (
                             (f.stage ?? f.round ?? "—")
                           )}
@@ -1515,7 +1568,71 @@ function DebutBadge() {
   );
 }
 
-/** Per-file outcome badge in the season-batch preview table. */
+/**
+ * Per-file Round / Final picker shown for batch files whose identity is missing
+ * (`needsResolution`) or collides (`duplicate` / `duplicateInBatch`). Defaults to
+ * the round/stage parsed from the scorecard; choosing one clears the other so a
+ * file is keyed by EITHER a round OR a finals stage, matching match identity.
+ */
+function FileIdentityResolver({
+  index,
+  parsedRound,
+  parsedStage,
+  resolution,
+  onChange,
+}: {
+  index: number;
+  parsedRound: number | null | undefined;
+  parsedStage: string | null | undefined;
+  resolution: { round: string; stage: string } | undefined;
+  onChange: (r: { round: string; stage: string }) => void;
+}) {
+  const roundVal = resolution
+    ? resolution.round
+    : parsedRound != null
+      ? String(parsedRound)
+      : "";
+  const stageVal = resolution ? resolution.stage : (parsedStage ?? "");
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        type="number"
+        min={1}
+        inputMode="numeric"
+        placeholder="Rnd"
+        value={roundVal}
+        onChange={(e) =>
+          onChange({
+            round: e.target.value,
+            stage: e.target.value ? "" : stageVal,
+          })
+        }
+        disabled={!!stageVal}
+        className="h-7 w-16"
+        data-testid={`input-file-round-${index}`}
+      />
+      <select
+        value={stageVal}
+        onChange={(e) =>
+          onChange({
+            stage: e.target.value,
+            round: e.target.value ? "" : roundVal,
+          })
+        }
+        className="h-7 rounded-md border border-input bg-background px-1 text-xs"
+        data-testid={`select-file-stage-${index}`}
+      >
+        <option value="">Final?</option>
+        {FINALS_STAGES.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function BatchStatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = {
     ready: "Ready",
@@ -1527,8 +1644,11 @@ function BatchStatusBadge({ status }: { status: string }) {
     unmappableGrade: "Unknown grade",
     parseError: "Parse error",
   };
-  const ok = status === "ready" || status === "abandoned" || status === "duplicate";
-  const warn = status === "needsResolution";
+  const ok = status === "ready" || status === "abandoned";
+  const warn =
+    status === "needsResolution" ||
+    status === "duplicate" ||
+    status === "duplicateInBatch";
   const cls = ok
     ? "bg-green-600/15 text-green-700 dark:text-green-400"
     : warn

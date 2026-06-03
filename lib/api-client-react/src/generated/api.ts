@@ -39,6 +39,8 @@ import type {
   BallotUpdate,
   BatchCommitResult,
   BatchImportPreview,
+  BatchRevalidateInput,
+  BatchRevalidatePreview,
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
@@ -2036,6 +2038,85 @@ export const useCommitMatchBatch = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCommitMatchBatchMutationOptions(options));
+    }
+
+export const getRevalidateMatchBatchUrl = (id: number,) => {
+
+
+
+
+  return `/api/imports/match-batch/${id}/revalidate`
+}
+
+/**
+ * Re-classify the pending batch holder against the admin's current per-file
+round/stage assignments and return the updated per-file statuses and the
+recomputed committable count. Lets the admin remap a file flagged
+`duplicateInBatch` (or `duplicate`) onto a distinct round/finals stage and
+see the collision clear before committing. Reads the parsed scorecards
+already persisted on the holder — no re-upload is needed. Writes nothing.
+
+ * @summary Re-check a previewed match batch with the admin's round/stage fixes
+ */
+export const revalidateMatchBatch = async (id: number,
+    batchRevalidateInput?: BatchRevalidateInput, options?: RequestInit): Promise<BatchRevalidatePreview> => {
+
+  return customFetch<BatchRevalidatePreview>(getRevalidateMatchBatchUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      batchRevalidateInput,)
+  }
+);}
+
+
+
+
+export const getRevalidateMatchBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revalidateMatchBatch>>, TError,{id: number;data?: BodyType<BatchRevalidateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revalidateMatchBatch>>, TError,{id: number;data?: BodyType<BatchRevalidateInput>}, TContext> => {
+
+const mutationKey = ['revalidateMatchBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revalidateMatchBatch>>, {id: number;data?: BodyType<BatchRevalidateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  revalidateMatchBatch(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevalidateMatchBatchMutationResult = NonNullable<Awaited<ReturnType<typeof revalidateMatchBatch>>>
+    export type RevalidateMatchBatchMutationBody = BodyType<BatchRevalidateInput> | undefined
+    export type RevalidateMatchBatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Re-check a previewed match batch with the admin's round/stage fixes
+ */
+export const useRevalidateMatchBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revalidateMatchBatch>>, TError,{id: number;data?: BodyType<BatchRevalidateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revalidateMatchBatch>>,
+        TError,
+        {id: number;data?: BodyType<BatchRevalidateInput>},
+        TContext
+      > => {
+      return useMutation(getRevalidateMatchBatchMutationOptions(options));
     }
 
 export const getUndoSeasonUrl = () => {

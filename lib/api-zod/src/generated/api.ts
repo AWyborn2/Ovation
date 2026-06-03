@@ -751,7 +751,7 @@ export const CommitImportBody = zod.object({
   "filename": zod.string(),
   "round": zod.number().min(1).nullish(),
   "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional()
-}).describe('Admin\'s round\/stage assignment for one batch file that parsed without a\nnumeric round or a recognised finals stage. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional().describe('For batch (.zip \/ multi-file) match imports: per-file round\/stage\nassignments for files that parsed without a numeric round or a\nrecognised finals stage (status needsResolution). Each entry sets\neither a round or a stage for the named file; matched by filename.\n'),
+}).describe('Admin\'s round\/stage assignment for one batch file. Used both for a file\nthat parsed without a numeric round or a recognised finals stage\n(status needsResolution) and to remap a file flagged duplicate \/\nduplicateInBatch onto a distinct identity. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional().describe('For batch (.zip \/ multi-file) match imports: per-file round\/stage\nassignments for files that parsed without a numeric round or a\nrecognised finals stage (status needsResolution). Each entry sets\neither a round or a stage for the named file; matched by filename.\n'),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Marks this as a PREVIOUS-season backfill and how to reconcile it with\ncurrent totals. `peel`: the season is already counted inside the\ngrade\'s all-time baseline, so subtract its per-player contribution\nfrom that baseline (career totals stay invariant, floored at zero).\n`add`: the season is genuinely missing, so add it only. When set,\nsocial\/milestone generation is suppressed and no out-of-order caps are\nminted (existing linked caps are still refreshed). Omit\/null for the\nnormal current-season flow.\n')
 }).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
@@ -970,7 +970,7 @@ export const CommitMatchBatchBody = zod.object({
   "filename": zod.string(),
   "round": zod.number().min(1).nullish(),
   "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional()
-}).describe('Admin\'s round\/stage assignment for one batch file that parsed without a\nnumeric round or a recognised finals stage. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional().describe('For batch (.zip \/ multi-file) match imports: per-file round\/stage\nassignments for files that parsed without a numeric round or a\nrecognised finals stage (status needsResolution). Each entry sets\neither a round or a stage for the named file; matched by filename.\n'),
+}).describe('Admin\'s round\/stage assignment for one batch file. Used both for a file\nthat parsed without a numeric round or a recognised finals stage\n(status needsResolution) and to remap a file flagged duplicate \/\nduplicateInBatch onto a distinct identity. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional().describe('For batch (.zip \/ multi-file) match imports: per-file round\/stage\nassignments for files that parsed without a numeric round or a\nrecognised finals stage (status needsResolution). Each entry sets\neither a round or a stage for the named file; matched by filename.\n'),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Marks this as a PREVIOUS-season backfill and how to reconcile it with\ncurrent totals. `peel`: the season is already counted inside the\ngrade\'s all-time baseline, so subtract its per-player contribution\nfrom that baseline (career totals stay invariant, floored at zero).\n`add`: the season is genuinely missing, so add it only. When set,\nsocial\/milestone generation is suppressed and no out-of-order caps are\nminted (existing linked caps are still refreshed). Omit\/null for the\nnormal current-season flow.\n')
 }).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
@@ -999,6 +999,57 @@ export const CommitMatchBatchResponse = zod.object({
   "baselineGames": zod.number()
 }).describe('A player whose all-time baseline could not absorb the full peel (the\nseason being peeled has more games than the baseline holds), so the\nbaseline floored at zero and the player\'s career total changed. Surfaced\nfor club review; never blocks the commit.\n')).optional().describe('Players whose baseline floored at zero during a peel (career total changed).')
 })
+
+
+/**
+ * Re-classify the pending batch holder against the admin's current per-file
+round/stage assignments and return the updated per-file statuses and the
+recomputed committable count. Lets the admin remap a file flagged
+`duplicateInBatch` (or `duplicate`) onto a distinct round/finals stage and
+see the collision clear before committing. Reads the parsed scorecards
+already persisted on the holder — no re-upload is needed. Writes nothing.
+
+ * @summary Re-check a previewed match batch with the admin's round/stage fixes
+ */
+export const RevalidateMatchBatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const RevalidateMatchBatchBody = zod.object({
+  "fileResolutions": zod.array(zod.object({
+  "filename": zod.string(),
+  "round": zod.number().min(1).nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional()
+}).describe('Admin\'s round\/stage assignment for one batch file. Used both for a file\nthat parsed without a numeric round or a recognised finals stage\n(status needsResolution) and to remap a file flagged duplicate \/\nduplicateInBatch onto a distinct identity. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional()
+}).describe('The admin\'s current per-file round\/stage assignments to re-check a\npreviewed batch against. Each entry remaps the named file\'s identity;\nfiles without an entry keep the round\/stage parsed from their scorecard.\n')
+
+export const RevalidateMatchBatchResponse = zod.object({
+  "files": zod.array(zod.object({
+  "filename": zod.string(),
+  "status": zod.enum(['ready', 'abandoned', 'duplicate', 'duplicateInBatch', 'missingRound', 'needsResolution', 'unmappableGrade', 'parseError']).describe('ready\/abandoned\/duplicate are committable; duplicate replaces a stored\nmatch. needsResolution (a file with neither a numeric round nor a\nrecognised finals stage) becomes committable once the admin assigns a\nround or stage via fileResolutions. duplicateInBatch (a later file for\nthe same grade+season+round+stage), missingRound (legacy alias of\nneedsResolution), unmappableGrade and parseError are excluded.\n'),
+  "committable": zod.boolean(),
+  "grade": zod.string().nullish(),
+  "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage parsed from the scorecard title, or null for a regular round.'),
+  "competition": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "hhccScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "abandoned": zod.boolean(),
+  "matchExists": zod.boolean().describe('True if this grade+season+round+stage was already stored (will replace).'),
+  "playerCount": zod.number(),
+  "warnings": zod.array(zod.string()),
+  "error": zod.string().nullish().describe('Parse error message when status is parseError.')
+}).describe('One candidate match in a batch upload — the parsed scorecard header plus\nthe per-file status that decides whether it will be committed.\n')),
+  "committableMatches": zod.number()
+}).describe('Result of re-classifying a pending batch holder with the admin\'s current\nround\/stage fixes — the same per-file shape as the upload preview, plus\nthe recomputed committable count, so the UI can refresh statuses live.\n')
 
 
 /**

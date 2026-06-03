@@ -34,6 +34,8 @@ export * from './batchImportPlayer';
 export * from './batchImportPlayerCapCategory';
 export * from './batchImportPlayerStatus';
 export * from './batchImportPreview';
+export * from './batchRevalidateInput';
+export * from './batchRevalidatePreview';
 export * from './capCategory';
 export * from './capEntry';
 export * from './capEntryInput';

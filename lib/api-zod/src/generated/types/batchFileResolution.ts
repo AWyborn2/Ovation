@@ -8,8 +8,10 @@
 import type { MatchStage } from './matchStage';
 
 /**
- * Admin's round/stage assignment for one batch file that parsed without a
-numeric round or a recognised finals stage. Exactly one of round/stage
+ * Admin's round/stage assignment for one batch file. Used both for a file
+that parsed without a numeric round or a recognised finals stage
+(status needsResolution) and to remap a file flagged duplicate /
+duplicateInBatch onto a distinct identity. Exactly one of round/stage
 should be provided; if stage is set it wins and round is ignored.
 
  */
