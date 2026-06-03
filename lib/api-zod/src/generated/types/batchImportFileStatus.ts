@@ -8,8 +8,11 @@
 
 /**
  * ready/abandoned/duplicate are committable; duplicate replaces a stored
-match. duplicateInBatch (a later file for the same grade+season+round),
-missingRound, unmappableGrade and parseError are excluded.
+match. needsResolution (a file with neither a numeric round nor a
+recognised finals stage) becomes committable once the admin assigns a
+round or stage via fileResolutions. duplicateInBatch (a later file for
+the same grade+season+round+stage), missingRound (legacy alias of
+needsResolution), unmappableGrade and parseError are excluded.
 
  */
 export type BatchImportFileStatus = typeof BatchImportFileStatus[keyof typeof BatchImportFileStatus];
@@ -21,6 +24,7 @@ export const BatchImportFileStatus = {
   duplicate: 'duplicate',
   duplicateInBatch: 'duplicateInBatch',
   missingRound: 'missingRound',
+  needsResolution: 'needsResolution',
   unmappableGrade: 'unmappableGrade',
   parseError: 'parseError',
 } as const;

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchStage } from './matchStage';
 
 export interface PlayerMatchLine {
   matchId: number;
@@ -13,6 +14,8 @@ export interface PlayerMatchLine {
   season?: number | null;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the match, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   matchDate?: string | null;
   /** @nullable */

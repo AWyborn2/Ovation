@@ -5,11 +5,21 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchStage } from './matchStage';
 
+/**
+ * Set a match's identity to a numeric round OR a finals stage (mutually
+exclusive). Provide `round` for a regular match, or `stage` for a finals
+match. Setting one clears the other.
+
+ */
 export interface MatchRoundUpdate {
   /**
-     * New round number for the match (unique per grade + season)
+     * New round number for the match (clears stage). Mutually exclusive with stage.
      * @minimum 1
+     * @nullable
      */
-  round: number;
+  round?: number | null;
+  /** New finals stage for the match (clears round). Mutually exclusive with round. */
+  stage?: MatchStage | null;
 }

@@ -163,6 +163,7 @@ export const GetPlayerMatchesResponseItem = zod.object({
   "grade": zod.string(),
   "season": zod.number().nullish(),
   "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the match, or null for a regular round.'),
   "matchDate": zod.string().nullish(),
   "opponent": zod.string().nullish(),
   "venue": zod.string().nullish(),
@@ -203,6 +204,7 @@ export const ListMatchesResponseItem = zod.object({
   "grade": zod.string(),
   "season": zod.number(),
   "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the match, or null for a regular round.'),
   "competition": zod.string().nullish(),
   "matchDate": zod.string().nullish(),
   "venue": zod.string().nullish(),
@@ -228,6 +230,7 @@ export const GetMatchResponse = zod.object({
   "grade": zod.string(),
   "season": zod.number(),
   "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the match, or null for a regular round.'),
   "competition": zod.string().nullish(),
   "matchDate": zod.string().nullish(),
   "venue": zod.string().nullish(),
@@ -300,14 +303,16 @@ export const UpdateMatchRoundParams = zod.object({
 
 
 export const UpdateMatchRoundBody = zod.object({
-  "round": zod.number().min(1).describe('New round number for the match (unique per grade + season)')
-})
+  "round": zod.number().min(1).nullish().describe('New round number for the match (clears stage). Mutually exclusive with stage.'),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('New finals stage for the match (clears round). Mutually exclusive with round.')
+}).describe('Set a match\'s identity to a numeric round OR a finals stage (mutually\nexclusive). Provide `round` for a regular match, or `stage` for a finals\nmatch. Setting one clears the other.\n')
 
 export const UpdateMatchRoundResponse = zod.object({
   "id": zod.number(),
   "grade": zod.string(),
   "season": zod.number(),
   "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the match, or null for a regular round.'),
   "competition": zod.string().nullish(),
   "matchDate": zod.string().nullish(),
   "venue": zod.string().nullish(),
@@ -730,6 +735,9 @@ export const CommitImportParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+
+
 export const CommitImportBody = zod.object({
   "resolutions": zod.array(zod.object({
   "surname": zod.string(),
@@ -737,7 +745,13 @@ export const CommitImportBody = zod.object({
   "action": zod.enum(['link', 'create']),
   "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
 }).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional(),
-  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n'),
+  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports. Mutually exclusive with stage — if stage is set, round\nis forced to null.\n'),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('For per-match (.xlsx) imports: the finals stage to assign to the\ncommitted match. When set, the match is a final (round forced null).\nMutually exclusive with round. Ignored for whole-season CSV imports.\n'),
+  "fileResolutions": zod.array(zod.object({
+  "filename": zod.string(),
+  "round": zod.number().min(1).nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional()
+}).describe('Admin\'s round\/stage assignment for one batch file that parsed without a\nnumeric round or a recognised finals stage. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional().describe('For batch (.zip \/ multi-file) match imports: per-file round\/stage\nassignments for files that parsed without a numeric round or a\nrecognised finals stage (status needsResolution). Each entry sets\neither a round or a stage for the named file; matched by filename.\n'),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Marks this as a PREVIOUS-season backfill and how to reconcile it with\ncurrent totals. `peel`: the season is already counted inside the\ngrade\'s all-time baseline, so subtract its per-player contribution\nfrom that baseline (career totals stay invariant, floored at zero).\n`add`: the season is genuinely missing, so add it only. When set,\nsocial\/milestone generation is suppressed and no out-of-order caps are\nminted (existing linked caps are still refreshed). Omit\/null for the\nnormal current-season flow.\n')
 }).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
@@ -796,6 +810,7 @@ export const UploadMatchScorecardResponse = zod.object({
   "grade": zod.string().nullish(),
   "season": zod.number().nullish(),
   "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage parsed from the scorecard title, or null for a regular round.'),
   "competition": zod.string().nullish(),
   "matchDate": zod.string().nullish(),
   "venue": zod.string().nullish(),
@@ -804,7 +819,7 @@ export const UploadMatchScorecardResponse = zod.object({
   "opponent": zod.string().nullish(),
   "hhccScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
-  "matchExists": zod.boolean().describe('True if this grade+season+round was already imported.'),
+  "matchExists": zod.boolean().describe('True if this grade+season+round+stage was already imported.'),
   "matchedPlayers": zod.number(),
   "newPlayers": zod.number(),
   "suggestedPlayers": zod.number().describe('Count of names with a fuzzy suggestion awaiting confirmation.'),
@@ -873,11 +888,12 @@ export const UploadMatchBatchResponse = zod.object({
   "importId": zod.number().describe('The pending holder import row id; pass it to commitMatchBatch.'),
   "files": zod.array(zod.object({
   "filename": zod.string(),
-  "status": zod.enum(['ready', 'abandoned', 'duplicate', 'duplicateInBatch', 'missingRound', 'unmappableGrade', 'parseError']).describe('ready\/abandoned\/duplicate are committable; duplicate replaces a stored\nmatch. duplicateInBatch (a later file for the same grade+season+round),\nmissingRound, unmappableGrade and parseError are excluded.\n'),
+  "status": zod.enum(['ready', 'abandoned', 'duplicate', 'duplicateInBatch', 'missingRound', 'needsResolution', 'unmappableGrade', 'parseError']).describe('ready\/abandoned\/duplicate are committable; duplicate replaces a stored\nmatch. needsResolution (a file with neither a numeric round nor a\nrecognised finals stage) becomes committable once the admin assigns a\nround or stage via fileResolutions. duplicateInBatch (a later file for\nthe same grade+season+round+stage), missingRound (legacy alias of\nneedsResolution), unmappableGrade and parseError are excluded.\n'),
   "committable": zod.boolean(),
   "grade": zod.string().nullish(),
   "season": zod.number().nullish(),
   "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage parsed from the scorecard title, or null for a regular round.'),
   "competition": zod.string().nullish(),
   "matchDate": zod.string().nullish(),
   "venue": zod.string().nullish(),
@@ -886,7 +902,7 @@ export const UploadMatchBatchResponse = zod.object({
   "hhccScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "abandoned": zod.boolean(),
-  "matchExists": zod.boolean().describe('True if this grade+season+round was already stored (will replace).'),
+  "matchExists": zod.boolean().describe('True if this grade+season+round+stage was already stored (will replace).'),
   "playerCount": zod.number(),
   "warnings": zod.array(zod.string()),
   "error": zod.string().nullish().describe('Parse error message when status is parseError.')
@@ -938,6 +954,9 @@ export const CommitMatchBatchParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+
+
 export const CommitMatchBatchBody = zod.object({
   "resolutions": zod.array(zod.object({
   "surname": zod.string(),
@@ -945,7 +964,13 @@ export const CommitMatchBatchBody = zod.object({
   "action": zod.enum(['link', 'create']),
   "playerId": zod.number().nullish().describe('Existing player to link to (required when action is `link`).')
 }).describe('An admin\'s decision for one previewed name: link it to an existing\nplayer or create a new one. Keyed back to the parsed row by name.\n')).optional(),
-  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports.\n'),
+  "round": zod.number().nullish().describe('For per-match (.xlsx) imports: the round to assign to the committed\nmatch. Overrides the value parsed from the scorecard header (and\nsupplies one when the header had none). Ignored for whole-season\nCSV imports. Mutually exclusive with stage — if stage is set, round\nis forced to null.\n'),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('For per-match (.xlsx) imports: the finals stage to assign to the\ncommitted match. When set, the match is a final (round forced null).\nMutually exclusive with round. Ignored for whole-season CSV imports.\n'),
+  "fileResolutions": zod.array(zod.object({
+  "filename": zod.string(),
+  "round": zod.number().min(1).nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional()
+}).describe('Admin\'s round\/stage assignment for one batch file that parsed without a\nnumeric round or a recognised finals stage. Exactly one of round\/stage\nshould be provided; if stage is set it wins and round is ignored.\n')).optional().describe('For batch (.zip \/ multi-file) match imports: per-file round\/stage\nassignments for files that parsed without a numeric round or a\nrecognised finals stage (status needsResolution). Each entry sets\neither a round or a stage for the named file; matched by filename.\n'),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Marks this as a PREVIOUS-season backfill and how to reconcile it with\ncurrent totals. `peel`: the season is already counted inside the\ngrade\'s all-time baseline, so subtract its per-player contribution\nfrom that baseline (career totals stay invariant, floored at zero).\n`add`: the season is genuinely missing, so add it only. When set,\nsocial\/milestone generation is suppressed and no out-of-order caps are\nminted (existing linked caps are still refreshed). Omit\/null for the\nnormal current-season flow.\n')
 }).describe('Optional per-name resolutions chosen in the preview, plus an optional\nround for per-match imports. Names without a resolution fall back to\nexact-match-or-create.\n')
 
@@ -956,7 +981,8 @@ export const CommitMatchBatchResponse = zod.object({
   "filename": zod.string(),
   "grade": zod.string(),
   "season": zod.number(),
-  "round": zod.number().nullish()
+  "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the committed match, or null for a regular round.')
 })),
   "capsSync": zod.array(zod.object({
   "grade": zod.string(),

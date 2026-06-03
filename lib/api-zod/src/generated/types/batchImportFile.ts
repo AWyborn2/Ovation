@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BatchImportFileStatus } from './batchImportFileStatus';
+import type { MatchStage } from './matchStage';
 
 /**
  * One candidate match in a batch upload — the parsed scorecard header plus
@@ -15,8 +16,11 @@ the per-file status that decides whether it will be committed.
 export interface BatchImportFile {
   filename: string;
   /** ready/abandoned/duplicate are committable; duplicate replaces a stored
-  match. duplicateInBatch (a later file for the same grade+season+round),
-  missingRound, unmappableGrade and parseError are excluded.
+  match. needsResolution (a file with neither a numeric round nor a
+  recognised finals stage) becomes committable once the admin assigns a
+  round or stage via fileResolutions. duplicateInBatch (a later file for
+  the same grade+season+round+stage), missingRound (legacy alias of
+  needsResolution), unmappableGrade and parseError are excluded.
    */
   status: BatchImportFileStatus;
   committable: boolean;
@@ -26,6 +30,8 @@ export interface BatchImportFile {
   season?: number | null;
   /** @nullable */
   round?: number | null;
+  /** Finals stage parsed from the scorecard title, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */
@@ -41,7 +47,7 @@ export interface BatchImportFile {
   /** @nullable */
   opponentScore?: string | null;
   abandoned: boolean;
-  /** True if this grade+season+round was already stored (will replace). */
+  /** True if this grade+season+round+stage was already stored (will replace). */
   matchExists: boolean;
   playerCount: number;
   warnings: string[];

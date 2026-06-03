@@ -471,7 +471,7 @@ export default function PlayerDetail() {
                           ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
                           : "—"}
                       </td>
-                      <td className="p-3 font-mono">{m.round ?? "—"}</td>
+                      <td className="p-3 font-mono">{m.stage ?? (m.round ?? "—")}</td>
                       <td className="p-3">
                         <GradeBadge grade={m.grade} size="sm" />
                       </td>

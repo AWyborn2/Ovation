@@ -481,6 +481,22 @@ export const MatchImportPreviewCapCategory = {
   female: 'female',
 } as const;
 
+/**
+ * Finals stage of a match. A finals match carries one of these with a NULL
+round; a regular match carries a numeric round with a NULL stage.
+
+ */
+export type MatchStage = typeof MatchStage[keyof typeof MatchStage];
+
+
+export const MatchStage = {
+  Elimination_Final: 'Elimination Final',
+  Qualifying_Final: 'Qualifying Final',
+  Semi_Final: 'Semi Final',
+  Preliminary_Final: 'Preliminary Final',
+  Grand_Final: 'Grand Final',
+} as const;
+
 export interface MatchImportPreview {
   importId: number;
   filename: string;
@@ -490,6 +506,8 @@ export interface MatchImportPreview {
   season?: number | null;
   /** @nullable */
   round?: number | null;
+  /** Finals stage parsed from the scorecard title, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */
@@ -505,7 +523,7 @@ export interface MatchImportPreview {
   hhccScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
-  /** True if this grade+season+round was already imported. */
+  /** True if this grade+season+round+stage was already imported. */
   matchExists: boolean;
   matchedPlayers: number;
   newPlayers: number;
@@ -526,8 +544,11 @@ export interface MatchImportPreview {
 
 /**
  * ready/abandoned/duplicate are committable; duplicate replaces a stored
-match. duplicateInBatch (a later file for the same grade+season+round),
-missingRound, unmappableGrade and parseError are excluded.
+match. needsResolution (a file with neither a numeric round nor a
+recognised finals stage) becomes committable once the admin assigns a
+round or stage via fileResolutions. duplicateInBatch (a later file for
+the same grade+season+round+stage), missingRound (legacy alias of
+needsResolution), unmappableGrade and parseError are excluded.
 
  */
 export type BatchImportFileStatus = typeof BatchImportFileStatus[keyof typeof BatchImportFileStatus];
@@ -539,6 +560,7 @@ export const BatchImportFileStatus = {
   duplicate: 'duplicate',
   duplicateInBatch: 'duplicateInBatch',
   missingRound: 'missingRound',
+  needsResolution: 'needsResolution',
   unmappableGrade: 'unmappableGrade',
   parseError: 'parseError',
 } as const;
@@ -551,8 +573,11 @@ the per-file status that decides whether it will be committed.
 export interface BatchImportFile {
   filename: string;
   /** ready/abandoned/duplicate are committable; duplicate replaces a stored
-  match. duplicateInBatch (a later file for the same grade+season+round),
-  missingRound, unmappableGrade and parseError are excluded.
+  match. needsResolution (a file with neither a numeric round nor a
+  recognised finals stage) becomes committable once the admin assigns a
+  round or stage via fileResolutions. duplicateInBatch (a later file for
+  the same grade+season+round+stage), missingRound (legacy alias of
+  needsResolution), unmappableGrade and parseError are excluded.
    */
   status: BatchImportFileStatus;
   committable: boolean;
@@ -562,6 +587,8 @@ export interface BatchImportFile {
   season?: number | null;
   /** @nullable */
   round?: number | null;
+  /** Finals stage parsed from the scorecard title, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */
@@ -577,7 +604,7 @@ export interface BatchImportFile {
   /** @nullable */
   opponentScore?: string | null;
   abandoned: boolean;
-  /** True if this grade+season+round was already stored (will replace). */
+  /** True if this grade+season+round+stage was already stored (will replace). */
   matchExists: boolean;
   playerCount: number;
   warnings: string[];
@@ -656,6 +683,8 @@ export interface BatchCommittedMatch {
   season: number;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the committed match, or null for a regular round. */
+  stage?: MatchStage | null;
 }
 
 /**
@@ -708,6 +737,22 @@ export interface PlayerResolution {
 }
 
 /**
+ * Admin's round/stage assignment for one batch file that parsed without a
+numeric round or a recognised finals stage. Exactly one of round/stage
+should be provided; if stage is set it wins and round is ignored.
+
+ */
+export interface BatchFileResolution {
+  filename: string;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  round?: number | null;
+  stage?: MatchStage | null;
+}
+
+/**
  * Marks this as a PREVIOUS-season backfill and how to reconcile it with
 current totals. `peel`: the season is already counted inside the
 grade's all-time baseline, so subtract its per-player contribution
@@ -739,11 +784,23 @@ export interface CommitImportInput {
      * For per-match (.xlsx) imports: the round to assign to the committed
   match. Overrides the value parsed from the scorecard header (and
   supplies one when the header had none). Ignored for whole-season
-  CSV imports.
+  CSV imports. Mutually exclusive with stage — if stage is set, round
+  is forced to null.
 
      * @nullable
      */
   round?: number | null;
+  /** For per-match (.xlsx) imports: the finals stage to assign to the
+  committed match. When set, the match is a final (round forced null).
+  Mutually exclusive with round. Ignored for whole-season CSV imports.
+   */
+  stage?: MatchStage | null;
+  /** For batch (.zip / multi-file) match imports: per-file round/stage
+  assignments for files that parsed without a numeric round or a
+  recognised finals stage (status needsResolution). Each entry sets
+  either a round or a stage for the named file; matched by filename.
+   */
+  fileResolutions?: BatchFileResolution[];
   /**
      * Marks this as a PREVIOUS-season backfill and how to reconcile it with
   current totals. `peel`: the season is already counted inside the
@@ -766,6 +823,8 @@ export interface PlayerMatchLine {
   season?: number | null;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the match, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   matchDate?: string | null;
   /** @nullable */
@@ -812,6 +871,8 @@ export interface MatchSummary {
   season: number;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the match, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */
@@ -908,6 +969,8 @@ export interface MatchDetail {
   season: number;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the match, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */
@@ -927,12 +990,21 @@ export interface MatchDetail {
   oppositionLines?: MatchOppositionLine[];
 }
 
+/**
+ * Set a match's identity to a numeric round OR a finals stage (mutually
+exclusive). Provide `round` for a regular match, or `stage` for a finals
+match. Setting one clears the other.
+
+ */
 export interface MatchRoundUpdate {
   /**
-     * New round number for the match (unique per grade + season)
+     * New round number for the match (clears stage). Mutually exclusive with stage.
      * @minimum 1
+     * @nullable
      */
-  round: number;
+  round?: number | null;
+  /** New finals stage for the match (clears round). Mutually exclusive with round. */
+  stage?: MatchStage | null;
 }
 
 export interface UndoSeasonInput {

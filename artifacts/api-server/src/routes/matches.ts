@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ne, desc, asc, count, type SQL } from "drizzle-orm";
+import { eq, and, ne, desc, asc, count, sql, type SQL } from "drizzle-orm";
 import {
   db,
   matchesTable,
@@ -88,6 +88,7 @@ async function loadMatchDetail(matchId: number) {
     grade: match.grade,
     season: match.season,
     round: match.round,
+    stage: match.stage,
     competition: match.competition,
     matchDate: match.matchDate,
     venue: match.venue,
@@ -119,6 +120,7 @@ router.get("/matches", async (req, res): Promise<void> => {
       grade: matchesTable.grade,
       season: matchesTable.season,
       round: matchesTable.round,
+      stage: matchesTable.stage,
       competition: matchesTable.competition,
       matchDate: matchesTable.matchDate,
       venue: matchesTable.venue,
@@ -181,10 +183,29 @@ router.patch(
       return;
     }
 
-    const newRound = body.data.round;
+    // A match identity is a numeric round XOR a finals stage. A stage always
+    // wins and clears the round; otherwise the round stands and the stage is
+    // cleared. If neither is supplied, the identity is left unchanged.
+    const hasRound = body.data.round != null;
+    const hasStage = body.data.stage != null;
+    const newStage = hasStage ? body.data.stage! : null;
+    const newRound = hasStage ? null : (body.data.round ?? null);
 
-    if (match.round !== newRound) {
-      // Rounds are unique per (grade, season). Check before writing so we can
+    if (!hasRound && !hasStage) {
+      res
+        .status(400)
+        .json({ error: "Provide a round or a finals stage to update the match." });
+      return;
+    }
+
+    const seasonLabel = `${match.season}/${String((match.season + 1) % 100).padStart(2, "0")}`;
+    const identityLabel = newStage
+      ? `The ${newStage}`
+      : `Round ${newRound}`;
+    const conflictMessage = `${identityLabel} is already used by another ${match.grade} match in ${seasonLabel}.`;
+
+    if (match.round !== newRound || match.stage !== newStage) {
+      // Identity is unique per (grade, season). Check before writing so we can
       // return a clear 409 rather than a raw DB constraint error.
       const [conflict] = await db
         .select({ id: matchesTable.id })
@@ -193,14 +214,17 @@ router.patch(
           and(
             eq(matchesTable.grade, match.grade),
             eq(matchesTable.season, match.season),
-            eq(matchesTable.round, newRound),
+            newRound == null
+              ? sql`${matchesTable.round} IS NULL`
+              : eq(matchesTable.round, newRound),
+            newStage == null
+              ? sql`${matchesTable.stage} IS NULL`
+              : eq(matchesTable.stage, newStage),
             ne(matchesTable.id, match.id),
           ),
         );
       if (conflict) {
-        res.status(409).json({
-          error: `Round ${newRound} is already used by another ${match.grade} match in ${match.season}/${String((match.season + 1) % 100).padStart(2, "0")}.`,
-        });
+        res.status(409).json({ error: conflictMessage });
         return;
       }
 
@@ -208,7 +232,7 @@ router.patch(
         await db.transaction(async (tx) => {
           await tx
             .update(matchesTable)
-            .set({ round: newRound })
+            .set({ round: newRound, stage: newStage })
             .where(eq(matchesTable.id, match.id));
           // Keep the originating import row's round in sync so the admin
           // imports list doesn't show a stale round.
@@ -220,9 +244,7 @@ router.patch(
       } catch (err) {
         // Safety net for a concurrent insert racing past the check above.
         if ((err as { code?: string }).code === "23505") {
-          res.status(409).json({
-            error: `Round ${newRound} is already used by another ${match.grade} match in ${match.season}/${String((match.season + 1) % 100).padStart(2, "0")}.`,
-          });
+          res.status(409).json({ error: conflictMessage });
           return;
         }
         throw err;

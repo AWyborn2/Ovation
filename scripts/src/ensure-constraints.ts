@@ -19,6 +19,14 @@ type ConstraintSpec = {
   name: string;
   /** Columns the UNIQUE constraint covers (also used for the dup pre-check). */
   columns: string[];
+  /**
+   * Treat NULLs as equal (Postgres 15+ `UNIQUE NULLS NOT DISTINCT`). Needed when
+   * a nullable column participates in the identity and two NULL rows must still
+   * collide (e.g. matches identity where round XOR stage is always NULL).
+   */
+  nullsNotDistinct?: boolean;
+  /** Stale constraint names to DROP first (e.g. a previous narrower unique). */
+  replaces?: string[];
 };
 
 const CONSTRAINTS: ConstraintSpec[] = [
@@ -42,10 +50,25 @@ const CONSTRAINTS: ConstraintSpec[] = [
     name: "award_ballots_config_captain_grade_round_unique",
     columns: ["config_id", "captain_id", "grade", "round"],
   },
+  {
+    table: "matches",
+    name: "matches_grade_season_round_stage_unique",
+    columns: ["grade", "season", "round", "stage"],
+    nullsNotDistinct: true,
+    replaces: ["matches_grade_season_round_unique"],
+  },
 ];
 
 async function main() {
   for (const c of CONSTRAINTS) {
+    // Drop any superseded constraints first so the new identity can be applied.
+    for (const old of c.replaces ?? []) {
+      await db.execute(
+        sql.raw(
+          `ALTER TABLE "${c.table}" DROP CONSTRAINT IF EXISTS "${old}"`,
+        ),
+      );
+    }
     // Existence check is scoped to the exact table + a unique constraint, since
     // constraint names are NOT globally unique across tables/schemas.
     const exists = await db.execute(
@@ -79,9 +102,10 @@ async function main() {
         )} rows: ${JSON.stringify(dups.rows)}`,
       );
     }
+    const nullsClause = c.nullsNotDistinct ? "NULLS NOT DISTINCT " : "";
     await db.execute(
       sql.raw(
-        `ALTER TABLE "${c.table}" ADD CONSTRAINT "${c.name}" UNIQUE (${cols})`,
+        `ALTER TABLE "${c.table}" ADD CONSTRAINT "${c.name}" UNIQUE ${nullsClause}(${cols})`,
       ),
     );
     console.log(`+ added ${c.name} on ${c.table}`);

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useListMatches, useListGrades } from "@workspace/api-client-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin } from "lucide-react";
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
@@ -96,7 +97,7 @@ export default function Matches() {
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">
                       {fmtSeason(m.season)}
-                      {m.round != null ? ` · Round ${m.round}` : ""}
+                      {matchLabel(m.round, m.stage) ? ` · ${matchLabel(m.round, m.stage)}` : ""}
                     </div>
                   </div>
                   {m.abandoned && (

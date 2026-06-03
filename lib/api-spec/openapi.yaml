@@ -2836,6 +2836,11 @@ components:
           type: ["integer", "null"]
         round:
           type: ["integer", "null"]
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: Finals stage parsed from the scorecard title, or null for a regular round.
         competition:
           type: ["string", "null"]
         matchDate:
@@ -2854,7 +2859,7 @@ components:
           type: ["string", "null"]
         matchExists:
           type: boolean
-          description: True if this grade+season+round was already imported.
+          description: True if this grade+season+round+stage was already imported.
         matchedPlayers:
           type: integer
         newPlayers:
@@ -2896,11 +2901,14 @@ components:
         status:
           type: string
           enum:
-            [ready, abandoned, duplicate, duplicateInBatch, missingRound, unmappableGrade, parseError]
+            [ready, abandoned, duplicate, duplicateInBatch, missingRound, needsResolution, unmappableGrade, parseError]
           description: |
             ready/abandoned/duplicate are committable; duplicate replaces a stored
-            match. duplicateInBatch (a later file for the same grade+season+round),
-            missingRound, unmappableGrade and parseError are excluded.
+            match. needsResolution (a file with neither a numeric round nor a
+            recognised finals stage) becomes committable once the admin assigns a
+            round or stage via fileResolutions. duplicateInBatch (a later file for
+            the same grade+season+round+stage), missingRound (legacy alias of
+            needsResolution), unmappableGrade and parseError are excluded.
         committable:
           type: boolean
         grade:
@@ -2909,6 +2917,11 @@ components:
           type: ["integer", "null"]
         round:
           type: ["integer", "null"]
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: Finals stage parsed from the scorecard title, or null for a regular round.
         competition:
           type: ["string", "null"]
         matchDate:
@@ -2927,7 +2940,7 @@ components:
           type: boolean
         matchExists:
           type: boolean
-          description: True if this grade+season+round was already stored (will replace).
+          description: True if this grade+season+round+stage was already stored (will replace).
         playerCount:
           type: integer
         warnings:
@@ -3034,6 +3047,11 @@ components:
           type: integer
         round:
           type: ["integer", "null"]
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: Finals stage of the committed match, or null for a regular round.
 
     BatchCommitResult:
       type: object
@@ -3076,6 +3094,24 @@ components:
         playerId:
           type: ["integer", "null"]
           description: Existing player to link to (required when action is `link`).
+
+    BatchFileResolution:
+      type: object
+      required: [filename]
+      description: |
+        Admin's round/stage assignment for one batch file that parsed without a
+        numeric round or a recognised finals stage. Exactly one of round/stage
+        should be provided; if stage is set it wins and round is ignored.
+      properties:
+        filename:
+          type: string
+        round:
+          type: ["integer", "null"]
+          minimum: 1
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
 
     BackfillPlayerFigures:
       type: object
@@ -3144,7 +3180,25 @@ components:
             For per-match (.xlsx) imports: the round to assign to the committed
             match. Overrides the value parsed from the scorecard header (and
             supplies one when the header had none). Ignored for whole-season
-            CSV imports.
+            CSV imports. Mutually exclusive with stage — if stage is set, round
+            is forced to null.
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: |
+            For per-match (.xlsx) imports: the finals stage to assign to the
+            committed match. When set, the match is a final (round forced null).
+            Mutually exclusive with round. Ignored for whole-season CSV imports.
+        fileResolutions:
+          type: array
+          description: |
+            For batch (.zip / multi-file) match imports: per-file round/stage
+            assignments for files that parsed without a numeric round or a
+            recognised finals stage (status needsResolution). Each entry sets
+            either a round or a stage for the named file; matched by filename.
+          items:
+            $ref: "#/components/schemas/BatchFileResolution"
         reconcileMode:
           type: ["string", "null"]
           enum: [peel, add, null]
@@ -3171,6 +3225,11 @@ components:
           type: ["integer", "null"]
         round:
           type: ["integer", "null"]
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: Finals stage of the match, or null for a regular round.
         matchDate:
           type: ["string", "null"]
         opponent:
@@ -3228,6 +3287,11 @@ components:
           type: integer
         round:
           type: ["integer", "null"]
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: Finals stage of the match, or null for a regular round.
         competition:
           type: ["string", "null"]
         matchDate:
@@ -3309,6 +3373,11 @@ components:
           type: integer
         round:
           type: ["integer", "null"]
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: Finals stage of the match, or null for a regular round.
         competition:
           type: ["string", "null"]
         matchDate:
@@ -3379,14 +3448,34 @@ components:
         runOuts:
           type: integer
 
+    MatchStage:
+      type: string
+      enum:
+        - Elimination Final
+        - Qualifying Final
+        - Semi Final
+        - Preliminary Final
+        - Grand Final
+      description: |
+        Finals stage of a match. A finals match carries one of these with a NULL
+        round; a regular match carries a numeric round with a NULL stage.
+
     MatchRoundUpdate:
       type: object
-      required: [round]
+      description: |
+        Set a match's identity to a numeric round OR a finals stage (mutually
+        exclusive). Provide `round` for a regular match, or `stage` for a finals
+        match. Setting one clears the other.
       properties:
         round:
-          type: integer
+          type: ["integer", "null"]
           minimum: 1
-          description: New round number for the match (unique per grade + season)
+          description: New round number for the match (clears stage). Mutually exclusive with stage.
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/MatchStage"
+            - type: "null"
+          description: New finals stage for the match (clears round). Mutually exclusive with round.
 
     UndoSeasonInput:
       type: object

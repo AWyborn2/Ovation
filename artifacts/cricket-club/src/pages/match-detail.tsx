@@ -5,12 +5,16 @@ import {
   useGetMatch,
   getGetMatchQueryKey,
   useUpdateMatchRound,
+  MatchStage,
   type MatchScorecardLine,
   type MatchOppositionLine,
 } from "@workspace/api-client-react";
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
+import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X } from "lucide-react";
+
+const FINALS_STAGES = Object.values(MatchStage);
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
@@ -35,10 +39,12 @@ export default function MatchDetail() {
 
   const [editingRound, setEditingRound] = useState(false);
   const [roundValue, setRoundValue] = useState("");
+  const [stageValue, setStageValue] = useState("");
   const [roundError, setRoundError] = useState<string | null>(null);
 
   const startEditRound = () => {
     setRoundValue(match?.round != null ? String(match.round) : "");
+    setStageValue(match?.stage ?? "");
     setRoundError(null);
     setEditingRound(true);
   };
@@ -49,14 +55,34 @@ export default function MatchDetail() {
   };
 
   const saveRound = () => {
+    // A finals stage wins and clears the round; otherwise a numeric round is
+    // required. The two are mutually exclusive identities for a match.
+    if (stageValue) {
+      setRoundError(null);
+      updateRound.mutate(
+        { id: matchId, data: { round: null, stage: stageValue as MatchStage } },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
+            queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+            setEditingRound(false);
+          },
+          onError: (e) => {
+            setRoundError(handleAdminMutationError(e) ?? "Could not update the match.");
+          },
+        },
+      );
+      return;
+    }
+
     const parsed = parseInt(roundValue, 10);
     if (!Number.isInteger(parsed) || parsed < 1) {
-      setRoundError("Enter a round number of 1 or more.");
+      setRoundError("Enter a round number of 1 or more, or pick a finals stage.");
       return;
     }
     setRoundError(null);
     updateRound.mutate(
-      { id: matchId, data: { round: parsed } },
+      { id: matchId, data: { round: parsed, stage: null } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
@@ -118,7 +144,9 @@ export default function MatchDetail() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
               <span>
                 {match.grade} · {fmtSeason(match.season)}
-                {!editingRound && (match.round != null ? ` · Round ${match.round}` : "")}
+                {!editingRound && matchLabel(match.round, match.stage)
+                  ? ` · ${matchLabel(match.round, match.stage)}`
+                  : ""}
               </span>
               {isAdmin && !editingRound && (
                 <button
@@ -128,7 +156,7 @@ export default function MatchDetail() {
                   data-testid="button-edit-round"
                 >
                   <Pencil className="h-3 w-3" />
-                  {match.round != null ? "Edit round" : "Set round"}
+                  {match.round != null || match.stage ? "Edit round/stage" : "Set round/stage"}
                 </button>
               )}
               {isAdmin && editingRound && (
@@ -138,12 +166,33 @@ export default function MatchDetail() {
                     type="number"
                     min={1}
                     value={roundValue}
-                    onChange={(e) => setRoundValue(e.target.value)}
-                    disabled={updateRound.isPending}
+                    onChange={(e) => {
+                      setRoundValue(e.target.value);
+                      if (e.target.value) setStageValue("");
+                    }}
+                    disabled={updateRound.isPending || !!stageValue}
                     autoFocus
-                    className="w-16 px-2 py-0.5 rounded border border-border bg-background text-foreground text-sm"
+                    className="w-16 px-2 py-0.5 rounded border border-border bg-background text-foreground text-sm disabled:opacity-50"
                     data-testid="input-round"
                   />
+                  <span className="text-foreground">or final</span>
+                  <select
+                    value={stageValue}
+                    onChange={(e) => {
+                      setStageValue(e.target.value);
+                      if (e.target.value) setRoundValue("");
+                    }}
+                    disabled={updateRound.isPending}
+                    className="px-2 py-0.5 rounded border border-border bg-background text-foreground text-sm"
+                    data-testid="select-stage"
+                  >
+                    <option value="">—</option>
+                    {FINALS_STAGES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     onClick={saveRound}

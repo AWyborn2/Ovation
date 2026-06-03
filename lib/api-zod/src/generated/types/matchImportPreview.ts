@@ -7,6 +7,7 @@
  */
 import type { MatchImportPreviewCapCategory } from './matchImportPreviewCapCategory';
 import type { MatchPreviewPlayer } from './matchPreviewPlayer';
+import type { MatchStage } from './matchStage';
 
 export interface MatchImportPreview {
   importId: number;
@@ -17,6 +18,8 @@ export interface MatchImportPreview {
   season?: number | null;
   /** @nullable */
   round?: number | null;
+  /** Finals stage parsed from the scorecard title, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */
@@ -32,7 +35,7 @@ export interface MatchImportPreview {
   hhccScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
-  /** True if this grade+season+round was already imported. */
+  /** True if this grade+season+round+stage was already imported. */
   matchExists: boolean;
   matchedPlayers: number;
   newPlayers: number;

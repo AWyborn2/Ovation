@@ -207,6 +207,7 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
       grade: matchesTable.grade,
       season: matchesTable.season,
       round: matchesTable.round,
+      stage: matchesTable.stage,
       matchDate: matchesTable.matchDate,
       opponent: matchesTable.opponent,
       venue: matchesTable.venue,

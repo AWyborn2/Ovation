@@ -7,6 +7,7 @@
  */
 import type { MatchOppositionLine } from './matchOppositionLine';
 import type { MatchScorecardLine } from './matchScorecardLine';
+import type { MatchStage } from './matchStage';
 
 export interface MatchDetail {
   id: number;
@@ -14,6 +15,8 @@ export interface MatchDetail {
   season: number;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the match, or null for a regular round. */
+  stage?: MatchStage | null;
   /** @nullable */
   competition?: string | null;
   /** @nullable */

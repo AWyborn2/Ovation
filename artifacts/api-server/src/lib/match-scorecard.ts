@@ -72,11 +72,44 @@ export type ParsedOppositionLine = {
   runOuts: number;
 };
 
+/**
+ * Canonical finals stage names. A finals match carries one of these in `stage`
+ * (with a NULL `round`); a regular match carries a numeric `round` (with a NULL
+ * `stage`).
+ */
+export const FINALS_STAGES = [
+  "Elimination Final",
+  "Qualifying Final",
+  "Semi Final",
+  "Preliminary Final",
+  "Grand Final",
+] as const;
+
+export type FinalsStage = (typeof FINALS_STAGES)[number];
+
+/**
+ * Recognise a finals stage from the right-hand side of a scorecard title
+ * (e.g. "Grand Final", "2nd Semi Final"). Returns null for ordinary rounds.
+ * Order matters: the more specific stages are tested before the generic
+ * "final" that several of them share.
+ */
+export function parseFinalsStage(s: string): FinalsStage | null {
+  const t = s.toLowerCase();
+  if (!/final/.test(t)) return null;
+  if (/grand/.test(t)) return "Grand Final";
+  if (/prelim/.test(t)) return "Preliminary Final";
+  if (/qualif/.test(t)) return "Qualifying Final";
+  if (/elim/.test(t)) return "Elimination Final";
+  if (/semi/.test(t)) return "Semi Final";
+  return null;
+}
+
 export type ParsedMatch = {
   competition: string | null;
   grade: string | null;
   season: number | null;
   round: number | null;
+  stage: FinalsStage | null;
   matchDate: string | null;
   venue: string | null;
   result: string | null;
@@ -221,7 +254,11 @@ export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
   const seasonMatch = leftRaw.match(/(\d{4})\/(\d{2})/);
   const season = seasonMatch ? parseInt(seasonMatch[1], 10) : null;
   const competition = leftRaw.replace(/\d{4}\/\d{2}/, "").replace(/\s+/g, " ").trim() || null;
-  const roundMatch = rightRaw.match(/(\d+)/);
+  // A finals scorecard names its stage ("Grand Final", "2nd Semi Final", …)
+  // instead of a numeric round. Finals never carry a numeric round, so a stage
+  // wins over any stray digits (e.g. "2nd") in the title.
+  const stage = parseFinalsStage(rightRaw);
+  const roundMatch = stage ? null : rightRaw.match(/(\d+)/);
   const round = roundMatch ? parseInt(roundMatch[1], 10) : null;
   const grade = competition ? competitionToGrade(competition) : null;
   if (competition && !grade) {
@@ -324,6 +361,7 @@ export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
       grade,
       season,
       round,
+      stage,
       matchDate,
       venue,
       result,
@@ -522,6 +560,7 @@ export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
     grade,
     season,
     round,
+    stage,
     matchDate,
     venue,
     result,

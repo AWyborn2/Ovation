@@ -15,7 +15,10 @@ import {
 import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
 import {
   parseMatchScorecard,
+  parseFinalsStage,
+  FINALS_STAGES,
   type ParsedMatch,
+  type FinalsStage,
 } from "../lib/match-scorecard";
 import { recomputeAggregates } from "../lib/recompute";
 import {
@@ -163,6 +166,39 @@ function parseCommitRound(body: unknown): number | null | undefined {
   if (r == null) return null;
   const n = typeof r === "number" ? r : parseInt(String(r), 10);
   return Number.isInteger(n) ? n : undefined;
+}
+
+/** Narrow an arbitrary value to a known finals stage, else null. */
+function coerceStage(v: unknown): FinalsStage | null {
+  return typeof v === "string" && (FINALS_STAGES as readonly string[]).includes(v)
+    ? (v as FinalsStage)
+    : null;
+}
+
+/**
+ * Read an optional finals `stage` override from a commit request body.
+ * Returns `undefined` when absent, `null` when explicitly cleared, or the
+ * recognised finals stage. Unknown strings are treated as cleared (null).
+ */
+function parseCommitStage(body: unknown): FinalsStage | null | undefined {
+  if (!body || typeof body !== "object" || !("stage" in body)) return undefined;
+  const s = (body as { stage?: unknown }).stage;
+  if (s == null) return null;
+  return coerceStage(s);
+}
+
+/**
+ * Enforce the round XOR stage invariant for a match identity: a finals stage
+ * always wins and forces round to null; otherwise stage is null and the round
+ * (possibly null) stands. The DB identity is (grade, season, round, stage) with
+ * NULLS NOT DISTINCT, so exactly one of round/stage should be set per match.
+ */
+function normalizeRoundStage(
+  round: number | null,
+  stage: FinalsStage | null,
+): { round: number | null; stage: FinalsStage | null } {
+  if (stage != null) return { round: null, stage };
+  return { round: round ?? null, stage: null };
 }
 
 /** Load the full roster as matcher input. */
@@ -799,7 +835,7 @@ router.post(
       }
     }
 
-    // Was this grade+season+round already imported?
+    // Was this grade+season+(round|stage) already imported?
     let matchExists = false;
     if (parsed.grade && parsed.season != null) {
       const existingMatch = await db
@@ -812,6 +848,9 @@ router.post(
             parsed.round == null
               ? sql`${matchesTable.round} IS NULL`
               : eq(matchesTable.round, parsed.round),
+            parsed.stage == null
+              ? sql`${matchesTable.stage} IS NULL`
+              : eq(matchesTable.stage, parsed.stage),
           ),
         );
       matchExists = existingMatch.length > 0;
@@ -825,7 +864,9 @@ router.post(
     }
     if (matchExists) {
       warnings.push(
-        "A match for this grade, season and round already exists. Committing will replace it.",
+        parsed.stage
+          ? `A ${parsed.stage} for this grade and season already exists. Committing will replace it.`
+          : "A match for this grade, season and round already exists. Committing will replace it.",
       );
     }
 
@@ -849,6 +890,7 @@ router.post(
       grade: parsed.grade,
       season: parsed.season,
       round: parsed.round,
+      stage: parsed.stage,
       competition: parsed.competition,
       matchDate: parsed.matchDate,
       venue: parsed.venue,
@@ -881,6 +923,7 @@ type BatchFileStatus =
   | "duplicate"
   | "duplicateInBatch"
   | "missingRound"
+  | "needsResolution"
   | "unmappableGrade"
   | "parseError";
 
@@ -899,7 +942,36 @@ type ClassifiedFile = {
   grade: string | null;
   season: number | null;
   round: number | null;
+  stage: FinalsStage | null;
 };
+
+/** Admin's per-file round/stage assignment for needsResolution batch files. */
+type BatchFileResolution = {
+  filename: string;
+  round: number | null;
+  stage: FinalsStage | null;
+};
+
+/** Parse the optional `fileResolutions` array from a batch commit body. */
+function parseFileResolutions(body: unknown): Map<string, BatchFileResolution> {
+  const map = new Map<string, BatchFileResolution>();
+  if (!body || typeof body !== "object") return map;
+  const raw = (body as { fileResolutions?: unknown }).fileResolutions;
+  if (!Array.isArray(raw)) return map;
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const filename = (entry as { filename?: unknown }).filename;
+    if (typeof filename !== "string") continue;
+    const stage = coerceStage((entry as { stage?: unknown }).stage);
+    const r = (entry as { round?: unknown }).round;
+    const roundNum =
+      r == null ? null : typeof r === "number" ? r : parseInt(String(r), 10);
+    const round = Number.isInteger(roundNum as number) ? (roundNum as number) : null;
+    const norm = normalizeRoundStage(round, stage);
+    map.set(filename, { filename, round: norm.round, stage: norm.stage });
+  }
+  return map;
+}
 
 /**
  * Expand uploaded files into individual scorecard buffers: a `.zip` is unpacked
@@ -938,25 +1010,43 @@ async function expandUploads(
  */
 async function classifyBatchFiles(
   candidates: BatchCandidate[],
+  fileResolutions: Map<string, BatchFileResolution> = new Map(),
 ): Promise<ClassifiedFile[]> {
-  // Existing (grade, season, round) tuples in the DB for fast duplicate checks.
+  // The effective (round, stage) of a file: its parsed identity unless the admin
+  // supplied a resolution for it (which then determines the identity).
+  const effectiveIdentity = (
+    c: BatchCandidate,
+  ): { round: number | null; stage: FinalsStage | null } => {
+    const res = fileResolutions.get(c.filename);
+    if (res) return { round: res.round, stage: res.stage };
+    const p = c.parsed;
+    return normalizeRoundStage(p?.round ?? null, p?.stage ?? null);
+  };
+
+  // Existing (grade, season, round, stage) identities in the DB for fast
+  // duplicate checks, scoped to the (grade, season) pairs present in the batch.
   const validKeys = new Set<string>();
   for (const c of candidates) {
     const p = c.parsed;
-    if (p && p.grade && p.season != null && p.round != null) {
-      validKeys.add(`${p.grade}|${p.season}`);
+    if (p && p.grade && p.season != null) {
+      const id = effectiveIdentity(c);
+      if (id.round != null || id.stage != null) validKeys.add(`${p.grade}|${p.season}`);
     }
   }
+  const idKey = (round: number | null, stage: FinalsStage | null): string =>
+    stage != null ? `s:${stage}` : `r:${round}`;
   const existing = new Set<string>();
   for (const gs of validKeys) {
     const [grade, seasonStr] = gs.split("|");
     const season = parseInt(seasonStr, 10);
     const rows = await db
-      .select({ round: matchesTable.round })
+      .select({ round: matchesTable.round, stage: matchesTable.stage })
       .from(matchesTable)
       .where(and(eq(matchesTable.grade, grade), eq(matchesTable.season, season)));
     for (const r of rows) {
-      if (r.round != null) existing.add(`${grade}|${season}|${r.round}`);
+      if (r.round != null || r.stage != null) {
+        existing.add(`${grade}|${season}|${idKey(r.round, r.stage as FinalsStage | null)}`);
+      }
     }
   }
 
@@ -973,12 +1063,15 @@ async function classifyBatchFiles(
         grade: null,
         season: null,
         round: null,
+        stage: null,
       });
       continue;
     }
     const grade = p.grade;
     const season = p.season;
-    const round = p.round;
+    const id = effectiveIdentity(c);
+    const round = id.round;
+    const stage = id.stage;
     if (!grade || season == null) {
       out.push({
         candidate: c,
@@ -988,22 +1081,26 @@ async function classifyBatchFiles(
         grade,
         season,
         round,
+        stage,
       });
       continue;
     }
-    if (round == null) {
+    // Neither a numeric round nor a recognised finals stage — the admin must
+    // assign one via fileResolutions before this file can be committed.
+    if (round == null && stage == null) {
       out.push({
         candidate: c,
-        status: "missingRound",
+        status: "needsResolution",
         committable: false,
         matchExists: false,
         grade,
         season,
         round,
+        stage,
       });
       continue;
     }
-    const key = `${grade}|${season}|${round}`;
+    const key = `${grade}|${season}|${idKey(round, stage)}`;
     if (seenInBatch.has(key)) {
       out.push({
         candidate: c,
@@ -1013,6 +1110,7 @@ async function classifyBatchFiles(
         grade,
         season,
         round,
+        stage,
       });
       continue;
     }
@@ -1031,6 +1129,7 @@ async function classifyBatchFiles(
       grade,
       season,
       round,
+      stage,
     });
   }
   return out;
@@ -1208,7 +1307,7 @@ router.post(
     const excluded = classified.length - committables.length;
     if (excluded > 0) {
       warnings.push(
-        `${excluded} file(s) will be skipped (parse error, missing round, unmappable grade, or duplicate).`,
+        `${excluded} file(s) need attention (parse error, missing round/stage, unmappable grade, or duplicate).`,
       );
     }
 
@@ -1238,7 +1337,8 @@ router.post(
           committable: c.committable,
           grade: p?.grade ?? null,
           season: p?.season ?? null,
-          round: p?.round ?? null,
+          round: c.round,
+          stage: c.stage,
           competition: p?.competition ?? null,
           matchDate: p?.matchDate ?? null,
           venue: p?.venue ?? null,
@@ -1286,13 +1386,18 @@ async function commitMatchImport(
   }
   const grade = parsed.grade ?? imp.grade;
   const season = parsed.season ?? imp.season;
-  // The admin can set/correct the round in the preview before committing. Use
-  // their value when supplied, otherwise fall back to the parsed/header value.
+  // The admin can set/correct the round OR the finals stage in the preview
+  // before committing. Use their value when supplied, otherwise fall back to the
+  // parsed/header value. A stage always wins and forces round to null.
   const overrideRound = parseCommitRound(req.body);
-  const round =
+  const overrideStage = parseCommitStage(req.body);
+  const rawRound =
     overrideRound !== undefined
       ? overrideRound
       : (parsed.round ?? imp.round ?? null);
+  const rawStage =
+    overrideStage !== undefined ? overrideStage : (parsed.stage ?? null);
+  const { round, stage } = normalizeRoundStage(rawRound, rawStage);
 
   if (!grade || season == null) {
     res
@@ -1317,8 +1422,8 @@ async function commitMatchImport(
   const negativeWarnings: NegativeBaselineWarning[] = [];
 
   await db.transaction(async (tx) => {
-    // Replace any existing match for this grade+season+round so re-importing a
-    // round is idempotent.
+    // Replace any existing match for this grade+season+(round|stage) so
+    // re-importing the same round or final is idempotent.
     await tx
       .delete(matchesTable)
       .where(
@@ -1328,6 +1433,9 @@ async function commitMatchImport(
           round == null
             ? sql`${matchesTable.round} IS NULL`
             : eq(matchesTable.round, round),
+          stage == null
+            ? sql`${matchesTable.stage} IS NULL`
+            : eq(matchesTable.stage, stage),
         ),
       );
 
@@ -1338,6 +1446,7 @@ async function commitMatchImport(
         grade,
         season,
         round,
+        stage,
         competition: parsed.competition ?? null,
         matchDate: parsed.matchDate ?? null,
         venue: parsed.venue ?? null,
@@ -1532,7 +1641,10 @@ router.post(
 
     const payload = imp.payload as { files?: BatchCandidate[] } | null;
     const candidates = payload?.files ?? [];
-    const classified = await classifyBatchFiles(candidates);
+    // Re-classify with the admin's per-file round/stage assignments so finals (or
+    // any file that parsed without a round) become committable on commit.
+    const fileResolutions = parseFileResolutions(req.body);
+    const classified = await classifyBatchFiles(candidates, fileResolutions);
     const committables = classified.filter((c) => c.committable);
     if (committables.length === 0) {
       res.status(400).json({ error: "Nothing committable in this batch." });
@@ -1585,7 +1697,8 @@ router.post(
       parsed: ParsedMatch;
       grade: string;
       season: number;
-      round: number;
+      round: number | null;
+      stage: FinalsStage | null;
       resolvedLines: Array<ParsedMatch["players"][number] & { playerId: number }>;
       importId: number;
     };
@@ -1602,13 +1715,22 @@ router.post(
         parsed,
         grade: c.grade!,
         season: c.season!,
-        round: c.round!,
+        round: c.round,
+        stage: c.stage,
         resolvedLines,
         importId: 0,
       });
     }
+    // Order: regular rounds (ascending) first, then finals after them so cap
+    // numbering proceeds chronologically. A null round sorts last.
+    const roundOrder = (r: number | null): number =>
+      r == null ? Number.MAX_SAFE_INTEGER : r;
     prepared.sort(
-      (a, b) => a.grade.localeCompare(b.grade) || a.season - b.season || a.round - b.round,
+      (a, b) =>
+        a.grade.localeCompare(b.grade) ||
+        a.season - b.season ||
+        roundOrder(a.round) - roundOrder(b.round) ||
+        (a.stage ?? "").localeCompare(b.stage ?? ""),
     );
 
     // Distinct (grade, season) pairs and per-grade debut order for cap sync.
@@ -1632,6 +1754,7 @@ router.post(
       grade: string;
       season: number;
       round: number | null;
+      stage: FinalsStage | null;
     }> = [];
 
     await db.transaction(async (tx) => {
@@ -1651,14 +1774,20 @@ router.post(
           .returning();
         pm.importId = matchImp.id;
 
-        // Replace any existing match for this grade+season+round (idempotent).
+        // Replace any existing match for this grade+season+(round|stage)
+        // (idempotent re-import of the same round or final).
         await tx
           .delete(matchesTable)
           .where(
             and(
               eq(matchesTable.grade, pm.grade),
               eq(matchesTable.season, pm.season),
-              eq(matchesTable.round, pm.round),
+              pm.round == null
+                ? sql`${matchesTable.round} IS NULL`
+                : eq(matchesTable.round, pm.round),
+              pm.stage == null
+                ? sql`${matchesTable.stage} IS NULL`
+                : eq(matchesTable.stage, pm.stage),
             ),
           );
         const [match] = await tx
@@ -1668,6 +1797,7 @@ router.post(
             grade: pm.grade,
             season: pm.season,
             round: pm.round,
+            stage: pm.stage,
             competition: pm.parsed.competition ?? null,
             matchDate: pm.parsed.matchDate ?? null,
             venue: pm.parsed.venue ?? null,
@@ -1740,6 +1870,7 @@ router.post(
           grade: pm.grade,
           season: pm.season,
           round: pm.round,
+          stage: pm.stage,
         });
       }
 

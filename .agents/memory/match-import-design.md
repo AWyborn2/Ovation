@@ -20,9 +20,24 @@ that match to the running season total and stores permanent per-match history.
   ALL match lines for that grade+season. Then `recomputeAggregates` rolls up to
   `player_grade_stats` / `players` / `grade_summaries`, and caps auto-sync.
 
-**Idempotent re-import:** committing the same (grade, season, round) again first
-deletes the existing match for that key, so re-uploading a corrected scorecard
-replaces rather than doubles.
+**Idempotent re-import:** committing the same (grade, season, round, stage) again
+first deletes the existing match for that key, so re-uploading a corrected
+scorecard replaces rather than doubles. The delete/conflict checks must use
+`IS NULL` SQL for whichever of round/stage is null (drizzle `eq` can't match NULL).
+
+**Finals stages (round-less matches):** a match's identity is `(grade, season,
+round, stage)` with `UNIQUE NULLS NOT DISTINCT`. A regular match has `round` set
++ `stage` NULL; a final has `round` NULL + `stage` set (one of FINALS_STAGES in
+match-scorecard.ts: Elimination/Qualifying/Semi/Preliminary/Grand Final). Stage
+ALWAYS wins and forces round=null (parser, commit, PATCH, and both frontend
+editors all enforce this XOR). drizzle-kit 0.31 can't manage NULLS NOT DISTINCT
+multi-col uniques → the constraint is created in scripts/src/ensure-constraints.ts
+(with `nullsNotDistinct`+`replaces` to drop the old `(grade,season,round)` unique),
+NOT in the Drizzle schema (same pattern as cap_register). Finals coexist with
+regular rounds in the same grade+season; `deriveSeasonSnapshotFromMatches` groups
+by (grade,season) only so null-round finals are already summed in — no aggregation
+change needed. Display everywhere via `matchLabel(round, stage)` helper
+(cricket-club/src/lib/utils.ts): stage name else `Round N`.
 
 **KEY CONSTRAINT — one ingestion method per (grade, season).** The match-commit
 snapshot DELETE keys on (grade, season, import_id IS NULL). A whole-season CSV
@@ -61,9 +76,14 @@ whole batch → commit all valid matches together.
   the existing per-match delete / undo-season works unchanged. Cancelling a
   pending batch just deletes the holder row (delete branch in imports.ts).
 - **Per-file status** (classifyBatchFiles): `ready | abandoned | duplicate`
-  (committable) vs `duplicateInBatch | missingRound | unmappableGrade | parseError`
-  (excluded). First file for a given grade+season+round wins; later copies become
-  `duplicateInBatch`. `duplicate` = already in DB → replaces it.
+  (committable) vs `needsResolution | duplicateInBatch | unmappableGrade | parseError`
+  (excluded). A file that parsed with neither a numeric round nor a recognised
+  finals stage is `needsResolution` — the admin assigns a round OR stage per-file
+  via the commit body's `fileResolutions` ([{filename, round?|stage?}], matched by
+  filename, stage wins) to make it committable. First file for a given
+  grade+season+(round|stage) wins; later copies become `duplicateInBatch`.
+  `duplicate` = already in DB → replaces it. (`missingRound` kept as a legacy alias
+  in the OpenAPI enum.)
 - **Commit derives ONCE:** shared resolver creates each new player once; after all
   matches inserted, `deriveSeasonSnapshotFromMatches` runs once per distinct
   (grade,season), `recomputeAggregates` once for all affected grades, caps sync

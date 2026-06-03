@@ -11,6 +11,7 @@ import {
   getListPlayersQueryKey,
   getListGradesQueryKey,
   getGetRecordsQueryKey,
+  MatchStage,
 } from "@workspace/api-client-react";
 import type {
   ImportPreview,
@@ -44,6 +45,8 @@ type RowResolution =
  * prevents punctuation/diacritic variants (e.g. "O'Brien" vs "Obrien") from
  * holding divergent UI state that the server would silently collapse.
  */
+const FINALS_STAGES = Object.values(MatchStage);
+
 const normName = (s: string) =>
   s
     .normalize("NFKD")
@@ -302,6 +305,10 @@ export default function AdminImport() {
   const [batchPreview, setBatchPreview] = useState<BatchImportPreview | null>(null);
   const [batchFiles, setBatchFiles] = useState<FileList | null>(null);
   const [matchRound, setMatchRound] = useState<string>("");
+  const [matchStage, setMatchStage] = useState<string>("");
+  const [fileResolutions, setFileResolutions] = useState<
+    Record<string, { round: string; stage: string }>
+  >({});
   const [resolutions, setResolutions] = useState<Record<string, RowResolution>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -352,6 +359,8 @@ export default function AdminImport() {
     setBatchPreview(null);
     setBatchFiles(null);
     setMatchRound("");
+    setMatchStage("");
+    setFileResolutions({});
     setResolutions({});
     setFile(null);
     setIsBackfill(false);
@@ -432,6 +441,7 @@ export default function AdminImport() {
       const data = body as MatchImportPreview;
       setMatchPreview(data);
       setMatchRound(data.round != null ? String(data.round) : "");
+      setMatchStage(data.stage ?? "");
       seedResolutions(data.players);
       refetchImports();
     } catch (err) {
@@ -514,22 +524,25 @@ export default function AdminImport() {
 
   const onConfirmMatch = () => {
     if (!matchPreview) return;
+    // A finals stage wins and clears the round; otherwise the typed round stands.
+    const stage = matchStage ? (matchStage as MatchStage) : null;
     const trimmed = matchRound.trim();
-    const round = trimmed === "" ? null : parseInt(trimmed, 10);
+    const round = stage ? null : trimmed === "" ? null : parseInt(trimmed, 10);
     commit.mutate(
       {
         id: matchPreview.importId,
         data: {
           resolutions: buildResolutions(resolutions, matchPreview.players),
           round,
+          stage,
           reconcileMode: isBackfill ? reconcileMode : null,
         },
       },
       {
         onSuccess: () => {
-          const r = round != null ? `Round ${round}, ` : "";
+          const label = stage ? `${stage}, ` : round != null ? `Round ${round}, ` : "";
           setCommitted({
-            label: `${r}${matchPreview.grade ?? ""} ${seasonLabel(matchPreview.season)}`.trim(),
+            label: `${label}${matchPreview.grade ?? ""} ${seasonLabel(matchPreview.season)}`.trim(),
           });
           resetPreviews();
           invalidateAggregates();
@@ -554,6 +567,14 @@ export default function AdminImport() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             resolutions: buildResolutions(resolutions, batchPreview.players),
+            fileResolutions: Object.entries(fileResolutions)
+              .map(([filename, v]) => {
+                if (v.stage) return { filename, stage: v.stage as MatchStage };
+                const r = parseInt(v.round, 10);
+                if (Number.isInteger(r) && r >= 1) return { filename, round: r };
+                return null;
+              })
+              .filter((x): x is NonNullable<typeof x> => x != null),
             reconcileMode: isBackfill ? reconcileMode : null,
           }),
           credentials: "include",
@@ -919,10 +940,39 @@ export default function AdminImport() {
                   min={1}
                   inputMode="numeric"
                   value={matchRound}
-                  onChange={(e) => setMatchRound(e.target.value)}
+                  onChange={(e) => {
+                    setMatchRound(e.target.value);
+                    if (e.target.value) setMatchStage("");
+                  }}
+                  disabled={!!matchStage}
                   placeholder="e.g. 5"
                   className="mt-1 h-8"
                 />
+              </div>
+              <div className="rounded-md border p-3">
+                <Label
+                  htmlFor="match-stage"
+                  className="text-xs uppercase tracking-wider text-muted-foreground font-normal"
+                >
+                  Final (optional)
+                </Label>
+                <select
+                  id="match-stage"
+                  value={matchStage}
+                  onChange={(e) => {
+                    setMatchStage(e.target.value);
+                    if (e.target.value) setMatchRound("");
+                  }}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  data-testid="select-match-stage"
+                >
+                  <option value="">Regular round</option>
+                  {FINALS_STAGES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
               </div>
               <Stat label="Result" value={matchPreview.result ?? "—"} />
             </div>
@@ -1110,7 +1160,7 @@ export default function AdminImport() {
                       <th className="py-2 px-3">File</th>
                       <th className="py-2 px-3">Grade</th>
                       <th className="py-2 px-3">Season</th>
-                      <th className="py-2 px-3">Round</th>
+                      <th className="py-2 px-3">Round / Final</th>
                       <th className="py-2 px-3">Opponent</th>
                       <th className="py-2 px-3">Result</th>
                       <th className="py-2 px-3">Status</th>
@@ -1129,7 +1179,58 @@ export default function AdminImport() {
                         </td>
                         <td className="py-2 px-3">{f.grade ?? "—"}</td>
                         <td className="py-2 px-3">{seasonLabel(f.season)}</td>
-                        <td className="py-2 px-3">{f.round ?? "—"}</td>
+                        <td className="py-2 px-3">
+                          {f.status === "needsResolution" ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min={1}
+                                inputMode="numeric"
+                                placeholder="Rnd"
+                                value={fileResolutions[f.filename]?.round ?? ""}
+                                onChange={(e) =>
+                                  setFileResolutions((prev) => ({
+                                    ...prev,
+                                    [f.filename]: {
+                                      round: e.target.value,
+                                      stage: e.target.value
+                                        ? ""
+                                        : prev[f.filename]?.stage ?? "",
+                                    },
+                                  }))
+                                }
+                                disabled={!!fileResolutions[f.filename]?.stage}
+                                className="h-7 w-16"
+                                data-testid={`input-file-round-${i}`}
+                              />
+                              <select
+                                value={fileResolutions[f.filename]?.stage ?? ""}
+                                onChange={(e) =>
+                                  setFileResolutions((prev) => ({
+                                    ...prev,
+                                    [f.filename]: {
+                                      stage: e.target.value,
+                                      round: e.target.value
+                                        ? ""
+                                        : prev[f.filename]?.round ?? "",
+                                    },
+                                  }))
+                                }
+                                className="h-7 rounded-md border border-input bg-background px-1 text-xs"
+                                data-testid={`select-file-stage-${i}`}
+                              >
+                                <option value="">Final?</option>
+                                {FINALS_STAGES.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            (f.stage ?? f.round ?? "—")
+                          )}
+                        </td>
                         <td className="py-2 px-3">{f.opponent ?? "—"}</td>
                         <td className="py-2 px-3">{f.result ?? "—"}</td>
                         <td className="py-2 px-3">
@@ -1421,14 +1522,18 @@ function BatchStatusBadge({ status }: { status: string }) {
     abandoned: "Abandoned",
     duplicate: "Replaces existing",
     duplicateInBatch: "Duplicate in batch",
+    needsResolution: "Set round / final",
     missingRound: "No round",
     unmappableGrade: "Unknown grade",
     parseError: "Parse error",
   };
   const ok = status === "ready" || status === "abandoned" || status === "duplicate";
+  const warn = status === "needsResolution";
   const cls = ok
     ? "bg-green-600/15 text-green-700 dark:text-green-400"
-    : "bg-destructive/15 text-destructive";
+    : warn
+      ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+      : "bg-destructive/15 text-destructive";
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}

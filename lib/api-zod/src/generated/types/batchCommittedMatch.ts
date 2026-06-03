@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchStage } from './matchStage';
 
 export interface BatchCommittedMatch {
   importId: number;
@@ -13,4 +14,6 @@ export interface BatchCommittedMatch {
   season: number;
   /** @nullable */
   round?: number | null;
+  /** Finals stage of the committed match, or null for a regular round. */
+  stage?: MatchStage | null;
 }

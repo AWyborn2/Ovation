@@ -5,7 +5,9 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BatchFileResolution } from './batchFileResolution';
 import type { CommitImportInputReconcileMode } from './commitImportInputReconcileMode';
+import type { MatchStage } from './matchStage';
 import type { PlayerResolution } from './playerResolution';
 
 /**
@@ -20,11 +22,23 @@ export interface CommitImportInput {
      * For per-match (.xlsx) imports: the round to assign to the committed
   match. Overrides the value parsed from the scorecard header (and
   supplies one when the header had none). Ignored for whole-season
-  CSV imports.
+  CSV imports. Mutually exclusive with stage — if stage is set, round
+  is forced to null.
 
      * @nullable
      */
   round?: number | null;
+  /** For per-match (.xlsx) imports: the finals stage to assign to the
+  committed match. When set, the match is a final (round forced null).
+  Mutually exclusive with round. Ignored for whole-season CSV imports.
+   */
+  stage?: MatchStage | null;
+  /** For batch (.zip / multi-file) match imports: per-file round/stage
+  assignments for files that parsed without a numeric round or a
+  recognised finals stage (status needsResolution). Each entry sets
+  either a round or a stage for the named file; matched by filename.
+   */
+  fileResolutions?: BatchFileResolution[];
   /**
      * Marks this as a PREVIOUS-season backfill and how to reconcile it with
   current totals. `peel`: the season is already counted inside the
