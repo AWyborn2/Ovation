@@ -6,11 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardTemplateSlot } from './cardTemplateSlot';
+import type { CardTemplateUpdateBackgroundKind } from './cardTemplateUpdateBackgroundKind';
+import type { CardTemplateUpdateMotionPreset } from './cardTemplateUpdateMotionPreset';
 
 export interface CardTemplateUpdate {
   name?: string;
   cardKinds?: string[];
   backgroundImageUrl?: string;
+  backgroundKind?: CardTemplateUpdateBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateUpdateMotionPreset;
   bgWidth?: number;
   bgHeight?: number;
   slots?: CardTemplateSlot[];

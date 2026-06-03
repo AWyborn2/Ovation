@@ -33,6 +33,11 @@ import { Loader2, Download, Copy, Check, Upload, ImageOff, User, ImageIcon } fro
 import {
   SIZES,
   renderShareCard,
+  renderShareCardVideo,
+  prepareAnimation,
+  isAnimatedCard,
+  canExportVideo,
+  videoFormatLabel,
   downloadBlob,
   cardBaseFilename,
   sponsorAppliesToKind,
@@ -42,6 +47,9 @@ import {
   type ShareCardInput,
   type PhotoPlacement,
   type PhotoTransform,
+  type MotionPreset,
+  type RenderOptions,
+  type AnimationHandle,
 } from "@/lib/share-card";
 import { PhotoReposition } from "@/components/photo-reposition";
 import { templateAppliesToKind } from "@/lib/card-template";
@@ -83,6 +91,65 @@ const PLATFORMS: { value: Platform; label: string }[] = [
   { value: "facebook", label: "Facebook" },
   { value: "twitter", label: "X / Twitter" },
 ];
+
+const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
+  { value: "none", label: "None (still)" },
+  { value: "fadeIn", label: "Fade in" },
+  { value: "slideUp", label: "Slide up" },
+  { value: "countUp", label: "Count up numbers" },
+];
+
+// Live, looping canvas preview for animated cards. Prepares the animation once
+// per `sig` change and drives it with requestAnimationFrame; cleans up any
+// playing <video> elements on unmount / re-prepare.
+function AnimatedCardPreview({
+  input,
+  opts,
+  sig,
+}: {
+  input: ShareCardInput;
+  opts: RenderOptions;
+  sig: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    let handle: AnimationHandle | null = null;
+    let cancelled = false;
+    let start = 0;
+    void (async () => {
+      const a = await prepareAnimation(input, opts);
+      if (cancelled) {
+        a.cleanup();
+        return;
+      }
+      handle = a;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      if (!canvas || !ctx) {
+        a.cleanup();
+        return;
+      }
+      canvas.width = a.width;
+      canvas.height = a.height;
+      const loop = (now: number) => {
+        if (!start) start = now;
+        const elapsed = now - start;
+        const t = a.loop ? (elapsed % a.durationMs) / a.durationMs : Math.min(1, elapsed / a.durationMs);
+        a.draw(ctx, t);
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    })();
+    return () => {
+      cancelled = true;
+      if (raf) cancelAnimationFrame(raf);
+      handle?.cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig]);
+  return <canvas ref={canvasRef} className="w-full h-full object-contain" />;
+}
 
 export function ShareCardModal({
   open,
@@ -237,6 +304,8 @@ export function ShareCardModal({
     if (open) {
       setLayoutId(null);
       setLayoutTouched(false);
+      setMotion("none");
+      setMotionTouched(false);
     }
   }, [open, input]);
   const selectedTemplate = useMemo<CardTemplate | null>(
@@ -246,6 +315,15 @@ export function ShareCardModal({
         : applicableTemplates.find((t) => t.id === layoutId) ?? null,
     [layoutId, applicableTemplates],
   );
+
+  // Motion preset. Defaults to the selected template's own preset (so an
+  // animated template animates out of the box) until the club picks one.
+  const [motion, setMotion] = useState<MotionPreset>("none");
+  const [motionTouched, setMotionTouched] = useState(false);
+  useEffect(() => {
+    if (!open || motionTouched) return;
+    setMotion((selectedTemplate?.motionPreset as MotionPreset | undefined) ?? "none");
+  }, [open, motionTouched, selectedTemplate]);
 
   const enabledSizes: CardSize[] = useMemo(() => {
     const s = bundle?.settings;
@@ -257,6 +335,15 @@ export function ShareCardModal({
   }, [bundle]);
 
   const [activeSize, setActiveSize] = useState<CardSize>("square");
+
+  // A video/GIF template always animates; otherwise the motion preset decides.
+  const animated = useMemo(
+    () => isAnimatedCard({ size: activeSize, template: selectedTemplate, motionPreset: motion }),
+    [activeSize, selectedTemplate, motion],
+  );
+  const videoSupported = useMemo(() => canExportVideo(), []);
+  const videoFormat = useMemo(() => videoFormatLabel(), []);
+  const [videoExporting, setVideoExporting] = useState(false);
   const [includeSponsors, setIncludeSponsors] = useState(true);
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [previewUrls, setPreviewUrls] = useState<Record<CardSize, string | null>>({
@@ -356,20 +443,11 @@ export function ShareCardModal({
     let cancelled = false;
     const run = async () => {
       if (!open || !input) return;
+      if (animated) return; // animated cards preview live on a canvas instead
       if (previewUrls[activeSize]) return; // cache hit
       setRendering(true);
       try {
-        const blob = await renderShareCard(input, {
-          size: activeSize,
-          sponsors,
-          clubUrl,
-          hashtag,
-          theme: selectedTheme,
-          template: selectedTemplate,
-          photoUrl: effectivePhotoUrl,
-          photoPlacement,
-          photoTransform: renderTransform,
-        });
+        const blob = await renderShareCard(input, buildOpts(activeSize, renderTransform));
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
         setPreviewUrls((prev) => ({ ...prev, [activeSize]: url }));
@@ -391,6 +469,39 @@ export function ShareCardModal({
   const sponsorSig = useMemo(
     () => sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~"),
     [sponsors],
+  );
+
+  // Build the render options shared by the still preview, PNG/zip export and the
+  // animated preview/video export. `transform` is supplied separately because
+  // the preview uses a debounced transform while downloads use the live one.
+  const buildOpts = (size: CardSize, transform: PhotoTransform): RenderOptions => ({
+    size,
+    sponsors,
+    clubUrl,
+    hashtag,
+    theme: selectedTheme,
+    template: selectedTemplate,
+    photoUrl: effectivePhotoUrl,
+    photoPlacement,
+    photoTransform: transform,
+    motionPreset: motion,
+  });
+
+  // Stable key for the animated preview so it only re-prepares when something
+  // that affects the animation actually changes.
+  const animSig = useMemo(
+    () =>
+      [
+        activeSize,
+        layoutId ?? "builtin",
+        selectedThemeId ?? "none",
+        motion,
+        effectivePhotoUrl ?? "nophoto",
+        photoPlacement,
+        `${renderTransform.focalX},${renderTransform.focalY},${renderTransform.zoom}`,
+        sponsorSig,
+      ].join("|"),
+    [activeSize, layoutId, selectedThemeId, motion, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
   );
 
   // Invalidate cached previews when sponsors flip or the theme changes.
@@ -417,18 +528,22 @@ export function ShareCardModal({
 
   const handleDownload = async (size: CardSize) => {
     if (!input) return;
-    const blob = await renderShareCard(input, {
-      size,
-      sponsors,
-      clubUrl,
-      hashtag,
-      theme: selectedTheme,
-      template: selectedTemplate,
-      photoUrl: effectivePhotoUrl,
-      photoPlacement,
-      photoTransform,
-    });
+    const blob = await renderShareCard(input, buildOpts(size, photoTransform));
     downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
+  };
+
+  // Export the animated card as a video clip (MP4 where supported, else WebM).
+  const handleDownloadVideo = async (size: CardSize) => {
+    if (!input) return;
+    setVideoExporting(true);
+    try {
+      const { blob, ext } = await renderShareCardVideo(input, buildOpts(size, photoTransform));
+      downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.${ext}`);
+    } catch (e) {
+      console.error("Card video export failed", e);
+    } finally {
+      setVideoExporting(false);
+    }
   };
 
   const handleDownloadAll = async () => {
@@ -437,18 +552,17 @@ export function ShareCardModal({
     try {
       const zip = new JSZip();
       for (const size of enabledSizes) {
-        const blob = await renderShareCard(input, {
-          size,
-          sponsors,
-          clubUrl,
-          hashtag,
-          theme: selectedTheme,
-          template: selectedTemplate,
-          photoUrl: effectivePhotoUrl,
-          photoPlacement,
-          photoTransform,
-        });
+        const blob = await renderShareCard(input, buildOpts(size, photoTransform));
         zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.png`, blob);
+        // Animated cards also carry a video clip per size alongside the still poster.
+        if (animated && videoSupported) {
+          try {
+            const { blob: vid, ext } = await renderShareCardVideo(input, buildOpts(size, photoTransform));
+            zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.${ext}`, vid);
+          } catch (e) {
+            console.error("Card video export failed", e);
+          }
+        }
       }
       if (bundle?.settings.captionsEnabled) {
         for (const p of PLATFORMS) {
@@ -513,7 +627,13 @@ export function ShareCardModal({
                     className="bg-muted border rounded-md flex items-center justify-center overflow-hidden"
                     style={{ aspectRatio: `${SIZES[s].w} / ${SIZES[s].h}`, maxHeight: 500 }}
                   >
-                    {rendering && !previewUrls[s] ? (
+                    {animated ? (
+                      <AnimatedCardPreview
+                        input={input}
+                        opts={buildOpts(s, renderTransform)}
+                        sig={animSig}
+                      />
+                    ) : rendering && !previewUrls[s] ? (
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     ) : previewUrls[s] ? (
                       <img src={previewUrls[s]!} alt="Card preview" className="w-full h-full object-contain" />
@@ -549,6 +669,37 @@ export function ShareCardModal({
                 </select>
               </div>
             )}
+
+            <div className="space-y-1.5 rounded border px-3 py-2">
+              <Label htmlFor="motion-select" className="text-sm">
+                Motion
+              </Label>
+              <select
+                id="motion-select"
+                value={motion}
+                onChange={(e) => {
+                  setMotionTouched(true);
+                  setMotion(e.target.value as MotionPreset);
+                }}
+                className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+              >
+                {MOTION_OPTIONS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {motion === "countUp"
+                  ? "Numbers tick up from zero on bound stat slots; other cards fade in."
+                  : "Adds an entrance animation to the card content."}
+                {animated && videoSupported
+                  ? ` Export plays as ${videoFormat}.`
+                  : animated && !videoSupported
+                    ? " Your browser can't record video; only the still image will download."
+                    : ""}
+              </p>
+            </div>
 
             {selectedTemplate === null && themes.length > 1 && (
               <div className="space-y-1.5 rounded border px-3 py-2">
@@ -745,11 +896,26 @@ export function ShareCardModal({
             <Download className="h-4 w-4 mr-2" />
             Download {SIZES[activeSize].label}
           </Button>
+          {animated && videoSupported && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => handleDownloadVideo(activeSize)}
+              disabled={videoExporting || zipping || approving}
+            >
+              {videoExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Download video
+            </Button>
+          )}
           <Button
             type="button"
             variant={onApprove ? "secondary" : "default"}
             onClick={handleDownloadAll}
-            disabled={zipping || approving}
+            disabled={zipping || approving || videoExporting}
           >
             {zipping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Download all sizes (zip)

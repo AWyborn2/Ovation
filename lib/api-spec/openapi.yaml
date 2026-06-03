@@ -4985,6 +4985,15 @@ components:
             type: string
         backgroundImageUrl:
           type: string
+        backgroundKind:
+          type: string
+          enum: [image, gif, video]
+        backgroundDurationMs:
+          type: integer
+          nullable: true
+        motionPreset:
+          type: string
+          enum: [none, fadeIn, slideUp, countUp]
         bgWidth:
           type: integer
         bgHeight:
@@ -5012,6 +5021,15 @@ components:
             type: string
         backgroundImageUrl:
           type: string
+        backgroundKind:
+          type: string
+          enum: [image, gif, video]
+        backgroundDurationMs:
+          type: integer
+          nullable: true
+        motionPreset:
+          type: string
+          enum: [none, fadeIn, slideUp, countUp]
         bgWidth:
           type: integer
         bgHeight:
@@ -5038,6 +5056,15 @@ components:
             type: string
         backgroundImageUrl:
           type: string
+        backgroundKind:
+          type: string
+          enum: [image, gif, video]
+        backgroundDurationMs:
+          type: integer
+          nullable: true
+        motionPreset:
+          type: string
+          enum: [none, fadeIn, slideUp, countUp]
         bgWidth:
           type: integer
         bgHeight:

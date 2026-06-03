@@ -11,17 +11,25 @@ import { requireAdmin } from "../middlewares/require-admin";
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
-// Uploads are admin-initiated image uploads (sponsor logos, match photos).
-// Constrain what can be signed for so the endpoint can't be used to host
-// arbitrary content under the app domain.
-const ALLOWED_UPLOAD_MIME = new Set([
+// Uploads are admin-initiated uploads (sponsor logos, match photos, and the
+// animated/still backgrounds used by custom social card templates). Constrain
+// what can be signed for so the endpoint can't be used to host arbitrary
+// content under the app domain.
+const ALLOWED_IMAGE_MIME = new Set([
   "image/png",
   "image/jpeg",
   "image/webp",
   "image/svg+xml",
   "image/gif",
 ]);
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
+// Animated card-template backgrounds. GIFs go through the image set above.
+const ALLOWED_VIDEO_MIME = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB — animated backgrounds
 
 // Harden serving of user-uploaded content: prevent MIME sniffing and neutralize
 // any active content (e.g. scripts embedded in SVG) if a URL is opened directly.
@@ -46,12 +54,20 @@ router.post("/storage/uploads/request-url", requireAdmin, async (req: Request, r
 
   const { name, size, contentType } = parsed.data;
 
-  if (!ALLOWED_UPLOAD_MIME.has(contentType)) {
-    res.status(400).json({ error: "Unsupported file type. Allowed: PNG, JPEG, WebP, SVG, GIF." });
+  const isImage = ALLOWED_IMAGE_MIME.has(contentType);
+  const isVideo = ALLOWED_VIDEO_MIME.has(contentType);
+  if (!isImage && !isVideo) {
+    res.status(400).json({
+      error:
+        "Unsupported file type. Allowed: PNG, JPEG, WebP, SVG, GIF, or MP4/WebM/MOV video.",
+    });
     return;
   }
-  if (size > MAX_UPLOAD_BYTES) {
-    res.status(400).json({ error: "File too large. Maximum size is 10MB." });
+  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (size > maxBytes) {
+    res.status(400).json({
+      error: `File too large. Maximum size is ${isVideo ? "50MB" : "10MB"}.`,
+    });
     return;
   }
 

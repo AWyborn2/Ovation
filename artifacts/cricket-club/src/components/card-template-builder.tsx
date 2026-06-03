@@ -25,12 +25,18 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import type { CardKind } from "@/lib/share-card";
+import type { CardKind, MotionPreset } from "@/lib/share-card";
 import { fieldsForKinds, fieldLabel } from "@/lib/card-template";
 import { CardKindPicker } from "@/components/card-kind-picker";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+type BackgroundKind = "image" | "gif" | "video";
+
+// Default loop length for an animated background when we can't read one (e.g.
+// GIFs, whose duration isn't exposed to the browser the way <video> is).
+const DEFAULT_ANIM_MS = 4000;
 
 type DraftTemplate = {
   id?: number;
@@ -39,6 +45,9 @@ type DraftTemplate = {
   backgroundImageUrl: string;
   bgWidth: number;
   bgHeight: number;
+  backgroundKind: BackgroundKind;
+  backgroundDurationMs: number | null;
+  motionPreset: MotionPreset;
   slots: CardTemplateSlot[];
   isActive: boolean;
   isDefault: boolean;
@@ -51,6 +60,9 @@ const blankDraft = (displayOrder: number): DraftTemplate => ({
   backgroundImageUrl: "",
   bgWidth: 0,
   bgHeight: 0,
+  backgroundKind: "image",
+  backgroundDurationMs: null,
+  motionPreset: "none",
   slots: [],
   isActive: true,
   isDefault: false,
@@ -64,6 +76,9 @@ const toDraft = (t: CardTemplate): DraftTemplate => ({
   backgroundImageUrl: t.backgroundImageUrl,
   bgWidth: t.bgWidth,
   bgHeight: t.bgHeight,
+  backgroundKind: (t.backgroundKind as BackgroundKind | undefined) ?? "image",
+  backgroundDurationMs: t.backgroundDurationMs ?? null,
+  motionPreset: (t.motionPreset as MotionPreset | undefined) ?? "none",
   slots: t.slots,
   isActive: t.isActive,
   isDefault: t.isDefault,
@@ -118,11 +133,21 @@ export function TemplatesCard() {
           <div className="space-y-2">
             {templates.map((t) => (
               <div key={t.id} className="flex items-center gap-3 border rounded p-2">
-                <img
-                  src={t.backgroundImageUrl}
-                  alt={t.name}
-                  className="h-12 w-12 object-cover rounded bg-muted"
-                />
+                {t.backgroundKind === "video" ? (
+                  <video
+                    src={t.backgroundImageUrl}
+                    className="h-12 w-12 object-cover rounded bg-muted"
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={t.backgroundImageUrl}
+                    alt={t.name}
+                    className="h-12 w-12 object-cover rounded bg-muted"
+                  />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate flex items-center gap-2">
                     {t.name}
@@ -208,23 +233,46 @@ function TemplateEditor({
 
   const handleBg = async (file: File) => {
     setError(null);
-    // Capture the natural dimensions so slot fractions map back to the design.
-    const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => reject(new Error("Could not read image"));
-      img.src = URL.createObjectURL(file);
-    }).catch(() => null);
+    const isVideo = file.type.startsWith("video/");
+    const isGif = file.type === "image/gif";
+    const kind: BackgroundKind = isVideo ? "video" : isGif ? "gif" : "image";
+    // Capture the natural dimensions (so slot fractions map back to the design)
+    // and, for video, the loop duration.
+    const meta = isVideo
+      ? await new Promise<{ w: number; h: number; durationMs: number } | null>((resolve) => {
+          const v = document.createElement("video");
+          v.preload = "metadata";
+          v.muted = true;
+          v.onloadedmetadata = () =>
+            resolve({
+              w: v.videoWidth,
+              h: v.videoHeight,
+              durationMs: Number.isFinite(v.duration) ? Math.round(v.duration * 1000) : DEFAULT_ANIM_MS,
+            });
+          v.onerror = () => resolve(null);
+          v.src = URL.createObjectURL(file);
+        })
+      : await new Promise<{ w: number; h: number; durationMs: number | null } | null>((resolve) => {
+          const img = new Image();
+          img.onload = () =>
+            resolve({ w: img.naturalWidth, h: img.naturalHeight, durationMs: isGif ? DEFAULT_ANIM_MS : null });
+          img.onerror = () => resolve(null);
+          img.src = URL.createObjectURL(file);
+        });
+    if (!meta) {
+      setError(isVideo ? "Could not read video metadata." : "Could not read image dimensions.");
+      return;
+    }
     const r = await bgUpload.uploadFile(file);
-    if (r && dims) {
+    if (r) {
       setDraft((d) => ({
         ...d,
         backgroundImageUrl: `/api/storage${r.objectPath}`,
-        bgWidth: dims.w,
-        bgHeight: dims.h,
+        bgWidth: meta.w,
+        bgHeight: meta.h,
+        backgroundKind: kind,
+        backgroundDurationMs: meta.durationMs,
       }));
-    } else if (!dims) {
-      setError("Could not read image dimensions.");
     }
   };
 
@@ -281,6 +329,9 @@ function TemplateEditor({
       backgroundImageUrl: draft.backgroundImageUrl,
       bgWidth: draft.bgWidth,
       bgHeight: draft.bgHeight,
+      backgroundKind: draft.backgroundKind,
+      backgroundDurationMs: draft.backgroundDurationMs,
+      motionPreset: draft.motionPreset,
       slots: draft.slots,
       isActive: draft.isActive,
       isDefault: draft.isDefault,
@@ -318,12 +369,12 @@ function TemplateEditor({
           />
         </div>
         <div className="space-y-1">
-          <Label>Background design (PNG / JPG)</Label>
+          <Label>Background design (PNG / JPG / GIF / MP4)</Label>
           <div className="flex items-center gap-2">
             <input
               ref={bgRef}
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
               onChange={(e) => e.target.files?.[0] && handleBg(e.target.files[0])}
               disabled={bgUpload.isUploading}
               className="text-xs"
@@ -333,6 +384,41 @@ function TemplateEditor({
               <Upload className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Still images up to 10MB. Animated GIF/MP4/WebM up to 50MB — keep clips
+            short (≈4s) and looping. MP4 (H.264) plays most widely.
+            {draft.backgroundKind !== "image" && (
+              <>
+                {" "}
+                Detected {draft.backgroundKind.toUpperCase()}
+                {draft.backgroundDurationMs
+                  ? ` • ${(draft.backgroundDurationMs / 1000).toFixed(1)}s loop`
+                  : ""}
+                .
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor={`${fileId}-motion`}>Motion preset</Label>
+          <select
+            id={`${fileId}-motion`}
+            value={draft.motionPreset}
+            onChange={(e) => setDraft((d) => ({ ...d, motionPreset: e.target.value as MotionPreset }))}
+            className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+          >
+            <option value="none">None (static slots)</option>
+            <option value="fadeIn">Fade in</option>
+            <option value="slideUp">Slide up</option>
+            <option value="countUp">Count up numbers</option>
+          </select>
+          <p className="text-[11px] text-muted-foreground">
+            Applies an entrance animation to the bound slots. Works on top of a
+            still or animated background. Clubs can still override this per share.
+          </p>
         </div>
       </div>
 
@@ -505,12 +591,23 @@ function SlotCanvas({
       style={{ aspectRatio: `${aspect}`, maxHeight: 460 }}
       onPointerDown={() => onSelectSlot(null)}
     >
-      <img
-        src={draft.backgroundImageUrl}
-        alt="Template background"
-        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-        draggable={false}
-      />
+      {draft.backgroundKind === "video" ? (
+        <video
+          src={draft.backgroundImageUrl}
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : (
+        <img
+          src={draft.backgroundImageUrl}
+          alt="Template background"
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+          draggable={false}
+        />
+      )}
       {draft.slots.map((slot) => {
         const selected = slot.id === selectedSlotId;
         return (

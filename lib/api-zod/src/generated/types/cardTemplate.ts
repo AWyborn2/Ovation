@@ -5,6 +5,8 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardTemplateBackgroundKind } from './cardTemplateBackgroundKind';
+import type { CardTemplateMotionPreset } from './cardTemplateMotionPreset';
 import type { CardTemplateSlot } from './cardTemplateSlot';
 
 export interface CardTemplate {
@@ -12,6 +14,9 @@ export interface CardTemplate {
   name: string;
   cardKinds: string[];
   backgroundImageUrl: string;
+  backgroundKind?: CardTemplateBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateMotionPreset;
   bgWidth: number;
   bgHeight: number;
   slots: CardTemplateSlot[];

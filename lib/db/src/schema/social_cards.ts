@@ -81,6 +81,15 @@ export const cardTemplatesTable = pgTable("card_templates", {
   // Empty = applies to every card kind.
   cardKinds: text("card_kinds").array().notNull().default([]),
   backgroundImageUrl: text("background_image_url").notNull(),
+  // Media kind of the uploaded background: "image" (still PNG/JPG/WebP), "gif"
+  // (self-animating), or "video" (MP4/WebM). Drives whether the card animates.
+  backgroundKind: text("background_kind").notNull().default("image"),
+  // Playback length of an animated (video) background, in milliseconds. Null for
+  // still/gif backgrounds (gifs loop on their own at an unknown cadence).
+  backgroundDurationMs: integer("background_duration_ms"),
+  // Built-in motion preset applied to the data-bound slots / whole card:
+  // "none" | "fadeIn" | "slideUp" | "countUp". Independent of the background.
+  motionPreset: text("motion_preset").notNull().default("none"),
   bgWidth: integer("bg_width").notNull().default(1080),
   bgHeight: integer("bg_height").notNull().default(1080),
   slots: jsonb("slots").$type<CardTemplateSlot[]>().notNull().default([]),

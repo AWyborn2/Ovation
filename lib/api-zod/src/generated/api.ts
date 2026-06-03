@@ -2538,6 +2538,9 @@ export const ListCardTemplatesResponseItem = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
   "backgroundImageUrl": zod.string(),
+  "backgroundKind": zod.enum(['image', 'gif', 'video']).optional(),
+  "backgroundDurationMs": zod.number().nullish(),
+  "motionPreset": zod.enum(['none', 'fadeIn', 'slideUp', 'countUp']).optional(),
   "bgWidth": zod.number(),
   "bgHeight": zod.number(),
   "slots": zod.array(zod.object({
@@ -2571,6 +2574,9 @@ export const CreateCardTemplateBody = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()).optional(),
   "backgroundImageUrl": zod.string(),
+  "backgroundKind": zod.enum(['image', 'gif', 'video']).optional(),
+  "backgroundDurationMs": zod.number().nullish(),
+  "motionPreset": zod.enum(['none', 'fadeIn', 'slideUp', 'countUp']).optional(),
   "bgWidth": zod.number(),
   "bgHeight": zod.number(),
   "slots": zod.array(zod.object({
@@ -2607,6 +2613,9 @@ export const UpdateCardTemplateBody = zod.object({
   "name": zod.string().optional(),
   "cardKinds": zod.array(zod.string()).optional(),
   "backgroundImageUrl": zod.string().optional(),
+  "backgroundKind": zod.enum(['image', 'gif', 'video']).optional(),
+  "backgroundDurationMs": zod.number().nullish(),
+  "motionPreset": zod.enum(['none', 'fadeIn', 'slideUp', 'countUp']).optional(),
   "bgWidth": zod.number().optional(),
   "bgHeight": zod.number().optional(),
   "slots": zod.array(zod.object({
@@ -2636,6 +2645,9 @@ export const UpdateCardTemplateResponse = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
   "backgroundImageUrl": zod.string(),
+  "backgroundKind": zod.enum(['image', 'gif', 'video']).optional(),
+  "backgroundDurationMs": zod.number().nullish(),
+  "motionPreset": zod.enum(['none', 'fadeIn', 'slideUp', 'countUp']).optional(),
   "bgWidth": zod.number(),
   "bgHeight": zod.number(),
   "slots": zod.array(zod.object({

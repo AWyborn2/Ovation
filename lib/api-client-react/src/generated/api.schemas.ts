@@ -1737,11 +1737,33 @@ export interface CardTemplateSlot {
   shape?: CardTemplateSlotShape;
 }
 
+export type CardTemplateBackgroundKind = typeof CardTemplateBackgroundKind[keyof typeof CardTemplateBackgroundKind];
+
+
+export const CardTemplateBackgroundKind = {
+  image: 'image',
+  gif: 'gif',
+  video: 'video',
+} as const;
+
+export type CardTemplateMotionPreset = typeof CardTemplateMotionPreset[keyof typeof CardTemplateMotionPreset];
+
+
+export const CardTemplateMotionPreset = {
+  none: 'none',
+  fadeIn: 'fadeIn',
+  slideUp: 'slideUp',
+  countUp: 'countUp',
+} as const;
+
 export interface CardTemplate {
   id: number;
   name: string;
   cardKinds: string[];
   backgroundImageUrl: string;
+  backgroundKind?: CardTemplateBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateMotionPreset;
   bgWidth: number;
   bgHeight: number;
   slots: CardTemplateSlot[];
@@ -1750,10 +1772,32 @@ export interface CardTemplate {
   displayOrder: number;
 }
 
+export type CardTemplateInputBackgroundKind = typeof CardTemplateInputBackgroundKind[keyof typeof CardTemplateInputBackgroundKind];
+
+
+export const CardTemplateInputBackgroundKind = {
+  image: 'image',
+  gif: 'gif',
+  video: 'video',
+} as const;
+
+export type CardTemplateInputMotionPreset = typeof CardTemplateInputMotionPreset[keyof typeof CardTemplateInputMotionPreset];
+
+
+export const CardTemplateInputMotionPreset = {
+  none: 'none',
+  fadeIn: 'fadeIn',
+  slideUp: 'slideUp',
+  countUp: 'countUp',
+} as const;
+
 export interface CardTemplateInput {
   name: string;
   cardKinds?: string[];
   backgroundImageUrl: string;
+  backgroundKind?: CardTemplateInputBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateInputMotionPreset;
   bgWidth: number;
   bgHeight: number;
   slots?: CardTemplateSlot[];
@@ -1762,10 +1806,32 @@ export interface CardTemplateInput {
   displayOrder?: number;
 }
 
+export type CardTemplateUpdateBackgroundKind = typeof CardTemplateUpdateBackgroundKind[keyof typeof CardTemplateUpdateBackgroundKind];
+
+
+export const CardTemplateUpdateBackgroundKind = {
+  image: 'image',
+  gif: 'gif',
+  video: 'video',
+} as const;
+
+export type CardTemplateUpdateMotionPreset = typeof CardTemplateUpdateMotionPreset[keyof typeof CardTemplateUpdateMotionPreset];
+
+
+export const CardTemplateUpdateMotionPreset = {
+  none: 'none',
+  fadeIn: 'fadeIn',
+  slideUp: 'slideUp',
+  countUp: 'countUp',
+} as const;
+
 export interface CardTemplateUpdate {
   name?: string;
   cardKinds?: string[];
   backgroundImageUrl?: string;
+  backgroundKind?: CardTemplateUpdateBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateUpdateMotionPreset;
   bgWidth?: number;
   bgHeight?: number;
   slots?: CardTemplateSlot[];

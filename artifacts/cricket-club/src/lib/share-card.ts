@@ -520,6 +520,12 @@ const drawFooter = (
   );
 };
 
+// Built-in motion presets applied to a card. "none" is a still card; "fadeIn"
+// and "slideUp" are whole-card / per-slot entrances; "countUp" ticks numeric
+// slot values up from zero (template slots only — a flat built-in card falls
+// back to "fadeIn" since its baked-in numbers can't be re-counted).
+export type MotionPreset = "none" | "fadeIn" | "slideUp" | "countUp";
+
 export type PhotoPlacement = "feature" | "headshot";
 
 // Focal point (0-1, 0.5 = centred) + zoom (>= 1) for a feature photo. Lets the
@@ -563,6 +569,12 @@ export type RenderOptions = {
    * instead of the built-in layout. The sponsor strip is still overlaid.
    */
   template?: CardTemplate | null;
+  /**
+   * Built-in motion preset for animated cards. When omitted, falls back to the
+   * template's own `motionPreset` (if a template is used) and otherwise "none".
+   * Ignored by the still PNG renderer (`renderShareCard`).
+   */
+  motionPreset?: MotionPreset;
 };
 
 // Draw `img` so it fits inside the rect (object-fit: contain), centred.
@@ -587,11 +599,168 @@ const drawImageContain = (
   ctx.drawImage(img, dx + (dw - w) / 2, dy + (dh - h) / 2, w, h);
 };
 
-// Render a custom template card: draw the uploaded background with object-fit
-// cover onto the target size, then map each slot's background-fraction geometry
-// through that same cover transform so slots stay glued to the design. The
-// sponsor strip is overlaid afterwards when sponsors are enabled.
-const renderTemplateCard = async (
+// --- Animation primitives ---------------------------------------------------
+
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+const easeOutCubic = (n: number): number => 1 - Math.pow(1 - clamp01(n), 3);
+
+// Replace the first run of digits in `text` with the same number scaled by
+// `frac` (0-1). Powers the count-up preset: "1,234 Runs" → "740 Runs" mid-way.
+const applyCountUp = (text: string, frac: number): string =>
+  text.replace(/\d[\d,]*/, (m) => {
+    const n = parseInt(m.replace(/,/g, ""), 10);
+    if (Number.isNaN(n)) return m;
+    return Math.round(n * clamp01(frac)).toLocaleString();
+  });
+
+// A template background ready to draw. Stills/GIFs come back as an <img>;
+// videos come back as a <video> (drawImage reads its current frame).
+type TemplateBgSource = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  video?: HTMLVideoElement;
+};
+
+// Load a template background. For "video" kind: when `play` is true the element
+// loops in real time (animation/export); otherwise it is seeked to a poster
+// frame for the still PNG. Images and GIFs load as an <img> either way.
+const loadTemplateBg = async (
+  template: CardTemplate,
+  play: boolean,
+): Promise<TemplateBgSource | null> => {
+  const kind = template.backgroundKind ?? "image";
+  if (kind === "video") {
+    return await new Promise<TemplateBgSource | null>((resolve) => {
+      const video = document.createElement("video");
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.playsInline = true;
+      video.loop = true;
+      video.preload = "auto";
+      const ok = () =>
+        resolve({
+          source: video,
+          width: video.videoWidth || template.bgWidth || 1080,
+          height: video.videoHeight || template.bgHeight || 1080,
+          video,
+        });
+      video.onerror = () => resolve(null);
+      if (play) {
+        video.oncanplay = () => {
+          void video.play().then(ok).catch(ok);
+        };
+      } else {
+        video.onloadeddata = () => {
+          video.onseeked = () => ok();
+          try {
+            video.currentTime = Math.min(0.1, (video.duration || 1) * 0.1);
+          } catch {
+            ok();
+          }
+        };
+      }
+      video.src = template.backgroundImageUrl;
+    });
+  }
+  const img = await loadImage(template.backgroundImageUrl).catch(() => null);
+  if (!img) return null;
+  return {
+    source: img,
+    width: img.naturalWidth || template.bgWidth || 1080,
+    height: img.naturalHeight || template.bgHeight || 1080,
+  };
+};
+
+// Draw any CanvasImageSource so it covers the rect (object-fit: cover), centred.
+// Unlike drawImageCover this takes explicit natural dimensions so it works for
+// <video> elements (whose .width/.height attributes are unreliable).
+const drawSourceCover = (
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  sw: number,
+  sh: number,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+) => {
+  const ir = sw / sh;
+  const rr = dw / dh;
+  let cw: number, ch: number;
+  if (ir > rr) {
+    ch = sh;
+    cw = sh * rr;
+  } else {
+    cw = sw;
+    ch = sw / rr;
+  }
+  ctx.drawImage(source, (sw - cw) / 2, (sh - ch) / 2, cw, ch, dx, dy, dw, dh);
+};
+
+// Preload sponsor logos (up to 4) into a cache so the sponsor strip can be
+// drawn synchronously every animation frame.
+const loadSponsorLogos = async (
+  sponsors: CardSponsor[],
+): Promise<Map<string, HTMLImageElement>> => {
+  const map = new Map<string, HTMLImageElement>();
+  await Promise.all(
+    sponsors.slice(0, 4).map(async (s) => {
+      const img = await loadImage(s.logoUrl).catch(() => null);
+      if (img) map.set(s.logoUrl, img);
+    }),
+  );
+  return map;
+};
+
+// Synchronous sponsor strip using preloaded logos (mirrors drawSponsors).
+const drawSponsorsSync = (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  sponsors: CardSponsor[],
+  scale: number,
+  p: Palette,
+  logos: Map<string, HTMLImageElement>,
+) => {
+  if (sponsors.length === 0) return;
+  const stripH = Math.round(110 * scale);
+  const stripY = H - stripH - Math.round(40 * scale);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+  ctx.fillRect(Math.round(56 * scale), stripY, W - Math.round(112 * scale), stripH);
+  ctx.strokeStyle = p.accentStrip;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(Math.round(56 * scale), stripY, W - Math.round(112 * scale), stripH);
+
+  ctx.fillStyle = p.textMuted;
+  ctx.font = `600 ${Math.round(14 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("PROUDLY SUPPORTED BY", Math.round(72 * scale), stripY + Math.round(10 * scale));
+
+  const logoH = Math.round(56 * scale);
+  const gap = Math.round(28 * scale);
+  let cursorX = Math.round(72 * scale);
+  const baseY = stripY + Math.round(36 * scale);
+  for (const s of sponsors.slice(0, 4)) {
+    const img = logos.get(s.logoUrl);
+    if (img) {
+      const w = (img.width / img.height) * logoH;
+      ctx.drawImage(img, cursorX, baseY, w, logoH);
+      cursorX += w + gap;
+    } else {
+      ctx.fillStyle = p.textLight;
+      ctx.font = `700 ${Math.round(20 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.fillText(s.name, cursorX, baseY + Math.round(18 * scale));
+      cursorX += ctx.measureText(s.name).width + gap;
+    }
+  }
+};
+
+// Synchronous, frame-aware template renderer shared by the still PNG path
+// (motion "none", t = 1) and the animation path. Draws the background (cover),
+// then each data-bound slot honouring the motion preset at progress `t` (0-1).
+const drawTemplateFrame = (
   ctx: CanvasRenderingContext2D,
   W: number,
   H: number,
@@ -600,6 +769,11 @@ const renderTemplateCard = async (
   template: CardTemplate,
   opts: RenderOptions,
   p: Palette,
+  bg: TemplateBgSource | null,
+  photoImg: HTMLImageElement | null,
+  logos: Map<string, HTMLImageElement>,
+  motion: MotionPreset,
+  t: number,
 ) => {
   const tctx: TemplateContext = {
     clubUrl: opts.clubUrl,
@@ -607,7 +781,7 @@ const renderTemplateCard = async (
     photoUrl: opts.photoUrl,
   };
 
-  // Cover transform of the background image into the target frame.
+  // Cover transform of the background into the target frame.
   const iw = template.bgWidth || 1080;
   const ih = template.bgHeight || 1080;
   const cover = Math.max(W / iw, H / ih);
@@ -618,52 +792,66 @@ const renderTemplateCard = async (
   const toX = (fx: number) => offX + fx * drawnW;
   const toY = (fy: number) => offY + fy * drawnH;
 
-  const bg = await loadImage(template.backgroundImageUrl).catch(() => null);
   if (bg) {
-    drawImageCover(ctx, bg, 0, 0, W, H);
+    drawSourceCover(ctx, bg.source, bg.width, bg.height, 0, 0, W, H);
   } else {
     // Background failed to load: fall back to a flat panel so slots are legible.
     ctx.fillStyle = p.bgDark;
     ctx.fillRect(0, 0, W, H);
   }
 
-  for (const slot of template.slots) {
+  const slots = template.slots;
+  slots.forEach((slot, i) => {
     const cx = toX(slot.x);
     const cy = toY(slot.y);
     const cw = slot.w * drawnW;
     const ch = slot.h * drawnH;
+
+    // Per-slot entrance progress: slots stagger in across the first ~60% of the
+    // timeline, then hold. Motion "none" shows everything fully (local unused).
+    const stagger = slots.length > 1 ? (i / slots.length) * 0.3 : 0;
+    const local = easeOutCubic((t - stagger) / 0.6);
+    const alpha = motion === "none" ? 1 : local;
+    if (alpha <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (motion === "slideUp") ctx.translate(0, (1 - local) * 0.06 * H);
+
     if (slot.type === "photo") {
       const url = resolvePhotoField(input, tctx);
-      if (!url) continue;
-      const img = await loadImage(url).catch(() => null);
-      if (!img) continue;
-      const t = opts.photoTransform ?? DEFAULT_PHOTO_TRANSFORM;
-      ctx.save();
-      if (slot.shape === "circle") {
-        const r = Math.min(cw, ch) / 2;
-        const ccx = cx + cw / 2;
-        const ccy = cy + ch / 2;
-        ctx.beginPath();
-        ctx.arc(ccx, ccy, r, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
-        drawImageCoverFocal(ctx, img, ccx - r, ccy - r, r * 2, r * 2, t.focalX, t.focalY, t.zoom);
-      } else if (slot.photoFit === "contain") {
-        drawImageContain(ctx, img, cx, cy, cw, ch);
-      } else {
-        ctx.beginPath();
-        ctx.rect(cx, cy, cw, ch);
-        ctx.closePath();
-        ctx.clip();
-        drawImageCoverFocal(ctx, img, cx, cy, cw, ch, t.focalX, t.focalY, t.zoom);
+      if (url && photoImg) {
+        const tr = opts.photoTransform ?? DEFAULT_PHOTO_TRANSFORM;
+        if (slot.shape === "circle") {
+          const r = Math.min(cw, ch) / 2;
+          const ccx = cx + cw / 2;
+          const ccy = cy + ch / 2;
+          ctx.beginPath();
+          ctx.arc(ccx, ccy, r, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          drawImageCoverFocal(ctx, photoImg, ccx - r, ccy - r, r * 2, r * 2, tr.focalX, tr.focalY, tr.zoom);
+        } else if (slot.photoFit === "contain") {
+          drawImageContain(ctx, photoImg, cx, cy, cw, ch);
+        } else {
+          ctx.beginPath();
+          ctx.rect(cx, cy, cw, ch);
+          ctx.closePath();
+          ctx.clip();
+          drawImageCoverFocal(ctx, photoImg, cx, cy, cw, ch, tr.focalX, tr.focalY, tr.zoom);
+        }
       }
       ctx.restore();
-      continue;
+      return;
     }
 
     // Text slot.
     let text = resolveTextField(input, slot.field, tctx);
-    if (!text) continue;
+    if (!text) {
+      ctx.restore();
+      return;
+    }
+    if (motion === "countUp") text = applyCountUp(text, local);
     if (slot.uppercase) text = text.toUpperCase();
     const fontPx = Math.max(8, (slot.fontSize ?? 0.05) * drawnH);
     const family =
@@ -685,11 +873,36 @@ const renderTemplateCard = async (
       ctx.fillText(line, tx, ty);
       ty += lineH;
     }
-  }
+    ctx.restore();
+  });
 
   // Sponsors strip still overlays the bottom when enabled.
-  const sponsors = opts.sponsors ?? [];
-  await drawSponsors(ctx, W, H, sponsors, scale, p);
+  drawSponsorsSync(ctx, W, H, opts.sponsors ?? [], scale, p, logos);
+};
+
+// Still template render: preload assets, then draw the final (motion "none")
+// frame. Keeps byte-for-byte parity with the previous still output.
+const renderTemplateCard = async (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
+  input: ShareCardInput,
+  template: CardTemplate,
+  opts: RenderOptions,
+  p: Palette,
+) => {
+  const tctx: TemplateContext = {
+    clubUrl: opts.clubUrl,
+    hashtag: opts.hashtag,
+    photoUrl: opts.photoUrl,
+  };
+  const bg = await loadTemplateBg(template, false);
+  const purl = resolvePhotoField(input, tctx);
+  const photoImg = purl ? await loadImage(purl).catch(() => null) : null;
+  const logos = await loadSponsorLogos(opts.sponsors ?? []);
+  drawTemplateFrame(ctx, W, H, scale, input, template, opts, p, bg, photoImg, logos, "none", 1);
+  bg?.video?.remove();
 };
 
 export const renderShareCard = async (
@@ -1159,4 +1372,188 @@ export const cardBaseFilename = (input: ShareCardInput): string => {
     case "fiveFor":
       return `hhcc-fivefor-${slugify(input.playerName)}-${input.wickets}`;
   }
+};
+
+// --- Animated cards ----------------------------------------------------------
+
+// The effective motion preset: an explicit option wins, else the template's own
+// preset, else "none".
+export const effectiveMotion = (opts: RenderOptions): MotionPreset =>
+  opts.motionPreset ??
+  ((opts.template?.motionPreset as MotionPreset | undefined) || "none");
+
+// A card is animated when it has a moving background (video/GIF) or a motion
+// preset other than "none".
+export const isAnimatedCard = (opts: RenderOptions): boolean => {
+  const kind = opts.template?.backgroundKind;
+  return kind === "video" || kind === "gif" || effectiveMotion(opts) !== "none";
+};
+
+// A reusable animation: draw(ctx, t) paints the frame at progress t (0-1). Used
+// by both the live preview (rAF loop) and the MediaRecorder export. Call
+// cleanup() when finished to release any playing <video> elements / bitmaps.
+export type AnimationHandle = {
+  width: number;
+  height: number;
+  durationMs: number;
+  loop: boolean;
+  draw: (ctx: CanvasRenderingContext2D, t: number) => void;
+  cleanup: () => void;
+};
+
+// Animated cards are short looping clips. Clamp every duration into a sane band.
+const clampDuration = (ms: number): number => Math.max(1500, Math.min(8000, ms));
+
+// Build an animation for a card. Preloads every asset up front so each draw()
+// call is synchronous and cheap (safe to run inside a rAF / capture loop).
+export const prepareAnimation = async (
+  input: ShareCardInput,
+  opts: RenderOptions,
+): Promise<AnimationHandle> => {
+  const { w: W, h: H } = SIZES[opts.size];
+  const scale = W / 1080;
+  const p = resolvePalette(opts.theme);
+  const motion = effectiveMotion(opts);
+
+  // Template-based animated card: animated/still background + data-bound slots.
+  if (opts.template) {
+    const template = opts.template;
+    const bgKind = template.backgroundKind ?? "image";
+    const bg = await loadTemplateBg(template, true);
+    const tctx: TemplateContext = {
+      clubUrl: opts.clubUrl,
+      hashtag: opts.hashtag,
+      photoUrl: opts.photoUrl,
+    };
+    const purl = resolvePhotoField(input, tctx);
+    const photoImg = purl ? await loadImage(purl).catch(() => null) : null;
+    const logos = await loadSponsorLogos(opts.sponsors ?? []);
+
+    let durationMs = motion === "none" ? 4000 : 3500;
+    if (bgKind === "video" && bg?.video) {
+      const vid = bg.video.duration ? bg.video.duration * 1000 : 4000;
+      durationMs = clampDuration(template.backgroundDurationMs ?? vid);
+    }
+
+    return {
+      width: W,
+      height: H,
+      durationMs,
+      loop: true,
+      draw: (ctx, t) =>
+        drawTemplateFrame(ctx, W, H, scale, input, template, opts, p, bg, photoImg, logos, motion, t),
+      cleanup: () => {
+        const v = bg?.video;
+        if (v) {
+          v.pause();
+          v.removeAttribute("src");
+          v.load();
+          v.remove();
+        }
+      },
+    };
+  }
+
+  // Built-in card: render the still once, then apply a whole-card entrance.
+  // A flat image can't re-count numbers, so "countUp" degrades to "fadeIn".
+  const stillBlob = await renderShareCard(input, { ...opts, template: null, motionPreset: "none" });
+  const bmp = await createImageBitmap(stillBlob);
+  const wholeMotion: MotionPreset = motion === "countUp" ? "fadeIn" : motion;
+
+  return {
+    width: W,
+    height: H,
+    durationMs: 3500,
+    loop: true,
+    draw: (ctx, t) => {
+      ctx.clearRect(0, 0, W, H);
+      const e = easeOutCubic(t / 0.6);
+      ctx.save();
+      ctx.globalAlpha = wholeMotion === "none" ? 1 : e;
+      if (wholeMotion === "slideUp") ctx.translate(0, (1 - e) * 0.05 * H);
+      ctx.drawImage(bmp, 0, 0, W, H);
+      ctx.restore();
+    },
+    cleanup: () => bmp.close(),
+  };
+};
+
+// Pick the best MediaRecorder container the browser supports. MP4 is preferred
+// (broad social-platform support); WebM is the universal fallback in Chromium.
+export const pickVideoMime = (): { mime: string; ext: string } => {
+  const supported = (m: string): boolean =>
+    typeof MediaRecorder !== "undefined" &&
+    typeof MediaRecorder.isTypeSupported === "function" &&
+    MediaRecorder.isTypeSupported(m);
+  if (supported("video/mp4;codecs=avc1")) return { mime: "video/mp4;codecs=avc1", ext: "mp4" };
+  if (supported("video/mp4")) return { mime: "video/mp4", ext: "mp4" };
+  if (supported("video/webm;codecs=vp9")) return { mime: "video/webm;codecs=vp9", ext: "webm" };
+  if (supported("video/webm")) return { mime: "video/webm", ext: "webm" };
+  return { mime: "", ext: "webm" };
+};
+
+// Human-facing label for the export format the current browser will produce
+// (so the admin UI can document the constraint, e.g. "MP4" vs "WebM").
+export const videoFormatLabel = (): string => pickVideoMime().ext.toUpperCase();
+
+// Whether this browser can export video at all (needs MediaRecorder +
+// canvas.captureStream). Lets the UI hide the video button gracefully.
+export const canExportVideo = (): boolean =>
+  typeof MediaRecorder !== "undefined" &&
+  typeof document.createElement("canvas").captureStream === "function";
+
+// Render a card to a downloadable video clip via canvas.captureStream +
+// MediaRecorder. Returns the encoded blob and its file extension. Runs the
+// animation once in real time (no loop) so the clip is a single clean pass.
+export const renderShareCardVideo = async (
+  input: ShareCardInput,
+  opts: RenderOptions,
+): Promise<{ blob: Blob; ext: string }> => {
+  if (!canExportVideo()) {
+    throw new Error("This browser can't export video (MediaRecorder unavailable).");
+  }
+  const anim = await prepareAnimation(input, opts);
+  const canvas = document.createElement("canvas");
+  canvas.width = anim.width;
+  canvas.height = anim.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not get canvas 2D context");
+
+  // Paint the first frame before the recorder starts so the clip opens cleanly.
+  anim.draw(ctx, 0);
+
+  const { mime, ext } = pickVideoMime();
+  const stream = canvas.captureStream(30);
+  const recorder = new MediaRecorder(
+    stream,
+    mime ? { mimeType: mime, videoBitsPerSecond: 8_000_000 } : undefined,
+  );
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) chunks.push(e.data);
+  };
+  const stopped = new Promise<Blob>((resolve) => {
+    recorder.onstop = () => resolve(new Blob(chunks, { type: mime || "video/webm" }));
+  });
+
+  recorder.start();
+  const start = performance.now();
+  await new Promise<void>((resolve) => {
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      anim.draw(ctx, Math.min(1, elapsed / anim.durationMs));
+      if (elapsed >= anim.durationMs) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  anim.draw(ctx, 1);
+  recorder.stop();
+
+  const blob = await stopped;
+  anim.cleanup();
+  return { blob, ext };
 };
