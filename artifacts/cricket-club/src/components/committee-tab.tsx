@@ -66,7 +66,7 @@ export function CommitteeTab() {
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
-          Committee &amp; Office Bearers
+          Office Bearers
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">

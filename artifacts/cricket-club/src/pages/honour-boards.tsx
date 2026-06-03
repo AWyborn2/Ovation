@@ -671,7 +671,7 @@ export default function HonourBoards() {
               : "text-muted-foreground hover:bg-muted hover:text-primary"
           }`}
         >
-          Committee
+          Office Bearers
         </button>
         <button
           onClick={() => setActiveTab("records")}
