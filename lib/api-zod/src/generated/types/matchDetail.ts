@@ -34,4 +34,6 @@ export interface MatchDetail {
   abandoned: boolean;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
+  /** Player IDs flagged by an admin as taking a hat-trick in this match. */
+  hatTrickPlayerIds?: number[];
 }

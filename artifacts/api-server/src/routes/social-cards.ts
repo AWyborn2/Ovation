@@ -481,6 +481,10 @@ router.get("/milestone-board-settings", async (_req, res): Promise<void> => {
     gamesThreshold: settings.gamesThreshold,
     runsThreshold: settings.runsThreshold,
     wicketsThreshold: settings.wicketsThreshold,
+    recencyWeeks: settings.recencyWeeks,
+    gamesTiers: settings.gamesTiers,
+    runsTiers: settings.runsTiers,
+    wicketsTiers: settings.wicketsTiers,
   });
 });
 
@@ -501,6 +505,10 @@ router.patch("/milestone-board-settings", requireAdmin, async (req, res): Promis
     gamesThreshold: row.gamesThreshold,
     runsThreshold: row.runsThreshold,
     wicketsThreshold: row.wicketsThreshold,
+    recencyWeeks: row.recencyWeeks,
+    gamesTiers: row.gamesTiers,
+    runsTiers: row.runsTiers,
+    wicketsTiers: row.wicketsTiers,
   });
 });
 

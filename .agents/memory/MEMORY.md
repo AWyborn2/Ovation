@@ -27,3 +27,4 @@
 - [HHCC history xlsx stacked blocks](history-xlsx-stacked-blocks.md) — Grade Records sheet stacks GRADE CAPTAINS over GRADE CRICKETERS OF THE YEAR (same layout); stop at second header or you double-import.
 - [Committee/captain role linking](committee-role-linking.md) — settled which club_roles role-holders stay plain text (office bearers w/ no player + joint captains) vs. the Sommers↔Somers matcher fix.
 - [Notable records derivation](notable-records-derivation.md) — committee/award leaderboards auto-derived from PUBLISHED roles/winners, name-grouped; tallies intentionally diverge from the stale hand-kept sheet.
+- [Milestones board (dated)](milestones-board.md) — GET /milestones dated achievements ranked by significance bands; empty until per-match imports give matchDate; configurable recencyWeeks + per-stat tiers.

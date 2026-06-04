@@ -8,12 +8,14 @@ import {
   useListPremierships,
   useGetMilestoneBoardSettings,
   useListRecentDebutants,
+  useGetMilestonesBoard,
   getGetGradeLeaderboardQueryOptions,
   getGetPlayerQueryKey,
   getListPlayersQueryKey,
   type DebutEntry,
+  type MilestoneItem,
 } from "@workspace/api-client-react";
-import { Trophy, Star } from "lucide-react";
+import { Trophy, Star, Award, Target, Zap, Flame, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
@@ -44,7 +46,7 @@ import { CommitteeTab } from "@/components/committee-tab";
 import { RecordsTab } from "@/components/records-tab";
 
 type Scope = "career" | "by-grade";
-type ExtraTab = "caps" | "life-members" | "awards" | "team-of-decade" | "committee" | "records" | "search";
+type ExtraTab = "milestones" | "caps" | "life-members" | "awards" | "team-of-decade" | "committee" | "records" | "search";
 type ActiveTab = BoardKey | ExtraTab;
 
 // A card in the "Just achieved" list: either a career-total milestone promotion
@@ -346,9 +348,66 @@ const Chip = ({ label, value }: { label: string; value: string | number }) => (
   </div>
 );
 
+const MILESTONE_KIND_META: Record<
+  MilestoneItem["kind"],
+  { label: string; icon: typeof Award; cls: string }
+> = {
+  hatTrick: { label: "Hat-trick", icon: Flame, cls: "text-rose-600 dark:text-rose-300 bg-rose-500/10 border-rose-500/30" },
+  century: { label: "Century", icon: Target, cls: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
+  fiveFor: { label: "Five-for", icon: Zap, cls: "text-sky-600 dark:text-sky-300 bg-sky-500/10 border-sky-500/30" },
+  debut: { label: "Debut", icon: UserPlus, cls: "text-violet-600 dark:text-violet-300 bg-violet-500/10 border-violet-500/30" },
+  career: { label: "Career", icon: Award, cls: "text-amber-600 dark:text-amber-300 bg-amber-500/10 border-amber-500/30" },
+};
+
+function formatMatchDate(d: string | null): string | null {
+  if (!d) return null;
+  const dt = new Date(`${d}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
+  const meta = MILESTONE_KIND_META[item.kind];
+  const Icon = meta.icon;
+  const date = formatMatchDate(item.matchDate ?? null);
+  return (
+    <Link
+      href={`/players/${item.playerId}`}
+      className="block bg-background/60 border border-border rounded-md p-4 hover:border-primary transition-colors no-underline"
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${meta.cls}`}
+        >
+          <Icon className="h-3 w-3" />
+          {meta.label}
+        </span>
+        {item.recent && (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Recent</span>
+        )}
+      </div>
+      <div className="font-serif font-bold text-primary leading-tight">{item.playerName}</div>
+      <div className="text-sm font-semibold text-foreground mt-0.5">{item.label}</div>
+      {item.detail && <div className="text-xs text-muted-foreground mt-1">{item.detail}</div>}
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
+        {item.grade && <GradeBadge grade={item.grade} size="sm" />}
+        {date && (
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{date}</span>
+        )}
+      </div>
+    </Link>
+  );
+};
+
 export default function HonourBoards() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("games");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("milestones");
   const [scope, setScope] = useState<Scope>("career");
+
+  // The Milestones tab is career-only; force the scope so its career
+  // aggregation (recent/approaching display mode) always has every grade.
+  useEffect(() => {
+    if (activeTab === "milestones" && scope !== "career") setScope("career");
+  }, [activeTab, scope]);
   const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -414,6 +473,10 @@ export default function HonourBoards() {
       setSelectedSeason("all");
     }
   }, [availableSeasons, selectedSeason]);
+
+  // Dated, prioritized milestones (centuries, five-fors, hat-tricks, A Grade
+  // debuts, career-tier crossings) derived server-side from real match data.
+  const { data: milestonesBoard } = useGetMilestonesBoard();
 
   const { data: milestoneSettings } = useGetMilestoneBoardSettings();
   const milestoneMode = milestoneSettings?.displayMode ?? "recent";
@@ -521,95 +584,18 @@ export default function HonourBoards() {
         </div>
       )}
 
-      {/* Season selector + Recent promotions */}
-      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && activeTab !== "team-of-decade" && activeTab !== "committee" && activeTab !== "records" && scope === "career" && (
-        <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
-            <div>
-              <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">{promotionHeading}</h2>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{promotionSubheading}</div>
-            </div>
-            {showRecent && (
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
-                <select
-                  value={selectedSeason === "all" ? "all" : String(selectedSeason)}
-                  onChange={(e) =>
-                    setSelectedSeason(e.target.value === "all" ? "all" : parseInt(e.target.value, 10))
-                  }
-                  className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-                >
-                  <option value="all">All-time</option>
-                  {availableSeasons.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-          <div className="w-12 h-[2px] bg-primary" />
-
-          {/* Recent achievers */}
-          {showRecent && (
-            <div className="space-y-3">
-              {milestoneMode === "both" && (
-                <div className="text-xs font-bold uppercase tracking-widest text-primary/80">
-                  Just achieved
-                </div>
-              )}
-              {recentItems.length === 0 ? (
-                <div className="text-sm text-muted-foreground italic">
-                  {selectedSeason === "all"
-                    ? "No significant milestones to show yet."
-                    : `No players reached a significant milestone in ${selectedSeason}.`}
-                </div>
-              ) : (
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-                  {recentItems.map((item) =>
-                    item.kind === "debut" ? (
-                      <DebutCard key={item.key} entry={item.debut} />
-                    ) : (
-                      <PromotionCard key={item.key} entry={item.promotion} />
-                    ),
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Visual divider between the two sub-boards */}
-          {milestoneMode === "both" && (
-            <div className="border-t border-dashed border-border" />
-          )}
-
-          {/* Approaching */}
-          {showApproaching && (
-            <div className="space-y-3">
-              {milestoneMode === "both" && (
-                <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Approaching
-                </div>
-              )}
-              {approachingMilestones.length === 0 ? (
-                <div className="text-sm text-muted-foreground italic">
-                  No players approaching a significant milestone right now.
-                </div>
-              ) : (
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-                  {approachingMilestones.map((p) => (
-                    <ApproachingCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="bg-card border border-border rounded-md flex flex-wrap overflow-hidden shadow-md">
+        <button
+          onClick={() => setActiveTab("milestones")}
+          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "milestones"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-primary"
+          }`}
+        >
+          Milestones
+        </button>
         {BOARDS.map((b) => (
           <button
             key={b.key}
@@ -695,8 +681,8 @@ export default function HonourBoards() {
         </button>
       </div>
 
-      {/* Scope control (hidden in search / caps / life-members) */}
-      {activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && activeTab !== "team-of-decade" && activeTab !== "committee" && activeTab !== "records" && (
+      {/* Scope control (hidden in milestones / search / caps / life-members) */}
+      {activeTab !== "milestones" && activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && activeTab !== "team-of-decade" && activeTab !== "committee" && activeTab !== "records" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
           <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
@@ -737,7 +723,120 @@ export default function HonourBoards() {
       )}
 
       {/* Tab content */}
-      {activeTab === "caps" ? (
+      {activeTab === "milestones" ? (
+        <div className="space-y-6">
+          {/* Dated, prioritized achievements from real match data */}
+          <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
+            <div>
+              <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">
+                {milestonesBoard?.featured ? "Recent milestones" : "Milestones"}
+              </h2>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">
+                {milestonesBoard?.featured
+                  ? "Latest centuries, five-fors, hat-tricks, debuts and career milestones"
+                  : "Significant achievements, ranked by milestone"}
+              </div>
+            </div>
+            <div className="w-12 h-[2px] bg-primary" />
+            {!milestonesBoard || milestonesBoard.items.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic">
+                No dated milestones yet — they appear as match scorecards are imported.
+              </div>
+            ) : (
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                {milestonesBoard.items.map((item) => (
+                  <DatedMilestoneCard key={item.id} item={item} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Existing display mode (recent / approaching / both) — preserved */}
+          <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
+              <div>
+                <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">{promotionHeading}</h2>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{promotionSubheading}</div>
+              </div>
+              {showRecent && (
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+                  <select
+                    value={selectedSeason === "all" ? "all" : String(selectedSeason)}
+                    onChange={(e) =>
+                      setSelectedSeason(e.target.value === "all" ? "all" : parseInt(e.target.value, 10))
+                    }
+                    className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+                  >
+                    <option value="all">All-time</option>
+                    {availableSeasons.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="w-12 h-[2px] bg-primary" />
+
+            {/* Recent achievers */}
+            {showRecent && (
+              <div className="space-y-3">
+                {milestoneMode === "both" && (
+                  <div className="text-xs font-bold uppercase tracking-widest text-primary/80">
+                    Just achieved
+                  </div>
+                )}
+                {recentItems.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic">
+                    {selectedSeason === "all"
+                      ? "No significant milestones to show yet."
+                      : `No players reached a significant milestone in ${selectedSeason}.`}
+                  </div>
+                ) : (
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                    {recentItems.map((item) =>
+                      item.kind === "debut" ? (
+                        <DebutCard key={item.key} entry={item.debut} />
+                      ) : (
+                        <PromotionCard key={item.key} entry={item.promotion} />
+                      ),
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Visual divider between the two sub-boards */}
+            {milestoneMode === "both" && (
+              <div className="border-t border-dashed border-border" />
+            )}
+
+            {/* Approaching */}
+            {showApproaching && (
+              <div className="space-y-3">
+                {milestoneMode === "both" && (
+                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Approaching
+                  </div>
+                )}
+                {approachingMilestones.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic">
+                    No players approaching a significant milestone right now.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                    {approachingMilestones.map((p) => (
+                      <ApproachingCard key={`${p.playerId}-${p.boardKey}`} entry={p} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : activeTab === "caps" ? (
         <CapRegisterTab />
       ) : activeTab === "life-members" ? (
         <LifeMembersTab />

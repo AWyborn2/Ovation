@@ -84,11 +84,13 @@ import type {
   ListStatsParams,
   LoginRequest,
   MatchDetail,
+  MatchHatTrickInput,
   MatchImportPreview,
   MatchRoundUpdate,
   MatchSummary,
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
+  MilestonesBoard,
   Player,
   PlayerDetail,
   PlayerInput,
@@ -910,6 +912,165 @@ export const useUpdateMatchRound = <TError = ErrorType<void>,
       > => {
       return useMutation(getUpdateMatchRoundMutationOptions(options));
     }
+
+export const getSetMatchHatTrickUrl = (id: number,) => {
+
+
+
+
+  return `/api/matches/${id}/hat-tricks`
+}
+
+/**
+ * Admin-only. Toggles a hat-trick flag for one player in a match. The flag
+surfaces on the public Milestones board as a dated achievement.
+
+ * @summary Record or remove a hat-trick for a player in a match
+ */
+export const setMatchHatTrick = async (id: number,
+    matchHatTrickInput: MatchHatTrickInput, options?: RequestInit): Promise<MatchDetail> => {
+
+  return customFetch<MatchDetail>(getSetMatchHatTrickUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      matchHatTrickInput,)
+  }
+);}
+
+
+
+
+export const getSetMatchHatTrickMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setMatchHatTrick>>, TError,{id: number;data: BodyType<MatchHatTrickInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setMatchHatTrick>>, TError,{id: number;data: BodyType<MatchHatTrickInput>}, TContext> => {
+
+const mutationKey = ['setMatchHatTrick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setMatchHatTrick>>, {id: number;data: BodyType<MatchHatTrickInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setMatchHatTrick(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetMatchHatTrickMutationResult = NonNullable<Awaited<ReturnType<typeof setMatchHatTrick>>>
+    export type SetMatchHatTrickMutationBody = BodyType<MatchHatTrickInput>
+    export type SetMatchHatTrickMutationError = ErrorType<void>
+
+    /**
+ * @summary Record or remove a hat-trick for a player in a match
+ */
+export const useSetMatchHatTrick = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setMatchHatTrick>>, TError,{id: number;data: BodyType<MatchHatTrickInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setMatchHatTrick>>,
+        TError,
+        {id: number;data: BodyType<MatchHatTrickInput>},
+        TContext
+      > => {
+      return useMutation(getSetMatchHatTrickMutationOptions(options));
+    }
+
+export const getGetMilestonesBoardUrl = () => {
+
+
+
+
+  return `/api/milestones`
+}
+
+/**
+ * Derives dated achievements from real match data — centuries (≥100),
+five-wicket hauls (≥5), admin-recorded hat-tricks, A Grade debuts and
+career-tier crossings within the configured recency window. Items are
+returned already ordered: when ≥5 players achieved within the window the
+recent achievers lead (most recent first), otherwise items rank by tier
+significance (bigger first; the baseline tier is lowest).
+
+ * @summary Prioritized, dated milestones for the public Milestones board
+ */
+export const getMilestonesBoard = async ( options?: RequestInit): Promise<MilestonesBoard> => {
+
+  return customFetch<MilestonesBoard>(getGetMilestonesBoardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMilestonesBoardQueryKey = () => {
+    return [
+    `/api/milestones`
+    ] as const;
+    }
+
+
+export const getGetMilestonesBoardQueryOptions = <TData = Awaited<ReturnType<typeof getMilestonesBoard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMilestonesBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMilestonesBoardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMilestonesBoard>>> = ({ signal }) => getMilestonesBoard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMilestonesBoard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMilestonesBoardQueryResult = NonNullable<Awaited<ReturnType<typeof getMilestonesBoard>>>
+export type GetMilestonesBoardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Prioritized, dated milestones for the public Milestones board
+ */
+
+export function useGetMilestonesBoard<TData = Awaited<ReturnType<typeof getMilestonesBoard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMilestonesBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMilestonesBoardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListStatsUrl = (params?: ListStatsParams,) => {
   const normalizedParams = new URLSearchParams();

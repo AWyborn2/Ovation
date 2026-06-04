@@ -1023,6 +1023,14 @@ export interface MatchDetail {
   abandoned: boolean;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
+  /** Player IDs flagged by an admin as taking a hat-trick in this match. */
+  hatTrickPlayerIds?: number[];
+}
+
+export interface MatchHatTrickInput {
+  playerId: number;
+  /** True to record a hat-trick for the player, false to remove it. */
+  hatTrick: boolean;
 }
 
 /**
@@ -2067,6 +2075,17 @@ export interface MilestoneBoardSettings {
      * @minimum 1
      */
   wicketsThreshold: number;
+  /**
+     * Weeks back (by real match date) that count as a recent achievement on the Milestones board (default 4).
+     * @minimum 1
+     */
+  recencyWeeks: number;
+  /** Significance tiers for games; first entry is the baseline lowest. */
+  gamesTiers: number[];
+  /** Significance tiers for runs; first entry is the baseline lowest. */
+  runsTiers: number[];
+  /** Significance tiers for wickets; first entry is the baseline lowest. */
+  wicketsTiers: number[];
 }
 
 export type MilestoneBoardSettingsUpdateDisplayMode = typeof MilestoneBoardSettingsUpdateDisplayMode[keyof typeof MilestoneBoardSettingsUpdateDisplayMode];
@@ -2086,6 +2105,69 @@ export interface MilestoneBoardSettingsUpdate {
   runsThreshold?: number;
   /** @minimum 1 */
   wicketsThreshold?: number;
+  /** @minimum 1 */
+  recencyWeeks?: number;
+  gamesTiers?: number[];
+  runsTiers?: number[];
+  wicketsTiers?: number[];
+}
+
+export type MilestoneItemKind = typeof MilestoneItemKind[keyof typeof MilestoneItemKind];
+
+
+export const MilestoneItemKind = {
+  debut: 'debut',
+  century: 'century',
+  fiveFor: 'fiveFor',
+  hatTrick: 'hatTrick',
+  career: 'career',
+} as const;
+
+export interface MilestoneItem {
+  /** Stable client key for the item. */
+  id: string;
+  kind: MilestoneItemKind;
+  playerId: number;
+  playerName: string;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  matchId?: number | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  season?: number | null;
+  /** @nullable */
+  round?: number | null;
+  /** @nullable */
+  opponent?: string | null;
+  /**
+     * For career crossings — games, runs or wickets.
+     * @nullable
+     */
+  boardKey?: string | null;
+  /** @nullable */
+  tierIndex?: number | null;
+  label: string;
+  /** @nullable */
+  detail?: string | null;
+  value: number;
+  /** @nullable */
+  threshold?: number | null;
+  significance: number;
+  recent: boolean;
+}
+
+export interface MilestonesBoard {
+  recencyWeeks: number;
+  /**
+     * ISO date (inclusive) of the start of the recent window, or null.
+     * @nullable
+     */
+  windowStart?: string | null;
+  /** True when ≥5 distinct players achieved within the recent window. */
+  featured: boolean;
+  items: MilestoneItem[];
 }
 
 export interface CaptionTemplate {

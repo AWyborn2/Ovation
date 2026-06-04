@@ -284,6 +284,60 @@ paths:
         "409":
           description: Round already used by another match in this grade and season
 
+  /matches/{id}/hat-tricks:
+    post:
+      operationId: setMatchHatTrick
+      tags: [matches]
+      summary: Record or remove a hat-trick for a player in a match
+      description: |
+        Admin-only. Toggles a hat-trick flag for one player in a match. The flag
+        surfaces on the public Milestones board as a dated achievement.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchHatTrickInput"
+      responses:
+        "200":
+          description: Updated match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not authenticated as admin
+        "404":
+          description: Match or player line not found
+
+  /milestones:
+    get:
+      operationId: getMilestonesBoard
+      tags: [milestones]
+      summary: Prioritized, dated milestones for the public Milestones board
+      description: |
+        Derives dated achievements from real match data — centuries (≥100),
+        five-wicket hauls (≥5), admin-recorded hat-tricks, A Grade debuts and
+        career-tier crossings within the configured recency window. Items are
+        returned already ordered: when ≥5 players achieved within the window the
+        recent achievers lead (most recent first), otherwise items rank by tier
+        significance (bigger first; the baseline tier is lowest).
+      responses:
+        "200":
+          description: Ordered milestone items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MilestonesBoard"
+
   /stats:
     get:
       operationId: listStats
@@ -3997,6 +4051,21 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchOppositionLine"
+        hatTrickPlayerIds:
+          type: array
+          items:
+            type: integer
+          description: Player IDs flagged by an admin as taking a hat-trick in this match.
+
+    MatchHatTrickInput:
+      type: object
+      required: [playerId, hatTrick]
+      properties:
+        playerId:
+          type: integer
+        hatTrick:
+          type: boolean
+          description: True to record a hat-trick for the player, false to remove it.
 
     MatchOppositionLine:
       type: object
@@ -5711,6 +5780,10 @@ components:
         - gamesThreshold
         - runsThreshold
         - wicketsThreshold
+        - recencyWeeks
+        - gamesTiers
+        - runsTiers
+        - wicketsTiers
       properties:
         displayMode:
           type: string
@@ -5728,6 +5801,27 @@ components:
           type: integer
           minimum: 1
           description: Minimum wickets for a significant club (default 100).
+        recencyWeeks:
+          type: integer
+          minimum: 1
+          description: >-
+            Weeks back (by real match date) that count as a recent achievement
+            on the Milestones board (default 4).
+        gamesTiers:
+          type: array
+          items:
+            type: integer
+          description: Significance tiers for games; first entry is the baseline lowest.
+        runsTiers:
+          type: array
+          items:
+            type: integer
+          description: Significance tiers for runs; first entry is the baseline lowest.
+        wicketsTiers:
+          type: array
+          items:
+            type: integer
+          description: Significance tiers for wickets; first entry is the baseline lowest.
 
     MilestoneBoardSettingsUpdate:
       type: object
@@ -5744,6 +5838,85 @@ components:
         wicketsThreshold:
           type: integer
           minimum: 1
+        recencyWeeks:
+          type: integer
+          minimum: 1
+        gamesTiers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+        runsTiers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+        wicketsTiers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+
+    MilestoneItem:
+      type: object
+      required: [id, kind, playerId, playerName, label, value, significance, recent]
+      properties:
+        id:
+          type: string
+          description: Stable client key for the item.
+        kind:
+          type: string
+          enum: [debut, century, fiveFor, hatTrick, career]
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        grade:
+          type: ["string", "null"]
+        matchId:
+          type: ["integer", "null"]
+        matchDate:
+          type: ["string", "null"]
+        season:
+          type: ["integer", "null"]
+        round:
+          type: ["integer", "null"]
+        opponent:
+          type: ["string", "null"]
+        boardKey:
+          type: ["string", "null"]
+          description: For career crossings — games, runs or wickets.
+        tierIndex:
+          type: ["integer", "null"]
+        label:
+          type: string
+        detail:
+          type: ["string", "null"]
+        value:
+          type: integer
+        threshold:
+          type: ["integer", "null"]
+        significance:
+          type: integer
+        recent:
+          type: boolean
+
+    MilestonesBoard:
+      type: object
+      required: [recencyWeeks, featured, items]
+      properties:
+        recencyWeeks:
+          type: integer
+        windowStart:
+          type: ["string", "null"]
+          description: ISO date (inclusive) of the start of the recent window, or null.
+        featured:
+          type: boolean
+          description: True when ≥5 distinct players achieved within the recent window.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MilestoneItem"
 
     CaptionTemplate:
       type: object

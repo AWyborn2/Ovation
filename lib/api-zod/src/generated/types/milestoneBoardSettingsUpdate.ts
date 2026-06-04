@@ -15,4 +15,9 @@ export interface MilestoneBoardSettingsUpdate {
   runsThreshold?: number;
   /** @minimum 1 */
   wicketsThreshold?: number;
+  /** @minimum 1 */
+  recencyWeeks?: number;
+  gamesTiers?: number[];
+  runsTiers?: number[];
+  wicketsTiers?: number[];
 }

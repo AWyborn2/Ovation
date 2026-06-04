@@ -129,6 +129,17 @@ export const milestoneBoardSettingsTable = pgTable("milestone_board_settings", {
   gamesThreshold: integer("games_threshold").notNull().default(100),
   runsThreshold: integer("runs_threshold").notNull().default(1000),
   wicketsThreshold: integer("wickets_threshold").notNull().default(100),
+  // How many weeks back (measured by real match dates) counts as a "recent"
+  // achievement on the Milestones board. When ≥5 players achieved within this
+  // window the board features recent achievers first; otherwise it ranks by
+  // tier significance.
+  recencyWeeks: integer("recency_weeks").notNull().default(4),
+  // Club-editable significance tiers per stat. The first (lowest) entry is the
+  // baseline tier; bigger values rank higher. Defaults keep 100 games / 1000
+  // runs / 100 wickets as the baseline lowest tier.
+  gamesTiers: integer("games_tiers").array().notNull().default([100, 150, 200, 250, 300]),
+  runsTiers: integer("runs_tiers").array().notNull().default([1000, 2000, 3000, 5000, 7500, 10000]),
+  wicketsTiers: integer("wickets_tiers").array().notNull().default([100, 150, 200, 300]),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

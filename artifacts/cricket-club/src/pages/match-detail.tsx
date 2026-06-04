@@ -5,6 +5,7 @@ import {
   useGetMatch,
   getGetMatchQueryKey,
   useUpdateMatchRound,
+  useSetMatchHatTrick,
   MatchStage,
   type MatchScorecardLine,
   type MatchOppositionLine,
@@ -12,7 +13,7 @@ import {
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
 import { matchLabel } from "@/lib/utils";
-import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X } from "lucide-react";
+import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame } from "lucide-react";
 
 const FINALS_STAGES = Object.values(MatchStage);
 
@@ -36,6 +37,17 @@ export default function MatchDetail() {
   const isAdmin = !!me.data;
   const queryClient = useQueryClient();
   const updateRound = useUpdateMatchRound();
+
+  const [hatTrickError, setHatTrickError] = useState<string | null>(null);
+  const setHatTrick = useSetMatchHatTrick({
+    mutation: {
+      onSuccess: () => {
+        setHatTrickError(null);
+        queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
+      },
+      onError: (e) => setHatTrickError(handleAdminMutationError(e)),
+    },
+  });
 
   const [editingRound, setEditingRound] = useState(false);
   const [roundValue, setRoundValue] = useState("");
@@ -103,6 +115,7 @@ export default function MatchDetail() {
     .filter((l) => l.batted)
     .sort((a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99));
   const bowling = match.lines.filter((l) => l.bowled);
+  const hatTrickIds = new Set(match.hatTrickPlayerIds ?? []);
   const fielding = match.lines.filter(
     (l) => (l.catches ?? 0) + (l.stumpings ?? 0) + (l.runOuts ?? 0) > 0,
   );
@@ -315,26 +328,64 @@ export default function MatchDetail() {
               <th className="text-right font-medium p-3">W</th>
               <th className="text-right font-medium p-3">Wd</th>
               <th className="text-right font-medium p-3">Nb</th>
+              {isAdmin && <th className="text-right font-medium p-3">Hat-trick</th>}
             </tr>
           </thead>
           <tbody>
             {bowling.length === 0 ? (
-              <tr><td colSpan={7} className="p-4 text-center text-muted-foreground italic">No bowling recorded.</td></tr>
+              <tr><td colSpan={isAdmin ? 8 : 7} className="p-4 text-center text-muted-foreground italic">No bowling recorded.</td></tr>
             ) : (
-              bowling.map((l) => (
-                <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                  <td className="p-3">{playerLink(l)}</td>
-                  <td className="p-3 text-right font-mono">{l.overs || "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.maidens ?? "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.runsConceded ?? "—"}</td>
-                  <td className="p-3 text-right font-mono font-bold">{l.wickets ?? 0}</td>
-                  <td className="p-3 text-right font-mono">{l.wides ?? "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.noBalls ?? "—"}</td>
-                </tr>
-              ))
+              bowling.map((l) => {
+                const hasHatTrick = hatTrickIds.has(l.playerId);
+                return (
+                  <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                    <td className="p-3">
+                      <span className="inline-flex items-center gap-1.5">
+                        {playerLink(l)}
+                        {hasHatTrick && (
+                          <span
+                            title="Hat-trick"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-300 bg-rose-500/10 border border-rose-500/30"
+                          >
+                            <Flame className="h-3 w-3" />
+                            Hat-trick
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right font-mono">{l.overs || "—"}</td>
+                    <td className="p-3 text-right font-mono">{l.maidens ?? "—"}</td>
+                    <td className="p-3 text-right font-mono">{l.runsConceded ?? "—"}</td>
+                    <td className="p-3 text-right font-mono font-bold">{l.wickets ?? 0}</td>
+                    <td className="p-3 text-right font-mono">{l.wides ?? "—"}</td>
+                    <td className="p-3 text-right font-mono">{l.noBalls ?? "—"}</td>
+                    {isAdmin && (
+                      <td className="p-3 text-right">
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs">
+                          <input
+                            type="checkbox"
+                            checked={hasHatTrick}
+                            disabled={setHatTrick.isPending}
+                            onChange={(e) =>
+                              setHatTrick.mutate({
+                                id: matchId,
+                                data: { playerId: l.playerId, hatTrick: e.target.checked },
+                              })
+                            }
+                          />
+                          <span className="text-muted-foreground">{hasHatTrick ? "Yes" : "No"}</span>
+                        </label>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
+        {isAdmin && hatTrickError && (
+          <div className="p-3 text-sm text-destructive">{hatTrickError}</div>
+        )}
       </ScorecardSection>
 
       {/* Fielding */}

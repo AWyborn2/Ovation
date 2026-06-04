@@ -5,6 +5,7 @@ import {
   matchesTable,
   matchPlayerLinesTable,
   matchOppositionLinesTable,
+  matchHatTricksTable,
   playersTable,
   importsTable,
 } from "@workspace/db";
@@ -13,6 +14,8 @@ import {
   GetMatchParams,
   UpdateMatchRoundParams,
   UpdateMatchRoundBody,
+  SetMatchHatTrickParams,
+  SetMatchHatTrickBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 
@@ -83,6 +86,11 @@ async function loadMatchDetail(matchId: number) {
     .where(eq(matchOppositionLinesTable.matchId, matchId))
     .orderBy(asc(matchOppositionLinesTable.battingPos), asc(matchOppositionLinesTable.id));
 
+  const hatTricks = await db
+    .select({ playerId: matchHatTricksTable.playerId })
+    .from(matchHatTricksTable)
+    .where(eq(matchHatTricksTable.matchId, matchId));
+
   return {
     id: match.id,
     grade: match.grade,
@@ -99,6 +107,7 @@ async function loadMatchDetail(matchId: number) {
     abandoned: match.abandoned,
     lines,
     oppositionLines,
+    hatTrickPlayerIds: hatTricks.map((h) => h.playerId),
   };
 }
 
@@ -252,6 +261,67 @@ router.patch(
     }
 
     const detail = await loadMatchDetail(match.id);
+    res.json(detail);
+  },
+);
+
+// Admin: toggle a hat-trick flag for one player in a match. Uniqueness is
+// enforced here (check-then insert/delete) rather than by a DB constraint —
+// see lib/db/src/schema/matches.ts for why.
+router.post(
+  "/matches/:id/hat-tricks",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = SetMatchHatTrickParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = SetMatchHatTrickBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+
+    const matchId = params.data.id;
+    const { playerId, hatTrick } = body.data;
+
+    // The player must have a line in this match for the flag to make sense.
+    const [line] = await db
+      .select({ id: matchPlayerLinesTable.id })
+      .from(matchPlayerLinesTable)
+      .where(
+        and(
+          eq(matchPlayerLinesTable.matchId, matchId),
+          eq(matchPlayerLinesTable.playerId, playerId),
+        ),
+      );
+    if (!line) {
+      res
+        .status(404)
+        .json({ error: "Player did not play in this match." });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: matchHatTricksTable.id })
+      .from(matchHatTricksTable)
+      .where(
+        and(
+          eq(matchHatTricksTable.matchId, matchId),
+          eq(matchHatTricksTable.playerId, playerId),
+        ),
+      );
+
+    if (hatTrick && !existing) {
+      await db.insert(matchHatTricksTable).values({ matchId, playerId });
+    } else if (!hatTrick && existing) {
+      await db
+        .delete(matchHatTricksTable)
+        .where(eq(matchHatTricksTable.id, existing.id));
+    }
+
+    const detail = await loadMatchDetail(matchId);
     res.json(detail);
   },
 );

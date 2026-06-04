@@ -292,7 +292,8 @@ export const GetMatchResponse = zod.object({
   "catches": zod.number(),
   "stumpings": zod.number(),
   "runOuts": zod.number()
-})).optional()
+})).optional(),
+  "hatTrickPlayerIds": zod.array(zod.number()).optional().describe('Player IDs flagged by an admin as taking a hat-trick in this match.')
 })
 
 
@@ -374,7 +375,124 @@ export const UpdateMatchRoundResponse = zod.object({
   "catches": zod.number(),
   "stumpings": zod.number(),
   "runOuts": zod.number()
-})).optional()
+})).optional(),
+  "hatTrickPlayerIds": zod.array(zod.number()).optional().describe('Player IDs flagged by an admin as taking a hat-trick in this match.')
+})
+
+
+/**
+ * Admin-only. Toggles a hat-trick flag for one player in a match. The flag
+surfaces on the public Milestones board as a dated achievement.
+
+ * @summary Record or remove a hat-trick for a player in a match
+ */
+export const SetMatchHatTrickParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetMatchHatTrickBody = zod.object({
+  "playerId": zod.number(),
+  "hatTrick": zod.boolean().describe('True to record a hat-trick for the player, false to remove it.')
+})
+
+export const SetMatchHatTrickResponse = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "season": zod.number(),
+  "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the match, or null for a regular round.'),
+  "competition": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "hhccScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "abandoned": zod.boolean(),
+  "lines": zod.array(zod.object({
+  "id": zod.number(),
+  "playerId": zod.number(),
+  "surname": zod.string(),
+  "givenName": zod.string(),
+  "batted": zod.boolean(),
+  "battingPos": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "notOut": zod.boolean(),
+  "dismissal": zod.string().nullish(),
+  "bowled": zod.boolean(),
+  "overs": zod.string().nullish(),
+  "maidens": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+})),
+  "oppositionLines": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "batted": zod.boolean(),
+  "battingPos": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "notOut": zod.boolean(),
+  "dismissal": zod.string().nullish(),
+  "bowled": zod.boolean(),
+  "overs": zod.string().nullish(),
+  "maidens": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+})).optional(),
+  "hatTrickPlayerIds": zod.array(zod.number()).optional().describe('Player IDs flagged by an admin as taking a hat-trick in this match.')
+})
+
+
+/**
+ * Derives dated achievements from real match data — centuries (≥100),
+five-wicket hauls (≥5), admin-recorded hat-tricks, A Grade debuts and
+career-tier crossings within the configured recency window. Items are
+returned already ordered: when ≥5 players achieved within the window the
+recent achievers lead (most recent first), otherwise items rank by tier
+significance (bigger first; the baseline tier is lowest).
+
+ * @summary Prioritized, dated milestones for the public Milestones board
+ */
+export const GetMilestonesBoardResponse = zod.object({
+  "recencyWeeks": zod.number(),
+  "windowStart": zod.string().nullish().describe('ISO date (inclusive) of the start of the recent window, or null.'),
+  "featured": zod.boolean().describe('True when ≥5 distinct players achieved within the recent window.'),
+  "items": zod.array(zod.object({
+  "id": zod.string().describe('Stable client key for the item.'),
+  "kind": zod.enum(['debut', 'century', 'fiveFor', 'hatTrick', 'career']),
+  "playerId": zod.number(),
+  "playerName": zod.string(),
+  "grade": zod.string().nullish(),
+  "matchId": zod.number().nullish(),
+  "matchDate": zod.string().nullish(),
+  "season": zod.number().nullish(),
+  "round": zod.number().nullish(),
+  "opponent": zod.string().nullish(),
+  "boardKey": zod.string().nullish().describe('For career crossings — games, runs or wickets.'),
+  "tierIndex": zod.number().nullish(),
+  "label": zod.string(),
+  "detail": zod.string().nullish(),
+  "value": zod.number(),
+  "threshold": zod.number().nullish(),
+  "significance": zod.number(),
+  "recent": zod.boolean()
+}))
 })
 
 
@@ -3302,11 +3420,16 @@ export const UpdateSocialSettingsResponse = zod.object({
 
 
 
+
 export const GetMilestoneBoardSettingsResponse = zod.object({
   "displayMode": zod.enum(['recent', 'approaching', 'both']).describe('What the public Significant Milestones section shows.'),
   "gamesThreshold": zod.number().min(1).describe('Minimum games for a significant club (default 100).'),
   "runsThreshold": zod.number().min(1).describe('Minimum runs for a significant club (default 1000).'),
-  "wicketsThreshold": zod.number().min(1).describe('Minimum wickets for a significant club (default 100).')
+  "wicketsThreshold": zod.number().min(1).describe('Minimum wickets for a significant club (default 100).'),
+  "recencyWeeks": zod.number().min(1).describe('Weeks back (by real match date) that count as a recent achievement on the Milestones board (default 4).'),
+  "gamesTiers": zod.array(zod.number()).describe('Significance tiers for games; first entry is the baseline lowest.'),
+  "runsTiers": zod.array(zod.number()).describe('Significance tiers for runs; first entry is the baseline lowest.'),
+  "wicketsTiers": zod.array(zod.number()).describe('Significance tiers for wickets; first entry is the baseline lowest.')
 })
 
 
@@ -3318,12 +3441,21 @@ export const GetMilestoneBoardSettingsResponse = zod.object({
 
 
 
+
+
+
+
 export const UpdateMilestoneBoardSettingsBody = zod.object({
   "displayMode": zod.enum(['recent', 'approaching', 'both']).optional(),
   "gamesThreshold": zod.number().min(1).optional(),
   "runsThreshold": zod.number().min(1).optional(),
-  "wicketsThreshold": zod.number().min(1).optional()
+  "wicketsThreshold": zod.number().min(1).optional(),
+  "recencyWeeks": zod.number().min(1).optional(),
+  "gamesTiers": zod.array(zod.number().min(1)).optional(),
+  "runsTiers": zod.array(zod.number().min(1)).optional(),
+  "wicketsTiers": zod.array(zod.number().min(1)).optional()
 })
+
 
 
 
@@ -3334,7 +3466,11 @@ export const UpdateMilestoneBoardSettingsResponse = zod.object({
   "displayMode": zod.enum(['recent', 'approaching', 'both']).describe('What the public Significant Milestones section shows.'),
   "gamesThreshold": zod.number().min(1).describe('Minimum games for a significant club (default 100).'),
   "runsThreshold": zod.number().min(1).describe('Minimum runs for a significant club (default 1000).'),
-  "wicketsThreshold": zod.number().min(1).describe('Minimum wickets for a significant club (default 100).')
+  "wicketsThreshold": zod.number().min(1).describe('Minimum wickets for a significant club (default 100).'),
+  "recencyWeeks": zod.number().min(1).describe('Weeks back (by real match date) that count as a recent achievement on the Milestones board (default 4).'),
+  "gamesTiers": zod.array(zod.number()).describe('Significance tiers for games; first entry is the baseline lowest.'),
+  "runsTiers": zod.array(zod.number()).describe('Significance tiers for runs; first entry is the baseline lowest.'),
+  "wicketsTiers": zod.array(zod.number()).describe('Significance tiers for wickets; first entry is the baseline lowest.')
 })
 
 

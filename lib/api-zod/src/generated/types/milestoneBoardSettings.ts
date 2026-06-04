@@ -25,4 +25,15 @@ export interface MilestoneBoardSettings {
      * @minimum 1
      */
   wicketsThreshold: number;
+  /**
+     * Weeks back (by real match date) that count as a recent achievement on the Milestones board (default 4).
+     * @minimum 1
+     */
+  recencyWeeks: number;
+  /** Significance tiers for games; first entry is the baseline lowest. */
+  gamesTiers: number[];
+  /** Significance tiers for runs; first entry is the baseline lowest. */
+  runsTiers: number[];
+  /** Significance tiers for wickets; first entry is the baseline lowest. */
+  wicketsTiers: number[];
 }

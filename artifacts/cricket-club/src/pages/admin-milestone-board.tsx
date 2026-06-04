@@ -40,6 +40,38 @@ const THRESHOLDS: { key: "gamesThreshold" | "runsThreshold" | "wicketsThreshold"
   { key: "wicketsThreshold", label: "Wickets", hint: "Default 100" },
 ];
 
+const TIERS: {
+  key: "gamesTiers" | "runsTiers" | "wicketsTiers";
+  label: string;
+  hint: string;
+}[] = [
+  { key: "gamesTiers", label: "Games tiers", hint: "e.g. 100, 150, 200, 250, 300" },
+  { key: "runsTiers", label: "Runs tiers", hint: "e.g. 1000, 2500, 5000, 7500, 10000" },
+  { key: "wicketsTiers", label: "Wickets tiers", hint: "e.g. 100, 150, 200, 250" },
+];
+
+function tiersToText(tiers: number[]): string {
+  return tiers.join(", ");
+}
+
+function parseTiers(text: string): number[] | null {
+  const parts = text
+    .split(/[,\s]+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+  if (parts.length === 0) return null;
+  const nums: number[] = [];
+  for (const p of parts) {
+    const n = parseInt(p, 10);
+    if (Number.isNaN(n) || n < 1) return null;
+    nums.push(n);
+  }
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] <= nums[i - 1]) return null;
+  }
+  return nums;
+}
+
 export default function AdminMilestoneBoard() {
   const qc = useQueryClient();
   const settingsQ = useGetMilestoneBoardSettings();
@@ -80,6 +112,10 @@ function SettingsCard({
   const [games, setGames] = useState(String(settings.gamesThreshold));
   const [runs, setRuns] = useState(String(settings.runsThreshold));
   const [wickets, setWickets] = useState(String(settings.wicketsThreshold));
+  const [recencyWeeks, setRecencyWeeks] = useState(String(settings.recencyWeeks));
+  const [gamesTiers, setGamesTiers] = useState(tiersToText(settings.gamesTiers));
+  const [runsTiers, setRunsTiers] = useState(tiersToText(settings.runsTiers));
+  const [wicketsTiers, setWicketsTiers] = useState(tiersToText(settings.wicketsTiers));
   const [error, setError] = useState<string | null>(null);
 
   const update = useUpdateMilestoneBoardSettings({
@@ -97,6 +133,10 @@ function SettingsCard({
     setGames(String(settings.gamesThreshold));
     setRuns(String(settings.runsThreshold));
     setWickets(String(settings.wicketsThreshold));
+    setRecencyWeeks(String(settings.recencyWeeks));
+    setGamesTiers(tiersToText(settings.gamesTiers));
+    setRunsTiers(tiersToText(settings.runsTiers));
+    setWicketsTiers(tiersToText(settings.wicketsTiers));
   }, [settings]);
 
   const values = { gamesThreshold: games, runsThreshold: runs, wicketsThreshold: wickets };
@@ -104,6 +144,13 @@ function SettingsCard({
     gamesThreshold: setGames,
     runsThreshold: setRuns,
     wicketsThreshold: setWickets,
+  };
+
+  const tierValues = { gamesTiers, runsTiers, wicketsTiers };
+  const tierSetters: Record<string, (v: string) => void> = {
+    gamesTiers: setGamesTiers,
+    runsTiers: setRunsTiers,
+    wicketsTiers: setWicketsTiers,
   };
 
   const save = () => {
@@ -116,11 +163,29 @@ function SettingsCard({
       }
       parsed[t.key] = n;
     }
+    const weeks = parseInt(recencyWeeks, 10);
+    if (isNaN(weeks) || weeks < 1) {
+      return setError("Recency window must be a whole number of weeks (at least 1).");
+    }
+    const parsedTiers: Record<string, number[]> = {};
+    for (const t of TIERS) {
+      const tiers = parseTiers(tierValues[t.key]);
+      if (!tiers) {
+        return setError(
+          `${t.label} must be a comma-separated list of ascending whole numbers (each at least 1).`,
+        );
+      }
+      parsedTiers[t.key] = tiers;
+    }
     const data: MilestoneBoardSettingsUpdate = {
       displayMode,
       gamesThreshold: parsed.gamesThreshold,
       runsThreshold: parsed.runsThreshold,
       wicketsThreshold: parsed.wicketsThreshold,
+      recencyWeeks: weeks,
+      gamesTiers: parsedTiers.gamesTiers,
+      runsTiers: parsedTiers.runsTiers,
+      wicketsTiers: parsedTiers.wicketsTiers,
     };
     update.mutate({ data });
   };
@@ -177,6 +242,53 @@ function SettingsCard({
                   min={1}
                   value={values[t.key]}
                   onChange={(e) => setters[t.key](e.target.value)}
+                />
+                <div className="text-xs text-muted-foreground">{t.hint}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+            Recency window
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            How many weeks back (by real match date) an achievement counts as "recent" on the
+            Milestones tab. When at least 5 different players achieve within this window, the board
+            features the most recent achievers first.
+          </p>
+          <div className="max-w-[12rem] space-y-2">
+            <Label htmlFor="recencyWeeks">Weeks</Label>
+            <Input
+              id="recencyWeeks"
+              type="number"
+              min={1}
+              value={recencyWeeks}
+              onChange={(e) => setRecencyWeeks(e.target.value)}
+            />
+            <div className="text-xs text-muted-foreground">Default 4</div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+            Career tiers
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Comma-separated milestone tiers for career games, runs and wickets. They drive how
+            significant a career crossing is when ranking the Milestones tab (higher tiers rank
+            first). List values in ascending order; the first value is the lowest tier.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {TIERS.map((t) => (
+              <div key={t.key} className="space-y-2">
+                <Label htmlFor={t.key}>{t.label}</Label>
+                <Input
+                  id={t.key}
+                  type="text"
+                  value={tierValues[t.key]}
+                  onChange={(e) => tierSetters[t.key](e.target.value)}
                 />
                 <div className="text-xs text-muted-foreground">{t.hint}</div>
               </div>
