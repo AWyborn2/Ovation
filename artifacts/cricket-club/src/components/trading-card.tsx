@@ -58,6 +58,34 @@ function mainStats(data: TradingCardData): { label: string; value: number | stri
   }
 }
 
+function frontStats(data: TradingCardData): { label: string; value: number | string }[] {
+  const s = data.stats;
+  const a = data.additionalStats;
+  switch (data.role) {
+    case "Bowler":
+      return [
+        { label: "Matches", value: s.matches },
+        { label: "Wickets", value: s.wickets },
+        { label: "Bowl Avg", value: s.bowlingAverage || "-" },
+        { label: "High Score", value: a.highestScore },
+      ];
+    case "All-Rounder":
+      return [
+        { label: "Runs", value: s.runs },
+        { label: "Wickets", value: s.wickets },
+        { label: "High Score", value: a.highestScore },
+        { label: "Matches", value: s.matches },
+      ];
+    default:
+      return [
+        { label: "Matches", value: s.matches },
+        { label: "Runs", value: s.runs },
+        { label: "Wickets", value: s.wickets },
+        { label: "High Score", value: a.highestScore },
+      ];
+  }
+}
+
 function perfBars(data: TradingCardData): { label: string; value: number; max: number }[] {
   const s = data.stats;
   const bar = (value: number, floor: number) => ({
@@ -305,6 +333,7 @@ function NameBlock({ data }: { data: TradingCardData }) {
 }
 
 export function CardFront({ data }: { data: TradingCardData }) {
+  const premierships = data.achievements.premierships;
   return (
     <CardSurface>
       <CardHeader data={data} />
@@ -312,15 +341,52 @@ export function CardFront({ data }: { data: TradingCardData }) {
       <div style={{ padding: "14px 18px 0" }}>
         <NameBlock data={data} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
-          {mainStats(data).map((s) => (
+          {frontStats(data).map((s) => (
             <StatTile key={s.label} label={s.label} value={s.value} />
           ))}
+          <div style={{ gridColumn: "1 / -1" }}>
+            <StatTile label="Best Bowling" value={data.additionalStats.bestBowling} />
+          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
-          {perfBars(data).map((b) => (
-            <PerfBar key={b.label} label={b.label} value={b.value} max={b.max} />
-          ))}
-        </div>
+        {premierships.length > 0 ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 14,
+              background: "rgba(251,172,39,0.10)",
+              border: `1px solid rgba(251,172,39,0.35)`,
+              borderRadius: 12,
+              padding: "12px 14px",
+            }}
+          >
+            <Trophy size={38} style={{ color: GOLD }} />
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 30, fontWeight: 900, color: GOLD, lineHeight: 1 }}>
+                ×{premierships.length}
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.7)",
+                }}
+              >
+                {premierships.length === 1 ? "Premiership" : "Premierships"}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
+            {perfBars(data).map((b) => (
+              <PerfBar key={b.label} label={b.label} value={b.value} max={b.max} />
+            ))}
+          </div>
+        )}
       </div>
       <CardFooter />
     </CardSurface>
