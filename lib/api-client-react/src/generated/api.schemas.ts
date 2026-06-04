@@ -28,6 +28,10 @@ export interface Player {
   premiershipsCaptained?: number | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  cardRole?: string | null;
+  /** @nullable */
+  cardRating?: number | null;
 }
 
 export interface PlayerInput {
@@ -44,6 +48,10 @@ export interface PlayerUpdate {
   deceased?: boolean;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  cardRole?: string | null;
+  /** @nullable */
+  cardRating?: number | null;
 }
 
 export interface Stat {
@@ -117,6 +125,10 @@ export interface PlayerDetail {
   premiershipsCaptained?: number | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  cardRole?: string | null;
+  /** @nullable */
+  cardRating?: number | null;
   stats: Stat[];
   premierships?: PlayerPremiership[];
 }

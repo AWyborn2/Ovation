@@ -12,4 +12,8 @@ export interface PlayerUpdate {
   deceased?: boolean;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  cardRole?: string | null;
+  /** @nullable */
+  cardRating?: number | null;
 }

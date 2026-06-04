@@ -25,4 +25,8 @@ export interface Player {
   premiershipsCaptained?: number | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  cardRole?: string | null;
+  /** @nullable */
+  cardRating?: number | null;
 }

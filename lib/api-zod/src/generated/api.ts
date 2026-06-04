@@ -41,7 +41,9 @@ export const ListPlayersResponse = zod.object({
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -76,6 +78,8 @@ export const GetPlayerResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish(),
   "stats": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -125,7 +129,9 @@ export const UpdatePlayerBody = zod.object({
   "surname": zod.string().optional(),
   "givenName": zod.string().optional(),
   "deceased": zod.boolean().optional(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 })
 
 export const UpdatePlayerResponse = zod.object({
@@ -139,7 +145,9 @@ export const UpdatePlayerResponse = zod.object({
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 })
 
 
@@ -607,7 +615,9 @@ export const GetDashboardResponse = zod.object({
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 }),
   "topWicketTaker": zod.object({
   "id": zod.number(),
@@ -620,7 +630,9 @@ export const GetDashboardResponse = zod.object({
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 }),
   "topFielder": zod.object({
   "id": zod.number(),
@@ -633,7 +645,9 @@ export const GetDashboardResponse = zod.object({
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 }),
   "gradeSummaries": zod.array(zod.object({
   "grade": zod.string(),
@@ -1499,7 +1513,9 @@ export const MergePlayerResponse = zod.object({
   "totalWickets": zod.number().nullish(),
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
-  "imageUrl": zod.string().nullish()
+  "imageUrl": zod.string().nullish(),
+  "cardRole": zod.string().nullish(),
+  "cardRating": zod.number().nullish()
 })
 
 

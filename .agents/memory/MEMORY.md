@@ -19,6 +19,7 @@
 - [api-server testing setup](api-server-testing.md) — vitest runs against the live dev DB (clean up uniquely-suffixed rows); supertest + forged HMAC cookies; build libs before per-package typecheck.
 - [Share-card photo crop coupling](share-card-photo-crop.md) — feature-photo focal/zoom is size-independent; the CSS reposition control must mirror the canvas cover math or preview/crop diverge.
 - [Backfill peel vs add](backfill-peel-add.md) — previous-season imports reconcile vs the season=NULL baseline; peel keeps career invariant (stores deltas for reversal), add is additive; suppress social, never mint caps.
+- [Trading card export gotchas](trading-card-export.md) — gate card render+export until BOTH player AND caps resolve (cap-number rule); waitForImages must treat img.complete as terminal + add timeout or broken photo URLs hang export.
 - [BYO social tile templates](card-templates-byo.md) — custom-upload card designs: slot geom+fontSize are fractions of the BG image, mapped through one object-fit cover transform so they hold across all export sizes.
 - [Animated social tiles](animated-social-tiles.md) — motion presets (countUp degrades to fadeIn on built-ins) + video/gif template bg; client-side captureStream+MediaRecorder export (mp4 else webm); `animated` memo must follow `activeSize` decl.
 - [Award history reconciliation](award-history-reconciliation.md) — loading historical award winners: exact + confident links via CORRECTIONS map, uncertain/non-roster stay free-text (playerId NULL) for admin to link later.

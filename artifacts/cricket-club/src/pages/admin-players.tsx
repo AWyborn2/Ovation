@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { TradingCardModal } from "@/components/trading-card";
+import { CARD_ROLES } from "@/lib/trading-card";
 
 export default function AdminPlayers() {
   const qc = useQueryClient();
@@ -205,14 +207,25 @@ function PlayerRow({
 }: {
   player: Player;
   pending: boolean;
-  onSave: (patch: { surname?: string; givenName?: string; deceased?: boolean }) => void;
+  onSave: (patch: {
+    surname?: string;
+    givenName?: string;
+    deceased?: boolean;
+    cardRole?: string | null;
+    cardRating?: number | null;
+  }) => void;
   onDelete: () => void;
   onMerge: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
   const [surname, setSurname] = useState(player.surname);
   const [givenName, setGivenName] = useState(player.givenName);
   const [deceased, setDeceased] = useState(player.deceased);
+  const [cardRole, setCardRole] = useState(player.cardRole ?? "");
+  const [cardRating, setCardRating] = useState(
+    player.cardRating != null ? String(player.cardRating) : "",
+  );
 
   if (!editing) {
     return (
@@ -227,6 +240,9 @@ function PlayerRow({
           </span>
         </div>
         <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setCardOpen(true)}>
+            Card
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
@@ -237,6 +253,7 @@ function PlayerRow({
             Delete
           </Button>
         </div>
+        <TradingCardModal playerId={player.id} open={cardOpen} onOpenChange={setCardOpen} />
       </div>
     );
   }
@@ -251,6 +268,32 @@ function PlayerRow({
         <Label>Given name</Label>
         <Input value={givenName} onChange={(e) => setGivenName(e.target.value)} />
       </div>
+      <div className="space-y-1">
+        <Label>Card role</Label>
+        <select
+          value={cardRole}
+          onChange={(e) => setCardRole(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+        >
+          <option value="">Auto</option>
+          {CARD_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-1">
+        <Label>Card rating (1-5)</Label>
+        <Input
+          type="number"
+          min={0}
+          max={5}
+          value={cardRating}
+          onChange={(e) => setCardRating(e.target.value)}
+          className="w-24"
+        />
+      </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={deceased} onChange={(e) => setDeceased(e.target.checked)} />
         Deceased
@@ -258,10 +301,21 @@ function PlayerRow({
       <Button
         size="sm"
         onClick={() => {
+          const ratingNum = cardRating.trim() === "" ? null : Number(cardRating);
+          const nextRole = cardRole === "" ? null : cardRole;
+          const prevRating = player.cardRating ?? null;
+          const prevRole = player.cardRole ?? null;
           onSave({
             surname: surname !== player.surname ? surname : undefined,
             givenName: givenName !== player.givenName ? givenName : undefined,
             deceased: deceased !== player.deceased ? deceased : undefined,
+            cardRole: nextRole !== prevRole ? nextRole : undefined,
+            cardRating:
+              ratingNum !== prevRating
+                ? ratingNum != null && Number.isFinite(ratingNum)
+                  ? Math.min(5, Math.max(0, Math.round(ratingNum)))
+                  : null
+                : undefined,
           });
           setEditing(false);
         }}
@@ -277,6 +331,8 @@ function PlayerRow({
           setSurname(player.surname);
           setGivenName(player.givenName);
           setDeceased(player.deceased);
+          setCardRole(player.cardRole ?? "");
+          setCardRating(player.cardRating != null ? String(player.cardRating) : "");
         }}
       >
         Cancel

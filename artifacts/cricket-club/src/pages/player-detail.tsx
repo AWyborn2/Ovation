@@ -20,6 +20,8 @@ import {
 import { downloadMilestoneCard } from "@/lib/milestone-share";
 import { ShareButton } from "@/components/share-card-modal";
 import type { ShareCardInput } from "@/lib/share-card";
+import { TradingCardModal } from "@/components/trading-card";
+import { IdCard } from "lucide-react";
 
 const fmtNum = (n: number) => n.toLocaleString();
 
@@ -103,6 +105,7 @@ export default function PlayerDetail() {
   const isAdmin = !!adminQ.data;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [cardOpen, setCardOpen] = useState(false);
   const { uploadFile, isUploading } = useUpload({
     onError: (e) => setPhotoError(e.message),
   });
@@ -280,9 +283,15 @@ export default function PlayerDetail() {
             };
             return <ShareButton input={input} appPath={`/players/${player.id}`} playerId={player.id} label="Share profile" />;
           })()}
-          <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
+          <Button variant="outline" onClick={() => setCardOpen(true)}>
+            <IdCard className="mr-1.5 h-4 w-4" /> Trading Card
+          </Button>
+          {isAdmin && (
+            <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
+          )}
         </div>
       </div>
+      <TradingCardModal playerId={playerId} open={cardOpen} onOpenChange={setCardOpen} />
 
       {premsWon > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">

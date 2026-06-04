@@ -12,6 +12,8 @@ export const playersTable = pgTable("players", {
   totalWickets: integer("total_wickets"),
   deceased: boolean("deceased").notNull().default(false),
   imageUrl: text("image_url"),
+  cardRole: text("card_role"),
+  cardRating: integer("card_rating"),
 });
 
 export const insertPlayerSchema = createInsertSchema(playersTable).omit({ id: true });

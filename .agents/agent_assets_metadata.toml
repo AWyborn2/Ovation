@@ -6,3 +6,15 @@ id = "NuV8ao0FmQZa5ItlYD49Z"
 uri = "file://artifacts/cricket-mobile/assets/images/icon.png"
 type = "image"
 title = "cricket club icon"
+
+[[generated]]
+id = "bf5n-I4w8odmAKOPTvgB3"
+uri = "file://artifacts/cricket-club/src/assets/card-avatar-male.png"
+type = "image"
+title = "male cricketer avatar"
+
+[[generated]]
+id = "7KuPl3EXGQaurDYU7Qq5_"
+uri = "file://artifacts/cricket-club/src/assets/card-avatar-female.png"
+type = "image"
+title = "female cricketer avatar"

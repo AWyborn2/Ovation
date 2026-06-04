@@ -2794,6 +2794,10 @@ components:
           type: ["integer", "null"]
         imageUrl:
           type: ["string", "null"]
+        cardRole:
+          type: ["string", "null"]
+        cardRating:
+          type: ["integer", "null"]
 
     PlayerInput:
       type: object
@@ -2819,6 +2823,10 @@ components:
           type: boolean
         imageUrl:
           type: ["string", "null"]
+        cardRole:
+          type: ["string", "null"]
+        cardRating:
+          type: ["integer", "null"]
 
     PlayerDetail:
       type: object
@@ -2840,6 +2848,10 @@ components:
           type: ["integer", "null"]
         imageUrl:
           type: ["string", "null"]
+        cardRole:
+          type: ["string", "null"]
+        cardRating:
+          type: ["integer", "null"]
         stats:
           type: array
           items:
