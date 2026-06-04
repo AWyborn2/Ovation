@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "NuV8ao0FmQZa5ItlYD49Z"
@@ -18,3 +17,15 @@ id = "7KuPl3EXGQaurDYU7Qq5_"
 uri = "file://artifacts/cricket-club/src/assets/card-avatar-female.png"
 type = "image"
 title = "female cricketer avatar"
+
+[[outputs]]
+id = "Dukf2k821c9IAwOKLRP3H"
+uri = "file://exports/players.xlsx"
+type = "table"
+title = "Player IDs (Excel)"
+
+[[outputs]]
+id = "aVNiBuBUxzx1rXjMuhK6q"
+uri = "file://exports/players.csv"
+type = "table"
+title = "Player IDs (CSV)"
