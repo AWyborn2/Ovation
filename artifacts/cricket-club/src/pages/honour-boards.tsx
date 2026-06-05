@@ -15,8 +15,14 @@ import {
   type DebutEntry,
   type MilestoneItem,
 } from "@workspace/api-client-react";
-import { Trophy, Star, Award, Target, Zap, Flame, UserPlus } from "lucide-react";
+import { Trophy, Star, Award, Target, Zap, Flame, UserPlus, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
@@ -48,6 +54,28 @@ import { RecordsTab } from "@/components/records-tab";
 type Scope = "career" | "by-grade";
 type ExtraTab = "milestones" | "caps" | "life-members" | "awards" | "team-of-decade" | "committee" | "records" | "search";
 type ActiveTab = BoardKey | ExtraTab;
+
+// "Honours" dropdown — the non-leaderboard boards (no career/by-grade scope).
+const HONOURS_ITEMS: { tab: ExtraTab; label: string }[] = [
+  { tab: "caps", label: "A Grade Caps" },
+  { tab: "life-members", label: "Life Members" },
+  { tab: "awards", label: "Awards" },
+  { tab: "team-of-decade", label: "Team of the Decade" },
+  { tab: "committee", label: "Office Bearers" },
+  { tab: "records", label: "Notable Records" },
+];
+
+const tabClass = (active: boolean) =>
+  `inline-flex items-center gap-1.5 px-4 md:px-5 py-2.5 rounded text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
+    active
+      ? "bg-primary text-primary-foreground"
+      : "text-muted-foreground hover:bg-muted hover:text-primary"
+  }`;
+
+const dropdownItemClass = (active: boolean) =>
+  `cursor-pointer text-xs md:text-sm font-semibold uppercase tracking-wider ${
+    active ? "bg-primary/10 text-primary" : ""
+  }`;
 
 // A card in the "Just achieved" list: either a career-total milestone promotion
 // or an A Grade / Female A Grade debut.
@@ -585,103 +613,67 @@ export default function HonourBoards() {
       )}
 
       {/* Tabs */}
-      <div className="bg-card border border-border rounded-md flex flex-wrap overflow-hidden shadow-md">
-        <button
-          onClick={() => setActiveTab("milestones")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "milestones"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Milestones
-        </button>
-        {BOARDS.map((b) => (
-          <button
-            key={b.key}
-            onClick={() => setActiveTab(b.key)}
-            className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-              activeTab === b.key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-primary"
-            }`}
-          >
-            {b.label}
-          </button>
-        ))}
-        <button
-          onClick={() => setActiveTab("caps")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "caps"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          A Grade Caps
-        </button>
-        <button
-          onClick={() => setActiveTab("life-members")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "life-members"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Life Members
-        </button>
-        <button
-          onClick={() => setActiveTab("awards")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "awards"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Awards
-        </button>
-        <button
-          onClick={() => setActiveTab("team-of-decade")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "team-of-decade"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Team of the Decade
-        </button>
-        <button
-          onClick={() => setActiveTab("committee")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "committee"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Office Bearers
-        </button>
-        <button
-          onClick={() => setActiveTab("records")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "records"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Notable Records
-        </button>
-        <button
-          onClick={() => setActiveTab("search")}
-          className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-            activeTab === "search"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
-          }`}
-        >
-          Search
-        </button>
-      </div>
+      {(() => {
+        const activeBoard = BOARDS.find((b) => b.key === activeTab);
+        const activeHonour = HONOURS_ITEMS.find((h) => h.tab === activeTab);
+        return (
+          <div className="bg-card border border-border rounded-md p-2 flex flex-wrap items-center gap-2 shadow-md">
+            <button onClick={() => setActiveTab("milestones")} className={tabClass(activeTab === "milestones")}>
+              Milestones
+            </button>
 
-      {/* Scope control (hidden in milestones / search / caps / life-members) */}
+            {/* Leaderboards — career/by-grade statistical boards */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={tabClass(!!activeBoard)}>
+                  {activeBoard ? `Leaderboards: ${activeBoard.label}` : "Leaderboards"}
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-52">
+                {BOARDS.map((b) => (
+                  <DropdownMenuItem
+                    key={b.key}
+                    onSelect={() => setActiveTab(b.key)}
+                    className={dropdownItemClass(activeTab === b.key)}
+                  >
+                    {b.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Honours — caps, life members, awards, etc. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={tabClass(!!activeHonour)}>
+                  {activeHonour ? `Honours: ${activeHonour.label}` : "Honours"}
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-52">
+                {HONOURS_ITEMS.map((h) => (
+                  <DropdownMenuItem
+                    key={h.tab}
+                    onSelect={() => setActiveTab(h.tab)}
+                    className={dropdownItemClass(activeTab === h.tab)}
+                  >
+                    {h.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <button onClick={() => setActiveTab("search")} className={tabClass(activeTab === "search")}>
+              Search
+            </button>
+          </div>
+        );
+      })()}
+
+      {/* Scope control — only shown for the Leaderboards (BOARDS) tabs; hidden for
+          milestones, search, and every Honours tab (caps / life-members / awards /
+          team-of-decade / committee / records). */}
       {activeTab !== "milestones" && activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && activeTab !== "team-of-decade" && activeTab !== "committee" && activeTab !== "records" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
