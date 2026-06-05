@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MatchStage } from './matchStage';
+import type { OpponentClub } from './opponentClub';
 
 export interface MatchSummary {
   id: number;
@@ -31,4 +32,6 @@ export interface MatchSummary {
   opponentScore?: string | null;
   abandoned: boolean;
   playerCount: number;
+  /** Opposition club branding, or null when unmatched. */
+  opponentClub?: OpponentClub | null;
 }

@@ -9,6 +9,7 @@ import {
   MatchStage,
   type MatchScorecardLine,
   type MatchOppositionLine,
+  type MatchDetail as MatchDetailDto,
 } from "@workspace/api-client-react";
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
@@ -151,8 +152,9 @@ export default function MatchDetail() {
         <div className="flex items-start gap-4">
           <GradeBadge grade={match.grade} size="lg" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-serif font-bold text-primary">
-              Halls Head vs {match.opponent ?? "Unknown"}
+            <h1 className="text-2xl font-serif font-bold text-primary flex items-center gap-2.5 flex-wrap">
+              <span>Halls Head vs {match.opponent ?? "Unknown"}</span>
+              <OpponentCrest club={match.opponentClub} size={32} />
             </h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
               <span>
@@ -420,6 +422,7 @@ export default function MatchDetail() {
           <TeamHeading
             name={match.opponent ?? "Opposition"}
             score={match.opponentScore}
+            club={match.opponentClub}
           />
 
           {oppBatting.length > 0 && (
@@ -512,19 +515,53 @@ export default function MatchDetail() {
   );
 }
 
+type OpponentClubInfo = MatchDetailDto["opponentClub"];
+
+// Branded opposition crest. Renders the club logo when one is matched, falling
+// back silently to nothing (the opponent name is always shown separately).
+function OpponentCrest({
+  club,
+  size = 28,
+}: {
+  club: OpponentClubInfo;
+  size?: number;
+}) {
+  const [errored, setErrored] = useState(false);
+  const src = club?.logoUrl128 || club?.logoUrl;
+  if (!club || !src || errored) return null;
+  return (
+    <img
+      src={src}
+      alt={`${club.name} logo`}
+      title={club.name}
+      width={size}
+      height={size}
+      onError={() => setErrored(true)}
+      className="inline-block rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
+      style={{ width: size, height: size }}
+      data-testid="img-opponent-crest"
+    />
+  );
+}
+
 function TeamHeading({
   name,
   score,
   hidden,
+  club,
 }: {
   name: string;
   score?: string | null;
   hidden?: boolean;
+  club?: OpponentClubInfo;
 }) {
   if (hidden) return null;
   return (
     <div className="flex items-baseline justify-between gap-3 pt-2">
-      <h2 className="text-xl font-serif font-bold text-foreground m-0">{name}</h2>
+      <h2 className="text-xl font-serif font-bold text-foreground m-0 flex items-center gap-2">
+        {club && <OpponentCrest club={club} size={26} />}
+        <span>{name}</span>
+      </h2>
       {score && <span className="font-mono font-bold text-primary text-lg">{score}</span>}
     </div>
   );

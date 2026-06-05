@@ -900,6 +900,24 @@ export interface PlayerMatchLine {
   runOuts: number;
 }
 
+/**
+ * Branding for the opposition club, resolved from the master club register via the match's opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.
+ */
+export interface OpponentClub {
+  id: number;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  logoUrl128?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+}
+
 export interface MatchSummary {
   id: number;
   grade: string;
@@ -924,6 +942,8 @@ export interface MatchSummary {
   opponentScore?: string | null;
   abandoned: boolean;
   playerCount: number;
+  /** Opposition club branding, or null when unmatched. */
+  opponentClub?: OpponentClub | null;
 }
 
 export interface MatchScorecardLine {
@@ -1021,6 +1041,8 @@ export interface MatchDetail {
   /** @nullable */
   opponentScore?: string | null;
   abandoned: boolean;
+  /** Opposition club branding, or null when unmatched. */
+  opponentClub?: OpponentClub | null;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
   /** Player IDs flagged by an admin as taking a hat-trick in this match. */

@@ -8,6 +8,7 @@ import {
   matchHatTricksTable,
   playersTable,
   importsTable,
+  clubsTable,
 } from "@workspace/db";
 import {
   ListMatchesQueryParams,
@@ -21,10 +22,62 @@ import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
 
+// Columns selected from the club register to brand a match's opposition.
+const opponentClubColumns = {
+  opponentClubId: clubsTable.id,
+  opponentClubName: clubsTable.name,
+  opponentClubShortName: clubsTable.shortName,
+  opponentClubLogoUrl: clubsTable.logoUrl,
+  opponentClubLogoUrl128: clubsTable.logoUrl128,
+  opponentClubPrimaryColour: clubsTable.primaryColour,
+  opponentClubSecondaryColour: clubsTable.secondaryColour,
+};
+
+type OpponentClubRow = {
+  opponentClubId: number | null;
+  opponentClubName: string | null;
+  opponentClubShortName: string | null;
+  opponentClubLogoUrl: string | null;
+  opponentClubLogoUrl128: string | null;
+  opponentClubPrimaryColour: string | null;
+  opponentClubSecondaryColour: string | null;
+};
+
+// Collapse the joined club columns into a nullable branding object. Null when
+// the match has no matched opposition club so renderers can fall back.
+function toOpponentClub(row: OpponentClubRow) {
+  if (row.opponentClubId == null || row.opponentClubName == null) return null;
+  return {
+    id: row.opponentClubId,
+    name: row.opponentClubName,
+    shortName: row.opponentClubShortName,
+    logoUrl: row.opponentClubLogoUrl,
+    logoUrl128: row.opponentClubLogoUrl128,
+    primaryColour: row.opponentClubPrimaryColour,
+    secondaryColour: row.opponentClubSecondaryColour,
+  };
+}
+
 async function loadMatchDetail(matchId: number) {
   const [match] = await db
-    .select()
+    .select({
+      id: matchesTable.id,
+      grade: matchesTable.grade,
+      season: matchesTable.season,
+      round: matchesTable.round,
+      stage: matchesTable.stage,
+      competition: matchesTable.competition,
+      matchDate: matchesTable.matchDate,
+      venue: matchesTable.venue,
+      result: matchesTable.result,
+      opponent: matchesTable.opponent,
+      hhccScore: matchesTable.hhccScore,
+      opponentScore: matchesTable.opponentScore,
+      abandoned: matchesTable.abandoned,
+      ...opponentClubColumns,
+    })
     .from(matchesTable)
+    .leftJoin(clubsTable, eq(clubsTable.id, matchesTable.opponentClubId))
     .where(eq(matchesTable.id, matchId));
   if (!match) return null;
 
@@ -105,6 +158,7 @@ async function loadMatchDetail(matchId: number) {
     hhccScore: match.hhccScore,
     opponentScore: match.opponentScore,
     abandoned: match.abandoned,
+    opponentClub: toOpponentClub(match),
     lines,
     oppositionLines,
     hatTrickPlayerIds: hatTricks.map((h) => h.playerId),
@@ -139,17 +193,32 @@ router.get("/matches", async (req, res): Promise<void> => {
       opponentScore: matchesTable.opponentScore,
       abandoned: matchesTable.abandoned,
       playerCount: count(matchPlayerLinesTable.id),
+      ...opponentClubColumns,
     })
     .from(matchesTable)
     .leftJoin(
       matchPlayerLinesTable,
       eq(matchPlayerLinesTable.matchId, matchesTable.id),
     )
+    .leftJoin(clubsTable, eq(clubsTable.id, matchesTable.opponentClubId))
     .where(conditions.length ? and(...conditions) : undefined)
-    .groupBy(matchesTable.id)
+    .groupBy(matchesTable.id, clubsTable.id)
     .orderBy(desc(matchesTable.season), desc(matchesTable.round), desc(matchesTable.id));
 
-  res.json(rows);
+  res.json(
+    rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubPrimaryColour, opponentClubSecondaryColour, ...rest }) => ({
+      ...rest,
+      opponentClub: toOpponentClub({
+        opponentClubId,
+        opponentClubName,
+        opponentClubShortName,
+        opponentClubLogoUrl,
+        opponentClubLogoUrl128,
+        opponentClubPrimaryColour,
+        opponentClubSecondaryColour,
+      }),
+    })),
+  );
 });
 
 router.get("/matches/:id", async (req, res): Promise<void> => {

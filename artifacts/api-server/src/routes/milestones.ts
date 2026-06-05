@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray, isNotNull } from "drizzle-orm";
+import { eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   matchesTable,
@@ -106,6 +106,8 @@ router.get("/milestones", async (_req, res): Promise<void> => {
     isIsoDate(d) && windowStart != null && d >= windowStart;
 
   // --- Per-player match lines (drive centuries, five-fors, career crossings).
+  //     Exclude fill-ins (playerId >= 90000): they have no real player record
+  //     and must never surface as a club milestone.
   const lines = await db
     .select({
       matchId: matchPlayerLinesTable.matchId,
@@ -113,7 +115,8 @@ router.get("/milestones", async (_req, res): Promise<void> => {
       runs: matchPlayerLinesTable.runs,
       wickets: matchPlayerLinesTable.wickets,
     })
-    .from(matchPlayerLinesTable);
+    .from(matchPlayerLinesTable)
+    .where(sql`${matchPlayerLinesTable.playerId} < 90000`);
 
   // --- Player names + current career totals.
   const players = await db
@@ -201,7 +204,8 @@ router.get("/milestones", async (_req, res): Promise<void> => {
       matchId: matchHatTricksTable.matchId,
       playerId: matchHatTricksTable.playerId,
     })
-    .from(matchHatTricksTable);
+    .from(matchHatTricksTable)
+    .where(sql`${matchHatTricksTable.playerId} < 90000`);
   for (const h of hatTricks) {
     const m = matchById.get(h.matchId);
     if (!m) continue;

@@ -3971,6 +3971,29 @@ components:
         runOuts:
           type: integer
 
+    OpponentClub:
+      type: object
+      description: >-
+        Branding for the opposition club, resolved from the master club register
+        via the match's opponentClubId. Null when the opponent could not be
+        matched to a known club; renderers must fall back gracefully.
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        logoUrl128:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        secondaryColour:
+          type: ["string", "null"]
+
     MatchSummary:
       type: object
       required: [id, grade, season, abandoned, playerCount]
@@ -4006,6 +4029,11 @@ components:
           type: boolean
         playerCount:
           type: integer
+        opponentClub:
+          oneOf:
+            - $ref: "#/components/schemas/OpponentClub"
+            - type: "null"
+          description: Opposition club branding, or null when unmatched.
 
     MatchScorecardLine:
       type: object
@@ -4090,6 +4118,11 @@ components:
           type: ["string", "null"]
         abandoned:
           type: boolean
+        opponentClub:
+          oneOf:
+            - $ref: "#/components/schemas/OpponentClub"
+            - type: "null"
+          description: Opposition club branding, or null when unmatched.
         lines:
           type: array
           items:

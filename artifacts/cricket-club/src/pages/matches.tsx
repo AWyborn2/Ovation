@@ -1,9 +1,33 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useListMatches, useListGrades } from "@workspace/api-client-react";
+import {
+  useListMatches,
+  useListGrades,
+  type MatchSummary,
+} from "@workspace/api-client-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin } from "lucide-react";
+
+// Compact opposition crest for match cards; falls back silently to nothing
+// (the opponent name is always shown beside it).
+function MatchCardCrest({ club }: { club: MatchSummary["opponentClub"] }) {
+  const [errored, setErrored] = useState(false);
+  const src = club?.logoUrl128 || club?.logoUrl;
+  if (!club || !src || errored) return null;
+  return (
+    <img
+      src={src}
+      alt={`${club.name} logo`}
+      title={club.name}
+      width={28}
+      height={28}
+      onError={() => setErrored(true)}
+      className="h-7 w-7 shrink-0 rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
+      data-testid="img-match-crest"
+    />
+  );
+}
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
@@ -91,6 +115,7 @@ export default function Matches() {
               <div className="bg-card border border-border rounded-md p-4 shadow-sm hover:border-primary transition-colors cursor-pointer group h-full flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <GradeBadge grade={m.grade} size="sm" />
+                  <MatchCardCrest club={m.opponentClub} />
                   <div className="flex-1 min-w-0">
                     <div className="font-serif font-bold text-primary group-hover:text-primary truncate">
                       vs {m.opponent ?? "Unknown"}

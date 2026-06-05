@@ -8,6 +8,7 @@
 import type { MatchOppositionLine } from './matchOppositionLine';
 import type { MatchScorecardLine } from './matchScorecardLine';
 import type { MatchStage } from './matchStage';
+import type { OpponentClub } from './opponentClub';
 
 export interface MatchDetail {
   id: number;
@@ -32,6 +33,8 @@ export interface MatchDetail {
   /** @nullable */
   opponentScore?: string | null;
   abandoned: boolean;
+  /** Opposition club branding, or null when unmatched. */
+  opponentClub?: OpponentClub | null;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
   /** Player IDs flagged by an admin as taking a hat-trick in this match. */
