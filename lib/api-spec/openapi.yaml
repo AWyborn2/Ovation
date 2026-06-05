@@ -2655,6 +2655,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/MilestoneBoardSettings"
 
+  /match-display-settings:
+    get:
+      operationId: getMatchDisplaySettings
+      tags: [matches]
+      summary: Get the public Matches page display defaults
+      responses:
+        "200":
+          description: Match display settings (default grade/season, grade order, round order)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDisplaySettings"
+    patch:
+      operationId: updateMatchDisplaySettings
+      tags: [matches]
+      summary: Update the public Matches page display defaults
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchDisplaySettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDisplaySettings"
+
   /caption-templates:
     put:
       operationId: upsertCaptionTemplate
@@ -6015,6 +6045,60 @@ components:
           items:
             type: integer
             minimum: 1
+
+    MatchDisplaySettings:
+      type: object
+      required:
+        - defaultGrade
+        - defaultSeasonMode
+        - gradeOrder
+        - roundOrder
+      properties:
+        defaultGrade:
+          type: string
+          description: Grade pre-selected on first load. Empty string = All grades.
+        defaultSeasonMode:
+          type: string
+          enum: [latest, specific, all]
+          description: >-
+            How the default season is chosen: latest available season, a
+            specific season, or all seasons.
+        defaultSeason:
+          type: integer
+          nullable: true
+          description: Specific season start-year used when defaultSeasonMode = specific.
+        gradeOrder:
+          type: array
+          items:
+            type: string
+          description: >-
+            Ordered grade names for the grade menu. Grades not listed fall back to
+            the built-in seniority order, appended after the configured ones.
+        roundOrder:
+          type: string
+          enum: [asc, desc]
+          description: >-
+            Within-season round direction: asc (round 1 first) or desc (latest
+            round first). Season ordering always stays newest-first.
+
+    MatchDisplaySettingsUpdate:
+      type: object
+      properties:
+        defaultGrade:
+          type: string
+        defaultSeasonMode:
+          type: string
+          enum: [latest, specific, all]
+        defaultSeason:
+          type: integer
+          nullable: true
+        gradeOrder:
+          type: array
+          items:
+            type: string
+        roundOrder:
+          type: string
+          enum: [asc, desc]
 
     MilestoneItem:
       type: object

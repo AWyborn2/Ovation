@@ -2189,6 +2189,67 @@ export interface MilestoneBoardSettingsUpdate {
   wicketsTiers?: number[];
 }
 
+/**
+ * How the default season is chosen: latest available season, a specific season, or all seasons.
+ */
+export type MatchDisplaySettingsDefaultSeasonMode = typeof MatchDisplaySettingsDefaultSeasonMode[keyof typeof MatchDisplaySettingsDefaultSeasonMode];
+
+
+export const MatchDisplaySettingsDefaultSeasonMode = {
+  latest: 'latest',
+  specific: 'specific',
+  all: 'all',
+} as const;
+
+/**
+ * Within-season round direction: asc (round 1 first) or desc (latest round first). Season ordering always stays newest-first.
+ */
+export type MatchDisplaySettingsRoundOrder = typeof MatchDisplaySettingsRoundOrder[keyof typeof MatchDisplaySettingsRoundOrder];
+
+
+export const MatchDisplaySettingsRoundOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export interface MatchDisplaySettings {
+  /** Grade pre-selected on first load. Empty string = All grades. */
+  defaultGrade: string;
+  /** How the default season is chosen: latest available season, a specific season, or all seasons. */
+  defaultSeasonMode: MatchDisplaySettingsDefaultSeasonMode;
+  /** Specific season start-year used when defaultSeasonMode = specific. */
+  defaultSeason?: number | null;
+  /** Ordered grade names for the grade menu. Grades not listed fall back to the built-in seniority order, appended after the configured ones. */
+  gradeOrder: string[];
+  /** Within-season round direction: asc (round 1 first) or desc (latest round first). Season ordering always stays newest-first. */
+  roundOrder: MatchDisplaySettingsRoundOrder;
+}
+
+export type MatchDisplaySettingsUpdateDefaultSeasonMode = typeof MatchDisplaySettingsUpdateDefaultSeasonMode[keyof typeof MatchDisplaySettingsUpdateDefaultSeasonMode];
+
+
+export const MatchDisplaySettingsUpdateDefaultSeasonMode = {
+  latest: 'latest',
+  specific: 'specific',
+  all: 'all',
+} as const;
+
+export type MatchDisplaySettingsUpdateRoundOrder = typeof MatchDisplaySettingsUpdateRoundOrder[keyof typeof MatchDisplaySettingsUpdateRoundOrder];
+
+
+export const MatchDisplaySettingsUpdateRoundOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export interface MatchDisplaySettingsUpdate {
+  defaultGrade?: string;
+  defaultSeasonMode?: MatchDisplaySettingsUpdateDefaultSeasonMode;
+  defaultSeason?: number | null;
+  gradeOrder?: string[];
+  roundOrder?: MatchDisplaySettingsUpdateRoundOrder;
+}
+
 export type MilestoneItemKind = typeof MilestoneItemKind[keyof typeof MilestoneItemKind];
 
 

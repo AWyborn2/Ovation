@@ -17,6 +17,7 @@ export * from "./captains";
 export * from "./award_voting";
 export * from "./award_points_config";
 export * from "./social_cards";
+export * from "./match_display_settings";
 export * from "./team_of_decade";
 export * from "./club_roles";
 export * from "./clubs";

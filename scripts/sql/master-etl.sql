@@ -8,7 +8,9 @@
 -- This file is idempotent: re-running cleanly replaces the loaded data.
 --
 -- It REPLACES the data tables the master owns and KEEPS app-config tables
--- (award definitions, honour-board config, admins, captains, imports, matches).
+-- (award definitions, honour-board config, admins, captains, imports, matches,
+-- match_display_settings). App-config is preserved implicitly: it is simply not
+-- in the DELETE/replace list below.
 -- It WIPES baseline_adjustments: the season=NULL career baseline is rebuilt fresh
 -- below, so any match-era peels recorded against the OLD baseline are stale (see
 -- step 3). Players are upserted by id (preserving the master IDs, including the

@@ -3573,6 +3573,38 @@ export const UpdateMilestoneBoardSettingsResponse = zod.object({
 
 
 /**
+ * @summary Get the public Matches page display defaults
+ */
+export const GetMatchDisplaySettingsResponse = zod.object({
+  "defaultGrade": zod.string().describe('Grade pre-selected on first load. Empty string = All grades.'),
+  "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
+  "defaultSeason": zod.number().nullish().describe('Specific season start-year used when defaultSeasonMode = specific.'),
+  "gradeOrder": zod.array(zod.string()).describe('Ordered grade names for the grade menu. Grades not listed fall back to the built-in seniority order, appended after the configured ones.'),
+  "roundOrder": zod.enum(['asc', 'desc']).describe('Within-season round direction: asc (round 1 first) or desc (latest round first). Season ordering always stays newest-first.')
+})
+
+
+/**
+ * @summary Update the public Matches page display defaults
+ */
+export const UpdateMatchDisplaySettingsBody = zod.object({
+  "defaultGrade": zod.string().optional(),
+  "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).optional(),
+  "defaultSeason": zod.number().nullish(),
+  "gradeOrder": zod.array(zod.string()).optional(),
+  "roundOrder": zod.enum(['asc', 'desc']).optional()
+})
+
+export const UpdateMatchDisplaySettingsResponse = zod.object({
+  "defaultGrade": zod.string().describe('Grade pre-selected on first load. Empty string = All grades.'),
+  "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
+  "defaultSeason": zod.number().nullish().describe('Specific season start-year used when defaultSeasonMode = specific.'),
+  "gradeOrder": zod.array(zod.string()).describe('Ordered grade names for the grade menu. Grades not listed fall back to the built-in seniority order, appended after the configured ones.'),
+  "roundOrder": zod.enum(['asc', 'desc']).describe('Within-season round direction: asc (round 1 first) or desc (latest round first). Season ordering always stays newest-first.')
+})
+
+
+/**
  * @summary Upsert a caption template for an engine+platform
  */
 export const UpsertCaptionTemplateBody = zod.object({

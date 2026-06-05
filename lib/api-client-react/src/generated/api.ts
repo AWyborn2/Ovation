@@ -86,6 +86,8 @@ import type {
   ListStatsParams,
   LoginRequest,
   MatchDetail,
+  MatchDisplaySettings,
+  MatchDisplaySettingsUpdate,
   MatchHatTrickInput,
   MatchImportPreview,
   MatchRoundUpdate,
@@ -9521,6 +9523,154 @@ export const useUpdateMilestoneBoardSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMilestoneBoardSettingsMutationOptions(options));
+    }
+
+export const getGetMatchDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/match-display-settings`
+}
+
+/**
+ * @summary Get the public Matches page display defaults
+ */
+export const getMatchDisplaySettings = async ( options?: RequestInit): Promise<MatchDisplaySettings> => {
+
+  return customFetch<MatchDisplaySettings>(getGetMatchDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMatchDisplaySettingsQueryKey = () => {
+    return [
+    `/api/match-display-settings`
+    ] as const;
+    }
+
+
+export const getGetMatchDisplaySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMatchDisplaySettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMatchDisplaySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMatchDisplaySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMatchDisplaySettings>>> = ({ signal }) => getMatchDisplaySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMatchDisplaySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMatchDisplaySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMatchDisplaySettings>>>
+export type GetMatchDisplaySettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the public Matches page display defaults
+ */
+
+export function useGetMatchDisplaySettings<TData = Awaited<ReturnType<typeof getMatchDisplaySettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMatchDisplaySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMatchDisplaySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateMatchDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/match-display-settings`
+}
+
+/**
+ * @summary Update the public Matches page display defaults
+ */
+export const updateMatchDisplaySettings = async (matchDisplaySettingsUpdate: MatchDisplaySettingsUpdate, options?: RequestInit): Promise<MatchDisplaySettings> => {
+
+  return customFetch<MatchDisplaySettings>(getUpdateMatchDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      matchDisplaySettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateMatchDisplaySettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMatchDisplaySettings>>, TError,{data: BodyType<MatchDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMatchDisplaySettings>>, TError,{data: BodyType<MatchDisplaySettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateMatchDisplaySettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMatchDisplaySettings>>, {data: BodyType<MatchDisplaySettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMatchDisplaySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMatchDisplaySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateMatchDisplaySettings>>>
+    export type UpdateMatchDisplaySettingsMutationBody = BodyType<MatchDisplaySettingsUpdate>
+    export type UpdateMatchDisplaySettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the public Matches page display defaults
+ */
+export const useUpdateMatchDisplaySettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMatchDisplaySettings>>, TError,{data: BodyType<MatchDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMatchDisplaySettings>>,
+        TError,
+        {data: BodyType<MatchDisplaySettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMatchDisplaySettingsMutationOptions(options));
     }
 
 export const getUpsertCaptionTemplateUrl = () => {

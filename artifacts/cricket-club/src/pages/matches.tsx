@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   useListMatches,
   useListGrades,
+  useGetMatchDisplaySettings,
+  getListMatchesQueryKey,
   type MatchSummary,
 } from "@workspace/api-client-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
@@ -39,30 +41,87 @@ const fmtDate = (d: string | null | undefined) => {
 };
 
 export default function Matches() {
-  const [grade, setGrade] = useState<string>("");
-  const [season, setSeason] = useState<string>("");
+  // `null` = not yet initialised from saved admin defaults.
+  const [grade, setGrade] = useState<string | null>(null);
+  const [season, setSeason] = useState<string | null>(null);
+  // For "latest" season mode we must wait until we know the newest season
+  // before the displayed list query is allowed to run.
+  const [seasonReady, setSeasonReady] = useState(false);
 
-  const { data: matches, isLoading } = useListMatches({
-    grade: grade || undefined,
-    season: season ? parseInt(season, 10) : undefined,
-  });
+  const { data: settings } = useGetMatchDisplaySettings();
   const { data: grades } = useListGrades();
 
-  const gradeOptions = useMemo(
-    () =>
-      sortGradesBySeniority(
-        (grades ?? []).map((g) => g.grade).filter((g) => g !== "CLUB TOTAL"),
-      ),
-    [grades],
+  const initialised = grade !== null;
+  const gradeArg = grade || undefined;
+  const seasonArg = season && season !== "" ? parseInt(season, 10) : undefined;
+
+  // Grade-only query: drives the season dropdown and "latest" detection so the
+  // season list never collapses to the single selected season.
+  const { data: gradeMatches } = useListMatches(
+    { grade: gradeArg },
+    {
+      query: {
+        enabled: initialised,
+        queryKey: getListMatchesQueryKey({ grade: gradeArg }),
+      },
+    },
   );
 
-  // Season options derived from all matches (unfiltered would need a second
-  // query; deriving from current results is sufficient and stays in sync).
+  // Displayed list: filtered by grade + season.
+  const { data: matches, isLoading } = useListMatches(
+    { grade: gradeArg, season: seasonArg },
+    {
+      query: {
+        enabled: initialised && seasonReady,
+        queryKey: getListMatchesQueryKey({ grade: gradeArg, season: seasonArg }),
+      },
+    },
+  );
+
+  // Apply saved admin defaults once, on first load.
+  useEffect(() => {
+    if (!settings || grade !== null) return;
+    setGrade(settings.defaultGrade);
+    if (settings.defaultSeasonMode === "specific") {
+      setSeason(settings.defaultSeason != null ? String(settings.defaultSeason) : "");
+      setSeasonReady(true);
+    } else if (settings.defaultSeasonMode === "all") {
+      setSeason("");
+      setSeasonReady(true);
+    } else {
+      // "latest" — resolved once gradeMatches loads below.
+      setSeason("");
+    }
+  }, [settings, grade]);
+
+  // Resolve "latest" season once the grade-only matches arrive.
+  useEffect(() => {
+    if (seasonReady || !settings || settings.defaultSeasonMode !== "latest") return;
+    if (!gradeMatches) return;
+    const latest = gradeMatches.reduce<number | null>(
+      (max, m) => (max === null || m.season > max ? m.season : max),
+      null,
+    );
+    setSeason(latest != null ? String(latest) : "");
+    setSeasonReady(true);
+  }, [gradeMatches, settings, seasonReady]);
+
+  const gradeOptions = useMemo(() => {
+    const available = sortGradesBySeniority(
+      (grades ?? []).map((g) => g.grade).filter((g) => g !== "CLUB TOTAL"),
+    );
+    const configured = (settings?.gradeOrder ?? []).filter((g) => available.includes(g));
+    const rest = available.filter((g) => !configured.includes(g));
+    return [...configured, ...rest];
+  }, [grades, settings]);
+
+  // Season options derived from the grade-only query so they stay complete even
+  // when a specific season is selected.
   const seasonOptions = useMemo(() => {
     const set = new Set<number>();
-    for (const m of matches ?? []) set.add(m.season);
+    for (const m of gradeMatches ?? []) set.add(m.season);
     return Array.from(set).sort((a, b) => b - a);
-  }, [matches]);
+  }, [gradeMatches]);
 
   return (
     <div className="space-y-6">
@@ -77,7 +136,7 @@ export default function Matches() {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold uppercase tracking-widest text-primary">Grade</label>
           <select
-            value={grade}
+            value={grade ?? ""}
             onChange={(e) => setGrade(e.target.value)}
             className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
           >
@@ -90,8 +149,11 @@ export default function Matches() {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
           <select
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
+            value={season ?? ""}
+            onChange={(e) => {
+              setSeason(e.target.value);
+              setSeasonReady(true);
+            }}
             className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[8rem]"
           >
             <option value="">All seasons</option>

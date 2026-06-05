@@ -6,6 +6,7 @@ import {
   matchPlayerLinesTable,
   matchOppositionLinesTable,
   matchHatTricksTable,
+  matchDisplaySettingsTable,
   playersTable,
   importsTable,
   clubsTable,
@@ -17,10 +18,38 @@ import {
   UpdateMatchRoundBody,
   SetMatchHatTrickParams,
   SetMatchHatTrickBody,
+  UpdateMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
+
+const DISPLAY_SETTINGS_ID = 1;
+
+async function ensureMatchDisplaySettings() {
+  const [existing] = await db
+    .select()
+    .from(matchDisplaySettingsTable)
+    .where(eq(matchDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+  if (existing) return existing;
+  const [created] = await db
+    .insert(matchDisplaySettingsTable)
+    .values({ id: DISPLAY_SETTINGS_ID })
+    .returning();
+  return created;
+}
+
+function serializeMatchDisplaySettings(
+  row: typeof matchDisplaySettingsTable.$inferSelect,
+) {
+  return {
+    defaultGrade: row.defaultGrade,
+    defaultSeasonMode: row.defaultSeasonMode as "latest" | "specific" | "all",
+    defaultSeason: row.defaultSeason,
+    gradeOrder: row.gradeOrder,
+    roundOrder: row.roundOrder as "asc" | "desc",
+  };
+}
 
 // Columns selected from the club register to brand a match's opposition.
 const opponentClubColumns = {
@@ -179,6 +208,11 @@ router.get("/matches", async (req, res): Promise<void> => {
   if (grade) conditions.push(eq(matchesTable.grade, grade));
   if (season !== undefined) conditions.push(eq(matchesTable.season, season));
 
+  // Within-season round direction is admin-configurable; season stays newest-first.
+  const settings = await ensureMatchDisplaySettings();
+  const roundDir = settings.roundOrder === "asc" ? asc : desc;
+  const idDir = settings.roundOrder === "asc" ? asc : desc;
+
   const rows = await db
     .select({
       id: matchesTable.id,
@@ -205,7 +239,7 @@ router.get("/matches", async (req, res): Promise<void> => {
     .leftJoin(clubsTable, eq(clubsTable.id, matchesTable.opponentClubId))
     .where(conditions.length ? and(...conditions) : undefined)
     .groupBy(matchesTable.id, clubsTable.id)
-    .orderBy(desc(matchesTable.season), desc(matchesTable.round), desc(matchesTable.id));
+    .orderBy(desc(matchesTable.season), roundDir(matchesTable.round), idDir(matchesTable.id));
 
   res.json(
     rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubPrimaryColour, opponentClubSecondaryColour, ...rest }) => ({
@@ -394,6 +428,30 @@ router.post(
 
     const detail = await loadMatchDetail(matchId);
     res.json(detail);
+  },
+);
+
+router.get("/match-display-settings", async (_req, res): Promise<void> => {
+  const settings = await ensureMatchDisplaySettings();
+  res.json(serializeMatchDisplaySettings(settings));
+});
+
+router.patch(
+  "/match-display-settings",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = UpdateMatchDisplaySettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    await ensureMatchDisplaySettings();
+    const [row] = await db
+      .update(matchDisplaySettingsTable)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(matchDisplaySettingsTable.id, DISPLAY_SETTINGS_ID))
+      .returning();
+    res.json(serializeMatchDisplaySettings(row));
   },
 );
 

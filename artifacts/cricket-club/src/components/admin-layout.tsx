@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/premierships", label: "Premierships" },
   { href: "/admin/honour-boards", label: "Honour boards" },
   { href: "/admin/milestone-board", label: "Milestone board" },
+  { href: "/admin/match-display", label: "Matches page display" },
   { href: "/admin/import", label: "Import CSV" },
   { href: "/admin/caps", label: "Cap register" },
   { href: "/admin/life-members", label: "Life members" },

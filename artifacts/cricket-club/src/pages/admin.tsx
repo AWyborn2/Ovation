@@ -8,6 +8,7 @@ const TILES = [
   { href: "/admin/premierships", title: "Premierships", body: "Add and edit premiership records and squads." },
   { href: "/admin/honour-boards", title: "Honour boards", body: "Edit board titles and pin/hide overrides." },
   { href: "/admin/milestone-board", title: "Milestone board", body: "Show recent / approaching milestones and set thresholds." },
+  { href: "/admin/match-display", title: "Matches page display", body: "Default grade/season, grade menu order, round order." },
   { href: "/admin/import", title: "Import CSV", body: "Upload a PlayCricket combined CSV for a season." },
   { href: "/admin/caps", title: "Cap register", body: "A Grade cap numbers and links." },
   { href: "/admin/life-members", title: "Life members", body: "Honour-board life members." },
