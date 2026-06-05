@@ -196,6 +196,21 @@ async function loadMatchDetail(matchId: number) {
   };
 }
 
+// Empty placeholder / "bye" fixture shells picked up during scraping: a row
+// with no opponent, no result, no scores and no players on either side (and
+// NOT flagged abandoned — those are real washed-out matches we keep). These
+// aren't real games, so they're hidden from the public match list. This is a
+// read-only filter; the underlying rows are left untouched in the database.
+const notEmptyFixture: SQL = sql`NOT (
+  (${matchesTable.opponent} IS NULL OR btrim(${matchesTable.opponent}) = '')
+  AND COALESCE(${matchesTable.abandoned}, false) = false
+  AND (${matchesTable.result} IS NULL OR btrim(${matchesTable.result}) = '')
+  AND (${matchesTable.hhccScore} IS NULL OR btrim(${matchesTable.hhccScore}) = '')
+  AND (${matchesTable.opponentScore} IS NULL OR btrim(${matchesTable.opponentScore}) = '')
+  AND NOT EXISTS (SELECT 1 FROM match_player_lines mpl WHERE mpl.match_id = ${matchesTable.id})
+  AND NOT EXISTS (SELECT 1 FROM match_opposition_lines mol WHERE mol.match_id = ${matchesTable.id})
+)`;
+
 router.get("/matches", async (req, res): Promise<void> => {
   const query = ListMatchesQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -207,6 +222,8 @@ router.get("/matches", async (req, res): Promise<void> => {
   const conditions: SQL[] = [];
   if (grade) conditions.push(eq(matchesTable.grade, grade));
   if (season !== undefined) conditions.push(eq(matchesTable.season, season));
+  // Always hide empty placeholder fixtures (see notEmptyFixture above).
+  conditions.push(notEmptyFixture);
 
   // Within-season round direction is admin-configurable; season stays newest-first.
   const settings = await ensureMatchDisplaySettings();
