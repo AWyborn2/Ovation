@@ -62,7 +62,7 @@ Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Fe
 - **Grades** (`/grades`) — summary cards for each grade
 - **Grade Leaderboard** (`/grades/:grade`) — full sortable stats table for a specific grade
 - **Committee & Captains** — season-by-season office bearers (Committee tab on Honour Boards) and grade captains (history section on each grade leaderboard), from `club_roles`. Admin CRUD at `/admin/committee` with publish/visibility toggle; names link to players where confident, plain text otherwise. Seeded from `artifacts/api-server/src/data/club-roles.json` via `scripts/src/seed-committee.ts`.
-- **Records** (`/records`) — all-time club records across all categories
+- **Records** (`/records`) — all-time club records across all categories. Tabs: Total Club Records, By Grade, Partnerships (highest stand per wicket + every recorded 50+ stand), Centuries, 5-Wicket Hauls. The last three are curated historical lists loaded from the club master DB (read-only; routes in `artifacts/api-server/src/routes/historical.ts`)
 - **Team of the Decade** — curated best-XI honour boards. Public view is a self-contained tab on the Honour Boards page (`/`), showing only published boards; admin management at `/admin/team-of-decade` (draft/publish toggle, reorder, lineup with optional player link via PlayerTypeahead, role + captain/VC/keeper flags). Schema: `team_of_decade_boards` + `team_of_decade_members`; routes in `artifacts/api-server/src/routes/team-of-decade.ts`.
 - **Stat Edit** (`/stats/:id`) — inline edit/delete a stat record
 - **Admin Import** (`/admin/import`) — two modes:
@@ -85,5 +85,6 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Pointers
 
+- **Master DB load** — the club's full master database export is the authoritative source for player roster, caps, premierships, club roles, award winners, life members, Team of the Decade, opposition clubs, and the historical records (partnerships, centuries, five-fors, club/honour-board records). Loaded via `scripts/src/load-master-db.ts` (`pnpm --filter @workspace/scripts run load-master-db [--commit]`): picks the newest dump in `attached_assets`, builds a `staging` schema, previews row diffs by default, and `--commit` runs `scripts/sql/master-etl.sql` (backup → replace owned DATA tables → recompute → setval) and verifies vs master career views. Idempotent/re-runnable; backup kept in schema `master_load_backup`. App-config tables (awards defs, honour-board config, admins, captains) are preserved, not replaced.
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
 - `docs/playcricket-ingestion.md` — spike findings on pulling stats directly from playcricket.com.au. Decision: **stay on CSV**. PlayHQ's public API does not expose per-grade cricket aggregates, and the private profile-stats endpoints need partner approval. Do not re-investigate without explicit user demand.

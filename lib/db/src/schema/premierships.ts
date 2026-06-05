@@ -25,6 +25,7 @@ export const premiershipPlayersTable = pgTable("premiership_players", {
   }),
   name: text("name").notNull(),
   isCaptain: boolean("is_captain").notNull().default(false),
+  isMotm: boolean("is_motm").notNull().default(false),
   battingOrder: integer("batting_order"),
 });
 

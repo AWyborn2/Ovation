@@ -1759,6 +1759,56 @@ export interface RecordsLeaderboards {
   awardRecords: RecordLeaderboard[];
 }
 
+export interface PartnershipRecord {
+  id: number;
+  grade: string;
+  /** Wicket the stand was for, e.g. "1st", "2nd". */
+  wicket: string;
+  runs: number;
+  /** The two batsmen, e.g. "Dale Burns / Leigh Burns". */
+  batsmen: string;
+  /** @nullable */
+  opposition?: string | null;
+  /**
+     * Display label, e.g. "2002/03".
+     * @nullable
+     */
+  season?: string | null;
+  /** @nullable */
+  source?: string | null;
+}
+
+export interface Partnerships {
+  /** Highest stand per wicket per grade. */
+  records: PartnershipRecord[];
+  /** Every recorded 50+ partnership. */
+  fiftyPlus: PartnershipRecord[];
+}
+
+export interface Century {
+  id: number;
+  /** @nullable */
+  playerId?: number | null;
+  grade: string;
+  batsman: string;
+  /** @nullable */
+  score?: string | null;
+  /** @nullable */
+  season?: string | null;
+}
+
+export interface FiveWicketHaul {
+  id: number;
+  /** @nullable */
+  playerId?: number | null;
+  grade: string;
+  bowler: string;
+  /** @nullable */
+  figures?: string | null;
+  /** @nullable */
+  season?: string | null;
+}
+
 export type CardKind = typeof CardKind[keyof typeof CardKind];
 
 

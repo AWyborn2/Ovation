@@ -2326,6 +2326,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordsLeaderboards"
 
+  /partnerships:
+    get:
+      operationId: getPartnerships
+      tags: [records]
+      summary: Partnership records and the full 50+ stand list
+      description: |
+        Loaded from the club's master database. `records` holds the highest
+        partnership per wicket per grade; `fiftyPlus` holds every recorded 50+
+        stand. There is no per-match link, so this is a records surface.
+      responses:
+        "200":
+          description: Partnership records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partnerships"
+
+  /centuries:
+    get:
+      operationId: listCenturies
+      tags: [records]
+      summary: Recorded individual centuries
+      responses:
+        "200":
+          description: Century list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Century"
+
+  /five-wicket-hauls:
+    get:
+      operationId: listFiveWicketHauls
+      tags: [records]
+      summary: Recorded five-wicket hauls
+      responses:
+        "200":
+          description: Five-wicket-haul list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FiveWicketHaul"
+
   /sponsors:
     get:
       operationId: listSponsors
@@ -5419,6 +5466,79 @@ components:
           type: ["integer", "null"]
         count:
           type: integer
+
+    PartnershipRecord:
+      type: object
+      required: [id, grade, wicket, runs, batsmen]
+      properties:
+        id:
+          type: integer
+        grade:
+          type: string
+        wicket:
+          type: string
+          description: Wicket the stand was for, e.g. "1st", "2nd".
+        runs:
+          type: integer
+        batsmen:
+          type: string
+          description: The two batsmen, e.g. "Dale Burns / Leigh Burns".
+        opposition:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+          description: Display label, e.g. "2002/03".
+        source:
+          type: ["string", "null"]
+
+    Partnerships:
+      type: object
+      required: [records, fiftyPlus]
+      properties:
+        records:
+          type: array
+          description: Highest stand per wicket per grade.
+          items:
+            $ref: "#/components/schemas/PartnershipRecord"
+        fiftyPlus:
+          type: array
+          description: Every recorded 50+ partnership.
+          items:
+            $ref: "#/components/schemas/PartnershipRecord"
+
+    Century:
+      type: object
+      required: [id, grade, batsman]
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        grade:
+          type: string
+        batsman:
+          type: string
+        score:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+
+    FiveWicketHaul:
+      type: object
+      required: [id, grade, bowler]
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+        grade:
+          type: string
+        bowler:
+          type: string
+        figures:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
 
     CardKind:
       type: string

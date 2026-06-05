@@ -15,6 +15,7 @@
     "seed-awards": "tsx ./src/seed-awards.ts",
     "load-award-history": "tsx ./src/load-award-history.ts",
     "seed-committee": "tsx ./src/seed-committee.ts",
+    "load-master-db": "tsx ./src/load-master-db.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

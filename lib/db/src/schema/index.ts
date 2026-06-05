@@ -19,3 +19,6 @@ export * from "./award_points_config";
 export * from "./social_cards";
 export * from "./team_of_decade";
 export * from "./club_roles";
+export * from "./clubs";
+export * from "./partnerships";
+export * from "./historical_records";

@@ -14,6 +14,12 @@ export const playersTable = pgTable("players", {
   imageUrl: text("image_url"),
   cardRole: text("card_role"),
   cardRating: integer("card_rating"),
+  // Placeholder players used to fill an XI in a scorecard (master IDs from
+  // 90001). Hidden from the public directory. Loaded from the master DB.
+  isFillIn: boolean("is_fill_in").notNull().default(false),
+  // Capped A-grade players whose career stats were never registered (master IDs
+  // from 95001). They appear in the cap register but carry no recorded stats.
+  isCapOnly: boolean("is_cap_only").notNull().default(false),
 });
 
 export const insertPlayerSchema = createInsertSchema(playersTable).omit({ id: true });

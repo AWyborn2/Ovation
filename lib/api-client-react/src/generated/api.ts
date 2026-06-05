@@ -58,6 +58,7 @@ import type {
   CardTheme,
   CardThemeInput,
   CardThemeUpdate,
+  Century,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -67,6 +68,7 @@ import type {
   Dashboard,
   DebutEntry,
   ErrorEnvelope,
+  FiveWicketHaul,
   GradeSummary,
   HealthStatus,
   HonourBoard,
@@ -91,6 +93,7 @@ import type {
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
   MilestonesBoard,
+  Partnerships,
   Player,
   PlayerDetail,
   PlayerInput,
@@ -8107,6 +8110,241 @@ export function useGetRecordsLeaderboards<TData = Awaited<ReturnType<typeof getR
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetRecordsLeaderboardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPartnershipsUrl = () => {
+
+
+
+
+  return `/api/partnerships`
+}
+
+/**
+ * Loaded from the club's master database. `records` holds the highest
+partnership per wicket per grade; `fiftyPlus` holds every recorded 50+
+stand. There is no per-match link, so this is a records surface.
+
+ * @summary Partnership records and the full 50+ stand list
+ */
+export const getPartnerships = async ( options?: RequestInit): Promise<Partnerships> => {
+
+  return customFetch<Partnerships>(getGetPartnershipsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPartnershipsQueryKey = () => {
+    return [
+    `/api/partnerships`
+    ] as const;
+    }
+
+
+export const getGetPartnershipsQueryOptions = <TData = Awaited<ReturnType<typeof getPartnerships>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartnerships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPartnershipsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPartnerships>>> = ({ signal }) => getPartnerships({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPartnerships>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPartnershipsQueryResult = NonNullable<Awaited<ReturnType<typeof getPartnerships>>>
+export type GetPartnershipsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Partnership records and the full 50+ stand list
+ */
+
+export function useGetPartnerships<TData = Awaited<ReturnType<typeof getPartnerships>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartnerships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPartnershipsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListCenturiesUrl = () => {
+
+
+
+
+  return `/api/centuries`
+}
+
+/**
+ * @summary Recorded individual centuries
+ */
+export const listCenturies = async ( options?: RequestInit): Promise<Century[]> => {
+
+  return customFetch<Century[]>(getListCenturiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCenturiesQueryKey = () => {
+    return [
+    `/api/centuries`
+    ] as const;
+    }
+
+
+export const getListCenturiesQueryOptions = <TData = Awaited<ReturnType<typeof listCenturies>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCenturies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCenturiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCenturies>>> = ({ signal }) => listCenturies({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCenturies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCenturiesQueryResult = NonNullable<Awaited<ReturnType<typeof listCenturies>>>
+export type ListCenturiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recorded individual centuries
+ */
+
+export function useListCenturies<TData = Awaited<ReturnType<typeof listCenturies>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCenturies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCenturiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListFiveWicketHaulsUrl = () => {
+
+
+
+
+  return `/api/five-wicket-hauls`
+}
+
+/**
+ * @summary Recorded five-wicket hauls
+ */
+export const listFiveWicketHauls = async ( options?: RequestInit): Promise<FiveWicketHaul[]> => {
+
+  return customFetch<FiveWicketHaul[]>(getListFiveWicketHaulsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFiveWicketHaulsQueryKey = () => {
+    return [
+    `/api/five-wicket-hauls`
+    ] as const;
+    }
+
+
+export const getListFiveWicketHaulsQueryOptions = <TData = Awaited<ReturnType<typeof listFiveWicketHauls>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFiveWicketHauls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFiveWicketHaulsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFiveWicketHauls>>> = ({ signal }) => listFiveWicketHauls({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFiveWicketHauls>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFiveWicketHaulsQueryResult = NonNullable<Awaited<ReturnType<typeof listFiveWicketHauls>>>
+export type ListFiveWicketHaulsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recorded five-wicket hauls
+ */
+
+export function useListFiveWicketHauls<TData = Awaited<ReturnType<typeof listFiveWicketHauls>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFiveWicketHauls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFiveWicketHaulsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

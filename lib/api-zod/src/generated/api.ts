@@ -3053,6 +3053,65 @@ export const GetRecordsLeaderboardsResponse = zod.object({
 
 
 /**
+ * Loaded from the club's master database. `records` holds the highest
+partnership per wicket per grade; `fiftyPlus` holds every recorded 50+
+stand. There is no per-match link, so this is a records surface.
+
+ * @summary Partnership records and the full 50+ stand list
+ */
+export const GetPartnershipsResponse = zod.object({
+  "records": zod.array(zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "wicket": zod.string().describe('Wicket the stand was for, e.g. \"1st\", \"2nd\".'),
+  "runs": zod.number(),
+  "batsmen": zod.string().describe('The two batsmen, e.g. \"Dale Burns \/ Leigh Burns\".'),
+  "opposition": zod.string().nullish(),
+  "season": zod.string().nullish().describe('Display label, e.g. \"2002\/03\".'),
+  "source": zod.string().nullish()
+})).describe('Highest stand per wicket per grade.'),
+  "fiftyPlus": zod.array(zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "wicket": zod.string().describe('Wicket the stand was for, e.g. \"1st\", \"2nd\".'),
+  "runs": zod.number(),
+  "batsmen": zod.string().describe('The two batsmen, e.g. \"Dale Burns \/ Leigh Burns\".'),
+  "opposition": zod.string().nullish(),
+  "season": zod.string().nullish().describe('Display label, e.g. \"2002\/03\".'),
+  "source": zod.string().nullish()
+})).describe('Every recorded 50+ partnership.')
+})
+
+
+/**
+ * @summary Recorded individual centuries
+ */
+export const ListCenturiesResponseItem = zod.object({
+  "id": zod.number(),
+  "playerId": zod.number().nullish(),
+  "grade": zod.string(),
+  "batsman": zod.string(),
+  "score": zod.string().nullish(),
+  "season": zod.string().nullish()
+})
+export const ListCenturiesResponse = zod.array(ListCenturiesResponseItem)
+
+
+/**
+ * @summary Recorded five-wicket hauls
+ */
+export const ListFiveWicketHaulsResponseItem = zod.object({
+  "id": zod.number(),
+  "playerId": zod.number().nullish(),
+  "grade": zod.string(),
+  "bowler": zod.string(),
+  "figures": zod.string().nullish(),
+  "season": zod.string().nullish()
+})
+export const ListFiveWicketHaulsResponse = zod.array(ListFiveWicketHaulsResponseItem)
+
+
+/**
  * @summary List all sponsors
  */
 export const ListSponsorsResponseItem = zod.object({

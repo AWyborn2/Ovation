@@ -27,6 +27,10 @@ export const capRegisterTable = pgTable("cap_register", {
   deceased: boolean("deceased").notNull().default(false),
   inStats: boolean("in_stats").notNull().default(false),
   gamesAGrade: integer("games_a_grade").notNull().default(0),
+  // Overall debut order across both cap categories (from the master DB).
+  debutSeq: integer("debut_seq"),
+  // Free-text note about the player's stats tracking (from the master DB).
+  capNote: text("cap_note"),
   // True when cap-sync created this row from imported stats (so rollback can
   // safely remove it). False for caps entered/edited by the club by hand.
   autoCreated: boolean("auto_created").notNull().default(false),

@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   useGetRecords,
   useListGrades,
   useGetGradeLeaderboard,
   getGetGradeLeaderboardQueryKey,
+  useGetPartnerships,
+  useListCenturies,
+  useListFiveWicketHauls,
   type Stat,
+  type PartnershipRecord,
+  type Century,
+  type FiveWicketHaul,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -13,7 +19,7 @@ import { GradeBadge } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
 import type { ShareCardInput } from "@/lib/share-card";
 
-type Tab = "total" | "by-grade";
+type Tab = "total" | "by-grade" | "partnerships" | "centuries" | "five-for";
 
 type RecordRow = {
   title: string;
@@ -140,6 +146,124 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
   );
 };
 
+const PlayerName = ({
+  playerId,
+  name,
+}: {
+  playerId: number | null | undefined;
+  name: string;
+}) =>
+  playerId != null ? (
+    <Link href={`/players/${playerId}`} className="font-medium hover:underline text-foreground">
+      {name}
+    </Link>
+  ) : (
+    <span className="text-foreground">{name}</span>
+  );
+
+const HistoryTable = ({
+  columns,
+  empty,
+  children,
+}: {
+  columns: string[];
+  empty: boolean;
+  children: ReactNode;
+}) => (
+  <div className="bg-card border border-border rounded-md overflow-hidden shadow-md">
+    {empty ? (
+      <div className="p-12 text-center text-muted-foreground">No records yet.</div>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/50 text-left">
+              {columns.map((c) => (
+                <th key={c} className="px-4 py-3 font-bold uppercase tracking-wider text-xs text-muted-foreground">
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">{children}</tbody>
+        </table>
+      </div>
+    )}
+  </div>
+);
+
+const PartnershipsSection = () => {
+  const { data, isLoading } = useGetPartnerships();
+  if (isLoading) {
+    return <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>;
+  }
+  const records = data?.records ?? [];
+  const fiftyPlus = data?.fiftyPlus ?? [];
+  const row = (p: PartnershipRecord) => (
+    <tr key={p.id} className="hover:bg-muted/30">
+      <td className="px-4 py-3"><GradeBadge grade={p.grade} size="sm" /></td>
+      <td className="px-4 py-3 whitespace-nowrap">{p.wicket}</td>
+      <td className="px-4 py-3 font-serif font-bold text-primary">{p.runs}</td>
+      <td className="px-4 py-3">{p.batsmen}</td>
+      <td className="px-4 py-3 text-muted-foreground">{p.opposition ?? "-"}</td>
+      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{p.season ?? "-"}</td>
+    </tr>
+  );
+  const cols = ["Grade", "Wicket", "Runs", "Batsmen", "Opposition", "Season"];
+  return (
+    <div className="space-y-8">
+      <section className="space-y-3">
+        <h2 className="text-xl font-serif font-bold">Highest Partnership per Wicket</h2>
+        <HistoryTable columns={cols} empty={records.length === 0}>{records.map(row)}</HistoryTable>
+      </section>
+      <section className="space-y-3">
+        <h2 className="text-xl font-serif font-bold">All 50+ Partnerships</h2>
+        <HistoryTable columns={cols} empty={fiftyPlus.length === 0}>{fiftyPlus.map(row)}</HistoryTable>
+      </section>
+    </div>
+  );
+};
+
+const CenturiesSection = () => {
+  const { data, isLoading } = useListCenturies();
+  if (isLoading) {
+    return <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>;
+  }
+  const rows = data ?? [];
+  return (
+    <HistoryTable columns={["Grade", "Batsman", "Score", "Season"]} empty={rows.length === 0}>
+      {rows.map((c: Century) => (
+        <tr key={c.id} className="hover:bg-muted/30">
+          <td className="px-4 py-3"><GradeBadge grade={c.grade} size="sm" /></td>
+          <td className="px-4 py-3"><PlayerName playerId={c.playerId} name={c.batsman} /></td>
+          <td className="px-4 py-3 font-serif font-bold text-primary">{c.score ?? "-"}</td>
+          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{c.season ?? "-"}</td>
+        </tr>
+      ))}
+    </HistoryTable>
+  );
+};
+
+const FiveForSection = () => {
+  const { data, isLoading } = useListFiveWicketHauls();
+  if (isLoading) {
+    return <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>;
+  }
+  const rows = data ?? [];
+  return (
+    <HistoryTable columns={["Grade", "Bowler", "Figures", "Season"]} empty={rows.length === 0}>
+      {rows.map((f: FiveWicketHaul) => (
+        <tr key={f.id} className="hover:bg-muted/30">
+          <td className="px-4 py-3"><GradeBadge grade={f.grade} size="sm" /></td>
+          <td className="px-4 py-3"><PlayerName playerId={f.playerId} name={f.bowler} /></td>
+          <td className="px-4 py-3 font-serif font-bold text-primary">{f.figures ?? "-"}</td>
+          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{f.season ?? "-"}</td>
+        </tr>
+      ))}
+    </HistoryTable>
+  );
+};
+
 export default function Records() {
   const [tab, setTab] = useState<Tab>("total");
   const [selectedGrade, setSelectedGrade] = useState<string>("");
@@ -188,7 +312,13 @@ export default function Records() {
           <p className="text-muted-foreground mt-1">
             {tab === "total"
               ? "All-time leading performances across all grades."
-              : `Leading performances in ${selectedGrade || "the selected grade"}.`}
+              : tab === "by-grade"
+                ? `Leading performances in ${selectedGrade || "the selected grade"}.`
+                : tab === "partnerships"
+                  ? "Record stands per wicket and every recorded 50+ partnership."
+                  : tab === "centuries"
+                    ? "Individual centuries recorded across the club's history."
+                    : "Five-wicket hauls recorded across the club's history."}
           </p>
         </div>
       </div>
@@ -197,6 +327,9 @@ export default function Records() {
         {[
           { key: "total" as Tab, label: "Total Club Records" },
           { key: "by-grade" as Tab, label: "By Grade" },
+          { key: "partnerships" as Tab, label: "Partnerships" },
+          { key: "centuries" as Tab, label: "Centuries" },
+          { key: "five-for" as Tab, label: "5-Wicket Hauls" },
         ].map((t) => (
           <button
             key={t.key}
@@ -230,7 +363,13 @@ export default function Records() {
         </div>
       )}
 
-      {loading ? (
+      {tab === "partnerships" ? (
+        <PartnershipsSection />
+      ) : tab === "centuries" ? (
+        <CenturiesSection />
+      ) : tab === "five-for" ? (
+        <FiveForSection />
+      ) : loading ? (
         <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
