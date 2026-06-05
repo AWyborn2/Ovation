@@ -55,10 +55,15 @@ type Scope = "career" | "by-grade";
 type ExtraTab = "milestones" | "caps" | "life-members" | "awards" | "team-of-decade" | "committee" | "records" | "search";
 type ActiveTab = BoardKey | ExtraTab;
 
-// "Honours" dropdown — the non-leaderboard boards (no career/by-grade scope).
-const HONOURS_ITEMS: { tab: ExtraTab; label: string }[] = [
-  { tab: "caps", label: "A Grade Caps" },
-  { tab: "life-members", label: "Life Members" },
+// "Statistics" dropdown — every career/by-grade leaderboard except Games,
+// which is surfaced at the top of the Honour Boards menu instead.
+const STATISTICS_ITEMS = BOARDS.filter((b) => b.key !== "games");
+
+// "Honour Boards" dropdown — Games Played (a leaderboard, lifted to the top)
+// plus the curated honour boards. A Grade Caps and Life Members are their own
+// top-level tabs, so they are intentionally not in this list.
+const HONOUR_BOARD_ITEMS: { tab: ActiveTab; label: string }[] = [
+  { tab: "games", label: "Games Played" },
   { tab: "awards", label: "Awards" },
   { tab: "team-of-decade", label: "Team of the Decade" },
   { tab: "committee", label: "Office Bearers" },
@@ -614,24 +619,24 @@ export default function HonourBoards() {
 
       {/* Tabs */}
       {(() => {
-        const activeBoard = BOARDS.find((b) => b.key === activeTab);
-        const activeHonour = HONOURS_ITEMS.find((h) => h.tab === activeTab);
+        const activeStat = STATISTICS_ITEMS.find((b) => b.key === activeTab);
+        const activeHonourBoard = HONOUR_BOARD_ITEMS.find((h) => h.tab === activeTab);
         return (
           <div className="bg-card border border-border rounded-md p-2 flex flex-wrap items-center gap-2 shadow-md">
             <button onClick={() => setActiveTab("milestones")} className={tabClass(activeTab === "milestones")}>
               Milestones
             </button>
 
-            {/* Leaderboards — career/by-grade statistical boards */}
+            {/* Statistics — career/by-grade leaderboards (Games lives in Honour Boards) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={tabClass(!!activeBoard)}>
-                  {activeBoard ? `Leaderboards: ${activeBoard.label}` : "Leaderboards"}
+                <button className={tabClass(!!activeStat)}>
+                  {activeStat ? `Statistics: ${activeStat.label}` : "Statistics"}
                   <ChevronDown className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-52">
-                {BOARDS.map((b) => (
+                {STATISTICS_ITEMS.map((b) => (
                   <DropdownMenuItem
                     key={b.key}
                     onSelect={() => setActiveTab(b.key)}
@@ -643,16 +648,16 @@ export default function HonourBoards() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Honours — caps, life members, awards, etc. */}
+            {/* Honour Boards — Games Played plus the curated boards */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={tabClass(!!activeHonour)}>
-                  {activeHonour ? `Honours: ${activeHonour.label}` : "Honours"}
+                <button className={tabClass(!!activeHonourBoard)}>
+                  {activeHonourBoard ? `Honour Boards: ${activeHonourBoard.label}` : "Honour Boards"}
                   <ChevronDown className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-52">
-                {HONOURS_ITEMS.map((h) => (
+                {HONOUR_BOARD_ITEMS.map((h) => (
                   <DropdownMenuItem
                     key={h.tab}
                     onSelect={() => setActiveTab(h.tab)}
@@ -664,6 +669,13 @@ export default function HonourBoards() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <button onClick={() => setActiveTab("caps")} className={tabClass(activeTab === "caps")}>
+              A Grade Caps
+            </button>
+            <button onClick={() => setActiveTab("life-members")} className={tabClass(activeTab === "life-members")}>
+              Life Members
+            </button>
+
             <button onClick={() => setActiveTab("search")} className={tabClass(activeTab === "search")}>
               Search
             </button>
@@ -671,9 +683,9 @@ export default function HonourBoards() {
         );
       })()}
 
-      {/* Scope control — only shown for the Leaderboards (BOARDS) tabs; hidden for
-          milestones, search, and every Honours tab (caps / life-members / awards /
-          team-of-decade / committee / records). */}
+      {/* Scope control — only shown for leaderboard (BOARDS) tabs, including
+          Games. Hidden for milestones, search, and the curated honour tabs
+          (caps / life-members / awards / team-of-decade / committee / records). */}
       {activeTab !== "milestones" && activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && activeTab !== "team-of-decade" && activeTab !== "committee" && activeTab !== "records" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
