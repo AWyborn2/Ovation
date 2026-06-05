@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { importsTable } from "./imports";
 import { playersTable } from "./players";
+import { clubsTable } from "./clubs";
 
 /**
  * One row per imported match scorecard, identified by (grade, season, round,
@@ -17,18 +18,30 @@ import { playersTable } from "./players";
  * lines live in `match_player_lines`. Deleting the source import cascades the
  * match (and its lines) away.
  *
- * The identity uniqueness — `UNIQUE NULLS NOT DISTINCT (grade, season, round,
- * stage)` — is intentionally NOT declared here. drizzle-kit 0.31 cannot detect
- * existing multi-column / NULLS-NOT-DISTINCT uniques, so it re-proposes them
- * every push and hangs the non-interactive post-merge on a TTY prompt. It is
- * created idempotently by scripts/src/ensure-constraints.ts instead. See
- * lib/db/src/schema/cap_register.ts for the full rationale.
+ * Identity uniqueness is intentionally NOT declared here. drizzle-kit 0.31
+ * cannot detect existing multi-column / NULLS-NOT-DISTINCT / partial uniques, so
+ * it re-proposes them every push and hangs the non-interactive post-merge on a
+ * TTY prompt. They are created idempotently by scripts/src/ensure-constraints.ts
+ * instead. See lib/db/src/schema/cap_register.ts for the full rationale.
+ *
+ * Two ingestion paths key matches differently, so there are two partial uniques:
+ *   - Admin per-match uploads carry `source_key = NULL`; they are unique on
+ *     `(grade, season, round, stage)` (NULLS NOT DISTINCT) — one match per round.
+ *   - The bulk master-DB load stores the master `source_key`; those rows are
+ *     unique on `source_key` instead, because parallel competitions (Mid-Year
+ *     T20 rolling into the base grade) and multi-fixture Colts/finals rounds make
+ *     (grade, season, round, stage) genuinely collide in the historical data.
  */
 export const matchesTable = pgTable("matches", {
   id: serial("id").primaryKey(),
   importId: integer("import_id")
     .notNull()
     .references(() => importsTable.id, { onDelete: "cascade" }),
+  /**
+   * Master-DB identity for bulk-loaded historical matches; NULL for admin
+   * per-match uploads. See the partial uniques in ensure-constraints.ts.
+   */
+  sourceKey: text("source_key"),
   grade: text("grade").notNull(),
   season: integer("season").notNull(),
   round: integer("round"),
@@ -38,6 +51,13 @@ export const matchesTable = pgTable("matches", {
   venue: text("venue"),
   result: text("result"),
   opponent: text("opponent"),
+  /**
+   * Resolved opponent club for branding (logo / colours). NULL when the
+   * opponent is only known by a grade label, so rendering must degrade.
+   */
+  opponentClubId: integer("opponent_club_id").references(() => clubsTable.id, {
+    onDelete: "set null",
+  }),
   hhccScore: text("hhcc_score"),
   opponentScore: text("opponent_score"),
   abandoned: boolean("abandoned").notNull().default(false),

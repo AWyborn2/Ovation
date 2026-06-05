@@ -61,12 +61,40 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["season", "role", "grade"],
     nullsNotDistinct: true,
   },
+];
+
+/**
+ * Partial unique indexes that the ConstraintSpec machinery above can't express
+ * (a partial / WHERE-clause unique is an INDEX, not a table CONSTRAINT). Created
+ * with raw idempotent SQL. `drops` removes any superseded constraint/index from
+ * an earlier schema so the partial versions can take over.
+ */
+type PartialIndexSpec = {
+  name: string;
+  sql: string;
+  /** Plain DROP CONSTRAINT and DROP INDEX names to clear first (IF EXISTS). */
+  dropConstraints?: string[];
+  dropIndexes?: string[];
+};
+
+const PARTIAL_INDEXES: PartialIndexSpec[] = [
+  // Admin per-match uploads (source_key IS NULL): one match per identity.
   {
-    table: "matches",
-    name: "matches_grade_season_round_stage_unique",
-    columns: ["grade", "season", "round", "stage"],
-    nullsNotDistinct: true,
-    replaces: ["matches_grade_season_round_unique"],
+    name: "matches_identity_manual_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "matches_identity_manual_uidx"
+          ON "matches" ("grade", "season", "round", "stage") NULLS NOT DISTINCT
+          WHERE "source_key" IS NULL`,
+    dropConstraints: [
+      "matches_grade_season_round_stage_unique",
+      "matches_grade_season_round_unique",
+    ],
+  },
+  // Bulk master-DB load: unique on the master source key.
+  {
+    name: "matches_source_key_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "matches_source_key_uidx"
+          ON "matches" ("source_key")
+          WHERE "source_key" IS NOT NULL`,
   },
 ];
 
@@ -121,6 +149,21 @@ async function main() {
     );
     console.log(`+ added ${c.name} on ${c.table}`);
   }
+
+  // Partial / WHERE-clause unique indexes (can't be table constraints).
+  for (const ix of PARTIAL_INDEXES) {
+    for (const con of ix.dropConstraints ?? []) {
+      await db.execute(
+        sql.raw(`ALTER TABLE "matches" DROP CONSTRAINT IF EXISTS "${con}"`),
+      );
+    }
+    for (const idx of ix.dropIndexes ?? []) {
+      await db.execute(sql.raw(`DROP INDEX IF EXISTS "${idx}"`));
+    }
+    await db.execute(sql.raw(ix.sql));
+    console.log(`✓ ${ix.name} ensured`);
+  }
+
   console.log("ensure-constraints: done");
 }
 
