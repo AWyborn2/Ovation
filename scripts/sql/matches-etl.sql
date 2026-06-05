@@ -76,6 +76,7 @@ SELECT
        WHEN m.team1 = m.opponent_name THEN m.team1_score
        WHEN m.team2 = m.opponent_name THEN m.team2_score
        ELSE NULL END                                      AS opponent_score,
+  m.hh_batted_first                                       AS hhcc_batted_first,
   (upper(coalesce(m.status, '')) = 'ABANDONED')           AS abandoned
 FROM staging.matches m
 LEFT JOIN public.clubs c ON c.id = m.opponent_club_id
@@ -146,10 +147,12 @@ GROUP BY n.app_grade, n.app_season;
 -- ---------------------------------------------------------------------
 INSERT INTO public.matches
   (import_id, source_key, grade, season, round, stage, competition, match_date,
-   venue, result, opponent, opponent_club_id, hhcc_score, opponent_score, abandoned)
+   venue, result, opponent, opponent_club_id, hhcc_score, opponent_score,
+   hhcc_batted_first, abandoned)
 SELECT i.id, n.source_key, n.app_grade, n.app_season, n.app_round, n.app_stage,
        n.competition, n.match_date, n.venue, n.hh_result, n.opponent_name,
-       n.opponent_club_id, n.hhcc_score, n.opponent_score, n.abandoned
+       n.opponent_club_id, n.hhcc_score, n.opponent_score,
+       n.hhcc_batted_first, n.abandoned
 FROM staging.mnorm n
 JOIN public.imports i
   ON i.filename = 'Master DB match history'

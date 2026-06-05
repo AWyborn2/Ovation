@@ -118,7 +118,9 @@ function buildStaging(dumpPath: string): void {
   const header =
     "DROP SCHEMA IF EXISTS staging CASCADE;\nCREATE SCHEMA staging;\nSET search_path TO staging;\n";
   writeFileSync(stagingOut, header + sql, "utf8");
-  psqlFile(stagingOut);
+  // Load the dump in ONE transaction; per-statement autocommit makes large dumps
+  // crawl past the bash/exec timeout.
+  psqlFile(stagingOut, true);
 }
 
 function main(): void {

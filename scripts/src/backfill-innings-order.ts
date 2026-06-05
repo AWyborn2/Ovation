@@ -14,6 +14,15 @@
  * Idempotent: re-running re-applies the same values. Uploads (source_key NULL)
  * are never touched. Picks the newest matching file in attached_assets by name
  * unless overridden with --csv= / --dump=.
+ *
+ * NOTE: this script only ever touched bulk-loaded matches — it keys CSV match_id
+ * -> dump source_key -> matches.source_key, and uploads (source_key NULL) are
+ * never matched. As of the 2003/04–2025/26 master dump, matches-etl.sql now maps
+ * the dump's own `hh_batted_first` column straight onto matches.hhcc_batted_first
+ * during the bulk load, so every bulk match already has its innings order and this
+ * script is fully redundant in the normal flow. It is retained only as a manual
+ * re-apply / correction tool from a standalone CSV. (Admin per-match uploads set
+ * hhcc_batted_first through the match commit path, not this script.)
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";

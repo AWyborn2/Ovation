@@ -28,5 +28,5 @@
 - [Committee/captain role linking](committee-role-linking.md) — settled which club_roles role-holders stay plain text (office bearers w/ no player + joint captains) vs. the Sommers↔Somers matcher fix.
 - [Notable records derivation](notable-records-derivation.md) — committee/award leaderboards auto-derived from PUBLISHED roles/winners, name-grouped; tallies intentionally diverge from the stale hand-kept sheet.
 - [Milestones board (dated)](milestones-board.md) — GET /milestones dated achievements ranked by significance bands; empty until per-match imports give matchDate; configurable recencyWeeks + per-stat tiers.
-- [Match history bulk load](match-history-bulk-load.md) — master career_stats is gappy so match scorecards win (Option A: totals rise); exclude fill-ins (playerId≥90000) from all derivations; opponentClub branding; ETL nohup + DISTINCT ON.
+- [Match history bulk load](match-history-bulk-load.md) — master career_stats gappy so match scorecards win (Option A: totals rise); exclude fill-ins; master reload MUST clear baseline_adjustments or careers double-count; load staging via psql -1.
 - [Master DB load](master-db-load.md) — master export is authoritative source (exact player_id links); pure-SQL ETL replaces owned DATA tables, preserves app-config; partnerships/centuries/five-fors are records-only surfaces.

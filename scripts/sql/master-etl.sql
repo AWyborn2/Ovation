@@ -8,9 +8,11 @@
 -- This file is idempotent: re-running cleanly replaces the loaded data.
 --
 -- It REPLACES the data tables the master owns and KEEPS app-config tables
--- (award definitions, honour-board config, admins, captains, baseline
--- adjustments, imports, matches). Players are upserted by id (preserving the
--- master IDs, including the fill-in 90001+ and cap-only 95001+ ranges).
+-- (award definitions, honour-board config, admins, captains, imports, matches).
+-- It WIPES baseline_adjustments: the season=NULL career baseline is rebuilt fresh
+-- below, so any match-era peels recorded against the OLD baseline are stale (see
+-- step 3). Players are upserted by id (preserving the master IDs, including the
+-- fill-in 90001+ and cap-only 95001+ ranges).
 
 ----------------------------------------------------------------------
 -- 0. Mapping helpers (idempotent)
@@ -91,6 +93,11 @@ FROM staging.caps c WHERE c.player_id = p.id AND c.deceased = true;
 --    rolled up by parent grade across sub-competitions)
 ----------------------------------------------------------------------
 DELETE FROM public.player_grade_season_stats;
+-- The season=NULL baseline is rebuilt fresh from career_stats below, so any
+-- recorded match-era peels against the OLD baseline are now meaningless. Clear
+-- them, or the next matches-etl reversal (step 2a) adds them back on top of the
+-- fresh baseline and double-counts every previously match-loaded (player,grade).
+DELETE FROM public.baseline_adjustments;
 WITH rolled AS (
   SELECT cs.player_id,
          staging.app_grade(cs.parent_grade) AS grade,
