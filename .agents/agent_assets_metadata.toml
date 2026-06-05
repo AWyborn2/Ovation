@@ -29,3 +29,9 @@ id = "aVNiBuBUxzx1rXjMuhK6q"
 uri = "file://exports/players.csv"
 type = "table"
 title = "Player IDs (CSV)"
+
+[[outputs]]
+id = "WGoM0jt-KHN4f6PYPo3Bb"
+uri = "file://exports/premierships.csv"
+type = "table"
+title = "Premiership Board — Teams & Results (CSV)"
