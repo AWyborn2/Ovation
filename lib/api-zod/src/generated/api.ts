@@ -265,6 +265,7 @@ export const GetMatchResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
+  "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -357,6 +358,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
+  "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -445,6 +447,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
+  "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),

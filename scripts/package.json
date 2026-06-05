@@ -17,6 +17,7 @@
     "seed-committee": "tsx ./src/seed-committee.ts",
     "load-master-db": "tsx ./src/load-master-db.ts",
     "load-matches": "tsx ./src/load-matches.ts",
+    "backfill-innings-order": "tsx ./src/backfill-innings-order.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

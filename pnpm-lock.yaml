@@ -397,6 +397,9 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/scorecard':
+        specifier: workspace:*
+        version: link:../../lib/scorecard
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -518,6 +521,9 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/scorecard':
+        specifier: workspace:*
+        version: link:../../lib/scorecard
       babel-plugin-react-compiler:
         specifier: ^19.0.0-beta-e993439-20250117
         version: 19.0.0-beta-ebf51a3-20250411
@@ -859,6 +865,12 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
+
+  lib/scorecard:
+    dependencies:
+      '@workspace/api-client-react':
+        specifier: workspace:*
+        version: link:../api-client-react
 
   scripts:
     dependencies:

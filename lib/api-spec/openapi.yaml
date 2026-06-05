@@ -4123,6 +4123,12 @@ components:
             - $ref: "#/components/schemas/OpponentClub"
             - type: "null"
           description: Opposition club branding, or null when unmatched.
+        hhccBattedFirst:
+          type: ["boolean", "null"]
+          description: >-
+            True when Halls Head batted first, false when they batted second,
+            null when unknown. Drives the true batting order of the two innings
+            on the scorecard.
         lines:
           type: array
           items:

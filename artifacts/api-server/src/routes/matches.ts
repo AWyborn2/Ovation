@@ -73,6 +73,7 @@ async function loadMatchDetail(matchId: number) {
       opponent: matchesTable.opponent,
       hhccScore: matchesTable.hhccScore,
       opponentScore: matchesTable.opponentScore,
+      hhccBattedFirst: matchesTable.hhccBattedFirst,
       abandoned: matchesTable.abandoned,
       ...opponentClubColumns,
     })
@@ -157,6 +158,7 @@ async function loadMatchDetail(matchId: number) {
     opponent: match.opponent,
     hhccScore: match.hhccScore,
     opponentScore: match.opponentScore,
+    hhccBattedFirst: match.hhccBattedFirst,
     abandoned: match.abandoned,
     opponentClub: toOpponentClub(match),
     lines,

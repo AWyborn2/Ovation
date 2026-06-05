@@ -7,12 +7,11 @@ import {
   useUpdateMatchRound,
   useSetMatchHatTrick,
   MatchStage,
-  type MatchScorecardLine,
-  type MatchOppositionLine,
   type MatchDetail as MatchDetailDto,
 } from "@workspace/api-client-react";
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
+import { DigitalScorecard } from "@/components/scorecard/digital-scorecard";
 import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame } from "lucide-react";
 
@@ -112,34 +111,9 @@ export default function MatchDetail() {
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
   if (!match) return <div className="p-8 text-center text-muted-foreground">Match not found.</div>;
 
-  const batting = match.lines
-    .filter((l) => l.batted)
-    .sort((a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99));
-  const bowling = match.lines.filter((l) => l.bowled);
   const hatTrickIds = new Set(match.hatTrickPlayerIds ?? []);
-  const fielding = match.lines.filter(
-    (l) => (l.catches ?? 0) + (l.stumpings ?? 0) + (l.runOuts ?? 0) > 0,
-  );
-
-  const oppLines = match.oppositionLines ?? [];
-  const oppBatting = oppLines
-    .filter((l) => l.batted)
-    .sort((a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99));
-  const oppBowling = oppLines.filter((l) => l.bowled);
-  const oppFielding = oppLines.filter(
-    (l) => (l.catches ?? 0) + (l.stumpings ?? 0) + (l.runOuts ?? 0) > 0,
-  );
-  const hasOpposition = oppBatting.length + oppBowling.length + oppFielding.length > 0;
-
-  const playerLink = (l: MatchScorecardLine) => (
-    <Link href={`/players/${l.playerId}`} className="font-medium text-primary hover:underline">
-      {l.givenName} {l.surname}
-    </Link>
-  );
-
-  const oppName = (l: MatchOppositionLine) => (
-    <span className="font-medium text-foreground">{l.name}</span>
-  );
+  // Admins manage hat-tricks on Halls Head bowlers (real players only).
+  const hhBowlers = match.lines.filter((l) => l.bowled && l.playerId < 90000);
 
   return (
     <div className="space-y-6">
@@ -279,237 +253,50 @@ export default function MatchDetail() {
         )}
       </div>
 
-      {/* Halls Head innings */}
-      <TeamHeading
-        name="Halls Head"
-        score={match.hhccScore}
-        hidden={match.abandoned}
-      />
+      {/* Branded digital scorecard */}
+      <DigitalScorecard match={match} hatTrickIds={hatTrickIds} />
 
-      {/* Batting */}
-      <ScorecardSection title="Batting">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="text-left font-medium p-3">Batter</th>
-              <th className="text-left font-medium p-3">Dismissal</th>
-              <th className="text-right font-medium p-3">R</th>
-              <th className="text-right font-medium p-3">B</th>
-              <th className="text-right font-medium p-3">4s</th>
-              <th className="text-right font-medium p-3">6s</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batting.length === 0 ? (
-              <tr><td colSpan={6} className="p-4 text-center text-muted-foreground italic">No batting recorded.</td></tr>
-            ) : (
-              batting.map((l) => (
-                <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                  <td className="p-3">{playerLink(l)}{l.notOut && <span className="text-primary font-bold"> *</span>}</td>
-                  <td className="p-3 text-muted-foreground">{l.dismissal || "—"}</td>
-                  <td className="p-3 text-right font-mono font-bold">{l.runs ?? 0}</td>
-                  <td className="p-3 text-right font-mono">{l.balls ?? "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.fours ?? "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.sixes ?? "—"}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </ScorecardSection>
-
-      {/* Bowling */}
-      <ScorecardSection title="Bowling">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="text-left font-medium p-3">Bowler</th>
-              <th className="text-right font-medium p-3">O</th>
-              <th className="text-right font-medium p-3">M</th>
-              <th className="text-right font-medium p-3">R</th>
-              <th className="text-right font-medium p-3">W</th>
-              <th className="text-right font-medium p-3">Wd</th>
-              <th className="text-right font-medium p-3">Nb</th>
-              {isAdmin && <th className="text-right font-medium p-3">Hat-trick</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {bowling.length === 0 ? (
-              <tr><td colSpan={isAdmin ? 8 : 7} className="p-4 text-center text-muted-foreground italic">No bowling recorded.</td></tr>
-            ) : (
-              bowling.map((l) => {
-                const hasHatTrick = hatTrickIds.has(l.playerId);
-                return (
-                  <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="p-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        {playerLink(l)}
-                        {hasHatTrick && (
-                          <span
-                            title="Hat-trick"
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-300 bg-rose-500/10 border border-rose-500/30"
-                          >
-                            <Flame className="h-3 w-3" />
-                            Hat-trick
-                          </span>
-                        )}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right font-mono">{l.overs || "—"}</td>
-                    <td className="p-3 text-right font-mono">{l.maidens ?? "—"}</td>
-                    <td className="p-3 text-right font-mono">{l.runsConceded ?? "—"}</td>
-                    <td className="p-3 text-right font-mono font-bold">{l.wickets ?? 0}</td>
-                    <td className="p-3 text-right font-mono">{l.wides ?? "—"}</td>
-                    <td className="p-3 text-right font-mono">{l.noBalls ?? "—"}</td>
-                    {isAdmin && (
-                      <td className="p-3 text-right">
-                        <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs">
-                          <input
-                            type="checkbox"
-                            checked={hasHatTrick}
-                            disabled={setHatTrick.isPending}
-                            onChange={(e) =>
-                              setHatTrick.mutate({
-                                id: matchId,
-                                data: { playerId: l.playerId, hatTrick: e.target.checked },
-                              })
-                            }
-                          />
-                          <span className="text-muted-foreground">{hasHatTrick ? "Yes" : "No"}</span>
-                        </label>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-        {isAdmin && hatTrickError && (
-          <div className="p-3 text-sm text-destructive">{hatTrickError}</div>
-        )}
-      </ScorecardSection>
-
-      {/* Fielding */}
-      {fielding.length > 0 && (
-        <ScorecardSection title="Fielding">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="text-left font-medium p-3">Fielder</th>
-                <th className="text-right font-medium p-3">Ct</th>
-                <th className="text-right font-medium p-3">St</th>
-                <th className="text-right font-medium p-3">RO</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fielding.map((l) => (
-                <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                  <td className="p-3">{playerLink(l)}</td>
-                  <td className="p-3 text-right font-mono">{l.catches || "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.stumpings || "—"}</td>
-                  <td className="p-3 text-right font-mono">{l.runOuts || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScorecardSection>
-      )}
-
-      {/* Opposition innings (display only — plain-text names) */}
-      {hasOpposition && (
-        <>
-          <TeamHeading
-            name={match.opponent ?? "Opposition"}
-            score={match.opponentScore}
-            club={match.opponentClub}
-          />
-
-          {oppBatting.length > 0 && (
-            <ScorecardSection title="Batting">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="text-left font-medium p-3">Batter</th>
-                    <th className="text-left font-medium p-3">Dismissal</th>
-                    <th className="text-right font-medium p-3">R</th>
-                    <th className="text-right font-medium p-3">B</th>
-                    <th className="text-right font-medium p-3">4s</th>
-                    <th className="text-right font-medium p-3">6s</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {oppBatting.map((l) => (
-                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                      <td className="p-3">{oppName(l)}{l.notOut && <span className="text-primary font-bold"> *</span>}</td>
-                      <td className="p-3 text-muted-foreground">{l.dismissal || "—"}</td>
-                      <td className="p-3 text-right font-mono font-bold">{l.runs ?? 0}</td>
-                      <td className="p-3 text-right font-mono">{l.balls ?? "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.fours ?? "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.sixes ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScorecardSection>
-          )}
-
-          {oppBowling.length > 0 && (
-            <ScorecardSection title="Bowling">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="text-left font-medium p-3">Bowler</th>
-                    <th className="text-right font-medium p-3">O</th>
-                    <th className="text-right font-medium p-3">M</th>
-                    <th className="text-right font-medium p-3">R</th>
-                    <th className="text-right font-medium p-3">W</th>
-                    <th className="text-right font-medium p-3">Wd</th>
-                    <th className="text-right font-medium p-3">Nb</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {oppBowling.map((l) => (
-                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                      <td className="p-3">{oppName(l)}</td>
-                      <td className="p-3 text-right font-mono">{l.overs || "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.maidens ?? "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.runsConceded ?? "—"}</td>
-                      <td className="p-3 text-right font-mono font-bold">{l.wickets ?? 0}</td>
-                      <td className="p-3 text-right font-mono">{l.wides ?? "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.noBalls ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScorecardSection>
-          )}
-
-          {oppFielding.length > 0 && (
-            <ScorecardSection title="Fielding">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="text-left font-medium p-3">Fielder</th>
-                    <th className="text-right font-medium p-3">Ct</th>
-                    <th className="text-right font-medium p-3">St</th>
-                    <th className="text-right font-medium p-3">RO</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {oppFielding.map((l) => (
-                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                      <td className="p-3">{oppName(l)}</td>
-                      <td className="p-3 text-right font-mono">{l.catches || "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.stumpings || "—"}</td>
-                      <td className="p-3 text-right font-mono">{l.runOuts || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScorecardSection>
-          )}
-        </>
+      {/* Admin: hat-trick management */}
+      {isAdmin && hhBowlers.length > 0 && (
+        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+          <h2 className="text-sm font-serif font-bold text-primary flex items-center gap-1.5">
+            <Flame className="h-4 w-4" /> Hat-tricks
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+            Mark any Halls Head bowler who took a hat-trick in this match.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {hhBowlers.map((l) => {
+              const has = hatTrickIds.has(l.playerId);
+              return (
+                <label
+                  key={l.id}
+                  className="inline-flex items-center gap-2 text-sm cursor-pointer rounded border border-border px-3 py-2 hover:bg-muted/50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={has}
+                    disabled={setHatTrick.isPending}
+                    onChange={(e) =>
+                      setHatTrick.mutate({
+                        id: matchId,
+                        data: { playerId: l.playerId, hatTrick: e.target.checked },
+                      })
+                    }
+                    data-testid={`checkbox-hattrick-${l.playerId}`}
+                  />
+                  <span className="text-foreground">
+                    {l.givenName} {l.surname}
+                  </span>
+                  <span className="ml-auto font-mono text-xs text-muted-foreground">
+                    {l.wickets ?? 0}/{l.runsConceded ?? "—"}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {hatTrickError && <div className="mt-3 text-sm text-destructive">{hatTrickError}</div>}
+        </div>
       )}
     </div>
   );
@@ -541,38 +328,5 @@ function OpponentCrest({
       style={{ width: size, height: size }}
       data-testid="img-opponent-crest"
     />
-  );
-}
-
-function TeamHeading({
-  name,
-  score,
-  hidden,
-  club,
-}: {
-  name: string;
-  score?: string | null;
-  hidden?: boolean;
-  club?: OpponentClubInfo;
-}) {
-  if (hidden) return null;
-  return (
-    <div className="flex items-baseline justify-between gap-3 pt-2">
-      <h2 className="text-xl font-serif font-bold text-foreground m-0 flex items-center gap-2">
-        {club && <OpponentCrest club={club} size={26} />}
-        <span>{name}</span>
-      </h2>
-      {score && <span className="font-mono font-bold text-primary text-lg">{score}</span>}
-    </div>
-  );
-}
-
-function ScorecardSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-      <h2 className="text-lg font-serif font-bold text-primary m-0">{title}</h2>
-      <div className="w-12 h-[2px] bg-primary mt-1 mb-4" />
-      <div className="overflow-x-auto">{children}</div>
-    </div>
   );
 }

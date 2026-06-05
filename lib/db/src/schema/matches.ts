@@ -60,6 +60,13 @@ export const matchesTable = pgTable("matches", {
   }),
   hhccScore: text("hhcc_score"),
   opponentScore: text("opponent_score"),
+  /**
+   * True when Halls Head batted first, false when they batted second, NULL when
+   * unknown. Backfilled from the master DB's innings-order export so the
+   * scorecard can render the two innings in true batting order rather than
+   * always putting HH first. Uploads leave this NULL (HH-first is assumed).
+   */
+  hhccBattedFirst: boolean("hhcc_batted_first"),
   abandoned: boolean("abandoned").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

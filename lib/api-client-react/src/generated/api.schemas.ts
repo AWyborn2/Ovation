@@ -1043,6 +1043,11 @@ export interface MatchDetail {
   abandoned: boolean;
   /** Opposition club branding, or null when unmatched. */
   opponentClub?: OpponentClub | null;
+  /**
+     * True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.
+     * @nullable
+     */
+  hhccBattedFirst?: boolean | null;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
   /** Player IDs flagged by an admin as taking a hat-trick in this match. */
