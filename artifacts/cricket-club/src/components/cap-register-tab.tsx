@@ -142,10 +142,10 @@ export function CapRegisterTab() {
                       {c.capNumber}
                     </td>
                     <td className="p-3">
-                      {c.inStats && c.playerId !== null && c.playerId !== undefined ? (
+                      {c.playerId !== null && c.playerId !== undefined ? (
                         <Link
                           href={`/players/${c.playerId}`}
-                          className="font-semibold text-primary hover:underline uppercase"
+                          className={`uppercase hover:underline ${c.inStats ? "font-semibold text-primary" : "text-muted-foreground/70 hover:text-primary"}`}
                         >
                           {c.name}
                         </Link>
