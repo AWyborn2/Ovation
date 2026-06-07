@@ -97,11 +97,10 @@ function FromMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
 
   const effectiveSeason = season ?? seasons[0] ?? null;
 
+  // Preserve the API's ordering (honours the admin round-direction setting and
+  // positions finals consistently); only narrow to the selected season.
   const filtered = useMemo(
-    () =>
-      matches
-        .filter((m) => m.season === effectiveSeason)
-        .sort((a, b) => (b.round ?? 0) - (a.round ?? 0)),
+    () => matches.filter((m) => m.season === effectiveSeason),
     [matches, effectiveSeason],
   );
 
