@@ -233,6 +233,20 @@ router.get("/matches", async (req, res): Promise<void> => {
   const settings = await ensureMatchDisplaySettings();
   const roundDir = settings.roundOrder === "asc" ? asc : desc;
   const idDir = settings.roundOrder === "asc" ? asc : desc;
+  // Finals carry no round number (round IS NULL) so they cluster together; order
+  // them by the date they were played (same direction as rounds). For ordinary
+  // rounds this only acts as a tiebreaker since round numbers are already distinct.
+  // match_date is free text ("12:20 PM, Saturday, 14 Mar 2026"), so parse it to a
+  // real timestamp for ordering; the regex guard makes any malformed/blank value
+  // sort as NULL instead of throwing. Finals with no stored date (most historical
+  // ones) fall through to the id tiebreaker below.
+  const matchDateExpr = sql`CASE WHEN ${matchesTable.matchDate} ~ '^[0-9]{1,2}:[0-9]{2} (AM|PM), [A-Za-z]+, [0-9]{1,2} [A-Za-z]{3} [0-9]{4}$' THEN to_timestamp(${matchesTable.matchDate}, 'HH12:MI AM, Day, DD Mon YYYY') END`;
+  // NULLS LAST so dated finals always outrank undated/blank-date finals (which
+  // then fall through to the id tiebreaker), regardless of the asc/desc direction.
+  const dateOrder =
+    settings.roundOrder === "asc"
+      ? sql`${matchDateExpr} asc nulls last`
+      : sql`${matchDateExpr} desc nulls last`;
 
   const rows = await db
     .select({
@@ -260,7 +274,12 @@ router.get("/matches", async (req, res): Promise<void> => {
     .leftJoin(clubsTable, eq(clubsTable.id, matchesTable.opponentClubId))
     .where(conditions.length ? and(...conditions) : undefined)
     .groupBy(matchesTable.id, clubsTable.id)
-    .orderBy(desc(matchesTable.season), roundDir(matchesTable.round), idDir(matchesTable.id));
+    .orderBy(
+      desc(matchesTable.season),
+      roundDir(matchesTable.round),
+      dateOrder,
+      idDir(matchesTable.id),
+    );
 
   res.json(
     rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubPrimaryColour, opponentClubSecondaryColour, ...rest }) => ({
