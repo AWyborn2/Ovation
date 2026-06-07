@@ -28,6 +28,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
+import { getHallsHeadBrand } from "../lib/halls-head-brand";
 
 const router: IRouter = Router();
 
@@ -443,6 +444,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       template: t.template,
     })),
     activeSponsors: await migrateSponsorLogos(activeSponsors, req.log),
+    brand: await getHallsHeadBrand(),
   });
 });
 

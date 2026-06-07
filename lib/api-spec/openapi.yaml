@@ -4024,6 +4024,30 @@ components:
         secondaryColour:
           type: ["string", "null"]
 
+    HallsHeadBrand:
+      type: object
+      description: >-
+        Halls Head's own branding, resolved from the clubs register record
+        (id 2) — the single source of truth for the club's official logo and
+        colours. Null when the record could not be loaded; renderers fall back
+        to their built-in official defaults.
+      required: [name]
+      properties:
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        logoUrl128:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        secondaryColour:
+          type: ["string", "null"]
+        tertiaryColour:
+          type: ["string", "null"]
+
     MatchSummary:
       type: object
       required: [id, grade, season, abandoned, playerCount]
@@ -4153,6 +4177,14 @@ components:
             - $ref: "#/components/schemas/OpponentClub"
             - type: "null"
           description: Opposition club branding, or null when unmatched.
+        hallsHead:
+          oneOf:
+            - $ref: "#/components/schemas/HallsHeadBrand"
+            - type: "null"
+          description: >-
+            Halls Head's official branding (logo + colours) from the clubs
+            register, or null when unavailable; the scorecard falls back to its
+            built-in official defaults.
         hhccBattedFirst:
           type: ["boolean", "null"]
           description: >-
@@ -6197,6 +6229,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Sponsor"
+        brand:
+          oneOf:
+            - $ref: "#/components/schemas/HallsHeadBrand"
+            - type: "null"
+          description: >-
+            Halls Head's official branding (logo + colours) from the clubs
+            register — the default theme/logo for share cards. Null when
+            unavailable; renderers fall back to their built-in official defaults.
 
     SocialDraft:
       type: object

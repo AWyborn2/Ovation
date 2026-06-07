@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Star, Trophy, Download, Loader2, RotateCw, Film, ImageIcon } from "lucide-react";
 import { useGetPlayer, getGetPlayerQueryKey, useListCaps, getListCapsQueryKey } from "@workspace/api-client-react";
-import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import { HALLS_HEAD_BRAND } from "@workspace/scorecard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -16,9 +16,11 @@ import {
   type CardVideoFrame,
 } from "@/lib/trading-card-export";
 
-const CHARCOAL = "#333F48";
-const GOLD = "#FBAC27";
-const BROWN = "#41342B";
+// Official club brand (clubs id 2), via the shared single source of truth.
+const logoUrl = HALLS_HEAD_BRAND.logoUrl ?? "";
+const CHARCOAL = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
+const GOLD = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
+const BROWN = HALLS_HEAD_BRAND.tertiaryColour ?? "#42342B";
 
 export const CARD_W = 384;
 export const CARD_H = 800;

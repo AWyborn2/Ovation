@@ -480,6 +480,7 @@ export function ShareCardModal({
     clubUrl,
     hashtag,
     theme: selectedTheme,
+    brand: bundle?.brand,
     template: selectedTemplate,
     photoUrl: effectivePhotoUrl,
     photoPlacement,

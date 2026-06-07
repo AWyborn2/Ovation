@@ -265,6 +265,15 @@ export const GetMatchResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
+  "hallsHead": zod.union([zod.object({
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults.'),
   "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
@@ -358,6 +367,15 @@ export const UpdateMatchRoundResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
+  "hallsHead": zod.union([zod.object({
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults.'),
   "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
@@ -447,6 +465,15 @@ export const SetMatchHatTrickResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
+  "hallsHead": zod.union([zod.object({
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults.'),
   "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
@@ -3474,7 +3501,16 @@ export const GetSocialSettingsResponse = zod.object({
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
-}))
+})),
+  "brand": zod.union([zod.object({
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register — the default theme\/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults.')
 })
 
 

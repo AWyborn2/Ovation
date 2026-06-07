@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles, type LucideIcon } from "lucide-react";
-import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import { HALLS_HEAD_BRAND } from "@workspace/scorecard";
 
 const TIER_ICONS: LucideIcon[] = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
 
@@ -16,10 +16,30 @@ export interface MilestoneShareInput {
   photoUrl?: string | null;
 }
 
-const BG_DARK = "#322F3D";
-const BG_PANEL = "#3F3C4C";
-const GOLD = "#FBD039";
-const GOLD_SOFT = "rgba(251, 208, 57, 0.18)";
+// Official club brand (clubs id 2), via the shared single source of truth.
+const logoUrl = HALLS_HEAD_BRAND.logoUrl ?? "";
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  let h = hex.trim().replace(/^#/, "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const n = parseInt(h, 16);
+  if (h.length !== 6 || Number.isNaN(n)) return [251, 172, 39];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const rgba = (hex: string, alpha: number): string => {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+const lighten = (hex: string, amount: number): string => {
+  const [r, g, b] = hexToRgb(hex);
+  const c = (n: number) => Math.round(n + (255 - n) * amount);
+  return `#${[c(r), c(g), c(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+};
+
+const BG_DARK = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
+const BG_PANEL = lighten(BG_DARK, 0.1);
+const GOLD = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
+const GOLD_SOFT = rgba(GOLD, 0.18);
 const TEXT_LIGHT = "#F5F2E8";
 const TEXT_MUTED = "rgba(245, 242, 232, 0.65)";
 

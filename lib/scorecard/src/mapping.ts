@@ -12,7 +12,12 @@ import type {
   ScorecardInnings,
   ScorecardTeam,
 } from "./types";
-import { HALLS_HEAD_COLORS, deriveOppositionColors } from "./colors";
+import { deriveOppositionColors } from "./colors";
+import {
+  HALLS_HEAD_BRAND,
+  deriveHallsHeadColors,
+  type HallsHeadBrand,
+} from "./brand";
 import { formatDismissal } from "./dismissal";
 import { economy, sumOvers } from "./overs";
 
@@ -124,12 +129,13 @@ function buildExtras(
   return { total, wides, noBalls, other };
 }
 
-function hallsHeadTeam(): ScorecardTeam {
+function hallsHeadTeam(brand: HallsHeadBrand | null | undefined): ScorecardTeam {
+  const b = brand ?? HALLS_HEAD_BRAND;
   return {
     name: "Halls Head",
     shortName: "HHCC",
-    logoUrl: null,
-    colors: HALLS_HEAD_COLORS,
+    logoUrl: b.logoUrl128 ?? b.logoUrl ?? null,
+    colors: deriveHallsHeadColors(b.primaryColour, b.secondaryColour),
     isHallsHead: true,
   };
 }
@@ -154,7 +160,7 @@ function oppositionTeam(
  * empty innings so the caller can render a clean "abandoned" state.
  */
 export function buildScorecard(match: MatchDetail): Scorecard {
-  const hh = hallsHeadTeam();
+  const hh = hallsHeadTeam(match.hallsHead);
   const opp = oppositionTeam(match.opponent ?? null, match.opponentClub ?? null);
 
   const hhScore = parseScore(match.hhccScore);

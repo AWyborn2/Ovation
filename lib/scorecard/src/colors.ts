@@ -1,18 +1,15 @@
 import type { TeamColors } from "./types";
+import { HALLS_HEAD_BRAND, deriveHallsHeadColors } from "./brand";
 
-/** Halls Head Cricket Club colours — navy & gold. */
-export const HALLS_HEAD_COLORS: TeamColors = {
-  primary: "#00305c",
-  secondary: "#f5a623",
-  text: "#f5a623",
-  accentText: "#00305c",
-  rowOdd: "#002845",
-  rowEven: "#001f38",
-  rowText: "#e8e8e8",
-  totalBg: "#00305c",
-  totalText: "#f5a623",
-  borderColor: "rgba(245,166,35,0.14)",
-};
+/**
+ * Halls Head Cricket Club colours — official navy & gold, derived from the
+ * single brand source of truth (clubs record id 2). Used as the scorecard
+ * fallback when a match carries no DB-sourced brand.
+ */
+export const HALLS_HEAD_COLORS: TeamColors = deriveHallsHeadColors(
+  HALLS_HEAD_BRAND.primaryColour,
+  HALLS_HEAD_BRAND.secondaryColour,
+);
 
 /** Neutral dark scheme used when an opposition club has no brand colours. */
 const NEUTRAL_OPPOSITION: TeamColors = {

@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles, type LucideIcon } from "lucide-react";
-import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
 import type { CardTemplate } from "@workspace/api-client-react";
+import { HALLS_HEAD_BRAND, type HallsHeadBrand } from "@workspace/scorecard";
 import {
   resolveTextField,
   resolvePhotoField,
@@ -219,13 +219,6 @@ type Palette = {
   textMuted: string; // textLight @ 0.65
 };
 
-const DEFAULT_THEME: CardTheme = {
-  bgDark: "#322F3D",
-  bgPanel: "#3F3C4C",
-  accent: "#FBD039",
-  textLight: "#F5F2E8",
-};
-
 const hexToRgb = (hex: string): [number, number, number] => {
   let h = hex.trim().replace(/^#/, "");
   if (h.length === 3) h = h.split("").map((c) => c + c).join("");
@@ -237,6 +230,27 @@ const hexToRgb = (hex: string): [number, number, number] => {
 const rgba = (hex: string, alpha: number): string => {
   const [r, g, b] = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// Lighten a hex colour toward white by `amount` (0..1) — used to derive the
+// slightly raised panel shade from the club's navy primary.
+const lighten = (hex: string, amount: number): string => {
+  const [r, g, b] = hexToRgb(hex);
+  const c = (n: number) => Math.round(n + (255 - n) * amount);
+  return `#${[c(r), c(g), c(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+};
+
+// The default card theme IS the official club brand (navy primary + gold
+// secondary from clubs id 2, surfaced via HALLS_HEAD_BRAND). Selectable card
+// themes still override these; this is the fallback so no divergent HHCC hexes
+// live in the renderer. textLight is a neutral cream for legibility on navy.
+const BRAND_PRIMARY = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
+const BRAND_SECONDARY = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
+const DEFAULT_THEME: CardTheme = {
+  bgDark: BRAND_PRIMARY,
+  bgPanel: lighten(BRAND_PRIMARY, 0.1),
+  accent: BRAND_SECONDARY,
+  textLight: "#F5F2E8",
 };
 
 const resolvePalette = (theme?: CardTheme | null): Palette => {
@@ -603,6 +617,12 @@ export type RenderOptions = {
   clubUrl?: string;
   hashtag?: string;
   theme?: CardTheme | null;
+  /**
+   * Official club brand (logo + colours) from the clubs register, sourced from
+   * the social-settings bundle. The renderer uses its logo when no theme logo is
+   * set; falls back to the built-in HALLS_HEAD_BRAND when omitted.
+   */
+  brand?: HallsHeadBrand | null;
   /**
    * Overrides the photo baked into the input. When omitted, the renderer falls
    * back to the input's own `photoUrl`; pass `null` to force no photo.
@@ -1356,7 +1376,11 @@ export const renderShareCard = async (
   // small circular headshot the per-kind body draws.
   const featureImg = placement === "feature" ? loadedPhoto : null;
   const photoImg = placement === "feature" ? null : loadedPhoto;
-  const logoSrc = opts.theme?.logoUrl || logoUrl;
+  const logoSrc =
+    opts.theme?.logoUrl ||
+    opts.brand?.logoUrl ||
+    HALLS_HEAD_BRAND.logoUrl ||
+    "";
 
   drawBackground(ctx, W, H, p, featureImg ?? bgImg, !!featureImg, featureImg ? opts.photoTransform : undefined);
   const headerEnd = await drawHeader(ctx, W, Math.round(80 * scale), scale, p, logoSrc);

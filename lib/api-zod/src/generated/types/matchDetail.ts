@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { HallsHeadBrand } from './hallsHeadBrand';
 import type { MatchOppositionLine } from './matchOppositionLine';
 import type { MatchScorecardLine } from './matchScorecardLine';
 import type { MatchStage } from './matchStage';
@@ -35,6 +36,8 @@ export interface MatchDetail {
   abandoned: boolean;
   /** Opposition club branding, or null when unmatched. */
   opponentClub?: OpponentClub | null;
+  /** Halls Head's official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults. */
+  hallsHead?: HallsHeadBrand | null;
   /**
      * True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.
      * @nullable

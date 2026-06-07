@@ -21,6 +21,7 @@ import {
   UpdateMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getHallsHeadBrand } from "../lib/halls-head-brand";
 
 const router: IRouter = Router();
 
@@ -174,6 +175,8 @@ async function loadMatchDetail(matchId: number) {
     .from(matchHatTricksTable)
     .where(eq(matchHatTricksTable.matchId, matchId));
 
+  const hallsHead = await getHallsHeadBrand();
+
   return {
     id: match.id,
     grade: match.grade,
@@ -190,6 +193,7 @@ async function loadMatchDetail(matchId: number) {
     hhccBattedFirst: match.hhccBattedFirst,
     abandoned: match.abandoned,
     opponentClub: toOpponentClub(match),
+    hallsHead,
     lines,
     oppositionLines,
     hatTrickPlayerIds: hatTricks.map((h) => h.playerId),

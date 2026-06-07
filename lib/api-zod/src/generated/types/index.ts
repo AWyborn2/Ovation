@@ -84,6 +84,7 @@ export * from './debutEntry';
 export * from './errorEnvelope';
 export * from './fiveWicketHaul';
 export * from './gradeSummary';
+export * from './hallsHeadBrand';
 export * from './healthStatus';
 export * from './honourBoard';
 export * from './honourBoardInput';

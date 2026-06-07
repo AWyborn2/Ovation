@@ -918,6 +918,25 @@ export interface OpponentClub {
   secondaryColour?: string | null;
 }
 
+/**
+ * Halls Head's own branding, resolved from the clubs register record (id 2) — the single source of truth for the club's official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.
+ */
+export interface HallsHeadBrand {
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  logoUrl128?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+  /** @nullable */
+  tertiaryColour?: string | null;
+}
+
 export interface MatchSummary {
   id: number;
   grade: string;
@@ -1043,6 +1062,8 @@ export interface MatchDetail {
   abandoned: boolean;
   /** Opposition club branding, or null when unmatched. */
   opponentClub?: OpponentClub | null;
+  /** Halls Head's official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults. */
+  hallsHead?: HallsHeadBrand | null;
   /**
      * True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.
      * @nullable
@@ -2325,6 +2346,8 @@ export interface SocialSettingsBundle {
   settings: SocialSettings;
   captionTemplates: CaptionTemplate[];
   activeSponsors: Sponsor[];
+  /** Halls Head's official branding (logo + colours) from the clubs register — the default theme/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults. */
+  brand?: HallsHeadBrand | null;
 }
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
