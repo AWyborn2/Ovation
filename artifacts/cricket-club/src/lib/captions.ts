@@ -120,6 +120,17 @@ const valueOf = (input: ShareCardInput, key: string): string => {
       };
       return map[key] ?? "";
     }
+    case "matchSummary": {
+      const map: Record<string, string> = {
+        "player.name": "",
+        "stat.value": input.result,
+        "stat.label": "result",
+        "stat.tier": "Match Summary",
+        "stat.threshold": "",
+        "grade.name": input.matchTitle,
+      };
+      return map[key] ?? "";
+    }
   }
 };
 

@@ -30,3 +30,4 @@
 - [Milestones board (dated)](milestones-board.md) — GET /milestones dated achievements ranked by significance bands; empty until per-match imports give matchDate; configurable recencyWeeks + per-stat tiers.
 - [Match history bulk load](match-history-bulk-load.md) — master career_stats gappy so match scorecards win (Option A: totals rise); exclude fill-ins; master reload MUST clear baseline_adjustments or careers double-count; load staging via psql -1.
 - [Master DB load](master-db-load.md) — master export is authoritative source (exact player_id links); pure-SQL ETL replaces owned DATA tables, preserves app-config; partnerships/centuries/five-fors are records-only surfaces.
+- [wouter nested catch-all](wouter-nested-catchall.md) — wouter v3 `:rest*` only matches one segment; use `/admin/*` for multi-segment nested admin routes or they 404 to public.

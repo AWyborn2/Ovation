@@ -10,6 +10,7 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "newCap", label: "New Cap" },
   { value: "century", label: "Century" },
   { value: "fiveFor", label: "Five-for" },
+  { value: "matchSummary", label: "Match Summary" },
 ];
 
 // Chip picker for the card types a sponsor or template applies to.

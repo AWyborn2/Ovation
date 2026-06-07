@@ -19,4 +19,5 @@ export const CardKind = {
   newCap: 'newCap',
   century: 'century',
   fiveFor: 'fiveFor',
+  matchSummary: 'matchSummary',
 } as const;

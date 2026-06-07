@@ -103,6 +103,13 @@ export const CARD_FIELD_CATALOG: Record<CardKind, TemplateFieldDef[]> = {
     { key: "round", label: "Round", type: "text" },
     PHOTO_FIELD,
   ],
+  matchSummary: [
+    { key: "matchTitle", label: "Match title", type: "text" },
+    { key: "matchType", label: "Match type", type: "text" },
+    { key: "date", label: "Date", type: "text" },
+    { key: "venue", label: "Venue", type: "text" },
+    { key: "result", label: "Result", type: "text" },
+  ],
 };
 
 // All bindable fields for a kind, common fields first.
@@ -273,6 +280,16 @@ export const resolveTextField = (
         overs: input.overs ?? "",
         opponent: input.opponent ?? "",
         round: input.round != null ? str(input.round) : "",
+      };
+      return map[key] ?? "";
+    }
+    case "matchSummary": {
+      const map: Record<string, string> = {
+        matchTitle: input.matchTitle,
+        matchType: input.matchType ?? "",
+        date: input.date ?? "",
+        venue: input.venue ?? "",
+        result: input.result,
       };
       return map[key] ?? "";
     }

@@ -28,6 +28,7 @@ import AdminLifeMembers from "@/pages/admin-life-members";
 import AdminAwards from "@/pages/admin-awards";
 import AdminTeamOfDecade from "@/pages/admin-team-of-decade";
 import AdminSocial from "@/pages/admin-social";
+import AdminSocialCreate from "@/pages/admin-social-create";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminMatchDisplay from "@/pages/admin-match-display";
@@ -80,6 +81,7 @@ function AdminRoutes() {
           <Route path="/admin/captains" component={AdminCaptains} />
           <Route path="/admin/committee" component={AdminCommittee} />
           <Route path="/admin/social" component={AdminSocial} />
+          <Route path="/admin/social/create" component={AdminSocialCreate} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
           <Route component={NotFound} />
         </Switch>
@@ -99,7 +101,7 @@ function CaptainRoutes() {
 function Router() {
   return (
     <Switch>
-      <Route path="/admin/:rest*" component={AdminRoutes} />
+      <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
       <Route path="/captain" component={CaptainRoutes} />
       <Route component={PublicRoutes} />

@@ -5611,7 +5611,7 @@ components:
 
     CardKind:
       type: string
-      enum: [milestone, player, record, gradeLeader, premiership, debut, newCap, century, fiveFor]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, newCap, century, fiveFor, matchSummary]
 
     Sponsor:
       type: object
