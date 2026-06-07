@@ -1,13 +1,14 @@
 import { Link, useLocation } from "wouter";
 import { Users, ScrollText, Trophy, Award, GitCompare, Menu, X, Crown, Settings, ClipboardList } from "lucide-react";
 import { useState } from "react";
-import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
 import { useCurrentAdmin } from "@/lib/admin-auth";
+import { useBrandLogo } from "@/lib/use-brand";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const me = useCurrentAdmin();
+  const logoUrl = useBrandLogo();
 
   const navigation = [
     { name: "Honour Boards", href: "/", icon: ScrollText },

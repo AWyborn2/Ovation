@@ -43,7 +43,7 @@ import {
   getApproachingMilestones,
   statToAggregated,
 } from "@/lib/honour-boards";
-import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import { useBrandLogo } from "@/lib/use-brand";
 import { CapRegisterTab } from "@/components/cap-register-tab";
 import { LifeMembersTab } from "@/components/life-members-tab";
 import { AwardsTab } from "@/components/awards-tab";
@@ -433,6 +433,7 @@ const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
 };
 
 export default function HonourBoards() {
+  const logoUrl = useBrandLogo();
   const [activeTab, setActiveTab] = useState<ActiveTab>("milestones");
   const [scope, setScope] = useState<Scope>("career");
 

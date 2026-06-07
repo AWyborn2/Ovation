@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useMemo, useState } from "react";
 import { useListPremierships } from "@workspace/api-client-react";
 import type { Premiership, PremiershipPlayer } from "@workspace/api-client-react";
-import logoUrl from "@assets/HHCC_logo_(1)_1779834789645.png";
+import { useBrandLogo } from "@/lib/use-brand";
 
 const PLAQUE_FONT = "'Inter', sans-serif";
 
@@ -123,6 +123,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
 };
 
 export default function Premierships() {
+  const logoUrl = useBrandLogo();
   const { data: premierships, isLoading } = useListPremierships();
   const [selectedGrade, setSelectedGrade] = useState<string>("All");
 
