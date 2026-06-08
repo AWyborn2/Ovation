@@ -33,6 +33,7 @@ import {
   EyeOff,
   Loader2,
   ExternalLink,
+  GripVertical,
 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { navIcon, NAV_ICON_MAP } from "@/lib/nav-icons";
@@ -116,17 +117,49 @@ function SurfaceSection({ config, options }: { config: SurfaceConfig; options: N
   const reorder = useReorderNavItems();
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  const commitOrder = (ordered: NavItem[]) => {
+    setError(null);
+    reorder.mutate(
+      { data: { surface, ids: ordered.map((i) => i.id) } },
+      { onSuccess: invalidateAll, onError: (e) => setError(handleAdminMutationError(e)) },
+    );
+  };
 
   const move = (idx: number, dir: -1 | 1) => {
     const next = [...items];
     const target = idx + dir;
     if (target < 0 || target >= next.length) return;
     [next[idx], next[target]] = [next[target], next[idx]];
-    setError(null);
-    reorder.mutate(
-      { data: { surface, ids: next.map((i) => i.id) } },
-      { onSuccess: invalidateAll, onError: (e) => setError(handleAdminMutationError(e)) },
-    );
+    commitOrder(next);
+  };
+
+  const reorderByDrag = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return;
+    const next = [...items];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    commitOrder(next);
+  };
+
+  const handleDragStart = (idx: number) => {
+    setDragIndex(idx);
+    setOverIndex(idx);
+  };
+  const handleDragOver = (idx: number) => {
+    if (dragIndex === null) return;
+    if (idx !== overIndex) setOverIndex(idx);
+  };
+  const handleDrop = () => {
+    if (dragIndex !== null && overIndex !== null) reorderByDrag(dragIndex, overIndex);
+    setDragIndex(null);
+    setOverIndex(null);
+  };
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setOverIndex(null);
   };
 
   return (
@@ -153,6 +186,12 @@ function SurfaceSection({ config, options }: { config: SurfaceConfig; options: N
                 options={options}
                 onMove={move}
                 onChanged={invalidateAll}
+                isDragging={dragIndex === idx}
+                isDropTarget={dragIndex !== null && overIndex === idx && dragIndex !== idx}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
               />
             ))}
           </div>
@@ -187,6 +226,12 @@ function NavItemRow({
   options,
   onMove,
   onChanged,
+  isDragging,
+  isDropTarget,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   item: NavItem;
   index: number;
@@ -195,6 +240,12 @@ function NavItemRow({
   options: NavOptions;
   onMove: (idx: number, dir: -1 | 1) => void;
   onChanged: () => void;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onDragStart: (idx: number) => void;
+  onDragOver: (idx: number) => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,7 +287,35 @@ function NavItemRow({
   }
 
   return (
-    <div className={`flex items-center gap-3 border border-border rounded-md p-3 ${item.visible ? "" : "opacity-60"}`}>
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver(index);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      className={`flex items-center gap-3 border rounded-md p-3 transition-colors ${
+        item.visible ? "" : "opacity-60"
+      } ${isDragging ? "opacity-40 border-primary" : "border-border"} ${
+        isDropTarget ? "border-primary border-dashed bg-primary/5" : ""
+      }`}
+    >
+      <button
+        type="button"
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          onDragStart(index);
+        }}
+        onDragEnd={onDragEnd}
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none shrink-0"
+        aria-label="Drag to reorder"
+        title="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
       <div className="flex flex-col">
         <button
           className="text-muted-foreground hover:text-foreground disabled:opacity-30"
