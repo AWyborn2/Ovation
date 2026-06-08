@@ -15,7 +15,7 @@ import {
   type DebutEntry,
   type MilestoneItem,
 } from "@workspace/api-client-react";
-import { Trophy, Star, Award, Target, Zap, Flame, UserPlus, ChevronDown } from "lucide-react";
+import { Trophy, Star, Award, Target, Zap, Flame, UserPlus, ChevronDown, ClipboardList, Crown, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -455,6 +455,32 @@ const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
   );
 };
 
+// Quick-link cards mirroring the Juniors dashboard, using the club's brown
+// (sampled from the Halls Head logo) in place of the Juniors emerald accent.
+function QuickLink({
+  href,
+  icon: Icon,
+  title,
+  desc,
+}: {
+  href: string;
+  icon: typeof Trophy;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Link href={href}>
+      <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-[#9a6f3c] transition-colors group">
+        <Icon className="h-7 w-7 text-[#b58146] mb-3" />
+        <div className="font-serif font-bold text-lg text-foreground group-hover:text-[#c79560]">
+          {title}
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">{desc}</p>
+      </div>
+    </Link>
+  );
+}
+
 export default function HonourBoards() {
   const logoUrl = useBrandLogo();
   const [activeTab, setActiveTab] = useState<ActiveTab>("milestones");
@@ -652,6 +678,13 @@ export default function HonourBoards() {
           <SummaryStat label="Total Dismissals" value={totalDismissals} />
         </div>
       )}
+
+      {/* Quick links */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <QuickLink href="/matches" icon={ClipboardList} title="Matches" desc="Browse senior games and full scorecards." />
+        <QuickLink href="/premierships" icon={Crown} title="Premierships" desc="Senior honour boards and winning rosters." />
+        <QuickLink href="/players" icon={Users} title="Players & Leaders" desc="Runs, wickets and games leaderboards." />
+      </div>
 
       {/* Tabs */}
       {(() => {
