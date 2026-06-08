@@ -4,6 +4,7 @@ import {
   db,
   premiershipsTable,
   premiershipPlayersTable,
+  matchesTable,
 } from "@workspace/db";
 import {
   CreatePremiershipBody,
@@ -20,6 +21,76 @@ interface PlayerInput {
   name: string;
   isCaptain: boolean;
   battingOrder?: number | null;
+}
+
+const MONTHS: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+/** Parse a free-text match_date (e.g. "12:00 PM, Saturday, 21 Mar 2026") into a
+ * sortable timestamp; null when no day-month-year can be extracted. */
+function parseMatchDate(d: string | null | undefined): number | null {
+  if (!d) return null;
+  const m = d.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+  if (!m) return null;
+  const mon = MONTHS[m[2].slice(0, 3).toLowerCase()];
+  if (mon === undefined) return null;
+  return new Date(Number(m[3]), mon, Number(m[1])).getTime();
+}
+
+const OPP_STOP_WORDS = new Set([
+  "GRADE", "SENIOR", "MEN", "T20", "BLUE", "GOLD", "THE", "AND", "CUP",
+]);
+
+/** Heuristic: does the match opponent name appear in the premiership result
+ * text? Strips generic "Cricket Club" wording and tries a substring match, then
+ * falls back to matching any meaningful token. */
+function opponentInResult(
+  opponent: string | null | undefined,
+  result: string | null | undefined,
+): boolean {
+  if (!opponent || !result) return false;
+  const res = result.toUpperCase();
+  const cleaned = opponent
+    .toUpperCase()
+    .replace(/CRICKET CLUB|CRICKET|CLUB/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (cleaned && res.includes(cleaned)) return true;
+  const tokens = cleaned
+    .split(/[^A-Z0-9]+/)
+    .filter((t) => t.length >= 4 && !OPP_STOP_WORDS.has(t));
+  return tokens.some((t) => res.includes(t));
+}
+
+type GfMatch = Pick<
+  typeof matchesTable.$inferSelect,
+  "id" | "grade" | "season" | "opponent" | "matchDate" | "result"
+>;
+
+/** Choose the single Grand Final match for a premiership from its candidates.
+ * Prefers a match whose opponent appears in the result text, then the most
+ * recent parsed matchDate, falling back to the lowest id. */
+function pickGrandFinal(
+  candidates: GfMatch[],
+  premResult: string | null | undefined,
+): number | null {
+  if (candidates.length === 0) return null;
+  const ranked = candidates
+    .map((m) => ({
+      id: m.id,
+      opp: opponentInResult(m.opponent, premResult),
+      date: parseMatchDate(m.matchDate),
+    }))
+    .sort((a, b) => {
+      if (a.opp !== b.opp) return a.opp ? -1 : 1;
+      const ad = a.date ?? -Infinity;
+      const bd = b.date ?? -Infinity;
+      if (ad !== bd) return bd - ad;
+      return a.id - b.id;
+    });
+  return ranked[0].id;
 }
 
 async function loadWithPlayers(id: number) {
@@ -60,7 +131,32 @@ router.get("/premierships", async (_req, res): Promise<void> => {
     byPrem.get(p.premiershipId)!.push(p);
   }
 
-  res.json(prems.map((p) => ({ ...p, players: byPrem.get(p.id) ?? [] })));
+  const gfMatches = await db
+    .select({
+      id: matchesTable.id,
+      grade: matchesTable.grade,
+      season: matchesTable.season,
+      opponent: matchesTable.opponent,
+      matchDate: matchesTable.matchDate,
+      result: matchesTable.result,
+    })
+    .from(matchesTable)
+    .where(eq(matchesTable.stage, "Grand Final"));
+
+  const gfByKey = new Map<string, GfMatch[]>();
+  for (const m of gfMatches) {
+    const key = `${m.grade}|${m.season}`;
+    if (!gfByKey.has(key)) gfByKey.set(key, []);
+    gfByKey.get(key)!.push(m);
+  }
+
+  res.json(
+    prems.map((p) => ({
+      ...p,
+      players: byPrem.get(p.id) ?? [],
+      matchId: pickGrandFinal(gfByKey.get(`${p.grade}|${p.year}`) ?? [], p.result),
+    })),
+  );
 });
 
 router.post("/premierships", requireAdmin, async (req, res): Promise<void> => {

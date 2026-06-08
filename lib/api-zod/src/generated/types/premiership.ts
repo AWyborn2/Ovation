@@ -22,5 +22,12 @@ export interface Premiership {
   mom?: string | null;
   /** @nullable */
   notes?: string | null;
+  /**
+     * Id of the Grand Final scorecard match for this premiership's grade and
+  season, when one exists in the match database; null otherwise.
+
+     * @nullable
+     */
+  matchId?: number | null;
   players: PremiershipPlayer[];
 }

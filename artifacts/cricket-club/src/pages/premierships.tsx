@@ -109,13 +109,24 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
             </div>
           )}
 
-          {prem.result && (
-            <div
-              style={{ ...resultStyle, whiteSpace: "pre-line" }}
-              className="text-[12px] font-bold">
-              {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
-            </div>
-          )}
+          {prem.result &&
+            (prem.matchId ? (
+              <Link
+                href={`/matches/${prem.matchId}`}
+                style={{ ...resultStyle, whiteSpace: "pre-line" }}
+                className="text-[12px] font-bold block hover:underline cursor-pointer"
+                title="View Grand Final scorecard"
+              >
+                {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
+              </Link>
+            ) : (
+              <div
+                style={{ ...resultStyle, whiteSpace: "pre-line" }}
+                className="text-[12px] font-bold"
+              >
+                {prem.result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
+              </div>
+            ))}
         </div>
       </div>
     </div>

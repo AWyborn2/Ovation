@@ -3039,6 +3039,11 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        matchId:
+          type: ["integer", "null"]
+          description: |
+            Id of the Grand Final scorecard match for this premiership's grade and
+            season, when one exists in the match database; null otherwise.
         players:
           type: array
           items:

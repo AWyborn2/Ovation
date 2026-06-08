@@ -1586,6 +1586,7 @@ export const ListPremiershipsResponseItem = zod.object({
   "result": zod.string().nullish(),
   "mom": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "matchId": zod.number().nullish().describe('Id of the Grand Final scorecard match for this premiership\'s grade and\nseason, when one exists in the match database; null otherwise.\n'),
   "players": zod.array(zod.object({
   "id": zod.number(),
   "premiershipId": zod.number(),
@@ -1653,6 +1654,7 @@ export const UpdatePremiershipResponse = zod.object({
   "result": zod.string().nullish(),
   "mom": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "matchId": zod.number().nullish().describe('Id of the Grand Final scorecard match for this premiership\'s grade and\nseason, when one exists in the match database; null otherwise.\n'),
   "players": zod.array(zod.object({
   "id": zod.number(),
   "premiershipId": zod.number(),
