@@ -1,15 +1,22 @@
 import { Link } from "wouter";
 import { useGetJuniorsOverview } from "@workspace/api-client-react";
 import { ClipboardList, Crown, Users, CalendarDays, ScrollText, TrendingUp } from "lucide-react";
-import { JUNIOR_ACCENT, fmtJuniorDate } from "@/lib/juniors";
+import { fmtJuniorDate } from "@/lib/juniors";
+
+// Option #4 — Juniors uses dark club-brown card panels (source tertiary #42342B)
+// with GOLD (the club secondary, text-primary) for numbers/icons/hover and warm
+// cream for muted text, so the brown reads as an asset (the surface) not as
+// low-contrast text on the dark slate theme.
+const JR_PANEL = "bg-[#42342b] border border-[#5d4838]";
+const JR_MUTED = "text-[#d8c9bd]";
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div className="text-3xl font-serif font-bold text-[#42342b]" data-testid={`stat-${label}`}>
+    <div className={`${JR_PANEL} rounded-md p-4 text-center shadow-sm`}>
+      <div className="text-3xl font-serif font-bold text-primary" data-testid={`stat-${label}`}>
         {value}
       </div>
-      <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
+      <div className={`text-xs uppercase tracking-widest ${JR_MUTED} mt-1`}>{label}</div>
     </div>
   );
 }
@@ -17,10 +24,10 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
 function QuickLink({ href, icon: Icon, title, desc }: { href: string; icon: typeof Users; title: string; desc: string }) {
   return (
     <Link href={href}>
-      <div className={`bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full ${JUNIOR_ACCENT.hoverBorder} transition-colors group`}>
-        <Icon className="h-7 w-7 text-[#42342b] mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-[#42342b]">{title}</div>
-        <p className="text-sm text-muted-foreground mt-1">{desc}</p>
+      <div className={`${JR_PANEL} rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group`}>
+        <Icon className="h-7 w-7 text-primary mb-3" />
+        <div className="font-serif font-bold text-lg text-white group-hover:text-primary">{title}</div>
+        <p className={`text-sm ${JR_MUTED} mt-1`}>{desc}</p>
       </div>
     </Link>
   );
@@ -70,28 +77,28 @@ export default function JuniorsDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.recentMatches.map((m) => (
                   <Link key={m.id} href={`/juniors/matches/${m.id}`}>
-                    <div className={`bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer h-full flex flex-col gap-2 ${JUNIOR_ACCENT.hoverBorder} transition-colors group`}>
+                    <div className={`${JR_PANEL} rounded-md p-4 shadow-sm cursor-pointer h-full flex flex-col gap-2 hover:border-primary transition-colors group`}>
                       <div className="flex items-center gap-2">
                         {m.ageGroup && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#bc8c6b] bg-[#bc8c6b]/10 border border-[#bc8c6b]/40 rounded px-2 py-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/15 border border-primary/40 rounded px-2 py-0.5">
                             {m.ageGroup}
                           </span>
                         )}
-                        <div className="font-serif font-bold text-primary group-hover:text-[#bc8c6b] truncate">
+                        <div className="font-serif font-bold text-white group-hover:text-primary truncate">
                           vs {m.opponentName ?? "Unknown"}
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                      <div className={`text-xs ${JR_MUTED} uppercase tracking-wider`}>
                         {m.season ?? ""}{m.round ? ` · ${m.round}` : ""}
                       </div>
                       {(m.hhScore || m.opponentScore) && (
-                        <div className="text-sm font-mono text-foreground/90">
-                          {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span> {m.opponentScore ?? "—"}
+                        <div className="text-sm font-mono text-white/90">
+                          {m.hhScore ?? "—"} <span className={JR_MUTED}>vs</span> {m.opponentScore ?? "—"}
                         </div>
                       )}
-                      {m.hhResult && <div className="text-sm text-foreground/80">{m.hhResult}</div>}
+                      {m.hhResult && <div className="text-sm text-white/80">{m.hhResult}</div>}
                       {fmtJuniorDate(m.matchDate) && (
-                        <span className="mt-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className={`mt-auto inline-flex items-center gap-1 text-xs ${JR_MUTED}`}>
                           <CalendarDays className="h-3.5 w-3.5" /> {fmtJuniorDate(m.matchDate)}
                         </span>
                       )}
@@ -105,15 +112,15 @@ export default function JuniorsDashboard() {
           {/* Top performers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.topRunScorers.length > 0 && (
-              <section className="bg-card border border-border rounded-md p-4 shadow-sm">
+              <section className={`${JR_PANEL} rounded-md p-4 shadow-sm text-white`}>
                 <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-[#bc8c6b]" /> Top Run Scorers
+                  <TrendingUp className="h-4 w-4 text-primary" /> Top Run Scorers
                 </h3>
-                <ul className="divide-y divide-border">
+                <ul className="divide-y divide-[#5d4838]">
                   {data.topRunScorers.map((p) => (
                     <li key={p.participantId}>
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-[#bc8c6b]">
+                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
                           <span className="font-medium">{p.displayName}</span>
                           <span className="font-mono text-sm">{p.runs}</span>
                         </div>
@@ -124,15 +131,15 @@ export default function JuniorsDashboard() {
               </section>
             )}
             {data.topWicketTakers.length > 0 && (
-              <section className="bg-card border border-border rounded-md p-4 shadow-sm">
+              <section className={`${JR_PANEL} rounded-md p-4 shadow-sm text-white`}>
                 <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-[#bc8c6b]" /> Top Wicket Takers
+                  <TrendingUp className="h-4 w-4 text-primary" /> Top Wicket Takers
                 </h3>
-                <ul className="divide-y divide-border">
+                <ul className="divide-y divide-[#5d4838]">
                   {data.topWicketTakers.map((p) => (
                     <li key={p.participantId}>
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-[#bc8c6b]">
+                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
                           <span className="font-medium">{p.displayName}</span>
                           <span className="font-mono text-sm">{p.wickets}</span>
                         </div>
