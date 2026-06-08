@@ -28,15 +28,46 @@ const MONTHS: Record<string, number> = {
   jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
 };
 
-/** Parse a free-text match_date (e.g. "12:00 PM, Saturday, 21 Mar 2026") into a
- * sortable timestamp; null when no day-month-year can be extracted. */
-function parseMatchDate(d: string | null | undefined): number | null {
+interface DateParts {
+  year: number;
+  month: number; // 1-12
+  day: number;
+}
+
+/** Parse a free-text match_date (e.g. "12:00 PM, Saturday, 21 Mar 2026") into
+ * day/month/year parts; null when no day-month-year can be extracted. */
+function parseMatchDateParts(d: string | null | undefined): DateParts | null {
   if (!d) return null;
   const m = d.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
   if (!m) return null;
   const mon = MONTHS[m[2].slice(0, 3).toLowerCase()];
   if (mon === undefined) return null;
-  return new Date(Number(m[3]), mon, Number(m[1])).getTime();
+  return { year: Number(m[3]), month: mon + 1, day: Number(m[1]) };
+}
+
+/** Parse a premiership match_date (stored as ISO-ish text "2026-03-21"). */
+function parsePremDateParts(d: string | null | undefined): DateParts | null {
+  if (!d) return null;
+  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+}
+
+function partsToTime(p: DateParts | null): number | null {
+  return p ? new Date(p.year, p.month - 1, p.day).getTime() : null;
+}
+
+/** Cricket season start-year for a premiership. Matches store `season` as the
+ * season start-year (e.g. 2023 = 2023/24, whose Grand Final is in March 2024),
+ * but a premiership's `year` is the calendar year of the win. Derive the season
+ * from the (more precise) final date: mid-season finals (Jul-Dec) keep the
+ * calendar year, season-ending finals (Jan-Jun) belong to the previous year. */
+function premiershipSeasons(year: number, matchDate: string | null | undefined): number[] {
+  const parts = parsePremDateParts(matchDate);
+  if (parts) return [parts.month >= 7 ? parts.year : parts.year - 1];
+  // No usable final date: a calendar-year-`year` win is either the end of
+  // season `year-1` or a mid-season final of season `year`. Consider both.
+  return [year - 1, year];
 }
 
 const OPP_STOP_WORDS = new Set([
@@ -69,21 +100,56 @@ type GfMatch = Pick<
   "id" | "grade" | "season" | "opponent" | "matchDate" | "result"
 >;
 
-/** Choose the single Grand Final match for a premiership from its candidates.
- * Prefers a match whose opponent appears in the result text, then the most
- * recent parsed matchDate, falling back to the lowest id. */
+interface PremForLink {
+  result: string | null;
+  competition: string;
+  matchDate: string | null;
+}
+
+const isT20 = (s: string | null | undefined): boolean => /\bt20\b/i.test(s ?? "");
+const isUndecidedResult = (r: string | null | undefined): boolean =>
+  /WASHOUT|ABANDON|SHARED|TIED|NO RESULT/i.test(r ?? "");
+
+/** Choose the single Grand Final match for a premiership from its candidates
+ * (already restricted to the right grade + season). A season can hold more than
+ * one Grand Final (e.g. a season-ending cup final plus a mid-season T20), so we
+ * disambiguate in priority order:
+ *   1. exact final date (premiership date == match date)
+ *   2. T20-vs-not alignment with the premiership's competition
+ *   3. a Won result (premierships are wins, unless washed-out/shared/tied)
+ *   4. opponent name appearing in the premiership result text
+ *   5. most recent date, then lowest id
+ */
 function pickGrandFinal(
   candidates: GfMatch[],
-  premResult: string | null | undefined,
+  prem: PremForLink,
 ): number | null {
   if (candidates.length === 0) return null;
+  const premDate = parsePremDateParts(prem.matchDate);
+  const premT20 = isT20(prem.competition) || isT20(prem.result);
+  const undecided = isUndecidedResult(prem.result);
   const ranked = candidates
-    .map((m) => ({
-      id: m.id,
-      opp: opponentInResult(m.opponent, premResult),
-      date: parseMatchDate(m.matchDate),
-    }))
+    .map((m) => {
+      const md = parseMatchDateParts(m.matchDate);
+      const exact =
+        premDate != null &&
+        md != null &&
+        premDate.year === md.year &&
+        premDate.month === md.month &&
+        premDate.day === md.day;
+      return {
+        id: m.id,
+        exact,
+        t20align: isT20(m.opponent) === premT20,
+        won: (m.result ?? "").toUpperCase() === "WON",
+        opp: opponentInResult(m.opponent, prem.result),
+        date: partsToTime(md),
+      };
+    })
     .sort((a, b) => {
+      if (a.exact !== b.exact) return a.exact ? -1 : 1;
+      if (a.t20align !== b.t20align) return a.t20align ? -1 : 1;
+      if (!undecided && a.won !== b.won) return a.won ? -1 : 1;
       if (a.opp !== b.opp) return a.opp ? -1 : 1;
       const ad = a.date ?? -Infinity;
       const bd = b.date ?? -Infinity;
@@ -151,11 +217,16 @@ router.get("/premierships", async (_req, res): Promise<void> => {
   }
 
   res.json(
-    prems.map((p) => ({
-      ...p,
-      players: byPrem.get(p.id) ?? [],
-      matchId: pickGrandFinal(gfByKey.get(`${p.grade}|${p.year}`) ?? [], p.result),
-    })),
+    prems.map((p) => {
+      const candidates = premiershipSeasons(p.year, p.matchDate).flatMap(
+        (season) => gfByKey.get(`${p.grade}|${season}`) ?? [],
+      );
+      return {
+        ...p,
+        players: byPrem.get(p.id) ?? [],
+        matchId: pickGrandFinal(candidates, p),
+      };
+    }),
   );
 });
 

@@ -35,3 +35,4 @@
 - [matches.match_date is free text](match-date-text-column.md) — formatted string not a date; ~82% blank (most finals have none); parse via to_timestamp+regex guard, NULLS LAST, id fallback.
 - [A Grade cap debut ordering](cap-debut-ordering.md) — new season-debutant caps order by PARSED match_date then surname (not batting position); reference add-a-grade-2025-26-debuts.ts.
 - [HHCC brand single source of truth](hhcc-brand-source-of-truth.md) — official logo/colours = clubs DB id 2, surfaced via match `hallsHead` + bundle `brand`; renderers read brand not hardcoded hexes; import `@workspace/scorecard/brand` on the server (barrel pulls DOM types).
+- [Premiership → GF match linking](premiership-match-linking.md) — prem.year = calendar year of win, matches.season = start-year; derive season from prem match_date (Jul-Dec→year, else year-1), then disambiguate multi-GF seasons.
