@@ -44,8 +44,12 @@ const MASK_NAME = "Private Player";
 
 type MatchRow = typeof juniorMatchesTable.$inferSelect;
 
-/** Leading-year of a "2024/25" style season, for newest-first ordering. */
-const seasonYear = sql<number>`nullif(substring(${juniorMatchesTable.season} from 1 for 4), '')::int`;
+/**
+ * Leading-year of a "2024/25" style season, for newest-first ordering. Parsed
+ * once at load time into season_start_year (see juniors-etl.sql); fall back to
+ * parsing the season text inline for any row that predates that column.
+ */
+const seasonYear = sql<number>`coalesce(${juniorMatchesTable.seasonStartYear}, nullif(substring(${juniorMatchesTable.season} from 1 for 4), '')::int)`;
 
 async function getPrivateIds(): Promise<Set<string>> {
   const rows = await db
@@ -352,26 +356,27 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   if (search) conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
 
   // Season / age-group filters restrict to participants who actually appeared in
-  // a matching match (any HH batting/bowling/roster line).
+  // a matching match. Appearance = ANY HH line (batting OR bowling OR roster);
+  // restricting to rosters alone would drop players who batted/bowled but have no
+  // roster row, so we union all three line types before joining the match filter.
   if (season || ageGroup) {
-    const mConds = [];
-    if (season) mConds.push(eq(juniorMatchesTable.season, season));
-    if (ageGroup) mConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
-    const appearancePids = await db
-      .selectDistinct({ pid: juniorMatchRostersTable.participantId })
-      .from(juniorMatchRostersTable)
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId),
-      )
-      .where(
-        and(
-          eq(juniorMatchRostersTable.isHallsHead, true),
-          isNotNull(juniorMatchRostersTable.participantId),
-          ...mConds,
-        ),
-      );
-    const ids = appearancePids.map((r) => r.pid).filter((x): x is string => !!x);
+    const seasonCond = season ? sql`m.season = ${season}` : sql`TRUE`;
+    const ageCond = ageGroup ? sql`m.age_group = ${ageGroup}` : sql`TRUE`;
+    const appearanceRes = await db.execute(sql`
+      SELECT DISTINCT t.participant_id AS pid
+      FROM (
+        SELECT participant_id, match_id FROM junior_match_batting WHERE is_halls_head AND participant_id IS NOT NULL
+        UNION
+        SELECT participant_id, match_id FROM junior_match_bowling WHERE is_halls_head AND participant_id IS NOT NULL
+        UNION
+        SELECT participant_id, match_id FROM junior_match_rosters WHERE is_halls_head AND participant_id IS NOT NULL
+      ) t
+      JOIN junior_matches m ON m.id = t.match_id
+      WHERE ${seasonCond} AND ${ageCond}
+    `);
+    const ids = (appearanceRes.rows as { pid: string | null }[])
+      .map((r) => r.pid)
+      .filter((x): x is string => !!x);
     if (ids.length === 0) {
       res.json([]);
       return;

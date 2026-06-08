@@ -7,7 +7,7 @@ description: How junior cricket data is kept isolated from senior records, serve
 
 Junior data is a self-contained PlayHQ-era dataset loaded into isolated `junior_*` tables and served ONLY via `/api/juniors/*`. **No junior query ever touches a senior table, and junior/senior stats NEVER combine.**
 
-**Why:** explicit club decision — juniors and seniors are tracked as wholly separate record sets. The only bridge is `junior_participants.senior_player_id` (nullable FK → `players.id`), used purely as a cross-reference link to jump between a person's junior and senior profiles, never to merge any figure.
+**Why:** explicit club decision — juniors and seniors are tracked as wholly separate record sets. The only bridge is `junior_participants.senior_player_id` (plain nullable integer, NO foreign key to `players.id` by design — juniors tables must not be constrained by senior tables), used purely as a cross-reference link to jump between a person's junior and senior profiles, never to merge any figure.
 
 **How to apply:**
 - New junior surfaces query `junior_*` only; new senior surfaces never read `junior_*`. Don't sum across the boundary.

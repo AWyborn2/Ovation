@@ -7,6 +7,27 @@
 -- admin-set junior↔senior cross-reference link (junior_participants.senior_player_id),
 -- which the loader snapshots and re-applies by participant_id.
 
+-- 0. Age-group normaliser. The club's grades are messy across eras
+-- ("Under 14", "U14", "Year 9 Boys Peel", "Year 4 South", "Peel Girls League").
+-- This canonicalises any such label to a single consistent age-group token
+-- (e.g. "U14", "Year 9", "Girls League"). The source dump already carries a
+-- mostly-clean age_group, so we PREFER it and fall back to deriving from the raw
+-- grade text; owning the canonicalisation here keeps future dumps consistent.
+CREATE OR REPLACE FUNCTION pg_temp.jr_norm_age(raw text)
+RETURNS text LANGUAGE sql IMMUTABLE AS $fn$
+  WITH s AS (SELECT lower(coalesce(raw, '')) AS r)
+  SELECT CASE
+    WHEN (SELECT r FROM s) ~ 'girls? league' THEN 'Girls League'
+    WHEN substring((SELECT r FROM s) from 'under\s*0*([0-9]+)') IS NOT NULL
+      THEN 'U' || substring((SELECT r FROM s) from 'under\s*0*([0-9]+)')
+    WHEN substring((SELECT r FROM s) from '\mu\s*0*([0-9]+)') IS NOT NULL
+      THEN 'U' || substring((SELECT r FROM s) from '\mu\s*0*([0-9]+)')
+    WHEN substring((SELECT r FROM s) from 'year\s*([0-9]+(?:-[0-9]+)?)') IS NOT NULL
+      THEN 'Year ' || substring((SELECT r FROM s) from 'year\s*([0-9]+(?:-[0-9]+)?)')
+    ELSE NULL
+  END;
+$fn$;
+
 -- 1. Snapshot the cross-reference links so a reload never loses them.
 CREATE TEMP TABLE _jp_links ON COMMIT DROP AS
 SELECT participant_id, senior_player_id
@@ -24,14 +45,28 @@ DELETE FROM public.junior_matches;
 
 -- 3. Load parents then children.
 INSERT INTO public.junior_matches (
-  id, playhq_match_id, season, grade, age_group, team_name, competition, round,
-  match_date, venue, status, team1, team1_score, team2, team2_score, hh_team_id,
-  hh_result, winner, toss_winner, hh_batted_first, opponent_name
+  id, playhq_match_id, season, season_start_year, grade, age_group, team_name,
+  competition, round, match_date, venue, status, team1, team1_score, team2,
+  team2_score, hh_team_id, hh_result, winner, toss_winner, hh_batted_first,
+  opponent_name
 )
 SELECT
-  match_id, playhq_match_id, season, grade, age_group, team_name, competition, round,
-  match_date, venue, status, team1, team1_score, team2, team2_score, hh_team_id,
-  hh_result, winner, toss_winner, hh_batted_first, opponent_name
+  match_id, playhq_match_id, season,
+  -- Parse the leading year out of a "2024/25" season string for reliable
+  -- newest-first ordering (NULL when the season text has no 4-digit prefix).
+  NULLIF(substring(season from '^[0-9]{4}'), '')::int AS season_start_year,
+  grade,
+  -- Canonical age-group label (see pg_temp.jr_norm_age above): prefer the dump's
+  -- clean age_group, fall back to deriving from the messy grade text.
+  COALESCE(
+    NULLIF(pg_temp.jr_norm_age(age_group), ''),
+    NULLIF(pg_temp.jr_norm_age(grade), ''),
+    NULLIF(trim(age_group), ''),
+    NULLIF(trim(grade), '')
+  ) AS age_group,
+  team_name, competition, round, match_date, venue, status, team1, team1_score,
+  team2, team2_score, hh_team_id, hh_result, winner, toss_winner, hh_batted_first,
+  opponent_name
 FROM juniors_staging.matches;
 
 INSERT INTO public.junior_participants (

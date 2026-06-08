@@ -1,5 +1,4 @@
 import { pgTable, integer, text, boolean, real } from "drizzle-orm/pg-core";
-import { playersTable } from "./players";
 
 /**
  * Halls Head JUNIORS data — kept COMPLETELY SEPARATE from the senior tables by
@@ -18,6 +17,7 @@ export const juniorMatchesTable = pgTable("junior_matches", {
   id: integer("id").primaryKey(),
   playhqMatchId: text("playhq_match_id"),
   season: text("season"),
+  seasonStartYear: integer("season_start_year"),
   grade: text("grade"),
   ageGroup: text("age_group"),
   teamName: text("team_name"),
@@ -100,7 +100,10 @@ export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
  * the handful of participants the club wants hidden everywhere — the API masks
  * their scorecard lines and omits them from every directory / leaderboard.
  * `seniorPlayerId` is an OPTIONAL cross-reference to a senior player record for
- * profile linking only; it NEVER combines junior and senior stats.
+ * profile linking only; it NEVER combines junior and senior stats. It is a plain
+ * nullable integer with NO foreign key to the senior `players` table by club
+ * decision — the juniors dataset must stay fully decoupled from senior tables so
+ * neither schema constrains the other.
  */
 export const juniorParticipantsTable = pgTable("junior_participants", {
   participantId: text("participant_id").primaryKey(),
@@ -111,10 +114,7 @@ export const juniorParticipantsTable = pgTable("junior_participants", {
   firstSeason: text("first_season"),
   lastSeason: text("last_season"),
   teams: text("teams"),
-  seniorPlayerId: integer("senior_player_id").references(
-    () => playersTable.id,
-    { onDelete: "set null" },
-  ),
+  seniorPlayerId: integer("senior_player_id"),
 });
 
 export type JuniorParticipantRow = typeof juniorParticipantsTable.$inferSelect;
