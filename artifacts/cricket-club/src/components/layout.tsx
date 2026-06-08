@@ -1,27 +1,28 @@
 import { Link, useLocation } from "wouter";
-import { Users, ScrollText, Trophy, Award, GitCompare, Menu, X, Crown, Settings, ClipboardList, Baby } from "lucide-react";
+import { Menu, X, Trophy, Baby } from "lucide-react";
 import { useState } from "react";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { useBrandLogo } from "@/lib/use-brand";
+import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 
-type NavItem = { name: string; href: string; icon: typeof Users };
-
-const SENIOR_NAV: NavItem[] = [
-  { name: "Honour Boards", href: "/", icon: ScrollText },
-  { name: "Players", href: "/players", icon: Users },
-  { name: "Matches", href: "/matches", icon: ClipboardList },
-  { name: "Grades", href: "/grades", icon: Trophy },
-  { name: "Records", href: "/records", icon: Award },
-  { name: "Premierships", href: "/premierships", icon: Crown },
-  { name: "Compare", href: "/compare", icon: GitCompare },
+// Hard-coded fallbacks used until the nav config loads (or if it fails). These
+// mirror the seeded senior/junior menus so the site is never blank.
+const SENIOR_NAV_FALLBACK: ResolvedNavItem[] = [
+  { label: "Honour Boards", target: "/", isExternal: false, iconKey: "scrollText", description: "" },
+  { label: "Players", target: "/players", isExternal: false, iconKey: "users", description: "" },
+  { label: "Matches", target: "/matches", isExternal: false, iconKey: "clipboardList", description: "" },
+  { label: "Grades", target: "/grades", isExternal: false, iconKey: "trophy", description: "" },
+  { label: "Records", target: "/records", isExternal: false, iconKey: "award", description: "" },
+  { label: "Premierships", target: "/premierships", isExternal: false, iconKey: "crown", description: "" },
+  { label: "Compare", target: "/compare", isExternal: false, iconKey: "gitCompare", description: "" },
 ];
 
-const JUNIOR_NAV: NavItem[] = [
-  { name: "Overview", href: "/juniors", icon: ScrollText },
-  { name: "Matches", href: "/juniors/matches", icon: ClipboardList },
-  { name: "Premierships", href: "/juniors/premierships", icon: Crown },
-  { name: "Players", href: "/juniors/players", icon: Users },
-  { name: "Office Bearers", href: "/juniors/office-bearers", icon: Award },
+const JUNIOR_NAV_FALLBACK: ResolvedNavItem[] = [
+  { label: "Overview", target: "/juniors", isExternal: false, iconKey: "scrollText", description: "" },
+  { label: "Matches", target: "/juniors/matches", isExternal: false, iconKey: "clipboardList", description: "" },
+  { label: "Premierships", target: "/juniors/premierships", isExternal: false, iconKey: "crown", description: "" },
+  { label: "Players", target: "/juniors/players", isExternal: false, iconKey: "users", description: "" },
+  { label: "Office Bearers", target: "/juniors/office-bearers", isExternal: false, iconKey: "award", description: "" },
 ];
 
 // Index pages match only on an exact location; everything else also matches its
@@ -71,11 +72,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const isJuniors = location === "/juniors" || location.startsWith("/juniors/");
 
-  const navigation: NavItem[] = isJuniors
-    ? JUNIOR_NAV
+  const seniorNav = useNavSurface("senior_menu", SENIOR_NAV_FALLBACK);
+  const juniorNav = useNavSurface("junior_menu", JUNIOR_NAV_FALLBACK);
+
+  const navigation: ResolvedNavItem[] = isJuniors
+    ? juniorNav
     : [
-        ...SENIOR_NAV,
-        ...(me.data ? [{ name: "Admin", href: "/admin", icon: Settings }] : []),
+        ...seniorNav,
+        // The Admin entry is auto-appended for signed-in admins and is never
+        // part of the configurable senior menu.
+        ...(me.data
+          ? [
+              {
+                label: "Admin",
+                target: "/admin",
+                isExternal: false,
+                iconKey: "settings",
+                description: "",
+              },
+            ]
+          : []),
       ];
 
   // Juniors uses the same gold accents as seniors; only the section banner below
@@ -103,19 +119,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Desktop Navigation + section toggle */}
             <div className="hidden md:flex items-center gap-6">
               <nav className="flex items-center space-x-6">
-                {navigation.map((item) => {
-                  const isActive = isItemActive(location, item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`font-serif text-base lg:text-lg uppercase tracking-wider transition-colors py-2 border-b-2 ${
-                        isActive
-                          ? `${activeText} ${activeBorder}`
-                          : `text-muted-foreground border-transparent ${hoverText} ${hoverBorder}`
-                      }`}
-                    >
-                      {item.name}
+                {navigation.map((item, idx) => {
+                  const isActive = !item.isExternal && isItemActive(location, item.target);
+                  const cls = `font-serif text-base lg:text-lg uppercase tracking-wider transition-colors py-2 border-b-2 ${
+                    isActive
+                      ? `${activeText} ${activeBorder}`
+                      : `text-muted-foreground border-transparent ${hoverText} ${hoverBorder}`
+                  }`;
+                  return item.isExternal ? (
+                    <a key={`${item.target}-${idx}`} href={item.target} target="_blank" rel="noopener noreferrer" className={cls}>
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link key={`${item.target}-${idx}`} href={item.target} className={cls}>
+                      {item.label}
                     </Link>
                   );
                 })}
@@ -156,18 +173,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-card border-t border-border">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => {
-                const isActive = isItemActive(location, item.href);
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`block px-3 py-3 rounded-md font-serif text-lg uppercase tracking-wider ${
-                      isActive ? activeMobileBg : "text-foreground hover:bg-muted"
-                    }`}
+              {navigation.map((item, idx) => {
+                const isActive = !item.isExternal && isItemActive(location, item.target);
+                const cls = `block px-3 py-3 rounded-md font-serif text-lg uppercase tracking-wider ${
+                  isActive ? activeMobileBg : "text-foreground hover:bg-muted"
+                }`;
+                return item.isExternal ? (
+                  <a
+                    key={`${item.target}-${idx}`}
+                    href={item.target}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cls}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    {item.name}
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={`${item.target}-${idx}`}
+                    href={item.target}
+                    className={cls}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.label}
                   </Link>
                 );
               })}
@@ -199,11 +228,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col items-center md:items-start">
               <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">Quick Links</h3>
               <ul className="space-y-2 text-center md:text-left">
-                {(isJuniors ? JUNIOR_NAV : SENIOR_NAV).map((item) => (
-                  <li key={item.name}>
-                    <Link href={item.href} className="text-muted-foreground hover:text-primary transition-colors">
-                      {item.name}
-                    </Link>
+                {(isJuniors ? juniorNav : seniorNav).map((item, idx) => (
+                  <li key={`${item.target}-${idx}`}>
+                    {item.isExternal ? (
+                      <a href={item.target} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link href={item.target} className="text-muted-foreground hover:text-primary transition-colors">
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

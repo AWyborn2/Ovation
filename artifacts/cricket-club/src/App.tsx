@@ -43,6 +43,7 @@ import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
 import AdminCaptains from "@/pages/admin-captains";
 import AdminCommittee from "@/pages/admin-committee";
 import AdminJuniorCommittee from "@/pages/admin-junior-committee";
+import AdminNav from "@/pages/admin-nav";
 import CaptainPage from "@/pages/captain";
 import NotFound from "@/pages/not-found";
 
@@ -104,6 +105,7 @@ function AdminRoutes() {
           <Route path="/admin/social" component={AdminSocial} />
           <Route path="/admin/social/create" component={AdminSocialCreate} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
+          <Route path="/admin/nav" component={AdminNav} />
           <Route component={NotFound} />
         </Switch>
       </AdminShell>

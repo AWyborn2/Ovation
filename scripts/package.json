@@ -16,6 +16,7 @@
     "seed-awards": "tsx ./src/seed-awards.ts",
     "load-award-history": "tsx ./src/load-award-history.ts",
     "seed-committee": "tsx ./src/seed-committee.ts",
+    "seed-nav-items": "tsx ./src/seed-nav-items.ts",
     "load-master-db": "tsx ./src/load-master-db.ts",
     "load-juniors-db": "tsx ./src/load-juniors-db.ts",
     "load-matches": "tsx ./src/load-matches.ts",

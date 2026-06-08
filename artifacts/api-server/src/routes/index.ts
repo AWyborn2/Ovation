@@ -24,6 +24,7 @@ import historicalRouter from "./historical";
 import socialCardsRouter from "./social-cards";
 import socialDraftsRouter from "./social-drafts";
 import juniorsRouter from "./juniors";
+import navItemsRouter from "./nav-items";
 import storageRouter from "./storage";
 
 const router: IRouter = Router();
@@ -53,6 +54,7 @@ router.use(historicalRouter);
 router.use(socialCardsRouter);
 router.use(socialDraftsRouter);
 router.use(juniorsRouter);
+router.use(navItemsRouter);
 router.use(storageRouter);
 
 export default router;

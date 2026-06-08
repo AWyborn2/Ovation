@@ -21,6 +21,7 @@ const NAV = [
   { href: "/admin/team-of-decade", label: "Team of the Decade" },
   { href: "/admin/committee", label: "Committee" },
   { href: "/admin/captains", label: "Captains" },
+  { href: "/admin/nav", label: "Navigation & menus" },
 ];
 
 export function AdminLayout({ admin, children }: { admin: Admin; children: ReactNode }) {

@@ -44,6 +44,8 @@ tags:
     description: Juniors data (matches, scorecards, players, leaderboards, premierships) — kept completely separate from senior records
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
+  - name: navigation
+    description: Admin-configurable navigation menus and quick-link/tile cards
   - name: Storage
     description: Object storage upload and serving endpoints.
 paths:
@@ -2781,6 +2783,146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MatchDisplaySettings"
+
+  /nav-options:
+    get:
+      operationId: getNavOptions
+      tags: [navigation]
+      summary: Curated link targets and icon keys for the nav editor
+      description: >-
+        Returns the set of valid internal page targets (per section) and the
+        curated icon-key set. The admin nav editor uses this to populate the
+        link-target dropdown and the icon picker.
+      responses:
+        "200":
+          description: Nav editor options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavOptions"
+
+  /nav-items:
+    get:
+      operationId: listNavItems
+      tags: [navigation]
+      summary: List configured navigation items, optionally filtered by surface
+      parameters:
+        - name: surface
+          in: query
+          schema:
+            $ref: "#/components/schemas/NavSurface"
+          description: Filter to a single surface
+        - name: includeHidden
+          in: query
+          schema:
+            type: boolean
+          description: Admin-only — include items with visible=false. Requires auth.
+      responses:
+        "200":
+          description: Navigation items ordered by surface then sortOrder
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NavItem"
+    post:
+      operationId: createNavItem
+      tags: [navigation]
+      summary: Create a navigation item (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NavItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavItem"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not authenticated as admin
+
+  /nav-items/reorder:
+    patch:
+      operationId: reorderNavItems
+      tags: [navigation]
+      summary: Persist a new order for a surface's items (admin only)
+      description: >-
+        Sets sortOrder to match the position of each id in the supplied array.
+        All ids must belong to the same surface.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NavReorderInput"
+      responses:
+        "200":
+          description: Reordered items for the surface
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NavItem"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not authenticated as admin
+
+  /nav-items/{id}:
+    patch:
+      operationId: updateNavItem
+      tags: [navigation]
+      summary: Update a navigation item (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NavItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavItem"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not authenticated as admin
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteNavItem
+      tags: [navigation]
+      summary: Delete a navigation item (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Not authenticated as admin
+        "404":
+          description: Not found
 
   /caption-templates:
     put:
@@ -6442,6 +6584,133 @@ components:
           items:
             type: integer
             minimum: 1
+
+    NavSurface:
+      type: string
+      enum: [senior_menu, junior_menu, junior_quick_links, admin_tiles]
+      description: >-
+        Which navigation surface an item belongs to: the senior top menu, the
+        junior top menu, the junior dashboard quick-link cards, or the admin
+        hub tiles.
+
+    NavItem:
+      type: object
+      required:
+        - id
+        - surface
+        - label
+        - description
+        - iconKey
+        - target
+        - isExternal
+        - sortOrder
+        - visible
+      properties:
+        id:
+          type: integer
+        surface:
+          $ref: "#/components/schemas/NavSurface"
+        label:
+          type: string
+          description: Display label / card title.
+        description:
+          type: string
+          description: Card description (used by card surfaces only).
+        iconKey:
+          type: string
+          description: Curated icon key mapped to a lucide icon on the client. Empty = none.
+        target:
+          type: string
+          description: >-
+            Internal route path (when isExternal is false) or full custom URL
+            (when isExternal is true).
+        isExternal:
+          type: boolean
+          description: When true the target is an external URL opened in a new tab.
+        sortOrder:
+          type: integer
+        visible:
+          type: boolean
+          description: When false the item is hidden from the public site.
+
+    NavItemInput:
+      type: object
+      required: [surface, label, target]
+      properties:
+        surface:
+          $ref: "#/components/schemas/NavSurface"
+        label:
+          type: string
+        description:
+          type: string
+        iconKey:
+          type: string
+        target:
+          type: string
+        isExternal:
+          type: boolean
+        sortOrder:
+          type: integer
+        visible:
+          type: boolean
+
+    NavItemUpdate:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        iconKey:
+          type: string
+        target:
+          type: string
+        isExternal:
+          type: boolean
+        sortOrder:
+          type: integer
+        visible:
+          type: boolean
+
+    NavReorderInput:
+      type: object
+      required: [surface, ids]
+      properties:
+        surface:
+          $ref: "#/components/schemas/NavSurface"
+        ids:
+          type: array
+          items:
+            type: integer
+          description: Item ids in their new display order.
+
+    NavTargetOption:
+      type: object
+      required: [value, label, section]
+      properties:
+        value:
+          type: string
+          description: Internal route path stored in NavItem.target.
+        label:
+          type: string
+        section:
+          type: string
+          enum: [senior, junior, admin]
+          description: Which area of the site this target lives in.
+
+    NavOptions:
+      type: object
+      required: [internalTargets, icons]
+      properties:
+        internalTargets:
+          type: array
+          items:
+            $ref: "#/components/schemas/NavTargetOption"
+        icons:
+          type: array
+          items:
+            type: string
+          description: Curated icon keys available in the icon picker.
 
     MatchDisplaySettings:
       type: object

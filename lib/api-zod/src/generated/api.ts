@@ -3727,6 +3727,118 @@ export const UpdateMatchDisplaySettingsResponse = zod.object({
 
 
 /**
+ * Returns the set of valid internal page targets (per section) and the curated icon-key set. The admin nav editor uses this to populate the link-target dropdown and the icon picker.
+ * @summary Curated link targets and icon keys for the nav editor
+ */
+export const GetNavOptionsResponse = zod.object({
+  "internalTargets": zod.array(zod.object({
+  "value": zod.string().describe('Internal route path stored in NavItem.target.'),
+  "label": zod.string(),
+  "section": zod.enum(['senior', 'junior', 'admin']).describe('Which area of the site this target lives in.')
+})),
+  "icons": zod.array(zod.string()).describe('Curated icon keys available in the icon picker.')
+})
+
+
+/**
+ * @summary List configured navigation items, optionally filtered by surface
+ */
+export const ListNavItemsQueryParams = zod.object({
+  "surface": zod.enum(['senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles']).optional().describe('Filter to a single surface'),
+  "includeHidden": zod.coerce.boolean().optional().describe('Admin-only — include items with visible=false. Requires auth.')
+})
+
+export const ListNavItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "surface": zod.enum(['senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles']).describe('Which navigation surface an item belongs to: the senior top menu, the junior top menu, the junior dashboard quick-link cards, or the admin hub tiles.'),
+  "label": zod.string().describe('Display label \/ card title.'),
+  "description": zod.string().describe('Card description (used by card surfaces only).'),
+  "iconKey": zod.string().describe('Curated icon key mapped to a lucide icon on the client. Empty = none.'),
+  "target": zod.string().describe('Internal route path (when isExternal is false) or full custom URL (when isExternal is true).'),
+  "isExternal": zod.boolean().describe('When true the target is an external URL opened in a new tab.'),
+  "sortOrder": zod.number(),
+  "visible": zod.boolean().describe('When false the item is hidden from the public site.')
+})
+export const ListNavItemsResponse = zod.array(ListNavItemsResponseItem)
+
+
+/**
+ * @summary Create a navigation item (admin only)
+ */
+export const CreateNavItemBody = zod.object({
+  "surface": zod.enum(['senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles']).describe('Which navigation surface an item belongs to: the senior top menu, the junior top menu, the junior dashboard quick-link cards, or the admin hub tiles.'),
+  "label": zod.string(),
+  "description": zod.string().optional(),
+  "iconKey": zod.string().optional(),
+  "target": zod.string(),
+  "isExternal": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "visible": zod.boolean().optional()
+})
+
+
+/**
+ * Sets sortOrder to match the position of each id in the supplied array. All ids must belong to the same surface.
+ * @summary Persist a new order for a surface's items (admin only)
+ */
+export const ReorderNavItemsBody = zod.object({
+  "surface": zod.enum(['senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles']).describe('Which navigation surface an item belongs to: the senior top menu, the junior top menu, the junior dashboard quick-link cards, or the admin hub tiles.'),
+  "ids": zod.array(zod.number()).describe('Item ids in their new display order.')
+})
+
+export const ReorderNavItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "surface": zod.enum(['senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles']).describe('Which navigation surface an item belongs to: the senior top menu, the junior top menu, the junior dashboard quick-link cards, or the admin hub tiles.'),
+  "label": zod.string().describe('Display label \/ card title.'),
+  "description": zod.string().describe('Card description (used by card surfaces only).'),
+  "iconKey": zod.string().describe('Curated icon key mapped to a lucide icon on the client. Empty = none.'),
+  "target": zod.string().describe('Internal route path (when isExternal is false) or full custom URL (when isExternal is true).'),
+  "isExternal": zod.boolean().describe('When true the target is an external URL opened in a new tab.'),
+  "sortOrder": zod.number(),
+  "visible": zod.boolean().describe('When false the item is hidden from the public site.')
+})
+export const ReorderNavItemsResponse = zod.array(ReorderNavItemsResponseItem)
+
+
+/**
+ * @summary Update a navigation item (admin only)
+ */
+export const UpdateNavItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateNavItemBody = zod.object({
+  "label": zod.string().optional(),
+  "description": zod.string().optional(),
+  "iconKey": zod.string().optional(),
+  "target": zod.string().optional(),
+  "isExternal": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "visible": zod.boolean().optional()
+})
+
+export const UpdateNavItemResponse = zod.object({
+  "id": zod.number(),
+  "surface": zod.enum(['senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles']).describe('Which navigation surface an item belongs to: the senior top menu, the junior top menu, the junior dashboard quick-link cards, or the admin hub tiles.'),
+  "label": zod.string().describe('Display label \/ card title.'),
+  "description": zod.string().describe('Card description (used by card surfaces only).'),
+  "iconKey": zod.string().describe('Curated icon key mapped to a lucide icon on the client. Empty = none.'),
+  "target": zod.string().describe('Internal route path (when isExternal is false) or full custom URL (when isExternal is true).'),
+  "isExternal": zod.boolean().describe('When true the target is an external URL opened in a new tab.'),
+  "sortOrder": zod.number(),
+  "visible": zod.boolean().describe('When false the item is hidden from the public site.')
+})
+
+
+/**
+ * @summary Delete a navigation item (admin only)
+ */
+export const DeleteNavItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Upsert a caption template for an engine+platform
  */
 export const UpsertCaptionTemplateBody = zod.object({

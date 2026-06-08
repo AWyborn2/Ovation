@@ -1,7 +1,15 @@
 import { Link } from "wouter";
 import { useGetJuniorsOverview } from "@workspace/api-client-react";
-import { ClipboardList, Crown, Users, CalendarDays, ScrollText, TrendingUp } from "lucide-react";
+import { CalendarDays, ScrollText, TrendingUp } from "lucide-react";
 import { fmtJuniorDate } from "@/lib/juniors";
+import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
+import { navIcon } from "@/lib/nav-icons";
+
+const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
+  { label: "Matches", target: "/juniors/matches", isExternal: false, iconKey: "clipboardList", description: "Browse junior games and full scorecards." },
+  { label: "Premierships", target: "/juniors/premierships", isExternal: false, iconKey: "crown", description: "Junior honour boards and winning rosters." },
+  { label: "Players & Leaders", target: "/juniors/players", isExternal: false, iconKey: "users", description: "Runs, wickets and games leaderboards." },
+];
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
@@ -14,20 +22,25 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-function QuickLink({ href, icon: Icon, title, desc }: { href: string; icon: typeof Users; title: string; desc: string }) {
-  return (
-    <Link href={href}>
-      <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-        <Icon className="h-7 w-7 text-primary mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">{title}</div>
-        <p className="text-sm text-muted-foreground mt-1">{desc}</p>
-      </div>
-    </Link>
+function QuickLink({ item }: { item: ResolvedNavItem }) {
+  const Icon = navIcon(item.iconKey);
+  const inner = (
+    <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
+      {Icon && <Icon className="h-7 w-7 text-primary mb-3" />}
+      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">{item.label}</div>
+      {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
+    </div>
+  );
+  return item.isExternal ? (
+    <a href={item.target} target="_blank" rel="noopener noreferrer">{inner}</a>
+  ) : (
+    <Link href={item.target}>{inner}</Link>
   );
 }
 
 export default function JuniorsDashboard() {
   const { data, isLoading } = useGetJuniorsOverview();
+  const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
 
   return (
     <div className="space-y-8">
@@ -58,9 +71,9 @@ export default function JuniorsDashboard() {
 
           {/* Quick links */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <QuickLink href="/juniors/matches" icon={ClipboardList} title="Matches" desc="Browse junior games and full scorecards." />
-            <QuickLink href="/juniors/premierships" icon={Crown} title="Premierships" desc="Junior honour boards and winning rosters." />
-            <QuickLink href="/juniors/players" icon={Users} title="Players & Leaders" desc="Runs, wickets and games leaderboards." />
+            {quickLinks.map((item, idx) => (
+              <QuickLink key={`${item.target}-${idx}`} item={item} />
+            ))}
           </div>
 
           {/* Recent matches */}

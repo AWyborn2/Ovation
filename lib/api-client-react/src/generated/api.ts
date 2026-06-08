@@ -99,6 +99,7 @@ import type {
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
   ListMatchesParams,
+  ListNavItemsParams,
   ListPlayersParams,
   ListStatsParams,
   LoginRequest,
@@ -112,6 +113,11 @@ import type {
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
   MilestonesBoard,
+  NavItem,
+  NavItemInput,
+  NavItemUpdate,
+  NavOptions,
+  NavReorderInput,
   Partnerships,
   Player,
   PlayerDetail,
@@ -10061,6 +10067,453 @@ export const useUpdateMatchDisplaySettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMatchDisplaySettingsMutationOptions(options));
+    }
+
+export const getGetNavOptionsUrl = () => {
+
+
+
+
+  return `/api/nav-options`
+}
+
+/**
+ * Returns the set of valid internal page targets (per section) and the curated icon-key set. The admin nav editor uses this to populate the link-target dropdown and the icon picker.
+ * @summary Curated link targets and icon keys for the nav editor
+ */
+export const getNavOptions = async ( options?: RequestInit): Promise<NavOptions> => {
+
+  return customFetch<NavOptions>(getGetNavOptionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNavOptionsQueryKey = () => {
+    return [
+    `/api/nav-options`
+    ] as const;
+    }
+
+
+export const getGetNavOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getNavOptions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNavOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNavOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNavOptions>>> = ({ signal }) => getNavOptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNavOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNavOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getNavOptions>>>
+export type GetNavOptionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Curated link targets and icon keys for the nav editor
+ */
+
+export function useGetNavOptions<TData = Awaited<ReturnType<typeof getNavOptions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNavOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNavOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListNavItemsUrl = (params?: ListNavItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/nav-items?${stringifiedParams}` : `/api/nav-items`
+}
+
+/**
+ * @summary List configured navigation items, optionally filtered by surface
+ */
+export const listNavItems = async (params?: ListNavItemsParams, options?: RequestInit): Promise<NavItem[]> => {
+
+  return customFetch<NavItem[]>(getListNavItemsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNavItemsQueryKey = (params?: ListNavItemsParams,) => {
+    return [
+    `/api/nav-items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListNavItemsQueryOptions = <TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<unknown>>(params?: ListNavItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNavItemsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNavItems>>> = ({ signal }) => listNavItems(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNavItemsQueryResult = NonNullable<Awaited<ReturnType<typeof listNavItems>>>
+export type ListNavItemsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List configured navigation items, optionally filtered by surface
+ */
+
+export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<unknown>>(
+ params?: ListNavItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNavItemsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateNavItemUrl = () => {
+
+
+
+
+  return `/api/nav-items`
+}
+
+/**
+ * @summary Create a navigation item (admin only)
+ */
+export const createNavItem = async (navItemInput: NavItemInput, options?: RequestInit): Promise<NavItem> => {
+
+  return customFetch<NavItem>(getCreateNavItemUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      navItemInput,)
+  }
+);}
+
+
+
+
+export const getCreateNavItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNavItem>>, TError,{data: BodyType<NavItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createNavItem>>, TError,{data: BodyType<NavItemInput>}, TContext> => {
+
+const mutationKey = ['createNavItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createNavItem>>, {data: BodyType<NavItemInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createNavItem(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateNavItemMutationResult = NonNullable<Awaited<ReturnType<typeof createNavItem>>>
+    export type CreateNavItemMutationBody = BodyType<NavItemInput>
+    export type CreateNavItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a navigation item (admin only)
+ */
+export const useCreateNavItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNavItem>>, TError,{data: BodyType<NavItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createNavItem>>,
+        TError,
+        {data: BodyType<NavItemInput>},
+        TContext
+      > => {
+      return useMutation(getCreateNavItemMutationOptions(options));
+    }
+
+export const getReorderNavItemsUrl = () => {
+
+
+
+
+  return `/api/nav-items/reorder`
+}
+
+/**
+ * Sets sortOrder to match the position of each id in the supplied array. All ids must belong to the same surface.
+ * @summary Persist a new order for a surface's items (admin only)
+ */
+export const reorderNavItems = async (navReorderInput: NavReorderInput, options?: RequestInit): Promise<NavItem[]> => {
+
+  return customFetch<NavItem[]>(getReorderNavItemsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      navReorderInput,)
+  }
+);}
+
+
+
+
+export const getReorderNavItemsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderNavItems>>, TError,{data: BodyType<NavReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderNavItems>>, TError,{data: BodyType<NavReorderInput>}, TContext> => {
+
+const mutationKey = ['reorderNavItems'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderNavItems>>, {data: BodyType<NavReorderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reorderNavItems(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderNavItemsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderNavItems>>>
+    export type ReorderNavItemsMutationBody = BodyType<NavReorderInput>
+    export type ReorderNavItemsMutationError = ErrorType<void>
+
+    /**
+ * @summary Persist a new order for a surface's items (admin only)
+ */
+export const useReorderNavItems = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderNavItems>>, TError,{data: BodyType<NavReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderNavItems>>,
+        TError,
+        {data: BodyType<NavReorderInput>},
+        TContext
+      > => {
+      return useMutation(getReorderNavItemsMutationOptions(options));
+    }
+
+export const getUpdateNavItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/nav-items/${id}`
+}
+
+/**
+ * @summary Update a navigation item (admin only)
+ */
+export const updateNavItem = async (id: number,
+    navItemUpdate: NavItemUpdate, options?: RequestInit): Promise<NavItem> => {
+
+  return customFetch<NavItem>(getUpdateNavItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      navItemUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateNavItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNavItem>>, TError,{id: number;data: BodyType<NavItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateNavItem>>, TError,{id: number;data: BodyType<NavItemUpdate>}, TContext> => {
+
+const mutationKey = ['updateNavItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNavItem>>, {id: number;data: BodyType<NavItemUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateNavItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateNavItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateNavItem>>>
+    export type UpdateNavItemMutationBody = BodyType<NavItemUpdate>
+    export type UpdateNavItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a navigation item (admin only)
+ */
+export const useUpdateNavItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNavItem>>, TError,{id: number;data: BodyType<NavItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateNavItem>>,
+        TError,
+        {id: number;data: BodyType<NavItemUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateNavItemMutationOptions(options));
+    }
+
+export const getDeleteNavItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/nav-items/${id}`
+}
+
+/**
+ * @summary Delete a navigation item (admin only)
+ */
+export const deleteNavItem = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteNavItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteNavItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNavItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteNavItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteNavItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteNavItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteNavItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteNavItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteNavItem>>>
+
+    export type DeleteNavItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a navigation item (admin only)
+ */
+export const useDeleteNavItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNavItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteNavItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteNavItemMutationOptions(options));
     }
 
 export const getUpsertCaptionTemplateUrl = () => {

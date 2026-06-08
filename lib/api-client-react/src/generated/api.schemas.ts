@@ -2253,6 +2253,90 @@ export interface MilestoneBoardSettingsUpdate {
 }
 
 /**
+ * Which navigation surface an item belongs to: the senior top menu, the junior top menu, the junior dashboard quick-link cards, or the admin hub tiles.
+ */
+export type NavSurface = typeof NavSurface[keyof typeof NavSurface];
+
+
+export const NavSurface = {
+  senior_menu: 'senior_menu',
+  junior_menu: 'junior_menu',
+  junior_quick_links: 'junior_quick_links',
+  admin_tiles: 'admin_tiles',
+} as const;
+
+export interface NavItem {
+  id: number;
+  surface: NavSurface;
+  /** Display label / card title. */
+  label: string;
+  /** Card description (used by card surfaces only). */
+  description: string;
+  /** Curated icon key mapped to a lucide icon on the client. Empty = none. */
+  iconKey: string;
+  /** Internal route path (when isExternal is false) or full custom URL (when isExternal is true). */
+  target: string;
+  /** When true the target is an external URL opened in a new tab. */
+  isExternal: boolean;
+  sortOrder: number;
+  /** When false the item is hidden from the public site. */
+  visible: boolean;
+}
+
+export interface NavItemInput {
+  surface: NavSurface;
+  label: string;
+  description?: string;
+  iconKey?: string;
+  target: string;
+  isExternal?: boolean;
+  sortOrder?: number;
+  visible?: boolean;
+}
+
+export interface NavItemUpdate {
+  label?: string;
+  description?: string;
+  iconKey?: string;
+  target?: string;
+  isExternal?: boolean;
+  sortOrder?: number;
+  visible?: boolean;
+}
+
+export interface NavReorderInput {
+  surface: NavSurface;
+  /** Item ids in their new display order. */
+  ids: number[];
+}
+
+/**
+ * Which area of the site this target lives in.
+ */
+export type NavTargetOptionSection = typeof NavTargetOptionSection[keyof typeof NavTargetOptionSection];
+
+
+export const NavTargetOptionSection = {
+  senior: 'senior',
+  junior: 'junior',
+  admin: 'admin',
+} as const;
+
+export interface NavTargetOption {
+  /** Internal route path stored in NavItem.target. */
+  value: string;
+  label: string;
+  /** Which area of the site this target lives in. */
+  section: NavTargetOptionSection;
+}
+
+export interface NavOptions {
+  internalTargets: NavTargetOption[];
+  /** Curated icon keys available in the icon picker. */
+  icons: string[];
+}
+
+/**
  * How the default season is chosen: latest available season, a specific season, or all seasons.
  */
 export type MatchDisplaySettingsDefaultSeasonMode = typeof MatchDisplaySettingsDefaultSeasonMode[keyof typeof MatchDisplaySettingsDefaultSeasonMode];
@@ -2994,6 +3078,17 @@ export type UploadMatchScorecardBody = {
 export type UploadMatchBatchBody = {
   /** One or more .xlsx scorecards, and/or a .zip of them */
   files: Blob[];
+};
+
+export type ListNavItemsParams = {
+/**
+ * Filter to a single surface
+ */
+surface?: NavSurface;
+/**
+ * Admin-only — include items with visible=false. Requires auth.
+ */
+includeHidden?: boolean;
 };
 
 export type ListJuniorMatchesParams = {
