@@ -81,7 +81,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
           ) : (
             nameContent
           )}
-          {!member.isPlayingMember && member.roleLabel && (
+          {member.roleLabel && (
             <div className="italic text-sm text-muted-foreground mt-1">
               {member.roleLabel}
             </div>

@@ -261,12 +261,29 @@ INSERT INTO public.award_winners (award_id, season, player_id, name, display_ord
 SELECT award_id, season, player_id, name, 0, true FROM ranked;
 
 ----------------------------------------------------------------------
--- 8. Life members (full replace)
+-- 8. Life members (replace identity from master, preserve club-authored
+--    bios/roles/years). The master export carries no role_label/blurb and
+--    only coarse induction years, so we snapshot any club-authored content
+--    (entered via admin or seed-honours) and overlay it back after the
+--    replace, matched by name. Generic — no bios hardcoded in SQL.
 ----------------------------------------------------------------------
+CREATE TEMP TABLE _lm_authored ON COMMIT DROP AS
+  SELECT name, role_label, blurb, induction_year, is_playing_member
+  FROM public.life_members;
+
 DELETE FROM public.life_members;
 INSERT INTO public.life_members (name, induction_year, is_playing_member, player_id, role_label, blurb)
 SELECT coalesce(name, ''), coalesce(staging.season_start(season_inducted), 0), true, player_id, NULL, ''
 FROM staging.life_members;
+
+UPDATE public.life_members lm
+SET role_label = a.role_label,
+    blurb = a.blurb,
+    induction_year = CASE WHEN coalesce(a.induction_year, 0) > 0 THEN a.induction_year ELSE lm.induction_year END,
+    is_playing_member = a.is_playing_member
+FROM _lm_authored a
+WHERE upper(btrim(lm.name)) = upper(btrim(a.name))
+  AND (coalesce(a.blurb, '') <> '' OR coalesce(a.role_label, '') <> '');
 
 ----------------------------------------------------------------------
 -- 9. Team of the decade -> one board per grade + members
