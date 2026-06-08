@@ -30,6 +30,7 @@
 - [Milestones board (dated)](milestones-board.md) — GET /milestones dated achievements ranked by significance bands; empty until per-match imports give matchDate; configurable recencyWeeks + per-stat tiers.
 - [Match history bulk load](match-history-bulk-load.md) — master career_stats gappy so match scorecards win (Option A: totals rise); exclude fill-ins; master reload MUST clear baseline_adjustments or careers double-count; load staging via psql -1.
 - [Master DB load](master-db-load.md) — master export is authoritative source (exact player_id links); pure-SQL ETL replaces owned DATA tables, preserves app-config; partnerships/centuries/five-fors are records-only surfaces.
+- [Master export date regression](master-export-date-regression.md) — a newer export can drop match_date + change source_key scheme; recover dates from prior dump via (season,grade,round,opponent) natural-key bridge through staging, then redo caps.
 - [wouter nested catch-all](wouter-nested-catchall.md) — wouter v3 `:rest*` only matches one segment; use `/admin/*` for multi-segment nested admin routes or they 404 to public.
 - [matches.match_date is free text](match-date-text-column.md) — formatted string not a date; ~82% blank (most finals have none); parse via to_timestamp+regex guard, NULLS LAST, id fallback.
 - [A Grade cap debut ordering](cap-debut-ordering.md) — new season-debutant caps order by PARSED match_date then surname (not batting position); reference add-a-grade-2025-26-debuts.ts.
