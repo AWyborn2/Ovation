@@ -92,6 +92,7 @@ import type {
   JuniorPlayerDetail,
   JuniorPlayerSummary,
   JuniorPremiership,
+  JuniorSocialMilestone,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
@@ -11799,6 +11800,83 @@ export function useListJuniorLeaderboard<TData = Awaited<ReturnType<typeof listJ
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListJuniorLeaderboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListJuniorSocialMilestonesUrl = () => {
+
+
+
+
+  return `/api/juniors/social-milestones`
+}
+
+/**
+ * @summary Junior career run/wicket/games tallies that have crossed a celebratory threshold, for the admin junior social downloads (private participants excluded).
+ */
+export const listJuniorSocialMilestones = async ( options?: RequestInit): Promise<JuniorSocialMilestone[]> => {
+
+  return customFetch<JuniorSocialMilestone[]>(getListJuniorSocialMilestonesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorSocialMilestonesQueryKey = () => {
+    return [
+    `/api/juniors/social-milestones`
+    ] as const;
+    }
+
+
+export const getListJuniorSocialMilestonesQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorSocialMilestones>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorSocialMilestones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorSocialMilestonesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorSocialMilestones>>> = ({ signal }) => listJuniorSocialMilestones({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorSocialMilestones>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorSocialMilestonesQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorSocialMilestones>>>
+export type ListJuniorSocialMilestonesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Junior career run/wicket/games tallies that have crossed a celebratory threshold, for the admin junior social downloads (private participants excluded).
+ */
+
+export function useListJuniorSocialMilestones<TData = Awaited<ReturnType<typeof listJuniorSocialMilestones>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorSocialMilestones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorSocialMilestonesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

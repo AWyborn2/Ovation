@@ -126,6 +126,8 @@ export * from './juniorPlayerSummary';
 export * from './juniorPremiership';
 export * from './juniorPremiershipPlayer';
 export * from './juniorRosterEntry';
+export * from './juniorSocialMilestone';
+export * from './juniorSocialMilestoneStatKey';
 export * from './juniorTotals';
 export * from './lifeMember';
 export * from './lifeMemberInput';

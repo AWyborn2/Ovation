@@ -36,6 +36,7 @@ import AdminAwards from "@/pages/admin-awards";
 import AdminTeamOfDecade from "@/pages/admin-team-of-decade";
 import AdminSocial from "@/pages/admin-social";
 import AdminSocialCreate from "@/pages/admin-social-create";
+import AdminJuniorSocial from "@/pages/admin-junior-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminMatchDisplay from "@/pages/admin-match-display";
@@ -104,6 +105,7 @@ function AdminRoutes() {
           />
           <Route path="/admin/social" component={AdminSocial} />
           <Route path="/admin/social/create" component={AdminSocialCreate} />
+          <Route path="/admin/social/juniors" component={AdminJuniorSocial} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
           <Route path="/admin/nav" component={AdminNav} />
           <Route component={NotFound} />

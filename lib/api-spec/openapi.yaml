@@ -3293,6 +3293,24 @@ paths:
                 items:
                   $ref: "#/components/schemas/JuniorLeaderboardRow"
 
+  /juniors/social-milestones:
+    get:
+      operationId: listJuniorSocialMilestones
+      tags: [juniors]
+      summary: >-
+        Junior career run/wicket/games tallies that have crossed a celebratory
+        threshold, for the admin junior social downloads (private participants
+        excluded).
+      responses:
+        "200":
+          description: Junior milestones, most impressive first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorSocialMilestone"
+
   /juniors/premierships:
     get:
       operationId: listJuniorPremierships
@@ -7428,6 +7446,38 @@ components:
           description: Best innings figures as "wickets/runs" (e.g. "5/12"); null if never bowled.
         fiveWickets:
           type: integer
+
+    JuniorSocialMilestone:
+      type: object
+      description: >-
+        A junior career tally (runs, wickets, or games) that has crossed a
+        celebratory threshold. Drives a junior milestone share card. Aggregated
+        from Halls Head lines only; private participants are excluded.
+      required:
+        [participantId, playerName, statKey, statLabel, value, threshold, tierLabel, tierIndex]
+      properties:
+        participantId:
+          type: string
+        playerName:
+          type: string
+        statKey:
+          type: string
+          enum: [runs, wickets, games]
+        statLabel:
+          type: string
+          description: Human label for the stat, e.g. "Career Runs".
+        value:
+          type: integer
+          description: The player's current career tally for this stat.
+        threshold:
+          type: integer
+          description: The highest milestone threshold the tally has crossed.
+        tierLabel:
+          type: string
+          description: Celebratory tier label, e.g. "1000 Run Club".
+        tierIndex:
+          type: integer
+          description: Position of the crossed threshold in its tier list (drives the badge icon).
 
     JuniorMatchDisplaySettings:
       type: object

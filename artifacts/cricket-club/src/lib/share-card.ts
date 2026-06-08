@@ -79,6 +79,12 @@ export type ShareCardInput =
       threshold?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * Marks this as a JUNIOR card: it is forced to render in the junior brown
+       * palette (regardless of the selected theme) and gets junior-specific
+       * labels/filenames. Junior data stays isolated from senior records.
+       */
+      junior?: boolean;
     }
   | {
       kind: "player";
@@ -172,6 +178,11 @@ export type ShareCardInput =
       opposition: MatchSummaryTeam;
       innings: MatchSummaryInnings[];
       headline?: string;
+      /**
+       * Marks this as a JUNIOR card: forces the junior brown palette and a
+       * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.
+       */
+      junior?: boolean;
     };
 
 export type CardKind = ShareCardInput["kind"];
@@ -253,6 +264,22 @@ const DEFAULT_THEME: CardTheme = {
   textLight: "#F5F2E8",
 };
 
+// Junior cards are forced to this club-brown palette (brown #42342B background +
+// gold accent), regardless of any selected card theme, so junior social content
+// is instantly distinguishable from the navy senior cards. Per Task #200 this
+// brown branding intentionally overrides the (now-gold) junior web UI accents.
+const JUNIOR_BROWN = "#42342B";
+export const JUNIOR_THEME: CardTheme = {
+  bgDark: JUNIOR_BROWN,
+  bgPanel: lighten(JUNIOR_BROWN, 0.12),
+  accent: BRAND_SECONDARY,
+  textLight: "#F5EFE6",
+};
+
+// True when an input is a junior-flagged card kind.
+const isJuniorInput = (input: ShareCardInput): boolean =>
+  "junior" in input && input.junior === true;
+
 const resolvePalette = (theme?: CardTheme | null): Palette => {
   const t = theme ?? DEFAULT_THEME;
   return {
@@ -315,7 +342,7 @@ const headlineFor = (input: ShareCardInput): string => {
   if (input.headline) return input.headline;
   switch (input.kind) {
     case "milestone":
-      return "Honour Board Milestone";
+      return input.junior ? "Junior Cricket Milestone" : "Honour Board Milestone";
     case "player":
       return "Player Profile";
     case "record":
@@ -1206,7 +1233,7 @@ const renderMatchSummaryCard = async (
   ctx.font = `800 ${Math.round((isStory ? 30 : 24) * scale)}px ${sans}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("MATCH SUMMARY", W / 2, y);
+  ctx.fillText(input.junior ? "JUNIOR MATCH" : "MATCH SUMMARY", W / 2, y);
   y += Math.round((isStory ? 48 : 38) * scale);
 
   ctx.fillStyle = p.textLight;
@@ -1326,7 +1353,11 @@ export const renderShareCard = async (
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get canvas 2D context");
 
-  const p = resolvePalette(opts.theme);
+  // Junior cards force the brown palette regardless of the selected theme so
+  // junior content is always visually distinct from the navy senior cards.
+  const p = isJuniorInput(input)
+    ? resolvePalette(JUNIOR_THEME)
+    : resolvePalette(opts.theme);
 
   // Custom uploaded template path: render the bg + data-bound slots and bail
   // out before any built-in chrome. Sponsors are overlaid inside the helper.
@@ -1777,9 +1808,10 @@ export const downloadBlob = (blob: Blob, filename: string): void => {
 };
 
 export const cardBaseFilename = (input: ShareCardInput): string => {
+  const jr = isJuniorInput(input) ? "junior-" : "";
   switch (input.kind) {
     case "milestone":
-      return `hhcc-${slugify(input.playerName)}-${slugify(input.tierLabel)}`;
+      return `hhcc-${jr}${slugify(input.playerName)}-${slugify(input.tierLabel)}`;
     case "player":
       return `hhcc-${slugify(input.playerName)}`;
     case "record":
@@ -1797,7 +1829,7 @@ export const cardBaseFilename = (input: ShareCardInput): string => {
     case "fiveFor":
       return `hhcc-fivefor-${slugify(input.playerName)}-${input.wickets}`;
     case "matchSummary":
-      return `hhcc-match-${slugify(input.club.name)}-vs-${slugify(input.opposition.name)}`;
+      return `hhcc-${jr}match-${slugify(input.club.name)}-vs-${slugify(input.opposition.name)}`;
   }
 };
 

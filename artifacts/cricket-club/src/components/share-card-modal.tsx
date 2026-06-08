@@ -275,9 +275,13 @@ export function ShareCardModal({
     const def = themes.find((t) => t.isDefault) ?? themes[0];
     setSelectedThemeId(def.id);
   }, [open, themes, selectedThemeId]);
+  // Junior cards are locked to the brown junior palette (no admin theme) and the
+  // built-in layout, so we suppress theme + custom-template selection entirely.
+  const isJunior =
+    !!input && "junior" in input && (input as { junior?: boolean }).junior === true;
   const selectedTheme = useMemo(
-    () => themes.find((t) => t.id === selectedThemeId),
-    [themes, selectedThemeId],
+    () => (isJunior ? undefined : themes.find((t) => t.id === selectedThemeId)),
+    [isJunior, themes, selectedThemeId],
   );
 
   // Custom "bring your own" templates that apply to this card kind.
@@ -310,10 +314,10 @@ export function ShareCardModal({
   }, [open, input]);
   const selectedTemplate = useMemo<CardTemplate | null>(
     () =>
-      layoutId === null
+      isJunior || layoutId === null
         ? null
         : applicableTemplates.find((t) => t.id === layoutId) ?? null,
-    [layoutId, applicableTemplates],
+    [isJunior, layoutId, applicableTemplates],
   );
 
   // Motion preset. Defaults to the selected template's own preset (so an
@@ -646,7 +650,7 @@ export function ShareCardModal({
               ))}
             </Tabs>
 
-            {applicableTemplates.length > 0 && (
+            {!isJunior && applicableTemplates.length > 0 && (
               <div className="space-y-1.5 rounded border px-3 py-2">
                 <Label htmlFor="layout-select" className="text-sm">
                   Layout
@@ -702,7 +706,7 @@ export function ShareCardModal({
               </p>
             </div>
 
-            {selectedTemplate === null && themes.length > 1 && (
+            {!isJunior && selectedTemplate === null && themes.length > 1 && (
               <div className="space-y-1.5 rounded border px-3 py-2">
                 <Label htmlFor="theme-select" className="text-sm">
                   Card theme

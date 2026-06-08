@@ -19,6 +19,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
   { label: "Junior office bearers", target: "/admin/junior-committee", isExternal: false, iconKey: "baby", description: "Season-by-season junior committee (separate from seniors)." },
   { label: "Social cards", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory: sizes, sponsors, captions." },
   { label: "Create a card", target: "/admin/social/create", isExternal: false, iconKey: "image", description: "Build a Match Summary card from a match or by hand." },
+  { label: "Junior social cards", target: "/admin/social/juniors", isExternal: false, iconKey: "image", description: "Brown-branded junior milestone and match cards." },
   { label: "Social queue", target: "/admin/social/queue", isExternal: false, iconKey: "listChecks", description: "Auto-detected milestones, round-ups, tracked links." },
   { label: "Navigation & menus", target: "/admin/nav", isExternal: false, iconKey: "layoutGrid", description: "Configure menus and quick-link cards across the site." },
 ];

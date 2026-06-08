@@ -928,6 +928,150 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /juniors/social-milestones — career run/wicket/games tallies per HH
+// junior that have crossed a celebratory threshold, for the admin junior social
+// downloads. Aggregated in JS from Halls Head lines only (inner-join
+// participants is_private=false excludes opposition AND private players), so the
+// 6 private juniors never surface. Junior data never touches a senior table.
+// ---------------------------------------------------------------------------
+const JUNIOR_MILESTONE_TIERS = {
+  runs: [250, 500, 1000, 1500, 2000, 2500, 3000],
+  wickets: [25, 50, 75, 100, 150, 200],
+  games: [25, 50, 75, 100, 150],
+} as const;
+
+const JUNIOR_STAT_SINGULAR = { runs: "Run", wickets: "Wicket", games: "Game" } as const;
+
+router.get("/juniors/social-milestones", async (_req, res): Promise<void> => {
+  const [battingRows, bowlingRows] = await Promise.all([
+    db
+      .select({
+        participantId: juniorParticipantsTable.participantId,
+        displayName: juniorParticipantsTable.displayName,
+        matchId: juniorMatchBattingTable.matchId,
+        runs: juniorMatchBattingTable.runs,
+      })
+      .from(juniorMatchBattingTable)
+      .innerJoin(
+        juniorParticipantsTable,
+        eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+      )
+      .where(
+        and(
+          eq(juniorParticipantsTable.isPrivate, false),
+          eq(juniorMatchBattingTable.isHallsHead, true),
+        ),
+      ),
+    db
+      .select({
+        participantId: juniorParticipantsTable.participantId,
+        displayName: juniorParticipantsTable.displayName,
+        matchId: juniorMatchBowlingTable.matchId,
+        wickets: juniorMatchBowlingTable.wickets,
+      })
+      .from(juniorMatchBowlingTable)
+      .innerJoin(
+        juniorParticipantsTable,
+        eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+      )
+      .where(
+        and(
+          eq(juniorParticipantsTable.isPrivate, false),
+          eq(juniorMatchBowlingTable.isHallsHead, true),
+        ),
+      ),
+  ]);
+
+  type Career = {
+    participantId: string;
+    displayName: string;
+    runs: number;
+    wickets: number;
+    matchIds: Set<number>;
+  };
+  const byPlayer = new Map<string, Career>();
+  const ensure = (participantId: string, displayName: string | null): Career => {
+    let c = byPlayer.get(participantId);
+    if (!c) {
+      c = {
+        participantId,
+        displayName: displayName ?? "",
+        runs: 0,
+        wickets: 0,
+        matchIds: new Set(),
+      };
+      byPlayer.set(participantId, c);
+    }
+    return c;
+  };
+
+  for (const r of battingRows) {
+    const c = ensure(r.participantId, r.displayName);
+    c.runs += r.runs ?? 0;
+    c.matchIds.add(r.matchId);
+  }
+  for (const r of bowlingRows) {
+    const c = ensure(r.participantId, r.displayName);
+    c.wickets += r.wickets ?? 0;
+    c.matchIds.add(r.matchId);
+  }
+
+  // Highest crossed threshold (and its tier position) for a stat value.
+  const crossed = (
+    value: number,
+    tiers: readonly number[],
+  ): { threshold: number; tierIndex: number } | null => {
+    let hit: { threshold: number; tierIndex: number } | null = null;
+    tiers.forEach((t, i) => {
+      if (value >= t) hit = { threshold: t, tierIndex: i };
+    });
+    return hit;
+  };
+
+  type Milestone = {
+    participantId: string;
+    playerName: string;
+    statKey: "runs" | "wickets" | "games";
+    statLabel: string;
+    value: number;
+    threshold: number;
+    tierLabel: string;
+    tierIndex: number;
+  };
+  const milestones: Milestone[] = [];
+  for (const c of byPlayer.values()) {
+    const stats: Array<["runs" | "wickets" | "games", number]> = [
+      ["runs", c.runs],
+      ["wickets", c.wickets],
+      ["games", c.matchIds.size],
+    ];
+    for (const [statKey, value] of stats) {
+      const hit = crossed(value, JUNIOR_MILESTONE_TIERS[statKey]);
+      if (!hit) continue;
+      milestones.push({
+        participantId: c.participantId,
+        playerName: c.displayName,
+        statKey,
+        statLabel: `Career ${JUNIOR_STAT_SINGULAR[statKey]}s`,
+        value,
+        threshold: hit.threshold,
+        tierLabel: `${hit.threshold} ${JUNIOR_STAT_SINGULAR[statKey]} Club`,
+        tierIndex: hit.tierIndex,
+      });
+    }
+  }
+
+  // Most impressive first: higher threshold, then higher tally, then name.
+  milestones.sort(
+    (a, b) =>
+      b.threshold - a.threshold ||
+      b.value - a.value ||
+      a.playerName.localeCompare(b.playerName),
+  );
+  res.json(milestones);
+});
+
+// ---------------------------------------------------------------------------
 // Juniors Matches page display settings (admin-controlled defaults).
 // Singleton row id=1; mirrors the senior match-display-settings pattern but
 // keyed on age group (no roundOrder — junior rounds are free text).

@@ -4352,6 +4352,22 @@ export const ListJuniorLeaderboardResponse = zod.array(ListJuniorLeaderboardResp
 
 
 /**
+ * @summary Junior career run/wicket/games tallies that have crossed a celebratory threshold, for the admin junior social downloads (private participants excluded).
+ */
+export const ListJuniorSocialMilestonesResponseItem = zod.object({
+  "participantId": zod.string(),
+  "playerName": zod.string(),
+  "statKey": zod.enum(['runs', 'wickets', 'games']),
+  "statLabel": zod.string().describe('Human label for the stat, e.g. \"Career Runs\".'),
+  "value": zod.number().describe('The player\'s current career tally for this stat.'),
+  "threshold": zod.number().describe('The highest milestone threshold the tally has crossed.'),
+  "tierLabel": zod.string().describe('Celebratory tier label, e.g. \"1000 Run Club\".'),
+  "tierIndex": zod.number().describe('Position of the crossed threshold in its tier list (drives the badge icon).')
+}).describe('A junior career tally (runs, wickets, or games) that has crossed a celebratory threshold. Drives a junior milestone share card. Aggregated from Halls Head lines only; private participants are excluded.')
+export const ListJuniorSocialMilestonesResponse = zod.array(ListJuniorSocialMilestonesResponseItem)
+
+
+/**
  * @summary Junior premierships with their winning squads
  */
 export const ListJuniorPremiershipsResponseItem = zod.object({
