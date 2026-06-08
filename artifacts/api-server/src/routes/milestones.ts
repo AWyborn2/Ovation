@@ -54,9 +54,25 @@ type MilestoneItem = {
   recent: boolean;
 };
 
-// ISO YYYY-MM-DD dates sort lexicographically; treat anything else as undated.
-const isIsoDate = (d: string | null): d is string =>
-  !!d && /^\d{4}-\d{2}-\d{2}$/.test(d);
+const MONTHS: Record<string, string> = {
+  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+};
+
+// match_date is stored as free text (e.g. "12:30 PM, Saturday, 07 Feb 2026")
+// for bulk-loaded / scorecard-imported matches, and occasionally as ISO. Parse
+// both into a comparable ISO YYYY-MM-DD string; anything unparseable is undated.
+function parseMatchDate(d: string | null): string | null {
+  if (!d) return null;
+  const s = d.replace(/"/g, "").trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const m = s.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+  if (!m) return null;
+  const mon = MONTHS[m[2].slice(0, 3).toLowerCase()];
+  if (!mon) return null;
+  return `${m[3]}-${mon}-${m[1].padStart(2, "0")}`;
+}
 
 function addWeeks(iso: string, weeks: number): string {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -97,13 +113,14 @@ router.get("/milestones", async (_req, res): Promise<void> => {
   // Window anchor = latest parseable match date. windowStart = anchor - weeks.
   let latestDate: string | null = null;
   for (const m of matches) {
-    if (isIsoDate(m.matchDate) && (!latestDate || m.matchDate > latestDate)) {
-      latestDate = m.matchDate;
-    }
+    const iso = parseMatchDate(m.matchDate);
+    if (iso && (!latestDate || iso > latestDate)) latestDate = iso;
   }
   const windowStart = latestDate ? addWeeks(latestDate, recencyWeeks) : null;
-  const inWindow = (d: string | null): boolean =>
-    isIsoDate(d) && windowStart != null && d >= windowStart;
+  const inWindow = (d: string | null): boolean => {
+    const iso = parseMatchDate(d);
+    return iso != null && windowStart != null && iso >= windowStart;
+  };
 
   // --- Per-player match lines (drive centuries, five-fors, career crossings).
   //     Exclude fill-ins (playerId >= 90000): they have no real player record
@@ -248,36 +265,33 @@ router.get("/milestones", async (_req, res): Promise<void> => {
     });
   }
 
-  // --- Ordering. When >=5 distinct players achieved within the window, feature
-  // recent achievers first (most recent date first), then the rest by
-  // significance. Otherwise rank everything by significance.
-  const recentPlayers = new Set(
-    items.filter((i) => i.recent).map((i) => i.playerId),
-  );
-  const featured = recentPlayers.size >= 5;
-
+  // --- Ordering. When matches are dated, the recency window is authoritative:
+  // show ONLY achievements inside the window, most recent first. Fall back to the
+  // all-time significance ranking only when no match is dated at all (windowStart
+  // null), so an undated database still shows something rather than nothing.
   const byDateDesc = (a: MilestoneItem, b: MilestoneItem): number => {
-    const ad = a.matchDate ?? "";
-    const bd = b.matchDate ?? "";
+    const ad = parseMatchDate(a.matchDate) ?? "";
+    const bd = parseMatchDate(b.matchDate) ?? "";
     if (ad !== bd) return ad < bd ? 1 : -1;
     if (a.significance !== b.significance) return b.significance - a.significance;
     return a.playerName.localeCompare(b.playerName);
   };
   const bySignificance = (a: MilestoneItem, b: MilestoneItem): number => {
     if (a.significance !== b.significance) return b.significance - a.significance;
-    const ad = a.matchDate ?? "";
-    const bd = b.matchDate ?? "";
+    const ad = parseMatchDate(a.matchDate) ?? "";
+    const bd = parseMatchDate(b.matchDate) ?? "";
     if (ad !== bd) return ad < bd ? 1 : -1;
     return a.playerName.localeCompare(b.playerName);
   };
 
   let ordered: MilestoneItem[];
-  if (featured) {
-    const recent = items.filter((i) => i.recent).sort(byDateDesc);
-    const rest = items.filter((i) => !i.recent).sort(bySignificance);
-    ordered = [...recent, ...rest];
+  let featured: boolean;
+  if (windowStart != null) {
+    ordered = items.filter((i) => i.recent).sort(byDateDesc);
+    featured = ordered.length > 0;
   } else {
     ordered = items.slice().sort(bySignificance);
+    featured = false;
   }
 
   res.json({
@@ -467,11 +481,12 @@ function appendCareerCrossings(
   const byPlayer = new Map<number, WindowLine[]>();
   for (const l of lines) {
     const m = matchById.get(l.matchId);
-    if (!m || !isIsoDate(m.matchDate) || m.matchDate < windowStart) continue;
+    const iso = m ? parseMatchDate(m.matchDate) : null;
+    if (!m || !iso || iso < windowStart) continue;
     const arr = byPlayer.get(l.playerId) ?? [];
     arr.push({
       matchId: l.matchId,
-      matchDate: m.matchDate,
+      matchDate: iso,
       games: 1,
       runs: l.runs ?? 0,
       wickets: l.wickets ?? 0,

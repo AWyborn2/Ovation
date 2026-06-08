@@ -394,9 +394,21 @@ const MILESTONE_KIND_META: Record<
 
 function formatMatchDate(d: string | null): string | null {
   if (!d) return null;
-  const dt = new Date(`${d}T00:00:00`);
-  if (Number.isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+    const dt = new Date(`${d.slice(0, 10)}T00:00:00`);
+    if (!Number.isNaN(dt.getTime())) {
+      return dt.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+    }
+  }
+  // Free-text dates (e.g. "12:30 PM, Saturday, 07 Feb 2026").
+  const m = d.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+  if (m) {
+    const parsed = new Date(`${m[1]} ${m[2]} ${m[3]}`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+    }
+  }
+  return d;
 }
 
 const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
@@ -745,7 +757,9 @@ export default function HonourBoards() {
             <div className="w-12 h-[2px] bg-primary" />
             {!milestonesBoard || milestonesBoard.items.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">
-                No dated milestones yet — they appear as match scorecards are imported.
+                {milestonesBoard?.windowStart
+                  ? `No milestones in the last ${milestonesBoard.recencyWeeks} week${milestonesBoard.recencyWeeks === 1 ? "" : "s"} of play. Widen the recency window on the admin Milestone board to show more.`
+                  : "No dated milestones yet — they appear as match scorecards are imported."}
               </div>
             ) : (
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
