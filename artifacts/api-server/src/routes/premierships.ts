@@ -62,7 +62,7 @@ function partsToTime(p: DateParts | null): number | null {
  * but a premiership's `year` is the calendar year of the win. Derive the season
  * from the (more precise) final date: mid-season finals (Jul-Dec) keep the
  * calendar year, season-ending finals (Jan-Jun) belong to the previous year. */
-function premiershipSeasons(year: number, matchDate: string | null | undefined): number[] {
+export function premiershipSeasons(year: number, matchDate: string | null | undefined): number[] {
   const parts = parsePremDateParts(matchDate);
   if (parts) return [parts.month >= 7 ? parts.year : parts.year - 1];
   // No usable final date: a calendar-year-`year` win is either the end of
@@ -120,7 +120,7 @@ const isUndecidedResult = (r: string | null | undefined): boolean =>
  *   4. opponent name appearing in the premiership result text
  *   5. most recent date, then lowest id
  */
-function pickGrandFinal(
+export function pickGrandFinal(
   candidates: GfMatch[],
   prem: PremForLink,
 ): number | null {
