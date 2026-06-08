@@ -23,3 +23,4 @@ export * from "./club_roles";
 export * from "./clubs";
 export * from "./partnerships";
 export * from "./historical_records";
+export * from "./juniors";

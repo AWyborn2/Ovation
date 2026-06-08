@@ -40,6 +40,8 @@ tags:
     description: Season-by-season club office bearers and grade captains
   - name: records
     description: Derived notable honour-board records (role tenures, award counts)
+  - name: juniors
+    description: Juniors data (matches, scorecards, players, leaderboards, premierships) — kept completely separate from senior records
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
   - name: Storage
@@ -2890,6 +2892,160 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+
+  /juniors/overview:
+    get:
+      operationId: getJuniorsOverview
+      tags: [juniors]
+      summary: Juniors dashboard bundle — club totals, recent results, top performers
+      responses:
+        "200":
+          description: Juniors overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorOverview"
+
+  /juniors/filters:
+    get:
+      operationId: getJuniorsFilters
+      tags: [juniors]
+      summary: Available seasons and age groups for juniors filter menus
+      responses:
+        "200":
+          description: Filter options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorFilters"
+
+  /juniors/matches:
+    get:
+      operationId: listJuniorMatches
+      tags: [juniors]
+      summary: List junior matches, filterable by season and age group
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Filter by season (e.g. "2024/25")
+        - name: ageGroup
+          in: query
+          schema:
+            type: string
+          description: Filter by age group (e.g. "U14")
+      responses:
+        "200":
+          description: List of junior matches (most recent first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorMatchSummary"
+
+  /juniors/matches/{id}:
+    get:
+      operationId: getJuniorMatch
+      tags: [juniors]
+      summary: Get a single junior match with its full scorecard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Junior match detail with both innings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorMatchDetail"
+        "404":
+          description: Not found
+
+  /juniors/players:
+    get:
+      operationId: listJuniorPlayers
+      tags: [juniors]
+      summary: Searchable directory of junior players (private participants excluded)
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Case-insensitive name search
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Filter to players active in this season
+        - name: ageGroup
+          in: query
+          schema:
+            type: string
+          description: Filter to players who appeared for this age group
+      responses:
+        "200":
+          description: List of junior players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorPlayerSummary"
+
+  /juniors/players/{id}:
+    get:
+      operationId: getJuniorPlayer
+      tags: [juniors]
+      summary: Junior player profile with career aggregates and recent matches
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: PlayHQ participant_id
+      responses:
+        "200":
+          description: Junior player detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorPlayerDetail"
+        "404":
+          description: Not found (or a private participant)
+
+  /juniors/leaderboards:
+    get:
+      operationId: getJuniorLeaderboards
+      tags: [juniors]
+      summary: Top junior batting and bowling performers (private participants excluded)
+      responses:
+        "200":
+          description: Leaderboard bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorLeaderboards"
+
+  /juniors/premierships:
+    get:
+      operationId: listJuniorPremierships
+      tags: [juniors]
+      summary: Junior premierships with their winning squads
+      responses:
+        "200":
+          description: List of junior premierships (most recent first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorPremiership"
 
 components:
   schemas:
@@ -6316,3 +6472,516 @@ components:
       properties:
         error:
           type: string
+
+    JuniorBattingLine:
+      type: object
+      description: One batting line in a junior innings. Private participants are masked (participantId null, name replaced) so the scorecard still adds up.
+      required: [id, isHallsHead, isPrivate, playerName]
+      properties:
+        id:
+          type: integer
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: string
+        isHallsHead:
+          type: boolean
+        isPrivate:
+          type: boolean
+        batOrder:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        strikeRate:
+          type: ["number", "null"]
+        dismissal:
+          type: ["string", "null"]
+
+    JuniorBowlingLine:
+      type: object
+      description: One bowling line in a junior innings. Private participants are masked.
+      required: [id, isHallsHead, isPrivate, playerName]
+      properties:
+        id:
+          type: integer
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: string
+        isHallsHead:
+          type: boolean
+        isPrivate:
+          type: boolean
+        overs:
+          type: ["number", "null"]
+        maidens:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        economy:
+          type: ["number", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+
+    JuniorRosterEntry:
+      type: object
+      description: A named player on the team sheet for a junior match. Private participants are masked.
+      required: [id, isHallsHead, isPrivate, playerName]
+      properties:
+        id:
+          type: integer
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: string
+        teamName:
+          type: ["string", "null"]
+        isHallsHead:
+          type: boolean
+        isPrivate:
+          type: boolean
+
+    JuniorInnings:
+      type: object
+      required: [innings, isHallsHead, batting, bowling]
+      properties:
+        innings:
+          type: integer
+        battingTeam:
+          type: ["string", "null"]
+        isHallsHead:
+          type: boolean
+          description: True when Halls Head was the batting team in this innings.
+        batting:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBattingLine"
+        bowling:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBowlingLine"
+
+    JuniorMatchSummary:
+      type: object
+      required: [id, isHallsHead]
+      properties:
+        id:
+          type: integer
+        season:
+          type: ["string", "null"]
+        grade:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        competition:
+          type: ["string", "null"]
+        round:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        opponentName:
+          type: ["string", "null"]
+        hhResult:
+          type: ["string", "null"]
+        hhScore:
+          type: ["string", "null"]
+        opponentScore:
+          type: ["string", "null"]
+        hhBattedFirst:
+          type: ["boolean", "null"]
+        isHallsHead:
+          type: boolean
+          description: Whether Halls Head fielded a team in this match (always true for junior records).
+
+    JuniorMatchDetail:
+      type: object
+      required: [id, innings, rosters]
+      properties:
+        id:
+          type: integer
+        playhqMatchId:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+        grade:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        competition:
+          type: ["string", "null"]
+        round:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        opponentName:
+          type: ["string", "null"]
+        hhResult:
+          type: ["string", "null"]
+        winner:
+          type: ["string", "null"]
+        tossWinner:
+          type: ["string", "null"]
+        hhBattedFirst:
+          type: ["boolean", "null"]
+        hhScore:
+          type: ["string", "null"]
+        opponentScore:
+          type: ["string", "null"]
+        innings:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorInnings"
+        rosters:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorRosterEntry"
+
+    JuniorPlayerSummary:
+      type: object
+      required: [participantId, displayName]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        firstSeason:
+          type: ["string", "null"]
+        lastSeason:
+          type: ["string", "null"]
+        teams:
+          type: ["string", "null"]
+        matches:
+          type: integer
+        runs:
+          type: integer
+        wickets:
+          type: integer
+        seniorPlayerId:
+          type: ["integer", "null"]
+          description: Optional cross-reference to a senior player record. For profile linking only; never combines stats.
+
+    JuniorBattingTotals:
+      type: object
+      required: [matches, innings, runs, notOuts, fours, sixes]
+      properties:
+        matches:
+          type: integer
+        innings:
+          type: integer
+        runs:
+          type: integer
+        ballsFaced:
+          type: integer
+        notOuts:
+          type: integer
+        fours:
+          type: integer
+        sixes:
+          type: integer
+        highScore:
+          type: ["integer", "null"]
+        average:
+          type: ["number", "null"]
+
+    JuniorBowlingTotals:
+      type: object
+      required: [matches, wickets, runs, maidens]
+      properties:
+        matches:
+          type: integer
+        overs:
+          type: ["number", "null"]
+        maidens:
+          type: integer
+        runs:
+          type: integer
+        wickets:
+          type: integer
+        bestWickets:
+          type: ["integer", "null"]
+        bestRuns:
+          type: ["integer", "null"]
+        economy:
+          type: ["number", "null"]
+
+    JuniorPlayerSeason:
+      type: object
+      required: [season, matches, runs, wickets]
+      properties:
+        season:
+          type: string
+        teams:
+          type: ["string", "null"]
+        matches:
+          type: integer
+        runs:
+          type: integer
+        wickets:
+          type: integer
+
+    JuniorPlayerMatchLine:
+      type: object
+      required: [matchId]
+      properties:
+        matchId:
+          type: integer
+        season:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        round:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        opponentName:
+          type: ["string", "null"]
+        hhResult:
+          type: ["string", "null"]
+        batting:
+          oneOf:
+            - $ref: "#/components/schemas/JuniorBattingLine"
+            - type: "null"
+        bowling:
+          oneOf:
+            - $ref: "#/components/schemas/JuniorBowlingLine"
+            - type: "null"
+
+    JuniorPlayerDetail:
+      type: object
+      required: [participantId, displayName, batting, bowling, seasons, matches]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        firstSeason:
+          type: ["string", "null"]
+        lastSeason:
+          type: ["string", "null"]
+        teams:
+          type: ["string", "null"]
+        seniorPlayerId:
+          type: ["integer", "null"]
+          description: Optional cross-reference to a senior player record. For profile linking only; never combines stats.
+        batting:
+          $ref: "#/components/schemas/JuniorBattingTotals"
+        bowling:
+          $ref: "#/components/schemas/JuniorBowlingTotals"
+        seasons:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorPlayerSeason"
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorPlayerMatchLine"
+
+    JuniorBattingLeader:
+      type: object
+      required: [participantId, displayName, runs, innings]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        runs:
+          type: integer
+        innings:
+          type: integer
+        highScore:
+          type: ["integer", "null"]
+        average:
+          type: ["number", "null"]
+
+    JuniorBowlingLeader:
+      type: object
+      required: [participantId, displayName, wickets, matches]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        wickets:
+          type: integer
+        matches:
+          type: integer
+        bestWickets:
+          type: ["integer", "null"]
+        economy:
+          type: ["number", "null"]
+
+    JuniorInningsLeader:
+      type: object
+      required: [participantId, displayName, runs, matchId]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        runs:
+          type: integer
+        balls:
+          type: ["integer", "null"]
+        season:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        matchId:
+          type: integer
+        opponentName:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+
+    JuniorBowlingFigureLeader:
+      type: object
+      required: [participantId, displayName, wickets, runs, matchId]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        wickets:
+          type: integer
+        runs:
+          type: integer
+        season:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        matchId:
+          type: integer
+        opponentName:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+
+    JuniorLeaderboards:
+      type: object
+      required: [mostRuns, mostWickets, highestScores, bestBowling]
+      properties:
+        mostRuns:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBattingLeader"
+        mostWickets:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBowlingLeader"
+        highestScores:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorInningsLeader"
+        bestBowling:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBowlingFigureLeader"
+
+    JuniorPremiershipPlayer:
+      type: object
+      required: [playerName]
+      properties:
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: string
+
+    JuniorPremiership:
+      type: object
+      required: [id, players]
+      properties:
+        id:
+          type: integer
+        season:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        competition:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        opponent:
+          type: ["string", "null"]
+        hhScore:
+          type: ["string", "null"]
+        oppScore:
+          type: ["string", "null"]
+        resultText:
+          type: ["string", "null"]
+        matchId:
+          type: ["integer", "null"]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorPremiershipPlayer"
+
+    JuniorTotals:
+      type: object
+      required: [matches, players, premierships, seasons, ageGroups]
+      properties:
+        matches:
+          type: integer
+        players:
+          type: integer
+        premierships:
+          type: integer
+        seasons:
+          type: integer
+        ageGroups:
+          type: integer
+
+    JuniorOverview:
+      type: object
+      required: [totals, recentMatches, topRunScorers, topWicketTakers]
+      properties:
+        totals:
+          $ref: "#/components/schemas/JuniorTotals"
+        recentMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorMatchSummary"
+        topRunScorers:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBattingLeader"
+        topWicketTakers:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorBowlingLeader"
+
+    JuniorFilters:
+      type: object
+      required: [seasons, ageGroups]
+      properties:
+        seasons:
+          type: array
+          items:
+            type: string
+        ageGroups:
+          type: array
+          items:
+            type: string

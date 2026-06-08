@@ -2431,6 +2431,364 @@ export interface ErrorEnvelope {
   error: string;
 }
 
+/**
+ * One batting line in a junior innings. Private participants are masked (participantId null, name replaced) so the scorecard still adds up.
+ */
+export interface JuniorBattingLine {
+  id: number;
+  /** @nullable */
+  participantId?: string | null;
+  playerName: string;
+  isHallsHead: boolean;
+  isPrivate: boolean;
+  /** @nullable */
+  batOrder?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  /** @nullable */
+  strikeRate?: number | null;
+  /** @nullable */
+  dismissal?: string | null;
+}
+
+/**
+ * One bowling line in a junior innings. Private participants are masked.
+ */
+export interface JuniorBowlingLine {
+  id: number;
+  /** @nullable */
+  participantId?: string | null;
+  playerName: string;
+  isHallsHead: boolean;
+  isPrivate: boolean;
+  /** @nullable */
+  overs?: number | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  economy?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+}
+
+/**
+ * A named player on the team sheet for a junior match. Private participants are masked.
+ */
+export interface JuniorRosterEntry {
+  id: number;
+  /** @nullable */
+  participantId?: string | null;
+  playerName: string;
+  /** @nullable */
+  teamName?: string | null;
+  isHallsHead: boolean;
+  isPrivate: boolean;
+}
+
+export interface JuniorInnings {
+  innings: number;
+  /** @nullable */
+  battingTeam?: string | null;
+  /** True when Halls Head was the batting team in this innings. */
+  isHallsHead: boolean;
+  batting: JuniorBattingLine[];
+  bowling: JuniorBowlingLine[];
+}
+
+export interface JuniorMatchSummary {
+  id: number;
+  /** @nullable */
+  season?: string | null;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  ageGroup?: string | null;
+  /** @nullable */
+  teamName?: string | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  round?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  hhResult?: string | null;
+  /** @nullable */
+  hhScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  /** @nullable */
+  hhBattedFirst?: boolean | null;
+  /** Whether Halls Head fielded a team in this match (always true for junior records). */
+  isHallsHead: boolean;
+}
+
+export interface JuniorMatchDetail {
+  id: number;
+  /** @nullable */
+  playhqMatchId?: string | null;
+  /** @nullable */
+  season?: string | null;
+  /** @nullable */
+  grade?: string | null;
+  /** @nullable */
+  ageGroup?: string | null;
+  /** @nullable */
+  teamName?: string | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  round?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  hhResult?: string | null;
+  /** @nullable */
+  winner?: string | null;
+  /** @nullable */
+  tossWinner?: string | null;
+  /** @nullable */
+  hhBattedFirst?: boolean | null;
+  /** @nullable */
+  hhScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  innings: JuniorInnings[];
+  rosters: JuniorRosterEntry[];
+}
+
+export interface JuniorPlayerSummary {
+  participantId: string;
+  displayName: string;
+  /** @nullable */
+  firstSeason?: string | null;
+  /** @nullable */
+  lastSeason?: string | null;
+  /** @nullable */
+  teams?: string | null;
+  matches?: number;
+  runs?: number;
+  wickets?: number;
+  /**
+     * Optional cross-reference to a senior player record. For profile linking only; never combines stats.
+     * @nullable
+     */
+  seniorPlayerId?: number | null;
+}
+
+export interface JuniorBattingTotals {
+  matches: number;
+  innings: number;
+  runs: number;
+  ballsFaced?: number;
+  notOuts: number;
+  fours: number;
+  sixes: number;
+  /** @nullable */
+  highScore?: number | null;
+  /** @nullable */
+  average?: number | null;
+}
+
+export interface JuniorBowlingTotals {
+  matches: number;
+  /** @nullable */
+  overs?: number | null;
+  maidens: number;
+  runs: number;
+  wickets: number;
+  /** @nullable */
+  bestWickets?: number | null;
+  /** @nullable */
+  bestRuns?: number | null;
+  /** @nullable */
+  economy?: number | null;
+}
+
+export interface JuniorPlayerSeason {
+  season: string;
+  /** @nullable */
+  teams?: string | null;
+  matches: number;
+  runs: number;
+  wickets: number;
+}
+
+export interface JuniorPlayerMatchLine {
+  matchId: number;
+  /** @nullable */
+  season?: string | null;
+  /** @nullable */
+  ageGroup?: string | null;
+  /** @nullable */
+  round?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  hhResult?: string | null;
+  batting?: JuniorBattingLine | null;
+  bowling?: JuniorBowlingLine | null;
+}
+
+export interface JuniorPlayerDetail {
+  participantId: string;
+  displayName: string;
+  /** @nullable */
+  firstSeason?: string | null;
+  /** @nullable */
+  lastSeason?: string | null;
+  /** @nullable */
+  teams?: string | null;
+  /**
+     * Optional cross-reference to a senior player record. For profile linking only; never combines stats.
+     * @nullable
+     */
+  seniorPlayerId?: number | null;
+  batting: JuniorBattingTotals;
+  bowling: JuniorBowlingTotals;
+  seasons: JuniorPlayerSeason[];
+  matches: JuniorPlayerMatchLine[];
+}
+
+export interface JuniorBattingLeader {
+  participantId: string;
+  displayName: string;
+  runs: number;
+  innings: number;
+  /** @nullable */
+  highScore?: number | null;
+  /** @nullable */
+  average?: number | null;
+}
+
+export interface JuniorBowlingLeader {
+  participantId: string;
+  displayName: string;
+  wickets: number;
+  matches: number;
+  /** @nullable */
+  bestWickets?: number | null;
+  /** @nullable */
+  economy?: number | null;
+}
+
+export interface JuniorInningsLeader {
+  participantId: string;
+  displayName: string;
+  runs: number;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  season?: string | null;
+  /** @nullable */
+  ageGroup?: string | null;
+  matchId: number;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+}
+
+export interface JuniorBowlingFigureLeader {
+  participantId: string;
+  displayName: string;
+  wickets: number;
+  runs: number;
+  /** @nullable */
+  season?: string | null;
+  /** @nullable */
+  ageGroup?: string | null;
+  matchId: number;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+}
+
+export interface JuniorLeaderboards {
+  mostRuns: JuniorBattingLeader[];
+  mostWickets: JuniorBowlingLeader[];
+  highestScores: JuniorInningsLeader[];
+  bestBowling: JuniorBowlingFigureLeader[];
+}
+
+export interface JuniorPremiershipPlayer {
+  /** @nullable */
+  participantId?: string | null;
+  playerName: string;
+}
+
+export interface JuniorPremiership {
+  id: number;
+  /** @nullable */
+  season?: string | null;
+  /** @nullable */
+  ageGroup?: string | null;
+  /** @nullable */
+  teamName?: string | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  hhScore?: string | null;
+  /** @nullable */
+  oppScore?: string | null;
+  /** @nullable */
+  resultText?: string | null;
+  /** @nullable */
+  matchId?: number | null;
+  players: JuniorPremiershipPlayer[];
+}
+
+export interface JuniorTotals {
+  matches: number;
+  players: number;
+  premierships: number;
+  seasons: number;
+  ageGroups: number;
+}
+
+export interface JuniorOverview {
+  totals: JuniorTotals;
+  recentMatches: JuniorMatchSummary[];
+  topRunScorers: JuniorBattingLeader[];
+  topWicketTakers: JuniorBowlingLeader[];
+}
+
+export interface JuniorFilters {
+  seasons: string[];
+  ageGroups: string[];
+}
+
 export type ListPlayersParams = {
 /**
  * Search by name
@@ -2527,5 +2885,31 @@ export type UploadMatchScorecardBody = {
 export type UploadMatchBatchBody = {
   /** One or more .xlsx scorecards, and/or a .zip of them */
   files: Blob[];
+};
+
+export type ListJuniorMatchesParams = {
+/**
+ * Filter by season (e.g. "2024/25")
+ */
+season?: string;
+/**
+ * Filter by age group (e.g. "U14")
+ */
+ageGroup?: string;
+};
+
+export type ListJuniorPlayersParams = {
+/**
+ * Case-insensitive name search
+ */
+search?: string;
+/**
+ * Filter to players active in this season
+ */
+season?: string;
+/**
+ * Filter to players who appeared for this age group
+ */
+ageGroup?: string;
 };
 

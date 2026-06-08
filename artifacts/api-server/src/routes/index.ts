@@ -23,6 +23,7 @@ import recordsRouter from "./records";
 import historicalRouter from "./historical";
 import socialCardsRouter from "./social-cards";
 import socialDraftsRouter from "./social-drafts";
+import juniorsRouter from "./juniors";
 import storageRouter from "./storage";
 
 const router: IRouter = Router();
@@ -51,6 +52,7 @@ router.use(recordsRouter);
 router.use(historicalRouter);
 router.use(socialCardsRouter);
 router.use(socialDraftsRouter);
+router.use(juniorsRouter);
 router.use(storageRouter);
 
 export default router;

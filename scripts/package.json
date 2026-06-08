@@ -17,6 +17,7 @@
     "load-award-history": "tsx ./src/load-award-history.ts",
     "seed-committee": "tsx ./src/seed-committee.ts",
     "load-master-db": "tsx ./src/load-master-db.ts",
+    "load-juniors-db": "tsx ./src/load-juniors-db.ts",
     "load-matches": "tsx ./src/load-matches.ts",
     "backfill-innings-order": "tsx ./src/backfill-innings-order.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"

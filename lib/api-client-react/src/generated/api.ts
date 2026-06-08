@@ -78,9 +78,19 @@ import type {
   HonourBoardUpdate,
   ImportPreview,
   ImportRecord,
+  JuniorFilters,
+  JuniorLeaderboards,
+  JuniorMatchDetail,
+  JuniorMatchSummary,
+  JuniorOverview,
+  JuniorPlayerDetail,
+  JuniorPlayerSummary,
+  JuniorPremiership,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
+  ListJuniorMatchesParams,
+  ListJuniorPlayersParams,
   ListMatchesParams,
   ListPlayersParams,
   ListStatsParams,
@@ -10321,6 +10331,636 @@ export function useGetStorageObject<TData = Awaited<ReturnType<typeof getStorage
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetStorageObjectQueryOptions(objectPath,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorsOverviewUrl = () => {
+
+
+
+
+  return `/api/juniors/overview`
+}
+
+/**
+ * @summary Juniors dashboard bundle — club totals, recent results, top performers
+ */
+export const getJuniorsOverview = async ( options?: RequestInit): Promise<JuniorOverview> => {
+
+  return customFetch<JuniorOverview>(getGetJuniorsOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorsOverviewQueryKey = () => {
+    return [
+    `/api/juniors/overview`
+    ] as const;
+    }
+
+
+export const getGetJuniorsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorsOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorsOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorsOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorsOverview>>> = ({ signal }) => getJuniorsOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorsOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorsOverview>>>
+export type GetJuniorsOverviewQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Juniors dashboard bundle — club totals, recent results, top performers
+ */
+
+export function useGetJuniorsOverview<TData = Awaited<ReturnType<typeof getJuniorsOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorsOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorsOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorsFiltersUrl = () => {
+
+
+
+
+  return `/api/juniors/filters`
+}
+
+/**
+ * @summary Available seasons and age groups for juniors filter menus
+ */
+export const getJuniorsFilters = async ( options?: RequestInit): Promise<JuniorFilters> => {
+
+  return customFetch<JuniorFilters>(getGetJuniorsFiltersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorsFiltersQueryKey = () => {
+    return [
+    `/api/juniors/filters`
+    ] as const;
+    }
+
+
+export const getGetJuniorsFiltersQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorsFilters>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorsFilters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorsFiltersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorsFilters>>> = ({ signal }) => getJuniorsFilters({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorsFilters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorsFiltersQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorsFilters>>>
+export type GetJuniorsFiltersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Available seasons and age groups for juniors filter menus
+ */
+
+export function useGetJuniorsFilters<TData = Awaited<ReturnType<typeof getJuniorsFilters>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorsFilters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorsFiltersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListJuniorMatchesUrl = (params?: ListJuniorMatchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/matches?${stringifiedParams}` : `/api/juniors/matches`
+}
+
+/**
+ * @summary List junior matches, filterable by season and age group
+ */
+export const listJuniorMatches = async (params?: ListJuniorMatchesParams, options?: RequestInit): Promise<JuniorMatchSummary[]> => {
+
+  return customFetch<JuniorMatchSummary[]>(getListJuniorMatchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorMatchesQueryKey = (params?: ListJuniorMatchesParams,) => {
+    return [
+    `/api/juniors/matches`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJuniorMatchesQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorMatches>>, TError = ErrorType<unknown>>(params?: ListJuniorMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorMatchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorMatches>>> = ({ signal }) => listJuniorMatches(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorMatches>>>
+export type ListJuniorMatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List junior matches, filterable by season and age group
+ */
+
+export function useListJuniorMatches<TData = Awaited<ReturnType<typeof listJuniorMatches>>, TError = ErrorType<unknown>>(
+ params?: ListJuniorMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorMatchUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${id}`
+}
+
+/**
+ * @summary Get a single junior match with its full scorecard
+ */
+export const getJuniorMatch = async (id: number, options?: RequestInit): Promise<JuniorMatchDetail> => {
+
+  return customFetch<JuniorMatchDetail>(getGetJuniorMatchUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorMatchQueryKey = (id: number,) => {
+    return [
+    `/api/juniors/matches/${id}`
+    ] as const;
+    }
+
+
+export const getGetJuniorMatchQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorMatch>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorMatchQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorMatch>>> = ({ signal }) => getJuniorMatch(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorMatchQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorMatch>>>
+export type GetJuniorMatchQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single junior match with its full scorecard
+ */
+
+export function useGetJuniorMatch<TData = Awaited<ReturnType<typeof getJuniorMatch>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorMatchQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListJuniorPlayersUrl = (params?: ListJuniorPlayersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/players?${stringifiedParams}` : `/api/juniors/players`
+}
+
+/**
+ * @summary Searchable directory of junior players (private participants excluded)
+ */
+export const listJuniorPlayers = async (params?: ListJuniorPlayersParams, options?: RequestInit): Promise<JuniorPlayerSummary[]> => {
+
+  return customFetch<JuniorPlayerSummary[]>(getListJuniorPlayersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorPlayersQueryKey = (params?: ListJuniorPlayersParams,) => {
+    return [
+    `/api/juniors/players`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJuniorPlayersQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorPlayers>>, TError = ErrorType<unknown>>(params?: ListJuniorPlayersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPlayers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorPlayersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorPlayers>>> = ({ signal }) => listJuniorPlayers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorPlayers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorPlayersQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorPlayers>>>
+export type ListJuniorPlayersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Searchable directory of junior players (private participants excluded)
+ */
+
+export function useListJuniorPlayers<TData = Awaited<ReturnType<typeof listJuniorPlayers>>, TError = ErrorType<unknown>>(
+ params?: ListJuniorPlayersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPlayers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorPlayersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorPlayerUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/players/${id}`
+}
+
+/**
+ * @summary Junior player profile with career aggregates and recent matches
+ */
+export const getJuniorPlayer = async (id: string, options?: RequestInit): Promise<JuniorPlayerDetail> => {
+
+  return customFetch<JuniorPlayerDetail>(getGetJuniorPlayerUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorPlayerQueryKey = (id: string,) => {
+    return [
+    `/api/juniors/players/${id}`
+    ] as const;
+    }
+
+
+export const getGetJuniorPlayerQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorPlayer>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorPlayer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorPlayerQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorPlayer>>> = ({ signal }) => getJuniorPlayer(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorPlayer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorPlayerQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorPlayer>>>
+export type GetJuniorPlayerQueryError = ErrorType<void>
+
+
+/**
+ * @summary Junior player profile with career aggregates and recent matches
+ */
+
+export function useGetJuniorPlayer<TData = Awaited<ReturnType<typeof getJuniorPlayer>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorPlayer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorPlayerQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorLeaderboardsUrl = () => {
+
+
+
+
+  return `/api/juniors/leaderboards`
+}
+
+/**
+ * @summary Top junior batting and bowling performers (private participants excluded)
+ */
+export const getJuniorLeaderboards = async ( options?: RequestInit): Promise<JuniorLeaderboards> => {
+
+  return customFetch<JuniorLeaderboards>(getGetJuniorLeaderboardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorLeaderboardsQueryKey = () => {
+    return [
+    `/api/juniors/leaderboards`
+    ] as const;
+    }
+
+
+export const getGetJuniorLeaderboardsQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorLeaderboards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorLeaderboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorLeaderboardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorLeaderboards>>> = ({ signal }) => getJuniorLeaderboards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorLeaderboards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorLeaderboardsQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorLeaderboards>>>
+export type GetJuniorLeaderboardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Top junior batting and bowling performers (private participants excluded)
+ */
+
+export function useGetJuniorLeaderboards<TData = Awaited<ReturnType<typeof getJuniorLeaderboards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorLeaderboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorLeaderboardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListJuniorPremiershipsUrl = () => {
+
+
+
+
+  return `/api/juniors/premierships`
+}
+
+/**
+ * @summary Junior premierships with their winning squads
+ */
+export const listJuniorPremierships = async ( options?: RequestInit): Promise<JuniorPremiership[]> => {
+
+  return customFetch<JuniorPremiership[]>(getListJuniorPremiershipsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorPremiershipsQueryKey = () => {
+    return [
+    `/api/juniors/premierships`
+    ] as const;
+    }
+
+
+export const getListJuniorPremiershipsQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorPremierships>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPremierships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorPremiershipsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorPremierships>>> = ({ signal }) => listJuniorPremierships({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorPremierships>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorPremiershipsQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorPremierships>>>
+export type ListJuniorPremiershipsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Junior premierships with their winning squads
+ */
+
+export function useListJuniorPremierships<TData = Awaited<ReturnType<typeof listJuniorPremierships>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPremierships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorPremiershipsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

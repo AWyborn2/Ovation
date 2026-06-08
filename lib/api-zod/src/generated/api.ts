@@ -3796,3 +3796,332 @@ export const GetStorageObjectParams = zod.object({
 })
 
 
+/**
+ * @summary Juniors dashboard bundle — club totals, recent results, top performers
+ */
+export const GetJuniorsOverviewResponse = zod.object({
+  "totals": zod.object({
+  "matches": zod.number(),
+  "players": zod.number(),
+  "premierships": zod.number(),
+  "seasons": zod.number(),
+  "ageGroups": zod.number()
+}),
+  "recentMatches": zod.array(zod.object({
+  "id": zod.number(),
+  "season": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "teamName": zod.string().nullish(),
+  "competition": zod.string().nullish(),
+  "round": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "opponentName": zod.string().nullish(),
+  "hhResult": zod.string().nullish(),
+  "hhScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "hhBattedFirst": zod.boolean().nullish(),
+  "isHallsHead": zod.boolean().describe('Whether Halls Head fielded a team in this match (always true for junior records).')
+})),
+  "topRunScorers": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "runs": zod.number(),
+  "innings": zod.number(),
+  "highScore": zod.number().nullish(),
+  "average": zod.number().nullish()
+})),
+  "topWicketTakers": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "wickets": zod.number(),
+  "matches": zod.number(),
+  "bestWickets": zod.number().nullish(),
+  "economy": zod.number().nullish()
+}))
+})
+
+
+/**
+ * @summary Available seasons and age groups for juniors filter menus
+ */
+export const GetJuniorsFiltersResponse = zod.object({
+  "seasons": zod.array(zod.string()),
+  "ageGroups": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List junior matches, filterable by season and age group
+ */
+export const ListJuniorMatchesQueryParams = zod.object({
+  "season": zod.coerce.string().optional().describe('Filter by season (e.g. \"2024\/25\")'),
+  "ageGroup": zod.coerce.string().optional().describe('Filter by age group (e.g. \"U14\")')
+})
+
+export const ListJuniorMatchesResponseItem = zod.object({
+  "id": zod.number(),
+  "season": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "teamName": zod.string().nullish(),
+  "competition": zod.string().nullish(),
+  "round": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "opponentName": zod.string().nullish(),
+  "hhResult": zod.string().nullish(),
+  "hhScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "hhBattedFirst": zod.boolean().nullish(),
+  "isHallsHead": zod.boolean().describe('Whether Halls Head fielded a team in this match (always true for junior records).')
+})
+export const ListJuniorMatchesResponse = zod.array(ListJuniorMatchesResponseItem)
+
+
+/**
+ * @summary Get a single junior match with its full scorecard
+ */
+export const GetJuniorMatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorMatchResponse = zod.object({
+  "id": zod.number(),
+  "playhqMatchId": zod.string().nullish(),
+  "season": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "teamName": zod.string().nullish(),
+  "competition": zod.string().nullish(),
+  "round": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "opponentName": zod.string().nullish(),
+  "hhResult": zod.string().nullish(),
+  "winner": zod.string().nullish(),
+  "tossWinner": zod.string().nullish(),
+  "hhBattedFirst": zod.boolean().nullish(),
+  "hhScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "innings": zod.array(zod.object({
+  "innings": zod.number(),
+  "battingTeam": zod.string().nullish(),
+  "isHallsHead": zod.boolean().describe('True when Halls Head was the batting team in this innings.'),
+  "batting": zod.array(zod.object({
+  "id": zod.number(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string(),
+  "isHallsHead": zod.boolean(),
+  "isPrivate": zod.boolean(),
+  "batOrder": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "strikeRate": zod.number().nullish(),
+  "dismissal": zod.string().nullish()
+}).describe('One batting line in a junior innings. Private participants are masked (participantId null, name replaced) so the scorecard still adds up.')),
+  "bowling": zod.array(zod.object({
+  "id": zod.number(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string(),
+  "isHallsHead": zod.boolean(),
+  "isPrivate": zod.boolean(),
+  "overs": zod.number().nullish(),
+  "maidens": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "economy": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish()
+}).describe('One bowling line in a junior innings. Private participants are masked.'))
+})),
+  "rosters": zod.array(zod.object({
+  "id": zod.number(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string(),
+  "teamName": zod.string().nullish(),
+  "isHallsHead": zod.boolean(),
+  "isPrivate": zod.boolean()
+}).describe('A named player on the team sheet for a junior match. Private participants are masked.'))
+})
+
+
+/**
+ * @summary Searchable directory of junior players (private participants excluded)
+ */
+export const ListJuniorPlayersQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Case-insensitive name search'),
+  "season": zod.coerce.string().optional().describe('Filter to players active in this season'),
+  "ageGroup": zod.coerce.string().optional().describe('Filter to players who appeared for this age group')
+})
+
+export const ListJuniorPlayersResponseItem = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "firstSeason": zod.string().nullish(),
+  "lastSeason": zod.string().nullish(),
+  "teams": zod.string().nullish(),
+  "matches": zod.number().optional(),
+  "runs": zod.number().optional(),
+  "wickets": zod.number().optional(),
+  "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.')
+})
+export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
+
+
+/**
+ * @summary Junior player profile with career aggregates and recent matches
+ */
+export const GetJuniorPlayerParams = zod.object({
+  "id": zod.coerce.string().describe('PlayHQ participant_id')
+})
+
+export const GetJuniorPlayerResponse = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "firstSeason": zod.string().nullish(),
+  "lastSeason": zod.string().nullish(),
+  "teams": zod.string().nullish(),
+  "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.'),
+  "batting": zod.object({
+  "matches": zod.number(),
+  "innings": zod.number(),
+  "runs": zod.number(),
+  "ballsFaced": zod.number().optional(),
+  "notOuts": zod.number(),
+  "fours": zod.number(),
+  "sixes": zod.number(),
+  "highScore": zod.number().nullish(),
+  "average": zod.number().nullish()
+}),
+  "bowling": zod.object({
+  "matches": zod.number(),
+  "overs": zod.number().nullish(),
+  "maidens": zod.number(),
+  "runs": zod.number(),
+  "wickets": zod.number(),
+  "bestWickets": zod.number().nullish(),
+  "bestRuns": zod.number().nullish(),
+  "economy": zod.number().nullish()
+}),
+  "seasons": zod.array(zod.object({
+  "season": zod.string(),
+  "teams": zod.string().nullish(),
+  "matches": zod.number(),
+  "runs": zod.number(),
+  "wickets": zod.number()
+})),
+  "matches": zod.array(zod.object({
+  "matchId": zod.number(),
+  "season": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "round": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "opponentName": zod.string().nullish(),
+  "hhResult": zod.string().nullish(),
+  "batting": zod.union([zod.object({
+  "id": zod.number(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string(),
+  "isHallsHead": zod.boolean(),
+  "isPrivate": zod.boolean(),
+  "batOrder": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "strikeRate": zod.number().nullish(),
+  "dismissal": zod.string().nullish()
+}).describe('One batting line in a junior innings. Private participants are masked (participantId null, name replaced) so the scorecard still adds up.'),zod.null()]).optional(),
+  "bowling": zod.union([zod.object({
+  "id": zod.number(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string(),
+  "isHallsHead": zod.boolean(),
+  "isPrivate": zod.boolean(),
+  "overs": zod.number().nullish(),
+  "maidens": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "economy": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish()
+}).describe('One bowling line in a junior innings. Private participants are masked.'),zod.null()]).optional()
+}))
+})
+
+
+/**
+ * @summary Top junior batting and bowling performers (private participants excluded)
+ */
+export const GetJuniorLeaderboardsResponse = zod.object({
+  "mostRuns": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "runs": zod.number(),
+  "innings": zod.number(),
+  "highScore": zod.number().nullish(),
+  "average": zod.number().nullish()
+})),
+  "mostWickets": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "wickets": zod.number(),
+  "matches": zod.number(),
+  "bestWickets": zod.number().nullish(),
+  "economy": zod.number().nullish()
+})),
+  "highestScores": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "runs": zod.number(),
+  "balls": zod.number().nullish(),
+  "season": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "matchId": zod.number(),
+  "opponentName": zod.string().nullish(),
+  "matchDate": zod.string().nullish()
+})),
+  "bestBowling": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "wickets": zod.number(),
+  "runs": zod.number(),
+  "season": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "matchId": zod.number(),
+  "opponentName": zod.string().nullish(),
+  "matchDate": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Junior premierships with their winning squads
+ */
+export const ListJuniorPremiershipsResponseItem = zod.object({
+  "id": zod.number(),
+  "season": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "teamName": zod.string().nullish(),
+  "competition": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "hhScore": zod.string().nullish(),
+  "oppScore": zod.string().nullish(),
+  "resultText": zod.string().nullish(),
+  "matchId": zod.number().nullish(),
+  "players": zod.array(zod.object({
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string()
+}))
+})
+export const ListJuniorPremiershipsResponse = zod.array(ListJuniorPremiershipsResponseItem)
+
+
