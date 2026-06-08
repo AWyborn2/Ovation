@@ -6,7 +6,7 @@ import { JUNIOR_ACCENT, fmtJuniorDate } from "@/lib/juniors";
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div className="text-3xl font-serif font-bold text-[#bc8c6b]" data-testid={`stat-${label}`}>
+      <div className="text-3xl font-serif font-bold text-[#42342b]" data-testid={`stat-${label}`}>
         {value}
       </div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
@@ -18,8 +18,8 @@ function QuickLink({ href, icon: Icon, title, desc }: { href: string; icon: type
   return (
     <Link href={href}>
       <div className={`bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full ${JUNIOR_ACCENT.hoverBorder} transition-colors group`}>
-        <Icon className="h-7 w-7 text-[#bc8c6b] mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-[#bc8c6b]">{title}</div>
+        <Icon className="h-7 w-7 text-[#42342b] mb-3" />
+        <div className="font-serif font-bold text-lg text-foreground group-hover:text-[#42342b]">{title}</div>
         <p className="text-sm text-muted-foreground mt-1">{desc}</p>
       </div>
     </Link>
@@ -32,7 +32,7 @@ export default function JuniorsDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
           <ScrollText className="h-4 w-4" /> Juniors
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Junior Cricket</h1>
