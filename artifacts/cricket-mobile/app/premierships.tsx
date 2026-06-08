@@ -10,6 +10,7 @@ import {
 
 import { Body, Card, ErrorView, Heading, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import { PlaqueModal, type PlaquePlayer } from "@/components/premiership-plaque";
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
@@ -86,10 +87,24 @@ function ResultBlock({ prem }: { prem: Premiership }) {
   );
 }
 
-function PremiershipCard({ prem }: { prem: Premiership }) {
+function PremiershipCard({ prem, onOpen }: { prem: Premiership; onOpen: () => void }) {
   const colors = useColors();
   return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onOpen}>
     <Card style={{ marginBottom: 10, padding: 14 }}>
+      <View
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          zIndex: 1,
+        }}
+      >
+        <Feather name="maximize-2" size={13} color={colors.mutedForeground} />
+      </View>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <View style={{ flex: 1 }}>
           <Heading size="sm">{prem.grade}</Heading>
@@ -124,6 +139,7 @@ function PremiershipCard({ prem }: { prem: Premiership }) {
 
       <ResultBlock prem={prem} />
     </Card>
+    </TouchableOpacity>
   );
 }
 
@@ -168,6 +184,7 @@ export default function PremiershipsScreen() {
   const colors = useColors();
   const { data, isLoading, isError } = useListPremierships();
   const [grade, setGrade] = useState<string>("");
+  const [active, setActive] = useState<Premiership | null>(null);
 
   const gradeOptions = useMemo(() => {
     const set = new Set<string>();
@@ -209,7 +226,9 @@ export default function PremiershipsScreen() {
           <FlatList
             data={filtered}
             keyExtractor={(p) => String(p.id)}
-            renderItem={({ item }) => <PremiershipCard prem={item} />}
+            renderItem={({ item }) => (
+              <PremiershipCard prem={item} onOpen={() => setActive(item)} />
+            )}
             contentContainerStyle={{ paddingBottom: 32 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
@@ -221,6 +240,36 @@ export default function PremiershipsScreen() {
           />
         )}
       </View>
+
+      {active ? (
+        <PlaqueModal
+          visible={active != null}
+          onClose={() => setActive(null)}
+          variant="senior"
+          title={active.grade}
+          subtitle={[
+            fmtSeason(active.year),
+            active.competition ?? undefined,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          meta={[active.venue ?? undefined, fmtDate(active.matchDate) ?? undefined]}
+          mom={active.mom ?? undefined}
+          players={active.players.map<PlaquePlayer>((p) => ({
+            key: String(p.id),
+            name: p.name.replace(/\s+/g, " ").trim(),
+            href: p.playerId ? `/players/${p.playerId}` : null,
+            isCaptain: p.isCaptain,
+          }))}
+          resultText={active.result ? active.result.replace(/\s+def\s+/i, " def ") : undefined}
+          resultLinksToScorecard={!!active.matchId}
+          scorecard={
+            active.matchId
+              ? { href: `/matches/${active.matchId}`, label: "View Grand Final scorecard" }
+              : null
+          }
+        />
+      ) : null}
     </>
   );
 }

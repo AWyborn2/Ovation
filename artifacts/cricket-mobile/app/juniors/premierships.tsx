@@ -11,6 +11,7 @@ import {
 import { Body, Card, ErrorView, Heading, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { JUNIOR } from "@/lib/juniors";
+import { PlaqueModal, type PlaquePlayer } from "@/components/premiership-plaque";
 
 function FilterChip({
   label,
@@ -88,9 +89,10 @@ function RosterName({ p }: { p: JuniorPremiershipPlayer }) {
   );
 }
 
-function PremiershipCard({ prem }: { prem: JuniorPremiership }) {
+function PremiershipCard({ prem, onOpen }: { prem: JuniorPremiership; onOpen: () => void }) {
   const colors = useColors();
   return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onOpen}>
     <Card style={{ marginBottom: 12, padding: 0, overflow: "hidden" }}>
       <View style={{ backgroundColor: JUNIOR.accent, paddingHorizontal: 14, paddingVertical: 12 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -99,6 +101,7 @@ function PremiershipCard({ prem }: { prem: JuniorPremiership }) {
             {prem.ageGroup ?? "Junior"}
             {prem.season ? ` · ${prem.season}` : ""}
           </Body>
+          <Feather name="maximize-2" size={14} color={JUNIOR.onAccent} />
         </View>
         {prem.competition ? (
           <Body
@@ -161,6 +164,7 @@ function PremiershipCard({ prem }: { prem: JuniorPremiership }) {
         ) : null}
       </View>
     </Card>
+    </TouchableOpacity>
   );
 }
 
@@ -168,6 +172,7 @@ export default function JuniorPremiershipsScreen() {
   const colors = useColors();
   const { data, isLoading, isError } = useListJuniorPremierships();
   const [ageGroup, setAgeGroup] = useState("");
+  const [active, setActive] = useState<JuniorPremiership | null>(null);
 
   const ageGroups = useMemo(() => {
     const set = new Set<string>();
@@ -212,7 +217,9 @@ export default function JuniorPremiershipsScreen() {
           <FlatList
             data={filtered}
             keyExtractor={(p) => String(p.id)}
-            renderItem={({ item }) => <PremiershipCard prem={item} />}
+            renderItem={({ item }) => (
+              <PremiershipCard prem={item} onOpen={() => setActive(item)} />
+            )}
             contentContainerStyle={{ paddingBottom: 32 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
@@ -224,6 +231,41 @@ export default function JuniorPremiershipsScreen() {
           />
         )}
       </View>
+
+      {active ? (
+        <PlaqueModal
+          visible={active != null}
+          onClose={() => setActive(null)}
+          variant="junior"
+          title={active.ageGroup ?? "Junior"}
+          subtitle={[active.season ?? undefined, active.competition ?? undefined]
+            .filter(Boolean)
+            .join(" · ")}
+          summary={
+            active.opponent || active.hhScore || active.oppScore
+              ? `${active.opponent ? `def. ${active.opponent}` : ""}${
+                  (active.hhScore || active.oppScore)
+                    ? `${active.opponent ? "  " : ""}${active.hhScore ?? "—"} vs ${active.oppScore ?? "—"}`
+                    : ""
+                }`.trim()
+              : undefined
+          }
+          resultText={active.resultText ?? undefined}
+          players={active.players.map<PlaquePlayer>((p, i) => ({
+            key: String(i),
+            name: p.playerName,
+            href: p.participantId ? `/juniors/players/${p.participantId}` : null,
+          }))}
+          scorecard={
+            active.matchId != null
+              ? {
+                  href: `/juniors/matches/${active.matchId}`,
+                  label: "View deciding scorecard",
+                }
+              : null
+          }
+        />
+      ) : null}
     </>
   );
 }
