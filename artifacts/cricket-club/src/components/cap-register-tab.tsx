@@ -28,7 +28,6 @@ export function CapRegisterTab() {
     );
   }, [inCategory, search]);
 
-  const onRecord = inCategory.filter((c) => c.inStats).length;
   const deceased = inCategory.filter((c) => c.deceased).length;
   const categoryLabel = CATEGORY_LABEL[category];
 
@@ -61,8 +60,7 @@ export function CapRegisterTab() {
         <p className="text-muted-foreground italic mt-3 mb-0">
           Every player to wear the {categoryLabel} cap for Halls Head Cricket
           Club, in chronological order of debut. {inCategory.length}{" "}
-          caps issued — {onRecord} with stats on record, {deceased} since
-          deceased.
+          caps issued, {deceased} since deceased.
         </p>
       </div>
 
@@ -84,12 +82,6 @@ export function CapRegisterTab() {
       </div>
 
       <div className="bg-card border border-border rounded-md p-4 shadow-md flex flex-wrap gap-3 items-center text-xs">
-        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/15 border border-emerald-600/40 text-emerald-700 dark:text-emerald-300 font-bold">
-          <span>✓</span> stats available
-        </span>
-        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-muted border border-border text-muted-foreground font-bold">
-          <span>○</span> no stats (pre-digital era)
-        </span>
         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold">
           <span>✝</span> deceased
         </span>
@@ -127,9 +119,6 @@ export function CapRegisterTab() {
                   <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">
                     A Grade Games
                   </th>
-                  <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell">
-                    Status
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -145,12 +134,12 @@ export function CapRegisterTab() {
                       {c.playerId !== null && c.playerId !== undefined ? (
                         <Link
                           href={`/players/${c.playerId}`}
-                          className={`uppercase hover:underline ${c.inStats ? "font-semibold text-primary" : "text-muted-foreground/70 hover:text-primary"}`}
+                          className="uppercase font-semibold text-primary hover:underline"
                         >
                           {c.name}
                         </Link>
                       ) : (
-                        <span className={`uppercase ${c.inStats ? "font-semibold text-primary" : "text-muted-foreground/70"}`}>
+                        <span className="uppercase font-semibold text-primary">
                           {c.name}
                         </span>
                       )}
@@ -169,17 +158,6 @@ export function CapRegisterTab() {
                         c.gamesAGrade
                       ) : (
                         <span className="text-muted-foreground/60">—</span>
-                      )}
-                    </td>
-                    <td className="p-3 hidden sm:table-cell">
-                      {c.inStats ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-600/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold">
-                          ✓ on record
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted border border-border text-muted-foreground text-[11px] font-bold">
-                          ○ pre-digital
-                        </span>
                       )}
                     </td>
                   </tr>
