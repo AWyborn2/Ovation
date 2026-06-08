@@ -90,6 +90,34 @@ export default function HonoursScreen() {
           </Card>
         </TouchableOpacity>
       </Link>
+
+      <Link href={"/premierships" as never} asChild>
+        <TouchableOpacity activeOpacity={0.7}>
+          <Card style={{ marginBottom: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: colors.radius,
+                  backgroundColor: colors.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="flag" size={22} color={colors.primaryForeground} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Heading size="md">Premierships</Heading>
+                <Body muted size={12} style={{ marginTop: 2 }}>
+                  Grand Final winners · tap a result for the scorecard
+                </Body>
+              </View>
+              <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+            </View>
+          </Card>
+        </TouchableOpacity>
+      </Link>
     </ScrollView>
   );
 }

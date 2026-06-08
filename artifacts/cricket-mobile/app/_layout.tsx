@@ -51,6 +51,7 @@ function RootLayoutNav() {
       <Stack.Screen name="grades/[grade]" options={{ title: "LEADERBOARD" }} />
       <Stack.Screen name="honours/[board]" options={{ title: "HONOUR BOARD" }} />
       <Stack.Screen name="honours/awards" options={{ title: "AWARDS" }} />
+      <Stack.Screen name="premierships" options={{ title: "PREMIERSHIPS" }} />
     </Stack>
   );
 }
