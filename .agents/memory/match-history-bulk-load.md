@@ -66,6 +66,19 @@ The matches list + detail routes leftJoin clubs and return a nullable
 frontend crest components fall back silently to nothing (name always shown).
 
 ## Operational gotchas
+- **A `-1`/timeout exit from `load-matches --commit` does NOT mean rollback.**
+  The ETL runs in `--single-transaction` and commits, THEN the node script runs
+  post-ETL verification psql queries; the 120s bash cap can kill the wrapper
+  AFTER the commit, during verification. Always check DB state (public.matches,
+  pgss, baseline_adjustments) before re-running — it may already be applied. The
+  documented validations are re-runnable read-only queries; run them by hand.
+- **Applying a corrected master export = full reload, not a surgical per-player
+  edit.** A single inflated career (e.g. a typo'd surname row in master
+  `career_stats` giving impossible runs) can't be fixed in isolation: current
+  match-era season rows came from the OLD dump, so new-master − old-matchera goes
+  negative. Run master-etl then matches-etl from the new dump; the GREATEST
+  invariant then holds. Expect collateral churn (a new export can drop/add whole
+  matches and renumber match ids) — surface it but it's the new authoritative state.
 - The `matches-etl.sql` step-7 season aggregation MUST use `DISTINCT ON` staging
   tables + indexes, NOT an O(n²) LATERAL, or the commit never finishes.
 - **Perf:** with `DISTINCT ON`, both ETLs run in seconds — BUT only if the dump is
