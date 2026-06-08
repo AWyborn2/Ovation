@@ -160,7 +160,7 @@ export default function JuniorsPremierships() {
       className="mx-[calc(50%-50vw)] w-screen min-h-screen"
       style={{
         background:
-          "radial-gradient(ellipse at center, #5a4a3e 0%, #42342b 60%, #2c231c 100%)",
+          "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
       }}
     >
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
