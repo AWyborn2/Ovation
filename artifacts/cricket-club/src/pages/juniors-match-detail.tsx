@@ -14,7 +14,7 @@ export default function JuniorsMatchDetail() {
   return (
     <div className="space-y-6">
       <Link href="/juniors/matches">
-        <span className="inline-flex items-center gap-1 text-sm text-[#bc8c6b] hover:underline cursor-pointer">
+        <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
           <ArrowLeft className="h-4 w-4" /> Back to junior matches
         </span>
       </Link>
@@ -28,7 +28,7 @@ export default function JuniorsMatchDetail() {
           <div className="bg-card border border-border rounded-md p-5 shadow-sm space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               {match.ageGroup && (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#bc8c6b] bg-[#bc8c6b]/10 border border-[#bc8c6b]/40 rounded px-2 py-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
                   {match.ageGroup}
                 </span>
               )}
@@ -51,7 +51,7 @@ export default function JuniorsMatchDetail() {
                 {match.hhScore ?? "—"} <span className="text-muted-foreground text-sm">vs</span> {match.opponentScore ?? "—"}
               </div>
             )}
-            {match.hhResult && <div className="text-base font-semibold text-[#bc8c6b]">{match.hhResult}</div>}
+            {match.hhResult && <div className="text-base font-semibold text-primary">{match.hhResult}</div>}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
               {fmtJuniorDate(match.matchDate) && (
                 <span className="inline-flex items-center gap-1">

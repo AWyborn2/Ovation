@@ -25,7 +25,7 @@ export default function JuniorsMatches() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
           Juniors
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Junior Matches</h1>
@@ -34,11 +34,11 @@ export default function JuniorsMatches() {
 
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Age Group</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-primary">Age Group</label>
           <select
             value={ageGroup}
             onChange={(e) => setAgeGroup(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[10rem]"
+            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
             data-testid="select-age-group"
           >
             <option value="">All age groups</option>
@@ -48,11 +48,11 @@ export default function JuniorsMatches() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Season</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
           <select
             value={season}
             onChange={(e) => setSeason(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[8rem]"
+            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[8rem]"
             data-testid="select-season"
           >
             <option value="">All seasons</option>
@@ -74,12 +74,12 @@ export default function JuniorsMatches() {
               <div className={`bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer group h-full flex flex-col gap-3 ${JUNIOR_ACCENT.hoverBorder} transition-colors`}>
                 <div className="flex items-center gap-2">
                   {m.ageGroup && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#bc8c6b] bg-[#bc8c6b]/10 border border-[#bc8c6b]/40 rounded px-2 py-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
                       {m.ageGroup}
                     </span>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="font-serif font-bold text-primary group-hover:text-[#bc8c6b] truncate">
+                    <div className="font-serif font-bold text-primary group-hover:text-primary truncate">
                       vs {m.opponentName ?? "Unknown"}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">

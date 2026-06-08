@@ -1,14 +1,14 @@
 // Shared helpers + styling tokens for the Juniors section. The juniors area uses
-// the club brown (source tertiary #42342B) throughout to read as visually distinct from the gold
-// senior side.
+// the same gold accents as the senior side; only the section banner (in
+// layout.tsx) stays club brown (with gold writing) to distinguish the two sides.
 
 export const JUNIOR_ACCENT = {
-  text: "text-[#bc8c6b]",
-  bg: "bg-[#42342b]",
-  bgSoft: "bg-[#bc8c6b]/10",
-  border: "border-[#bc8c6b]",
-  borderSoft: "border-[#bc8c6b]/40",
-  hoverBorder: "hover:border-[#bc8c6b]",
+  text: "text-primary",
+  bg: "bg-primary",
+  bgSoft: "bg-primary/10",
+  border: "border-primary",
+  borderSoft: "border-primary/40",
+  hoverBorder: "hover:border-primary",
 };
 
 /** Junior match dates arrive as free text; show them as-is, falling back to —. */

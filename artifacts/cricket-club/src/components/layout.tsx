@@ -52,7 +52,7 @@ function SectionToggle({ isJuniors }: { isJuniors: boolean }) {
       <Link
         href="/juniors"
         className={`px-4 py-1.5 transition-colors border-l-2 border-primary ${
-          isJuniors ? "bg-[#42342b] text-white" : "text-primary hover:bg-primary/10"
+          isJuniors ? "bg-primary text-primary-foreground" : "text-primary hover:bg-primary/10"
         }`}
         data-testid="link-section-juniors"
       >
@@ -77,13 +77,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         ...(me.data ? [{ name: "Admin", href: "/admin", icon: Settings }] : []),
       ];
 
-  // Junior nav/active states use the club brown accent so the section reads as
-  // clearly distinct from the navy/gold senior side.
-  const activeText = isJuniors ? "text-[#bc8c6b]" : "text-primary";
-  const activeBorder = isJuniors ? "border-[#bc8c6b]" : "border-primary";
-  const hoverText = isJuniors ? "hover:text-[#bc8c6b]" : "hover:text-primary";
-  const hoverBorder = isJuniors ? "hover:border-[#bc8c6b]/50" : "hover:border-primary/50";
-  const activeMobileBg = isJuniors ? "bg-[#42342b] text-white" : "bg-primary text-primary-foreground";
+  // Juniors uses the same gold accents as seniors; only the section banner below
+  // stays brown (with gold writing) to distinguish the two sides.
+  const activeText = "text-primary";
+  const activeBorder = "border-primary";
+  const hoverText = "hover:text-primary";
+  const hoverBorder = "hover:border-primary/50";
+  const activeMobileBg = "bg-primary text-primary-foreground";
 
   return (
     <div className="min-h-screen bg-background flex flex-col text-foreground">
@@ -139,7 +139,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div
           className={`w-full border-t ${
             isJuniors
-              ? "bg-[#42342b] text-white border-[#42342b]"
+              ? "bg-[#42342b] text-primary border-[#42342b]"
               : "bg-primary text-primary-foreground border-primary"
           }`}
         >
