@@ -16,6 +16,12 @@ import Records from "@/pages/records";
 import Premierships from "@/pages/premierships";
 import Compare from "@/pages/compare";
 import StatDetail from "@/pages/stat-detail";
+import JuniorsDashboard from "@/pages/juniors-dashboard";
+import JuniorsMatches from "@/pages/juniors-matches";
+import JuniorsMatchDetail from "@/pages/juniors-match-detail";
+import JuniorsPremierships from "@/pages/juniors-premierships";
+import JuniorsPlayers from "@/pages/juniors-players";
+import JuniorsPlayerDetail from "@/pages/juniors-player-detail";
 import AdminHub from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminStats from "@/pages/admin-stats";
@@ -54,6 +60,12 @@ function PublicRoutes() {
         <Route path="/premierships" component={Premierships} />
         <Route path="/compare" component={Compare} />
         <Route path="/stats/:id" component={StatDetail} />
+        <Route path="/juniors" component={JuniorsDashboard} />
+        <Route path="/juniors/matches" component={JuniorsMatches} />
+        <Route path="/juniors/matches/:id" component={JuniorsMatchDetail} />
+        <Route path="/juniors/premierships" component={JuniorsPremierships} />
+        <Route path="/juniors/players" component={JuniorsPlayers} />
+        <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

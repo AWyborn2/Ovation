@@ -3,6 +3,10 @@ export type {
   MatchScorecardLine,
   MatchOppositionLine,
   OpponentClub,
+  JuniorMatchDetail,
+  JuniorInnings,
+  JuniorBattingLine,
+  JuniorBowlingLine,
 } from "@workspace/api-client-react";
 export * from "./types";
 export {
@@ -14,3 +18,4 @@ export { HALLS_HEAD_COLORS, deriveOppositionColors } from "./colors";
 export { formatDismissal } from "./dismissal";
 export { oversToBalls, ballsToOvers, sumOvers, economy } from "./overs";
 export { buildScorecard } from "./mapping";
+export { buildJuniorScorecard } from "./junior-mapping";

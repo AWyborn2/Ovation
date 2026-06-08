@@ -46,7 +46,11 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 
 Grades: A Grade, B Grade, C Grade, D Grade, E Grade, F Grade, Female A Grade, Female B Grade, PPL, Colts
 
-### Juniors (kept COMPLETELY SEPARATE from senior records)
+### Juniors web section (`/juniors/*`)
+
+Parallel public section to the senior side, reached via a Seniors/Juniors toggle in the shared `layout.tsx` (emerald accent + section banner when on `/juniors*`). Pages live in `artifacts/cricket-club/src/pages/juniors-*.tsx`: dashboard (`/juniors`), matches list (`/juniors/matches`, age-group+season filters), match detail two-innings scorecard (`/juniors/matches/:id`), premierships honour board (`/juniors/premierships`, rosters → deciding scorecard), players directory + leaderboards (`/juniors/players` — runs/wickets/games/highest scores/best bowling), player detail (`/juniors/players/:id`). Uses ONLY `/api/juniors/*` hooks; never blends junior+senior. The "Most Games" leaderboard is derived client-side from the players list (no games endpoint exists). Junior scorecards reuse the senior `BattingCard`/`BowlingCard` via `buildJuniorScorecard` in `lib/scorecard/src/junior-mapping.ts` (junior playerId always null → plain-text names, no career popup). Private players are masked server-side.
+
+### Juniors data (kept COMPLETELY SEPARATE from senior records)
 
 Junior data lives in isolated `junior_*` tables and is served only via `/api/juniors/*`. No junior query ever touches a senior table; junior and senior stats NEVER combine. The only bridge is `junior_participants.senior_player_id` (a plain nullable integer — deliberately **NO** foreign key to `players.id`, so the juniors schema never constrains or is constrained by senior tables) used purely as a **cross-reference link**, never to merge figures.
 
