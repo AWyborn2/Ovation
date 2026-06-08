@@ -52,6 +52,11 @@ function RootLayoutNav() {
       <Stack.Screen name="honours/[board]" options={{ title: "HONOUR BOARD" }} />
       <Stack.Screen name="honours/awards" options={{ title: "AWARDS" }} />
       <Stack.Screen name="premierships" options={{ title: "PREMIERSHIPS" }} />
+      <Stack.Screen name="juniors/matches" options={{ title: "JUNIOR MATCHES" }} />
+      <Stack.Screen name="juniors/matches/[id]" options={{ title: "JUNIOR SCORECARD" }} />
+      <Stack.Screen name="juniors/premierships" options={{ title: "JUNIOR PREMIERSHIPS" }} />
+      <Stack.Screen name="juniors/players" options={{ title: "JUNIOR PLAYERS" }} />
+      <Stack.Screen name="juniors/players/[id]" options={{ title: "JUNIOR PLAYER" }} />
     </Stack>
   );
 }

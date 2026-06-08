@@ -198,12 +198,12 @@ function DataCell({
   );
 }
 
-function BattingBlock({
+export function BattingBlock({
   innings,
   onPlayer,
 }: {
   innings: ScorecardInnings;
-  onPlayer: (id: number, name: string) => void;
+  onPlayer?: (id: number, name: string) => void;
 }) {
   const team = innings.battingTeam;
   const c = team.colors;
@@ -236,7 +236,7 @@ function BattingBlock({
             >
               <View style={{ flex: 3 }}>
                 {clickable ? (
-                  <Pressable onPress={() => onPlayer(row.playerId!, row.name)}>
+                  <Pressable onPress={() => onPlayer?.(row.playerId!, row.name)}>
                     <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>
                       {row.name}{row.notOut ? <Body bold size={13} style={{ color: c.secondary }}> *</Body> : null}
                     </Body>
@@ -285,14 +285,14 @@ function BattingBlock({
 
 /* ------------------------------------------------------------------ bowling */
 
-function BowlingBlock({
+export function BowlingBlock({
   innings,
   hatTrickIds,
   onPlayer,
 }: {
   innings: ScorecardInnings;
   hatTrickIds?: Set<number>;
-  onPlayer: (id: number, name: string) => void;
+  onPlayer?: (id: number, name: string) => void;
 }) {
   const team = innings.bowlingTeam;
   const c = team.colors;
@@ -327,7 +327,7 @@ function BowlingBlock({
             >
               <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 5 }}>
                 {clickable ? (
-                  <Pressable onPress={() => onPlayer(row.playerId!, row.name)} style={{ flexShrink: 1 }}>
+                  <Pressable onPress={() => onPlayer?.(row.playerId!, row.name)} style={{ flexShrink: 1 }}>
                     <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>{row.name}</Body>
                   </Pressable>
                 ) : (

@@ -105,6 +105,17 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="juniors"
+        options={{
+          title: "JUNIORS",
+          tabBarLabel: "Juniors",
+          tabBarActiveTintColor: "#059669",
+          tabBarIcon: ({ color }) => (
+            <Feather name="star" size={22} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
