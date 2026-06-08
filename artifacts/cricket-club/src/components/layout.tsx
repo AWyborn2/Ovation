@@ -21,6 +21,7 @@ const JUNIOR_NAV: NavItem[] = [
   { name: "Matches", href: "/juniors/matches", icon: ClipboardList },
   { name: "Premierships", href: "/juniors/premierships", icon: Crown },
   { name: "Players", href: "/juniors/players", icon: Users },
+  { name: "Office Bearers", href: "/juniors/office-bearers", icon: Award },
 ];
 
 // Index pages match only on an exact location; everything else also matches its

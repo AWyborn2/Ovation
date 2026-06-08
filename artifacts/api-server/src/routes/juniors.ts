@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import {
   eq,
   and,
+  asc,
   desc,
   ilike,
   inArray,
@@ -17,13 +18,19 @@ import {
   juniorParticipantsTable,
   juniorPremiershipsTable,
   juniorPremiershipPlayersTable,
+  juniorOfficeBearersTable,
 } from "@workspace/db";
 import {
   ListJuniorMatchesQueryParams,
   GetJuniorMatchParams,
   ListJuniorPlayersQueryParams,
   GetJuniorPlayerParams,
+  CreateJuniorOfficeBearerBody,
+  UpdateJuniorOfficeBearerBody,
+  UpdateJuniorOfficeBearerParams,
+  DeleteJuniorOfficeBearerParams,
 } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
 
@@ -918,5 +925,107 @@ async function bestBowlingFigures(limit: number) {
     matchDate: r.matchDate,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Junior office bearers — admin-managed, kept COMPLETELY SEPARATE from the
+// senior club_roles table. Public list returns published rows only.
+// ---------------------------------------------------------------------------
+const officeBearersOrdered = () =>
+  db
+    .select()
+    .from(juniorOfficeBearersTable)
+    .orderBy(
+      desc(juniorOfficeBearersTable.season),
+      asc(juniorOfficeBearersTable.displayOrder),
+      asc(juniorOfficeBearersTable.id),
+    );
+
+router.get("/juniors/office-bearers", async (_req, res): Promise<void> => {
+  const rows = await officeBearersOrdered().where(
+    eq(juniorOfficeBearersTable.published, true),
+  );
+  res.json(rows);
+});
+
+router.get(
+  "/juniors/office-bearers/all",
+  requireAdmin,
+  async (_req, res): Promise<void> => {
+    const rows = await officeBearersOrdered();
+    res.json(rows);
+  },
+);
+
+router.post(
+  "/juniors/office-bearers",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = CreateJuniorOfficeBearerBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [row] = await db
+      .insert(juniorOfficeBearersTable)
+      .values({
+        season: parsed.data.season,
+        role: parsed.data.role,
+        name: parsed.data.name,
+        participantId: parsed.data.participantId ?? null,
+        displayOrder: parsed.data.displayOrder ?? 0,
+        published: parsed.data.published ?? false,
+      })
+      .returning();
+    res.status(201).json(row);
+  },
+);
+
+router.patch(
+  "/juniors/office-bearers/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = UpdateJuniorOfficeBearerParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateJuniorOfficeBearerBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const [row] = await db
+      .update(juniorOfficeBearersTable)
+      .set(body.data)
+      .where(eq(juniorOfficeBearersTable.id, params.data.id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Junior office bearer not found" });
+      return;
+    }
+    res.json(row);
+  },
+);
+
+router.delete(
+  "/juniors/office-bearers/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = DeleteJuniorOfficeBearerParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [row] = await db
+      .delete(juniorOfficeBearersTable)
+      .where(eq(juniorOfficeBearersTable.id, params.data.id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Junior office bearer not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 export default router;

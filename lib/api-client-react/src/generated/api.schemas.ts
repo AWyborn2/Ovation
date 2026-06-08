@@ -1789,6 +1789,40 @@ export interface ClubRoleUpdate {
   published?: boolean;
 }
 
+export interface JuniorOfficeBearer {
+  id: number;
+  season: number;
+  role: string;
+  name: string;
+  /**
+     * Optional cross-reference to a junior participant (PlayHQ participant_id) for profile linking only.
+     * @nullable
+     */
+  participantId?: string | null;
+  displayOrder: number;
+  published: boolean;
+}
+
+export interface JuniorOfficeBearerInput {
+  season: number;
+  role: string;
+  name: string;
+  /** @nullable */
+  participantId?: string | null;
+  displayOrder?: number;
+  published?: boolean;
+}
+
+export interface JuniorOfficeBearerUpdate {
+  season?: number;
+  role?: string;
+  name?: string;
+  /** @nullable */
+  participantId?: string | null;
+  displayOrder?: number;
+  published?: boolean;
+}
+
 export interface RecordLeaderboardEntry {
   rank: number;
   name: string;

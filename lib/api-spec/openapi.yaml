@@ -2309,6 +2309,99 @@ paths:
         "404":
           description: Not found
 
+  /juniors/office-bearers:
+    get:
+      operationId: listJuniorOfficeBearers
+      tags: [juniors]
+      summary: List published junior office bearers
+      description: |
+        Public list of junior office-bearer records that are published, ordered
+        by season descending, then displayOrder, then id. Kept completely
+        separate from the senior club roles.
+      responses:
+        "200":
+          description: Junior office bearers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorOfficeBearer"
+    post:
+      operationId: createJuniorOfficeBearer
+      tags: [juniors]
+      summary: Create a junior office-bearer record (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorOfficeBearerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorOfficeBearer"
+
+  /juniors/office-bearers/all:
+    get:
+      operationId: listAllJuniorOfficeBearers
+      tags: [juniors]
+      summary: List every junior office-bearer record including unpublished (admin)
+      responses:
+        "200":
+          description: Junior office bearers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorOfficeBearer"
+
+  /juniors/office-bearers/{id}:
+    patch:
+      operationId: updateJuniorOfficeBearer
+      tags: [juniors]
+      summary: Update a junior office-bearer record (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorOfficeBearerUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorOfficeBearer"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteJuniorOfficeBearer
+      tags: [juniors]
+      summary: Delete a junior office-bearer record (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /records-leaderboards:
     get:
       operationId: getRecordsLeaderboards
@@ -5680,6 +5773,59 @@ components:
           type: ["integer", "null"]
         name:
           type: string
+        displayOrder:
+          type: integer
+        published:
+          type: boolean
+
+    JuniorOfficeBearer:
+      type: object
+      required: [id, season, role, name, displayOrder, published]
+      properties:
+        id:
+          type: integer
+        season:
+          type: integer
+        role:
+          type: string
+        name:
+          type: string
+        participantId:
+          type: ["string", "null"]
+          description: Optional cross-reference to a junior participant (PlayHQ participant_id) for profile linking only.
+        displayOrder:
+          type: integer
+        published:
+          type: boolean
+
+    JuniorOfficeBearerInput:
+      type: object
+      required: [season, role, name]
+      properties:
+        season:
+          type: integer
+        role:
+          type: string
+        name:
+          type: string
+        participantId:
+          type: ["string", "null"]
+        displayOrder:
+          type: integer
+        published:
+          type: boolean
+
+    JuniorOfficeBearerUpdate:
+      type: object
+      properties:
+        season:
+          type: integer
+        role:
+          type: string
+        name:
+          type: string
+        participantId:
+          type: ["string", "null"]
         displayOrder:
           type: integer
         published:

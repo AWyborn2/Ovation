@@ -3086,6 +3086,88 @@ export const DeleteClubRoleParams = zod.object({
 
 
 /**
+ * Public list of junior office-bearer records that are published, ordered
+by season descending, then displayOrder, then id. Kept completely
+separate from the senior club roles.
+
+ * @summary List published junior office bearers
+ */
+export const ListJuniorOfficeBearersResponseItem = zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "role": zod.string(),
+  "name": zod.string(),
+  "participantId": zod.string().nullish().describe('Optional cross-reference to a junior participant (PlayHQ participant_id) for profile linking only.'),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+})
+export const ListJuniorOfficeBearersResponse = zod.array(ListJuniorOfficeBearersResponseItem)
+
+
+/**
+ * @summary Create a junior office-bearer record (admin)
+ */
+export const CreateJuniorOfficeBearerBody = zod.object({
+  "season": zod.number(),
+  "role": zod.string(),
+  "name": zod.string(),
+  "participantId": zod.string().nullish(),
+  "displayOrder": zod.number().optional(),
+  "published": zod.boolean().optional()
+})
+
+
+/**
+ * @summary List every junior office-bearer record including unpublished (admin)
+ */
+export const ListAllJuniorOfficeBearersResponseItem = zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "role": zod.string(),
+  "name": zod.string(),
+  "participantId": zod.string().nullish().describe('Optional cross-reference to a junior participant (PlayHQ participant_id) for profile linking only.'),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+})
+export const ListAllJuniorOfficeBearersResponse = zod.array(ListAllJuniorOfficeBearersResponseItem)
+
+
+/**
+ * @summary Update a junior office-bearer record (admin)
+ */
+export const UpdateJuniorOfficeBearerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateJuniorOfficeBearerBody = zod.object({
+  "season": zod.number().optional(),
+  "role": zod.string().optional(),
+  "name": zod.string().optional(),
+  "participantId": zod.string().nullish(),
+  "displayOrder": zod.number().optional(),
+  "published": zod.boolean().optional()
+})
+
+export const UpdateJuniorOfficeBearerResponse = zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "role": zod.string(),
+  "name": zod.string(),
+  "participantId": zod.string().nullish().describe('Optional cross-reference to a junior participant (PlayHQ participant_id) for profile linking only.'),
+  "displayOrder": zod.number(),
+  "published": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a junior office-bearer record (admin)
+ */
+export const DeleteJuniorOfficeBearerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * Public, auto-derived "Notable Honour Board Records": ranked
 leaderboards for most seasons in each club office-bearer role and most
 wins of each club award. Derived only from PUBLISHED club roles and

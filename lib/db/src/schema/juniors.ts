@@ -1,4 +1,12 @@
-import { pgTable, integer, text, boolean, real } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  boolean,
+  real,
+  index,
+} from "drizzle-orm/pg-core";
 
 /**
  * Halls Head JUNIORS data — kept COMPLETELY SEPARATE from the senior tables by
@@ -152,3 +160,35 @@ export const juniorPremiershipPlayersTable = pgTable(
 
 export type JuniorPremiershipPlayerRow =
   typeof juniorPremiershipPlayersTable.$inferSelect;
+
+/**
+ * Halls Head Junior Cricket Club office bearers, entered and managed MANUALLY by
+ * admins (there is no junior cap register and no spreadsheet import for this).
+ * One row per (season, role) office-bearer entry. Kept COMPLETELY SEPARATE from
+ * the senior `club_roles` table — this never mixes with senior records.
+ *
+ * `season` is the start year of a cricket season (e.g. 2024 → "2024/25"),
+ * mirroring how the senior committee admin stores seasons. `participantId` is an
+ * OPTIONAL cross-reference to a junior participant (PlayHQ participant_id, TEXT)
+ * for profile linking only; like every other junior cross-link it is a plain
+ * nullable column with NO foreign key, so the juniors dataset stays decoupled.
+ * `published` gates public visibility so admins can prepare a season privately.
+ */
+export const juniorOfficeBearersTable = pgTable(
+  "junior_office_bearers",
+  {
+    id: serial("id").primaryKey(),
+    season: integer("season").notNull(),
+    role: text("role").notNull(),
+    name: text("name").notNull(),
+    participantId: text("participant_id"),
+    displayOrder: integer("display_order").notNull().default(0),
+    published: boolean("published").notNull().default(false),
+  },
+  (t) => ({
+    idxSeason: index("junior_office_bearers_season_idx").on(t.season),
+  }),
+);
+
+export type JuniorOfficeBearerRow =
+  typeof juniorOfficeBearersTable.$inferSelect;

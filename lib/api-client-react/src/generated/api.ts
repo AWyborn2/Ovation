@@ -82,6 +82,9 @@ import type {
   JuniorLeaderboards,
   JuniorMatchDetail,
   JuniorMatchSummary,
+  JuniorOfficeBearer,
+  JuniorOfficeBearerInput,
+  JuniorOfficeBearerUpdate,
   JuniorOverview,
   JuniorPlayerDetail,
   JuniorPlayerSummary,
@@ -8049,6 +8052,377 @@ export const useDeleteClubRole = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteClubRoleMutationOptions(options));
+    }
+
+export const getListJuniorOfficeBearersUrl = () => {
+
+
+
+
+  return `/api/juniors/office-bearers`
+}
+
+/**
+ * Public list of junior office-bearer records that are published, ordered
+by season descending, then displayOrder, then id. Kept completely
+separate from the senior club roles.
+
+ * @summary List published junior office bearers
+ */
+export const listJuniorOfficeBearers = async ( options?: RequestInit): Promise<JuniorOfficeBearer[]> => {
+
+  return customFetch<JuniorOfficeBearer[]>(getListJuniorOfficeBearersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorOfficeBearersQueryKey = () => {
+    return [
+    `/api/juniors/office-bearers`
+    ] as const;
+    }
+
+
+export const getListJuniorOfficeBearersQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorOfficeBearers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorOfficeBearers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorOfficeBearersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorOfficeBearers>>> = ({ signal }) => listJuniorOfficeBearers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorOfficeBearers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorOfficeBearersQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorOfficeBearers>>>
+export type ListJuniorOfficeBearersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List published junior office bearers
+ */
+
+export function useListJuniorOfficeBearers<TData = Awaited<ReturnType<typeof listJuniorOfficeBearers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorOfficeBearers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorOfficeBearersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateJuniorOfficeBearerUrl = () => {
+
+
+
+
+  return `/api/juniors/office-bearers`
+}
+
+/**
+ * @summary Create a junior office-bearer record (admin)
+ */
+export const createJuniorOfficeBearer = async (juniorOfficeBearerInput: JuniorOfficeBearerInput, options?: RequestInit): Promise<JuniorOfficeBearer> => {
+
+  return customFetch<JuniorOfficeBearer>(getCreateJuniorOfficeBearerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorOfficeBearerInput,)
+  }
+);}
+
+
+
+
+export const getCreateJuniorOfficeBearerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorOfficeBearer>>, TError,{data: BodyType<JuniorOfficeBearerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createJuniorOfficeBearer>>, TError,{data: BodyType<JuniorOfficeBearerInput>}, TContext> => {
+
+const mutationKey = ['createJuniorOfficeBearer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createJuniorOfficeBearer>>, {data: BodyType<JuniorOfficeBearerInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createJuniorOfficeBearer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateJuniorOfficeBearerMutationResult = NonNullable<Awaited<ReturnType<typeof createJuniorOfficeBearer>>>
+    export type CreateJuniorOfficeBearerMutationBody = BodyType<JuniorOfficeBearerInput>
+    export type CreateJuniorOfficeBearerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a junior office-bearer record (admin)
+ */
+export const useCreateJuniorOfficeBearer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorOfficeBearer>>, TError,{data: BodyType<JuniorOfficeBearerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createJuniorOfficeBearer>>,
+        TError,
+        {data: BodyType<JuniorOfficeBearerInput>},
+        TContext
+      > => {
+      return useMutation(getCreateJuniorOfficeBearerMutationOptions(options));
+    }
+
+export const getListAllJuniorOfficeBearersUrl = () => {
+
+
+
+
+  return `/api/juniors/office-bearers/all`
+}
+
+/**
+ * @summary List every junior office-bearer record including unpublished (admin)
+ */
+export const listAllJuniorOfficeBearers = async ( options?: RequestInit): Promise<JuniorOfficeBearer[]> => {
+
+  return customFetch<JuniorOfficeBearer[]>(getListAllJuniorOfficeBearersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAllJuniorOfficeBearersQueryKey = () => {
+    return [
+    `/api/juniors/office-bearers/all`
+    ] as const;
+    }
+
+
+export const getListAllJuniorOfficeBearersQueryOptions = <TData = Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAllJuniorOfficeBearersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>> = ({ signal }) => listAllJuniorOfficeBearers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAllJuniorOfficeBearersQueryResult = NonNullable<Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>>
+export type ListAllJuniorOfficeBearersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List every junior office-bearer record including unpublished (admin)
+ */
+
+export function useListAllJuniorOfficeBearers<TData = Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllJuniorOfficeBearers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAllJuniorOfficeBearersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateJuniorOfficeBearerUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/office-bearers/${id}`
+}
+
+/**
+ * @summary Update a junior office-bearer record (admin)
+ */
+export const updateJuniorOfficeBearer = async (id: number,
+    juniorOfficeBearerUpdate: JuniorOfficeBearerUpdate, options?: RequestInit): Promise<JuniorOfficeBearer> => {
+
+  return customFetch<JuniorOfficeBearer>(getUpdateJuniorOfficeBearerUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorOfficeBearerUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorOfficeBearerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorOfficeBearer>>, TError,{id: number;data: BodyType<JuniorOfficeBearerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorOfficeBearer>>, TError,{id: number;data: BodyType<JuniorOfficeBearerUpdate>}, TContext> => {
+
+const mutationKey = ['updateJuniorOfficeBearer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorOfficeBearer>>, {id: number;data: BodyType<JuniorOfficeBearerUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateJuniorOfficeBearer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorOfficeBearerMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorOfficeBearer>>>
+    export type UpdateJuniorOfficeBearerMutationBody = BodyType<JuniorOfficeBearerUpdate>
+    export type UpdateJuniorOfficeBearerMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a junior office-bearer record (admin)
+ */
+export const useUpdateJuniorOfficeBearer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorOfficeBearer>>, TError,{id: number;data: BodyType<JuniorOfficeBearerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorOfficeBearer>>,
+        TError,
+        {id: number;data: BodyType<JuniorOfficeBearerUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorOfficeBearerMutationOptions(options));
+    }
+
+export const getDeleteJuniorOfficeBearerUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/office-bearers/${id}`
+}
+
+/**
+ * @summary Delete a junior office-bearer record (admin)
+ */
+export const deleteJuniorOfficeBearer = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteJuniorOfficeBearerUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteJuniorOfficeBearerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorOfficeBearer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorOfficeBearer>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteJuniorOfficeBearer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJuniorOfficeBearer>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteJuniorOfficeBearer(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJuniorOfficeBearerMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJuniorOfficeBearer>>>
+
+    export type DeleteJuniorOfficeBearerMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a junior office-bearer record (admin)
+ */
+export const useDeleteJuniorOfficeBearer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorOfficeBearer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJuniorOfficeBearer>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteJuniorOfficeBearerMutationOptions(options));
     }
 
 export const getGetRecordsLeaderboardsUrl = () => {

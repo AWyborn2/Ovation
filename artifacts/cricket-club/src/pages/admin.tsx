@@ -14,6 +14,7 @@ const TILES = [
   { href: "/admin/life-members", title: "Life members", body: "Honour-board life members." },
   { href: "/admin/awards", title: "Awards", body: "Create club awards and record past winners." },
   { href: "/admin/team-of-decade", title: "Team of the Decade", body: "Curate best-XI honour boards with draft/publish." },
+  { href: "/admin/junior-committee", title: "Junior office bearers", body: "Season-by-season junior committee (separate from seniors)." },
   { href: "/admin/social", title: "Social cards", body: "Share-card factory: sizes, sponsors, captions." },
   { href: "/admin/social/create", title: "Create a card", body: "Build a Match Summary card from a match or by hand." },
   { href: "/admin/social/queue", title: "Social queue", body: "Auto-detected milestones, round-ups, tracked links." },

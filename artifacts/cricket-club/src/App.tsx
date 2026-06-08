@@ -22,6 +22,7 @@ import JuniorsMatchDetail from "@/pages/juniors-match-detail";
 import JuniorsPremierships from "@/pages/juniors-premierships";
 import JuniorsPlayers from "@/pages/juniors-players";
 import JuniorsPlayerDetail from "@/pages/juniors-player-detail";
+import JuniorsOfficeBearers from "@/pages/juniors-office-bearers";
 import AdminHub from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminStats from "@/pages/admin-stats";
@@ -40,6 +41,7 @@ import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminMatchDisplay from "@/pages/admin-match-display";
 import AdminCaptains from "@/pages/admin-captains";
 import AdminCommittee from "@/pages/admin-committee";
+import AdminJuniorCommittee from "@/pages/admin-junior-committee";
 import CaptainPage from "@/pages/captain";
 import NotFound from "@/pages/not-found";
 
@@ -66,6 +68,7 @@ function PublicRoutes() {
         <Route path="/juniors/premierships" component={JuniorsPremierships} />
         <Route path="/juniors/players" component={JuniorsPlayers} />
         <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />
+        <Route path="/juniors/office-bearers" component={JuniorsOfficeBearers} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -92,6 +95,10 @@ function AdminRoutes() {
           <Route path="/admin/team-of-decade" component={AdminTeamOfDecade} />
           <Route path="/admin/captains" component={AdminCaptains} />
           <Route path="/admin/committee" component={AdminCommittee} />
+          <Route
+            path="/admin/junior-committee"
+            component={AdminJuniorCommittee}
+          />
           <Route path="/admin/social" component={AdminSocial} />
           <Route path="/admin/social/create" component={AdminSocialCreate} />
           <Route path="/admin/social/queue" component={AdminSocialQueue} />
