@@ -392,6 +392,17 @@ const MILESTONE_KIND_META: Record<
   career: { label: "Career", icon: Award, cls: "text-amber-600 dark:text-amber-300 bg-amber-500/10 border-amber-500/30" },
 };
 
+const MILESTONE_FILTERS: { value: MilestoneItem["kind"] | "all"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "century", label: "Centuries" },
+  { value: "fiveFor", label: "Five-fors" },
+  { value: "hatTrick", label: "Hat-tricks" },
+  { value: "debut", label: "Debuts" },
+  { value: "career", label: "Career" },
+];
+
+const MILESTONES_PREVIEW = 5;
+
 function formatMatchDate(d: string | null): string | null {
   if (!d) return null;
   if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
@@ -456,6 +467,8 @@ export default function HonourBoards() {
   }, [activeTab, scope]);
   const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [milestoneKind, setMilestoneKind] = useState<MilestoneItem["kind"] | "all">("all");
+  const [milestonesExpanded, setMilestonesExpanded] = useState(false);
 
   const { data: dashboard } = useGetDashboard();
   const { data: gradesList } = useListGrades();
@@ -523,6 +536,16 @@ export default function HonourBoards() {
   // Dated, prioritized milestones (centuries, five-fors, hat-tricks, A Grade
   // debuts, career-tier crossings) derived server-side from real match data.
   const { data: milestonesBoard } = useGetMilestonesBoard();
+
+  const filteredMilestones = useMemo(() => {
+    const items = milestonesBoard?.items ?? [];
+    return milestoneKind === "all"
+      ? items
+      : items.filter((i) => i.kind === milestoneKind);
+  }, [milestonesBoard, milestoneKind]);
+  const visibleMilestones = milestonesExpanded
+    ? filteredMilestones
+    : filteredMilestones.slice(0, MILESTONES_PREVIEW);
 
   const { data: milestoneSettings } = useGetMilestoneBoardSettings();
   const milestoneMode = milestoneSettings?.displayMode ?? "recent";
@@ -755,17 +778,54 @@ export default function HonourBoards() {
               </div>
             </div>
             <div className="w-12 h-[2px] bg-primary" />
-            {!milestonesBoard || milestonesBoard.items.length === 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {MILESTONE_FILTERS.map((f) => {
+                const active = milestoneKind === f.value;
+                return (
+                  <button
+                    key={f.value}
+                    onClick={() => {
+                      setMilestoneKind(f.value);
+                      setMilestonesExpanded(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+            {filteredMilestones.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">
-                {milestonesBoard?.windowStart
-                  ? `No milestones in the last ${milestonesBoard.recencyWeeks} week${milestonesBoard.recencyWeeks === 1 ? "" : "s"} of play. Widen the recency window on the admin Milestone board to show more.`
-                  : "No dated milestones yet — they appear as match scorecards are imported."}
+                {!milestonesBoard || (milestonesBoard.items.length === 0 && !milestonesBoard.windowStart)
+                  ? "No dated milestones yet — they appear as match scorecards are imported."
+                  : milestoneKind === "all"
+                    ? "No milestones recorded yet."
+                    : `No ${MILESTONE_FILTERS.find((f) => f.value === milestoneKind)?.label.toLowerCase()} recorded yet.`}
               </div>
             ) : (
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                {milestonesBoard.items.map((item) => (
-                  <DatedMilestoneCard key={item.id} item={item} />
-                ))}
+              <div className="space-y-4">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  {visibleMilestones.map((item) => (
+                    <DatedMilestoneCard key={item.id} item={item} />
+                  ))}
+                </div>
+                {filteredMilestones.length > MILESTONES_PREVIEW && (
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setMilestonesExpanded((v) => !v)}
+                      className="px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border-2 border-primary text-primary hover:bg-primary/15 transition-colors"
+                    >
+                      {milestonesExpanded
+                        ? "Show less"
+                        : `Show ${filteredMilestones.length - MILESTONES_PREVIEW} more`}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

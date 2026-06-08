@@ -1004,10 +1004,12 @@ export const getGetMilestonesBoardUrl = () => {
 /**
  * Derives dated achievements from real match data — centuries (≥100),
 five-wicket hauls (≥5), admin-recorded hat-tricks, A Grade debuts and
-career-tier crossings within the configured recency window. Items are
-returned already ordered: when ≥5 players achieved within the window the
-recent achievers lead (most recent first), otherwise items rank by tier
-significance (bigger first; the baseline tier is lowest).
+career-tier crossings across the whole match era. Items are returned
+already ordered: when any match is dated they are listed most-recent
+first (so the board always shows the latest milestones, never blank),
+otherwise items rank by tier significance (bigger first; the baseline
+tier is lowest). Each item carries a `recent` flag for achievements
+inside the configured recency window.
 
  * @summary Prioritized, dated milestones for the public Milestones board
  */

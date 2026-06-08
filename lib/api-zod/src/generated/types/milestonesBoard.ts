@@ -14,7 +14,7 @@ export interface MilestonesBoard {
      * @nullable
      */
   windowStart?: string | null;
-  /** True when ≥5 distinct players achieved within the recent window. */
+  /** True when there are dated milestones to feature (most-recent-first). */
   featured: boolean;
   items: MilestoneItem[];
 }

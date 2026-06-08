@@ -528,17 +528,19 @@ export const SetMatchHatTrickResponse = zod.object({
 /**
  * Derives dated achievements from real match data — centuries (≥100),
 five-wicket hauls (≥5), admin-recorded hat-tricks, A Grade debuts and
-career-tier crossings within the configured recency window. Items are
-returned already ordered: when ≥5 players achieved within the window the
-recent achievers lead (most recent first), otherwise items rank by tier
-significance (bigger first; the baseline tier is lowest).
+career-tier crossings across the whole match era. Items are returned
+already ordered: when any match is dated they are listed most-recent
+first (so the board always shows the latest milestones, never blank),
+otherwise items rank by tier significance (bigger first; the baseline
+tier is lowest). Each item carries a `recent` flag for achievements
+inside the configured recency window.
 
  * @summary Prioritized, dated milestones for the public Milestones board
  */
 export const GetMilestonesBoardResponse = zod.object({
   "recencyWeeks": zod.number(),
   "windowStart": zod.string().nullish().describe('ISO date (inclusive) of the start of the recent window, or null.'),
-  "featured": zod.boolean().describe('True when ≥5 distinct players achieved within the recent window.'),
+  "featured": zod.boolean().describe('True when there are dated milestones to feature (most-recent-first).'),
   "items": zod.array(zod.object({
   "id": zod.string().describe('Stable client key for the item.'),
   "kind": zod.enum(['debut', 'century', 'fiveFor', 'hatTrick', 'career']),

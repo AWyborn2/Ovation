@@ -255,8 +255,8 @@ function SettingsCard({
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
             How many weeks back (by real match date) an achievement counts as "recent" on the
-            Milestones tab. When at least 5 different players achieve within this window, the board
-            features the most recent achievers first.
+            Milestones tab. The board always lists the most recently achieved milestones first;
+            those within this window get a "Recent" highlight badge.
           </p>
           <div className="max-w-[12rem] space-y-2">
             <Label htmlFor="recencyWeeks">Weeks</Label>

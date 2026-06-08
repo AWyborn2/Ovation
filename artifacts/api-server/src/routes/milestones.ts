@@ -251,22 +251,26 @@ router.get("/milestones", async (_req, res): Promise<void> => {
   // --- A Grade / Female A Grade debuts (dated from the first capped match).
   await appendDebuts(items, { matchById, nameFor, inWindow });
 
-  // --- Career-tier crossings detectable within the recency window.
-  if (windowStart != null) {
+  // --- Career-tier crossings across the whole dated match era. We compute over
+  // all match history (not just the recency window) so the board can always
+  // surface the most recently achieved crossings; the recency window only marks
+  // an item as `recent` for the highlight badge.
+  if (latestDate != null) {
     appendCareerCrossings(items, {
       lines,
       matchById,
       careerById,
       nameFor,
-      windowStart,
+      inWindow,
       gamesTiers,
       runsTiers,
       wicketsTiers,
     });
   }
 
-  // --- Ordering. When matches are dated, the recency window is authoritative:
-  // show ONLY achievements inside the window, most recent first. Fall back to the
+  // --- Ordering. When matches are dated, always surface the most recently
+  // achieved milestones (across all types), newest first, so the board never goes
+  // blank just because nothing falls inside the recency window. Fall back to the
   // all-time significance ranking only when no match is dated at all (windowStart
   // null), so an undated database still shows something rather than nothing.
   const byDateDesc = (a: MilestoneItem, b: MilestoneItem): number => {
@@ -287,7 +291,7 @@ router.get("/milestones", async (_req, res): Promise<void> => {
   let ordered: MilestoneItem[];
   let featured: boolean;
   if (windowStart != null) {
-    ordered = items.filter((i) => i.recent).sort(byDateDesc);
+    ordered = items.slice().sort(byDateDesc);
     featured = ordered.length > 0;
   } else {
     ordered = items.slice().sort(bySignificance);
@@ -426,10 +430,11 @@ async function appendDebuts(
 }
 
 /**
- * Detect career-tier crossings (games / runs / wickets) that happened during the
- * recency window. The player's current career total minus their in-window match
- * contributions gives the pre-window total; we then walk the window's matches in
- * date order and emit an item when a cumulative total first reaches a tier.
+ * Detect dated career-tier crossings (games / runs / wickets) across the whole
+ * match era. The player's current career total minus their match-era
+ * contributions gives the pre-match-era total; we then walk their dated matches
+ * in date order and emit an item when a cumulative total first reaches a tier.
+ * Each item is flagged `recent` when its match falls inside the recency window.
  */
 function appendCareerCrossings(
   items: MilestoneItem[],
@@ -453,7 +458,7 @@ function appendCareerCrossings(
     >;
     careerById: Map<number, { games: number; runs: number; wickets: number }>;
     nameFor: (id: number) => string;
-    windowStart: string;
+    inWindow: (d: string | null) => boolean;
     gamesTiers: number[];
     runsTiers: number[];
     wicketsTiers: number[];
@@ -464,13 +469,13 @@ function appendCareerCrossings(
     matchById,
     careerById,
     nameFor,
-    windowStart,
+    inWindow,
     gamesTiers,
     runsTiers,
     wicketsTiers,
   } = ctx;
 
-  // Per-player, in-window match lines (with dated matches), oldest first.
+  // Per-player, dated match lines across the whole match era, oldest first.
   type WindowLine = {
     matchId: number;
     matchDate: string;
@@ -482,7 +487,7 @@ function appendCareerCrossings(
   for (const l of lines) {
     const m = matchById.get(l.matchId);
     const iso = m ? parseMatchDate(m.matchDate) : null;
-    if (!m || !iso || iso < windowStart) continue;
+    if (!m || !iso) continue;
     const arr = byPlayer.get(l.playerId) ?? [];
     arr.push({
       matchId: l.matchId,
@@ -540,7 +545,7 @@ function appendCareerCrossings(
               value: running,
               threshold: tier,
               significance: SIG_CAREER_BASE + i * SIG_CAREER_STEP,
-              recent: true,
+              recent: inWindow(m.matchDate),
             });
           }
         }
