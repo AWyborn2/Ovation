@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Linking, ScrollView, TouchableOpacity, View } from "react-native";
 import { Link } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useGetJuniorsOverview } from "@workspace/api-client-react";
@@ -7,6 +7,34 @@ import { useGetJuniorsOverview } from "@workspace/api-client-react";
 import { Body, Card, Heading, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { JUNIOR, fmtJuniorDate } from "@/lib/juniors";
+import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
+import { navIcon } from "@/lib/nav-icons";
+
+// Hard-coded fallback used until the nav config loads (or if it fails). Mirrors
+// the seeded junior_quick_links surface so the tab is never empty.
+const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
+  {
+    label: "Matches",
+    target: "/juniors/matches",
+    isExternal: false,
+    iconKey: "clipboardList",
+    description: "Browse junior games and full scorecards.",
+  },
+  {
+    label: "Premierships",
+    target: "/juniors/premierships",
+    isExternal: false,
+    iconKey: "crown",
+    description: "Junior honour boards and winning rosters.",
+  },
+  {
+    label: "Players & Leaders",
+    target: "/juniors/players",
+    isExternal: false,
+    iconKey: "users",
+    description: "Runs, wickets and games leaderboards.",
+  },
+];
 
 function StatTile({ label, value }: { label: string; value: number | string }) {
   const colors = useColors();
@@ -38,44 +66,55 @@ function StatTile({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-function QuickLink({
-  href,
-  icon,
-  title,
-  desc,
-}: {
-  href: string;
-  icon: keyof typeof Feather.glyphMap;
-  title: string;
-  desc: string;
-}) {
+function QuickLinkCard({ item }: { item: ResolvedNavItem }) {
   const colors = useColors();
   return (
-    <Link href={href as never} asChild>
+    <Card style={{ padding: 14, marginBottom: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: JUNIOR.accentSoft,
+          }}
+        >
+          <Feather name={navIcon(item.iconKey, "chevron-right")} size={20} color={JUNIOR.accent} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Heading size="sm">{item.label}</Heading>
+          {item.description ? (
+            <Body muted size={12} style={{ marginTop: 2 }}>
+              {item.description}
+            </Body>
+          ) : null}
+        </View>
+        <Feather
+          name={item.isExternal ? "external-link" : "chevron-right"}
+          size={18}
+          color={colors.mutedForeground}
+        />
+      </View>
+    </Card>
+  );
+}
+
+function QuickLink({ item }: { item: ResolvedNavItem }) {
+  // External targets open in the device browser; internal targets use the
+  // in-app router. Mirrors the web app's internal/external handling.
+  if (item.isExternal) {
+    return (
+      <TouchableOpacity activeOpacity={0.7} onPress={() => void Linking.openURL(item.target)}>
+        <QuickLinkCard item={item} />
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <Link href={item.target as never} asChild>
       <TouchableOpacity activeOpacity={0.7}>
-        <Card style={{ padding: 14, marginBottom: 10 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: JUNIOR.accentSoft,
-              }}
-            >
-              <Feather name={icon} size={20} color={JUNIOR.accent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Heading size="sm">{title}</Heading>
-              <Body muted size={12} style={{ marginTop: 2 }}>
-                {desc}
-              </Body>
-            </View>
-            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-          </View>
-        </Card>
+        <QuickLinkCard item={item} />
       </TouchableOpacity>
     </Link>
   );
@@ -130,6 +169,7 @@ function LeaderList({
 export default function JuniorsOverviewScreen() {
   const colors = useColors();
   const { data, isLoading } = useGetJuniorsOverview();
+  const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
 
   return (
     <ScrollView
@@ -183,24 +223,9 @@ export default function JuniorsOverviewScreen() {
             <StatTile label="Age Groups" value={data.totals.ageGroups} />
           </View>
 
-          <QuickLink
-            href="/juniors/matches"
-            icon="clipboard"
-            title="Matches"
-            desc="Browse junior games and full scorecards."
-          />
-          <QuickLink
-            href="/juniors/premierships"
-            icon="award"
-            title="Premierships"
-            desc="Junior honour boards and winning rosters."
-          />
-          <QuickLink
-            href="/juniors/players"
-            icon="users"
-            title="Players & Leaders"
-            desc="Runs, wickets and games leaderboards."
-          />
+          {quickLinks.map((item) => (
+            <QuickLink key={`${item.target}-${item.label}`} item={item} />
+          ))}
 
           {data.recentMatches.length > 0 ? (
             <>
