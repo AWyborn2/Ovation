@@ -6,7 +6,7 @@ import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="bg-card border border-border rounded-md p-3 text-center">
-      <div className="text-xl font-serif font-bold text-emerald-700">{value}</div>
+      <div className="text-xl font-serif font-bold text-[#bc8c6b]">{value}</div>
       <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{label}</div>
     </div>
   );
@@ -22,7 +22,7 @@ export default function JuniorsPlayerDetail() {
   return (
     <div className="space-y-6">
       <Link href="/juniors/players">
-        <span className="inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline cursor-pointer">
+        <span className="inline-flex items-center gap-1 text-sm text-[#bc8c6b] hover:underline cursor-pointer">
           <ArrowLeft className="h-4 w-4" /> Back to junior players
         </span>
       </Link>
@@ -34,7 +34,7 @@ export default function JuniorsPlayerDetail() {
       ) : (
         <>
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 mb-2">
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
               Junior Player
             </div>
             <h1 className="text-3xl font-serif font-bold text-primary">{player.displayName}</h1>
@@ -113,7 +113,7 @@ export default function JuniorsPlayerDetail() {
               <div className="space-y-2">
                 {player.matches.map((m) => (
                   <Link key={m.matchId} href={`/juniors/matches/${m.matchId}`}>
-                    <div className="bg-card border border-border rounded-md p-3 shadow-sm cursor-pointer hover:border-emerald-600 transition-colors flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <div className="bg-card border border-border rounded-md p-3 shadow-sm cursor-pointer hover:border-[#bc8c6b] transition-colors flex flex-wrap items-center gap-x-4 gap-y-1">
                       <div className="font-medium text-primary min-w-0">
                         vs {m.opponentName ?? "Unknown"}
                       </div>

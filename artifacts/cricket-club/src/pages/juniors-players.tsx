@@ -66,7 +66,7 @@ export default function JuniorsPlayers() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
           Juniors
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Junior Players & Leaders</h1>
@@ -81,8 +81,8 @@ export default function JuniorsPlayers() {
             onClick={() => setTab(t.key)}
             className={`px-3 py-2 font-serif text-sm uppercase tracking-wider border-b-2 -mb-px transition-colors ${
               tab === t.key
-                ? "text-emerald-700 border-emerald-600"
-                : "text-muted-foreground border-transparent hover:text-emerald-700"
+                ? "text-[#bc8c6b] border-[#bc8c6b]"
+                : "text-muted-foreground border-transparent hover:text-[#bc8c6b]"
             }`}
             data-testid={`tab-${t.key}`}
           >
@@ -95,21 +95,21 @@ export default function JuniorsPlayers() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
-              <label className="text-xs font-bold uppercase tracking-widest text-emerald-700">Search</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Search</label>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Player name"
-                className="px-3 py-2 rounded border-2 border-emerald-600 bg-card text-foreground text-sm"
+                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm"
                 data-testid="input-search"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-emerald-700">Age Group</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Age Group</label>
               <select
                 value={ageGroup}
                 onChange={(e) => setAgeGroup(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-emerald-600 bg-card text-foreground text-sm font-medium min-w-[9rem]"
+                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[9rem]"
                 data-testid="select-age-group"
               >
                 <option value="">All age groups</option>
@@ -119,11 +119,11 @@ export default function JuniorsPlayers() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-emerald-700">Season</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Season</label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-emerald-600 bg-card text-foreground text-sm font-medium min-w-[8rem]"
+                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[8rem]"
                 data-testid="select-season"
               >
                 <option value="">All seasons</option>
@@ -152,10 +152,10 @@ export default function JuniorsPlayers() {
                 </thead>
                 <tbody>
                   {players.map((p) => (
-                    <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-emerald-500/5">
+                    <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
                       <td className="px-3 py-2">
                         <Link href={`/juniors/players/${p.participantId}`}>
-                          <span className="font-medium text-primary hover:text-emerald-700 cursor-pointer">{p.displayName}</span>
+                          <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{p.displayName}</span>
                         </Link>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground text-xs">
@@ -192,11 +192,11 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {gamesRanked.map((p, i) => (
-                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-emerald-500/5">
+                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-emerald-700 cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{p.displayName}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.matches ?? 0}</td>
@@ -228,11 +228,11 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.mostRuns.map((p, i) => (
-                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-emerald-500/5">
+                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-emerald-700 cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{p.displayName}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.runs}</td>
@@ -259,11 +259,11 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.mostWickets.map((p, i) => (
-                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-emerald-500/5">
+                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-emerald-700 cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{p.displayName}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.wickets}</td>
@@ -289,11 +289,11 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.highestScores.map((p, i) => (
-                  <tr key={`${p.participantId}-${p.matchId}-${i}`} className="border-b border-border/60 last:border-0 hover:bg-emerald-500/5">
+                  <tr key={`${p.participantId}-${p.matchId}-${i}`} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-emerald-700 cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{p.displayName}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">
@@ -301,7 +301,7 @@ export default function JuniorsPlayers() {
                     </td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/matches/${p.matchId}`}>
-                        <span className="hover:text-emerald-700 cursor-pointer">{p.opponentName ?? "—"}</span>
+                        <span className="hover:text-[#bc8c6b] cursor-pointer">{p.opponentName ?? "—"}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">
@@ -326,17 +326,17 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.bestBowling.map((p, i) => (
-                  <tr key={`${p.participantId}-${p.matchId}-${i}`} className="border-b border-border/60 last:border-0 hover:bg-emerald-500/5">
+                  <tr key={`${p.participantId}-${p.matchId}-${i}`} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-emerald-700 cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{p.displayName}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.wickets}/{p.runs}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/matches/${p.matchId}`}>
-                        <span className="hover:text-emerald-700 cursor-pointer">{p.opponentName ?? "—"}</span>
+                        <span className="hover:text-[#bc8c6b] cursor-pointer">{p.opponentName ?? "—"}</span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">

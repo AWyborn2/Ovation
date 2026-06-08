@@ -455,8 +455,8 @@ const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
   );
 };
 
-// Quick-link cards mirroring the Juniors dashboard, using the club's brown
-// (sampled from the Halls Head logo) in place of the Juniors emerald accent.
+// Quick-link cards mirroring the Juniors dashboard, in the club gold (the
+// senior section keeps gold as its accent everywhere).
 function QuickLink({
   href,
   icon: Icon,
@@ -470,9 +470,9 @@ function QuickLink({
 }) {
   return (
     <Link href={href}>
-      <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-[#9a6f3c] transition-colors group">
-        <Icon className="h-7 w-7 text-[#b58146] mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-[#c79560]">
+      <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
+        <Icon className="h-7 w-7 text-primary mb-3" />
+        <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
           {title}
         </div>
         <p className="text-sm text-muted-foreground mt-1">{desc}</p>

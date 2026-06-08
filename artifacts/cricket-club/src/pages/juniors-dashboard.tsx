@@ -6,7 +6,7 @@ import { JUNIOR_ACCENT, fmtJuniorDate } from "@/lib/juniors";
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div className="text-3xl font-serif font-bold text-emerald-700" data-testid={`stat-${label}`}>
+      <div className="text-3xl font-serif font-bold text-[#bc8c6b]" data-testid={`stat-${label}`}>
         {value}
       </div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
@@ -18,8 +18,8 @@ function QuickLink({ href, icon: Icon, title, desc }: { href: string; icon: type
   return (
     <Link href={href}>
       <div className={`bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full ${JUNIOR_ACCENT.hoverBorder} transition-colors group`}>
-        <Icon className="h-7 w-7 text-emerald-600 mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-emerald-700">{title}</div>
+        <Icon className="h-7 w-7 text-[#bc8c6b] mb-3" />
+        <div className="font-serif font-bold text-lg text-foreground group-hover:text-[#bc8c6b]">{title}</div>
         <p className="text-sm text-muted-foreground mt-1">{desc}</p>
       </div>
     </Link>
@@ -32,7 +32,7 @@ export default function JuniorsDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
           <ScrollText className="h-4 w-4" /> Juniors
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Junior Cricket</h1>
@@ -73,11 +73,11 @@ export default function JuniorsDashboard() {
                     <div className={`bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer h-full flex flex-col gap-2 ${JUNIOR_ACCENT.hoverBorder} transition-colors group`}>
                       <div className="flex items-center gap-2">
                         {m.ageGroup && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-500/10 border border-emerald-600/40 rounded px-2 py-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#bc8c6b] bg-[#bc8c6b]/10 border border-[#bc8c6b]/40 rounded px-2 py-0.5">
                             {m.ageGroup}
                           </span>
                         )}
-                        <div className="font-serif font-bold text-primary group-hover:text-emerald-700 truncate">
+                        <div className="font-serif font-bold text-primary group-hover:text-[#bc8c6b] truncate">
                           vs {m.opponentName ?? "Unknown"}
                         </div>
                       </div>
@@ -107,13 +107,13 @@ export default function JuniorsDashboard() {
             {data.topRunScorers.length > 0 && (
               <section className="bg-card border border-border rounded-md p-4 shadow-sm">
                 <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-emerald-600" /> Top Run Scorers
+                  <TrendingUp className="h-4 w-4 text-[#bc8c6b]" /> Top Run Scorers
                 </h3>
                 <ul className="divide-y divide-border">
                   {data.topRunScorers.map((p) => (
                     <li key={p.participantId}>
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-emerald-700">
+                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-[#bc8c6b]">
                           <span className="font-medium">{p.displayName}</span>
                           <span className="font-mono text-sm">{p.runs}</span>
                         </div>
@@ -126,13 +126,13 @@ export default function JuniorsDashboard() {
             {data.topWicketTakers.length > 0 && (
               <section className="bg-card border border-border rounded-md p-4 shadow-sm">
                 <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-emerald-600" /> Top Wicket Takers
+                  <TrendingUp className="h-4 w-4 text-[#bc8c6b]" /> Top Wicket Takers
                 </h3>
                 <ul className="divide-y divide-border">
                   {data.topWicketTakers.map((p) => (
                     <li key={p.participantId}>
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-emerald-700">
+                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-[#bc8c6b]">
                           <span className="font-medium">{p.displayName}</span>
                           <span className="font-mono text-sm">{p.wickets}</span>
                         </div>
