@@ -7,6 +7,7 @@
  */
 import type { JuniorInnings } from './juniorInnings';
 import type { JuniorRosterEntry } from './juniorRosterEntry';
+import type { OpponentClub } from './opponentClub';
 
 export interface JuniorMatchDetail {
   id: number;
@@ -44,6 +45,8 @@ export interface JuniorMatchDetail {
   hhScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
+  /** Branding for the opposition club, resolved from the shared clubs register via the junior match's opponentClubId. Null when unmatched; renderers fall back gracefully. */
+  opponentClub?: OpponentClub | null;
   innings: JuniorInnings[];
   rosters: JuniorRosterEntry[];
 }

@@ -19,6 +19,8 @@ import {
   juniorPremiershipsTable,
   juniorPremiershipPlayersTable,
   juniorOfficeBearersTable,
+  juniorMatchDisplaySettingsTable,
+  clubsTable,
 } from "@workspace/db";
 import {
   ListJuniorMatchesQueryParams,
@@ -29,10 +31,52 @@ import {
   UpdateJuniorOfficeBearerBody,
   UpdateJuniorOfficeBearerParams,
   DeleteJuniorOfficeBearerParams,
+  ListJuniorLeaderboardQueryParams,
+  UpdateJuniorMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
+
+const JUNIOR_DISPLAY_SETTINGS_ID = 1;
+
+// Columns selected from the shared clubs register to brand a junior match's
+// opposition. clubs is a neutral reference table (not a senior stat table), so
+// reading it here does not blend junior and senior data.
+const opponentClubColumns = {
+  opponentClubId: clubsTable.id,
+  opponentClubName: clubsTable.name,
+  opponentClubShortName: clubsTable.shortName,
+  opponentClubLogoUrl: clubsTable.logoUrl,
+  opponentClubLogoUrl128: clubsTable.logoUrl128,
+  opponentClubPrimaryColour: clubsTable.primaryColour,
+  opponentClubSecondaryColour: clubsTable.secondaryColour,
+};
+
+type OpponentClubRow = {
+  opponentClubId: number | null;
+  opponentClubName: string | null;
+  opponentClubShortName: string | null;
+  opponentClubLogoUrl: string | null;
+  opponentClubLogoUrl128: string | null;
+  opponentClubPrimaryColour: string | null;
+  opponentClubSecondaryColour: string | null;
+};
+
+// Collapse the joined club columns into a nullable branding object. Null when
+// the junior match has no matched opposition club so renderers fall back.
+function toOpponentClub(row: OpponentClubRow) {
+  if (row.opponentClubId == null || row.opponentClubName == null) return null;
+  return {
+    id: row.opponentClubId,
+    name: row.opponentClubName,
+    shortName: row.opponentClubShortName,
+    logoUrl: row.opponentClubLogoUrl,
+    logoUrl128: row.opponentClubLogoUrl128,
+    primaryColour: row.opponentClubPrimaryColour,
+    secondaryColour: row.opponentClubSecondaryColour,
+  };
+}
 
 /**
  * JUNIORS read API. This data is kept COMPLETELY SEPARATE from the senior
@@ -77,7 +121,10 @@ function splitScores(m: MatchRow): {
   return { hhScore: m.team1Score ?? null, opponentScore: m.team2Score ?? null };
 }
 
-function toMatchSummary(m: MatchRow) {
+function toMatchSummary(
+  m: MatchRow,
+  club: ReturnType<typeof toOpponentClub> = null,
+) {
   const { hhScore, opponentScore } = splitScores(m);
   return {
     id: m.id,
@@ -96,6 +143,7 @@ function toMatchSummary(m: MatchRow) {
     opponentScore,
     hhBattedFirst: m.hhBattedFirst,
     isHallsHead: true,
+    opponentClub: club,
   };
 }
 
@@ -148,8 +196,9 @@ router.get("/juniors/overview", async (_req, res): Promise<void> => {
     ]);
 
   const recentRows = await db
-    .select()
+    .select({ match: juniorMatchesTable, ...opponentClubColumns })
     .from(juniorMatchesTable)
+    .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
     .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
     .limit(6);
 
@@ -166,7 +215,7 @@ router.get("/juniors/overview", async (_req, res): Promise<void> => {
       seasons: seasonCount?.n ?? 0,
       ageGroups: ageCount?.n ?? 0,
     },
-    recentMatches: recentRows.map(toMatchSummary),
+    recentMatches: recentRows.map((r) => toMatchSummary(r.match, toOpponentClub(r))),
     topRunScorers,
     topWicketTakers,
   });
@@ -208,12 +257,13 @@ router.get("/juniors/matches", async (req, res): Promise<void> => {
   if (ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
 
   const rows = await db
-    .select()
+    .select({ match: juniorMatchesTable, ...opponentClubColumns })
     .from(juniorMatchesTable)
+    .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(seasonYear), desc(juniorMatchesTable.id));
 
-  res.json(rows.map(toMatchSummary));
+  res.json(rows.map((r) => toMatchSummary(r.match, toOpponentClub(r))));
 });
 
 // ---------------------------------------------------------------------------
@@ -227,14 +277,17 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
   }
   const matchId = params.data.id;
 
-  const [match] = await db
-    .select()
+  const [matchRow] = await db
+    .select({ match: juniorMatchesTable, ...opponentClubColumns })
     .from(juniorMatchesTable)
+    .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
     .where(eq(juniorMatchesTable.id, matchId));
-  if (!match) {
+  if (!matchRow) {
     res.status(404).json({ error: "Match not found" });
     return;
   }
+  const match = matchRow.match;
+  const opponentClub = toOpponentClub(matchRow);
 
   const privateIds = await getPrivateIds();
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
@@ -343,6 +396,7 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     hhBattedFirst: match.hhBattedFirst,
     hhScore,
     opponentScore,
+    opponentClub,
     innings,
     rosters,
   });
@@ -712,6 +766,234 @@ router.get("/juniors/leaderboards", async (_req, res): Promise<void> => {
   ]);
   res.json({ mostRuns, mostWickets, highestScores, bestBowling });
 });
+
+// ---------------------------------------------------------------------------
+// GET /juniors/leaderboard — rich combined batting + bowling aggregate, one row
+// per HH junior, filterable by age group + season. Aggregated in JS from
+// Halls Head lines only (inner-join participants is_private=false excludes
+// opposition AND private players). Junior data never touches a senior table.
+// ---------------------------------------------------------------------------
+router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
+  const parsed = ListJuniorLeaderboardQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid query", details: parsed.error.issues });
+    return;
+  }
+  const { season, ageGroup } = parsed.data;
+
+  const matchConds = [eq(juniorMatchBattingTable.isHallsHead, true)];
+  if (season) matchConds.push(eq(juniorMatchesTable.season, season));
+  if (ageGroup) matchConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
+
+  const bowlConds = [eq(juniorMatchBowlingTable.isHallsHead, true)];
+  if (season) bowlConds.push(eq(juniorMatchesTable.season, season));
+  if (ageGroup) bowlConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
+
+  const [battingRows, bowlingRows] = await Promise.all([
+    db
+      .select({
+        participantId: juniorParticipantsTable.participantId,
+        displayName: juniorParticipantsTable.displayName,
+        matchId: juniorMatchBattingTable.matchId,
+        runs: juniorMatchBattingTable.runs,
+        dismissal: juniorMatchBattingTable.dismissal,
+      })
+      .from(juniorMatchBattingTable)
+      .innerJoin(
+        juniorParticipantsTable,
+        eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+      )
+      .innerJoin(
+        juniorMatchesTable,
+        eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
+      )
+      .where(and(eq(juniorParticipantsTable.isPrivate, false), ...matchConds)),
+    db
+      .select({
+        participantId: juniorParticipantsTable.participantId,
+        displayName: juniorParticipantsTable.displayName,
+        matchId: juniorMatchBowlingTable.matchId,
+        wickets: juniorMatchBowlingTable.wickets,
+        runs: juniorMatchBowlingTable.runs,
+      })
+      .from(juniorMatchBowlingTable)
+      .innerJoin(
+        juniorParticipantsTable,
+        eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+      )
+      .innerJoin(
+        juniorMatchesTable,
+        eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
+      )
+      .where(and(eq(juniorParticipantsTable.isPrivate, false), ...bowlConds)),
+  ]);
+
+  type Agg = {
+    participantId: string;
+    displayName: string;
+    matchIds: Set<number>;
+    innings: number;
+    notOuts: number;
+    runs: number;
+    highScore: number | null;
+    outs: number;
+    hundreds: number;
+    fifties: number;
+    wickets: number;
+    runsConceded: number;
+    bestWickets: number;
+    bestRuns: number;
+    fiveWickets: number;
+    hasBowled: boolean;
+  };
+  const aggByPlayer = new Map<string, Agg>();
+  const ensure = (participantId: string, displayName: string | null): Agg => {
+    let a = aggByPlayer.get(participantId);
+    if (!a) {
+      a = {
+        participantId,
+        displayName: displayName ?? "",
+        matchIds: new Set(),
+        innings: 0,
+        notOuts: 0,
+        runs: 0,
+        highScore: null,
+        outs: 0,
+        hundreds: 0,
+        fifties: 0,
+        wickets: 0,
+        runsConceded: 0,
+        bestWickets: -1,
+        bestRuns: 0,
+        fiveWickets: 0,
+        hasBowled: false,
+      };
+      aggByPlayer.set(participantId, a);
+    }
+    return a;
+  };
+
+  for (const r of battingRows) {
+    const a = ensure(r.participantId, r.displayName);
+    a.matchIds.add(r.matchId);
+    a.innings += 1;
+    const runs = r.runs ?? 0;
+    a.runs += runs;
+    if (a.highScore === null || runs > a.highScore) a.highScore = runs;
+    if (isNotOut(r.dismissal)) a.notOuts += 1;
+    else a.outs += 1;
+    if (runs >= 100) a.hundreds += 1;
+    else if (runs >= 50) a.fifties += 1;
+  }
+
+  for (const r of bowlingRows) {
+    const a = ensure(r.participantId, r.displayName);
+    a.matchIds.add(r.matchId);
+    a.hasBowled = true;
+    const wkts = r.wickets ?? 0;
+    const conceded = r.runs ?? 0;
+    a.wickets += wkts;
+    a.runsConceded += conceded;
+    if (wkts >= 5) a.fiveWickets += 1;
+    // Best bowling: most wickets, then fewest runs.
+    if (wkts > a.bestWickets || (wkts === a.bestWickets && conceded < a.bestRuns)) {
+      a.bestWickets = wkts;
+      a.bestRuns = conceded;
+    }
+  }
+
+  const rows = Array.from(aggByPlayer.values()).map((a) => ({
+    participantId: a.participantId,
+    displayName: a.displayName,
+    matches: a.matchIds.size,
+    innings: a.innings,
+    notOuts: a.notOuts,
+    runs: a.runs,
+    highScore: a.highScore,
+    battingAverage:
+      a.outs > 0 ? Math.round((a.runs / a.outs) * 100) / 100 : null,
+    hundreds: a.hundreds,
+    fifties: a.fifties,
+    wickets: a.wickets,
+    runsConceded: a.runsConceded,
+    bowlingAverage:
+      a.wickets > 0 ? Math.round((a.runsConceded / a.wickets) * 100) / 100 : null,
+    bestBowling: a.hasBowled && a.bestWickets >= 0 ? `${a.bestWickets}/${a.bestRuns}` : null,
+    fiveWickets: a.fiveWickets,
+  }));
+
+  // Default ordering: most runs first, then most wickets.
+  rows.sort((x, y) => y.runs - x.runs || y.wickets - x.wickets);
+  res.json(rows);
+});
+
+// ---------------------------------------------------------------------------
+// Juniors Matches page display settings (admin-controlled defaults).
+// Singleton row id=1; mirrors the senior match-display-settings pattern but
+// keyed on age group (no roundOrder — junior rounds are free text).
+// ---------------------------------------------------------------------------
+async function ensureJuniorMatchDisplaySettings() {
+  const [existing] = await db
+    .select()
+    .from(juniorMatchDisplaySettingsTable)
+    .where(eq(juniorMatchDisplaySettingsTable.id, JUNIOR_DISPLAY_SETTINGS_ID));
+  if (existing) return existing;
+  const [created] = await db
+    .insert(juniorMatchDisplaySettingsTable)
+    .values({ id: JUNIOR_DISPLAY_SETTINGS_ID })
+    .onConflictDoNothing()
+    .returning();
+  if (created) return created;
+  const [row] = await db
+    .select()
+    .from(juniorMatchDisplaySettingsTable)
+    .where(eq(juniorMatchDisplaySettingsTable.id, JUNIOR_DISPLAY_SETTINGS_ID));
+  return row;
+}
+
+function serializeJuniorMatchDisplaySettings(
+  s: Awaited<ReturnType<typeof ensureJuniorMatchDisplaySettings>>,
+) {
+  return {
+    defaultAgeGroup: s.defaultAgeGroup ?? "",
+    defaultSeasonMode: s.defaultSeasonMode ?? "latest",
+    defaultSeason: s.defaultSeason ?? null,
+    ageGroupOrder: s.ageGroupOrder ?? [],
+  };
+}
+
+router.get("/juniors/match-display-settings", async (_req, res): Promise<void> => {
+  const settings = await ensureJuniorMatchDisplaySettings();
+  res.json(serializeJuniorMatchDisplaySettings(settings));
+});
+
+router.patch(
+  "/juniors/match-display-settings",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = UpdateJuniorMatchDisplaySettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
+      return;
+    }
+    await ensureJuniorMatchDisplaySettings();
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (parsed.data.defaultAgeGroup !== undefined)
+      patch.defaultAgeGroup = parsed.data.defaultAgeGroup;
+    if (parsed.data.defaultSeasonMode !== undefined)
+      patch.defaultSeasonMode = parsed.data.defaultSeasonMode;
+    if (parsed.data.defaultSeason !== undefined)
+      patch.defaultSeason = parsed.data.defaultSeason;
+    if (parsed.data.ageGroupOrder !== undefined)
+      patch.ageGroupOrder = parsed.data.ageGroupOrder;
+    const [updated] = await db
+      .update(juniorMatchDisplaySettingsTable)
+      .set(patch)
+      .where(eq(juniorMatchDisplaySettingsTable.id, JUNIOR_DISPLAY_SETTINGS_ID))
+      .returning();
+    res.json(serializeJuniorMatchDisplaySettings(updated));
+  },
+);
 
 // ---------------------------------------------------------------------------
 // GET /juniors/premierships

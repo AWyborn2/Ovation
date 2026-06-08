@@ -125,3 +125,48 @@ SET senior_player_id = l.senior_player_id
 FROM _jp_links l
 WHERE l.participant_id = jp.participant_id
   AND EXISTS (SELECT 1 FROM public.players p WHERE p.id = l.senior_player_id);
+
+-- 5. Link each junior match's opposition to a club in the shared register so the
+-- scorecard + match list can show the opponent's crest and colours. The clubs
+-- register is the neutral, area-wide reference table populated by master-etl —
+-- reading it here does NOT blend junior and senior STAT data. Most metro junior
+-- opponents are absent from the Peel-focused register, so opponent_club_id stays
+-- NULL for them and renderers fall back gracefully.
+--
+-- Matching is deliberately CONSERVATIVE to avoid false crests: both the club
+-- name and the messy free-text opponent name are normalised (lowercased,
+-- parentheticals/punctuation/age tokens/colours/gender/club-suffix words
+-- stripped) and a match requires the normalised opponent to EQUAL the normalised
+-- club or start with it followed by a space. Team nicknames (e.g. "Hornets",
+-- "Swans") are intentionally NOT stripped so "Rockingham Rams" never collapses
+-- onto "Rockingham Hornets". When several clubs match, the longest club token
+-- wins (so "South Mandurah …" links to South Mandurah, not Mandurah).
+-- NOTE: master-etl MUST run before juniors-etl for public.clubs to be populated.
+CREATE OR REPLACE FUNCTION pg_temp.jr_norm_club(raw text)
+RETURNS text LANGUAGE sql IMMUTABLE AS $fn$
+  WITH s0 AS (SELECT lower(coalesce(raw,'')) AS r),
+  s1 AS (SELECT regexp_replace((SELECT r FROM s0), '\(.*?\)', ' ', 'g') AS r),
+  s2 AS (SELECT regexp_replace((SELECT r FROM s1), '[^a-z0-9 ]', ' ', 'g') AS r),
+  s3 AS (SELECT regexp_replace((SELECT r FROM s2), '\m(under\s*[0-9]+|u[0-9]+|year\s*[0-9]+(-[0-9]+)?|yr\s*[0-9]+|y[0-9]+)\M', ' ', 'g') AS r),
+  s4 AS (SELECT regexp_replace((SELECT r FROM s3),
+    '\m(cricket|club|clubs|junior|juniors|jcc|cc|inc|association|associations|red|blue|blues|white|whites|black|blacks|green|greens|gold|golds|grey|gray|maroon|navy|yellow|orange|purple|silver|brown|browns|boys|boy|girls|girl|mens|men|womens|women)\M', ' ', 'g') AS r)
+  SELECT trim(regexp_replace((SELECT r FROM s4), '\s+', ' ', 'g'));
+$fn$;
+
+UPDATE public.junior_matches jm
+SET opponent_club_id = best.club_id
+FROM (
+  SELECT m.match_id, m.club_id FROM (
+    SELECT jm2.id AS match_id, cn.id AS club_id,
+      row_number() OVER (PARTITION BY jm2.id ORDER BY length(cn.norm) DESC) rn
+    FROM public.junior_matches jm2
+    JOIN (
+      SELECT id, pg_temp.jr_norm_club(name) AS norm FROM public.clubs
+      WHERE pg_temp.jr_norm_club(name) <> ''
+    ) cn
+      ON pg_temp.jr_norm_club(jm2.opponent_name) = cn.norm
+      OR pg_temp.jr_norm_club(jm2.opponent_name) LIKE cn.norm || ' %'
+    WHERE jm2.opponent_name IS NOT NULL
+  ) m WHERE m.rn = 1
+) best
+WHERE jm.id = best.match_id;

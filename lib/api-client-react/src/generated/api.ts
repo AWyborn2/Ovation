@@ -79,8 +79,11 @@ import type {
   ImportPreview,
   ImportRecord,
   JuniorFilters,
+  JuniorLeaderboardRow,
   JuniorLeaderboards,
   JuniorMatchDetail,
+  JuniorMatchDisplaySettings,
+  JuniorMatchDisplaySettingsUpdate,
   JuniorMatchSummary,
   JuniorOfficeBearer,
   JuniorOfficeBearerInput,
@@ -92,6 +95,7 @@ import type {
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
+  ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
   ListMatchesParams,
@@ -11270,6 +11274,90 @@ export function useGetJuniorLeaderboards<TData = Awaited<ReturnType<typeof getJu
 
 
 
+export const getListJuniorLeaderboardUrl = (params?: ListJuniorLeaderboardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/leaderboard?${stringifiedParams}` : `/api/juniors/leaderboard`
+}
+
+/**
+ * @summary Rich combined junior batting + bowling leaderboard, filterable by age group and season
+ */
+export const listJuniorLeaderboard = async (params?: ListJuniorLeaderboardParams, options?: RequestInit): Promise<JuniorLeaderboardRow[]> => {
+
+  return customFetch<JuniorLeaderboardRow[]>(getListJuniorLeaderboardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorLeaderboardQueryKey = (params?: ListJuniorLeaderboardParams,) => {
+    return [
+    `/api/juniors/leaderboard`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJuniorLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorLeaderboard>>, TError = ErrorType<unknown>>(params?: ListJuniorLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorLeaderboardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorLeaderboard>>> = ({ signal }) => listJuniorLeaderboard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorLeaderboard>>>
+export type ListJuniorLeaderboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Rich combined junior batting + bowling leaderboard, filterable by age group and season
+ */
+
+export function useListJuniorLeaderboard<TData = Awaited<ReturnType<typeof listJuniorLeaderboard>>, TError = ErrorType<unknown>>(
+ params?: ListJuniorLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorLeaderboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListJuniorPremiershipsUrl = () => {
 
 
@@ -11346,4 +11434,152 @@ export function useListJuniorPremierships<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getGetJuniorMatchDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/juniors/match-display-settings`
+}
+
+/**
+ * @summary Admin-controlled defaults for the public Juniors Matches page
+ */
+export const getJuniorMatchDisplaySettings = async ( options?: RequestInit): Promise<JuniorMatchDisplaySettings> => {
+
+  return customFetch<JuniorMatchDisplaySettings>(getGetJuniorMatchDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorMatchDisplaySettingsQueryKey = () => {
+    return [
+    `/api/juniors/match-display-settings`
+    ] as const;
+    }
+
+
+export const getGetJuniorMatchDisplaySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorMatchDisplaySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>> = ({ signal }) => getJuniorMatchDisplaySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorMatchDisplaySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>>
+export type GetJuniorMatchDisplaySettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Admin-controlled defaults for the public Juniors Matches page
+ */
+
+export function useGetJuniorMatchDisplaySettings<TData = Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatchDisplaySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorMatchDisplaySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateJuniorMatchDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/juniors/match-display-settings`
+}
+
+/**
+ * @summary Update the Juniors Matches page display defaults (admin only)
+ */
+export const updateJuniorMatchDisplaySettings = async (juniorMatchDisplaySettingsUpdate: JuniorMatchDisplaySettingsUpdate, options?: RequestInit): Promise<JuniorMatchDisplaySettings> => {
+
+  return customFetch<JuniorMatchDisplaySettings>(getUpdateJuniorMatchDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorMatchDisplaySettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorMatchDisplaySettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorMatchDisplaySettings>>, TError,{data: BodyType<JuniorMatchDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorMatchDisplaySettings>>, TError,{data: BodyType<JuniorMatchDisplaySettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateJuniorMatchDisplaySettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorMatchDisplaySettings>>, {data: BodyType<JuniorMatchDisplaySettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateJuniorMatchDisplaySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorMatchDisplaySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorMatchDisplaySettings>>>
+    export type UpdateJuniorMatchDisplaySettingsMutationBody = BodyType<JuniorMatchDisplaySettingsUpdate>
+    export type UpdateJuniorMatchDisplaySettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the Juniors Matches page display defaults (admin only)
+ */
+export const useUpdateJuniorMatchDisplaySettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorMatchDisplaySettings>>, TError,{data: BodyType<JuniorMatchDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorMatchDisplaySettings>>,
+        TError,
+        {data: BodyType<JuniorMatchDisplaySettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorMatchDisplaySettingsMutationOptions(options));
+    }
 

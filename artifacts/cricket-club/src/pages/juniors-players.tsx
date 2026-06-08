@@ -3,21 +3,52 @@ import { Link } from "wouter";
 import {
   useListJuniorPlayers,
   useGetJuniorLeaderboards,
+  useListJuniorLeaderboard,
   useGetJuniorsFilters,
   getListJuniorPlayersQueryKey,
   getGetJuniorLeaderboardsQueryKey,
+  getListJuniorLeaderboardQueryKey,
+  type JuniorLeaderboardRow,
 } from "@workspace/api-client-react";
 import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
 
-type Tab = "directory" | "runs" | "wickets" | "games" | "innings" | "bowling";
+type Tab = "directory" | "leaderboard" | "runs" | "wickets" | "games" | "innings" | "bowling";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "directory", label: "Players" },
+  { key: "leaderboard", label: "Leaderboard" },
   { key: "runs", label: "Most Runs" },
   { key: "wickets", label: "Most Wickets" },
   { key: "games", label: "Most Games" },
   { key: "innings", label: "Highest Scores" },
   { key: "bowling", label: "Best Bowling" },
+];
+
+// Columns for the rich combined batting + bowling leaderboard. `num` selects the
+// sortable numeric value; nulls sort last regardless of direction.
+type LbCol = {
+  key: string;
+  label: string;
+  title: string;
+  group: "bat" | "bowl";
+  num: (r: JuniorLeaderboardRow) => number | null;
+  render: (r: JuniorLeaderboardRow) => React.ReactNode;
+};
+
+const LB_COLS: LbCol[] = [
+  { key: "matches", label: "Mat", title: "Matches", group: "bat", num: (r) => r.matches, render: (r) => r.matches },
+  { key: "innings", label: "Inns", title: "Innings batted", group: "bat", num: (r) => r.innings, render: (r) => r.innings },
+  { key: "notOuts", label: "NO", title: "Not outs", group: "bat", num: (r) => r.notOuts, render: (r) => r.notOuts },
+  { key: "runs", label: "Runs", title: "Runs scored", group: "bat", num: (r) => r.runs, render: (r) => <span className="font-bold">{r.runs}</span> },
+  { key: "highScore", label: "HS", title: "Highest score", group: "bat", num: (r) => r.highScore ?? null, render: (r) => r.highScore ?? "—" },
+  { key: "battingAverage", label: "Avg", title: "Batting average", group: "bat", num: (r) => r.battingAverage ?? null, render: (r) => fmtNum(r.battingAverage, 2) },
+  { key: "hundreds", label: "100s", title: "Hundreds", group: "bat", num: (r) => r.hundreds, render: (r) => r.hundreds },
+  { key: "fifties", label: "50s", title: "Fifties", group: "bat", num: (r) => r.fifties, render: (r) => r.fifties },
+  { key: "wickets", label: "Wkts", title: "Wickets", group: "bowl", num: (r) => r.wickets, render: (r) => <span className="font-bold">{r.wickets}</span> },
+  { key: "runsConceded", label: "Runs", title: "Runs conceded", group: "bowl", num: (r) => r.runsConceded, render: (r) => r.runsConceded },
+  { key: "bowlingAverage", label: "Avg", title: "Bowling average", group: "bowl", num: (r) => r.bowlingAverage ?? null, render: (r) => fmtNum(r.bowlingAverage, 2) },
+  { key: "bestBowling", label: "BB", title: "Best bowling", group: "bowl", num: (r) => r.bestBowling ? parseInt(r.bestBowling.split("/")[0] ?? "0", 10) : null, render: (r) => r.bestBowling ?? "—" },
+  { key: "fiveWickets", label: "5WI", title: "Five-wicket hauls", group: "bowl", num: (r) => r.fiveWickets, render: (r) => r.fiveWickets },
 ];
 
 export default function JuniorsPlayers() {
@@ -60,8 +91,51 @@ export default function JuniorsPlayers() {
   );
 
   const { data: leaderboards, isLoading: lbLoading } = useGetJuniorLeaderboards({
-    query: { enabled: tab !== "directory" && tab !== "games", queryKey: getGetJuniorLeaderboardsQueryKey() },
+    query: {
+      enabled: tab !== "directory" && tab !== "games" && tab !== "leaderboard",
+      queryKey: getGetJuniorLeaderboardsQueryKey(),
+    },
   });
+
+  // Rich combined leaderboard — server aggregates the filtered HH lines; sorting
+  // and name search happen client-side over that result set.
+  const inLeaderboard = tab === "leaderboard";
+  const richParams = { season: seasonArg, ageGroup: ageArg };
+  const { data: richRows, isLoading: richLoading } = useListJuniorLeaderboard(richParams, {
+    query: { enabled: inLeaderboard, queryKey: getListJuniorLeaderboardQueryKey(richParams) },
+  });
+
+  const [sortKey, setSortKey] = useState<string>("runs");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const sortedRich = useMemo(() => {
+    const rows = [...(richRows ?? [])];
+    if (searchArg) {
+      const q = searchArg.toLowerCase();
+      for (let i = rows.length - 1; i >= 0; i--) {
+        if (!rows[i].displayName.toLowerCase().includes(q)) rows.splice(i, 1);
+      }
+    }
+    const col = LB_COLS.find((c) => c.key === sortKey);
+    rows.sort((a, b) => {
+      const av = col ? col.num(a) : null;
+      const bv = col ? col.num(b) : null;
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1; // nulls always last
+      if (bv == null) return -1;
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+    return rows;
+  }, [richRows, searchArg, sortKey, sortDir]);
+
+  const toggleSort = (key: string) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -166,6 +240,119 @@ export default function JuniorsPlayers() {
                       <td className="px-3 py-2 text-right font-mono">{p.matches ?? 0}</td>
                       <td className="px-3 py-2 text-right font-mono">{p.runs ?? 0}</td>
                       <td className="px-3 py-2 text-right font-mono">{p.wickets ?? 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      ) : tab === "leaderboard" ? (
+        <>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Search</label>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Player name"
+                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm"
+                data-testid="input-lb-search"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Age Group</label>
+              <select
+                value={ageGroup}
+                onChange={(e) => setAgeGroup(e.target.value)}
+                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[9rem]"
+                data-testid="select-lb-age-group"
+              >
+                <option value="">All age groups</option>
+                {(filters?.ageGroups ?? []).map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Season</label>
+              <select
+                value={season}
+                onChange={(e) => setSeason(e.target.value)}
+                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[8rem]"
+                data-testid="select-lb-season"
+              >
+                <option value="">All seasons</option>
+                {(filters?.seasons ?? []).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {richLoading ? (
+            <div className="p-8 text-center">Loading...</div>
+          ) : sortedRich.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No junior leaderboard data for this filter.</div>
+          ) : (
+            <div className="overflow-x-auto bg-card border border-border rounded-md">
+              <table className="w-full text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="px-2 py-1 border-b border-border" />
+                    <th className="px-2 py-1 border-b border-border" />
+                    <th className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 border-x border-x-border text-[#bc8c6b]" colSpan={LB_COLS.filter((c) => c.group === "bat").length}>
+                      Batting
+                    </th>
+                    <th className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 text-[#bc8c6b]" colSpan={LB_COLS.filter((c) => c.group === "bowl").length}>
+                      Bowling
+                    </th>
+                  </tr>
+                  <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="px-2 py-2 w-8 border-b border-border">#</th>
+                    <th className="px-3 py-2 border-b border-border">Player</th>
+                    {LB_COLS.map((c, i) => {
+                      const firstBowl = c.group === "bowl" && LB_COLS[i - 1]?.group === "bat";
+                      const active = sortKey === c.key;
+                      return (
+                        <th
+                          key={c.key}
+                          title={c.title}
+                          onClick={() => toggleSort(c.key)}
+                          className={`px-2 py-2 text-right cursor-pointer select-none border-b border-border hover:text-[#bc8c6b] ${
+                            firstBowl ? "border-l border-l-border" : ""
+                          } ${active ? "text-[#bc8c6b]" : ""}`}
+                          data-testid={`sort-${c.key}`}
+                        >
+                          {c.label}
+                          {active ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRich.map((r, i) => (
+                    <tr key={r.participantId} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
+                      <td className="px-2 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                      <td className="px-3 py-2">
+                        <Link href={`/juniors/players/${r.participantId}`}>
+                          <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{r.displayName}</span>
+                        </Link>
+                      </td>
+                      {LB_COLS.map((c, ci) => {
+                        const firstBowl = c.group === "bowl" && LB_COLS[ci - 1]?.group === "bat";
+                        return (
+                          <td
+                            key={c.key}
+                            className={`px-2 py-2 text-right font-mono ${firstBowl ? "border-l border-l-border" : ""} ${
+                              sortKey === c.key ? "text-[#bc8c6b]" : ""
+                            }`}
+                          >
+                            {c.render(r)}
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>

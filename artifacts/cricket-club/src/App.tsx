@@ -39,6 +39,7 @@ import AdminSocialCreate from "@/pages/admin-social-create";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminMatchDisplay from "@/pages/admin-match-display";
+import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
 import AdminCaptains from "@/pages/admin-captains";
 import AdminCommittee from "@/pages/admin-committee";
 import AdminJuniorCommittee from "@/pages/admin-junior-committee";
@@ -88,6 +89,7 @@ function AdminRoutes() {
           <Route path="/admin/honour-boards" component={AdminHonourBoards} />
           <Route path="/admin/milestone-board" component={AdminMilestoneBoard} />
           <Route path="/admin/match-display" component={AdminMatchDisplay} />
+          <Route path="/admin/junior-match-display" component={AdminJuniorMatchDisplay} />
           <Route path="/admin/import" component={AdminImport} />
           <Route path="/admin/caps" component={AdminCaps} />
           <Route path="/admin/life-members" component={AdminLifeMembers} />

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { OpponentClub } from './opponentClub';
 
 export interface JuniorMatchSummary {
   id: number;
@@ -38,4 +39,6 @@ export interface JuniorMatchSummary {
   hhBattedFirst?: boolean | null;
   /** Whether Halls Head fielded a team in this match (always true for junior records). */
   isHallsHead: boolean;
+  /** Branding for the opposition club, resolved from the shared clubs register via the junior match's opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully. */
+  opponentClub?: OpponentClub | null;
 }

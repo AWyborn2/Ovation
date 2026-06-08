@@ -39,3 +39,4 @@
 - [Juniors data & API separation](juniors-data-separation.md) — junior_* tables fully isolated from senior; only bridge is senior_player_id (cross-ref, never merged); private players masked in scorecards but excluded from aggregates via participant inner-join + is_private=false.
 - [Premiership → GF match linking](premiership-match-linking.md) — prem.year = calendar year of win, matches.season = start-year; derive season from prem match_date (Jul-Dec→year, else year-1), then disambiguate multi-GF seasons.
 - [Junior office bearers](junior-office-bearers.md) — manual junior committee CRUD, fully separate from senior club_roles; junior_office_bearers table, /api/juniors/* routes, TEXT participantId link (no FK), brown accent.
+- [Junior opponent → club matching](junior-opponent-club-matching.md) — conservative normalised matcher links junior_matches.opponent_club_id to shared clubs for crests; nicknames NOT stripped; ~600/1828 stay NULL (fall back, never wrong crest).

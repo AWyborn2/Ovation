@@ -3,6 +3,7 @@ import type {
   JuniorInnings,
   JuniorBattingLine,
   JuniorBowlingLine,
+  OpponentClub,
 } from "@workspace/api-client-react";
 import type {
   Scorecard,
@@ -75,12 +76,15 @@ function hallsHeadTeam(): ScorecardTeam {
   };
 }
 
-function oppositionTeam(name: string | null | undefined): ScorecardTeam {
+function oppositionTeam(
+  name: string | null | undefined,
+  club: OpponentClub | null | undefined,
+): ScorecardTeam {
   return {
-    name: name?.trim() || "Opposition",
-    shortName: null,
-    logoUrl: null,
-    colors: deriveOppositionColors(null, null),
+    name: club?.name ?? (name?.trim() || "Opposition"),
+    shortName: club?.shortName ?? null,
+    logoUrl: club?.logoUrl128 ?? club?.logoUrl ?? null,
+    colors: deriveOppositionColors(club?.primaryColour, club?.secondaryColour),
     isHallsHead: false,
   };
 }
@@ -164,12 +168,14 @@ function buildInnings(
  * Map a junior match-detail DTO into the shared scorecard view-model so the
  * branded batting/bowling cards can render junior matches with the same look as
  * the senior scorecard. Innings arrive from the API already in true batting
- * order; private participants are masked server-side before this runs. Juniors
- * carry no opposition club branding, so the opposition uses the neutral scheme.
+ * order; private participants are masked server-side before this runs. When the
+ * junior opponent was matched to a club in the shared register the opposition
+ * shows that club's crest + colours, otherwise it falls back to the neutral
+ * scheme.
  */
 export function buildJuniorScorecard(match: JuniorMatchDetail): Scorecard {
   const hh = hallsHeadTeam();
-  const opp = oppositionTeam(match.opponentName);
+  const opp = oppositionTeam(match.opponentName, match.opponentClub ?? null);
   const hhScore = parseJuniorScore(match.hhScore);
   const oppScore = parseJuniorScore(match.opponentScore);
 

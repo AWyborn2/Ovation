@@ -3125,6 +3125,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/JuniorLeaderboards"
 
+  /juniors/leaderboard:
+    get:
+      operationId: listJuniorLeaderboard
+      tags: [juniors]
+      summary: Rich combined junior batting + bowling leaderboard, filterable by age group and season
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Filter to a single season (e.g. "2024/25")
+        - name: ageGroup
+          in: query
+          schema:
+            type: string
+          description: Filter to a single age group (e.g. "U14")
+      responses:
+        "200":
+          description: One combined batting + bowling aggregate row per junior player
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLeaderboardRow"
+
   /juniors/premierships:
     get:
       operationId: listJuniorPremierships
@@ -3139,6 +3165,36 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/JuniorPremiership"
+
+  /juniors/match-display-settings:
+    get:
+      operationId: getJuniorMatchDisplaySettings
+      tags: [juniors]
+      summary: Admin-controlled defaults for the public Juniors Matches page
+      responses:
+        "200":
+          description: Junior match display settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorMatchDisplaySettings"
+    patch:
+      operationId: updateJuniorMatchDisplaySettings
+      tags: [juniors]
+      summary: Update the Juniors Matches page display defaults (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorMatchDisplaySettingsUpdate"
+      responses:
+        "200":
+          description: Updated junior match display settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorMatchDisplaySettings"
 
 components:
   schemas:
@@ -6754,6 +6810,16 @@ components:
         isHallsHead:
           type: boolean
           description: Whether Halls Head fielded a team in this match (always true for junior records).
+        opponentClub:
+          oneOf:
+            - $ref: "#/components/schemas/OpponentClub"
+            - type: "null"
+          description: >-
+            Branding for the opposition club, resolved from the shared clubs
+            register via the junior match's opponentClubId. Null when the
+            opponent could not be matched to a known club (most metro junior
+            opponents are absent from the Peel-focused register); renderers fall
+            back gracefully.
 
     JuniorMatchDetail:
       type: object
@@ -6795,6 +6861,14 @@ components:
           type: ["string", "null"]
         opponentScore:
           type: ["string", "null"]
+        opponentClub:
+          oneOf:
+            - $ref: "#/components/schemas/OpponentClub"
+            - type: "null"
+          description: >-
+            Branding for the opposition club, resolved from the shared clubs
+            register via the junior match's opponentClubId. Null when unmatched;
+            renderers fall back gracefully.
         innings:
           type: array
           items:
@@ -7044,6 +7118,86 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JuniorBowlingFigureLeader"
+
+    JuniorLeaderboardRow:
+      type: object
+      description: >-
+        Combined per-player batting + bowling aggregate for the rich junior
+        leaderboard table, filterable by age group + season. Aggregated from
+        Halls Head batting/bowling lines only; opposition and private
+        participants are excluded.
+      required: [participantId, displayName, matches, innings, notOuts, runs, hundreds, fifties, wickets, runsConceded, fiveWickets]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        matches:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        highScore:
+          type: ["integer", "null"]
+        battingAverage:
+          type: ["number", "null"]
+        hundreds:
+          type: integer
+        fifties:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        bowlingAverage:
+          type: ["number", "null"]
+        bestBowling:
+          type: ["string", "null"]
+          description: Best innings figures as "wickets/runs" (e.g. "5/12"); null if never bowled.
+        fiveWickets:
+          type: integer
+
+    JuniorMatchDisplaySettings:
+      type: object
+      required: [defaultAgeGroup, defaultSeasonMode, ageGroupOrder]
+      properties:
+        defaultAgeGroup:
+          type: string
+          description: Age group pre-selected on first load. Empty string = All age groups.
+        defaultSeasonMode:
+          type: string
+          enum: [latest, specific, all]
+          description: >-
+            How the default season is chosen: latest available season, a
+            specific season, or all seasons.
+        defaultSeason:
+          type: ["string", "null"]
+          description: Specific season string (e.g. "2024/25") used when defaultSeasonMode = specific.
+        ageGroupOrder:
+          type: array
+          items:
+            type: string
+          description: >-
+            Ordered age-group tokens for the age-group menu. Tokens not listed
+            fall back to the natural order, appended after the configured ones.
+
+    JuniorMatchDisplaySettingsUpdate:
+      type: object
+      properties:
+        defaultAgeGroup:
+          type: string
+        defaultSeasonMode:
+          type: string
+          enum: [latest, specific, all]
+        defaultSeason:
+          type: ["string", "null"]
+        ageGroupOrder:
+          type: array
+          items:
+            type: string
 
     JuniorPremiershipPlayer:
       type: object

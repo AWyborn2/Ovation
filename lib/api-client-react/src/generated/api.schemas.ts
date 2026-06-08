@@ -2573,6 +2573,8 @@ export interface JuniorMatchSummary {
   hhBattedFirst?: boolean | null;
   /** Whether Halls Head fielded a team in this match (always true for junior records). */
   isHallsHead: boolean;
+  /** Branding for the opposition club, resolved from the shared clubs register via the junior match's opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully. */
+  opponentClub?: OpponentClub | null;
 }
 
 export interface JuniorMatchDetail {
@@ -2611,6 +2613,8 @@ export interface JuniorMatchDetail {
   hhScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
+  /** Branding for the opposition club, resolved from the shared clubs register via the junior match's opponentClubId. Null when unmatched; renderers fall back gracefully. */
+  opponentClub?: OpponentClub | null;
   innings: JuniorInnings[];
   rosters: JuniorRosterEntry[];
 }
@@ -2770,6 +2774,77 @@ export interface JuniorLeaderboards {
   mostWickets: JuniorBowlingLeader[];
   highestScores: JuniorInningsLeader[];
   bestBowling: JuniorBowlingFigureLeader[];
+}
+
+/**
+ * Combined per-player batting + bowling aggregate for the rich junior leaderboard table, filterable by age group + season. Aggregated from Halls Head batting/bowling lines only; opposition and private participants are excluded.
+ */
+export interface JuniorLeaderboardRow {
+  participantId: string;
+  displayName: string;
+  matches: number;
+  innings: number;
+  notOuts: number;
+  runs: number;
+  /** @nullable */
+  highScore?: number | null;
+  /** @nullable */
+  battingAverage?: number | null;
+  hundreds: number;
+  fifties: number;
+  wickets: number;
+  runsConceded: number;
+  /** @nullable */
+  bowlingAverage?: number | null;
+  /**
+     * Best innings figures as "wickets/runs" (e.g. "5/12"); null if never bowled.
+     * @nullable
+     */
+  bestBowling?: string | null;
+  fiveWickets: number;
+}
+
+/**
+ * How the default season is chosen: latest available season, a specific season, or all seasons.
+ */
+export type JuniorMatchDisplaySettingsDefaultSeasonMode = typeof JuniorMatchDisplaySettingsDefaultSeasonMode[keyof typeof JuniorMatchDisplaySettingsDefaultSeasonMode];
+
+
+export const JuniorMatchDisplaySettingsDefaultSeasonMode = {
+  latest: 'latest',
+  specific: 'specific',
+  all: 'all',
+} as const;
+
+export interface JuniorMatchDisplaySettings {
+  /** Age group pre-selected on first load. Empty string = All age groups. */
+  defaultAgeGroup: string;
+  /** How the default season is chosen: latest available season, a specific season, or all seasons. */
+  defaultSeasonMode: JuniorMatchDisplaySettingsDefaultSeasonMode;
+  /**
+     * Specific season string (e.g. "2024/25") used when defaultSeasonMode = specific.
+     * @nullable
+     */
+  defaultSeason?: string | null;
+  /** Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones. */
+  ageGroupOrder: string[];
+}
+
+export type JuniorMatchDisplaySettingsUpdateDefaultSeasonMode = typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode[keyof typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode];
+
+
+export const JuniorMatchDisplaySettingsUpdateDefaultSeasonMode = {
+  latest: 'latest',
+  specific: 'specific',
+  all: 'all',
+} as const;
+
+export interface JuniorMatchDisplaySettingsUpdate {
+  defaultAgeGroup?: string;
+  defaultSeasonMode?: JuniorMatchDisplaySettingsUpdateDefaultSeasonMode;
+  /** @nullable */
+  defaultSeason?: string | null;
+  ageGroupOrder?: string[];
 }
 
 export interface JuniorPremiershipPlayer {
@@ -2943,6 +3018,17 @@ search?: string;
 season?: string;
 /**
  * Filter to players who appeared for this age group
+ */
+ageGroup?: string;
+};
+
+export type ListJuniorLeaderboardParams = {
+/**
+ * Filter to a single season (e.g. "2024/25")
+ */
+season?: string;
+/**
+ * Filter to a single age group (e.g. "U14")
  */
 ageGroup?: string;
 };

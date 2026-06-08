@@ -3905,7 +3905,16 @@ export const GetJuniorsOverviewResponse = zod.object({
   "hhScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "hhBattedFirst": zod.boolean().nullish(),
-  "isHallsHead": zod.boolean().describe('Whether Halls Head fielded a team in this match (always true for junior records).')
+  "isHallsHead": zod.boolean().describe('Whether Halls Head fielded a team in this match (always true for junior records).'),
+  "opponentClub": zod.union([zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish()
+}).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully.')
 })),
   "topRunScorers": zod.array(zod.object({
   "participantId": zod.string(),
@@ -3959,7 +3968,16 @@ export const ListJuniorMatchesResponseItem = zod.object({
   "hhScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "hhBattedFirst": zod.boolean().nullish(),
-  "isHallsHead": zod.boolean().describe('Whether Halls Head fielded a team in this match (always true for junior records).')
+  "isHallsHead": zod.boolean().describe('Whether Halls Head fielded a team in this match (always true for junior records).'),
+  "opponentClub": zod.union([zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish()
+}).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully.')
 })
 export const ListJuniorMatchesResponse = zod.array(ListJuniorMatchesResponseItem)
 
@@ -3990,6 +4008,15 @@ export const GetJuniorMatchResponse = zod.object({
   "hhBattedFirst": zod.boolean().nullish(),
   "hhScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
+  "opponentClub": zod.union([zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish()
+}).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when unmatched; renderers fall back gracefully.'),
   "innings": zod.array(zod.object({
   "innings": zod.number(),
   "battingTeam": zod.string().nullish(),
@@ -4185,6 +4212,34 @@ export const GetJuniorLeaderboardsResponse = zod.object({
 
 
 /**
+ * @summary Rich combined junior batting + bowling leaderboard, filterable by age group and season
+ */
+export const ListJuniorLeaderboardQueryParams = zod.object({
+  "season": zod.coerce.string().optional().describe('Filter to a single season (e.g. \"2024\/25\")'),
+  "ageGroup": zod.coerce.string().optional().describe('Filter to a single age group (e.g. \"U14\")')
+})
+
+export const ListJuniorLeaderboardResponseItem = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "matches": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.number().nullish(),
+  "battingAverage": zod.number().nullish(),
+  "hundreds": zod.number(),
+  "fifties": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bowlingAverage": zod.number().nullish(),
+  "bestBowling": zod.string().nullish().describe('Best innings figures as \"wickets\/runs\" (e.g. \"5\/12\"); null if never bowled.'),
+  "fiveWickets": zod.number()
+}).describe('Combined per-player batting + bowling aggregate for the rich junior leaderboard table, filterable by age group + season. Aggregated from Halls Head batting\/bowling lines only; opposition and private participants are excluded.')
+export const ListJuniorLeaderboardResponse = zod.array(ListJuniorLeaderboardResponseItem)
+
+
+/**
  * @summary Junior premierships with their winning squads
  */
 export const ListJuniorPremiershipsResponseItem = zod.object({
@@ -4205,5 +4260,34 @@ export const ListJuniorPremiershipsResponseItem = zod.object({
 }))
 })
 export const ListJuniorPremiershipsResponse = zod.array(ListJuniorPremiershipsResponseItem)
+
+
+/**
+ * @summary Admin-controlled defaults for the public Juniors Matches page
+ */
+export const GetJuniorMatchDisplaySettingsResponse = zod.object({
+  "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
+  "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
+  "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+})
+
+
+/**
+ * @summary Update the Juniors Matches page display defaults (admin only)
+ */
+export const UpdateJuniorMatchDisplaySettingsBody = zod.object({
+  "defaultAgeGroup": zod.string().optional(),
+  "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).optional(),
+  "defaultSeason": zod.string().nullish(),
+  "ageGroupOrder": zod.array(zod.string()).optional()
+})
+
+export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
+  "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
+  "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
+  "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+})
 
 

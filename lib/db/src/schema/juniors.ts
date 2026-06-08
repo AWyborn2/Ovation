@@ -6,7 +6,9 @@ import {
   boolean,
   real,
   index,
+  timestamp,
 } from "drizzle-orm/pg-core";
+import { clubsTable } from "./clubs";
 
 /**
  * Halls Head JUNIORS data — kept COMPLETELY SEPARATE from the senior tables by
@@ -44,6 +46,15 @@ export const juniorMatchesTable = pgTable("junior_matches", {
   tossWinner: text("toss_winner"),
   hhBattedFirst: boolean("hh_batted_first"),
   opponentName: text("opponent_name"),
+  // Optional link to the shared clubs register so junior scorecards/cards can
+  // render opposition club crests + colours, mirroring senior matches. Populated
+  // by a conservative normalized-name match in juniors-etl.sql; most metro junior
+  // opponents are not in the (Peel-focused) clubs table, so this stays NULL for
+  // them and renderers fall back gracefully. clubs is a neutral shared reference
+  // table (not a senior stat table), so this does not blend junior + senior data.
+  opponentClubId: integer("opponent_club_id").references(() => clubsTable.id, {
+    onDelete: "set null",
+  }),
 });
 
 export type JuniorMatchRow = typeof juniorMatchesTable.$inferSelect;
@@ -192,3 +203,35 @@ export const juniorOfficeBearersTable = pgTable(
 
 export type JuniorOfficeBearerRow =
   typeof juniorOfficeBearersTable.$inferSelect;
+
+/**
+ * Singleton settings controlling how the public Juniors Matches page behaves by
+ * default: which age group + season load first and the order age groups appear
+ * in the age-group menu. Mirrors the senior matchDisplaySettingsTable but is
+ * age-group based (juniors have no fixed grade list) and intentionally has NO
+ * round-order option — junior rounds are messy free text, so there is no
+ * reliable within-season round direction to configure. App-config; never touched
+ * by the juniors ETL full-replace.
+ */
+export const juniorMatchDisplaySettingsTable = pgTable(
+  "junior_match_display_settings",
+  {
+    id: serial("id").primaryKey(),
+    // Default age group pre-selected on first load. Empty string = "All age groups".
+    defaultAgeGroup: text("default_age_group").notNull().default(""),
+    // "latest" (newest available season), "specific" (defaultSeason), or "all".
+    defaultSeasonMode: text("default_season_mode").notNull().default("all"),
+    // Specific season string (e.g. "2024/25") used when defaultSeasonMode = "specific".
+    // Junior seasons are free-text strings, not start-year ints like seniors.
+    defaultSeason: text("default_season"),
+    // Ordered list of age-group tokens for the menu. Tokens not listed fall back
+    // to the natural order, appended after the configured ones.
+    ageGroupOrder: text("age_group_order").array().notNull().default([]),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+export type JuniorMatchDisplaySettingsRow =
+  typeof juniorMatchDisplaySettingsTable.$inferSelect;

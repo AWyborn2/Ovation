@@ -1,25 +1,98 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   useListJuniorMatches,
   useGetJuniorsFilters,
+  useGetJuniorMatchDisplaySettings,
   getListJuniorMatchesQueryKey,
+  type JuniorMatchSummary,
 } from "@workspace/api-client-react";
 import { CalendarDays, MapPin } from "lucide-react";
 import { JUNIOR_ACCENT, fmtJuniorDate } from "@/lib/juniors";
 
+// Compact opposition crest for junior match cards; falls back silently to
+// nothing (the opponent name is always shown beside it). Most metro junior
+// opponents are absent from the Peel-focused clubs register, so opponentClub is
+// usually null.
+function MatchCardCrest({ club }: { club: JuniorMatchSummary["opponentClub"] }) {
+  const [errored, setErrored] = useState(false);
+  const src = club?.logoUrl128 || club?.logoUrl;
+  if (!club || !src || errored) return null;
+  return (
+    <img
+      src={src}
+      alt={`${club.name} logo`}
+      title={club.name}
+      width={28}
+      height={28}
+      onError={() => setErrored(true)}
+      className="h-7 w-7 shrink-0 rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
+      data-testid="img-junior-match-crest"
+    />
+  );
+}
+
+/** Parse the start year out of a junior season string ("2024/25" → 2024). */
+function seasonStartYear(s: string | null | undefined): number {
+  if (!s) return -1;
+  const m = s.match(/(\d{4})/);
+  return m ? parseInt(m[1], 10) : -1;
+}
+
+/** Order age-group tokens by the admin-configured order, appending the rest. */
+function orderAgeGroups(saved: string[], all: string[]): string[] {
+  const present = saved.filter((a) => all.includes(a));
+  const rest = all.filter((a) => !present.includes(a));
+  return [...present, ...rest];
+}
+
 export default function JuniorsMatches() {
-  const [season, setSeason] = useState("");
-  const [ageGroup, setAgeGroup] = useState("");
+  // `null` = not yet initialised from saved admin defaults.
+  const [season, setSeason] = useState<string | null>(null);
+  const [ageGroup, setAgeGroup] = useState<string | null>(null);
 
   const { data: filters } = useGetJuniorsFilters();
+  const { data: settings } = useGetJuniorMatchDisplaySettings();
+
+  const ageGroupOptions = useMemo(
+    () => orderAgeGroups(settings?.ageGroupOrder ?? [], filters?.ageGroups ?? []),
+    [settings?.ageGroupOrder, filters?.ageGroups],
+  );
+
+  // Newest season (by parsed start year) drives the "latest" default mode.
+  const latestSeason = useMemo(() => {
+    const seasons = filters?.seasons ?? [];
+    if (seasons.length === 0) return "";
+    return [...seasons].sort((a, b) => seasonStartYear(b) - seasonStartYear(a))[0];
+  }, [filters?.seasons]);
+
+  // Apply saved admin defaults once both settings and filters have loaded.
+  useEffect(() => {
+    if (!settings || !filters) return;
+    setAgeGroup((prev) => (prev === null ? settings.defaultAgeGroup ?? "" : prev));
+    setSeason((prev) => {
+      if (prev !== null) return prev;
+      if (settings.defaultSeasonMode === "all") return "";
+      if (settings.defaultSeasonMode === "specific") {
+        const s = settings.defaultSeason;
+        return s && (filters.seasons ?? []).includes(s) ? s : latestSeason;
+      }
+      return latestSeason;
+    });
+  }, [settings, filters, latestSeason]);
 
   const seasonArg = season || undefined;
   const ageArg = ageGroup || undefined;
+  const ready = season !== null && ageGroup !== null;
 
   const { data: matches, isLoading } = useListJuniorMatches(
     { season: seasonArg, ageGroup: ageArg },
-    { query: { queryKey: getListJuniorMatchesQueryKey({ season: seasonArg, ageGroup: ageArg }) } },
+    {
+      query: {
+        enabled: ready,
+        queryKey: getListJuniorMatchesQueryKey({ season: seasonArg, ageGroup: ageArg }),
+      },
+    },
   );
 
   return (
@@ -36,13 +109,13 @@ export default function JuniorsMatches() {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold uppercase tracking-widest text-primary">Age Group</label>
           <select
-            value={ageGroup}
+            value={ageGroup ?? ""}
             onChange={(e) => setAgeGroup(e.target.value)}
             className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
             data-testid="select-age-group"
           >
             <option value="">All age groups</option>
-            {(filters?.ageGroups ?? []).map((a) => (
+            {ageGroupOptions.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
@@ -50,7 +123,7 @@ export default function JuniorsMatches() {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
           <select
-            value={season}
+            value={season ?? ""}
             onChange={(e) => setSeason(e.target.value)}
             className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[8rem]"
             data-testid="select-season"
@@ -63,7 +136,7 @@ export default function JuniorsMatches() {
         </div>
       </div>
 
-      {isLoading ? (
+      {!ready || isLoading ? (
         <div className="p-8 text-center">Loading...</div>
       ) : !matches || matches.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground">No junior matches found for these filters.</div>
@@ -78,6 +151,7 @@ export default function JuniorsMatches() {
                       {m.ageGroup}
                     </span>
                   )}
+                  <MatchCardCrest club={m.opponentClub} />
                   <div className="flex-1 min-w-0">
                     <div className="font-serif font-bold text-primary group-hover:text-primary truncate">
                       vs {m.opponentName ?? "Unknown"}
