@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useListPremierships } from "@workspace/api-client-react";
 import type { Premiership, PremiershipPlayer } from "@workspace/api-client-react";
 import { useBrandLogo } from "@/lib/use-brand";
+import { PlaqueLightbox } from "@/components/plaque-lightbox";
 
 const PLAQUE_FONT = "'Inter', sans-serif";
 
@@ -137,6 +138,7 @@ export default function Premierships() {
   const logoUrl = useBrandLogo();
   const { data: premierships, isLoading } = useListPremierships();
   const [selectedGrade, setSelectedGrade] = useState<string>("All");
+  const [enlarged, setEnlarged] = useState<Premiership | null>(null);
 
   const grades = useMemo(() => {
     const set = new Set<string>();
@@ -158,7 +160,7 @@ export default function Premierships() {
 
   return (
     <div
-      className="mx-[calc(50%-50vw)] w-screen min-h-screen"
+      className="mx-[calc(50%-50vw)] w-screen min-h-screen overflow-x-hidden"
       style={{
         background:
           "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
@@ -205,13 +207,33 @@ export default function Premierships() {
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-white/70 italic">No premierships found.</div>
         ) : (
-          <div className="grid gap-[3px] grid-cols-10 justify-center">
+          <div
+            className="grid gap-[3px] justify-center"
+            style={{ gridTemplateColumns: "repeat(auto-fill, 151px)" }}
+          >
             {filtered.map((p) => (
-              <Plaque key={p.id} prem={p} />
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setEnlarged(p)}
+                aria-label={`Enlarge ${p.grade} premiership plaque`}
+                className="block p-0 m-0 bg-transparent border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                data-testid={`button-plaque-${p.id}`}
+              >
+                <div className="pointer-events-none">
+                  <Plaque prem={p} />
+                </div>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {enlarged && (
+        <PlaqueLightbox onClose={() => setEnlarged(null)}>
+          <Plaque prem={enlarged} />
+        </PlaqueLightbox>
+      )}
     </div>
   );
 }

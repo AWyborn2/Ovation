@@ -5,6 +5,7 @@ import {
   type JuniorPremiership,
 } from "@workspace/api-client-react";
 import { useBrandLogo } from "@/lib/use-brand";
+import { PlaqueLightbox } from "@/components/plaque-lightbox";
 
 const PLAQUE_FONT = "'Inter', sans-serif";
 const TRACK = "0.0103em";
@@ -137,6 +138,7 @@ export default function JuniorsPremierships() {
   const logoUrl = useBrandLogo();
   const { data, isLoading } = useListJuniorPremierships();
   const [ageGroup, setAgeGroup] = useState("All");
+  const [enlarged, setEnlarged] = useState<JuniorPremiership | null>(null);
 
   const ageGroups = useMemo(() => {
     const set = new Set<string>();
@@ -157,7 +159,7 @@ export default function JuniorsPremierships() {
 
   return (
     <div
-      className="mx-[calc(50%-50vw)] w-screen min-h-screen"
+      className="mx-[calc(50%-50vw)] w-screen min-h-screen overflow-x-hidden"
       style={{
         background:
           "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
@@ -208,13 +210,33 @@ export default function JuniorsPremierships() {
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-white/70 italic">No junior premierships found.</div>
         ) : (
-          <div className="grid gap-[3px] grid-cols-10 justify-center">
+          <div
+            className="grid gap-[3px] justify-center"
+            style={{ gridTemplateColumns: "repeat(auto-fill, 151px)" }}
+          >
             {filtered.map((p) => (
-              <Plaque key={p.id} prem={p} />
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setEnlarged(p)}
+                aria-label={`Enlarge ${[p.ageGroup, p.season].filter(Boolean).join(" ")} premiership plaque`}
+                className="block p-0 m-0 bg-transparent border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                data-testid={`button-plaque-${p.id}`}
+              >
+                <div className="pointer-events-none">
+                  <Plaque prem={p} />
+                </div>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {enlarged && (
+        <PlaqueLightbox theme="gold" onClose={() => setEnlarged(null)}>
+          <Plaque prem={enlarged} />
+        </PlaqueLightbox>
+      )}
     </div>
   );
 }
