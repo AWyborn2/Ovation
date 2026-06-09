@@ -9,6 +9,13 @@ import type { JuniorBattingLeader } from './juniorBattingLeader';
 import type { JuniorBowlingLeader } from './juniorBowlingLeader';
 
 export interface JuniorSeasonTopPerformers {
+  /**
+     * Resolved season these leaders cover (e.g. "2024/25"), or null for the all-time list.
+     * @nullable
+     */
+  season: string | null;
+  /** Age groups that have records in the resolved season (or all age groups ever played for the all-time list). Drives the age chips. */
+  availableAgeGroups: string[];
   topRunScorers: JuniorBattingLeader[];
   topWicketTakers: JuniorBowlingLeader[];
 }

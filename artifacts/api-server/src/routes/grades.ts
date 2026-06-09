@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, sum, count, lt, gt, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sum, count, lt, gt, isNotNull, sql, type SQL } from "drizzle-orm";
 import {
   db,
   gradeSummariesTable,
@@ -155,6 +155,75 @@ async function seasonLeaders(
     surname: r.surname,
     value: Number(r.value ?? 0),
   }));
+}
+
+// All-time top run scorers / wicket takers, summed from the per-grade career
+// aggregate (player_grade_stats already equals career per grade, so summing
+// across grades = career). An optional grade scopes the list to one grade.
+async function allTimeLeaders(
+  metric: "runs" | "wickets",
+  grade?: string,
+): Promise<{ playerId: number; givenName: string; surname: string; value: number }[]> {
+  const col =
+    metric === "runs" ? playerGradeStatsTable.runs : playerGradeStatsTable.wickets;
+  const conds: SQL[] = [lt(playerGradeStatsTable.playerId, FILL_IN_FLOOR)];
+  if (grade) conds.push(eq(playerGradeStatsTable.grade, grade));
+
+  const rows = await db
+    .select({
+      playerId: playerGradeStatsTable.playerId,
+      givenName: playersTable.givenName,
+      surname: playersTable.surname,
+      value: sum(col).mapWith(Number),
+    })
+    .from(playerGradeStatsTable)
+    .innerJoin(playersTable, eq(playersTable.id, playerGradeStatsTable.playerId))
+    .where(and(...conds))
+    .groupBy(playerGradeStatsTable.playerId, playersTable.givenName, playersTable.surname)
+    .having(gt(sum(col), 0))
+    .orderBy(sql`${sum(col)} desc nulls last`)
+    .limit(5);
+
+  return rows.map((r) => ({
+    playerId: r.playerId,
+    givenName: r.givenName,
+    surname: r.surname,
+    value: Number(r.value ?? 0),
+  }));
+}
+
+// Distinct seasons (newest-first) that have per-season stat rows — the seasons
+// the home season picker can offer top performers for.
+async function seasonOptions(): Promise<{ season: number; label: string }[]> {
+  const rows = await db
+    .selectDistinct({ season: playerGradeSeasonStatsTable.season })
+    .from(playerGradeSeasonStatsTable)
+    .where(
+      and(
+        isNotNull(playerGradeSeasonStatsTable.season),
+        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+      ),
+    )
+    .orderBy(desc(playerGradeSeasonStatsTable.season));
+  return rows
+    .filter((r): r is { season: number } => r.season !== null)
+    .map((r) => ({ season: r.season, label: seasonLabel(r.season) }));
+}
+
+// Grades with real records in a season (games > 0); when season is null the
+// list is every grade ever played (drives the all-time grade chips). Fill-ins
+// excluded. Returned unsorted; the client orders by seniority.
+async function gradesForSeason(season: number | null): Promise<string[]> {
+  const conds: SQL[] = [
+    lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+    gt(playerGradeSeasonStatsTable.games, 0),
+  ];
+  if (season !== null) conds.push(eq(playerGradeSeasonStatsTable.season, season));
+  const rows = await db
+    .selectDistinct({ grade: playerGradeSeasonStatsTable.grade })
+    .from(playerGradeSeasonStatsTable)
+    .where(and(...conds));
+  return rows.map((r) => r.grade).filter((g): g is string => Boolean(g));
 }
 
 router.get("/grades", async (_req, res): Promise<void> => {
@@ -320,6 +389,7 @@ router.get("/overview", async (_req, res): Promise<void> => {
   res.json({
     latestSeason,
     latestSeasonLabel: latestSeason === null ? null : seasonLabel(latestSeason),
+    availableSeasons: await seasonOptions(),
     totals: {
       players: Number(playerCount?.count ?? 0),
       games: Number(totals?.totalGames ?? 0),
@@ -341,25 +411,61 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
     return;
   }
   const grade = parsed.data.grade?.trim() || undefined;
+  const allTime = parsed.data.allTime === true;
+  const requestedSeason = parsed.data.season ?? null;
 
-  const [latest] = await db
-    .select({ season: matchesTable.season })
-    .from(matchesTable)
-    .where(notEmptyFixture)
-    .orderBy(desc(matchesTable.season))
-    .limit(1);
-  const latestSeason = latest?.season ?? null;
-
-  if (latestSeason === null) {
-    res.json({ topRunScorers: [], topWicketTakers: [] });
+  // All-time: aggregate career totals across every season.
+  if (allTime) {
+    const [topRunScorers, topWicketTakers, availableGrades] = await Promise.all([
+      allTimeLeaders("runs", grade),
+      allTimeLeaders("wickets", grade),
+      gradesForSeason(null),
+    ]);
+    res.json({
+      season: null,
+      seasonLabel: null,
+      availableGrades,
+      topRunScorers,
+      topWicketTakers,
+    });
     return;
   }
 
-  const [topRunScorers, topWicketTakers] = await Promise.all([
-    seasonLeaders(latestSeason, "runs", grade),
-    seasonLeaders(latestSeason, "wickets", grade),
+  // Resolve the season: explicit request, else the latest season with results.
+  let season = requestedSeason;
+  if (season === null) {
+    const [latest] = await db
+      .select({ season: matchesTable.season })
+      .from(matchesTable)
+      .where(notEmptyFixture)
+      .orderBy(desc(matchesTable.season))
+      .limit(1);
+    season = latest?.season ?? null;
+  }
+
+  if (season === null) {
+    res.json({
+      season: null,
+      seasonLabel: null,
+      availableGrades: [],
+      topRunScorers: [],
+      topWicketTakers: [],
+    });
+    return;
+  }
+
+  const [topRunScorers, topWicketTakers, availableGrades] = await Promise.all([
+    seasonLeaders(season, "runs", grade),
+    seasonLeaders(season, "wickets", grade),
+    gradesForSeason(season),
   ]);
-  res.json({ topRunScorers, topWicketTakers });
+  res.json({
+    season,
+    seasonLabel: seasonLabel(season),
+    availableGrades,
+    topRunScorers,
+    topWicketTakers,
+  });
 });
 
 router.get("/records", async (_req, res): Promise<void> => {

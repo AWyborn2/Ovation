@@ -853,6 +853,10 @@ export const GetDashboardResponse = zod.object({
  * @summary Seniors home overview — club totals, the latest season label, that season's most recent match per grade, and latest-season top run scorers and wicket takers (club-wide across all grades).
  */
 export const GetSeniorOverviewResponse = zod.object({
+  "availableSeasons": zod.array(zod.object({
+  "season": zod.number().describe('Season start year (e.g. 2025).'),
+  "label": zod.string().describe('Human label for the season (e.g. \"2025\/26\").')
+}).describe('A selectable season for the home-page season picker.')).describe('Seasons that have results, newest-first, for the season picker.'),
   "latestSeason": zod.number().nullable().describe('Start year of the newest season with results, or null when none.'),
   "latestSeasonLabel": zod.string().nullable().describe('Human label for the latest season (e.g. \"2025\/26\").'),
   "totals": zod.object({
@@ -906,10 +910,15 @@ export const GetSeniorOverviewResponse = zod.object({
  * @summary Latest-season top run scorers and wicket takers, optionally filtered to a single grade (omit grade for the club-wide combined list).
  */
 export const GetSeniorSeasonTopPerformersQueryParams = zod.object({
-  "grade": zod.coerce.string().optional().describe('Single grade to scope the leaders to; omit for club-wide.')
+  "grade": zod.coerce.string().optional().describe('Single grade to scope the leaders to; omit for club-wide.'),
+  "season": zod.coerce.number().optional().describe('Season start year to scope the leaders to; omit for the latest season. Ignored when allTime is true.'),
+  "allTime": zod.coerce.boolean().optional().describe('When true, aggregate across every season (ignores season).')
 })
 
 export const GetSeniorSeasonTopPerformersResponse = zod.object({
+  "season": zod.number().nullable().describe('Resolved season start year these leaders cover, or null for the all-time list.'),
+  "seasonLabel": zod.string().nullable().describe('Human label for the resolved season, or null for all-time.'),
+  "availableGrades": zod.array(zod.string()).describe('Grades that have records in the resolved season (or all grades ever played for the all-time list). Drives the grade chips.'),
   "topRunScorers": zod.array(zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
@@ -4166,10 +4175,14 @@ export const GetJuniorsOverviewResponse = zod.object({
  * @summary Latest-season junior top run scorers and wicket takers, optionally filtered to a single age group (omit for the club-wide combined list). Private participants are always excluded.
  */
 export const GetJuniorSeasonTopPerformersQueryParams = zod.object({
-  "ageGroup": zod.coerce.string().optional().describe('Single age group to scope the leaders to; omit for club-wide.')
+  "ageGroup": zod.coerce.string().optional().describe('Single age group to scope the leaders to; omit for club-wide.'),
+  "season": zod.coerce.string().optional().describe('Season (e.g. \"2024\/25\") to scope the leaders to; omit for the latest season. Ignored when allTime is true.'),
+  "allTime": zod.coerce.boolean().optional().describe('When true, aggregate across every season (ignores season).')
 })
 
 export const GetJuniorSeasonTopPerformersResponse = zod.object({
+  "season": zod.string().nullable().describe('Resolved season these leaders cover (e.g. \"2024\/25\"), or null for the all-time list.'),
+  "availableAgeGroups": zod.array(zod.string()).describe('Age groups that have records in the resolved season (or all age groups ever played for the all-time list). Drives the age chips.'),
   "topRunScorers": zod.array(zod.object({
   "participantId": zod.string(),
   "displayName": zod.string(),

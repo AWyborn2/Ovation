@@ -1,13 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 import { Link } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {
   useGetSeniorOverview,
   useGetSeniorSeasonTopPerformers,
-  getGetSeniorSeasonTopPerformersQueryKey,
   useGetDashboard,
-  useListGrades,
   type MatchSummary,
   type SeasonLeader,
 } from "@workspace/api-client-react";
@@ -147,33 +145,48 @@ function LeaderRow({
   );
 }
 
+// Season picker value: "latest" (default), "all" (all-time), or a season year.
+type SeasonChoice = "latest" | "all" | number;
+
 export default function DashboardScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useGetSeniorOverview();
   const { data: dashboard } = useGetDashboard();
-  const { data: grades } = useListGrades();
   const colors = useColors();
   const [gradeFilter, setGradeFilter] = useState<string>("");
+  const [season, setSeason] = useState<SeasonChoice>("latest");
 
-  const gradeOptions = useMemo(
-    () => (grades ?? []).map((g) => g.grade).filter((g) => g !== "CLUB TOTAL"),
-    [grades],
-  );
+  // Top performers drive BOTH the leader rows AND the grade chips: the response
+  // carries availableGrades for the resolved season (or all grades, all-time).
+  const seasonParams =
+    season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
+  const { data: tp } = useGetSeniorSeasonTopPerformers({
+    ...(gradeFilter ? { grade: gradeFilter } : {}),
+    ...seasonParams,
+  });
 
-  const { data: scoped } = useGetSeniorSeasonTopPerformers(
-    { grade: gradeFilter },
-    {
-      query: {
-        enabled: gradeFilter !== "",
-        queryKey: getGetSeniorSeasonTopPerformersQueryKey({ grade: gradeFilter }),
-      },
-    },
-  );
+  const gradeOptions = useMemo(() => tp?.availableGrades ?? [], [tp?.availableGrades]);
+
+  // If the chosen grade has no records in the newly-selected season, fall back
+  // to the club-wide list so we never show an empty, stale grade filter.
+  useEffect(() => {
+    if (gradeFilter && tp && !tp.availableGrades.includes(gradeFilter)) {
+      setGradeFilter("");
+    }
+  }, [tp, gradeFilter]);
 
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorView />;
 
-  const topRunScorers = gradeFilter === "" ? data.topRunScorers : scoped?.topRunScorers ?? [];
-  const topWicketTakers = gradeFilter === "" ? data.topWicketTakers : scoped?.topWicketTakers ?? [];
+  const topRunScorers = tp?.topRunScorers ?? [];
+  const topWicketTakers = tp?.topWicketTakers ?? [];
+
+  // Header label for the resolved season ("All time" when aggregating).
+  const seasonTitle =
+    season === "all"
+      ? "Top Performers · All time"
+      : tp?.seasonLabel
+        ? `Top Performers · ${tp.seasonLabel}`
+        : "Top Performers";
 
   return (
     <ScrollView
@@ -216,11 +229,19 @@ export default function DashboardScreen() {
         </>
       ) : null}
 
-      {/* Top performers — scoped to the latest season, club-wide or one grade */}
-      <SectionHeader
-        icon="star"
-        title={data.latestSeasonLabel ? `Top Performers · ${data.latestSeasonLabel}` : "Top Performers"}
-      />
+      {/* Top performers — season picker + season-aware grade chips */}
+      <SectionHeader icon="star" title={seasonTitle} />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        {data.availableSeasons.map((s) => (
+          <FilterChip
+            key={s.season}
+            label={s.label}
+            active={season === s.season || (season === "latest" && s.season === data.latestSeason)}
+            onPress={() => setSeason(s.season)}
+          />
+        ))}
+        <FilterChip label="All time" active={season === "all"} onPress={() => setSeason("all")} />
+      </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         <FilterChip label="All grades" active={gradeFilter === ""} onPress={() => setGradeFilter("")} />
         {gradeOptions.map((g) => (

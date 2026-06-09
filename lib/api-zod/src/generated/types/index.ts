@@ -216,6 +216,7 @@ export * from './recordsDisplaySettingsUpdateDefaultTab';
 export * from './recordsLeaderboards';
 export * from './roundUpInput';
 export * from './seasonLeader';
+export * from './seasonOption';
 export * from './seasonTopPerformers';
 export * from './seniorOverview';
 export * from './seniorTotals';

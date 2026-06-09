@@ -1,13 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   useGetJuniorsOverview,
   useGetJuniorSeasonTopPerformers,
-  getGetJuniorSeasonTopPerformersQueryKey,
   useGetJuniorsFilters,
 } from "@workspace/api-client-react";
 import { CalendarDays, ScrollText, TrendingUp } from "lucide-react";
 import { fmtJuniorDate } from "@/lib/juniors";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
 
@@ -44,28 +50,52 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
   );
 }
 
+// Season picker value: "latest" (default), "all" (all-time), or a season string.
+type SeasonChoice = "latest" | "all" | string;
+
 export default function JuniorsDashboard() {
   const { data, isLoading } = useGetJuniorsOverview();
   const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
   const { data: filters } = useGetJuniorsFilters();
   const [ageFilter, setAgeFilter] = useState<string>("");
+  const [season, setSeason] = useState<SeasonChoice>("latest");
 
-  const ageOptions = useMemo(() => filters?.ageGroups ?? [], [filters?.ageGroups]);
+  const seasonOptions = useMemo(() => filters?.seasons ?? [], [filters?.seasons]);
 
-  // Club-wide leaders come from the overview payload; an age-group filter fetches
-  // the scoped leaders on demand (only enabled when an age group is selected).
-  const { data: scoped } = useGetJuniorSeasonTopPerformers(
-    { ageGroup: ageFilter },
-    {
-      query: {
-        enabled: ageFilter !== "",
-        queryKey: getGetJuniorSeasonTopPerformersQueryKey({ ageGroup: ageFilter }),
-      },
-    },
-  );
+  // Top performers drive BOTH the leader lists AND the age-group chips: the
+  // response carries availableAgeGroups for the resolved season (or all-time).
+  const seasonParams =
+    season === "all"
+      ? { allTime: true }
+      : season === "latest"
+        ? {}
+        : { season };
+  const { data: tp } = useGetJuniorSeasonTopPerformers({
+    ...(ageFilter ? { ageGroup: ageFilter } : {}),
+    ...seasonParams,
+  });
 
-  const topRunScorers = ageFilter === "" ? data?.topRunScorers ?? [] : scoped?.topRunScorers ?? [];
-  const topWicketTakers = ageFilter === "" ? data?.topWicketTakers ?? [] : scoped?.topWicketTakers ?? [];
+  const ageOptions = useMemo(() => tp?.availableAgeGroups ?? [], [tp?.availableAgeGroups]);
+
+  // If the chosen age group has no records in the newly-selected season, fall
+  // back to the club-wide list so we never show an empty, stale age filter.
+  useEffect(() => {
+    if (ageFilter && tp && !tp.availableAgeGroups.includes(ageFilter)) {
+      setAgeFilter("");
+    }
+  }, [tp, ageFilter]);
+
+  const topRunScorers = tp?.topRunScorers ?? [];
+  const topWicketTakers = tp?.topWicketTakers ?? [];
+
+  // Header label for the resolved season ("All time" when aggregating).
+  const seasonLabel = season === "all" ? "All time" : tp?.season ?? null;
+  const seasonValue =
+    season === "latest"
+      ? data?.latestSeason ?? "latest"
+      : season === "all"
+        ? "all"
+        : season;
 
   return (
     <div className="space-y-8">
@@ -140,16 +170,32 @@ export default function JuniorsDashboard() {
             </section>
           )}
 
-          {/* Top performers */}
+          {/* Top performers with season picker */}
           <section className="space-y-3">
-            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
-              {data.latestSeason && (
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {data.latestSeason} season
-                </span>
-              )}
+              <Select
+                value={seasonValue}
+                onValueChange={(v) => setSeason(v)}
+              >
+                <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
+                  <SelectValue placeholder="Season" />
+                </SelectTrigger>
+                <SelectContent>
+                  {seasonOptions.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {seasonLabel && (
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                {season === "all" ? "All time" : `${seasonLabel} season`}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setAgeFilter("")}

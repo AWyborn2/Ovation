@@ -277,7 +277,29 @@ export interface SeniorTotals {
   grades: number;
 }
 
+/**
+ * A selectable season for the home-page season picker.
+ */
+export interface SeasonOption {
+  /** Season start year (e.g. 2025). */
+  season: number;
+  /** Human label for the season (e.g. "2025/26"). */
+  label: string;
+}
+
 export interface SeasonTopPerformers {
+  /**
+     * Resolved season start year these leaders cover, or null for the all-time list.
+     * @nullable
+     */
+  season: number | null;
+  /**
+     * Human label for the resolved season, or null for all-time.
+     * @nullable
+     */
+  seasonLabel: string | null;
+  /** Grades that have records in the resolved season (or all grades ever played for the all-time list). Drives the grade chips. */
+  availableGrades: string[];
   topRunScorers: SeasonLeader[];
   topWicketTakers: SeasonLeader[];
 }
@@ -345,6 +367,8 @@ export interface MatchSummary {
 }
 
 export interface SeniorOverview {
+  /** Seasons that have results, newest-first, for the season picker. */
+  availableSeasons: SeasonOption[];
   /**
      * Start year of the newest season with results, or null when none.
      * @nullable
@@ -3102,6 +3126,13 @@ export interface JuniorOverview {
 }
 
 export interface JuniorSeasonTopPerformers {
+  /**
+     * Resolved season these leaders cover (e.g. "2024/25"), or null for the all-time list.
+     * @nullable
+     */
+  season: string | null;
+  /** Age groups that have records in the resolved season (or all age groups ever played for the all-time list). Drives the age chips. */
+  availableAgeGroups: string[];
   topRunScorers: JuniorBattingLeader[];
   topWicketTakers: JuniorBowlingLeader[];
 }
@@ -3197,6 +3228,14 @@ export type GetSeniorSeasonTopPerformersParams = {
  * Single grade to scope the leaders to; omit for club-wide.
  */
 grade?: string;
+/**
+ * Season start year to scope the leaders to; omit for the latest season. Ignored when allTime is true.
+ */
+season?: number;
+/**
+ * When true, aggregate across every season (ignores season).
+ */
+allTime?: boolean;
 };
 
 export type UploadPlaycricketCsvBody = {
@@ -3232,6 +3271,14 @@ export type GetJuniorSeasonTopPerformersParams = {
  * Single age group to scope the leaders to; omit for club-wide.
  */
 ageGroup?: string;
+/**
+ * Season (e.g. "2024/25") to scope the leaders to; omit for the latest season. Ignored when allTime is true.
+ */
+season?: string;
+/**
+ * When true, aggregate across every season (ignores season).
+ */
+allTime?: boolean;
 };
 
 export type ListJuniorMatchesParams = {

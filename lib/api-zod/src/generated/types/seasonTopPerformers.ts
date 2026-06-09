@@ -8,6 +8,18 @@
 import type { SeasonLeader } from './seasonLeader';
 
 export interface SeasonTopPerformers {
+  /**
+     * Resolved season start year these leaders cover, or null for the all-time list.
+     * @nullable
+     */
+  season: number | null;
+  /**
+     * Human label for the resolved season, or null for all-time.
+     * @nullable
+     */
+  seasonLabel: string | null;
+  /** Grades that have records in the resolved season (or all grades ever played for the all-time list). Drives the grade chips. */
+  availableGrades: string[];
   topRunScorers: SeasonLeader[];
   topWicketTakers: SeasonLeader[];
 }

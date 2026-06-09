@@ -1,15 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   useGetSeniorOverview,
   useGetSeniorSeasonTopPerformers,
-  getGetSeniorSeasonTopPerformersQueryKey,
-  useListGrades,
   type MatchSummary,
   type SeasonLeader,
 } from "@workspace/api-client-react";
 import { Trophy, TrendingUp, CalendarDays, MapPin } from "lucide-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { matchLabel } from "@/lib/utils";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
@@ -149,31 +154,50 @@ function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[]
   );
 }
 
+// Season picker value: "latest" (default), "all" (all-time), or a season year.
+type SeasonChoice = "latest" | "all" | number;
+
 export default function Home() {
   const { data, isLoading } = useGetSeniorOverview();
   const quickLinks = useNavSurface("senior_menu", SENIOR_QUICK_LINKS_FALLBACK);
-  const { data: grades } = useListGrades();
   const [gradeFilter, setGradeFilter] = useState<string>("");
+  const [season, setSeason] = useState<SeasonChoice>("latest");
+
+  // Top performers drive BOTH the leader lists AND the grade chips: the response
+  // carries availableGrades for the resolved season (or all grades, all-time).
+  const seasonParams =
+    season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
+  const { data: tp } = useGetSeniorSeasonTopPerformers({
+    ...(gradeFilter ? { grade: gradeFilter } : {}),
+    ...seasonParams,
+  });
 
   const gradeOptions = useMemo(
-    () => sortGradesBySeniority((grades ?? []).map((g) => g.grade)),
-    [grades],
+    () => sortGradesBySeniority(tp?.availableGrades ?? []),
+    [tp?.availableGrades],
   );
 
-  // Club-wide leaders come from the overview payload; a grade filter fetches the
-  // scoped leaders on demand (only enabled when a grade is selected).
-  const { data: scoped } = useGetSeniorSeasonTopPerformers(
-    { grade: gradeFilter },
-    {
-      query: {
-        enabled: gradeFilter !== "",
-        queryKey: getGetSeniorSeasonTopPerformersQueryKey({ grade: gradeFilter }),
-      },
-    },
-  );
+  // If the chosen grade has no records in the newly-selected season, fall back
+  // to the club-wide list so we never show an empty, stale grade filter.
+  useEffect(() => {
+    if (gradeFilter && tp && !tp.availableGrades.includes(gradeFilter)) {
+      setGradeFilter("");
+    }
+  }, [tp, gradeFilter]);
 
-  const topRunScorers = gradeFilter === "" ? data?.topRunScorers ?? [] : scoped?.topRunScorers ?? [];
-  const topWicketTakers = gradeFilter === "" ? data?.topWicketTakers ?? [] : scoped?.topWicketTakers ?? [];
+  const topRunScorers = tp?.topRunScorers ?? [];
+  const topWicketTakers = tp?.topWicketTakers ?? [];
+
+  // Header label for the resolved season ("All time" when aggregating).
+  const seasonLabel = season === "all" ? "All time" : tp?.seasonLabel ?? null;
+  const seasonValue =
+    season === "latest"
+      ? data?.latestSeason != null
+        ? String(data.latestSeason)
+        : "latest"
+      : season === "all"
+        ? "all"
+        : String(season);
 
   return (
     <div className="space-y-8">
@@ -228,16 +252,34 @@ export default function Home() {
             </section>
           )}
 
-          {/* Top performers (latest season) with grade filter */}
+          {/* Top performers with season picker + grade filter */}
           <section className="space-y-3">
-            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
-              {data.latestSeasonLabel && (
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {data.latestSeasonLabel} season
-                </span>
-              )}
+              <Select
+                value={seasonValue}
+                onValueChange={(v) =>
+                  setSeason(v === "all" ? "all" : Number(v))
+                }
+              >
+                <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
+                  <SelectValue placeholder="Season" />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.availableSeasons.map((s) => (
+                    <SelectItem key={s.season} value={String(s.season)}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {seasonLabel && (
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                {season === "all" ? "All time" : `${seasonLabel} season`}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setGradeFilter("")}

@@ -259,25 +259,96 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
     return;
   }
   const ageGroup = parsed.data.ageGroup?.trim() || undefined;
+  const allTime = parsed.data.allTime === true;
+  const requestedSeason = parsed.data.season?.trim() || undefined;
 
-  const [latest] = await db
-    .select({ season: juniorMatchesTable.season })
-    .from(juniorMatchesTable)
-    .where(isNotNull(juniorMatchesTable.season))
-    .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
-    .limit(1);
-  const latestSeason = latest?.season ?? null;
+  // Age groups that actually have leaderboard records in the resolved season
+  // (or every age group ever, for the all-time list) — derived from the SAME
+  // source as the leaders (HH lines + non-private participants) so a chip never
+  // appears for an age group whose matches have no recorded stats. Unions the
+  // batting and bowling sides since a player may only appear in one.
+  async function ageGroupsForSeason(season: string | null): Promise<string[]> {
+    const battingConds = [
+      isNotNull(juniorMatchesTable.ageGroup),
+      eq(juniorMatchBattingTable.isHallsHead, true),
+      eq(juniorParticipantsTable.isPrivate, false),
+    ];
+    const bowlingConds = [
+      isNotNull(juniorMatchesTable.ageGroup),
+      eq(juniorMatchBowlingTable.isHallsHead, true),
+      eq(juniorParticipantsTable.isPrivate, false),
+    ];
+    if (season !== null) {
+      battingConds.push(eq(juniorMatchesTable.season, season));
+      bowlingConds.push(eq(juniorMatchesTable.season, season));
+    }
+    const [batting, bowling] = await Promise.all([
+      db
+        .selectDistinct({ ageGroup: juniorMatchesTable.ageGroup })
+        .from(juniorMatchBattingTable)
+        .innerJoin(
+          juniorParticipantsTable,
+          eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+        )
+        .innerJoin(
+          juniorMatchesTable,
+          eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
+        )
+        .where(and(...battingConds)),
+      db
+        .selectDistinct({ ageGroup: juniorMatchesTable.ageGroup })
+        .from(juniorMatchBowlingTable)
+        .innerJoin(
+          juniorParticipantsTable,
+          eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+        )
+        .innerJoin(
+          juniorMatchesTable,
+          eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
+        )
+        .where(and(...bowlingConds)),
+    ]);
+    const set = new Set<string>();
+    for (const r of [...batting, ...bowling]) {
+      if (r.ageGroup) set.add(r.ageGroup);
+    }
+    return [...set].sort();
+  }
 
-  if (latestSeason === null) {
-    res.json({ topRunScorers: [], topWicketTakers: [] });
+  // All-time: aggregate across every season.
+  if (allTime) {
+    const [topRunScorers, topWicketTakers, availableAgeGroups] = await Promise.all([
+      battingLeaders(5, { ageGroup }),
+      bowlingLeaders(5, { ageGroup }),
+      ageGroupsForSeason(null),
+    ]);
+    res.json({ season: null, availableAgeGroups, topRunScorers, topWicketTakers });
     return;
   }
 
-  const [topRunScorers, topWicketTakers] = await Promise.all([
-    battingLeaders(5, { season: latestSeason, ageGroup }),
-    bowlingLeaders(5, { season: latestSeason, ageGroup }),
+  // Resolve the season: explicit request, else the latest season with matches.
+  let season = requestedSeason ?? null;
+  if (season === null) {
+    const [latest] = await db
+      .select({ season: juniorMatchesTable.season })
+      .from(juniorMatchesTable)
+      .where(isNotNull(juniorMatchesTable.season))
+      .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
+      .limit(1);
+    season = latest?.season ?? null;
+  }
+
+  if (season === null) {
+    res.json({ season: null, availableAgeGroups: [], topRunScorers: [], topWicketTakers: [] });
+    return;
+  }
+
+  const [topRunScorers, topWicketTakers, availableAgeGroups] = await Promise.all([
+    battingLeaders(5, { season, ageGroup }),
+    bowlingLeaders(5, { season, ageGroup }),
+    ageGroupsForSeason(season),
   ]);
-  res.json({ topRunScorers, topWicketTakers });
+  res.json({ season, availableAgeGroups, topRunScorers, topWicketTakers });
 });
 
 // ---------------------------------------------------------------------------

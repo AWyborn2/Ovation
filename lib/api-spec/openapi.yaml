@@ -549,9 +549,23 @@ paths:
           schema:
             type: string
           description: Single grade to scope the leaders to; omit for club-wide.
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: >-
+            Season start year to scope the leaders to; omit for the latest
+            season. Ignored when allTime is true.
+        - name: allTime
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: When true, aggregate across every season (ignores season).
       responses:
         "200":
-          description: Latest-season top performers
+          description: Top performers for the resolved season (or all-time)
           content:
             application/json:
               schema:
@@ -3224,9 +3238,23 @@ paths:
           schema:
             type: string
           description: Single age group to scope the leaders to; omit for club-wide.
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >-
+            Season (e.g. "2024/25") to scope the leaders to; omit for the latest
+            season. Ignored when allTime is true.
+        - name: allTime
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: When true, aggregate across every season (ignores season).
       responses:
         "200":
-          description: Latest-season junior top performers
+          description: Junior top performers for the resolved season (or all-time)
           content:
             application/json:
               schema:
@@ -3865,10 +3893,37 @@ components:
         grades:
           type: integer
 
+    SeasonOption:
+      type: object
+      description: A selectable season for the home-page season picker.
+      required: [season, label]
+      properties:
+        season:
+          type: integer
+          description: Season start year (e.g. 2025).
+        label:
+          type: string
+          description: Human label for the season (e.g. "2025/26").
+
     SeasonTopPerformers:
       type: object
-      required: [topRunScorers, topWicketTakers]
+      required: [season, seasonLabel, availableGrades, topRunScorers, topWicketTakers]
       properties:
+        season:
+          type: ["integer", "null"]
+          description: >-
+            Resolved season start year these leaders cover, or null for the
+            all-time list.
+        seasonLabel:
+          type: ["string", "null"]
+          description: Human label for the resolved season, or null for all-time.
+        availableGrades:
+          type: array
+          items:
+            type: string
+          description: >-
+            Grades that have records in the resolved season (or all grades ever
+            played for the all-time list). Drives the grade chips.
         topRunScorers:
           type: array
           items:
@@ -3881,8 +3936,14 @@ components:
     SeniorOverview:
       type: object
       required:
-        [latestSeason, latestSeasonLabel, totals, recentMatches, topRunScorers, topWicketTakers]
+        [latestSeason, latestSeasonLabel, availableSeasons, totals, recentMatches, topRunScorers, topWicketTakers]
       properties:
+        availableSeasons:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeasonOption"
+          description: >-
+            Seasons that have results, newest-first, for the season picker.
         latestSeason:
           type: ["integer", "null"]
           description: Start year of the newest season with results, or null when none.
@@ -7816,8 +7877,20 @@ components:
 
     JuniorSeasonTopPerformers:
       type: object
-      required: [topRunScorers, topWicketTakers]
+      required: [season, availableAgeGroups, topRunScorers, topWicketTakers]
       properties:
+        season:
+          type: ["string", "null"]
+          description: >-
+            Resolved season these leaders cover (e.g. "2024/25"), or null for
+            the all-time list.
+        availableAgeGroups:
+          type: array
+          items:
+            type: string
+          description: >-
+            Age groups that have records in the resolved season (or all age
+            groups ever played for the all-time list). Drives the age chips.
         topRunScorers:
           type: array
           items:

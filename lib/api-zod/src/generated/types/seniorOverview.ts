@@ -7,9 +7,12 @@
  */
 import type { MatchSummary } from './matchSummary';
 import type { SeasonLeader } from './seasonLeader';
+import type { SeasonOption } from './seasonOption';
 import type { SeniorTotals } from './seniorTotals';
 
 export interface SeniorOverview {
+  /** Seasons that have results, newest-first, for the season picker. */
+  availableSeasons: SeasonOption[];
   /**
      * Start year of the newest season with results, or null when none.
      * @nullable

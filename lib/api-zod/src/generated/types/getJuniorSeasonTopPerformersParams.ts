@@ -11,4 +11,12 @@ export type GetJuniorSeasonTopPerformersParams = {
  * Single age group to scope the leaders to; omit for club-wide.
  */
 ageGroup?: string;
+/**
+ * Season (e.g. "2024/25") to scope the leaders to; omit for the latest season. Ignored when allTime is true.
+ */
+season?: string;
+/**
+ * When true, aggregate across every season (ignores season).
+ */
+allTime?: boolean;
 };

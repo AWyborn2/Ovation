@@ -11,4 +11,12 @@ export type GetSeniorSeasonTopPerformersParams = {
  * Single grade to scope the leaders to; omit for club-wide.
  */
 grade?: string;
+/**
+ * Season start year to scope the leaders to; omit for the latest season. Ignored when allTime is true.
+ */
+season?: number;
+/**
+ * When true, aggregate across every season (ignores season).
+ */
+allTime?: boolean;
 };
