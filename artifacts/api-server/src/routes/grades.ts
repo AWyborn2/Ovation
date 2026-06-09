@@ -9,6 +9,7 @@ import {
   matchesTable,
   matchPlayerLinesTable,
   clubsTable,
+  capRegisterTable,
   recordsDisplaySettingsTable,
 } from "@workspace/db";
 import {
@@ -231,9 +232,24 @@ router.get("/grades", async (_req, res): Promise<void> => {
     .select()
     .from(gradeSummariesTable)
     .orderBy(gradeSummariesTable.grade);
+  // The A Grade "Players" figure should mirror the official A Grade Cap list
+  // (male cap_register), not the distinct-appearance count, so the card matches
+  // the capped-players honour list and tracks cap add/remove live.
+  const [aGradeCapCount] = await db
+    .select({ value: count() })
+    .from(capRegisterTable)
+    .where(eq(capRegisterTable.category, "male"));
   // CLUB TOTAL is an aggregate row stored alongside real grades; it isn't a
   // grade users can pick, so filter it out of the API response.
-  res.json(grades.filter((g) => g.grade !== "CLUB TOTAL"));
+  res.json(
+    grades
+      .filter((g) => g.grade !== "CLUB TOTAL")
+      .map((g) =>
+        g.grade === "A Grade"
+          ? { ...g, players: aGradeCapCount?.value ?? g.players }
+          : g,
+      ),
+  );
 });
 
 router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
