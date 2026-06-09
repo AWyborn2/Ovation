@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Award, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
-import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { GradeBadge, GradeBadgeList, sortGradesBySeniority } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
 import type { ShareCardInput } from "@/lib/share-card";
 
@@ -26,7 +26,13 @@ type Tab = "total" | "by-grade" | "partnerships" | "centuries" | "five-for";
 type RecordRow = {
   title: string;
   value: string | number;
-  stat: { playerId: number; givenName: string; surname: string; grade?: string } | null;
+  stat: {
+    playerId: number;
+    givenName: string;
+    surname: string;
+    grade?: string;
+    grades?: string[];
+  } | null;
 };
 
 const parseHs = (hs: string | null | undefined): number => {
@@ -231,11 +237,20 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
             <Link href={`/players/${row.stat.playerId}`} className="text-sm font-medium hover:underline text-foreground">
               {row.stat.givenName} {row.stat.surname}
             </Link>
-            {row.stat.grade && (
-              <div className="mt-1 flex items-center gap-2">
-                <GradeBadge grade={row.stat.grade} size="sm" />
-                <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
+            {row.stat.grades && row.stat.grades.length > 0 ? (
+              <div className="mt-2">
+                <GradeBadgeList
+                  grades={sortGradesBySeniority(row.stat.grades)}
+                  size="sm"
+                />
               </div>
+            ) : (
+              row.stat.grade && (
+                <div className="mt-1 flex items-center gap-2">
+                  <GradeBadge grade={row.stat.grade} size="sm" />
+                  <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
+                </div>
+              )
             )}
           </>
         ) : (
@@ -602,8 +617,8 @@ export default function Records() {
 
   const totalRows: RecordRow[] = useMemo(() => {
     if (!records) return [];
-    const agg = (title: string, r: { playerId: number; givenName: string; surname: string; value: number }): RecordRow =>
-      ({ title, value: r.value || 0, stat: { playerId: r.playerId, givenName: r.givenName, surname: r.surname } });
+    const agg = (title: string, r: { playerId: number; givenName: string; surname: string; value: number; grades: string[] }): RecordRow =>
+      ({ title, value: r.value || 0, stat: { playerId: r.playerId, givenName: r.givenName, surname: r.surname, grades: r.grades } });
     const peak = (title: string, value: string | number, s: { playerId: number; givenName: string; surname: string; grade: string }): RecordRow =>
       ({ title, value, stat: { playerId: s.playerId, givenName: s.givenName, surname: s.surname, grade: s.grade } });
     return [

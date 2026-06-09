@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sum, count, sql } from "drizzle-orm";
+import { eq, and, gt, desc, sum, count, sql } from "drizzle-orm";
 import {
   db,
   gradeSummariesTable,
@@ -105,7 +105,13 @@ router.get("/records", async (_req, res): Promise<void> => {
       | typeof playerGradeStatsTable.catches
       | typeof playerGradeStatsTable.fifties
       | typeof playerGradeStatsTable.hundreds,
-  ): Promise<{ playerId: number; givenName: string; surname: string; value: number } | null> {
+  ): Promise<{
+    playerId: number;
+    givenName: string;
+    surname: string;
+    value: number;
+    grades: string[];
+  } | null> {
     const [row] = await db
       .select({
         playerId: playerGradeStatsTable.playerId,
@@ -124,11 +130,23 @@ router.get("/records", async (_req, res): Promise<void> => {
       .orderBy(sql`${sum(col)} desc nulls last`)
       .limit(1);
     if (!row) return null;
+    // Every grade this leader actually appeared in (games > 0), so the
+    // club-wide aggregate cards can show their grade badges.
+    const gradeRows = await db
+      .selectDistinct({ grade: playerGradeStatsTable.grade })
+      .from(playerGradeStatsTable)
+      .where(
+        and(
+          eq(playerGradeStatsTable.playerId, row.playerId),
+          gt(playerGradeStatsTable.games, 0),
+        ),
+      );
     return {
       playerId: row.playerId,
       givenName: row.givenName,
       surname: row.surname,
       value: Number(row.value ?? 0),
+      grades: gradeRows.map((g) => g.grade),
     };
   }
 

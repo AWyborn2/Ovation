@@ -4869,7 +4869,7 @@ components:
 
     PlayerRecord:
       type: object
-      required: [playerId, givenName, surname, value]
+      required: [playerId, givenName, surname, value, grades]
       properties:
         playerId:
           type: integer
@@ -4879,6 +4879,11 @@ components:
           type: string
         value:
           type: integer
+        grades:
+          type: array
+          description: Grades this player has appeared in, ordered by seniority.
+          items:
+            type: string
 
     CapCategory:
       type: string

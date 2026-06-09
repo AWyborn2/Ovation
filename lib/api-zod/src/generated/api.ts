@@ -1280,19 +1280,22 @@ export const GetRecordsResponse = zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
   "surname": zod.string(),
-  "value": zod.number()
+  "value": zod.number(),
+  "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 }),
   "mostRuns": zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
   "surname": zod.string(),
-  "value": zod.number()
+  "value": zod.number(),
+  "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 }),
   "mostWickets": zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
   "surname": zod.string(),
-  "value": zod.number()
+  "value": zod.number(),
+  "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 }),
   "highestScore": zod.object({
   "id": zod.number(),
@@ -1346,19 +1349,22 @@ export const GetRecordsResponse = zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
   "surname": zod.string(),
-  "value": zod.number()
+  "value": zod.number(),
+  "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 }),
   "mostFifties": zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
   "surname": zod.string(),
-  "value": zod.number()
+  "value": zod.number(),
+  "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 }),
   "mostHundreds": zod.object({
   "playerId": zod.number(),
   "givenName": zod.string(),
   "surname": zod.string(),
-  "value": zod.number()
+  "value": zod.number(),
+  "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 })
 })
 

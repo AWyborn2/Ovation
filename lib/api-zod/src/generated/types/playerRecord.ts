@@ -11,4 +11,6 @@ export interface PlayerRecord {
   givenName: string;
   surname: string;
   value: number;
+  /** Grades this player has appeared in, ordered by seniority. */
+  grades: string[];
 }
