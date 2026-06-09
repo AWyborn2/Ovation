@@ -12,8 +12,10 @@ import {
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
 import { DigitalScorecard } from "@/components/scorecard/digital-scorecard";
+import { ShareCardModal } from "@/components/share-card-modal";
+import { matchToSummaryInput } from "@/lib/match-summary";
 import { matchLabel } from "@/lib/utils";
-import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame } from "lucide-react";
+import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame, Share2 } from "lucide-react";
 
 const FINALS_STAGES = Object.values(MatchStage);
 
@@ -48,6 +50,8 @@ export default function MatchDetail() {
       onError: (e) => setHatTrickError(handleAdminMutationError(e)),
     },
   });
+
+  const [shareOpen, setShareOpen] = useState(false);
 
   const [editingRound, setEditingRound] = useState(false);
   const [roundValue, setRoundValue] = useState("");
@@ -224,11 +228,21 @@ export default function MatchDetail() {
               )}
             </div>
           </div>
-          {match.abandoned && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/15 border border-amber-600/40 rounded px-2 py-0.5">
-              Abandoned
-            </span>
-          )}
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {match.abandoned && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/15 border border-amber-600/40 rounded px-2 py-0.5">
+                Abandoned
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+              data-testid="button-share-match"
+            >
+              <Share2 className="h-3.5 w-3.5" /> Share
+            </button>
+          </div>
         </div>
         {(match.result || match.hhccScore || match.opponentScore) && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-4">
@@ -298,6 +312,15 @@ export default function MatchDetail() {
           {hatTrickError && <div className="mt-3 text-sm text-destructive">{hatTrickError}</div>}
         </div>
       )}
+
+      <ShareCardModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        input={shareOpen ? matchToSummaryInput(match) : null}
+        engine="ondemand"
+        appPath={`/matches/${matchId}`}
+        playerId={null}
+      />
     </div>
   );
 }
