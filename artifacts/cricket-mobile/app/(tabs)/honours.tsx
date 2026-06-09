@@ -91,6 +91,34 @@ export default function HonoursScreen() {
         </TouchableOpacity>
       </Link>
 
+      <Link href={"/honours/team-of-decade" as never} asChild>
+        <TouchableOpacity activeOpacity={0.7}>
+          <Card style={{ marginBottom: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: colors.radius,
+                  backgroundColor: colors.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="users" size={22} color={colors.primaryForeground} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Heading size="md">Team of the Decade</Heading>
+                <Body muted size={12} style={{ marginTop: 2 }}>
+                  Curated best XIs honouring each era
+                </Body>
+              </View>
+              <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+            </View>
+          </Card>
+        </TouchableOpacity>
+      </Link>
+
       <Link href={"/premierships" as never} asChild>
         <TouchableOpacity activeOpacity={0.7}>
           <Card style={{ marginBottom: 10 }}>
