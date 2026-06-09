@@ -616,6 +616,147 @@ const drawFooter = (
   );
 };
 
+// --- Trading-card visual language -------------------------------------------
+// Shared helpers that bring the HTML trading card's look (StatTile / SectionTitle
+// / role chip) to the canvas cards: a translucent rounded stat tile with a gold
+// value over a muted uppercase label, a gold-barred section heading, and a gold
+// pill chip. They draw from the resolved palette, so the junior brown theme and
+// custom themes still apply. Type is Montserrat to match the app + trading card.
+const CARD_FONT = "'Montserrat', sans-serif";
+
+// Shrink `weight px family` until `text` fits within maxW (down to a floor) and
+// leave that font set on ctx. Returns the chosen pixel size.
+const fitFontSize = (
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxW: number,
+  weight: number,
+  startPx: number,
+  family: string,
+  floorPx = 14,
+): number => {
+  let size = startPx;
+  ctx.font = `${weight} ${size}px ${family}`;
+  while (size > floorPx && ctx.measureText(text).width > maxW) {
+    size -= 2;
+    ctx.font = `${weight} ${size}px ${family}`;
+  }
+  return size;
+};
+
+// Gold vertical bar + uppercase heading (trading-card SectionTitle). Left-aligned
+// at x; returns the y just below the title row.
+const drawSectionTitle = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  text: string,
+  scale: number,
+  p: Palette,
+): number => {
+  const barW = Math.round(6 * scale);
+  const barH = Math.round(30 * scale);
+  ctx.beginPath();
+  ctx.roundRect(x, y, barW, barH, Math.round(3 * scale));
+  ctx.fillStyle = p.accent;
+  ctx.fill();
+  ctx.fillStyle = p.textLight;
+  ctx.font = `800 ${Math.round(26 * scale)}px ${CARD_FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(
+    text.toUpperCase(),
+    x + barW + Math.round(16 * scale),
+    y + barH / 2 + Math.round(1 * scale),
+  );
+  return y + barH + Math.round(22 * scale);
+};
+
+// Translucent rounded stat tile: gold value over a muted uppercase label, both
+// centred in the rect (mirrors the trading-card StatTile). `big` enlarges type.
+const drawStatTile = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  value: string | number,
+  label: string,
+  scale: number,
+  p: Palette,
+  big = false,
+): void => {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, Math.round(16 * scale));
+  ctx.fillStyle = rgba(p.textLight, 0.06);
+  ctx.fill();
+  ctx.strokeStyle = rgba(p.textLight, 0.1);
+  ctx.lineWidth = Math.max(1, Math.round(1.5 * scale));
+  ctx.stroke();
+
+  const cx = x + w / 2;
+  const innerW = w - Math.round(28 * scale);
+  const labelPx = Math.round((big ? 22 : 18) * scale);
+  const gap = Math.round(12 * scale);
+  const valPx = fitFontSize(
+    ctx,
+    String(fmt(value)),
+    innerW,
+    900,
+    Math.round((big ? 62 : 46) * scale),
+    CARD_FONT,
+  );
+  const blockH = valPx + gap + labelPx;
+  const top = y + (h - blockH) / 2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = p.accent;
+  ctx.fillText(String(fmt(value)), cx, top);
+  ctx.fillStyle = p.textMuted;
+  ctx.font = `700 ${labelPx}px ${CARD_FONT}`;
+  ctx.fillText(label.toUpperCase(), cx, top + valPx + gap);
+};
+
+// Centred rounded pill chip. `filled` = solid gold with dark text; otherwise a
+// soft-gold fill with a gold outline + gold text. Returns its bottom y.
+const drawPill = (
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  y: number,
+  text: string,
+  scale: number,
+  p: Palette,
+  filled = false,
+): number => {
+  const label = text.toUpperCase();
+  const sidePad = Math.round(24 * scale);
+  const maxPillW = ctx.canvas.width - Math.round(160 * scale);
+  const fontPx = fitFontSize(ctx, label, maxPillW - sidePad * 2, 800, Math.round(22 * scale), CARD_FONT);
+  ctx.font = `800 ${fontPx}px ${CARD_FONT}`;
+  const tw = ctx.measureText(label).width;
+  const h = Math.round(46 * scale);
+  const w = Math.min(maxPillW, tw + sidePad * 2);
+  const x = cx - w / 2;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, h / 2);
+  if (filled) {
+    ctx.fillStyle = p.accent;
+    ctx.fill();
+    ctx.fillStyle = p.bgDark;
+  } else {
+    ctx.fillStyle = p.accentSoft;
+    ctx.fill();
+    ctx.strokeStyle = p.accent;
+    ctx.lineWidth = Math.max(1, Math.round(1.5 * scale));
+    ctx.stroke();
+    ctx.fillStyle = p.accent;
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, cx, y + h / 2 + Math.round(1 * scale));
+  return y + h;
+};
+
 // Built-in motion presets applied to a card. "none" is a still card; "fadeIn"
 // and "slideUp" are whole-card / per-slot entrances; "countUp" ticks numeric
 // slot values up from zero (template slots only — a flat built-in card falls
@@ -1353,6 +1494,14 @@ export const renderShareCard = async (
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get canvas 2D context");
 
+  // Ensure web fonts (Montserrat) are ready so canvas text matches the app and
+  // the trading card rather than falling back to a system sans.
+  if (document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {}
+  }
+
   // Junior cards force the brown palette regardless of the selected theme so
   // junior content is always visually distinct from the navy senior cards.
   const p = isJuniorInput(input)
@@ -1464,78 +1613,104 @@ export const renderShareCard = async (
       } catch {}
     }
 
-    ctx.fillStyle = GOLD;
-    ctx.font = `800 ${Math.round(34 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+    // Tier as a filled gold pill chip.
+    let y = badgeCy + badgeR + Math.round(28 * scale);
+    y = drawPill(ctx, W / 2, y, input.tierLabel, scale, p, true) + Math.round(30 * scale);
+
+    // Name (Montserrat heavy).
+    ctx.fillStyle = TEXT_LIGHT;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    const tierY = badgeCy + badgeR + Math.round(28 * scale);
-    ctx.fillText(input.tierLabel.toUpperCase(), W / 2, tierY);
+    const mPad = Math.round(100 * scale);
+    const nameUpper = input.playerName.toUpperCase();
+    const namePx = fitFontSize(ctx, nameUpper, W - mPad * 2, 900, Math.round(64 * scale), CARD_FONT);
+    const lineH = Math.round(namePx * 1.08);
+    const nameLines = wrapText(ctx, nameUpper, W - mPad * 2);
+    nameLines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * lineH));
+    y += nameLines.length * lineH + Math.round(28 * scale);
 
-    ctx.fillStyle = TEXT_LIGHT;
-    ctx.font = `700 ${Math.round(58 * scale)}px Georgia, 'Times New Roman', serif`;
-    const nameLines = wrapText(ctx, input.playerName.toUpperCase(), W - Math.round(200 * scale));
-    const lineH = Math.round(68 * scale);
-    const nameY = tierY + Math.round(60 * scale);
-    nameLines.forEach((line, i) => ctx.fillText(line, W / 2, nameY + i * lineH));
-
-    const statY = nameY + nameLines.length * lineH + Math.round(24 * scale);
-    ctx.fillStyle = TEXT_LIGHT;
-    ctx.font = `800 ${Math.round(52 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-    ctx.fillText(
-      `${fmt(input.currentValue)} ${input.milestoneLabel.toLowerCase()}`,
-      W / 2,
-      statY,
+    // Milestone value as a single wide stat tile.
+    const tileW = Math.min(W - mPad * 2, Math.round(640 * scale));
+    const tileH = Math.round(190 * scale);
+    drawStatTile(
+      ctx,
+      W / 2 - tileW / 2,
+      y,
+      tileW,
+      tileH,
+      input.currentValue,
+      input.milestoneLabel,
+      scale,
+      p,
+      true,
     );
+    y += tileH + Math.round(28 * scale);
+
     if (input.threshold && input.threshold > 0) {
       ctx.fillStyle = TEXT_MUTED;
-      ctx.font = `500 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.font = `500 ${Math.round(24 * scale)}px ${CARD_FONT}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
       ctx.fillText(
-        `Just past the ${fmt(input.threshold)} ${input.milestoneLabel.toLowerCase()} mark`,
+        `Past the ${fmt(input.threshold)} ${input.milestoneLabel.toLowerCase()} mark`,
         W / 2,
-        statY + Math.round(64 * scale),
+        y,
       );
     }
   } else if (input.kind === "player") {
-    let y = bodyTop + Math.round(40 * scale);
+    const pad = Math.round(100 * scale);
+    let y = bodyTop + Math.round(24 * scale);
     if (photoImg) {
-      const r = Math.round(150 * scale);
+      const r = Math.round(140 * scale);
       const cy = y + r;
       drawCircularImage(ctx, photoImg, W / 2, cy, r, GOLD, Math.round(6 * scale));
-      y = cy + r + Math.round(36 * scale);
+      y = cy + r + Math.round(30 * scale);
     }
+    // Name (Montserrat heavy, matching the trading-card name block).
     ctx.fillStyle = TEXT_LIGHT;
-    ctx.font = `700 ${Math.round(72 * scale)}px Georgia, 'Times New Roman', serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    const nameLines = wrapText(ctx, input.playerName.toUpperCase(), W - Math.round(200 * scale));
-    const lineH = Math.round(80 * scale);
+    const nameUpper = input.playerName.toUpperCase();
+    const namePx = fitFontSize(ctx, nameUpper, W - pad * 2, 900, Math.round(78 * scale), CARD_FONT);
+    const nameLines = wrapText(ctx, nameUpper, W - pad * 2);
+    const lineH = Math.round(namePx * 1.05);
     nameLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * lineH));
     y += nameLines.length * lineH + Math.round(20 * scale);
 
     if (input.gradesPlayed) {
-      ctx.fillStyle = GOLD;
-      ctx.font = `600 ${Math.round(20 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-      ctx.fillText(input.gradesPlayed.toUpperCase(), W / 2, y);
-      y += Math.round(40 * scale);
+      y = drawPill(ctx, W / 2, y, input.gradesPlayed, scale, p) + Math.round(34 * scale);
     }
 
-    // Stat grid (2 cols).
-    const cols = 2;
-    const cellW = (W - Math.round(200 * scale)) / cols;
-    const cellH = Math.round(150 * scale);
-    const startX = Math.round(100 * scale);
-    const startY = Math.min(y + Math.round(20 * scale), bodyBottom - cellH * Math.ceil(input.stats.length / cols) - Math.round(20 * scale));
-    input.stats.slice(0, 6).forEach((s, i) => {
-      const cx = startX + (i % cols) * cellW + cellW / 2;
-      const cy = startY + Math.floor(i / cols) * cellH;
-      ctx.fillStyle = GOLD;
-      ctx.font = `800 ${Math.round(62 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-      ctx.textBaseline = "top";
-      ctx.fillText(String(fmt(s.value)), cx, cy);
-      ctx.fillStyle = TEXT_MUTED;
-      ctx.font = `600 ${Math.round(20 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-      ctx.fillText(s.label.toUpperCase(), cx, cy + Math.round(72 * scale));
-    });
+    // Career statistics as trading-card stat tiles (2-col grid).
+    let stats = input.stats.slice(0, 6);
+    if (stats.length > 0) {
+      y = drawSectionTitle(ctx, pad, y, "Career Statistics", scale, p);
+      const cols = 2;
+      const gridGap = Math.round(20 * scale);
+      const gridW = W - pad * 2;
+      const tileW = (gridW - gridGap * (cols - 1)) / cols;
+      const maxGridH = bodyBottom - y - Math.round(20 * scale);
+      const minTileH = Math.round(78 * scale);
+      // Drop the lowest-priority pair of stats until the remaining rows fit the
+      // available space at the minimum tile height (never overflow the footer).
+      while (stats.length > 2) {
+        const rows = Math.ceil(stats.length / cols);
+        if (rows * minTileH + gridGap * (rows - 1) <= maxGridH) break;
+        stats = stats.slice(0, stats.length - 2);
+      }
+      const rows = Math.ceil(stats.length / cols);
+      const tileH = Math.max(
+        minTileH,
+        Math.min(Math.round(150 * scale), (maxGridH - gridGap * (rows - 1)) / rows),
+      );
+      stats.forEach((s, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const tx = pad + col * (tileW + gridGap);
+        const ty = y + row * (tileH + gridGap);
+        drawStatTile(ctx, tx, ty, tileW, tileH, s.value, s.label, scale, p, false);
+      });
+    }
   } else if (input.kind === "record") {
     let y = bodyTop + Math.round(30 * scale);
     if (photoImg) {
@@ -1668,6 +1843,7 @@ export const renderShareCard = async (
     let bigValue = "";
     let caption = "";
     let subtitle = "";
+    let tileLabel = "";
     let iconIndex = 4;
     if (input.kind === "debut") {
       badgeLabel =
@@ -1681,12 +1857,14 @@ export const renderShareCard = async (
       if (matchPart) debutParts.push(matchPart);
       if (input.season) debutParts.push(input.season);
       subtitle = debutParts.join(" • ");
+      tileLabel = input.grade;
       iconIndex = 4; // Star
     } else if (input.kind === "newCap") {
       badgeLabel = `${input.grade} Cap`;
       bigValue = `#${input.capNumber}`;
       caption = `${input.grade} cap number ${input.capNumber}`;
       subtitle = input.category === "female" ? "Female A Grade" : "A Grade";
+      tileLabel = "Cap Number";
       iconIndex = 0; // Crown
     } else if (input.kind === "century") {
       badgeLabel = "Century";
@@ -1696,6 +1874,7 @@ export const renderShareCard = async (
           ? `${input.runs}${input.notOut ? " not out" : ""} off ${input.balls} balls`
           : `${input.runs}${input.notOut ? " not out" : ""} runs`;
       subtitle = matchSubtitle(input.opponent, input.round);
+      tileLabel = "Runs";
       iconIndex = 1; // Trophy
     } else {
       badgeLabel = "Five-Wicket Haul";
@@ -1705,6 +1884,7 @@ export const renderShareCard = async (
           ? `${input.wickets} wickets off ${input.overs} overs`
           : `${input.wickets} wickets`;
       subtitle = matchSubtitle(input.opponent, input.round);
+      tileLabel = "Figures";
       iconIndex = 2; // Medal
     }
 
@@ -1747,34 +1927,42 @@ export const renderShareCard = async (
       } catch {}
     }
 
-    ctx.fillStyle = GOLD;
-    ctx.font = `800 ${Math.round(34 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-    const labelY = badgeCy + badgeR + Math.round(28 * scale);
-    ctx.fillText(badgeLabel.toUpperCase(), W / 2, labelY);
+    // Badge label as a filled gold pill chip.
+    let y = badgeCy + badgeR + Math.round(26 * scale);
+    y = drawPill(ctx, W / 2, y, badgeLabel, scale, p, true) + Math.round(28 * scale);
 
+    // Name (Montserrat heavy).
     ctx.fillStyle = TEXT_LIGHT;
-    ctx.font = `700 ${Math.round(58 * scale)}px Georgia, 'Times New Roman', serif`;
-    const nameLines = wrapText(ctx, input.playerName.toUpperCase(), W - Math.round(200 * scale));
-    const lineH = Math.round(68 * scale);
-    const nameY = labelY + Math.round(56 * scale);
-    nameLines.forEach((line, i) => ctx.fillText(line, W / 2, nameY + i * lineH));
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const hPad = Math.round(100 * scale);
+    const nameUpper = input.playerName.toUpperCase();
+    const namePx = fitFontSize(ctx, nameUpper, W - hPad * 2, 900, Math.round(60 * scale), CARD_FONT);
+    const lineH = Math.round(namePx * 1.08);
+    const nameLines = wrapText(ctx, nameUpper, W - hPad * 2);
+    nameLines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * lineH));
+    y += nameLines.length * lineH + Math.round(26 * scale);
 
-    const valueY = nameY + nameLines.length * lineH + Math.round(20 * scale);
-    ctx.fillStyle = GOLD;
-    ctx.font = `900 ${Math.round(130 * scale)}px Georgia, 'Times New Roman', serif`;
-    ctx.fillText(bigValue, W / 2, valueY);
+    // Hero value as a wide stat tile (gold value + short uppercase label).
+    const tileW = Math.min(W - hPad * 2, Math.round(560 * scale));
+    const tileH = Math.round(200 * scale);
+    drawStatTile(ctx, W / 2 - tileW / 2, y, tileW, tileH, bigValue, tileLabel, scale, p, true);
+    y += tileH + Math.round(28 * scale);
 
-    let cY = valueY + Math.round(150 * scale);
     if (caption) {
       ctx.fillStyle = TEXT_LIGHT;
-      ctx.font = `600 ${Math.round(26 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-      ctx.fillText(caption, W / 2, cY);
-      cY += Math.round(40 * scale);
+      ctx.font = `600 ${Math.round(26 * scale)}px ${CARD_FONT}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(caption, W / 2, y);
+      y += Math.round(40 * scale);
     }
     if (subtitle) {
       ctx.fillStyle = TEXT_MUTED;
-      ctx.font = `500 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-      ctx.fillText(subtitle, W / 2, cY);
+      ctx.font = `500 ${Math.round(23 * scale)}px ${CARD_FONT}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(subtitle, W / 2, y);
     }
   }
 
