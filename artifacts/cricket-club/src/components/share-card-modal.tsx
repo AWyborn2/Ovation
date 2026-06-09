@@ -585,17 +585,31 @@ export function ShareCardModal({
     setZipping(true);
     try {
       const zip = new JSZip();
+      const base = cardBaseFilename(input);
+      // Still posters render fast, so do them serially.
       for (const size of enabledSizes) {
         const blob = await renderShareCard(input, buildOpts(size, photoTransform));
-        zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.png`, blob);
-        // Animated cards also carry a video clip per size alongside the still poster.
-        if (animated && videoSupported) {
-          try {
-            const { blob: vid, ext } = await renderShareCardVideo(input, buildOpts(size, photoTransform));
-            zip.file(`${cardBaseFilename(input)}-${SIZES[size].code}.${ext}`, vid);
-          } catch (e) {
-            console.error("Card video export failed", e);
-          }
+        zip.file(`${base}-${SIZES[size].code}.png`, blob);
+      }
+      // Animated cards also carry a video clip per size. Video export is
+      // real-time (canvas.captureStream + MediaRecorder), so recording the sizes
+      // one after another makes the wait the SUM of every clip's duration.
+      // Each renderShareCardVideo uses its own offscreen canvas/stream/recorder,
+      // so we record all sizes concurrently — the wait collapses to roughly a
+      // single clip's duration instead of the serial sum.
+      if (animated && videoSupported) {
+        const results = await Promise.all(
+          enabledSizes.map((size) =>
+            renderShareCardVideo(input, buildOpts(size, photoTransform))
+              .then((r) => ({ size, ...r }))
+              .catch((e) => {
+                console.error("Card video export failed", e);
+                return null;
+              }),
+          ),
+        );
+        for (const r of results) {
+          if (r) zip.file(`${base}-${SIZES[r.size].code}.${r.ext}`, r.blob);
         }
       }
       if (bundle?.settings.captionsEnabled) {
