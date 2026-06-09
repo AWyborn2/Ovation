@@ -185,6 +185,7 @@ export * from './negativeBaselineWarning';
 export * from './opponentClub';
 export * from './partnershipRecord';
 export * from './partnerships';
+export * from './pendingDraftCount';
 export * from './player';
 export * from './playerAward';
 export * from './playerDetail';

@@ -9,6 +9,7 @@ import {
   getListTrackedLinksQueryKey,
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
+  getGetPendingSocialDraftCountQueryKey,
   type SocialDraft,
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
@@ -38,24 +39,29 @@ export default function AdminSocialQueue() {
   });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
+  // Refresh both the queue list and the admin-nav pending badge after any
+  // action that changes how many drafts are still waiting for review.
+  const invalidateDrafts = () => {
+    qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+    qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
+  };
+
   const approveM = useApproveSocialDraft({
     mutation: {
       onSuccess: () => {
-        qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+        invalidateDrafts();
         qc.invalidateQueries({ queryKey: getListTrackedLinksQueryKey() });
       },
     },
   });
   const dismissM = useDismissSocialDraft({
     mutation: {
-      onSuccess: () =>
-        qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() }),
+      onSuccess: invalidateDrafts,
     },
   });
   const roundupM = useGenerateRoundUp({
     mutation: {
-      onSuccess: () =>
-        qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() }),
+      onSuccess: invalidateDrafts,
     },
   });
 
@@ -64,7 +70,7 @@ export default function AdminSocialQueue() {
       method: "POST",
       credentials: "include",
     });
-    qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+    invalidateDrafts();
   };
 
   const triggerRecap = async () => {
@@ -74,7 +80,7 @@ export default function AdminSocialQueue() {
       credentials: "include",
       body: JSON.stringify({ grade, season }),
     });
-    qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+    invalidateDrafts();
   };
 
   const [previewDraft, setPreviewDraft] = useState<SocialDraft | null>(null);

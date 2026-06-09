@@ -23,6 +23,14 @@ router.get("/social-drafts", requireAdmin, async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
+router.get("/social-drafts/pending-count", requireAdmin, async (_req, res): Promise<void> => {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(socialDraftsTable)
+    .where(eq(socialDraftsTable.status, "pending"));
+  res.json({ count: Number(row?.count ?? 0) });
+});
+
 router.post("/social-drafts/:id/approve", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {

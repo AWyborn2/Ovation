@@ -4094,6 +4094,14 @@ export const ListSocialDraftsResponseItem = zod.object({
 export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
 
+/**
+ * @summary Count of social card drafts still awaiting review (status = pending)
+ */
+export const GetPendingSocialDraftCountResponse = zod.object({
+  "count": zod.number()
+})
+
+
 export const ApproveSocialDraftParams = zod.object({
   "id": zod.coerce.number()
 })

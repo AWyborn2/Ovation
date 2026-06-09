@@ -123,6 +123,7 @@ import type {
   NavOptions,
   NavReorderInput,
   Partnerships,
+  PendingDraftCount,
   Player,
   PlayerDetail,
   PlayerImage,
@@ -11424,6 +11425,83 @@ export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocial
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListSocialDraftsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPendingSocialDraftCountUrl = () => {
+
+
+
+
+  return `/api/social-drafts/pending-count`
+}
+
+/**
+ * @summary Count of social card drafts still awaiting review (status = pending)
+ */
+export const getPendingSocialDraftCount = async ( options?: RequestInit): Promise<PendingDraftCount> => {
+
+  return customFetch<PendingDraftCount>(getGetPendingSocialDraftCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPendingSocialDraftCountQueryKey = () => {
+    return [
+    `/api/social-drafts/pending-count`
+    ] as const;
+    }
+
+
+export const getGetPendingSocialDraftCountQueryOptions = <TData = Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPendingSocialDraftCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPendingSocialDraftCount>>> = ({ signal }) => getPendingSocialDraftCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPendingSocialDraftCountQueryResult = NonNullable<Awaited<ReturnType<typeof getPendingSocialDraftCount>>>
+export type GetPendingSocialDraftCountQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Count of social card drafts still awaiting review (status = pending)
+ */
+
+export function useGetPendingSocialDraftCount<TData = Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPendingSocialDraftCountQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

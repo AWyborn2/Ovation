@@ -3172,6 +3172,19 @@ paths:
                 items:
                   $ref: "#/components/schemas/SocialDraft"
 
+  /social-drafts/pending-count:
+    get:
+      operationId: getPendingSocialDraftCount
+      tags: [socialCards]
+      summary: Count of social card drafts still awaiting review (status = pending)
+      responses:
+        "200":
+          description: Pending draft count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingDraftCount"
+
   /social-drafts/{id}/approve:
     post:
       operationId: approveSocialDraft
@@ -7421,6 +7434,12 @@ components:
         sourceImportId: { type: ["integer", "null"] }
         createdAt: { type: string, format: date-time }
         reviewedAt: { type: ["string", "null"], format: date-time }
+
+    PendingDraftCount:
+      type: object
+      required: [count]
+      properties:
+        count: { type: integer }
 
     RoundUpInput:
       type: object

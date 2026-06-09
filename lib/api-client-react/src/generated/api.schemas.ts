@@ -2670,6 +2670,10 @@ export interface SocialDraft {
   reviewedAt?: string | null;
 }
 
+export interface PendingDraftCount {
+  count: number;
+}
+
 export interface RoundUpInput {
   grade: string;
   season: number;
