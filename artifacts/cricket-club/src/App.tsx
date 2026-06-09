@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { AdminShell } from "@/components/admin-shell";
+import Home from "@/pages/home";
 import HonourBoards from "@/pages/honour-boards";
 import Players from "@/pages/players";
 import PlayerDetail from "@/pages/player-detail";
@@ -55,7 +56,8 @@ function PublicRoutes() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={HonourBoards} />
+        <Route path="/" component={Home} />
+        <Route path="/honour-boards" component={HonourBoards} />
         <Route path="/players" component={Players} />
         <Route path="/players/:id" component={PlayerDetail} />
         <Route path="/matches" component={Matches} />

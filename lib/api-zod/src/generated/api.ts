@@ -850,6 +850,82 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * @summary Seniors home overview — club totals, the latest season label, that season's most recent match per grade, and latest-season top run scorers and wicket takers (club-wide across all grades).
+ */
+export const GetSeniorOverviewResponse = zod.object({
+  "latestSeason": zod.number().nullable().describe('Start year of the newest season with results, or null when none.'),
+  "latestSeasonLabel": zod.string().nullable().describe('Human label for the latest season (e.g. \"2025\/26\").'),
+  "totals": zod.object({
+  "players": zod.number(),
+  "games": zod.number(),
+  "runs": zod.number(),
+  "wickets": zod.number(),
+  "grades": zod.number()
+}),
+  "recentMatches": zod.array(zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "season": zod.number(),
+  "round": zod.number().nullish(),
+  "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('Finals stage of the match, or null for a regular round.'),
+  "competition": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "hhccScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "abandoned": zod.boolean(),
+  "playerCount": zod.number(),
+  "opponentClub": zod.union([zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish()
+}).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.')
+})).describe('Most recent match per grade fielded in the latest season.'),
+  "topRunScorers": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "value": zod.number().describe('Runs (for top run scorers) or wickets (for top wicket takers).')
+}).describe('A single player\'s latest-season tally (runs or wickets), aggregated across all grades they played that season. Fill-in players (playerId >= 90000) are excluded.')),
+  "topWicketTakers": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "value": zod.number().describe('Runs (for top run scorers) or wickets (for top wicket takers).')
+}).describe('A single player\'s latest-season tally (runs or wickets), aggregated across all grades they played that season. Fill-in players (playerId >= 90000) are excluded.'))
+})
+
+
+/**
+ * @summary Latest-season top run scorers and wicket takers, optionally filtered to a single grade (omit grade for the club-wide combined list).
+ */
+export const GetSeniorSeasonTopPerformersQueryParams = zod.object({
+  "grade": zod.coerce.string().optional().describe('Single grade to scope the leaders to; omit for club-wide.')
+})
+
+export const GetSeniorSeasonTopPerformersResponse = zod.object({
+  "topRunScorers": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "value": zod.number().describe('Runs (for top run scorers) or wickets (for top wicket takers).')
+}).describe('A single player\'s latest-season tally (runs or wickets), aggregated across all grades they played that season. Fill-in players (playerId >= 90000) are excluded.')),
+  "topWicketTakers": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "value": zod.number().describe('Runs (for top run scorers) or wickets (for top wicket takers).')
+}).describe('A single player\'s latest-season tally (runs or wickets), aggregated across all grades they played that season. Fill-in players (playerId >= 90000) are excluded.'))
+})
+
+
+/**
  * @summary List past CSV imports
  */
 export const ListImportsResponseItem = zod.object({
@@ -4039,6 +4115,7 @@ export const GetJuniorsOverviewResponse = zod.object({
   "seasons": zod.number(),
   "ageGroups": zod.number()
 }),
+  "latestSeason": zod.string().nullable().describe('Newest season with results (e.g. \"2024\/25\"), or null when none.'),
   "recentMatches": zod.array(zod.object({
   "id": zod.number(),
   "season": zod.string().nullish(),
@@ -4065,7 +4142,34 @@ export const GetJuniorsOverviewResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully.')
+})).describe('Most recent match per age group fielded in the latest season.'),
+  "topRunScorers": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "runs": zod.number(),
+  "innings": zod.number(),
+  "highScore": zod.number().nullish(),
+  "average": zod.number().nullish()
 })),
+  "topWicketTakers": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "wickets": zod.number(),
+  "matches": zod.number(),
+  "bestWickets": zod.number().nullish(),
+  "economy": zod.number().nullish()
+}))
+})
+
+
+/**
+ * @summary Latest-season junior top run scorers and wicket takers, optionally filtered to a single age group (omit for the club-wide combined list). Private participants are always excluded.
+ */
+export const GetJuniorSeasonTopPerformersQueryParams = zod.object({
+  "ageGroup": zod.coerce.string().optional().describe('Single age group to scope the leaders to; omit for club-wide.')
+})
+
+export const GetJuniorSeasonTopPerformersResponse = zod.object({
   "topRunScorers": zod.array(zod.object({
   "participantId": zod.string(),
   "displayName": zod.string(),

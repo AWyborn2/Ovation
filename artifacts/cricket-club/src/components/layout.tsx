@@ -8,7 +8,7 @@ import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 // Hard-coded fallbacks used until the nav config loads (or if it fails). These
 // mirror the seeded senior/junior menus so the site is never blank.
 const SENIOR_NAV_FALLBACK: ResolvedNavItem[] = [
-  { label: "Honour Boards", target: "/", isExternal: false, iconKey: "scrollText", description: "" },
+  { label: "Honour Boards", target: "/honour-boards", isExternal: false, iconKey: "scrollText", description: "" },
   { label: "Players", target: "/players", isExternal: false, iconKey: "users", description: "" },
   { label: "Matches", target: "/matches", isExternal: false, iconKey: "clipboardList", description: "" },
   { label: "Grades", target: "/grades", isExternal: false, iconKey: "trophy", description: "" },

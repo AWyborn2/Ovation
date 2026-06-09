@@ -69,6 +69,8 @@ import type {
   DebutEntry,
   ErrorEnvelope,
   FiveWicketHaul,
+  GetJuniorSeasonTopPerformersParams,
+  GetSeniorSeasonTopPerformersParams,
   GradeSummary,
   HealthStatus,
   HonourBoard,
@@ -92,6 +94,7 @@ import type {
   JuniorPlayerDetail,
   JuniorPlayerSummary,
   JuniorPremiership,
+  JuniorSeasonTopPerformers,
   JuniorSocialMilestone,
   LifeMember,
   LifeMemberInput,
@@ -137,6 +140,8 @@ import type {
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
   RoundUpInput,
+  SeasonTopPerformers,
+  SeniorOverview,
   SocialDraft,
   SocialSettings,
   SocialSettingsBundle,
@@ -1698,6 +1703,167 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSeniorOverviewUrl = () => {
+
+
+
+
+  return `/api/overview`
+}
+
+/**
+ * @summary Seniors home overview — club totals, the latest season label, that season's most recent match per grade, and latest-season top run scorers and wicket takers (club-wide across all grades).
+ */
+export const getSeniorOverview = async ( options?: RequestInit): Promise<SeniorOverview> => {
+
+  return customFetch<SeniorOverview>(getGetSeniorOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeniorOverviewQueryKey = () => {
+    return [
+    `/api/overview`
+    ] as const;
+    }
+
+
+export const getGetSeniorOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getSeniorOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeniorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeniorOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeniorOverview>>> = ({ signal }) => getSeniorOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeniorOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSeniorOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getSeniorOverview>>>
+export type GetSeniorOverviewQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Seniors home overview — club totals, the latest season label, that season's most recent match per grade, and latest-season top run scorers and wicket takers (club-wide across all grades).
+ */
+
+export function useGetSeniorOverview<TData = Awaited<ReturnType<typeof getSeniorOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeniorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSeniorOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSeniorSeasonTopPerformersUrl = (params?: GetSeniorSeasonTopPerformersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/overview/top-performers?${stringifiedParams}` : `/api/overview/top-performers`
+}
+
+/**
+ * @summary Latest-season top run scorers and wicket takers, optionally filtered to a single grade (omit grade for the club-wide combined list).
+ */
+export const getSeniorSeasonTopPerformers = async (params?: GetSeniorSeasonTopPerformersParams, options?: RequestInit): Promise<SeasonTopPerformers> => {
+
+  return customFetch<SeasonTopPerformers>(getGetSeniorSeasonTopPerformersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeniorSeasonTopPerformersQueryKey = (params?: GetSeniorSeasonTopPerformersParams,) => {
+    return [
+    `/api/overview/top-performers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSeniorSeasonTopPerformersQueryOptions = <TData = Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>, TError = ErrorType<unknown>>(params?: GetSeniorSeasonTopPerformersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeniorSeasonTopPerformersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>> = ({ signal }) => getSeniorSeasonTopPerformers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSeniorSeasonTopPerformersQueryResult = NonNullable<Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>>
+export type GetSeniorSeasonTopPerformersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Latest-season top run scorers and wicket takers, optionally filtered to a single grade (omit grade for the club-wide combined list).
+ */
+
+export function useGetSeniorSeasonTopPerformers<TData = Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>, TError = ErrorType<unknown>>(
+ params?: GetSeniorSeasonTopPerformersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeniorSeasonTopPerformers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSeniorSeasonTopPerformersQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -11390,6 +11556,90 @@ export function useGetJuniorsOverview<TData = Awaited<ReturnType<typeof getJunio
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetJuniorsOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorSeasonTopPerformersUrl = (params?: GetJuniorSeasonTopPerformersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/top-performers?${stringifiedParams}` : `/api/juniors/top-performers`
+}
+
+/**
+ * @summary Latest-season junior top run scorers and wicket takers, optionally filtered to a single age group (omit for the club-wide combined list). Private participants are always excluded.
+ */
+export const getJuniorSeasonTopPerformers = async (params?: GetJuniorSeasonTopPerformersParams, options?: RequestInit): Promise<JuniorSeasonTopPerformers> => {
+
+  return customFetch<JuniorSeasonTopPerformers>(getGetJuniorSeasonTopPerformersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorSeasonTopPerformersQueryKey = (params?: GetJuniorSeasonTopPerformersParams,) => {
+    return [
+    `/api/juniors/top-performers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetJuniorSeasonTopPerformersQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>, TError = ErrorType<unknown>>(params?: GetJuniorSeasonTopPerformersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorSeasonTopPerformersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>> = ({ signal }) => getJuniorSeasonTopPerformers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorSeasonTopPerformersQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>>
+export type GetJuniorSeasonTopPerformersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Latest-season junior top run scorers and wicket takers, optionally filtered to a single age group (omit for the club-wide combined list). Private participants are always excluded.
+ */
+
+export function useGetJuniorSeasonTopPerformers<TData = Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>, TError = ErrorType<unknown>>(
+ params?: GetJuniorSeasonTopPerformersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorSeasonTopPerformers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorSeasonTopPerformersQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

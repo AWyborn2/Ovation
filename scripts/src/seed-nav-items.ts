@@ -24,7 +24,7 @@ type Seed = {
 };
 
 const SENIOR_MENU: Seed[] = [
-  { label: "Honour Boards", target: "/", iconKey: "scrollText" },
+  { label: "Honour Boards", target: "/honour-boards", iconKey: "scrollText" },
   { label: "Players", target: "/players", iconKey: "users" },
   { label: "Matches", target: "/matches", iconKey: "clipboardList" },
   { label: "Grades", target: "/grades", iconKey: "trophy" },

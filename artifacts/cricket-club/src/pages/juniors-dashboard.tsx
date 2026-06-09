@@ -1,5 +1,11 @@
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useGetJuniorsOverview } from "@workspace/api-client-react";
+import {
+  useGetJuniorsOverview,
+  useGetJuniorSeasonTopPerformers,
+  getGetJuniorSeasonTopPerformersQueryKey,
+  useGetJuniorsFilters,
+} from "@workspace/api-client-react";
 import { CalendarDays, ScrollText, TrendingUp } from "lucide-react";
 import { fmtJuniorDate } from "@/lib/juniors";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
@@ -41,6 +47,25 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
 export default function JuniorsDashboard() {
   const { data, isLoading } = useGetJuniorsOverview();
   const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
+  const { data: filters } = useGetJuniorsFilters();
+  const [ageFilter, setAgeFilter] = useState<string>("");
+
+  const ageOptions = useMemo(() => filters?.ageGroups ?? [], [filters?.ageGroups]);
+
+  // Club-wide leaders come from the overview payload; an age-group filter fetches
+  // the scoped leaders on demand (only enabled when an age group is selected).
+  const { data: scoped } = useGetJuniorSeasonTopPerformers(
+    { ageGroup: ageFilter },
+    {
+      query: {
+        enabled: ageFilter !== "",
+        queryKey: getGetJuniorSeasonTopPerformersQueryKey({ ageGroup: ageFilter }),
+      },
+    },
+  );
+
+  const topRunScorers = ageFilter === "" ? data?.topRunScorers ?? [] : scoped?.topRunScorers ?? [];
+  const topWicketTakers = ageFilter === "" ? data?.topWicketTakers ?? [] : scoped?.topWicketTakers ?? [];
 
   return (
     <div className="space-y-8">
@@ -116,46 +141,87 @@ export default function JuniorsDashboard() {
           )}
 
           {/* Top performers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.topRunScorers.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
+              {data.latestSeason && (
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {data.latestSeason} season
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setAgeFilter("")}
+                className={`text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1.5 border transition-colors ${
+                  ageFilter === ""
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "text-muted-foreground border-border hover:border-primary/50"
+                }`}
+                data-testid="filter-age-all"
+              >
+                All Ages
+              </button>
+              {ageOptions.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setAgeFilter(a)}
+                  className={`text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1.5 border transition-colors ${
+                    ageFilter === a
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "text-muted-foreground border-border hover:border-primary/50"
+                  }`}
+                  data-testid={`filter-age-${a}`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <section className="bg-card border border-border rounded-md p-4 shadow-sm">
                 <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
                   <TrendingUp className="h-4 w-4 text-primary" /> Top Run Scorers
                 </h3>
-                <ul className="divide-y divide-border">
-                  {data.topRunScorers.map((p) => (
-                    <li key={p.participantId}>
-                      <Link href={`/juniors/players/${p.participantId}`}>
-                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
-                          <span className="font-medium">{p.displayName}</span>
-                          <span className="font-mono text-sm">{p.runs}</span>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {topRunScorers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {topRunScorers.map((p) => (
+                      <li key={p.participantId}>
+                        <Link href={`/juniors/players/${p.participantId}`}>
+                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
+                            <span className="font-medium">{p.displayName}</span>
+                            <span className="font-mono text-sm">{p.runs}</span>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
-            )}
-            {data.topWicketTakers.length > 0 && (
               <section className="bg-card border border-border rounded-md p-4 shadow-sm">
                 <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
                   <TrendingUp className="h-4 w-4 text-primary" /> Top Wicket Takers
                 </h3>
-                <ul className="divide-y divide-border">
-                  {data.topWicketTakers.map((p) => (
-                    <li key={p.participantId}>
-                      <Link href={`/juniors/players/${p.participantId}`}>
-                        <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
-                          <span className="font-medium">{p.displayName}</span>
-                          <span className="font-mono text-sm">{p.wickets}</span>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {topWicketTakers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {topWicketTakers.map((p) => (
+                      <li key={p.participantId}>
+                        <Link href={`/juniors/players/${p.participantId}`}>
+                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
+                            <span className="font-medium">{p.displayName}</span>
+                            <span className="font-mono text-sm">{p.wickets}</span>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
-            )}
-          </div>
+            </div>
+          </section>
         </>
       )}
     </div>

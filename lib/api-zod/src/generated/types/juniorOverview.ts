@@ -12,6 +12,12 @@ import type { JuniorTotals } from './juniorTotals';
 
 export interface JuniorOverview {
   totals: JuniorTotals;
+  /**
+     * Newest season with results (e.g. "2024/25"), or null when none.
+     * @nullable
+     */
+  latestSeason: string | null;
+  /** Most recent match per age group fielded in the latest season. */
   recentMatches: JuniorMatchSummary[];
   topRunScorers: JuniorBattingLeader[];
   topWicketTakers: JuniorBowlingLeader[];

@@ -32,6 +32,7 @@ import {
   UpdateJuniorOfficeBearerParams,
   DeleteJuniorOfficeBearerParams,
   ListJuniorLeaderboardQueryParams,
+  GetJuniorSeasonTopPerformersQueryParams,
   UpdateJuniorMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -195,17 +196,42 @@ router.get("/juniors/overview", async (_req, res): Promise<void> => {
         .from(juniorMatchesTable),
     ]);
 
-  const recentRows = await db
-    .select({ match: juniorMatchesTable, ...opponentClubColumns })
+  // Latest season = the season string with the newest parsed start year.
+  const [latest] = await db
+    .select({ season: juniorMatchesTable.season })
     .from(juniorMatchesTable)
-    .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
+    .where(isNotNull(juniorMatchesTable.season))
     .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
-    .limit(6);
+    .limit(1);
+  const latestSeason = latest?.season ?? null;
 
-  const [topRunScorers, topWicketTakers] = await Promise.all([
-    battingLeaders(5),
-    bowlingLeaders(5),
-  ]);
+  let recentMatches: ReturnType<typeof toMatchSummary>[] = [];
+  let topRunScorers: Awaited<ReturnType<typeof battingLeaders>> = [];
+  let topWicketTakers: Awaited<ReturnType<typeof bowlingLeaders>> = [];
+
+  if (latestSeason !== null) {
+    // Every match in the latest season, newest-first; keep the first per age group.
+    const seasonRows = await db
+      .select({ match: juniorMatchesTable, ...opponentClubColumns })
+      .from(juniorMatchesTable)
+      .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
+      .where(eq(juniorMatchesTable.season, latestSeason))
+      .orderBy(desc(juniorMatchesTable.id));
+    const seenAge = new Set<string>();
+    recentMatches = seasonRows
+      .filter((r) => {
+        const key = r.match.ageGroup ?? "";
+        if (seenAge.has(key)) return false;
+        seenAge.add(key);
+        return true;
+      })
+      .map((r) => toMatchSummary(r.match, toOpponentClub(r)));
+
+    [topRunScorers, topWicketTakers] = await Promise.all([
+      battingLeaders(5, { season: latestSeason }),
+      bowlingLeaders(5, { season: latestSeason }),
+    ]);
+  }
 
   res.json({
     totals: {
@@ -215,10 +241,43 @@ router.get("/juniors/overview", async (_req, res): Promise<void> => {
       seasons: seasonCount?.n ?? 0,
       ageGroups: ageCount?.n ?? 0,
     },
-    recentMatches: recentRows.map((r) => toMatchSummary(r.match, toOpponentClub(r))),
+    latestSeason,
+    recentMatches,
     topRunScorers,
     topWicketTakers,
   });
+});
+
+// ---------------------------------------------------------------------------
+// GET /juniors/top-performers — latest-season top run scorers / wicket takers,
+// optionally scoped to a single age group. Private participants always excluded.
+// ---------------------------------------------------------------------------
+router.get("/juniors/top-performers", async (req, res): Promise<void> => {
+  const parsed = GetJuniorSeasonTopPerformersQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid query", details: parsed.error.issues });
+    return;
+  }
+  const ageGroup = parsed.data.ageGroup?.trim() || undefined;
+
+  const [latest] = await db
+    .select({ season: juniorMatchesTable.season })
+    .from(juniorMatchesTable)
+    .where(isNotNull(juniorMatchesTable.season))
+    .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
+    .limit(1);
+  const latestSeason = latest?.season ?? null;
+
+  if (latestSeason === null) {
+    res.json({ topRunScorers: [], topWicketTakers: [] });
+    return;
+  }
+
+  const [topRunScorers, topWicketTakers] = await Promise.all([
+    battingLeaders(5, { season: latestSeason, ageGroup }),
+    bowlingLeaders(5, { season: latestSeason, ageGroup }),
+  ]);
+  res.json({ topRunScorers, topWicketTakers });
 });
 
 // ---------------------------------------------------------------------------
@@ -1188,7 +1247,20 @@ router.get("/juniors/premierships", async (_req, res): Promise<void> => {
 // Leaderboard helpers — all inner-join junior_participants and filter
 // is_private, which excludes both opposition players and private participants.
 // ---------------------------------------------------------------------------
-async function battingLeaders(limit: number) {
+// Optional scope for the leader helpers. season/ageGroup narrow the aggregate to
+// a single junior season and/or age group (used by the home overview's
+// latest-season leaders and the /juniors/top-performers filter); omitting both
+// gives the all-time club-wide list. junior_matches is always joined so these
+// filters are available; the 1:1 join never changes the aggregate when unfiltered.
+type LeaderScope = { season?: string; ageGroup?: string };
+
+async function battingLeaders(limit: number, scope: LeaderScope = {}) {
+  const conds = [
+    eq(juniorMatchBattingTable.isHallsHead, true),
+    eq(juniorParticipantsTable.isPrivate, false),
+  ];
+  if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
+  if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -1203,13 +1275,13 @@ async function battingLeaders(limit: number) {
       juniorParticipantsTable,
       eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
     )
-    .where(
-      and(
-        eq(juniorMatchBattingTable.isHallsHead, true),
-        eq(juniorParticipantsTable.isPrivate, false),
-      ),
+    .innerJoin(
+      juniorMatchesTable,
+      eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
     )
+    .where(and(...conds))
     .groupBy(juniorParticipantsTable.participantId, juniorParticipantsTable.displayName)
+    .having(sql`sum(${juniorMatchBattingTable.runs}) > 0`)
     .orderBy(sql`sum(${juniorMatchBattingTable.runs}) desc nulls last`)
     .limit(limit);
   return rows.map((r) => ({
@@ -1222,7 +1294,13 @@ async function battingLeaders(limit: number) {
   }));
 }
 
-async function bowlingLeaders(limit: number) {
+async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
+  const conds = [
+    eq(juniorMatchBowlingTable.isHallsHead, true),
+    eq(juniorParticipantsTable.isPrivate, false),
+  ];
+  if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
+  if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -1239,13 +1317,13 @@ async function bowlingLeaders(limit: number) {
       juniorParticipantsTable,
       eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
     )
-    .where(
-      and(
-        eq(juniorMatchBowlingTable.isHallsHead, true),
-        eq(juniorParticipantsTable.isPrivate, false),
-      ),
+    .innerJoin(
+      juniorMatchesTable,
+      eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
     )
+    .where(and(...conds))
     .groupBy(juniorParticipantsTable.participantId, juniorParticipantsTable.displayName)
+    .having(sql`sum(${juniorMatchBowlingTable.wickets}) > 0`)
     .orderBy(sql`sum(${juniorMatchBowlingTable.wickets}) desc nulls last`)
     .limit(limit);
   return rows.map((r) => ({

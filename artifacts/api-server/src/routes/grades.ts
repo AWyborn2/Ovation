@@ -1,16 +1,161 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gt, desc, sum, count, sql } from "drizzle-orm";
+import { eq, and, desc, sum, count, lt, gt, sql, type SQL } from "drizzle-orm";
 import {
   db,
   gradeSummariesTable,
   playerGradeStatsTable,
+  playerGradeSeasonStatsTable,
   playersTable,
+  matchesTable,
+  matchPlayerLinesTable,
+  clubsTable,
   recordsDisplaySettingsTable,
 } from "@workspace/db";
-import { UpdateRecordsDisplaySettingsBody } from "@workspace/api-zod";
+import {
+  UpdateRecordsDisplaySettingsBody,
+  GetSeniorSeasonTopPerformersQueryParams,
+} from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
+
+// Fill-in players are stored on match lines for scorecard history but have no
+// real player record; they must never surface in any derived stat/leaderboard.
+const FILL_IN_FLOOR = 90000;
+
+// Branding columns for a match's opposition club (mirrors matches.ts).
+const opponentClubColumns = {
+  opponentClubId: clubsTable.id,
+  opponentClubName: clubsTable.name,
+  opponentClubShortName: clubsTable.shortName,
+  opponentClubLogoUrl: clubsTable.logoUrl,
+  opponentClubLogoUrl128: clubsTable.logoUrl128,
+  opponentClubPrimaryColour: clubsTable.primaryColour,
+  opponentClubSecondaryColour: clubsTable.secondaryColour,
+};
+
+function toOpponentClub(row: {
+  opponentClubId: number | null;
+  opponentClubName: string | null;
+  opponentClubShortName: string | null;
+  opponentClubLogoUrl: string | null;
+  opponentClubLogoUrl128: string | null;
+  opponentClubPrimaryColour: string | null;
+  opponentClubSecondaryColour: string | null;
+}) {
+  if (row.opponentClubId == null || row.opponentClubName == null) return null;
+  return {
+    id: row.opponentClubId,
+    name: row.opponentClubName,
+    shortName: row.opponentClubShortName,
+    logoUrl: row.opponentClubLogoUrl,
+    logoUrl128: row.opponentClubLogoUrl128,
+    primaryColour: row.opponentClubPrimaryColour,
+    secondaryColour: row.opponentClubSecondaryColour,
+  };
+}
+
+// Hide empty placeholder / "bye" fixture shells (mirrors matches.ts).
+const notEmptyFixture: SQL = sql`NOT (
+  (${matchesTable.opponent} IS NULL OR btrim(${matchesTable.opponent}) = '')
+  AND COALESCE(${matchesTable.abandoned}, false) = false
+  AND (${matchesTable.result} IS NULL OR btrim(${matchesTable.result}) = '')
+  AND (${matchesTable.hhccScore} IS NULL OR btrim(${matchesTable.hhccScore}) = '')
+  AND (${matchesTable.opponentScore} IS NULL OR btrim(${matchesTable.opponentScore}) = '')
+  AND NOT EXISTS (SELECT 1 FROM match_player_lines mpl WHERE mpl.match_id = ${matchesTable.id})
+  AND NOT EXISTS (SELECT 1 FROM match_opposition_lines mol WHERE mol.match_id = ${matchesTable.id})
+)`;
+
+// Parse the free-text match_date ("12:20 PM, Saturday, 14 Mar 2026") for ordering.
+const matchDateExpr = sql`CASE WHEN ${matchesTable.matchDate} ~ '^[0-9]{1,2}:[0-9]{2} (AM|PM), [A-Za-z]+, [0-9]{1,2} [A-Za-z]{3} [0-9]{4}$' THEN to_timestamp(${matchesTable.matchDate}, 'HH12:MI AM, Day, DD Mon YYYY') END`;
+
+function seasonLabel(season: number): string {
+  return `${season}/${String((season + 1) % 100).padStart(2, "0")}`;
+}
+
+// Collapse a joined match row into a MatchSummary (mirrors matches.ts list shape).
+function toRecentMatch(row: {
+  id: number;
+  grade: string;
+  season: number;
+  round: number | null;
+  stage: string | null;
+  competition: string | null;
+  matchDate: string | null;
+  venue: string | null;
+  result: string | null;
+  opponent: string | null;
+  hhccScore: string | null;
+  opponentScore: string | null;
+  abandoned: boolean | null;
+  playerCount: number;
+  opponentClubId: number | null;
+  opponentClubName: string | null;
+  opponentClubShortName: string | null;
+  opponentClubLogoUrl: string | null;
+  opponentClubLogoUrl128: string | null;
+  opponentClubPrimaryColour: string | null;
+  opponentClubSecondaryColour: string | null;
+}) {
+  return {
+    id: row.id,
+    grade: row.grade,
+    season: row.season,
+    round: row.round,
+    stage: row.stage,
+    competition: row.competition,
+    matchDate: row.matchDate,
+    venue: row.venue,
+    result: row.result,
+    opponent: row.opponent,
+    hhccScore: row.hhccScore,
+    opponentScore: row.opponentScore,
+    abandoned: row.abandoned ?? false,
+    playerCount: row.playerCount,
+    opponentClub: toOpponentClub(row),
+  };
+}
+
+// Latest-season top run scorers / wicket takers, aggregated across every grade a
+// player turned out in that season. Fill-ins are excluded; an optional grade
+// scopes the list to a single grade. Players with a zero tally are dropped.
+async function seasonLeaders(
+  season: number,
+  metric: "runs" | "wickets",
+  grade?: string,
+): Promise<{ playerId: number; givenName: string; surname: string; value: number }[]> {
+  const col =
+    metric === "runs"
+      ? playerGradeSeasonStatsTable.runs
+      : playerGradeSeasonStatsTable.wickets;
+  const conds: SQL[] = [
+    eq(playerGradeSeasonStatsTable.season, season),
+    lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+  ];
+  if (grade) conds.push(eq(playerGradeSeasonStatsTable.grade, grade));
+
+  const rows = await db
+    .select({
+      playerId: playerGradeSeasonStatsTable.playerId,
+      givenName: playersTable.givenName,
+      surname: playersTable.surname,
+      value: sum(col).mapWith(Number),
+    })
+    .from(playerGradeSeasonStatsTable)
+    .innerJoin(playersTable, eq(playersTable.id, playerGradeSeasonStatsTable.playerId))
+    .where(and(...conds))
+    .groupBy(playerGradeSeasonStatsTable.playerId, playersTable.givenName, playersTable.surname)
+    .having(gt(sum(col), 0))
+    .orderBy(desc(sum(col)))
+    .limit(5);
+
+  return rows.map((r) => ({
+    playerId: r.playerId,
+    givenName: r.givenName,
+    surname: r.surname,
+    value: Number(r.value ?? 0),
+  }));
+}
 
 router.get("/grades", async (_req, res): Promise<void> => {
   const grades = await db
@@ -94,6 +239,127 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     topFielder: topFielder ?? null,
     gradeSummaries,
   });
+});
+
+// Seniors home overview: club totals, latest season's most recent match per
+// grade, and that season's club-wide top run scorers / wicket takers.
+router.get("/overview", async (_req, res): Promise<void> => {
+  // Club totals (mirrors /dashboard's all-time figures).
+  const [playerCount] = await db.select({ count: count() }).from(playersTable);
+  const [totals] = await db
+    .select({
+      totalGames: sum(playersTable.totalGames),
+      totalRuns: sum(playersTable.totalRuns),
+      totalWickets: sum(playersTable.totalWickets),
+    })
+    .from(playersTable);
+  const allGradeSummaries = await db.select().from(gradeSummariesTable);
+  const gradesCount = allGradeSummaries.filter((g) => g.grade !== "CLUB TOTAL").length;
+
+  // Latest season = newest season with a real (non-empty) fixture.
+  const [latest] = await db
+    .select({ season: matchesTable.season })
+    .from(matchesTable)
+    .where(notEmptyFixture)
+    .orderBy(desc(matchesTable.season))
+    .limit(1);
+  const latestSeason = latest?.season ?? null;
+
+  let recentMatches: ReturnType<typeof toRecentMatch>[] = [];
+  let topRunScorers: Awaited<ReturnType<typeof seasonLeaders>> = [];
+  let topWicketTakers: Awaited<ReturnType<typeof seasonLeaders>> = [];
+
+  if (latestSeason !== null) {
+    // All real fixtures in the latest season, newest-first within each grade.
+    const rows = await db
+      .select({
+        id: matchesTable.id,
+        grade: matchesTable.grade,
+        season: matchesTable.season,
+        round: matchesTable.round,
+        stage: matchesTable.stage,
+        competition: matchesTable.competition,
+        matchDate: matchesTable.matchDate,
+        venue: matchesTable.venue,
+        result: matchesTable.result,
+        opponent: matchesTable.opponent,
+        hhccScore: matchesTable.hhccScore,
+        opponentScore: matchesTable.opponentScore,
+        abandoned: matchesTable.abandoned,
+        playerCount: count(matchPlayerLinesTable.id),
+        ...opponentClubColumns,
+      })
+      .from(matchesTable)
+      .leftJoin(matchPlayerLinesTable, eq(matchPlayerLinesTable.matchId, matchesTable.id))
+      .leftJoin(clubsTable, eq(clubsTable.id, matchesTable.opponentClubId))
+      .where(and(eq(matchesTable.season, latestSeason), notEmptyFixture))
+      .groupBy(matchesTable.id, clubsTable.id)
+      .orderBy(
+        matchesTable.grade,
+        sql`${matchDateExpr} desc nulls last`,
+        desc(matchesTable.round),
+        desc(matchesTable.id),
+      );
+
+    // Keep only the most recent match per grade (first row per grade above).
+    const seen = new Set<string>();
+    recentMatches = rows
+      .filter((r) => {
+        if (seen.has(r.grade)) return false;
+        seen.add(r.grade);
+        return true;
+      })
+      .map(toRecentMatch);
+
+    [topRunScorers, topWicketTakers] = await Promise.all([
+      seasonLeaders(latestSeason, "runs"),
+      seasonLeaders(latestSeason, "wickets"),
+    ]);
+  }
+
+  res.json({
+    latestSeason,
+    latestSeasonLabel: latestSeason === null ? null : seasonLabel(latestSeason),
+    totals: {
+      players: Number(playerCount?.count ?? 0),
+      games: Number(totals?.totalGames ?? 0),
+      runs: Number(totals?.totalRuns ?? 0),
+      wickets: Number(totals?.totalWickets ?? 0),
+      grades: gradesCount,
+    },
+    recentMatches,
+    topRunScorers,
+    topWicketTakers,
+  });
+});
+
+// Latest-season top performers, optionally scoped to a single grade.
+router.get("/overview/top-performers", async (req, res): Promise<void> => {
+  const parsed = GetSeniorSeasonTopPerformersQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid query", details: parsed.error.issues });
+    return;
+  }
+  const grade = parsed.data.grade?.trim() || undefined;
+
+  const [latest] = await db
+    .select({ season: matchesTable.season })
+    .from(matchesTable)
+    .where(notEmptyFixture)
+    .orderBy(desc(matchesTable.season))
+    .limit(1);
+  const latestSeason = latest?.season ?? null;
+
+  if (latestSeason === null) {
+    res.json({ topRunScorers: [], topWicketTakers: [] });
+    return;
+  }
+
+  const [topRunScorers, topWicketTakers] = await Promise.all([
+    seasonLeaders(latestSeason, "runs", grade),
+    seasonLeaders(latestSeason, "wickets", grade),
+  ]);
+  res.json({ topRunScorers, topWicketTakers });
 });
 
 router.get("/records", async (_req, res): Promise<void> => {

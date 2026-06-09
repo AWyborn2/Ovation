@@ -258,6 +258,110 @@ export interface Dashboard {
   gradeSummaries?: GradeSummary[];
 }
 
+/**
+ * A single player's latest-season tally (runs or wickets), aggregated across all grades they played that season. Fill-in players (playerId >= 90000) are excluded.
+ */
+export interface SeasonLeader {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  /** Runs (for top run scorers) or wickets (for top wicket takers). */
+  value: number;
+}
+
+export interface SeniorTotals {
+  players: number;
+  games: number;
+  runs: number;
+  wickets: number;
+  grades: number;
+}
+
+export interface SeasonTopPerformers {
+  topRunScorers: SeasonLeader[];
+  topWicketTakers: SeasonLeader[];
+}
+
+/**
+ * Finals stage of a match. A finals match carries one of these with a NULL
+round; a regular match carries a numeric round with a NULL stage.
+
+ */
+export type MatchStage = typeof MatchStage[keyof typeof MatchStage];
+
+
+export const MatchStage = {
+  Elimination_Final: 'Elimination Final',
+  Qualifying_Final: 'Qualifying Final',
+  Semi_Final: 'Semi Final',
+  Preliminary_Final: 'Preliminary Final',
+  Grand_Final: 'Grand Final',
+} as const;
+
+/**
+ * Branding for the opposition club, resolved from the master club register via the match's opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.
+ */
+export interface OpponentClub {
+  id: number;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  logoUrl128?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+}
+
+export interface MatchSummary {
+  id: number;
+  grade: string;
+  season: number;
+  /** @nullable */
+  round?: number | null;
+  /** Finals stage of the match, or null for a regular round. */
+  stage?: MatchStage | null;
+  /** @nullable */
+  competition?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  result?: string | null;
+  /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
+  hhccScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  abandoned: boolean;
+  playerCount: number;
+  /** Opposition club branding, or null when unmatched. */
+  opponentClub?: OpponentClub | null;
+}
+
+export interface SeniorOverview {
+  /**
+     * Start year of the newest season with results, or null when none.
+     * @nullable
+     */
+  latestSeason: number | null;
+  /**
+     * Human label for the latest season (e.g. "2025/26").
+     * @nullable
+     */
+  latestSeasonLabel: string | null;
+  totals: SeniorTotals;
+  /** Most recent match per grade fielded in the latest season. */
+  recentMatches: MatchSummary[];
+  topRunScorers: SeasonLeader[];
+  topWicketTakers: SeasonLeader[];
+}
+
 export interface ImportRecord {
   id: number;
   filename: string;
@@ -498,22 +602,6 @@ export type MatchImportPreviewCapCategory = typeof MatchImportPreviewCapCategory
 export const MatchImportPreviewCapCategory = {
   male: 'male',
   female: 'female',
-} as const;
-
-/**
- * Finals stage of a match. A finals match carries one of these with a NULL
-round; a regular match carries a numeric round with a NULL stage.
-
- */
-export type MatchStage = typeof MatchStage[keyof typeof MatchStage];
-
-
-export const MatchStage = {
-  Elimination_Final: 'Elimination Final',
-  Qualifying_Final: 'Qualifying Final',
-  Semi_Final: 'Semi Final',
-  Preliminary_Final: 'Preliminary Final',
-  Grand_Final: 'Grand Final',
 } as const;
 
 export interface MatchImportPreview {
@@ -908,24 +996,6 @@ export interface PlayerMatchLine {
 }
 
 /**
- * Branding for the opposition club, resolved from the master club register via the match's opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.
- */
-export interface OpponentClub {
-  id: number;
-  name: string;
-  /** @nullable */
-  shortName?: string | null;
-  /** @nullable */
-  logoUrl?: string | null;
-  /** @nullable */
-  logoUrl128?: string | null;
-  /** @nullable */
-  primaryColour?: string | null;
-  /** @nullable */
-  secondaryColour?: string | null;
-}
-
-/**
  * Halls Head's own branding, resolved from the clubs register record (id 2) — the single source of truth for the club's official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.
  */
 export interface HallsHeadBrand {
@@ -942,34 +1012,6 @@ export interface HallsHeadBrand {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
-}
-
-export interface MatchSummary {
-  id: number;
-  grade: string;
-  season: number;
-  /** @nullable */
-  round?: number | null;
-  /** Finals stage of the match, or null for a regular round. */
-  stage?: MatchStage | null;
-  /** @nullable */
-  competition?: string | null;
-  /** @nullable */
-  matchDate?: string | null;
-  /** @nullable */
-  venue?: string | null;
-  /** @nullable */
-  result?: string | null;
-  /** @nullable */
-  opponent?: string | null;
-  /** @nullable */
-  hhccScore?: string | null;
-  /** @nullable */
-  opponentScore?: string | null;
-  abandoned: boolean;
-  playerCount: number;
-  /** Opposition club branding, or null when unmatched. */
-  opponentClub?: OpponentClub | null;
 }
 
 export interface MatchScorecardLine {
@@ -3048,7 +3090,18 @@ export interface JuniorTotals {
 
 export interface JuniorOverview {
   totals: JuniorTotals;
+  /**
+     * Newest season with results (e.g. "2024/25"), or null when none.
+     * @nullable
+     */
+  latestSeason: string | null;
+  /** Most recent match per age group fielded in the latest season. */
   recentMatches: JuniorMatchSummary[];
+  topRunScorers: JuniorBattingLeader[];
+  topWicketTakers: JuniorBowlingLeader[];
+}
+
+export interface JuniorSeasonTopPerformers {
   topRunScorers: JuniorBattingLeader[];
   topWicketTakers: JuniorBowlingLeader[];
 }
@@ -3139,6 +3192,13 @@ export const ListStatsSortOrder = {
   desc: 'desc',
 } as const;
 
+export type GetSeniorSeasonTopPerformersParams = {
+/**
+ * Single grade to scope the leaders to; omit for club-wide.
+ */
+grade?: string;
+};
+
 export type UploadPlaycricketCsvBody = {
   /** The PlayCricket CSV export */
   file: Blob;
@@ -3165,6 +3225,13 @@ surface?: NavSurface;
  * Admin-only — include items with visible=false. Requires auth.
  */
 includeHidden?: boolean;
+};
+
+export type GetJuniorSeasonTopPerformersParams = {
+/**
+ * Single age group to scope the leaders to; omit for club-wide.
+ */
+ageGroup?: string;
 };
 
 export type ListJuniorMatchesParams = {
