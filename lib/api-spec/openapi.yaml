@@ -205,6 +205,108 @@ paths:
                 items:
                   $ref: "#/components/schemas/PlayerMatchLine"
 
+  /players/{id}/images:
+    get:
+      operationId: listPlayerImages
+      tags: [players]
+      summary: List a player's photo gallery
+      description: Gallery images ordered by sort order; the default image first.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player gallery images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerImage"
+    post:
+      operationId: addPlayerImage
+      tags: [players]
+      summary: Add an image to a player's gallery
+      description: |
+        Admin-only. Adds an uploaded image URL to the gallery. The first image
+        for a player (or one added with makeDefault) becomes the default and is
+        mirrored onto players.image_url.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerImageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerImage"
+
+  /players/{id}/images/{imageId}:
+    delete:
+      operationId: deletePlayerImage
+      tags: [players]
+      summary: Remove an image from a player's gallery
+      description: |
+        Admin-only. If the deleted image was the default, the next remaining
+        image is promoted to default (or players.image_url is cleared when none
+        remain).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /players/{id}/images/{imageId}/default:
+    post:
+      operationId: setDefaultPlayerImage
+      tags: [players]
+      summary: Mark a gallery image as the player's default photo
+      description: Admin-only. Sets this image as default and mirrors it onto players.image_url.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated default image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerImage"
+        "404":
+          description: Not found
+
   /matches:
     get:
       operationId: listMatches
@@ -3515,6 +3617,30 @@ components:
           type: ["string", "null"]
         cardRating:
           type: ["integer", "null"]
+
+    PlayerImage:
+      type: object
+      required: [id, playerId, imageUrl, sortOrder, isDefault]
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        imageUrl:
+          type: string
+        sortOrder:
+          type: integer
+        isDefault:
+          type: boolean
+
+    PlayerImageInput:
+      type: object
+      required: [imageUrl]
+      properties:
+        imageUrl:
+          type: string
+        makeDefault:
+          type: boolean
 
     PlayerInput:
       type: object

@@ -30,6 +30,8 @@ export type {
   ListStatsSortOrder,
   Player,
   PlayerDetail,
+  PlayerImage,
+  PlayerImageInput,
   PlayerInput,
   PlayerListResponse,
   PlayerUpdate,

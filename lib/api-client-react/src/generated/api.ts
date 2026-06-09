@@ -125,6 +125,8 @@ import type {
   Partnerships,
   Player,
   PlayerDetail,
+  PlayerImage,
+  PlayerImageInput,
   PlayerInput,
   PlayerListResponse,
   PlayerMatchLine,
@@ -710,6 +712,309 @@ export function useGetPlayerMatches<TData = Awaited<ReturnType<typeof getPlayerM
 
 
 
+
+export const getListPlayerImagesUrl = (id: number,) => {
+
+
+
+
+  return `/api/players/${id}/images`
+}
+
+/**
+ * Gallery images ordered by sort order; the default image first.
+ * @summary List a player's photo gallery
+ */
+export const listPlayerImages = async (id: number, options?: RequestInit): Promise<PlayerImage[]> => {
+
+  return customFetch<PlayerImage[]>(getListPlayerImagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPlayerImagesQueryKey = (id: number,) => {
+    return [
+    `/api/players/${id}/images`
+    ] as const;
+    }
+
+
+export const getListPlayerImagesQueryOptions = <TData = Awaited<ReturnType<typeof listPlayerImages>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlayerImages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlayerImagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlayerImages>>> = ({ signal }) => listPlayerImages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPlayerImages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPlayerImagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPlayerImages>>>
+export type ListPlayerImagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List a player's photo gallery
+ */
+
+export function useListPlayerImages<TData = Awaited<ReturnType<typeof listPlayerImages>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlayerImages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPlayerImagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddPlayerImageUrl = (id: number,) => {
+
+
+
+
+  return `/api/players/${id}/images`
+}
+
+/**
+ * Admin-only. Adds an uploaded image URL to the gallery. The first image
+for a player (or one added with makeDefault) becomes the default and is
+mirrored onto players.image_url.
+
+ * @summary Add an image to a player's gallery
+ */
+export const addPlayerImage = async (id: number,
+    playerImageInput: PlayerImageInput, options?: RequestInit): Promise<PlayerImage> => {
+
+  return customFetch<PlayerImage>(getAddPlayerImageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      playerImageInput,)
+  }
+);}
+
+
+
+
+export const getAddPlayerImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addPlayerImage>>, TError,{id: number;data: BodyType<PlayerImageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addPlayerImage>>, TError,{id: number;data: BodyType<PlayerImageInput>}, TContext> => {
+
+const mutationKey = ['addPlayerImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addPlayerImage>>, {id: number;data: BodyType<PlayerImageInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addPlayerImage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddPlayerImageMutationResult = NonNullable<Awaited<ReturnType<typeof addPlayerImage>>>
+    export type AddPlayerImageMutationBody = BodyType<PlayerImageInput>
+    export type AddPlayerImageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add an image to a player's gallery
+ */
+export const useAddPlayerImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addPlayerImage>>, TError,{id: number;data: BodyType<PlayerImageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addPlayerImage>>,
+        TError,
+        {id: number;data: BodyType<PlayerImageInput>},
+        TContext
+      > => {
+      return useMutation(getAddPlayerImageMutationOptions(options));
+    }
+
+export const getDeletePlayerImageUrl = (id: number,
+    imageId: number,) => {
+
+
+
+
+  return `/api/players/${id}/images/${imageId}`
+}
+
+/**
+ * Admin-only. If the deleted image was the default, the next remaining
+image is promoted to default (or players.image_url is cleared when none
+remain).
+
+ * @summary Remove an image from a player's gallery
+ */
+export const deletePlayerImage = async (id: number,
+    imageId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePlayerImageUrl(id,imageId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePlayerImageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlayerImage>>, TError,{id: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePlayerImage>>, TError,{id: number;imageId: number}, TContext> => {
+
+const mutationKey = ['deletePlayerImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePlayerImage>>, {id: number;imageId: number}> = (props) => {
+          const {id,imageId} = props ?? {};
+
+          return  deletePlayerImage(id,imageId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePlayerImageMutationResult = NonNullable<Awaited<ReturnType<typeof deletePlayerImage>>>
+
+    export type DeletePlayerImageMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove an image from a player's gallery
+ */
+export const useDeletePlayerImage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlayerImage>>, TError,{id: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePlayerImage>>,
+        TError,
+        {id: number;imageId: number},
+        TContext
+      > => {
+      return useMutation(getDeletePlayerImageMutationOptions(options));
+    }
+
+export const getSetDefaultPlayerImageUrl = (id: number,
+    imageId: number,) => {
+
+
+
+
+  return `/api/players/${id}/images/${imageId}/default`
+}
+
+/**
+ * Admin-only. Sets this image as default and mirrors it onto players.image_url.
+ * @summary Mark a gallery image as the player's default photo
+ */
+export const setDefaultPlayerImage = async (id: number,
+    imageId: number, options?: RequestInit): Promise<PlayerImage> => {
+
+  return customFetch<PlayerImage>(getSetDefaultPlayerImageUrl(id,imageId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetDefaultPlayerImageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDefaultPlayerImage>>, TError,{id: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDefaultPlayerImage>>, TError,{id: number;imageId: number}, TContext> => {
+
+const mutationKey = ['setDefaultPlayerImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDefaultPlayerImage>>, {id: number;imageId: number}> = (props) => {
+          const {id,imageId} = props ?? {};
+
+          return  setDefaultPlayerImage(id,imageId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDefaultPlayerImageMutationResult = NonNullable<Awaited<ReturnType<typeof setDefaultPlayerImage>>>
+
+    export type SetDefaultPlayerImageMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark a gallery image as the player's default photo
+ */
+export const useSetDefaultPlayerImage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDefaultPlayerImage>>, TError,{id: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setDefaultPlayerImage>>,
+        TError,
+        {id: number;imageId: number},
+        TContext
+      > => {
+      return useMutation(getSetDefaultPlayerImageMutationOptions(options));
+    }
 
 export const getListMatchesUrl = (params?: ListMatchesParams,) => {
   const normalizedParams = new URLSearchParams();

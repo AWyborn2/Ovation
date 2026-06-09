@@ -201,6 +201,72 @@ export const GetPlayerMatchesResponse = zod.array(GetPlayerMatchesResponseItem)
 
 
 /**
+ * Gallery images ordered by sort order; the default image first.
+ * @summary List a player's photo gallery
+ */
+export const ListPlayerImagesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListPlayerImagesResponseItem = zod.object({
+  "id": zod.number(),
+  "playerId": zod.number(),
+  "imageUrl": zod.string(),
+  "sortOrder": zod.number(),
+  "isDefault": zod.boolean()
+})
+export const ListPlayerImagesResponse = zod.array(ListPlayerImagesResponseItem)
+
+
+/**
+ * Admin-only. Adds an uploaded image URL to the gallery. The first image
+for a player (or one added with makeDefault) becomes the default and is
+mirrored onto players.image_url.
+
+ * @summary Add an image to a player's gallery
+ */
+export const AddPlayerImageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddPlayerImageBody = zod.object({
+  "imageUrl": zod.string(),
+  "makeDefault": zod.boolean().optional()
+})
+
+
+/**
+ * Admin-only. If the deleted image was the default, the next remaining
+image is promoted to default (or players.image_url is cleared when none
+remain).
+
+ * @summary Remove an image from a player's gallery
+ */
+export const DeletePlayerImageParams = zod.object({
+  "id": zod.coerce.number(),
+  "imageId": zod.coerce.number()
+})
+
+
+/**
+ * Admin-only. Sets this image as default and mirrors it onto players.image_url.
+ * @summary Mark a gallery image as the player's default photo
+ */
+export const SetDefaultPlayerImageParams = zod.object({
+  "id": zod.coerce.number(),
+  "imageId": zod.coerce.number()
+})
+
+export const SetDefaultPlayerImageResponse = zod.object({
+  "id": zod.number(),
+  "playerId": zod.number(),
+  "imageUrl": zod.string(),
+  "sortOrder": zod.number(),
+  "isDefault": zod.boolean()
+})
+
+
+/**
  * Returns matches ordered most-recent first (by season, then round).
  * @summary List matches, filterable by grade and season
  */

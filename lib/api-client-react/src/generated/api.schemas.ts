@@ -34,6 +34,19 @@ export interface Player {
   cardRating?: number | null;
 }
 
+export interface PlayerImage {
+  id: number;
+  playerId: number;
+  imageUrl: string;
+  sortOrder: number;
+  isDefault: boolean;
+}
+
+export interface PlayerImageInput {
+  imageUrl: string;
+  makeDefault?: boolean;
+}
+
 export interface PlayerInput {
   surname: string;
   givenName: string;

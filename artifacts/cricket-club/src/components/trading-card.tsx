@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Star, Trophy, Download, Loader2, RotateCw, Film, ImageIcon } from "lucide-react";
-import { useGetPlayer, getGetPlayerQueryKey, useListCaps, getListCapsQueryKey } from "@workspace/api-client-react";
+import {
+  useGetPlayer,
+  getGetPlayerQueryKey,
+  useListCaps,
+  getListCapsQueryKey,
+  useListPlayerImages,
+  getListPlayerImagesQueryKey,
+} from "@workspace/api-client-react";
 import { HALLS_HEAD_BRAND } from "@workspace/scorecard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -660,10 +667,25 @@ export function TradingCardModal({
   const { data: caps, isLoading: capsLoading } = useListCaps({
     query: { enabled: open, queryKey: getListCapsQueryKey() },
   });
+  const { data: images } = useListPlayerImages(playerId, {
+    query: { enabled: open && !!playerId, queryKey: getListPlayerImagesQueryKey(playerId) },
+  });
+
+  // Admin can pick which gallery image the card uses; defaults to the player's
+  // default photo (players.image_url, mirrored by the gallery default).
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open) {
+      setSelectedImageUrl(null);
+      return;
+    }
+    const def = images?.find((i) => i.isDefault) ?? images?.[0];
+    setSelectedImageUrl(def?.imageUrl ?? null);
+  }, [open, images]);
 
   const data = useMemo(
-    () => (player && caps ? buildTradingCardData(player, caps) : null),
-    [player, caps],
+    () => (player && caps ? buildTradingCardData(player, caps, selectedImageUrl) : null),
+    [player, caps, selectedImageUrl],
   );
 
   const [flipped, setFlipped] = useState(false);
@@ -786,6 +808,31 @@ export function TradingCardModal({
                     </div>
                   </div>
                 </div>
+
+                {images && images.length > 1 && (
+                  <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                    {images.map((img) => {
+                      const selected = selectedImageUrl === img.imageUrl;
+                      return (
+                        <button
+                          key={img.id}
+                          type="button"
+                          title={img.isDefault ? "Default photo" : undefined}
+                          className={`h-12 w-12 overflow-hidden rounded border-2 ${
+                            selected ? "border-primary" : "border-muted"
+                          }`}
+                          onClick={() => setSelectedImageUrl(img.imageUrl)}
+                        >
+                          <img
+                            src={img.imageUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div className="flex w-full flex-wrap items-center justify-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setFlipped((f) => !f)}>

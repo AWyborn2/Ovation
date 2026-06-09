@@ -6,11 +6,18 @@ import {
   useDeletePlayer,
   useMergePlayer,
   useCreatePlayer,
+  useListPlayerImages,
+  useAddPlayerImage,
+  useDeletePlayerImage,
+  useSetDefaultPlayerImage,
+  getListPlayerImagesQueryKey,
+  getGetPlayerQueryKey,
   getListPlayersQueryKey,
   getGetDashboardQueryKey,
   getGetRecordsQueryKey,
   type Player,
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -298,6 +305,7 @@ function PlayerRow({
         <input type="checkbox" checked={deceased} onChange={(e) => setDeceased(e.target.checked)} />
         Deceased
       </label>
+      <PlayerGallery playerId={player.id} />
       <Button
         size="sm"
         onClick={() => {
@@ -337,6 +345,121 @@ function PlayerRow({
       >
         Cancel
       </Button>
+    </div>
+  );
+}
+
+function PlayerGallery({ playerId }: { playerId: number }) {
+  const qc = useQueryClient();
+  const [galleryError, setGalleryError] = useState<string | null>(null);
+  const { data: images, isLoading } = useListPlayerImages(playerId);
+  const addImage = useAddPlayerImage();
+  const deleteImage = useDeletePlayerImage();
+  const setDefault = useSetDefaultPlayerImage();
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: getListPlayerImagesQueryKey(playerId) });
+    qc.invalidateQueries({ queryKey: getGetPlayerQueryKey(playerId) });
+    qc.invalidateQueries({ queryKey: getListPlayersQueryKey() });
+  };
+  const onErr = (e: unknown) => setGalleryError(handleAdminMutationError(e));
+
+  const { uploadFile, isUploading } = useUpload({
+    onError: (e) => setGalleryError(e.message),
+  });
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setGalleryError(null);
+    const result = await uploadFile(file);
+    if (!result) return;
+    const url = `/api/storage${result.objectPath}`;
+    addImage.mutate(
+      { id: playerId, data: { imageUrl: url } },
+      { onSuccess: invalidate, onError: onErr },
+    );
+  };
+
+  const busy = isUploading || addImage.isPending || deleteImage.isPending || setDefault.isPending;
+
+  return (
+    <div className="basis-full space-y-2 rounded-md border bg-muted/30 p-3">
+      <div className="flex items-center justify-between">
+        <Label>Photo gallery</Label>
+        <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+          {isUploading ? "Uploading…" : "+ Add photo"}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFile}
+            disabled={busy}
+          />
+        </label>
+      </div>
+      {galleryError && <p className="text-xs text-destructive">{galleryError}</p>}
+      {isLoading ? (
+        <p className="text-xs text-muted-foreground">Loading…</p>
+      ) : !images || images.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No photos yet. Add one — the first becomes the default.
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {images.map((img) => (
+            <div key={img.id} className="w-24 space-y-1">
+              <div
+                className={`relative aspect-square overflow-hidden rounded-md border-2 ${
+                  img.isDefault ? "border-primary" : "border-transparent"
+                }`}
+              >
+                <img
+                  src={img.imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+                {img.isDefault && (
+                  <span className="absolute left-1 top-1 rounded bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    Default
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-1">
+                {!img.isDefault && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-primary hover:underline disabled:opacity-50"
+                    disabled={busy}
+                    onClick={() =>
+                      setDefault.mutate(
+                        { id: playerId, imageId: img.id },
+                        { onSuccess: invalidate, onError: onErr },
+                      )
+                    }
+                  >
+                    Default
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="text-[11px] text-destructive hover:underline disabled:opacity-50"
+                  disabled={busy}
+                  onClick={() =>
+                    deleteImage.mutate(
+                      { id: playerId, imageId: img.id },
+                      { onSuccess: invalidate, onError: onErr },
+                    )
+                  }
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

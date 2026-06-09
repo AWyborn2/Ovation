@@ -3,6 +3,7 @@ import { eq, ilike, or, desc, asc, count, sql } from "drizzle-orm";
 import {
   db,
   playersTable,
+  playerImagesTable,
   playerGradeStatsTable,
   playerGradeSeasonStatsTable,
   premiershipsTable,
@@ -21,6 +22,11 @@ import {
   ListPlayersQueryParams,
   MergePlayerBody,
   MergePlayerParams,
+  ListPlayerImagesParams,
+  AddPlayerImageParams,
+  AddPlayerImageBody,
+  DeletePlayerImageParams,
+  SetDefaultPlayerImageParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
@@ -329,6 +335,244 @@ router.delete("/players/:id", requireAdmin, async (req, res): Promise<void> => {
     },
   );
 });
+
+// --- Player photo gallery -------------------------------------------------
+// player_images is the gallery; players.image_url mirrors whichever row is the
+// default so existing single-photo readers keep working.
+
+router.get("/players/:id/images", async (req, res): Promise<void> => {
+  const params = ListPlayerImagesParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const playerId = params.data.id;
+  const order = [
+    desc(playerImagesTable.isDefault),
+    asc(playerImagesTable.sortOrder),
+    asc(playerImagesTable.id),
+  ] as const;
+
+  let images = await db
+    .select()
+    .from(playerImagesTable)
+    .where(eq(playerImagesTable.playerId, playerId))
+    .orderBy(...order);
+
+  // Self-healing backfill: a player that pre-dates the gallery may have a legacy
+  // photo in players.image_url but no gallery row. Surface it as the default so
+  // the admin gallery and per-card pickers always include the existing photo,
+  // even if the post-merge backfill hasn't run. Insert is guarded so concurrent
+  // GETs can't create duplicates.
+  if (images.length === 0) {
+    const [player] = await db
+      .select({ imageUrl: playersTable.imageUrl })
+      .from(playersTable)
+      .where(eq(playersTable.id, playerId));
+    if (player?.imageUrl) {
+      await db.execute(sql`
+        INSERT INTO player_images (player_id, image_url, sort_order, is_default)
+        SELECT ${playerId}, ${player.imageUrl}, 0, true
+        WHERE NOT EXISTS (
+          SELECT 1 FROM player_images WHERE player_id = ${playerId}
+        )
+      `);
+      images = await db
+        .select()
+        .from(playerImagesTable)
+        .where(eq(playerImagesTable.playerId, playerId))
+        .orderBy(...order);
+    }
+  }
+  res.json(images);
+});
+
+router.post(
+  "/players/:id/images",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = AddPlayerImageParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const parsed = AddPlayerImageBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const playerId = params.data.id;
+    const { imageUrl, makeDefault } = parsed.data;
+
+    const created = await db.transaction(async (tx) => {
+      const [player] = await tx
+        .select({ id: playersTable.id })
+        .from(playersTable)
+        .where(eq(playersTable.id, playerId));
+      if (!player) {
+        throw new Error("__NOT_FOUND__");
+      }
+
+      const existing = await tx
+        .select({ id: playerImagesTable.id, sortOrder: playerImagesTable.sortOrder })
+        .from(playerImagesTable)
+        .where(eq(playerImagesTable.playerId, playerId));
+
+      const nextSort =
+        existing.length === 0
+          ? 0
+          : Math.max(...existing.map((r) => r.sortOrder)) + 1;
+      // First image is always the default; otherwise honour makeDefault.
+      const shouldBeDefault = existing.length === 0 || makeDefault === true;
+
+      const [row] = await tx
+        .insert(playerImagesTable)
+        .values({
+          playerId,
+          imageUrl,
+          sortOrder: nextSort,
+          isDefault: shouldBeDefault,
+        })
+        .returning();
+
+      if (shouldBeDefault) {
+        await tx
+          .update(playerImagesTable)
+          .set({ isDefault: false })
+          .where(eq(playerImagesTable.playerId, playerId));
+        await tx
+          .update(playerImagesTable)
+          .set({ isDefault: true })
+          .where(eq(playerImagesTable.id, row.id));
+        await tx
+          .update(playersTable)
+          .set({ imageUrl })
+          .where(eq(playersTable.id, playerId));
+        row.isDefault = true;
+      }
+      return row;
+    }).catch((err) => {
+      if (err?.message === "__NOT_FOUND__") return null;
+      throw err;
+    });
+
+    if (!created) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.status(201).json(created);
+  },
+);
+
+router.delete(
+  "/players/:id/images/:imageId",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = DeletePlayerImageParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const { id: playerId, imageId } = params.data;
+
+    await db
+      .transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(playerImagesTable)
+          .where(
+            sql`${playerImagesTable.id} = ${imageId} AND ${playerImagesTable.playerId} = ${playerId}`,
+          )
+          .returning();
+        if (!deleted) {
+          throw new Error("__NOT_FOUND__");
+        }
+        if (deleted.isDefault) {
+          // Promote the next remaining image, or clear the pointer entirely.
+          const [next] = await tx
+            .select()
+            .from(playerImagesTable)
+            .where(eq(playerImagesTable.playerId, playerId))
+            .orderBy(asc(playerImagesTable.sortOrder), asc(playerImagesTable.id))
+            .limit(1);
+          if (next) {
+            await tx
+              .update(playerImagesTable)
+              .set({ isDefault: true })
+              .where(eq(playerImagesTable.id, next.id));
+            await tx
+              .update(playersTable)
+              .set({ imageUrl: next.imageUrl })
+              .where(eq(playersTable.id, playerId));
+          } else {
+            await tx
+              .update(playersTable)
+              .set({ imageUrl: null })
+              .where(eq(playersTable.id, playerId));
+          }
+        }
+      })
+      .then(
+        () => res.sendStatus(204),
+        (err) => {
+          if (err?.message === "__NOT_FOUND__") {
+            res.status(404).json({ error: "Image not found" });
+          } else {
+            throw err;
+          }
+        },
+      );
+  },
+);
+
+router.post(
+  "/players/:id/images/:imageId/default",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = SetDefaultPlayerImageParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const { id: playerId, imageId } = params.data;
+
+    const updated = await db
+      .transaction(async (tx) => {
+        const [target] = await tx
+          .select()
+          .from(playerImagesTable)
+          .where(
+            sql`${playerImagesTable.id} = ${imageId} AND ${playerImagesTable.playerId} = ${playerId}`,
+          );
+        if (!target) {
+          throw new Error("__NOT_FOUND__");
+        }
+        await tx
+          .update(playerImagesTable)
+          .set({ isDefault: false })
+          .where(eq(playerImagesTable.playerId, playerId));
+        const [row] = await tx
+          .update(playerImagesTable)
+          .set({ isDefault: true })
+          .where(eq(playerImagesTable.id, imageId))
+          .returning();
+        await tx
+          .update(playersTable)
+          .set({ imageUrl: row.imageUrl })
+          .where(eq(playersTable.id, playerId));
+        return row;
+      })
+      .catch((err) => {
+        if (err?.message === "__NOT_FOUND__") return null;
+        throw err;
+      });
+
+    if (!updated) {
+      res.status(404).json({ error: "Image not found" });
+      return;
+    }
+    res.json(updated);
+  },
+);
 
 router.post("/players/:id/merge", requireAdmin, async (req, res): Promise<void> => {
   const params = MergePlayerParams.safeParse(req.params);

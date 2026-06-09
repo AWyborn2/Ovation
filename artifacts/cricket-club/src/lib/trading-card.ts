@@ -82,6 +82,9 @@ function normaliseRole(value: string | null | undefined): CardRole | null {
 export function buildTradingCardData(
   player: PlayerDetail,
   caps: CapEntry[] | undefined,
+  // Optional gallery image chosen by an admin. Overrides the default photo
+  // (players.image_url) when provided.
+  overrideImageUrl?: string | null,
 ): TradingCardData {
   const agg = aggregateCareer(player.stats)[0];
 
@@ -112,8 +115,11 @@ export function buildTradingCardData(
         : null,
     debutYear,
     careerSpan: player.seasonsPlayed ?? null,
-    photoUrl: player.imageUrl ?? (isFemalePlayer(player, agg) ? avatarFemale : avatarMale),
-    usingFallback: !player.imageUrl,
+    photoUrl:
+      overrideImageUrl ??
+      player.imageUrl ??
+      (isFemalePlayer(player, agg) ? avatarFemale : avatarMale),
+    usingFallback: !(overrideImageUrl ?? player.imageUrl),
     stats: {
       matches: agg?.games ?? 0,
       runs,

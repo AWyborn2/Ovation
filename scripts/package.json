@@ -7,6 +7,7 @@
     "hello": "tsx ./src/hello.ts",
     "seed": "tsx ./src/seed.ts",
     "backfill-season-snapshots": "tsx ./src/backfill-season-snapshots.ts",
+    "backfill-player-images": "tsx ./src/backfill-player-images.ts",
     "ensure-constraints": "tsx ./src/ensure-constraints.ts",
     "reconcile-caps": "tsx ./src/reconcile-caps.ts",
     "remove-a-grade-2025-26": "tsx ./src/remove-a-grade-2025-26.ts",

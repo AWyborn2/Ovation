@@ -11,7 +11,9 @@ import {
   getListCardTemplatesQueryKey,
   useGetPlayer,
   getGetPlayerQueryKey,
-  useUpdatePlayer,
+  useListPlayerImages,
+  useAddPlayerImage,
+  getListPlayerImagesQueryKey,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
   type CardTemplate,
@@ -170,7 +172,7 @@ export function ShareCardModal({
   // Photo control state. We only surface it when the tile is about a player.
   const showPhotoControls = playerId != null;
   const queryClient = useQueryClient();
-  const updatePlayer = useUpdatePlayer();
+  const addPlayerImage = useAddPlayerImage();
   const playerQ = useGetPlayer(playerId ?? 0, {
     query: { enabled: open && showPhotoControls, queryKey: getGetPlayerQueryKey(playerId ?? 0) },
   });
@@ -180,8 +182,28 @@ export function ShareCardModal({
     (showPhotoControls ? playerQ.data?.imageUrl ?? null : null) ??
     (input && "photoUrl" in input ? input.photoUrl ?? null : null);
 
-  type PhotoSource = "profile" | "uploaded" | "none";
+  // The player's photo gallery. Each image is selectable; the default image is
+  // pre-selected. Falls back to the single profile photo when the gallery is
+  // empty (e.g. older players whose image_url predates the gallery).
+  const galleryQ = useListPlayerImages(playerId ?? 0, {
+    query: {
+      enabled: open && showPhotoControls,
+      queryKey: getListPlayerImagesQueryKey(playerId ?? 0),
+    },
+  });
+  const galleryPhotos: { url: string; isDefault: boolean }[] = useMemo(() => {
+    const rows = galleryQ.data ?? [];
+    if (rows.length > 0) {
+      return rows.map((r) => ({ url: r.imageUrl, isDefault: r.isDefault }));
+    }
+    return profilePhotoUrl ? [{ url: profilePhotoUrl, isDefault: true }] : [];
+  }, [galleryQ.data, profilePhotoUrl]);
+  const defaultGalleryUrl: string | null =
+    galleryPhotos.find((p) => p.isDefault)?.url ?? galleryPhotos[0]?.url ?? null;
+
+  type PhotoSource = "gallery" | "uploaded" | "none";
   const [photoSource, setPhotoSource] = useState<PhotoSource>("none");
+  const [galleryUrl, setGalleryUrl] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [photoPlacement, setPhotoPlacement] = useState<PhotoPlacement>("headshot");
   // Focal point + zoom for a feature photo. `photoTransform` updates live as the
@@ -201,6 +223,7 @@ export function ShareCardModal({
   useEffect(() => {
     if (open) {
       setPhotoSource("none");
+      setGalleryUrl(null);
       setUploadedUrl(null);
       setPhotoPlacement("headshot");
       setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
@@ -211,17 +234,18 @@ export function ShareCardModal({
     }
   }, [open]);
 
-  // Once the profile photo is known (it loads async), default to using it —
-  // unless the club has already interacted with the photo control.
+  // Once the gallery is known (it loads async), default to the player's default
+  // image — unless the club has already interacted with the photo control.
   useEffect(() => {
-    if (open && !photoTouched && photoSource === "none" && uploadedUrl === null && profilePhotoUrl) {
-      setPhotoSource("profile");
+    if (open && !photoTouched && photoSource === "none" && uploadedUrl === null && defaultGalleryUrl) {
+      setPhotoSource("gallery");
+      setGalleryUrl(defaultGalleryUrl);
     }
-  }, [open, photoTouched, photoSource, uploadedUrl, profilePhotoUrl]);
+  }, [open, photoTouched, photoSource, uploadedUrl, defaultGalleryUrl]);
 
   const effectivePhotoUrl: string | null =
-    photoSource === "profile"
-      ? profilePhotoUrl
+    photoSource === "gallery"
+      ? galleryUrl
       : photoSource === "uploaded"
         ? uploadedUrl
         : null;
@@ -250,13 +274,18 @@ export function ShareCardModal({
     setUploadedUrl(url);
     setPhotoSource("uploaded");
     setPhotoTouched(true);
-    // Save to the player's profile so it's the default next time (opt-out).
+    // Save to the player's gallery (as the new default) so it persists and is
+    // selectable next time (opt-out via the toggle).
     if (saveToProfile && playerId != null) {
-      updatePlayer.mutate(
-        { id: playerId, data: { imageUrl: url } },
+      addPlayerImage.mutate(
+        { id: playerId, data: { imageUrl: url, makeDefault: true } },
         {
-          onSuccess: () =>
-            queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(playerId) }),
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(playerId) });
+            queryClient.invalidateQueries({
+              queryKey: getListPlayerImagesQueryKey(playerId),
+            });
+          },
           onError: (err) =>
             setPhotoError((err as Error)?.message ?? "Could not save photo to profile"),
         },
@@ -750,22 +779,41 @@ export function ShareCardModal({
                   className="hidden"
                   onChange={handlePhotoUpload}
                 />
+                {galleryPhotos.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {galleryPhotos.map((p) => {
+                      const selected =
+                        photoSource === "gallery" && galleryUrl === p.url;
+                      return (
+                        <button
+                          key={p.url}
+                          type="button"
+                          title={p.isDefault ? "Default photo" : undefined}
+                          className={`relative h-12 w-12 overflow-hidden rounded border-2 ${
+                            selected ? "border-primary" : "border-muted"
+                          }`}
+                          onClick={() => {
+                            setPhotoSource("gallery");
+                            setGalleryUrl(p.url);
+                            setPhotoTouched(true);
+                          }}
+                        >
+                          <img
+                            src={p.url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                          {p.isDefault && (
+                            <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-center text-[8px] font-semibold leading-tight text-primary-foreground">
+                              Default
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-1.5">
-                  {profilePhotoUrl && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={photoSource === "profile" ? "default" : "outline"}
-                      className="h-8 text-xs"
-                      onClick={() => {
-                        setPhotoSource("profile");
-                        setPhotoTouched(true);
-                      }}
-                    >
-                      <User className="h-3.5 w-3.5 mr-1" />
-                      Profile photo
-                    </Button>
-                  )}
                   <Button
                     type="button"
                     size="sm"

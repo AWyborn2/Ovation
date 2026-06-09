@@ -9,3 +9,7 @@ pnpm --filter @workspace/scripts run ensure-constraints
 # linked to a player (incl. before recompute-on-link existed) show real games.
 # Idempotent: only updates rows whose cached value is out of date.
 pnpm --filter @workspace/scripts run reconcile-caps
+# Backfill the photo gallery (player_images) from the legacy single-photo
+# pointer (players.image_url) so pre-gallery players appear in the gallery /
+# per-card pickers. Idempotent: inserts only for players with no gallery row.
+pnpm --filter @workspace/scripts run backfill-player-images

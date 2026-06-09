@@ -187,6 +187,8 @@ export * from './partnershipRecord';
 export * from './partnerships';
 export * from './player';
 export * from './playerDetail';
+export * from './playerImage';
+export * from './playerImageInput';
 export * from './playerInput';
 export * from './playerListResponse';
 export * from './playerMatchLine';

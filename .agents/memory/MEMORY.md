@@ -46,3 +46,4 @@
 - [Canvas share-card fonts & fitting](canvas-share-card-fonts.md) — await document.fonts.ready before canvas text or web font silently falls back; share-card bodies must self-fit (fitFontSize/pill cap/grid drop) or overflow the footer; animation reuses renderShareCard (no separate body path).
 - [@types/react dual-version typecheck](types-react-duplication-typecheck.md) — cricket-club/mockup-sandbox typecheck fails in vendored shadcn UI from two @types/react versions; pre-existing env drift, not your change.
 - [Season-aware Top Performers chips](season-aware-chips.md) — availability chips must derive from the leaderboard's source rows (junior participant lines), not match existence; junior "stats not recorded" matches would surface empty chips.
+- [Player photo gallery](player-photo-gallery.md) — player_images gallery + per-card picker; players.image_url MIRRORS the default row (route logic syncs it on add/set-default/delete); single-photo readers unchanged.
