@@ -7258,10 +7258,22 @@ components:
         statKeys:
           type: array
           description: >-
-            Ordered stat keys shown on every player's trading card. Empty = fall
-            back to the per-role default stat selection.
+            Ordered stat keys shown on every player's trading card, used as the
+            default for every role. Empty = fall back to the per-role default
+            stat selection.
           items:
             type: string
+        statKeysByRole:
+          type: object
+          description: >-
+            Per-role stat key overrides, keyed by card role ("Batsman",
+            "Bowler", "All-Rounder", "Wicket-Keeper"). A role with a non-empty
+            list overrides statKeys for players of that role; otherwise statKeys
+            (then the smart per-role default) applies.
+          additionalProperties:
+            type: array
+            items:
+              type: string
         awardKeys:
           type: array
           description: >-
@@ -7278,6 +7290,12 @@ components:
           type: array
           items:
             type: string
+        statKeysByRole:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
         awardKeys:
           type: array
           items:

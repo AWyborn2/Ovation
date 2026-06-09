@@ -227,9 +227,11 @@ export function buildTradingCardData(
     },
   };
 
-  // Resolve the admin-chosen stat keys against the catalog. Empty = per-role
-  // defaults (configuredStats stays null and the card uses its fallbacks).
-  const statKeys = settings?.statKeys ?? [];
+  // Resolve the admin-chosen stat keys against the catalog. A per-role override
+  // wins when set; otherwise the global statKeys apply; an empty result falls
+  // back to the per-role smart defaults (configuredStats stays null).
+  const roleOverride = settings?.statKeysByRole?.[data.role] ?? [];
+  const statKeys = roleOverride.length > 0 ? roleOverride : (settings?.statKeys ?? []);
   if (statKeys.length > 0) {
     data.configuredStats = statKeys
       .map((k) => STAT_CATALOG_MAP[k])

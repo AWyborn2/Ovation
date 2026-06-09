@@ -29,6 +29,7 @@ function serializeTradingCardSettings(
 ) {
   return {
     statKeys: row.statKeys,
+    statKeysByRole: row.statKeysByRole,
     awardKeys: row.awardKeys,
   };
 }

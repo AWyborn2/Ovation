@@ -3926,7 +3926,8 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
  * @summary Get the global trading-card display settings
  */
 export const GetTradingCardSettingsResponse = zod.object({
-  "statKeys": zod.array(zod.string()).describe('Ordered stat keys shown on every player\'s trading card. Empty = fall back to the per-role default stat selection.'),
+  "statKeys": zod.array(zod.string()).describe('Ordered stat keys shown on every player\'s trading card, used as the default for every role. Empty = fall back to the per-role default stat selection.'),
+  "statKeysByRole": zod.record(zod.string(), zod.array(zod.string())).optional().describe('Per-role stat key overrides, keyed by card role (\"Batsman\", \"Bowler\", \"All-Rounder\", \"Wicket-Keeper\"). A role with a non-empty list overrides statKeys for players of that role; otherwise statKeys (then the smart per-role default) applies.'),
   "awardKeys": zod.array(zod.string()).describe('Award keys (awards.key) eligible to appear on cards; each player\'s card shows the ones they have won. Empty = all published awards eligible.')
 })
 
@@ -3936,11 +3937,13 @@ export const GetTradingCardSettingsResponse = zod.object({
  */
 export const UpdateTradingCardSettingsBody = zod.object({
   "statKeys": zod.array(zod.string()).optional(),
+  "statKeysByRole": zod.record(zod.string(), zod.array(zod.string())).optional(),
   "awardKeys": zod.array(zod.string()).optional()
 })
 
 export const UpdateTradingCardSettingsResponse = zod.object({
-  "statKeys": zod.array(zod.string()).describe('Ordered stat keys shown on every player\'s trading card. Empty = fall back to the per-role default stat selection.'),
+  "statKeys": zod.array(zod.string()).describe('Ordered stat keys shown on every player\'s trading card, used as the default for every role. Empty = fall back to the per-role default stat selection.'),
+  "statKeysByRole": zod.record(zod.string(), zod.array(zod.string())).optional().describe('Per-role stat key overrides, keyed by card role (\"Batsman\", \"Bowler\", \"All-Rounder\", \"Wicket-Keeper\"). A role with a non-empty list overrides statKeys for players of that role; otherwise statKeys (then the smart per-role default) applies.'),
   "awardKeys": zod.array(zod.string()).describe('Award keys (awards.key) eligible to appear on cards; each player\'s card shows the ones they have won. Empty = all published awards eligible.')
 })
 

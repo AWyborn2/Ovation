@@ -5,10 +5,13 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { TradingCardSettingsStatKeysByRole } from './tradingCardSettingsStatKeysByRole';
 
 export interface TradingCardSettings {
-  /** Ordered stat keys shown on every player's trading card. Empty = fall back to the per-role default stat selection. */
+  /** Ordered stat keys shown on every player's trading card, used as the default for every role. Empty = fall back to the per-role default stat selection. */
   statKeys: string[];
+  /** Per-role stat key overrides, keyed by card role ("Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"). A role with a non-empty list overrides statKeys for players of that role; otherwise statKeys (then the smart per-role default) applies. */
+  statKeysByRole?: TradingCardSettingsStatKeysByRole;
   /** Award keys (awards.key) eligible to appear on cards; each player's card shows the ones they have won. Empty = all published awards eligible. */
   awardKeys: string[];
 }

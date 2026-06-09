@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { STAT_CATALOG } from "@/lib/trading-card";
+import { STAT_CATALOG, CARD_ROLES, type CardRole } from "@/lib/trading-card";
 
 export default function AdminTradingCards() {
   const qc = useQueryClient();
@@ -23,9 +23,11 @@ export default function AdminTradingCards() {
       <div>
         <h1 className="text-3xl font-serif font-bold">Trading card contents</h1>
         <p className="text-muted-foreground mt-1">
-          Choose which statistics and awards appear on every player's trading card. This is a
-          single global setting — it applies to all cards. Leave the stats empty to fall back to
-          smart per-role defaults, and leave the awards empty to show every award a player has won.
+          Choose which statistics and awards appear on player trading cards. Set a default that
+          applies to every card, then optionally override the stats per player role (Batsman,
+          Bowler, All-Rounder, Wicket-Keeper). Leave a section empty to fall back: a role with no
+          stats uses the default, and an empty default uses smart per-role defaults. Leave the
+          awards empty to show every award a player has won.
         </p>
       </div>
 
@@ -58,11 +60,15 @@ function SettingsCard({
   onSaved: () => void;
 }) {
   const [statKeys, setStatKeys] = useState<string[]>(settings.statKeys);
+  const [statKeysByRole, setStatKeysByRole] = useState<Record<string, string[]>>(
+    settings.statKeysByRole ?? {},
+  );
   const [awardKeys, setAwardKeys] = useState<string[]>(settings.awardKeys);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setStatKeys(settings.statKeys);
+    setStatKeysByRole(settings.statKeysByRole ?? {});
     setAwardKeys(settings.awardKeys);
   }, [settings]);
 
@@ -83,6 +89,16 @@ function SettingsCard({
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
 
+  // Toggle a stat key for one role's override list (independent ordered lists).
+  const toggleRoleStat = (role: CardRole, key: string) =>
+    setStatKeysByRole((prev) => {
+      const current = prev[role] ?? [];
+      const next = current.includes(key)
+        ? current.filter((k) => k !== key)
+        : [...current, key];
+      return { ...prev, [role]: next };
+    });
+
   const toggleAward = (key: string) =>
     setAwardKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
@@ -90,7 +106,11 @@ function SettingsCard({
 
   const save = () => {
     setError(null);
-    update.mutate({ data: { statKeys, awardKeys } });
+    // Drop empty role lists so the payload stays clean (empty = use default).
+    const cleanedByRole = Object.fromEntries(
+      Object.entries(statKeysByRole).filter(([, keys]) => keys.length > 0),
+    );
+    update.mutate({ data: { statKeys, statKeysByRole: cleanedByRole, awardKeys } });
   };
 
   return (
@@ -99,39 +119,42 @@ function SettingsCard({
         <CardTitle>Card statistics &amp; awards</CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
-        {/* Stats */}
+        {/* Default stats (apply to every role unless overridden) */}
         <div>
           <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-            Statistics shown on cards
+            Default statistics (all roles)
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
             Selected stats appear on every card in the order you pick them. Leave all unticked to
             use the automatic per-role default selection.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {STAT_CATALOG.map((stat) => {
-              const order = statKeys.indexOf(stat.key);
-              const selected = order >= 0;
-              return (
-                <label
-                  key={stat.key}
-                  className={`flex items-center gap-2 border rounded p-2.5 cursor-pointer transition-colors ${
-                    selected ? "border-primary bg-primary/5" : "hover:bg-muted"
-                  }`}
-                  data-testid={`stat-${stat.key}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => toggleStat(stat.key)}
-                  />
-                  <span className="font-medium text-sm flex-1">{stat.label}</span>
-                  {selected && (
-                    <span className="text-xs font-bold text-primary">{order + 1}</span>
-                  )}
-                </label>
-              );
-            })}
+          <StatPicker
+            selected={statKeys}
+            onToggle={toggleStat}
+            testIdPrefix="stat"
+          />
+        </div>
+
+        {/* Per-role stat overrides */}
+        <div>
+          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+            Statistics by role
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Override the stats for players of a specific role. Leave a role unticked to use the
+            default selection above.
+          </p>
+          <div className="space-y-6">
+            {CARD_ROLES.map((role) => (
+              <div key={role}>
+                <h4 className="font-semibold text-sm mb-2">{role}</h4>
+                <StatPicker
+                  selected={statKeysByRole[role] ?? []}
+                  onToggle={(key) => toggleRoleStat(role, key)}
+                  testIdPrefix={`stat-${role}`}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
@@ -184,5 +207,45 @@ function SettingsCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// A grid of the full stat catalog as ordered toggles. The selection order
+// (shown as a numeric badge) drives the order tiles appear on the card.
+function StatPicker({
+  selected,
+  onToggle,
+  testIdPrefix,
+}: {
+  selected: string[];
+  onToggle: (key: string) => void;
+  testIdPrefix: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {STAT_CATALOG.map((stat) => {
+        const order = selected.indexOf(stat.key);
+        const isSelected = order >= 0;
+        return (
+          <label
+            key={stat.key}
+            className={`flex items-center gap-2 border rounded p-2.5 cursor-pointer transition-colors ${
+              isSelected ? "border-primary bg-primary/5" : "hover:bg-muted"
+            }`}
+            data-testid={`${testIdPrefix}-${stat.key}`}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => onToggle(stat.key)}
+            />
+            <span className="font-medium text-sm flex-1">{stat.label}</span>
+            {isSelected && (
+              <span className="text-xs font-bold text-primary">{order + 1}</span>
+            )}
+          </label>
+        );
+      })}
+    </div>
   );
 }

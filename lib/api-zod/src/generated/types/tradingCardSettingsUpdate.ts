@@ -5,8 +5,10 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { TradingCardSettingsUpdateStatKeysByRole } from './tradingCardSettingsUpdateStatKeysByRole';
 
 export interface TradingCardSettingsUpdate {
   statKeys?: string[];
+  statKeysByRole?: TradingCardSettingsUpdateStatKeysByRole;
   awardKeys?: string[];
 }
