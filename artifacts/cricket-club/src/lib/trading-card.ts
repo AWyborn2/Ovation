@@ -75,16 +75,6 @@ function normaliseRole(value: string | null | undefined): CardRole | null {
   return match ?? null;
 }
 
-function earliestSeason(player: PlayerDetail): number | null {
-  let min: number | null = null;
-  for (const s of player.stats) {
-    if (typeof s.season === "number" && (min === null || s.season < min)) {
-      min = s.season;
-    }
-  }
-  return min;
-}
-
 /**
  * Build the trading-card view model from a player detail record and the cap register.
  * The big "number" is the player's A Grade cap number, shown ONLY if they hold one.
@@ -103,8 +93,9 @@ export function buildTradingCardData(
   const outs = innings - notOuts;
 
   const capNumber = caps?.find((c) => c.playerId === player.id)?.capNumber ?? null;
-  const debutYear = earliestSeason(player);
-  const currentYear = new Date().getFullYear();
+  // Debut + seasons come from the server (inferred from the match-data era).
+  // null = career predates reliable scorecards, so the card shows "-".
+  const debutYear = player.debutSeason ?? null;
 
   const premierships = (player.premierships ?? [])
     .map((p) => p.year)
@@ -120,7 +111,7 @@ export function buildTradingCardData(
         ? Math.min(5, Math.max(1, Math.round(player.cardRating)))
         : null,
     debutYear,
-    careerSpan: debutYear ? Math.max(0, currentYear - debutYear) : null,
+    careerSpan: player.seasonsPlayed ?? null,
     photoUrl: player.imageUrl ?? (isFemalePlayer(player, agg) ? avatarFemale : avatarMale),
     usingFallback: !player.imageUrl,
     stats: {

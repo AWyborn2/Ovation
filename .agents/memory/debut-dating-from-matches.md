@@ -26,3 +26,17 @@ Mitchell Caine (cap #242) and Ben Higton (#241) had 0 prior games.
 `match_player_lines` must cross-check the snapshot baseline, not trust the
 earliest match row alone. Seeded historical caps with no match record stay
 undated and are treated as not-recent.
+
+## Trading-card debut/seasons (server-computed)
+
+`PlayerDetail.debutSeason` / `seasonsPlayed` are computed in `GET /players/:id`
+by aggregating `player_grade_season_stats`: a debut is datable only when
+`SUM(games) FILTER (season IS NULL) = 0` (no pre-scorecard baseline), then
+`debutSeason = MIN(season)` and `seasonsPlayed = COUNT(DISTINCT season)` over
+rows with `season NOT NULL AND games > 0`; otherwise both null.
+
+**Why:** the old client helper `earliestSeason()` read `season` off
+`player.stats` (= `player_grade_stats` AGGREGATE rows, where `season` is ALWAYS
+null), so every card showed "-"/no "Since" badge. Never infer debut from the
+aggregate table — only `player_grade_season_stats` carries real seasons. Keeping
+it server-side means it stays "continuously updated" as imports recompute.

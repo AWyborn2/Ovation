@@ -25,6 +25,16 @@ export interface PlayerDetail {
   cardRole?: string | null;
   /** @nullable */
   cardRating?: number | null;
+  /**
+     * Inferred club debut season (start year, e.g. 2019 for 2019/20), derived from the match-data era. Only set for players whose entire record sits in the reliable scorecard era (zero pre-scorecard baseline games); null when the career predates reliable match data.
+     * @nullable
+     */
+  debutSeason?: number | null;
+  /**
+     * Count of distinct match-era seasons the player has appeared in. Null when a debut season cannot be reliably inferred.
+     * @nullable
+     */
+  seasonsPlayed?: number | null;
   stats: Stat[];
   premierships?: PlayerPremiership[];
 }

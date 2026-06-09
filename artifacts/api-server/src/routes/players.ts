@@ -159,7 +159,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [playerRow, stats, premRows] = await Promise.all([
+  const [playerRow, stats, premRows, debutRow] = await Promise.all([
     db.select().from(playersTable).where(eq(playersTable.id, params.data.id)).then((rows) => rows[0]),
     db.select().from(playerGradeStatsTable).where(eq(playerGradeStatsTable.playerId, params.data.id)).orderBy(asc(playerGradeStatsTable.grade)),
     db
@@ -178,6 +178,21 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       .innerJoin(premiershipsTable, eq(premiershipsTable.id, premiershipPlayersTable.premiershipId))
       .where(eq(premiershipPlayersTable.playerId, params.data.id))
       .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade)),
+    // Debut inference from the season snapshot. A debut season is only reliable
+    // for players whose entire record sits in the match-data ("scorecard") era:
+    // any season=NULL baseline games mean the career predates reliable data, so
+    // we leave the debut null rather than guess. firstSeason is the earliest
+    // match-era season (start year); seasonsPlayed counts distinct match-era
+    // seasons. Computed live so it stays in sync as matches are imported.
+    db
+      .select({
+        baselineGames: sql<number>`COALESCE(SUM(${playerGradeSeasonStatsTable.games}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NULL), 0)`,
+        firstSeason: sql<number | null>`MIN(${playerGradeSeasonStatsTable.season}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NOT NULL AND ${playerGradeSeasonStatsTable.games} > 0)`,
+        seasonsPlayed: sql<number>`COUNT(DISTINCT ${playerGradeSeasonStatsTable.season}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NOT NULL AND ${playerGradeSeasonStatsTable.games} > 0)`,
+      })
+      .from(playerGradeSeasonStatsTable)
+      .where(eq(playerGradeSeasonStatsTable.playerId, params.data.id))
+      .then((rows) => rows[0]),
   ]);
 
   if (!playerRow) {
@@ -185,10 +200,19 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Only date a debut when the player has zero pre-scorecard baseline games
+  // (i.e. they "clearly started" in the reliable match-data era).
+  const datable =
+    debutRow != null && Number(debutRow.baselineGames) === 0 && debutRow.firstSeason != null;
+  const debutSeason = datable ? Number(debutRow.firstSeason) : null;
+  const seasonsPlayed = datable ? Number(debutRow.seasonsPlayed) : null;
+
   res.json({
     ...playerRow,
     premiershipsWon: premRows.length,
     premiershipsCaptained: premRows.filter((r) => r.isCaptain).length,
+    debutSeason,
+    seasonsPlayed,
     stats,
     premierships: premRows,
   });

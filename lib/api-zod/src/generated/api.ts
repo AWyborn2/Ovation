@@ -80,6 +80,8 @@ export const GetPlayerResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish(),
+  "debutSeason": zod.number().nullish().describe('Inferred club debut season (start year, e.g. 2019 for 2019\/20), derived from the match-data era. Only set for players whose entire record sits in the reliable scorecard era (zero pre-scorecard baseline games); null when the career predates reliable match data.'),
+  "seasonsPlayed": zod.number().nullish().describe('Count of distinct match-era seasons the player has appeared in. Null when a debut season cannot be reliably inferred.'),
   "stats": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
