@@ -40,7 +40,7 @@ function oppName(line: MatchOppositionLine): string {
   return line.name?.trim() || "—";
 }
 
-/** Parse a stored score string "wickets / runs" (e.g. "10 / 187"). */
+/** Parse a stored score string "runs / wickets" (e.g. "187 / 10"). */
 function parseScore(
   score: string | null | undefined,
 ): { wickets: number | null; runs: number | null } {
@@ -51,7 +51,7 @@ function parseScore(
     const n = /^\s*(\d+)\s*$/.exec(score);
     return { wickets: null, runs: n ? parseInt(n[1], 10) : null };
   }
-  return { wickets: parseInt(m[1], 10), runs: parseInt(m[2], 10) };
+  return { runs: parseInt(m[1], 10), wickets: parseInt(m[2], 10) };
 }
 
 function strikeRate(
