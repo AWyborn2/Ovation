@@ -10,6 +10,7 @@ import {
   useAddPlayerImage,
   useDeletePlayerImage,
   useSetDefaultPlayerImage,
+  useGetPlayer,
   getListPlayerImagesQueryKey,
   getGetPlayerQueryKey,
   getListPlayersQueryKey,
@@ -25,7 +26,8 @@ import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { TradingCardModal } from "@/components/trading-card";
-import { CARD_ROLES } from "@/lib/trading-card";
+import { CARD_ROLES, deriveRole } from "@/lib/trading-card";
+import { aggregateCareer } from "@/lib/honour-boards";
 
 export default function AdminPlayers() {
   const qc = useQueryClient();
@@ -234,6 +236,15 @@ function PlayerRow({
     player.cardRating != null ? String(player.cardRating) : "",
   );
 
+  // Surface the role the auto-rule computes for this player, so an admin can
+  // confirm or override it at a glance. Only fetched while the row is open for
+  // editing (the dropdown is hidden otherwise), and only needed for the "Auto"
+  // option — but we resolve it whenever editing so the label is ready.
+  const { data: detail } = useGetPlayer(player.id, {
+    query: { enabled: editing, queryKey: getGetPlayerQueryKey(player.id) },
+  });
+  const suggestedRole = detail ? deriveRole(aggregateCareer(detail.stats)[0]) : null;
+
   if (!editing) {
     return (
       <div className="flex items-center justify-between gap-3 border-b pb-2 last:border-0">
@@ -282,7 +293,7 @@ function PlayerRow({
           onChange={(e) => setCardRole(e.target.value)}
           className="h-9 rounded-md border border-input bg-background px-2 text-sm"
         >
-          <option value="">Auto</option>
+          <option value="">{suggestedRole ? `Auto — ${suggestedRole}` : "Auto"}</option>
           {CARD_ROLES.map((r) => (
             <option key={r} value={r}>
               {r}

@@ -118,7 +118,7 @@ function isFemalePlayer(player: PlayerDetail, agg: AggregatedPlayer | undefined)
   return false;
 }
 
-function deriveRole(agg: AggregatedPlayer | undefined): CardRole {
+export function deriveRole(agg: AggregatedPlayer | undefined): CardRole {
   if (!agg) return "Batsman";
   // Genuine wicket-keeper signature: enough stumpings to clear the 1–4 fill-in
   // noise band, stumpings a meaningful share of dismissals, and not a frontline
