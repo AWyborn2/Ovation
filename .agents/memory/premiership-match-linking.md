@@ -6,7 +6,21 @@ description: How premierships are linked to their scorecard match, and the seaso
 # Premiership → Grand Final match linking
 
 `GET /api/premierships` derives each premiership's `matchId` at read time (no stored FK)
-by finding the `matches` row with `stage='Grand Final'` for the same grade + season.
+via the exported pure helper `linkPremiershipMatch(prem, gfByKey, finalsByKey)`, which
+finds the `matches` row for the same grade + season.
+
+## Stage labels: "Grand Final" with a "Finals" fallback
+- Most competitions label the decider `stage='Grand Final'`, but a few (PPL T20 Cup,
+  PCA Colts) label it generically **"Finals"** in the master export.
+- The linker fetches BOTH stages and prefers a Grand Final; it only falls back to a
+  "Finals"-stage match when the grade+season has **no** Grand Final candidate at all.
+  This is a strict no-Grand-Final fallback (a same-season GF always wins).
+- **Why:** previously the ETL hardcoded specific `source_key`s to promote "Finals"→
+  "Grand Final" (`scripts/sql/matches-etl.sql`), so every new season whose decider
+  PlayHQ labels "Finals" silently failed to link until someone added another source_key.
+  That override is now removed; the read-time fallback handles it generically.
+- Do NOT widen the fallback to "Semi Finals" / "Preliminary Final" / "Qualifying Final"
+  — those are not deciders and would mis-link.
 
 ## The off-by-one (root cause of mislinks)
 - `premierships.year` is the **calendar year of the win** (a March 2024 final → year 2024).
@@ -33,8 +47,10 @@ White Knights *loss*. Verify the season mapping before concluding a final is mis
   unavailable there, so the T20/Won/result-text signals carry the disambiguation.
 
 ## Genuine data gaps (no scorecard ever loaded — not backfilled)
-PPL 2026 GF, Colts 2024 GF (no Colts matches at all), and pre-2003/04 finals (master
-match history starts 2003/04). Not backfilled: a real scorecard needs full
-batting/bowling/fielding lines we don't have, and fabricating match rows would corrupt
-stats. The premiership honour-board row still shows result/MOM/players; only the tappable
-scorecard link is absent.
+Pre-2003/04 finals (master match history starts 2003/04) and any season whose match
+history simply isn't loaded. ~18 of 54 premierships still resolve to `matchId=null`,
+mostly older seasons. Not backfilled: a real scorecard needs full batting/bowling/
+fielding lines we don't have, and fabricating match rows would corrupt stats. The
+premiership honour-board row still shows result/MOM/players; only the tappable scorecard
+link is absent. (PPL 2026 GF and Colts 2024 GF, once listed as gaps, now DO link via the
+Finals fallback above.)

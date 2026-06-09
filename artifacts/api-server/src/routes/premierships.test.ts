@@ -1,11 +1,25 @@
 import { describe, it, expect } from "vitest";
 import type { matchesTable } from "@workspace/db";
-import { premiershipSeasons, pickGrandFinal } from "./premierships";
+import {
+  premiershipSeasons,
+  pickGrandFinal,
+  linkPremiershipMatch,
+} from "./premierships";
 
 type GfMatch = Pick<
   typeof matchesTable.$inferSelect,
   "id" | "grade" | "season" | "opponent" | "matchDate" | "result"
 >;
+
+function byKey(matches: GfMatch[]): Map<string, GfMatch[]> {
+  const map = new Map<string, GfMatch[]>();
+  for (const m of matches) {
+    const key = `${m.grade}|${m.season}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(m);
+  }
+  return map;
+}
 
 function gf(overrides: Partial<GfMatch> & { id: number }): GfMatch {
   return {
@@ -138,5 +152,53 @@ describe("pickGrandFinal", () => {
   it("breaks a full tie by lowest id", () => {
     const candidates = [gf({ id: 9 }), gf({ id: 3 }), gf({ id: 12 })];
     expect(pickGrandFinal(candidates, prem())).toBe(3);
+  });
+});
+
+describe("linkPremiershipMatch", () => {
+  const base = { year: 2024, grade: "A Grade", ...prem({ matchDate: "2024-03-16" }) };
+
+  it("prefers an explicit Grand Final when one exists for the grade+season", () => {
+    const gfByKey = byKey([gf({ id: 100, season: 2023 })]);
+    const finalsByKey = byKey([gf({ id: 200, season: 2023 })]);
+    expect(linkPremiershipMatch(base, gfByKey, finalsByKey)).toBe(100);
+  });
+
+  it("falls back to a Finals decider when there is no Grand Final", () => {
+    // PPL T20 Cup / PCA Colts label their decider "Finals", not "Grand Final".
+    const gfByKey = byKey([]);
+    const finalsByKey = byKey([gf({ id: 200, season: 2023 })]);
+    expect(linkPremiershipMatch(base, gfByKey, finalsByKey)).toBe(200);
+  });
+
+  it("returns null when neither a Grand Final nor a Finals exists", () => {
+    expect(linkPremiershipMatch(base, byKey([]), byKey([]))).toBeNull();
+  });
+
+  it("disambiguates a multi-Finals season via opponent-in-result text", () => {
+    // PPL 2025 (start-year) had two "Finals": one vs Waroona, the decider vs
+    // Pinjarra. The premiership result text names Pinjarra, so that wins.
+    const ppl2026 = {
+      year: 2026,
+      grade: "PPL",
+      ...prem({
+        competition: "Grand Final",
+        matchDate: "2026-03-10",
+        result: "Halls Head 6/167 def Pinjarra 9/137",
+      }),
+    };
+    const finalsByKey = byKey([
+      gf({ id: 11613, grade: "PPL", season: 2025, opponent: "Waroona Cricket Club", result: "Won", matchDate: "12:00 PM, Tuesday, 24 Feb 2026" }),
+      gf({ id: 11612, grade: "PPL", season: 2025, opponent: "Pinjarra Cricket Club", result: "Won", matchDate: "12:00 PM, Tuesday, 10 Mar 2026" }),
+    ]);
+    expect(linkPremiershipMatch(ppl2026, byKey([]), finalsByKey)).toBe(11612);
+  });
+
+  it("does not fall back to Finals when a same-season Grand Final is present", () => {
+    // If both exist, the Grand Final must win even if a Finals match looks like
+    // a better opponent/text match — Finals is strictly a no-Grand-Final fallback.
+    const gfByKey = byKey([gf({ id: 100, season: 2023, opponent: "Some Club", result: "Won" })]);
+    const finalsByKey = byKey([gf({ id: 200, season: 2023, opponent: "Pinjarra", result: "Won" })]);
+    expect(linkPremiershipMatch(base, gfByKey, finalsByKey)).toBe(100);
   });
 });

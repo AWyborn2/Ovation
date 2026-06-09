@@ -59,16 +59,12 @@ SELECT
        THEN substring(m.round from '[0-9]+')::int END     AS app_round,
   -- Stage = the round name for non-numeric rounds. A few competitions
   -- (PPL T20 Cup, PCA Colts) label their grand final generically as
-  -- "Finals" in the master export instead of "Grand Final", which left the
-  -- corresponding premierships with no tappable scorecard (premiership
-  -- linking keys on stage = 'Grand Final'). Promote those specific deciders
-  -- by their stable master source_key so the link resolves and a reload
-  -- keeps the correct stage.
+  -- "Finals" in the master export instead of "Grand Final". The premiership
+  -- linker (artifacts/api-server/src/routes/premierships.ts) handles this by
+  -- falling back to a "Finals"-stage decider when a grade+season has no
+  -- "Grand Final", so the raw round label is preserved here verbatim — no
+  -- per-match source_key promotion is needed.
   CASE
-       WHEN m.source_key IN (
-         '3bf80176-3dfa-400a-ada4-b200b05c8471',  -- PPL 2025/26 GF: HH def Pinjarra
-         'd18a43f7-4971-48cd-a35e-31efd69f675a'   -- U21 Colts 2023/24 GF: HH def White Knights Baldivis
-       ) THEN 'Grand Final'
        WHEN m.round IS NULL THEN NULL
        WHEN m.round ~ '^Round [0-9]+$' THEN NULL
        ELSE m.round END                                   AS app_stage,

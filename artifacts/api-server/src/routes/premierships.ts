@@ -106,6 +106,29 @@ interface PremForLink {
   matchDate: string | null;
 }
 
+/** Resolve the scorecard match for a premiership from pre-grouped candidate
+ * pools keyed by `grade|season`. Most competitions label their decider
+ * "Grand Final", but a few (e.g. the PPL T20 Cup, PCA Colts) label it
+ * generically as "Finals". Prefer an explicit Grand Final; only fall back to a
+ * "Finals"-stage decider when the grade+season has no Grand Final at all. This
+ * keeps the link working without per-match source_key hardcoding in the ETL. */
+export function linkPremiershipMatch(
+  prem: PremForLink & { year: number; grade: string },
+  gfByKey: Map<string, GfMatch[]>,
+  finalsByKey: Map<string, GfMatch[]>,
+): number | null {
+  const seasons = premiershipSeasons(prem.year, prem.matchDate);
+  let candidates = seasons.flatMap(
+    (season) => gfByKey.get(`${prem.grade}|${season}`) ?? [],
+  );
+  if (candidates.length === 0) {
+    candidates = seasons.flatMap(
+      (season) => finalsByKey.get(`${prem.grade}|${season}`) ?? [],
+    );
+  }
+  return pickGrandFinal(candidates, prem);
+}
+
 const isT20 = (s: string | null | undefined): boolean => /\bt20\b/i.test(s ?? "");
 const isUndecidedResult = (r: string | null | undefined): boolean =>
   /WASHOUT|ABANDON|SHARED|TIED|NO RESULT/i.test(r ?? "");
@@ -197,7 +220,11 @@ router.get("/premierships", async (_req, res): Promise<void> => {
     byPrem.get(p.premiershipId)!.push(p);
   }
 
-  const gfMatches = await db
+  // Most competitions label their decider "Grand Final", but a few (e.g. the
+  // PPL T20 Cup and PCA Colts) label it generically as "Finals". Fetch both so
+  // a premiership whose grade+season has no "Grand Final" can fall back to the
+  // "Finals" decider — without per-match source_key hardcoding in the ETL.
+  const finalMatches = await db
     .select({
       id: matchesTable.id,
       grade: matchesTable.grade,
@@ -205,28 +232,26 @@ router.get("/premierships", async (_req, res): Promise<void> => {
       opponent: matchesTable.opponent,
       matchDate: matchesTable.matchDate,
       result: matchesTable.result,
+      stage: matchesTable.stage,
     })
     .from(matchesTable)
-    .where(eq(matchesTable.stage, "Grand Final"));
+    .where(inArray(matchesTable.stage, ["Grand Final", "Finals"]));
 
   const gfByKey = new Map<string, GfMatch[]>();
-  for (const m of gfMatches) {
+  const finalsByKey = new Map<string, GfMatch[]>();
+  for (const m of finalMatches) {
     const key = `${m.grade}|${m.season}`;
-    if (!gfByKey.has(key)) gfByKey.set(key, []);
-    gfByKey.get(key)!.push(m);
+    const target = m.stage === "Grand Final" ? gfByKey : finalsByKey;
+    if (!target.has(key)) target.set(key, []);
+    target.get(key)!.push(m);
   }
 
   res.json(
-    prems.map((p) => {
-      const candidates = premiershipSeasons(p.year, p.matchDate).flatMap(
-        (season) => gfByKey.get(`${p.grade}|${season}`) ?? [],
-      );
-      return {
-        ...p,
-        players: byPrem.get(p.id) ?? [],
-        matchId: pickGrandFinal(candidates, p),
-      };
-    }),
+    prems.map((p) => ({
+      ...p,
+      players: byPrem.get(p.id) ?? [],
+      matchId: linkPremiershipMatch(p, gfByKey, finalsByKey),
+    })),
   );
 });
 
