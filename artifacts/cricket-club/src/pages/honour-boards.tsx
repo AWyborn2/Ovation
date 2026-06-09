@@ -26,6 +26,7 @@ import {
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
+import { seasonLabel } from "@/lib/share-card";
 import { useEffect, useMemo, useState } from "react";
 import {
   BOARDS,
@@ -237,9 +238,10 @@ const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
 };
 
 const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
+  const seasonText = d.season != null ? seasonLabel(d.season) : null;
   const subline =
-    d.season != null
-      ? `${d.grade} Cap #${d.capNumber} • ${d.round != null ? `Round ${d.round}, ` : ""}${d.season}`
+    seasonText != null
+      ? `${d.grade} Cap #${d.capNumber} • ${d.round != null ? `Round ${d.round}, ` : ""}${seasonText}`
       : `${d.grade} Cap #${d.capNumber}`;
   return (
     <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
@@ -270,7 +272,7 @@ const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
             playerName: d.name,
             grade: d.grade,
             capNumber: d.capNumber,
-            season: d.season != null ? String(d.season) : null,
+            season: seasonText,
             round: d.round ?? null,
           }}
         />
