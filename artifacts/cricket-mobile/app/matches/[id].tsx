@@ -1,7 +1,12 @@
 import React from "react";
-import { ScrollView, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useGetMatch, getGetMatchQueryKey } from "@workspace/api-client-react";
+import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import {
+  useGetMatch,
+  getGetMatchQueryKey,
+  useListPremierships,
+} from "@workspace/api-client-react";
 
 import { Body, Card, ErrorView, Heading, Loading, styles } from "@/components/ui";
 import { DigitalScorecard } from "@/components/scorecard";
@@ -32,12 +37,14 @@ export default function MatchDetailScreen() {
       queryKey: getGetMatchQueryKey(matchId),
     },
   });
+  const { data: premierships } = useListPremierships();
 
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorView message="Match not found" />;
 
   const hatTrickIds = new Set(data.hatTrickPlayerIds ?? []);
   const label = matchLabel(data.round, data.stage);
+  const premiership = (premierships ?? []).find((p) => p.matchId === matchId);
 
   return (
     <>
@@ -50,6 +57,31 @@ export default function MatchDetailScreen() {
         </Body>
         {data.competition ? (
           <Body muted size={11} style={{ marginTop: 2 }}>{data.competition}</Body>
+        ) : null}
+
+        {premiership ? (
+          <Link href={"/premierships" as never} asChild>
+            <TouchableOpacity activeOpacity={0.7}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 12,
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: colors.radius,
+                  backgroundColor: colors.primary,
+                }}
+              >
+                <Feather name="award" size={16} color={colors.primaryForeground} />
+                <Body bold size={12} style={{ flex: 1, color: colors.primaryForeground }}>
+                  Grand Final · {premiership.grade} Premiership {fmtSeason(premiership.year)}
+                </Body>
+                <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
+              </View>
+            </TouchableOpacity>
+          </Link>
         ) : null}
 
         <Card style={{ marginTop: 12 }}>
