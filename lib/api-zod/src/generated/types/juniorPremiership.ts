@@ -39,6 +39,11 @@ export interface JuniorPremiership {
   oppScore?: string | null;
   /** @nullable */
   resultText?: string | null;
+  /**
+     * Man-of-the-match name (admin-entered; not in the source dump).
+     * @nullable
+     */
+  mom?: string | null;
   /** @nullable */
   matchId?: number | null;
   players: JuniorPremiershipPlayer[];

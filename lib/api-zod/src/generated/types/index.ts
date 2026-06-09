@@ -127,6 +127,7 @@ export * from './juniorPlayerSeason';
 export * from './juniorPlayerSummary';
 export * from './juniorPremiership';
 export * from './juniorPremiershipPlayer';
+export * from './juniorPremiershipUpdate';
 export * from './juniorRosterEntry';
 export * from './juniorSeasonTopPerformers';
 export * from './juniorSocialMilestone';

@@ -3590,6 +3590,33 @@ paths:
                 items:
                   $ref: "#/components/schemas/JuniorPremiership"
 
+  /juniors/premierships/{id}:
+    patch:
+      operationId: updateJuniorPremiership
+      tags: [juniors]
+      summary: Set the man-of-the-match and captain flags for a junior premiership (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorPremiershipUpdate"
+      responses:
+        "200":
+          description: Updated junior premiership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorPremiership"
+        "404":
+          description: Premiership not found
+
   /juniors/match-display-settings:
     get:
       operationId: getJuniorMatchDisplaySettings
@@ -8069,12 +8096,16 @@ components:
 
     JuniorPremiershipPlayer:
       type: object
-      required: [playerName]
+      required: [id, playerName, isCaptain]
       properties:
+        id:
+          type: integer
         participantId:
           type: ["string", "null"]
         playerName:
           type: string
+        isCaptain:
+          type: boolean
 
     JuniorPremiership:
       type: object
@@ -8108,12 +8139,27 @@ components:
           type: ["string", "null"]
         resultText:
           type: ["string", "null"]
+        mom:
+          type: ["string", "null"]
+          description: Man-of-the-match name (admin-entered; not in the source dump).
         matchId:
           type: ["integer", "null"]
         players:
           type: array
           items:
             $ref: "#/components/schemas/JuniorPremiershipPlayer"
+
+    JuniorPremiershipUpdate:
+      type: object
+      description: Admin edit of a junior premiership's man-of-the-match and captain flags.
+      properties:
+        mom:
+          type: ["string", "null"]
+        captainPlayerIds:
+          type: array
+          description: Ids of junior_premiership_players rows to mark as captain (all others cleared).
+          items:
+            type: integer
 
     JuniorTotals:
       type: object

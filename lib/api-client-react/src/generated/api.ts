@@ -94,6 +94,7 @@ import type {
   JuniorPlayerDetail,
   JuniorPlayerSummary,
   JuniorPremiership,
+  JuniorPremiershipUpdate,
   JuniorSeasonTopPerformers,
   JuniorSocialMilestone,
   LifeMember,
@@ -12898,6 +12899,78 @@ export function useListJuniorPremierships<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getUpdateJuniorPremiershipUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/premierships/${id}`
+}
+
+/**
+ * @summary Set the man-of-the-match and captain flags for a junior premiership (admin)
+ */
+export const updateJuniorPremiership = async (id: number,
+    juniorPremiershipUpdate: JuniorPremiershipUpdate, options?: RequestInit): Promise<JuniorPremiership> => {
+
+  return customFetch<JuniorPremiership>(getUpdateJuniorPremiershipUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorPremiershipUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorPremiershipMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorPremiership>>, TError,{id: number;data: BodyType<JuniorPremiershipUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorPremiership>>, TError,{id: number;data: BodyType<JuniorPremiershipUpdate>}, TContext> => {
+
+const mutationKey = ['updateJuniorPremiership'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorPremiership>>, {id: number;data: BodyType<JuniorPremiershipUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateJuniorPremiership(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorPremiershipMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorPremiership>>>
+    export type UpdateJuniorPremiershipMutationBody = BodyType<JuniorPremiershipUpdate>
+    export type UpdateJuniorPremiershipMutationError = ErrorType<void>
+
+    /**
+ * @summary Set the man-of-the-match and captain flags for a junior premiership (admin)
+ */
+export const useUpdateJuniorPremiership = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorPremiership>>, TError,{id: number;data: BodyType<JuniorPremiershipUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorPremiership>>,
+        TError,
+        {id: number;data: BodyType<JuniorPremiershipUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorPremiershipMutationOptions(options));
+    }
 
 export const getGetJuniorMatchDisplaySettingsUrl = () => {
 

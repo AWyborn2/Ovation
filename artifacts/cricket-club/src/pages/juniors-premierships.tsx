@@ -43,10 +43,13 @@ const resultStyle = {
 } as const;
 
 // Junior premierships carry NO captain or man-of-the-match data in the source
-// dump, so plaques omit those lines (unlike the senior board). Roster names that
-// resolve to a known participant link to the player page.
+// dump — admins add them by hand via /admin/junior-premierships, after which the
+// plaque shows "(CAPT)" beside the captain and an "M.O.M - NAME" line, matching
+// the senior board. Roster names that resolve to a known participant link to the
+// player page.
 const PlayerLine = ({ p }: { p: JuniorPremiership["players"][number] }) => {
   const display = p.playerName.replace(/\s+/g, " ").trim().toUpperCase();
+  const label = p.isCaptain ? `${display} (CAPT)` : display;
   return (
     <li>
       {p.participantId ? (
@@ -54,10 +57,10 @@ const PlayerLine = ({ p }: { p: JuniorPremiership["players"][number] }) => {
           href={`/juniors/players/${p.participantId}`}
           className="block whitespace-nowrap text-slate-900 hover:underline font-semibold text-[9px]"
         >
-          {display}
+          {label}
         </Link>
       ) : (
-        <span className="block whitespace-nowrap text-slate-900 font-semibold text-[9px]">{display}</span>
+        <span className="block whitespace-nowrap text-slate-900 font-semibold text-[9px]">{label}</span>
       )}
     </li>
   );
@@ -118,6 +121,15 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
           )}
 
           <div className="flex-1" />
+
+          {prem.mom && (
+            <div
+              style={{ ...resultStyle, marginBottom: "4px" }}
+              className="text-[10px] pt-[10px] pb-[10px] text-center font-bold"
+            >
+              M.O.M - {prem.mom.toUpperCase()}
+            </div>
+          )}
 
           {result &&
             (prem.matchId != null ? (

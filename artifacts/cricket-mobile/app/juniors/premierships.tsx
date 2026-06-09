@@ -52,6 +52,7 @@ function FilterChip({
 
 function RosterName({ p }: { p: JuniorPremiershipPlayer }) {
   const colors = useColors();
+  const label = p.isCaptain ? `${p.playerName} (c)` : p.playerName;
   if (p.participantId) {
     return (
       <Link href={`/juniors/players/${p.participantId}` as never} asChild>
@@ -67,7 +68,7 @@ function RosterName({ p }: { p: JuniorPremiershipPlayer }) {
             }}
           >
             <Body size={12} bold style={{ color: JUNIOR.accentDark }}>
-              {p.playerName}
+              {label}
             </Body>
           </View>
         </TouchableOpacity>
@@ -84,7 +85,7 @@ function RosterName({ p }: { p: JuniorPremiershipPlayer }) {
         paddingVertical: 4,
       }}
     >
-      <Body size={12} muted>{p.playerName}</Body>
+      <Body size={12} muted>{label}</Body>
     </View>
   );
 }
@@ -258,10 +259,12 @@ export default function JuniorPremiershipsScreen() {
               : undefined
           }
           resultText={active.resultText ?? undefined}
+          mom={active.mom ?? undefined}
           players={active.players.map<PlaquePlayer>((p, i) => ({
             key: String(i),
             name: p.playerName,
             href: p.participantId ? `/juniors/players/${p.participantId}` : null,
+            isCaptain: p.isCaptain,
           }))}
           scorecard={
             active.matchId != null

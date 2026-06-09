@@ -34,6 +34,8 @@ import {
   ListJuniorLeaderboardQueryParams,
   GetJuniorSeasonTopPerformersQueryParams,
   UpdateJuniorMatchDisplaySettingsBody,
+  UpdateJuniorPremiershipParams,
+  UpdateJuniorPremiershipBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 
@@ -1310,17 +1312,117 @@ router.get("/juniors/premierships", async (_req, res): Promise<void> => {
       hhScore: pr.hhScore,
       oppScore: pr.oppScore,
       resultText: pr.resultText,
+      mom: pr.mom,
       matchId: pr.matchId,
       players: (byPrem.get(pr.id) ?? []).map((pl) => {
         const priv = !!pl.participantId && privateIds.has(pl.participantId);
         return {
+          id: pl.id,
           participantId: priv ? null : pl.participantId,
           playerName: priv ? MASK_NAME : (pl.playerName ?? ""),
+          isCaptain: pl.isCaptain,
         };
       }),
     })),
   );
 });
+
+// ---------------------------------------------------------------------------
+// PATCH /juniors/premierships/:id (admin) — set man-of-the-match + captain
+// flags. Junior premierships come from the dump (no create/delete here); admins
+// only enrich them with captain + MoM, which the ETL preserves across reloads.
+// ---------------------------------------------------------------------------
+router.patch(
+  "/juniors/premierships/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = UpdateJuniorPremiershipParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateJuniorPremiershipBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const id = params.data.id;
+
+    const [prem] = await db
+      .select()
+      .from(juniorPremiershipsTable)
+      .where(eq(juniorPremiershipsTable.id, id));
+    if (!prem) {
+      res.status(404).json({ error: "Premiership not found" });
+      return;
+    }
+
+    const { mom, captainPlayerIds } = body.data;
+    await db.transaction(async (tx) => {
+      if (mom !== undefined) {
+        await tx
+          .update(juniorPremiershipsTable)
+          .set({ mom: mom ?? null })
+          .where(eq(juniorPremiershipsTable.id, id));
+      }
+      if (captainPlayerIds !== undefined) {
+        await tx
+          .update(juniorPremiershipPlayersTable)
+          .set({ isCaptain: false })
+          .where(eq(juniorPremiershipPlayersTable.premiershipId, id));
+        if (captainPlayerIds.length > 0) {
+          await tx
+            .update(juniorPremiershipPlayersTable)
+            .set({ isCaptain: true })
+            .where(
+              and(
+                eq(juniorPremiershipPlayersTable.premiershipId, id),
+                inArray(juniorPremiershipPlayersTable.id, captainPlayerIds),
+              ),
+            );
+        }
+      }
+    });
+
+    const privateIds = await getPrivateIds();
+    const [updated] = await db
+      .select()
+      .from(juniorPremiershipsTable)
+      .where(eq(juniorPremiershipsTable.id, id));
+    const players = await db
+      .select()
+      .from(juniorPremiershipPlayersTable)
+      .where(eq(juniorPremiershipPlayersTable.premiershipId, id))
+      .orderBy(juniorPremiershipPlayersTable.id);
+
+    res.json({
+      id: updated.id,
+      season: updated.season,
+      ageGroup: updated.ageGroup,
+      teamName: updated.teamName,
+      competition: updated.competition,
+      association: updated.association,
+      matchDate: updated.matchDate,
+      venue: updated.venue,
+      venueOval: updated.venueOval,
+      opponent: updated.opponent,
+      hhScore: updated.hhScore,
+      oppScore: updated.oppScore,
+      resultText: updated.resultText,
+      mom: updated.mom,
+      matchId: updated.matchId,
+      players: players.map((pl) => {
+        const priv = !!pl.participantId && privateIds.has(pl.participantId);
+        return {
+          id: pl.id,
+          participantId: priv ? null : pl.participantId,
+          playerName: priv ? MASK_NAME : (pl.playerName ?? ""),
+          isCaptain: pl.isCaptain,
+        };
+      }),
+    });
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Leaderboard helpers — all inner-join junior_participants and filter

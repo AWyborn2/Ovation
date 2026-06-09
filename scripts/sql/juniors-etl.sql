@@ -56,6 +56,20 @@ SELECT participant_id, senior_player_id
 FROM public.junior_participants
 WHERE senior_player_id IS NOT NULL;
 
+-- 1b. Snapshot admin-entered premiership extras (man-of-the-match + captain
+-- flags). These are NOT in the PlayHQ dump — admins add them by hand — so they
+-- must survive a reload. Premiership and player ids are stable across reloads
+-- (the dump carries explicit ids), so we re-key by id.
+CREATE TEMP TABLE _jp_mom ON COMMIT DROP AS
+SELECT id, mom
+FROM public.junior_premierships
+WHERE mom IS NOT NULL;
+
+CREATE TEMP TABLE _jp_captains ON COMMIT DROP AS
+SELECT id
+FROM public.junior_premiership_players
+WHERE is_captain;
+
 -- 2. Clear in FK-safe order (children before parents).
 DELETE FROM public.junior_premiership_players;
 DELETE FROM public.junior_premierships;
@@ -172,6 +186,18 @@ SET senior_player_id = l.senior_player_id
 FROM _jp_links l
 WHERE l.participant_id = jp.participant_id
   AND EXISTS (SELECT 1 FROM public.players p WHERE p.id = l.senior_player_id);
+
+-- 4b. Re-apply preserved admin-entered premiership extras (man-of-the-match +
+-- captain flags) onto the freshly loaded rows, matching by stable dump id.
+UPDATE public.junior_premierships pr
+SET mom = m.mom
+FROM _jp_mom m
+WHERE m.id = pr.id;
+
+UPDATE public.junior_premiership_players pl
+SET is_captain = TRUE
+FROM _jp_captains c
+WHERE c.id = pl.id;
 
 -- 5. Link each junior match's opposition to a club in the shared register so the
 -- scorecard + match list can show the opponent's crest and colours. The clubs

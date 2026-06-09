@@ -7,7 +7,9 @@
  */
 
 export interface JuniorPremiershipPlayer {
+  id: number;
   /** @nullable */
   participantId?: string | null;
   playerName: string;
+  isCaptain: boolean;
 }

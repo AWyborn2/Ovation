@@ -4652,13 +4652,53 @@ export const ListJuniorPremiershipsResponseItem = zod.object({
   "hhScore": zod.string().nullish(),
   "oppScore": zod.string().nullish(),
   "resultText": zod.string().nullish(),
+  "mom": zod.string().nullish().describe('Man-of-the-match name (admin-entered; not in the source dump).'),
   "matchId": zod.number().nullish(),
   "players": zod.array(zod.object({
+  "id": zod.number(),
   "participantId": zod.string().nullish(),
-  "playerName": zod.string()
+  "playerName": zod.string(),
+  "isCaptain": zod.boolean()
 }))
 })
 export const ListJuniorPremiershipsResponse = zod.array(ListJuniorPremiershipsResponseItem)
+
+
+/**
+ * @summary Set the man-of-the-match and captain flags for a junior premiership (admin)
+ */
+export const UpdateJuniorPremiershipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateJuniorPremiershipBody = zod.object({
+  "mom": zod.string().nullish(),
+  "captainPlayerIds": zod.array(zod.number()).optional().describe('Ids of junior_premiership_players rows to mark as captain (all others cleared).')
+}).describe('Admin edit of a junior premiership\'s man-of-the-match and captain flags.')
+
+export const UpdateJuniorPremiershipResponse = zod.object({
+  "id": zod.number(),
+  "season": zod.string().nullish(),
+  "ageGroup": zod.string().nullish(),
+  "teamName": zod.string().nullish(),
+  "competition": zod.string().nullish(),
+  "association": zod.string().nullish().describe('Governing competition (Peel Junior Cricket Association, Community Cup, Girls League, South West Junior (SWMJCC)).'),
+  "matchDate": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "venueOval": zod.string().nullish().describe('Specific oval\/ground within the venue complex.'),
+  "opponent": zod.string().nullish(),
+  "hhScore": zod.string().nullish(),
+  "oppScore": zod.string().nullish(),
+  "resultText": zod.string().nullish(),
+  "mom": zod.string().nullish().describe('Man-of-the-match name (admin-entered; not in the source dump).'),
+  "matchId": zod.number().nullish(),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string(),
+  "isCaptain": zod.boolean()
+}))
+})
 
 
 /**

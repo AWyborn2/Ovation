@@ -167,6 +167,9 @@ export const juniorPremiershipsTable = pgTable("junior_premierships", {
   hhScore: text("hh_score"),
   oppScore: text("opp_score"),
   resultText: text("result_text"),
+  // Man-of-the-match name. NOT present in the PlayHQ dump — entered manually by
+  // admins, so the juniors ETL snapshots + re-applies it across a reload.
+  mom: text("mom"),
   matchId: integer("match_id").references(() => juniorMatchesTable.id, {
     onDelete: "set null",
   }),
@@ -184,6 +187,9 @@ export const juniorPremiershipPlayersTable = pgTable(
       .references(() => juniorPremiershipsTable.id, { onDelete: "cascade" }),
     participantId: text("participant_id"),
     playerName: text("player_name"),
+    // Captain flag. NOT present in the PlayHQ dump — set manually by admins, so
+    // the juniors ETL snapshots + re-applies it across a reload.
+    isCaptain: boolean("is_captain").notNull().default(false),
   },
 );
 

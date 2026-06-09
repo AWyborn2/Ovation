@@ -3152,9 +3152,11 @@ export interface JuniorMatchDisplaySettingsUpdate {
 }
 
 export interface JuniorPremiershipPlayer {
+  id: number;
   /** @nullable */
   participantId?: string | null;
   playerName: string;
+  isCaptain: boolean;
 }
 
 export interface JuniorPremiership {
@@ -3189,9 +3191,24 @@ export interface JuniorPremiership {
   oppScore?: string | null;
   /** @nullable */
   resultText?: string | null;
+  /**
+     * Man-of-the-match name (admin-entered; not in the source dump).
+     * @nullable
+     */
+  mom?: string | null;
   /** @nullable */
   matchId?: number | null;
   players: JuniorPremiershipPlayer[];
+}
+
+/**
+ * Admin edit of a junior premiership's man-of-the-match and captain flags.
+ */
+export interface JuniorPremiershipUpdate {
+  /** @nullable */
+  mom?: string | null;
+  /** Ids of junior_premiership_players rows to mark as captain (all others cleared). */
+  captainPlayerIds?: number[];
 }
 
 export interface JuniorTotals {

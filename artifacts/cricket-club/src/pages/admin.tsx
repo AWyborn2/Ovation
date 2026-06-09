@@ -19,6 +19,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
   { label: "Awards", target: "/admin/awards", isExternal: false, iconKey: "award", description: "Create club awards and record past winners." },
   { label: "Team of the Decade", target: "/admin/team-of-decade", isExternal: false, iconKey: "trophy", description: "Curate best-XI honour boards with draft/publish." },
   { label: "Junior office bearers", target: "/admin/junior-committee", isExternal: false, iconKey: "baby", description: "Season-by-season junior committee (separate from seniors)." },
+  { label: "Junior premierships", target: "/admin/junior-premierships", isExternal: false, iconKey: "crown", description: "Set captain and man-of-the-match on junior premiership plaques." },
   { label: "Social cards", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory: sizes, sponsors, captions." },
   { label: "Create a card", target: "/admin/social/create", isExternal: false, iconKey: "image", description: "Build a Match Summary card from a match or by hand." },
   { label: "Junior social cards", target: "/admin/social/juniors", isExternal: false, iconKey: "image", description: "Brown-branded junior milestone and match cards." },
