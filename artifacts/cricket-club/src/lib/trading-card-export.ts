@@ -49,8 +49,8 @@ const dataUrlToBlob = (dataUrl: string): Blob => {
   return new Blob([arr], { type: mime });
 };
 
-/** Export a still PNG of a fully-rendered card node. */
-export async function exportCardPng(node: HTMLElement, fileName: string): Promise<void> {
+/** Snapshot a fully-rendered node to a still PNG blob. */
+export async function nodeToPngBlob(node: HTMLElement): Promise<Blob> {
   if (document.fonts?.ready) await document.fonts.ready;
   await waitForImages(node);
   const dataUrl = await toPng(node, {
@@ -58,7 +58,37 @@ export async function exportCardPng(node: HTMLElement, fileName: string): Promis
     cacheBust: true,
     skipFonts: false,
   });
-  triggerDownload(dataUrlToBlob(dataUrl), fileName);
+  return dataUrlToBlob(dataUrl);
+}
+
+/** Export a still PNG of a fully-rendered card node. */
+export async function exportCardPng(node: HTMLElement, fileName: string): Promise<void> {
+  triggerDownload(await nodeToPngBlob(node), fileName);
+}
+
+/**
+ * Save or share a still PNG of a fully-rendered node. On devices that support
+ * the Web Share API with files (most mobiles), this opens the native share
+ * sheet so the image can go straight to socials/messages; otherwise it falls
+ * back to a plain download. A cancelled share is treated as a no-op.
+ */
+export async function saveOrSharePng(node: HTMLElement, fileName: string): Promise<void> {
+  const blob = await nodeToPngBlob(node);
+  const file = new File([blob], fileName, { type: "image/png" });
+  const nav = navigator as Navigator & {
+    canShare?: (data?: ShareData) => boolean;
+    share?: (data?: ShareData) => Promise<void>;
+  };
+  if (nav.canShare?.({ files: [file] }) && nav.share) {
+    try {
+      await nav.share({ files: [file] });
+      return;
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return; // user dismissed the sheet
+      // Any other failure falls through to a download.
+    }
+  }
+  triggerDownload(blob, fileName);
 }
 
 /** Snapshot a node to an ImageBitmap at the given pixel ratio. */

@@ -239,6 +239,12 @@ export default function Premierships() {
           onIndexChange={setEnlargedIndex}
           onClose={() => setEnlargedIndex(null)}
           renderItem={(p) => <Plaque prem={p} />}
+          exportFileName={(p) =>
+            `hhcc-${p.grade}-${p.year}-premiership`
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)/g, "")
+          }
         />
       )}
     </div>

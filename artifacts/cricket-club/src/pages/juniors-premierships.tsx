@@ -249,6 +249,12 @@ export default function JuniorsPremierships() {
           onIndexChange={setEnlargedIndex}
           onClose={() => setEnlargedIndex(null)}
           renderItem={(p) => <Plaque prem={p} />}
+          exportFileName={(p) =>
+            `hhcc-junior-${p.ageGroup ?? "premiership"}-${p.season ?? ""}`
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)/g, "")
+          }
         />
       )}
     </div>

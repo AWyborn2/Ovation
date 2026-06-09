@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Download, Loader2 } from "lucide-react";
+import { saveOrSharePng } from "@/lib/trading-card-export";
 
 const PLAQUE_W = 151;
 const PLAQUE_H = 259;
@@ -17,6 +19,12 @@ interface PlaqueLightboxProps<T> {
   onClose: () => void;
   /** "gold" tints the controls with the club gold accent (juniors). */
   theme?: "default" | "gold";
+  /**
+   * When provided, a "Save / Share image" action exports the enlarged plaque
+   * (metallic styling intact) as a PNG. Receives the current item and returns
+   * the download filename (without extension).
+   */
+  exportFileName?: (item: T) => string;
 }
 
 /**
@@ -24,8 +32,8 @@ interface PlaqueLightboxProps<T> {
  * scaled up to a comfortably readable size, with prev/next navigation across the
  * supplied list (on-screen arrows, left/right keyboard arrows, and touch swipe).
  * The plaque rendered inside keeps its real inner links (player pages, Grand
- * Final scorecard) working. Used by both the senior and junior premierships
- * boards.
+ * Final scorecard) working, and can optionally be saved/shared as a PNG. Used by
+ * both the senior and junior premierships boards.
  */
 export function PlaqueLightbox<T>({
   items,
@@ -34,8 +42,11 @@ export function PlaqueLightbox<T>({
   onIndexChange,
   onClose,
   theme = "default",
+  exportFileName,
 }: PlaqueLightboxProps<T>) {
   const [scale, setScale] = useState(1);
+  const [exporting, setExporting] = useState(false);
+  const plaqueRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
 
@@ -68,6 +79,20 @@ export function PlaqueLightbox<T>({
   if (!current) return null;
 
   const accent = theme === "gold" ? "hsl(46 96% 57%)" : "#ffffff";
+
+  const handleExport = async () => {
+    const node = plaqueRef.current;
+    if (!node || exporting) return;
+    setExporting(true);
+    try {
+      const name = exportFileName?.(current) || "premiership-plaque";
+      await saveOrSharePng(node, `${name}.png`);
+    } catch (e) {
+      console.error("Plaque export failed", e);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
@@ -180,8 +205,34 @@ export function PlaqueLightbox<T>({
         }}
         data-testid="plaque-lightbox-content"
       >
-        {renderItem(current)}
+        <div ref={plaqueRef}>{renderItem(current)}</div>
       </div>
+
+      {exportFileName && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            void handleExport();
+          }}
+          disabled={exporting}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+          style={{
+            color: theme === "gold" ? "#42342B" : "#0f172a",
+            background: accent,
+            border: `1px solid ${accent}`,
+            cursor: exporting ? "default" : "pointer",
+            zIndex: 10,
+          }}
+          data-testid="button-save-plaque"
+        >
+          {exporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {exporting ? "Preparing…" : "Save / Share image"}
+        </button>
+      )}
     </div>,
     document.body,
   );
