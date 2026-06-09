@@ -1,24 +1,47 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 const PLAQUE_W = 151;
 const PLAQUE_H = 259;
+const SWIPE_THRESHOLD = 45;
 
-interface PlaqueLightboxProps {
-  children: ReactNode;
+interface PlaqueLightboxProps<T> {
+  /** The full, already-filtered+sorted list the gallery navigates through. */
+  items: T[];
+  /** Index into `items` of the currently shown plaque. */
+  index: number;
+  /** Render the plaque for a given item. */
+  renderItem: (item: T) => ReactNode;
+  /** Move to a different index within `items`. */
+  onIndexChange: (index: number) => void;
   onClose: () => void;
-  /** "gold" tints the close control with the club gold accent (juniors). */
+  /** "gold" tints the controls with the club gold accent (juniors). */
   theme?: "default" | "gold";
 }
 
 /**
  * Centered, backdrop-dismissable overlay that shows a single premiership plaque
- * scaled up to a comfortably readable size. The plaque rendered inside keeps its
- * real inner links (player pages, Grand Final scorecard) working. Used by both
- * the senior and junior premierships boards.
+ * scaled up to a comfortably readable size, with prev/next navigation across the
+ * supplied list (on-screen arrows, left/right keyboard arrows, and touch swipe).
+ * The plaque rendered inside keeps its real inner links (player pages, Grand
+ * Final scorecard) working. Used by both the senior and junior premierships
+ * boards.
  */
-export function PlaqueLightbox({ children, onClose, theme = "default" }: PlaqueLightboxProps) {
+export function PlaqueLightbox<T>({
+  items,
+  index,
+  renderItem,
+  onIndexChange,
+  onClose,
+  theme = "default",
+}: PlaqueLightboxProps<T>) {
   const [scale, setScale] = useState(1);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
+
+  const hasPrev = index > 0;
+  const hasNext = index < items.length - 1;
+  const current = items[index];
 
   useEffect(() => {
     const compute = () => {
@@ -35,12 +58,58 @@ export function PlaqueLightbox({ children, onClose, theme = "default" }: PlaqueL
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
+      else if (e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, onIndexChange, index, hasPrev, hasNext]);
 
-  const closeColor = theme === "gold" ? "hsl(46 96% 57%)" : "#ffffff";
+  if (!current) return null;
+
+  const accent = theme === "gold" ? "hsl(46 96% 57%)" : "#ffffff";
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+    swiped.current = false;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      swiped.current = true;
+      if (dx < 0 && hasNext) onIndexChange(index + 1);
+      else if (dx > 0 && hasPrev) onIndexChange(index - 1);
+    }
+  };
+
+  // Suppress inner link taps when the gesture was a horizontal swipe.
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (swiped.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      swiped.current = false;
+    }
+  };
+
+  const navBtnStyle = (enabled: boolean) => ({
+    width: 48,
+    height: 48,
+    color: accent,
+    background: "rgba(255,255,255,0.08)",
+    border: `1px solid ${accent}`,
+    fontSize: 28,
+    lineHeight: 1,
+    cursor: enabled ? "pointer" : "default",
+    opacity: enabled ? 1 : 0.3,
+    zIndex: 10,
+  });
 
   return createPortal(
     <div
@@ -56,9 +125,9 @@ export function PlaqueLightbox({ children, onClose, theme = "default" }: PlaqueL
         style={{
           width: 44,
           height: 44,
-          color: closeColor,
+          color: accent,
           background: "rgba(255,255,255,0.08)",
-          border: `1px solid ${closeColor}`,
+          border: `1px solid ${accent}`,
           fontSize: 26,
           lineHeight: 1,
           cursor: "pointer",
@@ -68,8 +137,40 @@ export function PlaqueLightbox({ children, onClose, theme = "default" }: PlaqueL
       >
         ×
       </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (hasPrev) onIndexChange(index - 1);
+        }}
+        disabled={!hasPrev}
+        aria-label="Previous plaque"
+        className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
+        style={navBtnStyle(hasPrev)}
+        data-testid="button-prev-plaque"
+      >
+        ‹
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (hasNext) onIndexChange(index + 1);
+        }}
+        disabled={!hasNext}
+        aria-label="Next plaque"
+        className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
+        style={navBtnStyle(hasNext)}
+        data-testid="button-next-plaque"
+      >
+        ›
+      </button>
+
       <div
         onClick={(e) => e.stopPropagation()}
+        onClickCapture={handleClickCapture}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         style={{
           width: PLAQUE_W,
           height: PLAQUE_H,
@@ -77,8 +178,9 @@ export function PlaqueLightbox({ children, onClose, theme = "default" }: PlaqueL
           transformOrigin: "center",
           flex: "none",
         }}
+        data-testid="plaque-lightbox-content"
       >
-        {children}
+        {renderItem(current)}
       </div>
     </div>,
     document.body,

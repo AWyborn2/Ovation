@@ -144,7 +144,7 @@ export default function JuniorsPremierships() {
   const logoUrl = useBrandLogo();
   const { data, isLoading } = useListJuniorPremierships();
   const [ageGroup, setAgeGroup] = useState("All");
-  const [enlarged, setEnlarged] = useState<JuniorPremiership | null>(null);
+  const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
 
   const ageGroups = useMemo(() => {
     const set = new Set<string>();
@@ -198,7 +198,10 @@ export default function JuniorsPremierships() {
           <span className="text-xs font-bold uppercase tracking-widest">Age Group</span>
           <select
             value={ageGroup}
-            onChange={(e) => setAgeGroup(e.target.value)}
+            onChange={(e) => {
+              setAgeGroup(e.target.value);
+              setEnlargedIndex(null);
+            }}
             className="px-3 py-1.5 rounded border border-white/30 bg-black/30 text-white text-sm font-medium"
             data-testid="select-age-group"
           >
@@ -220,11 +223,11 @@ export default function JuniorsPremierships() {
             className="grid gap-[3px] justify-center"
             style={{ gridTemplateColumns: "repeat(auto-fill, 151px)" }}
           >
-            {filtered.map((p) => (
+            {filtered.map((p, i) => (
               <button
                 key={p.id}
                 type="button"
-                onClick={() => setEnlarged(p)}
+                onClick={() => setEnlargedIndex(i)}
                 aria-label={`Enlarge ${[p.ageGroup, p.season].filter(Boolean).join(" ")} premiership plaque`}
                 className="block p-0 m-0 bg-transparent border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 data-testid={`button-plaque-${p.id}`}
@@ -238,10 +241,15 @@ export default function JuniorsPremierships() {
         )}
       </div>
 
-      {enlarged && (
-        <PlaqueLightbox theme="gold" onClose={() => setEnlarged(null)}>
-          <Plaque prem={enlarged} />
-        </PlaqueLightbox>
+      {enlargedIndex !== null && (
+        <PlaqueLightbox
+          theme="gold"
+          items={filtered}
+          index={enlargedIndex}
+          onIndexChange={setEnlargedIndex}
+          onClose={() => setEnlargedIndex(null)}
+          renderItem={(p) => <Plaque prem={p} />}
+        />
       )}
     </div>
   );
