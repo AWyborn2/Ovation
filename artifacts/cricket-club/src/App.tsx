@@ -42,6 +42,7 @@ import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminMatchDisplay from "@/pages/admin-match-display";
 import AdminRecordsDisplay from "@/pages/admin-records-display";
+import AdminTradingCards from "@/pages/admin-trading-cards";
 import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
 import AdminCaptains from "@/pages/admin-captains";
 import AdminCommittee from "@/pages/admin-committee";
@@ -95,6 +96,7 @@ function AdminRoutes() {
           <Route path="/admin/milestone-board" component={AdminMilestoneBoard} />
           <Route path="/admin/match-display" component={AdminMatchDisplay} />
           <Route path="/admin/records-display" component={AdminRecordsDisplay} />
+          <Route path="/admin/trading-cards" component={AdminTradingCards} />
           <Route path="/admin/junior-match-display" component={AdminJuniorMatchDisplay} />
           <Route path="/admin/import" component={AdminImport} />
           <Route path="/admin/caps" component={AdminCaps} />

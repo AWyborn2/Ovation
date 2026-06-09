@@ -20,6 +20,7 @@ export * from "./award_points_config";
 export * from "./social_cards";
 export * from "./match_display_settings";
 export * from "./records_display_settings";
+export * from "./trading_card_settings";
 export * from "./nav_items";
 export * from "./team_of_decade";
 export * from "./club_roles";

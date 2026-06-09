@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Star, Trophy, Download, Loader2, RotateCw, Film, ImageIcon } from "lucide-react";
+import { Star, Trophy, Award, Download, Loader2, RotateCw, Film, ImageIcon } from "lucide-react";
 import {
   useGetPlayer,
   getGetPlayerQueryKey,
@@ -8,12 +8,14 @@ import {
   getListCapsQueryKey,
   useListPlayerImages,
   getListPlayerImagesQueryKey,
+  getGetTradingCardSettingsQueryKey,
+  useGetTradingCardSettings,
 } from "@workspace/api-client-react";
 import { HALLS_HEAD_BRAND } from "@workspace/scorecard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { buildTradingCardData, type TradingCardData, type CardRole } from "@/lib/trading-card";
+import { buildTradingCardData, type TradingCardData, type CardRole, type CardPremiership } from "@/lib/trading-card";
 import {
   exportCardPng,
   encodeCardVideo,
@@ -29,12 +31,31 @@ const CHARCOAL = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
 const GOLD = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
 const BROWN = HALLS_HEAD_BRAND.tertiaryColour ?? "#42342B";
 
+// "{year} {grade}" plus the competition when it adds information (so two
+// premierships in the same year + grade but different competitions read as
+// distinct entries instead of identical chips). Mirrors player-detail.tsx.
+function premiershipLabel(p: CardPremiership): string {
+  const base = `${p.year} ${p.grade}`;
+  if (p.competition && p.competition.toUpperCase() !== p.grade.toUpperCase()) {
+    return `${base} · ${p.competition}`;
+  }
+  return base;
+}
+
 export const CARD_W = 384;
 export const CARD_H = 800;
 
 const FONT = "'Montserrat', sans-serif";
 
-type Phase = "intro" | "mainStats" | "batting" | "bowling" | "fielding" | "premierships" | "outro";
+type Phase =
+  | "intro"
+  | "careerStats"
+  | "batting"
+  | "bowling"
+  | "fielding"
+  | "premierships"
+  | "awards"
+  | "outro";
 
 const fmt = (v: number | string): string =>
   typeof v === "number" ? v.toLocaleString("en-AU") : v;
@@ -175,26 +196,29 @@ function CardHeader({ data }: { data: TradingCardData }) {
             position: "absolute",
             top: 0,
             right: 0,
-            width: 74,
-            height: 74,
+            width: 104,
+            height: 104,
             background: GOLD,
             clipPath: "polygon(100% 0, 0 0, 100% 100%)",
           }}
         >
+          {/* Keep the label + number close to the top-right corner where the
+              triangle is widest, so even a 4-digit cap number reads fully. */}
           <div
             style={{
               position: "absolute",
-              top: 8,
+              top: 6,
               right: 8,
               textAlign: "right",
               color: CHARCOAL,
               lineHeight: 1,
+              whiteSpace: "nowrap",
             }}
           >
             <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>
               Cap
             </div>
-            <div style={{ fontSize: 26, fontWeight: 900 }}>{data.number}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, marginTop: 2 }}>{data.number}</div>
           </div>
         </div>
       )}
@@ -350,12 +374,14 @@ export function CardFront({ data }: { data: TradingCardData }) {
       <div style={{ padding: "14px 18px 0" }}>
         <NameBlock data={data} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
-          {frontStats(data).map((s) => (
-            <StatTile key={s.label} label={s.label} value={s.value} />
+          {(data.configuredStats ?? frontStats(data)).map((s, i) => (
+            <StatTile key={`${s.label}-${i}`} label={s.label} value={s.value} />
           ))}
-          <div style={{ gridColumn: "1 / -1" }}>
-            <StatTile label="Best Bowling" value={data.additionalStats.bestBowling} />
-          </div>
+          {!data.configuredStats && (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <StatTile label="Best Bowling" value={data.additionalStats.bestBowling} />
+            </div>
+          )}
         </div>
         {premierships.length > 0 ? (
           <div
@@ -492,9 +518,9 @@ export function CardBack({ data }: { data: TradingCardData }) {
           <div style={{ marginTop: 16 }}>
             <SectionTitle>Premierships</SectionTitle>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {data.achievements.premierships.map((y) => (
+              {data.achievements.premierships.map((p, i) => (
                 <span
-                  key={y}
+                  key={`${p.year}-${p.grade}-${i}`}
                   style={{
                     background: GOLD,
                     color: CHARCOAL,
@@ -504,8 +530,41 @@ export function CardBack({ data }: { data: TradingCardData }) {
                     fontWeight: 800,
                   }}
                 >
-                  {y}
+                  {premiershipLabel(p)}
                 </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data.achievements.awards.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <SectionTitle>Awards</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {data.achievements.awards.map((award, i) => (
+                <div
+                  key={`${award.title}-${i}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 10,
+                    padding: "6px 10px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <Award size={16} style={{ color: GOLD, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {award.title}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 10.5, fontWeight: 800, color: GOLD, flexShrink: 0 }}>
+                    {award.seasons.join(", ")}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
@@ -516,29 +575,54 @@ export function CardBack({ data }: { data: TradingCardData }) {
   );
 }
 
-function PhaseHero({ data, title }: { data: TradingCardData; title?: string }) {
+// Persistent photo height in the animation. The header, photo and name stay
+// fixed across EVERY phase; only the lower content region (PhaseContent) swaps,
+// so the player's photo reads as a static portrait while the stats cycle under it.
+const PHASE_PHOTO_H = 290;
+// Header (~70) + photo + name block (~56) + footer (~44) leaves this for content.
+const PHASE_CONTENT_H = CARD_H - 70 - PHASE_PHOTO_H - 56 - 44;
+
+function PhaseName({ data }: { data: TradingCardData }) {
   return (
-    <>
-      <PlayerPhoto data={data} height={520} />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 70, textAlign: "center" }}>
-        <NameBlock data={data} />
-        {title && (
-          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: 2, textTransform: "uppercase" }}>
-            {title}
-          </div>
-        )}
+    <div style={{ textAlign: "center", padding: "10px 16px 0" }}>
+      <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.3, lineHeight: 1.1 }}>{data.name}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
+        {data.role}
       </div>
-    </>
+    </div>
   );
 }
 
-function PhasePanel({ title, children }: { title: string; children: React.ReactNode }) {
+function PhaseContent({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ padding: "26px 22px", display: "flex", flexDirection: "column", justifyContent: "center", height: CARD_H - 74 - 44 }}>
-      <SectionTitle>{title}</SectionTitle>
+    <div
+      style={{
+        height: PHASE_CONTENT_H,
+        padding: "12px 22px 0",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
       {children}
     </div>
   );
+}
+
+function PhaseTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
+      <div style={{ width: 4, height: 18, background: GOLD, borderRadius: 2 }} />
+      <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function careerStatTiles(data: TradingCardData): { label: string; value: number | string }[] {
+  return data.configuredStats ?? mainStats(data);
 }
 
 export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: Phase }) {
@@ -547,68 +631,129 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
   return (
     <CardSurface>
       <CardHeader data={data} />
-      {phase === "intro" && <PhaseHero data={data} title="Player Card" />}
-      {phase === "outro" && <PhaseHero data={data} title="Halls Head Cricket Club" />}
-      {phase === "mainStats" && (
-        <PhasePanel title="Career Statistics">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {mainStats(data).map((m) => (
-              <StatTile key={m.label} label={m.label} value={m.value} big />
-            ))}
-          </div>
-        </PhasePanel>
-      )}
-      {phase === "batting" && (
-        <PhasePanel title="Batting">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <StatTile label="Runs" value={s.runs} big />
-            <StatTile label="Average" value={s.battingAverage || "-"} big />
-            <StatTile label="High Score" value={a.highestScore} big />
-            <StatTile label="Centuries" value={s.centuries} big />
-            <StatTile label="Half-Centuries" value={s.halfCenturies} big />
-            <StatTile label="Matches" value={s.matches} big />
-          </div>
-        </PhasePanel>
-      )}
-      {phase === "bowling" && (
-        <PhasePanel title="Bowling">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <StatTile label="Wickets" value={s.wickets} big />
-            <StatTile label="Average" value={s.bowlingAverage || "-"} big />
-            <StatTile label="Best Bowling" value={a.bestBowling} big />
-            <StatTile label="5-Wicket Hauls" value={s.fiveWickets} big />
-          </div>
-        </PhasePanel>
-      )}
-      {phase === "fielding" && (
-        <PhasePanel title="Fielding">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <StatTile label="Catches" value={a.catches} big />
-            {data.role === "Wicket-Keeper" && <StatTile label="Stumpings" value={a.stumpings} big />}
-            <StatTile label="Run Outs" value={a.runOuts} big />
-          </div>
-        </PhasePanel>
-      )}
-      {phase === "premierships" && (
-        <PhasePanel title="Premierships">
+      <PlayerPhoto data={data} height={PHASE_PHOTO_H} />
+      <PhaseName data={data} />
+      <PhaseContent>
+        {phase === "intro" && (
           <div style={{ textAlign: "center" }}>
-            <Trophy size={56} style={{ color: GOLD, margin: "0 auto 8px" }} />
-            <div style={{ fontSize: 40, fontWeight: 900, color: GOLD }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: GOLD, letterSpacing: 2, textTransform: "uppercase" }}>
+              Official Player Card
+            </div>
+            {data.rating !== null && (
+              <div style={{ marginTop: 14 }}>
+                <StarRow rating={data.rating} />
+              </div>
+            )}
+            {data.debutYear !== null && (
+              <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: 1 }}>
+                Halls Head since {data.debutYear}
+              </div>
+            )}
+          </div>
+        )}
+        {phase === "outro" && (
+          <div style={{ textAlign: "center" }}>
+            <Trophy size={44} style={{ color: GOLD, margin: "0 auto 10px" }} />
+            <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.5 }}>Halls Head Cricket Club</div>
+            <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: 2, textTransform: "uppercase" }}>
+              Est. 1991
+            </div>
+          </div>
+        )}
+        {phase === "careerStats" && (
+          <>
+            <PhaseTitle>Career Statistics</PhaseTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {careerStatTiles(data).slice(0, 6).map((m, i) => (
+                <StatTile key={`${m.label}-${i}`} label={m.label} value={m.value} big />
+              ))}
+            </div>
+          </>
+        )}
+        {phase === "batting" && (
+          <>
+            <PhaseTitle>Batting</PhaseTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <StatTile label="Runs" value={s.runs} big />
+              <StatTile label="Average" value={s.battingAverage || "-"} big />
+              <StatTile label="High Score" value={a.highestScore} big />
+              <StatTile label="Centuries" value={s.centuries} big />
+              <StatTile label="Half-Centuries" value={s.halfCenturies} big />
+              <StatTile label="Matches" value={s.matches} big />
+            </div>
+          </>
+        )}
+        {phase === "bowling" && (
+          <>
+            <PhaseTitle>Bowling</PhaseTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <StatTile label="Wickets" value={s.wickets} big />
+              <StatTile label="Average" value={s.bowlingAverage || "-"} big />
+              <StatTile label="Best Bowling" value={a.bestBowling} big />
+              <StatTile label="5-Wicket Hauls" value={s.fiveWickets} big />
+            </div>
+          </>
+        )}
+        {phase === "fielding" && (
+          <>
+            <PhaseTitle>Fielding</PhaseTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <StatTile label="Catches" value={a.catches} big />
+              {data.role === "Wicket-Keeper" && <StatTile label="Stumpings" value={a.stumpings} big />}
+              <StatTile label="Run Outs" value={a.runOuts} big />
+            </div>
+          </>
+        )}
+        {phase === "premierships" && (
+          <div style={{ textAlign: "center" }}>
+            <Trophy size={40} style={{ color: GOLD, margin: "0 auto 4px" }} />
+            <div style={{ fontSize: 32, fontWeight: 900, color: GOLD, lineHeight: 1 }}>
               {data.achievements.premierships.length}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "rgba(255,255,255,0.7)", marginBottom: 16 }}>
-              Premierships Won
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "rgba(255,255,255,0.7)", marginBottom: 12 }}>
+              {data.achievements.premierships.length === 1 ? "Premiership" : "Premierships"}
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-              {data.achievements.premierships.map((y) => (
-                <span key={y} style={{ background: GOLD, color: CHARCOAL, borderRadius: 999, padding: "4px 12px", fontSize: 13, fontWeight: 800 }}>
-                  {y}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+              {data.achievements.premierships.map((p, i) => (
+                <span key={`${p.year}-${p.grade}-${i}`} style={{ background: GOLD, color: CHARCOAL, borderRadius: 999, padding: "4px 10px", fontSize: 11.5, fontWeight: 800 }}>
+                  {premiershipLabel(p)}
                 </span>
               ))}
             </div>
           </div>
-        </PhasePanel>
-      )}
+        )}
+        {phase === "awards" && (
+          <>
+            <PhaseTitle>Awards</PhaseTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "hidden" }}>
+              {data.achievements.awards.slice(0, 4).map((award, i) => (
+                <div
+                  key={`${award.title}-${i}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    background: "rgba(251,172,39,0.10)",
+                    border: `1px solid rgba(251,172,39,0.30)`,
+                    borderRadius: 10,
+                    padding: "8px 12px",
+                  }}
+                >
+                  <Award size={20} style={{ color: GOLD, flexShrink: 0 }} />
+                  <div style={{ textAlign: "left", minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {award.title}
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: GOLD }}>
+                      {award.seasons.join(", ")}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </PhaseContent>
       <CardFooter />
     </CardSurface>
   );
@@ -617,11 +762,12 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
 function activePhases(data: TradingCardData): Phase[] {
   const s = data.stats;
   const a = data.additionalStats;
-  const phases: Phase[] = ["intro", "mainStats"];
+  const phases: Phase[] = ["intro", "careerStats"];
   if (data.role !== "Bowler" && s.runs > 0) phases.push("batting");
   if (s.wickets > 0) phases.push("bowling");
   if (a.catches + a.stumpings + a.runOuts > 0) phases.push("fielding");
   if (data.achievements.premierships.length > 0) phases.push("premierships");
+  if (data.achievements.awards.length > 0) phases.push("awards");
   phases.push("outro");
   return phases;
 }
@@ -629,11 +775,12 @@ function activePhases(data: TradingCardData): Phase[] {
 function phaseDurations(phases: Phase[]): number[] {
   const weight: Record<Phase, number> = {
     intro: 2.4,
-    mainStats: 3,
+    careerStats: 3,
     batting: 2.6,
     bowling: 2.6,
     fielding: 2.2,
     premierships: 2.4,
+    awards: 2.6,
     outro: 2.4,
   };
   const weights = phases.map((p) => weight[p]);
@@ -670,6 +817,10 @@ export function TradingCardModal({
   const { data: images } = useListPlayerImages(playerId, {
     query: { enabled: open && !!playerId, queryKey: getListPlayerImagesQueryKey(playerId) },
   });
+  // Global, admin-chosen card contents (which stats + which awards show on EVERY card).
+  const { data: cardSettings } = useGetTradingCardSettings({
+    query: { enabled: open, queryKey: getGetTradingCardSettingsQueryKey() },
+  });
 
   // Admin can pick which gallery image the card uses; defaults to the player's
   // default photo (players.image_url, mirrored by the gallery default).
@@ -684,8 +835,11 @@ export function TradingCardModal({
   }, [open, images]);
 
   const data = useMemo(
-    () => (player && caps ? buildTradingCardData(player, caps, selectedImageUrl) : null),
-    [player, caps, selectedImageUrl],
+    () =>
+      player && caps
+        ? buildTradingCardData(player, caps, selectedImageUrl, cardSettings)
+        : null,
+    [player, caps, selectedImageUrl, cardSettings],
   );
 
   const [flipped, setFlipped] = useState(false);

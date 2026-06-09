@@ -116,7 +116,12 @@ export const GetPlayerResponse = zod.object({
   "result": zod.string().nullish(),
   "mom": zod.string().nullish(),
   "isCaptain": zod.boolean()
-})).optional()
+})).optional(),
+  "awards": zod.array(zod.object({
+  "key": zod.string().describe('Award key (awards.key).'),
+  "title": zod.string(),
+  "season": zod.number().describe('Season (start year) the award was won.')
+})).optional().describe('Published awards this player has won (one row per season won), used by the trading card.')
 })
 
 
@@ -3914,6 +3919,29 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
   "partnershipsDefaultGrade": zod.string().describe('Default grade filter for the Partnerships tab. Empty string = All grades (highest stand per wicket across every grade).'),
   "centuriesSort": zod.string().describe('Default sort for the Centuries table as \"<column>-<dir>\" (column: grade|batsman|score|season; dir: asc|desc).'),
   "fiveForSort": zod.string().describe('Default sort for the 5-Wicket Hauls table as \"<column>-<dir>\" (column: grade|bowler|figures|season; dir: asc|desc).')
+})
+
+
+/**
+ * @summary Get the global trading-card display settings
+ */
+export const GetTradingCardSettingsResponse = zod.object({
+  "statKeys": zod.array(zod.string()).describe('Ordered stat keys shown on every player\'s trading card. Empty = fall back to the per-role default stat selection.'),
+  "awardKeys": zod.array(zod.string()).describe('Award keys (awards.key) eligible to appear on cards; each player\'s card shows the ones they have won. Empty = all published awards eligible.')
+})
+
+
+/**
+ * @summary Update the global trading-card display settings
+ */
+export const UpdateTradingCardSettingsBody = zod.object({
+  "statKeys": zod.array(zod.string()).optional(),
+  "awardKeys": zod.array(zod.string()).optional()
+})
+
+export const UpdateTradingCardSettingsResponse = zod.object({
+  "statKeys": zod.array(zod.string()).describe('Ordered stat keys shown on every player\'s trading card. Empty = fall back to the per-role default stat selection.'),
+  "awardKeys": zod.array(zod.string()).describe('Award keys (awards.key) eligible to appear on cards; each player\'s card shows the ones they have won. Empty = all published awards eligible.')
 })
 
 

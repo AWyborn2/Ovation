@@ -162,6 +162,8 @@ import type {
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
   TrackedLink,
+  TradingCardSettings,
+  TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
   UploadMatchBatchBody,
@@ -10689,6 +10691,154 @@ export const useUpdateRecordsDisplaySettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateRecordsDisplaySettingsMutationOptions(options));
+    }
+
+export const getGetTradingCardSettingsUrl = () => {
+
+
+
+
+  return `/api/trading-card-settings`
+}
+
+/**
+ * @summary Get the global trading-card display settings
+ */
+export const getTradingCardSettings = async ( options?: RequestInit): Promise<TradingCardSettings> => {
+
+  return customFetch<TradingCardSettings>(getGetTradingCardSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTradingCardSettingsQueryKey = () => {
+    return [
+    `/api/trading-card-settings`
+    ] as const;
+    }
+
+
+export const getGetTradingCardSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getTradingCardSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTradingCardSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTradingCardSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTradingCardSettings>>> = ({ signal }) => getTradingCardSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTradingCardSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTradingCardSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getTradingCardSettings>>>
+export type GetTradingCardSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the global trading-card display settings
+ */
+
+export function useGetTradingCardSettings<TData = Awaited<ReturnType<typeof getTradingCardSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTradingCardSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTradingCardSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateTradingCardSettingsUrl = () => {
+
+
+
+
+  return `/api/trading-card-settings`
+}
+
+/**
+ * @summary Update the global trading-card display settings
+ */
+export const updateTradingCardSettings = async (tradingCardSettingsUpdate: TradingCardSettingsUpdate, options?: RequestInit): Promise<TradingCardSettings> => {
+
+  return customFetch<TradingCardSettings>(getUpdateTradingCardSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tradingCardSettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTradingCardSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTradingCardSettings>>, TError,{data: BodyType<TradingCardSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTradingCardSettings>>, TError,{data: BodyType<TradingCardSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateTradingCardSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTradingCardSettings>>, {data: BodyType<TradingCardSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateTradingCardSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTradingCardSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateTradingCardSettings>>>
+    export type UpdateTradingCardSettingsMutationBody = BodyType<TradingCardSettingsUpdate>
+    export type UpdateTradingCardSettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the global trading-card display settings
+ */
+export const useUpdateTradingCardSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTradingCardSettings>>, TError,{data: BodyType<TradingCardSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTradingCardSettings>>,
+        TError,
+        {data: BodyType<TradingCardSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTradingCardSettingsMutationOptions(options));
     }
 
 export const getGetNavOptionsUrl = () => {

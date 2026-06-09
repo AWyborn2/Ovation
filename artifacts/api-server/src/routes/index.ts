@@ -26,6 +26,7 @@ import socialDraftsRouter from "./social-drafts";
 import juniorsRouter from "./juniors";
 import navItemsRouter from "./nav-items";
 import storageRouter from "./storage";
+import tradingCardSettingsRouter from "./trading-card-settings";
 
 const router: IRouter = Router();
 
@@ -56,5 +57,6 @@ router.use(socialDraftsRouter);
 router.use(juniorsRouter);
 router.use(navItemsRouter);
 router.use(storageRouter);
+router.use(tradingCardSettingsRouter);
 
 export default router;

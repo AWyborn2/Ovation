@@ -2968,6 +2968,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordsDisplaySettings"
 
+  /trading-card-settings:
+    get:
+      operationId: getTradingCardSettings
+      tags: [players]
+      summary: Get the global trading-card display settings
+      responses:
+        "200":
+          description: Trading-card settings (chosen stat keys and award keys)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradingCardSettings"
+    patch:
+      operationId: updateTradingCardSettings
+      tags: [players]
+      summary: Update the global trading-card display settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradingCardSettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradingCardSettings"
+
   /nav-options:
     get:
       operationId: getNavOptions
@@ -3715,6 +3745,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlayerPremiership"
+        awards:
+          type: array
+          description: >-
+            Published awards this player has won (one row per season won), used
+            by the trading card.
+          items:
+            $ref: "#/components/schemas/PlayerAward"
+
+    PlayerAward:
+      type: object
+      required: [key, title, season]
+      properties:
+        key:
+          type: string
+          description: Award key (awards.key).
+        title:
+          type: string
+        season:
+          type: integer
+          description: Season (start year) the award was won.
 
     PlayerPremiership:
       type: object
@@ -7200,6 +7250,38 @@ components:
           type: string
         fiveForSort:
           type: string
+
+    TradingCardSettings:
+      type: object
+      required: [statKeys, awardKeys]
+      properties:
+        statKeys:
+          type: array
+          description: >-
+            Ordered stat keys shown on every player's trading card. Empty = fall
+            back to the per-role default stat selection.
+          items:
+            type: string
+        awardKeys:
+          type: array
+          description: >-
+            Award keys (awards.key) eligible to appear on cards; each player's
+            card shows the ones they have won. Empty = all published awards
+            eligible.
+          items:
+            type: string
+
+    TradingCardSettingsUpdate:
+      type: object
+      properties:
+        statKeys:
+          type: array
+          items:
+            type: string
+        awardKeys:
+          type: array
+          items:
+            type: string
 
     MilestoneItem:
       type: object

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, desc, asc, count, sql } from "drizzle-orm";
+import { eq, ilike, or, and, desc, asc, count, sql } from "drizzle-orm";
 import {
   db,
   playersTable,
@@ -12,6 +12,8 @@ import {
   lifeMembersTable,
   matchesTable,
   matchPlayerLinesTable,
+  awardsTable,
+  awardWinnersTable,
 } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -165,7 +167,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [playerRow, stats, premRows, debutRow] = await Promise.all([
+  const [playerRow, stats, premRows, debutRow, awardRows] = await Promise.all([
     db.select().from(playersTable).where(eq(playersTable.id, params.data.id)).then((rows) => rows[0]),
     db.select().from(playerGradeStatsTable).where(eq(playerGradeStatsTable.playerId, params.data.id)).orderBy(asc(playerGradeStatsTable.grade)),
     db
@@ -199,6 +201,25 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       .from(playerGradeSeasonStatsTable)
       .where(eq(playerGradeSeasonStatsTable.playerId, params.data.id))
       .then((rows) => rows[0]),
+    // Published awards this player has won (one row per season won), used by the
+    // trading card. Both the award and the individual winner row must be
+    // published to appear publicly.
+    db
+      .select({
+        key: awardsTable.key,
+        title: awardsTable.title,
+        season: awardWinnersTable.season,
+      })
+      .from(awardWinnersTable)
+      .innerJoin(awardsTable, eq(awardsTable.id, awardWinnersTable.awardId))
+      .where(
+        and(
+          eq(awardWinnersTable.playerId, params.data.id),
+          eq(awardWinnersTable.published, true),
+          eq(awardsTable.published, true),
+        ),
+      )
+      .orderBy(asc(awardsTable.displayOrder), desc(awardWinnersTable.season)),
   ]);
 
   if (!playerRow) {
@@ -221,6 +242,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     seasonsPlayed,
     stats,
     premierships: premRows,
+    awards: awardRows,
   });
 });
 

@@ -125,6 +125,14 @@ export interface PlayerPremiership {
   isCaptain: boolean;
 }
 
+export interface PlayerAward {
+  /** Award key (awards.key). */
+  key: string;
+  title: string;
+  /** Season (start year) the award was won. */
+  season: number;
+}
+
 export interface PlayerDetail {
   id: number;
   surname: string;
@@ -154,6 +162,8 @@ export interface PlayerDetail {
   seasonsPlayed?: number | null;
   stats: Stat[];
   premierships?: PlayerPremiership[];
+  /** Published awards this player has won (one row per season won), used by the trading card. */
+  awards?: PlayerAward[];
 }
 
 export interface PremiershipPlayer {
@@ -2532,6 +2542,18 @@ export interface RecordsDisplaySettingsUpdate {
   partnershipsDefaultGrade?: string;
   centuriesSort?: string;
   fiveForSort?: string;
+}
+
+export interface TradingCardSettings {
+  /** Ordered stat keys shown on every player's trading card. Empty = fall back to the per-role default stat selection. */
+  statKeys: string[];
+  /** Award keys (awards.key) eligible to appear on cards; each player's card shows the ones they have won. Empty = all published awards eligible. */
+  awardKeys: string[];
+}
+
+export interface TradingCardSettingsUpdate {
+  statKeys?: string[];
+  awardKeys?: string[];
 }
 
 export type MilestoneItemKind = typeof MilestoneItemKind[keyof typeof MilestoneItemKind];

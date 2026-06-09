@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PlayerAward } from './playerAward';
 import type { PlayerPremiership } from './playerPremiership';
 import type { Stat } from './stat';
 
@@ -37,4 +38,6 @@ export interface PlayerDetail {
   seasonsPlayed?: number | null;
   stats: Stat[];
   premierships?: PlayerPremiership[];
+  /** Published awards this player has won (one row per season won), used by the trading card. */
+  awards?: PlayerAward[];
 }
