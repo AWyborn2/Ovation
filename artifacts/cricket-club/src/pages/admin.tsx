@@ -11,6 +11,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
   { label: "Honour boards", target: "/admin/honour-boards", isExternal: false, iconKey: "scrollText", description: "Edit board titles and pin/hide overrides." },
   { label: "Milestone board", target: "/admin/milestone-board", isExternal: false, iconKey: "medal", description: "Show recent / approaching milestones and set thresholds." },
   { label: "Matches page display", target: "/admin/match-display", isExternal: false, iconKey: "clipboardList", description: "Default grade/season, grade menu order, round order." },
+  { label: "Records page display", target: "/admin/records-display", isExternal: false, iconKey: "clipboardList", description: "Default tab, By Grade / Partnerships grade, table sorts." },
   { label: "Import CSV", target: "/admin/import", isExternal: false, iconKey: "upload", description: "Upload a PlayCricket combined CSV for a season." },
   { label: "Cap register", target: "/admin/caps", isExternal: false, iconKey: "ticket", description: "A Grade cap numbers and links." },
   { label: "Life members", target: "/admin/life-members", isExternal: false, iconKey: "star", description: "Honour-board life members." },

@@ -2397,6 +2397,52 @@ export interface MatchDisplaySettingsUpdate {
   roundOrder?: MatchDisplaySettingsUpdateRoundOrder;
 }
 
+/**
+ * Tab pre-selected when the Records page first opens.
+ */
+export type RecordsDisplaySettingsDefaultTab = typeof RecordsDisplaySettingsDefaultTab[keyof typeof RecordsDisplaySettingsDefaultTab];
+
+
+export const RecordsDisplaySettingsDefaultTab = {
+  total: 'total',
+  'by-grade': 'by-grade',
+  partnerships: 'partnerships',
+  centuries: 'centuries',
+  'five-for': 'five-for',
+} as const;
+
+export interface RecordsDisplaySettings {
+  /** Tab pre-selected when the Records page first opens. */
+  defaultTab: RecordsDisplaySettingsDefaultTab;
+  /** Default grade for the By Grade tab. Empty string = first available grade. */
+  byGradeDefaultGrade: string;
+  /** Default grade filter for the Partnerships tab. Empty string = All grades (highest stand per wicket across every grade). */
+  partnershipsDefaultGrade: string;
+  /** Default sort for the Centuries table as "<column>-<dir>" (column: grade|batsman|score|season; dir: asc|desc). */
+  centuriesSort: string;
+  /** Default sort for the 5-Wicket Hauls table as "<column>-<dir>" (column: grade|bowler|figures|season; dir: asc|desc). */
+  fiveForSort: string;
+}
+
+export type RecordsDisplaySettingsUpdateDefaultTab = typeof RecordsDisplaySettingsUpdateDefaultTab[keyof typeof RecordsDisplaySettingsUpdateDefaultTab];
+
+
+export const RecordsDisplaySettingsUpdateDefaultTab = {
+  total: 'total',
+  'by-grade': 'by-grade',
+  partnerships: 'partnerships',
+  centuries: 'centuries',
+  'five-for': 'five-for',
+} as const;
+
+export interface RecordsDisplaySettingsUpdate {
+  defaultTab?: RecordsDisplaySettingsUpdateDefaultTab;
+  byGradeDefaultGrade?: string;
+  partnershipsDefaultGrade?: string;
+  centuriesSort?: string;
+  fiveForSort?: string;
+}
+
 export type MilestoneItemKind = typeof MilestoneItemKind[keyof typeof MilestoneItemKind];
 
 

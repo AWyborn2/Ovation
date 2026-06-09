@@ -133,6 +133,8 @@ import type {
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
+  RecordsDisplaySettings,
+  RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
   RoundUpInput,
   SocialDraft,
@@ -10068,6 +10070,154 @@ export const useUpdateMatchDisplaySettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMatchDisplaySettingsMutationOptions(options));
+    }
+
+export const getGetRecordsDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/records-display-settings`
+}
+
+/**
+ * @summary Get the public Records page display defaults
+ */
+export const getRecordsDisplaySettings = async ( options?: RequestInit): Promise<RecordsDisplaySettings> => {
+
+  return customFetch<RecordsDisplaySettings>(getGetRecordsDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecordsDisplaySettingsQueryKey = () => {
+    return [
+    `/api/records-display-settings`
+    ] as const;
+    }
+
+
+export const getGetRecordsDisplaySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getRecordsDisplaySettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordsDisplaySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecordsDisplaySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecordsDisplaySettings>>> = ({ signal }) => getRecordsDisplaySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecordsDisplaySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecordsDisplaySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getRecordsDisplaySettings>>>
+export type GetRecordsDisplaySettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the public Records page display defaults
+ */
+
+export function useGetRecordsDisplaySettings<TData = Awaited<ReturnType<typeof getRecordsDisplaySettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordsDisplaySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecordsDisplaySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateRecordsDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/records-display-settings`
+}
+
+/**
+ * @summary Update the public Records page display defaults
+ */
+export const updateRecordsDisplaySettings = async (recordsDisplaySettingsUpdate: RecordsDisplaySettingsUpdate, options?: RequestInit): Promise<RecordsDisplaySettings> => {
+
+  return customFetch<RecordsDisplaySettings>(getUpdateRecordsDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      recordsDisplaySettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateRecordsDisplaySettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRecordsDisplaySettings>>, TError,{data: BodyType<RecordsDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRecordsDisplaySettings>>, TError,{data: BodyType<RecordsDisplaySettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateRecordsDisplaySettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRecordsDisplaySettings>>, {data: BodyType<RecordsDisplaySettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRecordsDisplaySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRecordsDisplaySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateRecordsDisplaySettings>>>
+    export type UpdateRecordsDisplaySettingsMutationBody = BodyType<RecordsDisplaySettingsUpdate>
+    export type UpdateRecordsDisplaySettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the public Records page display defaults
+ */
+export const useUpdateRecordsDisplaySettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRecordsDisplaySettings>>, TError,{data: BodyType<RecordsDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRecordsDisplaySettings>>,
+        TError,
+        {data: BodyType<RecordsDisplaySettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRecordsDisplaySettingsMutationOptions(options));
     }
 
 export const getGetNavOptionsUrl = () => {

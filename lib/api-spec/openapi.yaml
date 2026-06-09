@@ -2784,6 +2784,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/MatchDisplaySettings"
 
+  /records-display-settings:
+    get:
+      operationId: getRecordsDisplaySettings
+      tags: [grades]
+      summary: Get the public Records page display defaults
+      responses:
+        "200":
+          description: Records display settings (default tab, grades, table sorts)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordsDisplaySettings"
+    patch:
+      operationId: updateRecordsDisplaySettings
+      tags: [grades]
+      summary: Update the public Records page display defaults
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordsDisplaySettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordsDisplaySettings"
+
   /nav-options:
     get:
       operationId: getNavOptions
@@ -6783,6 +6813,55 @@ components:
         roundOrder:
           type: string
           enum: [asc, desc]
+
+    RecordsDisplaySettings:
+      type: object
+      required:
+        - defaultTab
+        - byGradeDefaultGrade
+        - partnershipsDefaultGrade
+        - centuriesSort
+        - fiveForSort
+      properties:
+        defaultTab:
+          type: string
+          enum: [total, by-grade, partnerships, centuries, five-for]
+          description: Tab pre-selected when the Records page first opens.
+        byGradeDefaultGrade:
+          type: string
+          description: >-
+            Default grade for the By Grade tab. Empty string = first available
+            grade.
+        partnershipsDefaultGrade:
+          type: string
+          description: >-
+            Default grade filter for the Partnerships tab. Empty string = All
+            grades (highest stand per wicket across every grade).
+        centuriesSort:
+          type: string
+          description: >-
+            Default sort for the Centuries table as "<column>-<dir>" (column:
+            grade|batsman|score|season; dir: asc|desc).
+        fiveForSort:
+          type: string
+          description: >-
+            Default sort for the 5-Wicket Hauls table as "<column>-<dir>"
+            (column: grade|bowler|figures|season; dir: asc|desc).
+
+    RecordsDisplaySettingsUpdate:
+      type: object
+      properties:
+        defaultTab:
+          type: string
+          enum: [total, by-grade, partnerships, centuries, five-for]
+        byGradeDefaultGrade:
+          type: string
+        partnershipsDefaultGrade:
+          type: string
+        centuriesSort:
+          type: string
+        fiveForSort:
+          type: string
 
     MilestoneItem:
       type: object

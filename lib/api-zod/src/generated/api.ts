@@ -3727,6 +3727,38 @@ export const UpdateMatchDisplaySettingsResponse = zod.object({
 
 
 /**
+ * @summary Get the public Records page display defaults
+ */
+export const GetRecordsDisplaySettingsResponse = zod.object({
+  "defaultTab": zod.enum(['total', 'by-grade', 'partnerships', 'centuries', 'five-for']).describe('Tab pre-selected when the Records page first opens.'),
+  "byGradeDefaultGrade": zod.string().describe('Default grade for the By Grade tab. Empty string = first available grade.'),
+  "partnershipsDefaultGrade": zod.string().describe('Default grade filter for the Partnerships tab. Empty string = All grades (highest stand per wicket across every grade).'),
+  "centuriesSort": zod.string().describe('Default sort for the Centuries table as \"<column>-<dir>\" (column: grade|batsman|score|season; dir: asc|desc).'),
+  "fiveForSort": zod.string().describe('Default sort for the 5-Wicket Hauls table as \"<column>-<dir>\" (column: grade|bowler|figures|season; dir: asc|desc).')
+})
+
+
+/**
+ * @summary Update the public Records page display defaults
+ */
+export const UpdateRecordsDisplaySettingsBody = zod.object({
+  "defaultTab": zod.enum(['total', 'by-grade', 'partnerships', 'centuries', 'five-for']).optional(),
+  "byGradeDefaultGrade": zod.string().optional(),
+  "partnershipsDefaultGrade": zod.string().optional(),
+  "centuriesSort": zod.string().optional(),
+  "fiveForSort": zod.string().optional()
+})
+
+export const UpdateRecordsDisplaySettingsResponse = zod.object({
+  "defaultTab": zod.enum(['total', 'by-grade', 'partnerships', 'centuries', 'five-for']).describe('Tab pre-selected when the Records page first opens.'),
+  "byGradeDefaultGrade": zod.string().describe('Default grade for the By Grade tab. Empty string = first available grade.'),
+  "partnershipsDefaultGrade": zod.string().describe('Default grade filter for the Partnerships tab. Empty string = All grades (highest stand per wicket across every grade).'),
+  "centuriesSort": zod.string().describe('Default sort for the Centuries table as \"<column>-<dir>\" (column: grade|batsman|score|season; dir: asc|desc).'),
+  "fiveForSort": zod.string().describe('Default sort for the 5-Wicket Hauls table as \"<column>-<dir>\" (column: grade|bowler|figures|season; dir: asc|desc).')
+})
+
+
+/**
  * Returns the set of valid internal page targets (per section) and the curated icon-key set. The admin nav editor uses this to populate the link-target dropdown and the icon picker.
  * @summary Curated link targets and icon keys for the nav editor
  */

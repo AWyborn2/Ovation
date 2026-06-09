@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin/honour-boards", label: "Honour boards" },
   { href: "/admin/milestone-board", label: "Milestone board" },
   { href: "/admin/match-display", label: "Matches page display" },
+  { href: "/admin/records-display", label: "Records page display" },
   { href: "/admin/junior-match-display", label: "Junior matches display" },
   { href: "/admin/import", label: "Import CSV" },
   { href: "/admin/caps", label: "Cap register" },

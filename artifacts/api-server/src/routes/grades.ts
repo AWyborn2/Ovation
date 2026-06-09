@@ -1,6 +1,14 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sum, count } from "drizzle-orm";
-import { db, gradeSummariesTable, playerGradeStatsTable, playersTable } from "@workspace/db";
+import { eq, desc, sum, count, sql } from "drizzle-orm";
+import {
+  db,
+  gradeSummariesTable,
+  playerGradeStatsTable,
+  playersTable,
+  recordsDisplaySettingsTable,
+} from "@workspace/db";
+import { UpdateRecordsDisplaySettingsBody } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/require-admin";
 
 const router: IRouter = Router();
 
@@ -111,7 +119,9 @@ router.get("/records", async (_req, res): Promise<void> => {
         playerGradeStatsTable.givenName,
         playerGradeStatsTable.surname,
       )
-      .orderBy(desc(sum(col)))
+      // NULLS LAST: Postgres sorts NULL first on DESC, so a player whose every
+      // row for this stat is NULL would otherwise float to the top and report 0.
+      .orderBy(sql`${sum(col)} desc nulls last`)
       .limit(1);
     if (!row) return null;
     return {
@@ -187,5 +197,81 @@ router.get("/records", async (_req, res): Promise<void> => {
     mostHundreds: mostHundreds ?? null,
   });
 });
+
+// Singleton app-config controlling how the public Records page behaves by
+// default: which tab opens first, the default grade for the By Grade tab, the
+// default grade filter for Partnerships, and the default sort for the Centuries
+// and 5-Wicket Hauls tables. Visitors can still change everything after load.
+const RECORDS_SETTINGS_ID = 1;
+
+async function ensureRecordsDisplaySettings() {
+  const [existing] = await db
+    .select()
+    .from(recordsDisplaySettingsTable)
+    .where(eq(recordsDisplaySettingsTable.id, RECORDS_SETTINGS_ID));
+  if (existing) return existing;
+  const [created] = await db
+    .insert(recordsDisplaySettingsTable)
+    .values({ id: RECORDS_SETTINGS_ID })
+    .returning();
+  return created;
+}
+
+function serializeRecordsDisplaySettings(
+  row: typeof recordsDisplaySettingsTable.$inferSelect,
+) {
+  return {
+    defaultTab: row.defaultTab as
+      | "total"
+      | "by-grade"
+      | "partnerships"
+      | "centuries"
+      | "five-for",
+    byGradeDefaultGrade: row.byGradeDefaultGrade,
+    partnershipsDefaultGrade: row.partnershipsDefaultGrade,
+    centuriesSort: row.centuriesSort,
+    fiveForSort: row.fiveForSort,
+  };
+}
+
+router.get("/records-display-settings", async (_req, res): Promise<void> => {
+  const settings = await ensureRecordsDisplaySettings();
+  res.json(serializeRecordsDisplaySettings(settings));
+});
+
+router.patch(
+  "/records-display-settings",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = UpdateRecordsDisplaySettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const CENTURIES_SORT = /^(grade|batsman|score|season)-(asc|desc)$/;
+    const FIVE_FOR_SORT = /^(grade|bowler|figures|season)-(asc|desc)$/;
+    if (
+      parsed.data.centuriesSort !== undefined &&
+      !CENTURIES_SORT.test(parsed.data.centuriesSort)
+    ) {
+      res.status(400).json({ error: "Invalid centuriesSort value" });
+      return;
+    }
+    if (
+      parsed.data.fiveForSort !== undefined &&
+      !FIVE_FOR_SORT.test(parsed.data.fiveForSort)
+    ) {
+      res.status(400).json({ error: "Invalid fiveForSort value" });
+      return;
+    }
+    await ensureRecordsDisplaySettings();
+    const [row] = await db
+      .update(recordsDisplaySettingsTable)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(recordsDisplaySettingsTable.id, RECORDS_SETTINGS_ID))
+      .returning();
+    res.json(serializeRecordsDisplaySettings(row));
+  },
+);
 
 export default router;
