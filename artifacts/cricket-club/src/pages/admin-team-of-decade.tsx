@@ -23,6 +23,7 @@ import {
   PlayerTypeahead,
   type SelectedPlayer,
 } from "@/components/player-typeahead";
+import { GripVertical } from "lucide-react";
 
 const slugify = (s: string) =>
   s
@@ -444,9 +445,12 @@ function MembersManager({
   onChanged: () => void;
 }) {
   const createMember = useCreateTeamOfDecadeMember();
+  const reorderMember = useUpdateTeamOfDecadeMember();
   const [player, setPlayer] = useState<SelectedPlayer | null>(null);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const members = [...board.members].sort(
     (a, b) =>
@@ -454,6 +458,57 @@ function MembersManager({
       a.displayOrder - b.displayOrder ||
       a.id - b.id,
   );
+
+  const commitOrder = async (ordered: TeamOfDecadeMember[]) => {
+    const changed = ordered.filter(
+      (m, i) => m.battingOrder !== i + 1 || m.displayOrder !== i,
+    );
+    if (changed.length === 0) return;
+    try {
+      await Promise.all(
+        ordered.map((m, i) =>
+          m.battingOrder !== i + 1 || m.displayOrder !== i
+            ? reorderMember.mutateAsync({
+                id: m.id,
+                data: { battingOrder: i + 1, displayOrder: i },
+              })
+            : Promise.resolve(),
+        ),
+      );
+      onChanged();
+    } catch (e) {
+      onError(e);
+      onChanged();
+    }
+  };
+
+  const reorderByDrag = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0) return;
+    if (from >= members.length || to >= members.length) return;
+    const next = [...members];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    void commitOrder(next);
+  };
+
+  const handleDragStart = (idx: number) => {
+    setDragIndex(idx);
+    setOverIndex(idx);
+  };
+  const handleDragOver = (idx: number) => {
+    if (dragIndex === null) return;
+    if (idx !== overIndex) setOverIndex(idx);
+  };
+  const handleDrop = () => {
+    if (dragIndex !== null && overIndex !== null)
+      reorderByDrag(dragIndex, overIndex);
+    setDragIndex(null);
+    setOverIndex(null);
+  };
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setOverIndex(null);
+  };
 
   const add = () => {
     const resolvedName = player
@@ -488,6 +543,12 @@ function MembersManager({
       <h4 className="text-sm font-bold uppercase tracking-wide text-primary">
         Lineup
       </h4>
+      {members.length > 1 && (
+        <p className="text-xs text-muted-foreground">
+          Drag the <GripVertical className="inline h-3 w-3 align-text-bottom" />{" "}
+          handle to reorder the batting lineup.
+        </p>
+      )}
 
       {members.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
@@ -495,12 +556,21 @@ function MembersManager({
         </p>
       ) : (
         <div className="space-y-2">
-          {members.map((m) => (
+          {members.map((m, idx) => (
             <MemberRow
               key={m.id}
               member={m}
+              index={idx}
               onError={onError}
               onChanged={onChanged}
+              isDragging={dragIndex === idx}
+              isDropTarget={
+                dragIndex !== null && overIndex === idx && dragIndex !== idx
+              }
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
             />
           ))}
         </div>
@@ -549,12 +619,26 @@ function MembersManager({
 
 function MemberRow({
   member,
+  index,
   onError,
   onChanged,
+  isDragging,
+  isDropTarget,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   member: TeamOfDecadeMember;
+  index: number;
   onError: (e: unknown) => void;
   onChanged: () => void;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onDragStart: (idx: number) => void;
+  onDragOver: (idx: number) => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }) {
   const update = useUpdateTeamOfDecadeMember();
   const remove = useDeleteTeamOfDecadeMember();
@@ -579,9 +663,35 @@ function MemberRow({
   if (member.isWicketkeeper) badges.push("WK");
 
   return (
-    <div className="rounded-md border border-border bg-background p-3 space-y-2">
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver(index);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      className={`rounded-md border bg-background p-3 space-y-2 transition-colors ${
+        isDragging ? "opacity-40 border-primary" : "border-border"
+      } ${isDropTarget ? "border-primary border-dashed bg-primary/5" : ""}`}
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = "move";
+              onDragStart(index);
+            }}
+            onDragEnd={onDragEnd}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none shrink-0"
+            aria-label="Drag to reorder"
+            title="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
           <span className="font-mono text-xs text-muted-foreground w-6 text-right">
             {member.battingOrder}
           </span>
