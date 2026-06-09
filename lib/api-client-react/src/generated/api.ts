@@ -133,6 +133,7 @@ import type {
   PlayerListResponse,
   PlayerMatchLine,
   PlayerMergeRequest,
+  PlayerSeasonStat,
   PlayerUpdate,
   PointsConfigInput,
   PointsConfigUpdate,
@@ -639,6 +640,84 @@ export const useDeletePlayer = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeletePlayerMutationOptions(options));
     }
+
+export const getGetPlayerSeasonsUrl = (id: number,) => {
+
+
+
+
+  return `/api/players/${id}/seasons`
+}
+
+/**
+ * One row per (grade, season) aggregated from the player_grade_season_stats snapshot. Baseline rows (season = null) represent the pre-scorecard career total imported with the seed. Summing all rows within a grade reproduces that grade's per-grade aggregate shown elsewhere.
+ * @summary Season-by-season stat breakdown for a player
+ */
+export const getPlayerSeasons = async (id: number, options?: RequestInit): Promise<PlayerSeasonStat[]> => {
+
+  return customFetch<PlayerSeasonStat[]>(getGetPlayerSeasonsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlayerSeasonsQueryKey = (id: number,) => {
+    return [
+    `/api/players/${id}/seasons`
+    ] as const;
+    }
+
+
+export const getGetPlayerSeasonsQueryOptions = <TData = Awaited<ReturnType<typeof getPlayerSeasons>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayerSeasons>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlayerSeasonsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerSeasons>>> = ({ signal }) => getPlayerSeasons(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlayerSeasons>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlayerSeasonsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlayerSeasons>>>
+export type GetPlayerSeasonsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Season-by-season stat breakdown for a player
+ */
+
+export function useGetPlayerSeasons<TData = Awaited<ReturnType<typeof getPlayerSeasons>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayerSeasons>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlayerSeasonsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetPlayerMatchesUrl = (id: number,) => {
 

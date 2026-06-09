@@ -200,6 +200,7 @@ export * from './playerPremiership';
 export * from './playerRecord';
 export * from './playerResolution';
 export * from './playerResolutionAction';
+export * from './playerSeasonStat';
 export * from './playerUpdate';
 export * from './pointsCategories';
 export * from './pointsCategory';

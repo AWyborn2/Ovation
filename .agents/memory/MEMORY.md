@@ -48,3 +48,4 @@
 - [Season-aware Top Performers chips](season-aware-chips.md) — availability chips must derive from the leaderboard's source rows (junior participant lines), not match existence; junior "stats not recorded" matches would surface empty chips.
 - [Player photo gallery](player-photo-gallery.md) — player_images gallery + per-card picker; players.image_url MIRRORS the default row (route logic syncs it on add/set-default/delete); single-photo readers unchanged.
 - [Match score format](match-score-format.md) — hhcc_score/opponent_score are runs/wickets ("206/10"); scorecard parseScore must read group1=runs, group2=wickets or totals swap + extras collapse to 0.
+- [Raw SQL bigint sums return as strings](raw-sql-bigint-strings.md) — db.execute SUM/int8/numeric arrive as JS strings; cast aggregates ::int or client totals string-concatenate.

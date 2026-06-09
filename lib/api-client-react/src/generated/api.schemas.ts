@@ -209,6 +209,47 @@ export interface PlayerListResponse {
   limit: number;
 }
 
+export interface PlayerSeasonStat {
+  grade: string;
+  /**
+     * Season start year (e.g. 2025 for 2025/26). Null for the pre-scorecard baseline row.
+     * @nullable
+     */
+  season: number | null;
+  /** @nullable */
+  games?: number | null;
+  /** @nullable */
+  innings?: number | null;
+  /** @nullable */
+  notOuts?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  batAvg?: number | null;
+  /** @nullable */
+  highScore?: string | null;
+  /** @nullable */
+  fifties?: number | null;
+  /** @nullable */
+  hundreds?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  runsConceded?: number | null;
+  /** @nullable */
+  bowlAvg?: number | null;
+  /** @nullable */
+  bestBowling?: string | null;
+  /** @nullable */
+  fiveWickets?: number | null;
+  /** @nullable */
+  catches?: number | null;
+  /** @nullable */
+  stumpings?: number | null;
+  /** @nullable */
+  runOuts?: number | null;
+}
+
 export interface StatInput {
   playerId: number;
   grade: string;

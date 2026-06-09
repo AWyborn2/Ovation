@@ -184,6 +184,33 @@ paths:
         "404":
           description: Not found
 
+  /players/{id}/seasons:
+    get:
+      operationId: getPlayerSeasons
+      tags: [players]
+      summary: Season-by-season stat breakdown for a player
+      description: >-
+        One row per (grade, season) aggregated from the
+        player_grade_season_stats snapshot. Baseline rows (season = null)
+        represent the pre-scorecard career total imported with the seed.
+        Summing all rows within a grade reproduces that grade's per-grade
+        aggregate shown elsewhere.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Season-level rows, grouped by grade
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerSeasonStat"
+
   /players/{id}/matches:
     get:
       operationId: getPlayerMatches
@@ -3908,6 +3935,50 @@ components:
         grade:
           type: string
         season:
+          type: ["integer", "null"]
+        games:
+          type: ["integer", "null"]
+        innings:
+          type: ["integer", "null"]
+        notOuts:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        batAvg:
+          type: ["number", "null"]
+        highScore:
+          type: ["string", "null"]
+        fifties:
+          type: ["integer", "null"]
+        hundreds:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        runsConceded:
+          type: ["integer", "null"]
+        bowlAvg:
+          type: ["number", "null"]
+        bestBowling:
+          type: ["string", "null"]
+        fiveWickets:
+          type: ["integer", "null"]
+        catches:
+          type: ["integer", "null"]
+        stumpings:
+          type: ["integer", "null"]
+        runOuts:
+          type: ["integer", "null"]
+
+    PlayerSeasonStat:
+      type: object
+      required: [grade, season]
+      properties:
+        grade:
+          type: string
+        season:
+          description: >-
+            Season start year (e.g. 2025 for 2025/26). Null for the
+            pre-scorecard baseline row.
           type: ["integer", "null"]
         games:
           type: ["integer", "null"]

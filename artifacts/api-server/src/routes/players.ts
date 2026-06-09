@@ -246,6 +246,75 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   });
 });
 
+router.get("/players/:id/seasons", async (req, res): Promise<void> => {
+  const params = GetPlayerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  // One row per (grade, season) summed from the snapshot table. Averages are
+  // derived from the summed totals (mirroring recompute.ts) since the snapshot
+  // stores raw counts, not averages. High score / best bowling pick the best
+  // value within each (grade, season). Baseline rows have season = null and
+  // sort first so a grade reads as a career timeline.
+  const rows = await db.execute(sql`
+    SELECT
+      s.grade AS grade,
+      s.season AS season,
+      NULLIF(COALESCE(SUM(s.games), 0), 0)::int AS games,
+      NULLIF(COALESCE(SUM(s.innings), 0), 0)::int AS innings,
+      NULLIF(COALESCE(SUM(s.not_outs), 0), 0)::int AS "notOuts",
+      NULLIF(COALESCE(SUM(s.runs), 0), 0)::int AS runs,
+      CASE
+        WHEN COALESCE(SUM(s.innings), 0) - COALESCE(SUM(s.not_outs), 0) > 0
+          THEN COALESCE(SUM(s.runs), 0)::real
+               / (COALESCE(SUM(s.innings), 0) - COALESCE(SUM(s.not_outs), 0))
+        ELSE NULL
+      END AS "batAvg",
+      (
+        SELECT x.high_score FROM player_grade_season_stats x
+        WHERE x.player_id = s.player_id AND x.grade = s.grade
+          AND x.season IS NOT DISTINCT FROM s.season
+          AND x.high_score IS NOT NULL AND x.high_score <> ''
+        ORDER BY
+          NULLIF(regexp_replace(x.high_score, '[^0-9]', '', 'g'), '')::int DESC NULLS LAST,
+          (x.high_score ~ '\\*') DESC
+        LIMIT 1
+      ) AS "highScore",
+      NULLIF(COALESCE(SUM(s.fifties), 0), 0)::int AS fifties,
+      NULLIF(COALESCE(SUM(s.hundreds), 0), 0)::int AS hundreds,
+      NULLIF(COALESCE(SUM(s.wickets), 0), 0)::int AS wickets,
+      NULLIF(COALESCE(SUM(s.runs_conceded), 0), 0)::int AS "runsConceded",
+      CASE
+        WHEN COALESCE(SUM(s.wickets), 0) > 0
+          THEN COALESCE(SUM(s.runs_conceded), 0)::real / SUM(s.wickets)
+        ELSE NULL
+      END AS "bowlAvg",
+      (
+        SELECT x.best_bowling FROM player_grade_season_stats x
+        WHERE x.player_id = s.player_id AND x.grade = s.grade
+          AND x.season IS NOT DISTINCT FROM s.season
+          AND x.best_bowling IS NOT NULL AND x.best_bowling <> ''
+          AND x.best_bowling ~ '^[0-9]+/[0-9]+$'
+        ORDER BY
+          split_part(x.best_bowling, '/', 1)::int DESC,
+          split_part(x.best_bowling, '/', 2)::int ASC
+        LIMIT 1
+      ) AS "bestBowling",
+      NULLIF(COALESCE(SUM(s.five_wickets), 0), 0)::int AS "fiveWickets",
+      NULLIF(COALESCE(SUM(s.catches), 0), 0)::int AS catches,
+      NULLIF(COALESCE(SUM(s.stumpings), 0), 0)::int AS stumpings,
+      NULLIF(COALESCE(SUM(s.run_outs), 0), 0)::int AS "runOuts"
+    FROM player_grade_season_stats s
+    WHERE s.player_id = ${params.data.id}
+    GROUP BY s.player_id, s.grade, s.season
+    ORDER BY s.grade ASC, s.season ASC NULLS FIRST
+  `);
+
+  res.json(rows.rows);
+});
+
 router.get("/players/:id/matches", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
   if (!params.success) {

@@ -1,6 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps, useGetPlayerMatches, getGetPlayerMatchesQueryKey } from "@workspace/api-client-react";
+import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps, useGetPlayerMatches, getGetPlayerMatchesQueryKey, useGetPlayerSeasons, getGetPlayerSeasonsQueryKey } from "@workspace/api-client-react";
+import type { PlayerSeasonStat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,6 +98,7 @@ export default function PlayerDetail() {
   const { data: player, isLoading } = useGetPlayer(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) } });
   const { data: caps } = useListCaps();
   const { data: matchLines } = useGetPlayerMatches(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerMatchesQueryKey(playerId) } });
+  const { data: seasonStats } = useGetPlayerSeasons(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerSeasonsQueryKey(playerId) } });
 
   const queryClient = useQueryClient();
   const deletePlayer = useDeletePlayer();
@@ -176,6 +178,35 @@ export default function PlayerDetail() {
     });
   }, [matchLines, matchSeasonFilter, matchGradeFilter]);
   const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
+
+  // Group the season-level rows by grade for the "By season" breakdown. Rows
+  // arrive sorted grade-asc, season-asc (baseline season=null first). The
+  // per-grade totals row is summed from the season rows, so it matches the
+  // existing per-grade aggregate table below.
+  const seasonsByGrade = useMemo(() => {
+    const rows = seasonStats ?? [];
+    const map = new Map<string, PlayerSeasonStat[]>();
+    for (const r of rows) {
+      if (r.grade === "CLUB TOTAL") continue;
+      const list = map.get(r.grade) ?? [];
+      list.push(r);
+      map.set(r.grade, list);
+    }
+    const sumKeys = [
+      "games", "innings", "notOuts", "runs", "fifties", "hundreds",
+      "wickets", "runsConceded", "fiveWickets", "catches", "stumpings", "runOuts",
+    ] as const;
+    return Array.from(map.entries()).map(([grade, list]) => {
+      const totals: Record<string, number> = {};
+      for (const k of sumKeys) {
+        totals[k] = list.reduce((acc, r) => acc + (r[k] ?? 0), 0);
+      }
+      const batOuts = totals.innings - totals.notOuts;
+      const batAvg = batOuts > 0 ? totals.runs / batOuts : null;
+      const bowlAvg = totals.wickets > 0 ? totals.runsConceded / totals.wickets : null;
+      return { grade, rows: list, totals, batAvg, bowlAvg };
+    });
+  }, [seasonStats]);
 
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this player?")) {
@@ -408,6 +439,95 @@ export default function PlayerDetail() {
             Played between 1 and 9 A Grade games for the club. Individual stats were not recorded
             prior to MyCricket and PlayHQ for players with fewer than 10 games.
           </p>
+        </div>
+      )}
+
+      {seasonsByGrade.length > 0 && (
+        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+          <div className="flex items-baseline justify-between gap-3 mb-1">
+            <h2 className="text-lg font-serif font-bold text-primary m-0">By season</h2>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Year-by-year history</span>
+          </div>
+          <div className="w-12 h-[2px] bg-primary mb-4" />
+          <div className="space-y-6">
+            {seasonsByGrade.map(({ grade, rows, totals, batAvg, bowlAvg }) => (
+              <div key={grade}>
+                <div className="flex items-center gap-2 mb-2">
+                  <GradeBadge grade={grade} size="sm" />
+                  <span className="font-semibold text-primary">{grade}</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left font-medium p-3">Season</th>
+                        <th className="text-right font-medium p-3">Mat</th>
+                        <th className="text-right font-medium p-3">Inn</th>
+                        <th className="text-right font-medium p-3">NO</th>
+                        <th className="text-right font-medium p-3">Runs</th>
+                        <th className="text-right font-medium p-3">HS</th>
+                        <th className="text-right font-medium p-3">Avg</th>
+                        <th className="text-right font-medium p-3">100s</th>
+                        <th className="text-right font-medium p-3">50s</th>
+                        <th className="text-right font-medium p-3">Wkts</th>
+                        <th className="text-right font-medium p-3">Runs</th>
+                        <th className="text-right font-medium p-3">Avg</th>
+                        <th className="text-right font-medium p-3">BB</th>
+                        <th className="text-right font-medium p-3">5WI</th>
+                        <th className="text-right font-medium p-3">Ct</th>
+                        <th className="text-right font-medium p-3">St</th>
+                        <th className="text-right font-medium p-3">RO</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r) => (
+                        <tr key={`${grade}-${r.season ?? "baseline"}`} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                          <td className="p-3 font-mono whitespace-nowrap">
+                            {r.season != null ? fmtSeason(r.season) : "Pre-2025"}
+                          </td>
+                          <td className="p-3 text-right font-mono">{r.games || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.innings || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.notOuts || "-"}</td>
+                          <td className="p-3 text-right font-mono font-bold">{r.runs || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.highScore || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.batAvg?.toFixed(2) || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.hundreds || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.fifties || "-"}</td>
+                          <td className="p-3 text-right font-mono font-bold">{r.wickets || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.runsConceded || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.bowlAvg?.toFixed(2) || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.bestBowling || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.fiveWickets || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.catches || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.stumpings || "-"}</td>
+                          <td className="p-3 text-right font-mono">{r.runOuts || "-"}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 border-primary/40 bg-muted/30 font-semibold">
+                        <td className="p-3 font-mono uppercase tracking-wider text-xs text-primary">Total</td>
+                        <td className="p-3 text-right font-mono">{totals.games || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.innings || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.notOuts || "-"}</td>
+                        <td className="p-3 text-right font-mono font-bold">{totals.runs || "-"}</td>
+                        <td className="p-3 text-right font-mono">-</td>
+                        <td className="p-3 text-right font-mono">{batAvg?.toFixed(2) || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.hundreds || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.fifties || "-"}</td>
+                        <td className="p-3 text-right font-mono font-bold">{totals.wickets || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.runsConceded || "-"}</td>
+                        <td className="p-3 text-right font-mono">{bowlAvg?.toFixed(2) || "-"}</td>
+                        <td className="p-3 text-right font-mono">-</td>
+                        <td className="p-3 text-right font-mono">{totals.fiveWickets || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.catches || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.stumpings || "-"}</td>
+                        <td className="p-3 text-right font-mono">{totals.runOuts || "-"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

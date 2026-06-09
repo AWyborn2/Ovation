@@ -167,6 +167,37 @@ export const DeletePlayerParams = zod.object({
 
 
 /**
+ * One row per (grade, season) aggregated from the player_grade_season_stats snapshot. Baseline rows (season = null) represent the pre-scorecard career total imported with the seed. Summing all rows within a grade reproduces that grade's per-grade aggregate shown elsewhere.
+ * @summary Season-by-season stat breakdown for a player
+ */
+export const GetPlayerSeasonsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPlayerSeasonsResponseItem = zod.object({
+  "grade": zod.string(),
+  "season": zod.number().nullable().describe('Season start year (e.g. 2025 for 2025\/26). Null for the pre-scorecard baseline row.'),
+  "games": zod.number().nullish(),
+  "innings": zod.number().nullish(),
+  "notOuts": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "batAvg": zod.number().nullish(),
+  "highScore": zod.string().nullish(),
+  "fifties": zod.number().nullish(),
+  "hundreds": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "runsConceded": zod.number().nullish(),
+  "bowlAvg": zod.number().nullish(),
+  "bestBowling": zod.string().nullish(),
+  "fiveWickets": zod.number().nullish(),
+  "catches": zod.number().nullish(),
+  "stumpings": zod.number().nullish(),
+  "runOuts": zod.number().nullish()
+})
+export const GetPlayerSeasonsResponse = zod.array(GetPlayerSeasonsResponseItem)
+
+
+/**
  * @summary Per-match scorecard lines for a player
  */
 export const GetPlayerMatchesParams = zod.object({
