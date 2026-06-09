@@ -45,3 +45,19 @@ cap_number>240` then re-run; only then does it order by parsed date instead of s
 **The real fix is upstream** — the club's export tooling dropping dates / changing
 source_key is the root cause. Don't bake this backfill into the loader; flag the
 export regression to the user and recover per-load until the export is fixed.
+
+## RESOLVED by a later export (don't re-run the backfill blindly)
+
+A subsequent master export fixed the upstream tooling: `match_date` + `source_key`
+(UUIDs) are populated for ALL matches again, AND the PlayHQ-era "Initial Surname"
+batting/bowling lines that previously had NULL `player_id` (so whole seasons of a
+player's career silently dropped during `matches-etl`) now carry real `player_id`s.
+**How to confirm before migrating a new dump:** grep the dump for a known affected
+player's lines (e.g. `J Rudge` → player_id 44) and check split players are separated
+(e.g. B Rayment 347 vs 500, B Lee 203). After `load-master-db` + `load-matches`
+commit, verify the restored seasons exist (Rudge A Grade 2023/24/25 = 21/18/17 games)
+and the career invariant holds (`players.total_games` == SUM(per-grade games), 0
+mismatches; 0 negative baseline rows). Only ~60 genuinely-ambiguous lines stay NULL
+(********, Unknown Player_1, lone initials) — that's correct, not the old bug.
+Because dates now come straight from the dump, the prior-dump natural-key date
+backfill above is NO LONGER needed for these exports.
