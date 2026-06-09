@@ -28,6 +28,28 @@ RETURNS text LANGUAGE sql IMMUTABLE AS $fn$
   END;
 $fn$;
 
+-- 0b. School-year BAND mapper. By club decision the app now groups juniors by a
+-- single unified school-year band that merges the legacy Under-age naming with
+-- the newer year naming (confirmed against the club's 2024/25 team↔grade pairings):
+--   U10→Year 4, U11→Year 5, U12→Year 6, U13→Year 7, U14→Year 8, U15→Year 9,
+--   and U16 + U17 → Year 10-11. Year* / Girls League labels pass through unchanged.
+-- The source dump already carries a clean `age_band`, so the ETL PREFERS it and
+-- only uses this mapper as a fallback (deriving from the raw age_group/grade).
+CREATE OR REPLACE FUNCTION pg_temp.jr_band(raw text)
+RETURNS text LANGUAGE sql IMMUTABLE AS $fn$
+  SELECT CASE pg_temp.jr_norm_age(raw)
+    WHEN 'U10' THEN 'Year 4'
+    WHEN 'U11' THEN 'Year 5'
+    WHEN 'U12' THEN 'Year 6'
+    WHEN 'U13' THEN 'Year 7'
+    WHEN 'U14' THEN 'Year 8'
+    WHEN 'U15' THEN 'Year 9'
+    WHEN 'U16' THEN 'Year 10-11'
+    WHEN 'U17' THEN 'Year 10-11'
+    ELSE pg_temp.jr_norm_age(raw)  -- 'Year N', 'Year 10-11', 'Girls League' pass through
+  END;
+$fn$;
+
 -- 1. Snapshot the cross-reference links so a reload never loses them.
 CREATE TEMP TABLE _jp_links ON COMMIT DROP AS
 SELECT participant_id, senior_player_id
@@ -45,8 +67,9 @@ DELETE FROM public.junior_matches;
 
 -- 3. Load parents then children.
 INSERT INTO public.junior_matches (
-  id, playhq_match_id, season, season_start_year, grade, age_group, team_name,
-  competition, round, match_date, venue, status, team1, team1_score, team2,
+  id, playhq_match_id, season, season_start_year, grade, age_group, age_group_raw,
+  team_name, competition, association, round, match_date, venue, venue_oval,
+  venue_address, venue_suburb, status, team1, team1_score, team2,
   team2_score, hh_team_id, hh_result, winner, toss_winner, hh_batted_first,
   opponent_name
 )
@@ -56,15 +79,26 @@ SELECT
   -- newest-first ordering (NULL when the season text has no 4-digit prefix).
   NULLIF(substring(season from '^[0-9]{4}'), '')::int AS season_start_year,
   grade,
-  -- Canonical age-group label (see pg_temp.jr_norm_age above): prefer the dump's
-  -- clean age_group, fall back to deriving from the messy grade text.
+  -- age_group GROUPING token = unified school-year band: prefer the dump's clean
+  -- age_band, else map the legacy age_group/grade via jr_band, else fall back to
+  -- the normalised raw label so nothing is ever dropped.
   COALESCE(
+    NULLIF(trim(age_band), ''),
+    pg_temp.jr_band(age_group),
+    pg_temp.jr_band(grade),
     NULLIF(pg_temp.jr_norm_age(age_group), ''),
-    NULLIF(pg_temp.jr_norm_age(grade), ''),
     NULLIF(trim(age_group), ''),
     NULLIF(trim(grade), '')
   ) AS age_group,
-  team_name, competition, round, match_date, venue, status, team1, team1_score,
+  -- Original raw label kept for traceability (normalised but NOT band-merged).
+  COALESCE(
+    NULLIF(pg_temp.jr_norm_age(age_group), ''),
+    NULLIF(trim(age_group), ''),
+    NULLIF(pg_temp.jr_norm_age(grade), ''),
+    NULLIF(trim(grade), '')
+  ) AS age_group_raw,
+  team_name, competition, association, round, match_date, venue, venue_oval,
+  venue_address, venue_suburb, status, team1, team1_score,
   team2, team2_score, hh_team_id, hh_result, winner, toss_winner, hh_batted_first,
   opponent_name
 FROM juniors_staging.matches;
@@ -104,12 +138,25 @@ SELECT
 FROM juniors_staging.match_rosters;
 
 INSERT INTO public.junior_premierships (
-  id, season, age_group, team_name, competition, match_date, opponent, hh_score,
+  id, season, age_group, age_group_raw, team_name, competition, association,
+  match_date, venue, venue_oval, opponent, hh_score,
   opp_score, result_text, match_id, playhq_match_id
 )
 SELECT
-  id, season, age_group, team_name, competition, match_date, opponent, hh_score,
-  opp_score, result_text, match_id, playhq_match_id
+  id, season,
+  -- age_group = unified school-year band (prefer dump age_band, see jr_band).
+  COALESCE(
+    NULLIF(trim(age_band), ''),
+    pg_temp.jr_band(age_group),
+    NULLIF(pg_temp.jr_norm_age(age_group), ''),
+    NULLIF(trim(age_group), '')
+  ) AS age_group,
+  COALESCE(
+    NULLIF(pg_temp.jr_norm_age(age_group), ''),
+    NULLIF(trim(age_group), '')
+  ) AS age_group_raw,
+  team_name, competition, association, match_date, venue, venue_oval, opponent,
+  hh_score, opp_score, result_text, match_id, playhq_match_id
 FROM juniors_staging.junior_premierships;
 
 INSERT INTO public.junior_premiership_players (

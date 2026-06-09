@@ -45,6 +45,7 @@ export default function JuniorsMatchDetail() {
               {match.season ?? ""}
               {match.round ? ` · ${match.round}` : ""}
               {match.competition ? ` · ${match.competition}` : ""}
+              {match.association ? ` · ${match.association}` : ""}
             </div>
             {(match.hhScore || match.opponentScore) && (
               <div className="text-lg font-mono text-foreground">
@@ -60,7 +61,10 @@ export default function JuniorsMatchDetail() {
               )}
               {match.venue && (
                 <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" /> {match.venue}
+                  <MapPin className="h-3.5 w-3.5" />
+                  {[match.venueOval, match.venue, match.venueSuburb]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               )}
             </div>

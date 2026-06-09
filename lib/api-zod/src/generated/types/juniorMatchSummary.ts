@@ -19,6 +19,11 @@ export interface JuniorMatchSummary {
   teamName?: string | null;
   /** @nullable */
   competition?: string | null;
+  /**
+     * Governing competition (Peel Junior Cricket Association, Community Cup, Girls League, South West Junior (SWMJCC)).
+     * @nullable
+     */
+  association?: string | null;
   /** @nullable */
   round?: string | null;
   /** @nullable */

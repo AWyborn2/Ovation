@@ -103,7 +103,7 @@ function PremiershipCard({ prem, onOpen }: { prem: JuniorPremiership; onOpen: ()
           </Body>
           <Feather name="maximize-2" size={14} color={JUNIOR.onAccent} />
         </View>
-        {prem.competition ? (
+        {prem.association || prem.competition ? (
           <Body
             size={10}
             style={{
@@ -114,7 +114,7 @@ function PremiershipCard({ prem, onOpen }: { prem: JuniorPremiership; onOpen: ()
               letterSpacing: 1,
             }}
           >
-            {prem.competition}
+            {prem.association || prem.competition}
           </Body>
         ) : null}
       </View>
@@ -127,6 +127,13 @@ function PremiershipCard({ prem, onOpen }: { prem: JuniorPremiership; onOpen: ()
           </Body>
         ) : null}
         {prem.resultText ? <Body size={13}>{prem.resultText}</Body> : null}
+
+        {prem.venueOval || prem.venue ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Feather name="map-pin" size={13} color={colors.mutedForeground} />
+            <Body muted size={12}>{prem.venueOval || prem.venue}</Body>
+          </View>
+        ) : null}
 
         {prem.players.length > 0 ? (
           <View>

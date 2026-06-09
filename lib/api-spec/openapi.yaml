@@ -7355,6 +7355,9 @@ components:
           type: ["string", "null"]
         competition:
           type: ["string", "null"]
+        association:
+          type: ["string", "null"]
+          description: Governing competition (Peel Junior Cricket Association, Community Cup, Girls League, South West Junior (SWMJCC)).
         round:
           type: ["string", "null"]
         matchDate:
@@ -7405,11 +7408,21 @@ components:
           type: ["string", "null"]
         competition:
           type: ["string", "null"]
+        association:
+          type: ["string", "null"]
+          description: Governing competition (Peel Junior Cricket Association, Community Cup, Girls League, South West Junior (SWMJCC)).
         round:
           type: ["string", "null"]
         matchDate:
           type: ["string", "null"]
         venue:
+          type: ["string", "null"]
+        venueOval:
+          type: ["string", "null"]
+          description: Specific oval/ground within the venue complex.
+        venueAddress:
+          type: ["string", "null"]
+        venueSuburb:
           type: ["string", "null"]
         status:
           type: ["string", "null"]
@@ -7820,8 +7833,16 @@ components:
           type: ["string", "null"]
         competition:
           type: ["string", "null"]
+        association:
+          type: ["string", "null"]
+          description: Governing competition (Peel Junior Cricket Association, Community Cup, Girls League, South West Junior (SWMJCC)).
         matchDate:
           type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+        venueOval:
+          type: ["string", "null"]
+          description: Specific oval/ground within the venue complex.
         opponent:
           type: ["string", "null"]
         hhScore:

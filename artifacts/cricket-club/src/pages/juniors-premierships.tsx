@@ -91,15 +91,21 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
         >
           <div style={titleStyle} className="text-[12px] font-bold uppercase">{title}</div>
 
-          {prem.competition && (
+          {(prem.association || prem.competition) && (
             <div style={{ ...metaStyle, marginTop: "2px" }} className="text-[10px]">
-              {prem.competition.toUpperCase()}
+              {(prem.association || prem.competition)!.toUpperCase()}
             </div>
           )}
 
           {prem.matchDate && (
             <div style={{ ...metaStyle, marginTop: "2px" }} className="text-[10px]">
               {formatDate(prem.matchDate)}
+            </div>
+          )}
+
+          {(prem.venueOval || prem.venue) && (
+            <div style={{ ...metaStyle, marginTop: "1px" }} className="text-[9px]">
+              {prem.venueOval || prem.venue}
             </div>
           )}
 

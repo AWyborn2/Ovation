@@ -73,6 +73,7 @@ export default function JuniorMatchDetailScreen() {
           {match.season ?? ""}
           {match.round ? ` · ${match.round}` : ""}
           {match.competition ? ` · ${match.competition}` : ""}
+          {match.association ? ` · ${match.association}` : ""}
         </Body>
 
         {match.hhScore || match.opponentScore ? (
@@ -97,7 +98,11 @@ export default function JuniorMatchDetailScreen() {
           {match.venue ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Feather name="map-pin" size={13} color={colors.mutedForeground} />
-              <Body muted size={12}>{match.venue}</Body>
+              <Body muted size={12}>
+                {[match.venueOval, match.venue, match.venueSuburb]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Body>
             </View>
           ) : null}
         </View>

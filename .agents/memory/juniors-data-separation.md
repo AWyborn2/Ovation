@@ -21,6 +21,14 @@ A handful of `junior_participants` rows have `is_private = true`. They must be h
 
 **Why:** opposition lines carry participant ids too (no FK), so "HH only" can't be done by id presence alone — `is_halls_head = true` selects HH, and the participant inner-join + `is_private=false` is what removes private players cleanly.
 
+## Unified school-year age bands (age_group is overloaded)
+
+`junior_matches.age_group` and `junior_premierships.age_group` hold a UNIFIED school-year band, NOT the raw label: Year 4 … Year 9, **Year 10-11** (merges old U16+U17), plus **Girls League**. The original label lives in `age_group_raw`. The ETL fills `age_group = COALESCE(dump age_band, pg_temp.jr_band(...))`; `jr_band()` maps U10→Year 4 … U15→Year 9, U16/U17→Year 10-11, passes through existing "Year N"/"Girls League".
+
+**Why overload the existing `age_group` column instead of adding a band column:** every filter, leaderboard, and honour-board already groups on `age_group`, so writing the band INTO that column regroups the whole section with zero query/UI change — the merge is purely an ETL concern. `age_group_raw` is the audit trail.
+
+**How to apply:** never reintroduce raw U-labels into a public surface — always group/display `age_group`. If you need the original, read `age_group_raw`. The newer dump also populates `match_date` for ALL matches (older dump had 0) and adds `association` + venue detail (`venue`/`venue_oval`/`venue_address`/`venue_suburb` on matches; `association`/`venue`/`venue_oval` on premierships).
+
 ## Data shape gotchas
 
 - `season` is free text ("2024/25"); order newest-first via `substring(season,1,4)::int`.

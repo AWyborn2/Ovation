@@ -29,12 +29,24 @@ export const juniorMatchesTable = pgTable("junior_matches", {
   season: text("season"),
   seasonStartYear: integer("season_start_year"),
   grade: text("grade"),
+  // age_group is the app's age-group GROUPING token. By club decision it now
+  // holds the unified school-year BAND (Year 4 … Year 10-11) — the dump's
+  // age_band, which merges the legacy Under-age naming (U10→Year 4, … U14→Year 8,
+  // U15→Year 9, U16 + U17 → Year 10-11). The original raw label is kept in
+  // age_group_raw for traceability. Loaded by scripts/sql/juniors-etl.sql.
   ageGroup: text("age_group"),
+  ageGroupRaw: text("age_group_raw"),
   teamName: text("team_name"),
   competition: text("competition"),
+  // PlayHQ governing-competition classification (Peel Junior Cricket Association,
+  // Community Cup, Girls League, South West Junior (SWMJCC)).
+  association: text("association"),
   round: text("round"),
   matchDate: text("match_date"),
   venue: text("venue"),
+  venueOval: text("venue_oval"),
+  venueAddress: text("venue_address"),
+  venueSuburb: text("venue_suburb"),
   status: text("status"),
   team1: text("team1"),
   team1Score: text("team1_score"),
@@ -141,10 +153,16 @@ export type JuniorParticipantRow = typeof juniorParticipantsTable.$inferSelect;
 export const juniorPremiershipsTable = pgTable("junior_premierships", {
   id: integer("id").primaryKey(),
   season: text("season"),
+  // age_group holds the unified school-year BAND (see juniorMatchesTable.ageGroup);
+  // ageGroupRaw keeps the original Under-age / year label for traceability.
   ageGroup: text("age_group"),
+  ageGroupRaw: text("age_group_raw"),
   teamName: text("team_name"),
   competition: text("competition"),
+  association: text("association"),
   matchDate: text("match_date"),
+  venue: text("venue"),
+  venueOval: text("venue_oval"),
   opponent: text("opponent"),
   hhScore: text("hh_score"),
   oppScore: text("opp_score"),

@@ -157,7 +157,7 @@ export default function JuniorsMatches() {
                       vs {m.opponentName ?? "Unknown"}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                      {m.season ?? ""}{m.round ? ` · ${m.round}` : ""}
+                      {m.season ?? ""}{m.round ? ` · ${m.round}` : ""}{m.competition ? ` · ${m.competition}` : ""}
                     </div>
                   </div>
                   {m.status && !/^(final|completed)$/i.test(m.status.trim()) && (
