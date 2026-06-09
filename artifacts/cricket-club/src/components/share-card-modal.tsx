@@ -231,6 +231,10 @@ export function ShareCardModal({
       setSaveToProfile(true);
       setPhotoTouched(false);
       setPhotoError(null);
+      setVideoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return null;
+      });
     }
   }, [open]);
 
@@ -377,6 +381,15 @@ export function ShareCardModal({
   const videoSupported = useMemo(() => canExportVideo(), []);
   const videoFormat = useMemo(() => videoFormatLabel(), []);
   const [videoExporting, setVideoExporting] = useState(false);
+  // The most recently rendered video clip, held back for review before saving.
+  // Playing this exact blob in a <video> lets admins confirm the real output
+  // (MediaRecorder timing/codec quirks can diverge from the live canvas).
+  const [videoPreview, setVideoPreview] = useState<{
+    url: string;
+    blob: Blob;
+    ext: string;
+    size: CardSize;
+  } | null>(null);
   const [includeSponsors, setIncludeSponsors] = useState(true);
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [previewUrls, setPreviewUrls] = useState<Record<CardSize, string | null>>({
@@ -556,6 +569,10 @@ export function ShareCardModal({
         if (url) URL.revokeObjectURL(url);
       });
       setPreviewUrls({ square: null, portrait: null, story: null });
+      setVideoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return null;
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -566,18 +583,45 @@ export function ShareCardModal({
     downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
   };
 
-  // Export the animated card as a video clip (MP4 where supported, else WebM).
+  // Record the animated card to a video clip (MP4 where supported, else WebM)
+  // and hold it back for review — the admin plays the exact rendered blob before
+  // deciding to save it or re-record. This catches MediaRecorder timing/codec
+  // quirks (first-frame flash, loop seam) that the live canvas preview can hide.
   const handleDownloadVideo = async (size: CardSize) => {
     if (!input) return;
     setVideoExporting(true);
     try {
       const { blob, ext } = await renderShareCardVideo(input, buildOpts(size, photoTransform));
-      downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.${ext}`);
+      const url = URL.createObjectURL(blob);
+      setVideoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return { url, blob, ext, size };
+      });
     } catch (e) {
       console.error("Card video export failed", e);
     } finally {
       setVideoExporting(false);
     }
+  };
+
+  // Save the reviewed clip to disk.
+  const handleSaveVideo = () => {
+    if (!input || !videoPreview) return;
+    downloadBlob(
+      videoPreview.blob,
+      `${cardBaseFilename(input)}-${SIZES[videoPreview.size].code}.${videoPreview.ext}`,
+    );
+    setVideoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev.url);
+      return null;
+    });
+  };
+
+  const closeVideoPreview = () => {
+    setVideoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev.url);
+      return null;
+    });
   };
 
   const handleDownloadAll = async () => {
@@ -649,6 +693,7 @@ export function ShareCardModal({
   const sponsorsAvailable = (bundle?.activeSponsors?.length ?? 0) > 0 && bundle?.settings.sponsorsEnabled;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -975,7 +1020,7 @@ export function ShareCardModal({
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}
-              Download video
+              {videoExporting ? "Rendering…" : "Preview video"}
             </Button>
           )}
           <Button
@@ -1004,6 +1049,62 @@ export function ShareCardModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog
+      open={videoPreview !== null}
+      onOpenChange={(o) => {
+        if (!o) closeVideoPreview();
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Preview rendered video</DialogTitle>
+          <DialogDescription>
+            This is the exact {videoPreview?.ext.toUpperCase()} clip that will
+            download. Play it through to check the first frame and loop seam, then
+            save it or re-record.
+          </DialogDescription>
+        </DialogHeader>
+        {videoPreview && (
+          <div
+            className="bg-muted border rounded-md flex items-center justify-center overflow-hidden"
+            style={{
+              aspectRatio: `${SIZES[videoPreview.size].w} / ${SIZES[videoPreview.size].h}`,
+              maxHeight: 400,
+            }}
+          >
+            <video
+              src={videoPreview.url}
+              className="w-full h-full object-contain"
+              controls
+              autoPlay
+              loop
+              playsInline
+            />
+          </div>
+        )}
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => videoPreview && handleDownloadVideo(videoPreview.size)}
+            disabled={videoExporting}
+          >
+            {videoExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            {videoExporting ? "Re-recording…" : "Re-record"}
+          </Button>
+          <Button type="button" onClick={handleSaveVideo} disabled={videoExporting}>
+            <Download className="h-4 w-4 mr-2" />
+            Save video
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
