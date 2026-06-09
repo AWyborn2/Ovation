@@ -120,7 +120,16 @@ function isFemalePlayer(player: PlayerDetail, agg: AggregatedPlayer | undefined)
 
 function deriveRole(agg: AggregatedPlayer | undefined): CardRole {
   if (!agg) return "Batsman";
-  if (agg.stumpings > 0) return "Wicket-Keeper";
+  // Genuine wicket-keeper signature: enough stumpings to clear the 1–4 fill-in
+  // noise band, stumpings a meaningful share of dismissals, and not a frontline
+  // bowler. Stumpings are the only keeper signal in the data (no keeper flag,
+  // no `st …` dismissal text), so fill-in keepers with a handful of stumpings
+  // must NOT auto-classify here.
+  const dismissals = agg.catches + agg.stumpings;
+  const stumpingShare = dismissals > 0 ? agg.stumpings / dismissals : 0;
+  if (agg.stumpings >= 5 && stumpingShare >= 0.05 && agg.wickets < 50) {
+    return "Wicket-Keeper";
+  }
   const battingScore = agg.runs;
   const bowlingScore = agg.wickets * 20;
   if (agg.runs >= 1000 && agg.wickets >= 50) return "All-Rounder";
