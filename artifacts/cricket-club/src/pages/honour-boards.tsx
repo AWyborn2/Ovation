@@ -1,21 +1,18 @@
-import { Link } from "wouter";
 import { useQueries } from "@tanstack/react-query";
 import {
   useGetDashboard,
   useListGrades,
   useListPlayers,
-  useGetPlayer,
   useListPremierships,
   useGetMilestoneBoardSettings,
   useListRecentDebutants,
   useGetMilestonesBoard,
   getGetGradeLeaderboardQueryOptions,
-  getGetPlayerQueryKey,
   getListPlayersQueryKey,
   type DebutEntry,
   type MilestoneItem,
 } from "@workspace/api-client-react";
-import { Trophy, Star, Award, Target, Zap, Flame, UserPlus, ChevronDown, ClipboardList, Crown, Users } from "lucide-react";
+import { ChevronDown, ClipboardList, Crown, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -23,17 +20,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TierBadge } from "@/components/tier-badge";
-import { GradeBadge, GradeBadgeList, GradeBadgeListFromString } from "@/components/grade-badge";
-import { ShareButton } from "@/components/share-card-modal";
-import { seasonLabel } from "@/lib/share-card";
+import { GradeBadge } from "@/components/grade-badge";
+import { LoadingState, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useEffect, useMemo, useState } from "react";
 import {
   BOARDS,
   type BoardKey,
-  type BoardTier,
-  type PromotionEntry,
-  type ApproachingEntry,
   type MilestoneThresholds,
   DEFAULT_MILESTONE_THRESHOLDS,
   aggregateCareer,
@@ -45,445 +37,37 @@ import {
   statToAggregated,
 } from "@/lib/honour-boards";
 import { useBrandLogo } from "@/lib/use-brand";
-import { LoadingState, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { CapRegisterTab } from "@/components/cap-register-tab";
 import { LifeMembersTab } from "@/components/life-members-tab";
 import { AwardsTab } from "@/components/awards-tab";
 import { TeamOfDecadeTab } from "@/components/team-of-decade-tab";
 import { CommitteeTab } from "@/components/committee-tab";
 import { RecordsTab } from "@/components/records-tab";
+import type { ActiveTab, RecentItem, Scope } from "@/components/honour-boards/types";
+import {
+  STATISTICS_ITEMS,
+  HONOUR_BOARD_ITEMS,
+  tabClass,
+  dropdownItemClass,
+  MILESTONE_FILTERS,
+  RECENT_ITEMS_LIMIT,
+  MILESTONES_PREVIEW,
+} from "@/components/honour-boards/constants";
+import {
+  SummaryStat,
+  BoardView,
+  QuickLink,
+} from "@/components/honour-boards/board-cards";
+import {
+  PromotionCard,
+  DebutCard,
+  ApproachingCard,
+  DatedMilestoneCard,
+} from "@/components/honour-boards/milestone-cards";
+import { SearchResultCard } from "@/components/honour-boards/search-result-card";
 
-type Scope = "career" | "by-grade";
-type ExtraTab = "milestones" | "caps" | "life-members" | "awards" | "team-of-decade" | "committee" | "records" | "search";
-type ActiveTab = BoardKey | ExtraTab;
-
-// "Statistics" dropdown — every career/by-grade leaderboard except Games,
-// which is surfaced at the top of the Honour Boards menu instead.
-const STATISTICS_ITEMS = BOARDS.filter((b) => b.key !== "games");
-
-// "Honour Boards" dropdown — Games Played (a leaderboard, lifted to the top)
-// plus the curated honour boards. A Grade Caps and Life Members are their own
-// top-level tabs, so they are intentionally not in this list.
-const HONOUR_BOARD_ITEMS: { tab: ActiveTab; label: string }[] = [
-  { tab: "games", label: "Games Played" },
-  { tab: "awards", label: "Awards" },
-  { tab: "team-of-decade", label: "Team of the Decade" },
-  { tab: "committee", label: "Office Bearers" },
-  { tab: "records", label: "Notable Records" },
-];
-
-const tabClass = (active: boolean) =>
-  `inline-flex items-center gap-1.5 px-4 md:px-5 py-2.5 rounded text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-    active
-      ? "bg-primary text-primary-foreground"
-      : "text-muted-foreground hover:bg-muted hover:text-primary"
-  }`;
-
-const dropdownItemClass = (active: boolean) =>
-  `cursor-pointer text-xs md:text-sm font-semibold uppercase tracking-wider ${
-    active ? "bg-primary/10 text-primary" : ""
-  }`;
-
-// A card in the "Just achieved" list: either a career-total milestone promotion
-// or an A Grade / Female A Grade debut.
-type RecentItem =
-  | { kind: "debut"; key: string; debut: DebutEntry }
-  | { kind: "promotion"; key: string; promotion: PromotionEntry };
-
-// Max cards shown in the "Just achieved" grid (debuts first, then milestones).
-const RECENT_ITEMS_LIMIT = 5;
-
-const SummaryStat = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="bg-card border border-border rounded-md p-5 shadow-md">
-    <div className="text-3xl md:text-4xl font-serif font-bold text-primary">
-      {typeof value === "number" ? value.toLocaleString() : value}
-    </div>
-    <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1 font-serif">{label}</div>
-  </div>
-);
-
-export type PremiershipCount = { won: number; captained: number };
-
-const PremiershipBadge = ({ count }: { count: PremiershipCount }) => {
-  if (count.won === 0) return <span className="text-muted-foreground/60">—</span>;
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold text-xs"
-      title={`${count.won} premiership${count.won === 1 ? "" : "s"}${count.captained ? `, captained ${count.captained}` : ""}`}
-    >
-      <Trophy className="h-3 w-3" />
-      <span className="font-mono">{count.won}</span>
-      {count.captained > 0 && (
-        <span className="ml-0.5 font-mono text-[10px] bg-amber-600 text-white rounded px-1">
-          C×{count.captained}
-        </span>
-      )}
-    </span>
-  );
-};
-
-const BoardCard = ({ tier, board, premMap }: { tier: BoardTier; board: (typeof BOARDS)[number]; premMap?: Map<number, PremiershipCount> }) => (
-  <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
-    <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
-      <span className="flex items-center gap-2 md:gap-3">
-        <TierBadge tierIndex={tier.tierIndex} />
-        <span>{tier.label}</span>
-      </span>
-      <span className="text-xs whitespace-nowrap">{tier.rows.length} {tier.rows.length === 1 ? "player" : "players"}</span>
-    </div>
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm sticky-id-col">
-        <thead>
-          <tr className="bg-black/25">
-            <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-14">#</th>
-            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Surname</th>
-            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Given Name</th>
-            <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">{board.headlineLabel}</th>
-            {board.key === "games" && (
-              <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs">Prem</th>
-            )}
-            <th className={`font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}>{board.key === "games" ? "Grades" : board.supportingLabel}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tier.rows.map((r, i) => (
-            <tr key={r.playerId} className={`border-t border-border/50 hover:bg-primary/10 transition-colors ${i % 2 ? "bg-black/10" : ""}`}>
-              <td className="p-3 text-center font-mono text-primary font-bold">{tier.startRank + i}</td>
-              <td className="p-3">
-                <Link href={`/players/${r.playerId}`} className="font-semibold text-primary hover:underline uppercase">
-                  {r.surname}
-                </Link>
-              </td>
-              <td className="p-3 text-foreground/90">{r.givenName}</td>
-              <td className="p-3 text-right font-mono font-bold">{r.headline}</td>
-              {board.key === "games" && (
-                <td className="p-3 text-center">
-                  <PremiershipBadge count={premMap?.get(r.playerId) ?? { won: 0, captained: 0 }} />
-                </td>
-              )}
-              <td className="p-3 hidden sm:table-cell">
-                {board.key === "games" ? (
-                  <GradeBadgeList grades={r.gradesPlayed} size="sm" />
-                ) : (
-                  <span className="block text-right font-mono text-muted-foreground">{r.supporting}</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-const BoardView = ({ tiers, board, premMap }: { tiers: BoardTier[]; board: (typeof BOARDS)[number]; premMap?: Map<number, PremiershipCount> }) => (
-  <div className="space-y-4">
-    <div className="bg-card border border-border rounded-md p-6 shadow-md">
-      <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">{board.title}</h2>
-      <div className="w-20 h-[3px] bg-primary mt-3" />
-      <p className="text-muted-foreground italic mt-3 mb-0">{board.subtitle}</p>
-    </div>
-    {tiers.length === 0 ? (
-      <EmptyState
-        title="No players qualify yet"
-        message="Players appear on this board as their career totals grow."
-      />
-    ) : (
-      tiers.map((t) => <BoardCard key={t.label} tier={t} board={board} premMap={premMap} />)
-    )}
-  </div>
-);
-
-const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
-  return (
-    <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
-      <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2 pr-8">
-        <div className="flex items-center gap-2">
-          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
-            {p.tierLabel}
-          </span>
-        </div>
-        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
-          {p.surname}
-          <span className="font-sans font-normal text-foreground/80 normal-case"> {p.givenName}</span>
-        </div>
-        <div className="text-xs text-muted-foreground mt-auto">
-          <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
-          {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
-        </div>
-      </Link>
-      <div className="absolute top-2 right-2">
-        <ShareButton
-          engine="milestone"
-          appPath={`/players/${p.playerId}`}
-          playerId={p.playerId}
-          iconOnly
-          variant="ghost"
-          size="icon"
-          label={`Share ${p.givenName} ${p.surname} milestone`}
-          className="h-7 w-7"
-          input={{
-            kind: "milestone",
-            playerName: `${p.givenName} ${p.surname}`.trim(),
-            tierLabel: p.tierLabel,
-            tierIndex: p.tierIndex,
-            milestoneLabel: p.boardLabel,
-            currentValue: p.currentValue,
-            threshold: p.threshold,
-            headline: "Just Promoted",
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
-  const seasonText = d.season != null ? seasonLabel(d.season) : null;
-  const subline =
-    seasonText != null
-      ? `${d.grade} Cap #${d.capNumber} • ${d.round != null ? `Round ${d.round}, ` : ""}${seasonText}`
-      : `${d.grade} Cap #${d.capNumber}`;
-  return (
-    <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
-      <Link href={`/players/${d.playerId}`} className="flex flex-col gap-2 pr-8">
-        <div className="flex items-center gap-2">
-          <Star className="h-5 w-5 text-primary shrink-0" strokeWidth={2.25} />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
-            Debut
-          </span>
-        </div>
-        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
-          {d.name}
-        </div>
-        <div className="text-xs text-muted-foreground mt-auto">{subline}</div>
-      </Link>
-      <div className="absolute top-2 right-2">
-        <ShareButton
-          engine="milestone"
-          appPath={`/players/${d.playerId}`}
-          playerId={d.playerId}
-          iconOnly
-          variant="ghost"
-          size="icon"
-          label={`Share ${d.name} debut`}
-          className="h-7 w-7"
-          input={{
-            kind: "debut",
-            playerName: d.name,
-            grade: d.grade,
-            capNumber: d.capNumber,
-            season: seasonText,
-            round: d.round ?? null,
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-const ApproachingCard = ({ entry: p }: { entry: ApproachingEntry }) => {
-  return (
-    <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
-      <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
-            {p.tierLabel}
-          </span>
-        </div>
-        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
-          {p.surname}
-          <span className="font-sans font-normal text-foreground/80 normal-case"> {p.givenName}</span>
-        </div>
-        <div className="text-xs text-muted-foreground mt-auto">
-          <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
-          {p.boardLabel.toLowerCase()} •{" "}
-          <span className="font-bold text-primary whitespace-nowrap">{p.gap.toLocaleString()} to go</span>
-        </div>
-      </Link>
-    </div>
-  );
-};
-
-const SearchResultCard = ({ playerId }: { playerId: number }) => {
-  const { data: player } = useGetPlayer(playerId, {
-    query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) },
-  });
-  if (!player) return null;
-  const agg = aggregateCareer(player.stats);
-  const a = agg[0] ?? null;
-  const grades = player.gradesPlayed || "—";
-  return (
-    <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md">
-      <Link href={`/players/${player.id}`} className="block group">
-        <h3 className="font-serif text-xl font-bold text-primary group-hover:underline m-0 uppercase">
-          {player.givenName} {player.surname}
-        </h3>
-      </Link>
-      <div className="mt-1 mb-4">
-        {player.gradesPlayed ? (
-          <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="sm" />
-        ) : (
-          <span className="text-xs text-muted-foreground italic">{grades}</span>
-        )}
-      </div>
-      {a && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-sm">
-          <Chip label="Games" value={a.games} />
-          <Chip label="Runs" value={a.runs} />
-          <Chip label="Wickets" value={a.wickets} />
-          <Chip label="Bat Avg" value={a.innings - a.notOuts > 0 ? (a.runs / (a.innings - a.notOuts)).toFixed(2) : "-"} />
-          <Chip label="High Score" value={a.highScoreDisplay} />
-          <Chip label="Bowl Avg" value={a.wickets > 0 ? (a.runsConceded / a.wickets).toFixed(2) : "-"} />
-          <Chip label="Best Bowling" value={a.bestBowling} />
-          <Chip label="Catches" value={a.catches} />
-        </div>
-      )}
-      {player.stats.length > 0 && (
-        <div className="overflow-x-auto mt-4">
-          <table className="w-full text-xs sticky-id-col">
-            <thead>
-              <tr className="bg-black/25">
-                <th className="text-left font-serif uppercase tracking-wider text-primary p-2">Grade</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">Mat</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">Runs</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">HS</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">Wkts</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">BB</th>
-              </tr>
-            </thead>
-            <tbody>
-              {player.stats.filter((s) => s.grade !== "CLUB TOTAL").map((s) => (
-                <tr key={s.id} className="border-t border-border/50">
-                  <td className="p-2">
-                    <div className="flex items-center gap-2">
-                      <GradeBadge grade={s.grade} size="sm" />
-                      <span className="font-semibold text-primary">{s.grade}</span>
-                    </div>
-                  </td>
-                  <td className="p-2 text-right font-mono">{s.games ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.runs ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.highScore ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.wickets ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.bestBowling ?? "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const Chip = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="bg-background/60 border border-border rounded px-3 py-2">
-    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-    <div className="font-mono font-semibold text-primary">{value}</div>
-  </div>
-);
-
-const MILESTONE_KIND_META: Record<
-  MilestoneItem["kind"],
-  { label: string; icon: typeof Award; cls: string }
-> = {
-  hatTrick: { label: "Hat-trick", icon: Flame, cls: "text-rose-600 dark:text-rose-300 bg-rose-500/10 border-rose-500/30" },
-  century: { label: "Century", icon: Target, cls: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
-  fiveFor: { label: "Five-for", icon: Zap, cls: "text-sky-600 dark:text-sky-300 bg-sky-500/10 border-sky-500/30" },
-  debut: { label: "Debut", icon: UserPlus, cls: "text-violet-600 dark:text-violet-300 bg-violet-500/10 border-violet-500/30" },
-  career: { label: "Career", icon: Award, cls: "text-amber-600 dark:text-amber-300 bg-amber-500/10 border-amber-500/30" },
-};
-
-const MILESTONE_FILTERS: { value: MilestoneItem["kind"] | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "century", label: "Centuries" },
-  { value: "fiveFor", label: "Five-fors" },
-  { value: "hatTrick", label: "Hat-tricks" },
-  { value: "debut", label: "Debuts" },
-  { value: "career", label: "Career" },
-];
-
-const MILESTONES_PREVIEW = 5;
-
-function formatMatchDate(d: string | null): string | null {
-  if (!d) return null;
-  if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
-    const dt = new Date(`${d.slice(0, 10)}T00:00:00`);
-    if (!Number.isNaN(dt.getTime())) {
-      return dt.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
-    }
-  }
-  // Free-text dates (e.g. "12:30 PM, Saturday, 07 Feb 2026").
-  const m = d.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
-  if (m) {
-    const parsed = new Date(`${m[1]} ${m[2]} ${m[3]}`);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
-    }
-  }
-  return d;
-}
-
-const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
-  const meta = MILESTONE_KIND_META[item.kind];
-  const Icon = meta.icon;
-  const date = formatMatchDate(item.matchDate ?? null);
-  return (
-    <Link
-      href={`/players/${item.playerId}`}
-      className="block bg-background/60 border border-border rounded-md p-4 hover:border-primary transition-colors no-underline"
-    >
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${meta.cls}`}
-        >
-          <Icon className="h-3 w-3" />
-          {meta.label}
-        </span>
-        {item.recent && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Recent</span>
-        )}
-      </div>
-      <div className="font-serif font-bold text-primary leading-tight">{item.playerName}</div>
-      <div className="text-sm font-semibold text-foreground mt-0.5">{item.label}</div>
-      {item.detail && <div className="text-xs text-muted-foreground mt-1">{item.detail}</div>}
-      <div className="flex items-center gap-2 mt-2 flex-wrap">
-        {item.grade && <GradeBadge grade={item.grade} size="sm" />}
-        {date && (
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{date}</span>
-        )}
-      </div>
-    </Link>
-  );
-};
-
-// Quick-link cards mirroring the Juniors dashboard, in the club gold (the
-// senior section keeps gold as its accent everywhere).
-function QuickLink({
-  href,
-  icon: Icon,
-  title,
-  desc,
-}: {
-  href: string;
-  icon: typeof Trophy;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Link href={href}>
-      <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-        <Icon className="h-7 w-7 text-primary mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
-          {title}
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">{desc}</p>
-      </div>
-    </Link>
-  );
-}
+export type { PremiershipCount } from "@/components/honour-boards/types";
+import type { PremiershipCount } from "@/components/honour-boards/types";
 
 export default function HonourBoards() {
   const logoUrl = useBrandLogo();
@@ -648,7 +232,12 @@ export default function HonourBoards() {
 
   // Search
   const searchParams = { search: searchTerm, page: 1, limit: 12 };
-  const { data: searchResults, isLoading: isSearchLoading, isError: isSearchError, refetch: refetchSearch } = useListPlayers(
+  const {
+    data: searchResults,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    refetch: refetchSearch,
+  } = useListPlayers(
     searchParams,
     {
       query: {
@@ -994,10 +583,10 @@ export default function HonourBoards() {
             </div>
           )}
         </div>
-      ) : isErrorBoards ? (
-        <QueryError onRetry={() => leaderboardQueries.forEach((q) => q.refetch())} />
       ) : isLoadingBoards ? (
         <TableSkeleton />
+      ) : isErrorBoards ? (
+        <QueryError onRetry={() => leaderboardQueries.forEach((q) => q.refetch())} />
       ) : (
         (() => {
           const board = BOARDS.find((b) => b.key === (activeTab as BoardKey))!;

@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import JSZip from "jszip";
-import { useQueryClient } from "@tanstack/react-query";
-import { useUpload } from "@workspace/object-storage-web";
 import {
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
@@ -9,11 +7,6 @@ import {
   getListCardThemesQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
-  useGetPlayer,
-  getGetPlayerQueryKey,
-  useListPlayerImages,
-  useAddPlayerImage,
-  getListPlayerImagesQueryKey,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
   type CardTemplate,
@@ -31,127 +24,33 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Download, Copy, Check, Upload, ImageOff, User, ImageIcon } from "lucide-react";
+import { Loader2, Download, Copy, Check } from "lucide-react";
 import {
   SIZES,
   renderShareCard,
   renderShareCardVideo,
-  prepareAnimation,
   isAnimatedCard,
   canExportVideo,
   videoFormatLabel,
   downloadBlob,
   cardBaseFilename,
   sponsorAppliesToKind,
-  DEFAULT_PHOTO_TRANSFORM,
   type CardSize,
   type CardSponsor,
   type ShareCardInput,
-  type PhotoPlacement,
   type PhotoTransform,
   type MotionPreset,
   type RenderOptions,
-  type AnimationHandle,
 } from "@/lib/share-card";
-import { PhotoReposition } from "@/components/photo-reposition";
 import { templateAppliesToKind } from "@/lib/card-template";
-import {
-  renderCaption,
-  truncateForPlatform,
-  PLATFORM_LIMITS,
-  type Platform,
-} from "@/lib/captions";
+import { PLATFORM_LIMITS } from "@/lib/captions";
+import { PLATFORMS, MOTION_OPTIONS, type EngineKey, type Props } from "@/components/share-card-modal/constants";
+import { AnimatedCardPreview } from "@/components/share-card-modal/animated-card-preview";
+import { usePhotoControls } from "@/components/share-card-modal/use-photo-controls";
+import { PhotoControls } from "@/components/share-card-modal/photo-controls";
+import { useCaptions } from "@/components/share-card-modal/use-captions";
 
-type EngineKey = "ondemand" | "milestone" | "roundup" | "recap";
-
-type Props = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  input: ShareCardInput | null;
-  engine?: EngineKey;
-  appPath?: string; // e.g. "/players/123"
-  trackedSlug?: string | null;
-  /**
-   * The player this tile is about, when there is one. Drives the photo control:
-   * it lets the modal load the player's saved profile photo as the default and
-   * save a freshly uploaded photo back to that profile. Omit for player-less
-   * cards (e.g. premiership) to hide the photo control entirely.
-   */
-  playerId?: number | null;
-  /**
-   * When provided, the modal becomes an approval surface: it shows an
-   * "Approve & download" button that renders the full card + caption bundle,
-   * downloads the zip, then runs this callback (used by the social queue to
-   * mark a draft + its milestone event as posted).
-   */
-  onApprove?: () => Promise<void> | void;
-  approveLabel?: string;
-};
-
-const PLATFORMS: { value: Platform; label: string }[] = [
-  { value: "instagram", label: "Instagram" },
-  { value: "facebook", label: "Facebook" },
-  { value: "twitter", label: "X / Twitter" },
-];
-
-const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
-  { value: "none", label: "None (still)" },
-  { value: "fadeIn", label: "Fade in" },
-  { value: "slideUp", label: "Slide up" },
-  { value: "countUp", label: "Count up numbers" },
-];
-
-// Live, looping canvas preview for animated cards. Prepares the animation once
-// per `sig` change and drives it with requestAnimationFrame; cleans up any
-// playing <video> elements on unmount / re-prepare.
-function AnimatedCardPreview({
-  input,
-  opts,
-  sig,
-}: {
-  input: ShareCardInput;
-  opts: RenderOptions;
-  sig: string;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    let raf = 0;
-    let handle: AnimationHandle | null = null;
-    let cancelled = false;
-    let start = 0;
-    void (async () => {
-      const a = await prepareAnimation(input, opts);
-      if (cancelled) {
-        a.cleanup();
-        return;
-      }
-      handle = a;
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
-      if (!canvas || !ctx) {
-        a.cleanup();
-        return;
-      }
-      canvas.width = a.width;
-      canvas.height = a.height;
-      const loop = (now: number) => {
-        if (!start) start = now;
-        const elapsed = now - start;
-        const t = a.loop ? (elapsed % a.durationMs) / a.durationMs : Math.min(1, elapsed / a.durationMs);
-        a.draw(ctx, t);
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
-    })();
-    return () => {
-      cancelled = true;
-      if (raf) cancelAnimationFrame(raf);
-      handle?.cleanup();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sig]);
-  return <canvas ref={canvasRef} className="w-full h-full object-contain" />;
-}
+export type { EngineKey } from "@/components/share-card-modal/constants";
 
 export function ShareCardModal({
   open,
@@ -169,133 +68,14 @@ export function ShareCardModal({
   });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
-  // Photo control state. We only surface it when the tile is about a player.
-  const showPhotoControls = playerId != null;
-  const queryClient = useQueryClient();
-  const addPlayerImage = useAddPlayerImage();
-  const playerQ = useGetPlayer(playerId ?? 0, {
-    query: { enabled: open && showPhotoControls, queryKey: getGetPlayerQueryKey(playerId ?? 0) },
-  });
-  // The player's saved profile photo (when present) is the default, falling back
-  // to whatever photo the input was built with.
-  const profilePhotoUrl: string | null =
-    (showPhotoControls ? playerQ.data?.imageUrl ?? null : null) ??
-    (input && "photoUrl" in input ? input.photoUrl ?? null : null);
-
-  // The player's photo gallery. Each image is selectable; the default image is
-  // pre-selected. Falls back to the single profile photo when the gallery is
-  // empty (e.g. older players whose image_url predates the gallery).
-  const galleryQ = useListPlayerImages(playerId ?? 0, {
-    query: {
-      enabled: open && showPhotoControls,
-      queryKey: getListPlayerImagesQueryKey(playerId ?? 0),
-    },
-  });
-  const galleryPhotos: { url: string; isDefault: boolean }[] = useMemo(() => {
-    const rows = galleryQ.data ?? [];
-    if (rows.length > 0) {
-      return rows.map((r) => ({ url: r.imageUrl, isDefault: r.isDefault }));
-    }
-    return profilePhotoUrl ? [{ url: profilePhotoUrl, isDefault: true }] : [];
-  }, [galleryQ.data, profilePhotoUrl]);
-  const defaultGalleryUrl: string | null =
-    galleryPhotos.find((p) => p.isDefault)?.url ?? galleryPhotos[0]?.url ?? null;
-
-  type PhotoSource = "gallery" | "uploaded" | "none";
-  const [photoSource, setPhotoSource] = useState<PhotoSource>("none");
-  const [galleryUrl, setGalleryUrl] = useState<string | null>(null);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const [photoPlacement, setPhotoPlacement] = useState<PhotoPlacement>("headshot");
-  // Focal point + zoom for a feature photo. `photoTransform` updates live as the
-  // user drags; `renderTransform` is debounced and drives the (heavier) full
-  // card preview so dragging stays smooth.
-  const [photoTransform, setPhotoTransform] = useState<PhotoTransform>(DEFAULT_PHOTO_TRANSFORM);
-  const [renderTransform, setRenderTransform] = useState<PhotoTransform>(DEFAULT_PHOTO_TRANSFORM);
-  const [saveToProfile, setSaveToProfile] = useState(true);
-  const [photoTouched, setPhotoTouched] = useState(false);
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const { uploadFile, isUploading } = useUpload({
-    onError: (e) => setPhotoError(e.message),
-  });
-
-  // Reset photo controls each time the modal opens.
-  useEffect(() => {
-    if (open) {
-      setPhotoSource("none");
-      setGalleryUrl(null);
-      setUploadedUrl(null);
-      setPhotoPlacement("headshot");
-      setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
-      setRenderTransform(DEFAULT_PHOTO_TRANSFORM);
-      setSaveToProfile(true);
-      setPhotoTouched(false);
-      setPhotoError(null);
-      setVideoPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev.url);
-        return null;
-      });
-    }
-  }, [open]);
-
-  // Once the gallery is known (it loads async), default to the player's default
-  // image — unless the club has already interacted with the photo control.
-  useEffect(() => {
-    if (open && !photoTouched && photoSource === "none" && uploadedUrl === null && defaultGalleryUrl) {
-      setPhotoSource("gallery");
-      setGalleryUrl(defaultGalleryUrl);
-    }
-  }, [open, photoTouched, photoSource, uploadedUrl, defaultGalleryUrl]);
-
-  const effectivePhotoUrl: string | null =
-    photoSource === "gallery"
-      ? galleryUrl
-      : photoSource === "uploaded"
-        ? uploadedUrl
-        : null;
-
-  // A different photo means a fresh crop — re-centre the focal point + zoom.
-  useEffect(() => {
-    setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
-    setRenderTransform(DEFAULT_PHOTO_TRANSFORM);
-  }, [effectivePhotoUrl]);
-
-  // Debounce the transform that drives the full card preview so dragging the
-  // focal point stays smooth (the reposition control gives instant feedback).
-  useEffect(() => {
-    const id = setTimeout(() => setRenderTransform(photoTransform), 160);
-    return () => clearTimeout(id);
-  }, [photoTransform]);
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setPhotoError(null);
-    const result = await uploadFile(file);
-    if (!result) return;
-    const url = `/api/storage${result.objectPath}`;
-    setUploadedUrl(url);
-    setPhotoSource("uploaded");
-    setPhotoTouched(true);
-    // Save to the player's gallery (as the new default) so it persists and is
-    // selectable next time (opt-out via the toggle).
-    if (saveToProfile && playerId != null) {
-      addPlayerImage.mutate(
-        { id: playerId, data: { imageUrl: url, makeDefault: true } },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(playerId) });
-            queryClient.invalidateQueries({
-              queryKey: getListPlayerImagesQueryKey(playerId),
-            });
-          },
-          onError: (err) =>
-            setPhotoError((err as Error)?.message ?? "Could not save photo to profile"),
-        },
-      );
-    }
-  };
+  const photo = usePhotoControls({ open, playerId, input });
+  const {
+    showPhotoControls,
+    photoPlacement,
+    photoTransform,
+    renderTransform,
+    effectivePhotoUrl,
+  } = photo;
 
   const themesQ = useListCardThemes({
     query: { enabled: open, queryKey: getListCardThemesQueryKey() },
@@ -391,7 +171,6 @@ export function ShareCardModal({
     size: CardSize;
   } | null>(null);
   const [includeSponsors, setIncludeSponsors] = useState(true);
-  const [platform, setPlatform] = useState<Platform>("instagram");
   const [previewUrls, setPreviewUrls] = useState<Record<CardSize, string | null>>({
     square: null,
     portrait: null,
@@ -400,13 +179,6 @@ export function ShareCardModal({
   const [rendering, setRendering] = useState(false);
   const [zipping, setZipping] = useState(false);
   const [approving, setApproving] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [captionDrafts, setCaptionDrafts] = useState<Record<Platform, string>>({
-    instagram: "",
-    facebook: "",
-    twitter: "",
-  });
-  const captionDraft = captionDrafts[platform];
 
   useEffect(() => {
     if (open && enabledSizes.length > 0 && !enabledSizes.includes(activeSize)) {
@@ -427,62 +199,25 @@ export function ShareCardModal({
   const clubUrl = bundle?.settings.clubUrl ?? "hallsheadcricket.com.au";
   const hashtag = bundle?.settings.clubHashtag ?? "#HHCC";
 
-  // On-demand shares get a tracked slug auto-minted server-side so the caption
-  // and downloaded card always carry a /go/<slug> link we can measure.
-  const [autoSlug, setAutoSlug] = useState<string | null>(null);
+  const {
+    platform,
+    setPlatform,
+    captionDraft,
+    setCaptionDraft,
+    captionDrafts,
+    copied,
+    handleCopyCaption,
+  } = useCaptions({ open, input, bundle, engine, appPath, trackedSlug, clubUrl, hashtag });
+
+  // Reset the held-back video clip whenever the modal (re)opens.
   useEffect(() => {
-    let cancelled = false;
-    if (!open || trackedSlug || autoSlug || !appPath || engine !== "ondemand") return;
-    fetch("/api/tracked-links", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetUrl: appPath, engine: "ondemand", label: "On-demand share" }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((row: { slug?: string } | null) => {
-        if (!cancelled && row?.slug) setAutoSlug(row.slug);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [open, trackedSlug, autoSlug, appPath, engine]);
-
-  const effectiveSlug = trackedSlug ?? autoSlug;
-  const appLink = useMemo(() => {
-    const base = clubUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    if (effectiveSlug) return `${base}/go/${effectiveSlug}`;
-    if (!appPath) return base;
-    return `${base}${appPath}`;
-  }, [clubUrl, appPath, effectiveSlug]);
-
-  const templateFor = (p: Platform): string => {
-    const tpl = bundle?.captionTemplates.find(
-      (t) => t.engine === engine && t.platform === p,
-    );
-    return tpl?.template ?? `{player.name} • {stat.value} {stat.label} ${appLink} ${hashtag}`;
-  };
-
-  // Rebuild every platform's caption from its template when the card data or
-  // settings change. Keeping a draft per platform means edits survive switching
-  // tabs and the zip can carry a caption file for each platform.
-  useEffect(() => {
-    if (!input || !bundle) return;
-    const next = {} as Record<Platform, string>;
-    for (const p of PLATFORMS) {
-      const raw = renderCaption(templateFor(p.value), input, {
-        clubUrl,
-        hashtag,
-        appLink,
+    if (open) {
+      setVideoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return null;
       });
-      next[p.value] = truncateForPlatform(raw, p.value);
     }
-    setCaptionDrafts(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input, bundle, appLink, clubUrl, hashtag]);
-
-  const setCaptionDraft = (value: string) =>
-    setCaptionDrafts((prev) => ({ ...prev, [platform]: value }));
+  }, [open]);
 
   // Render preview when size/sponsors/input changes.
   useEffect(() => {
@@ -681,12 +416,6 @@ export function ShareCardModal({
     }
   };
 
-  const handleCopyCaption = async () => {
-    await navigator.clipboard.writeText(captionDraft);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
   if (!input) return null;
 
   const captionsEnabled = bundle?.settings.captionsEnabled !== false;
@@ -829,136 +558,14 @@ export function ShareCardModal({
             )}
 
             {showPhotoControls && (
-              <div className="space-y-2.5 rounded border px-3 py-2.5">
-                <Label className="text-sm">Photo</Label>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoUpload}
-                />
-                {galleryPhotos.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {galleryPhotos.map((p) => {
-                      const selected =
-                        photoSource === "gallery" && galleryUrl === p.url;
-                      return (
-                        <button
-                          key={p.url}
-                          type="button"
-                          title={p.isDefault ? "Default photo" : undefined}
-                          className={`relative h-12 w-12 overflow-hidden rounded border-2 ${
-                            selected ? "border-primary" : "border-muted"
-                          }`}
-                          onClick={() => {
-                            setPhotoSource("gallery");
-                            setGalleryUrl(p.url);
-                            setPhotoTouched(true);
-                          }}
-                        >
-                          <img
-                            src={p.url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                          {p.isDefault && (
-                            <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-center text-[8px] font-semibold leading-tight text-primary-foreground">
-                              Default
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={photoSource === "uploaded" ? "default" : "outline"}
-                    className="h-8 text-xs"
-                    disabled={isUploading}
-                    onClick={() => photoInputRef.current?.click()}
-                  >
-                    {isUploading ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                    ) : (
-                      <Upload className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    {uploadedUrl ? "Replace photo" : "Upload photo"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={photoSource === "none" ? "default" : "outline"}
-                    className="h-8 text-xs"
-                    onClick={() => {
-                      setPhotoSource("none");
-                      setPhotoTouched(true);
-                    }}
-                  >
-                    <ImageOff className="h-3.5 w-3.5 mr-1" />
-                    No photo
-                  </Button>
-                </div>
-
-                {effectivePhotoUrl && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Placement</Label>
-                    <div className="flex gap-1.5">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={photoPlacement === "feature" ? "default" : "outline"}
-                        className="h-8 flex-1 text-xs"
-                        onClick={() => setPhotoPlacement("feature")}
-                      >
-                        <ImageIcon className="h-3.5 w-3.5 mr-1" />
-                        Feature
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={photoPlacement === "headshot" ? "default" : "outline"}
-                        className="h-8 flex-1 text-xs"
-                        onClick={() => setPhotoPlacement("headshot")}
-                      >
-                        <User className="h-3.5 w-3.5 mr-1" />
-                        Headshot
-                      </Button>
-                    </div>
-                    {photoPlacement === "feature" && (
-                      <PhotoReposition
-                        src={effectivePhotoUrl}
-                        aspect={{ w: SIZES[activeSize].w, h: SIZES[activeSize].h }}
-                        value={photoTransform}
-                        onChange={setPhotoTransform}
-                      />
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-0.5">
-                  <Label htmlFor="save-profile-toggle" className="text-xs text-muted-foreground">
-                    Save uploads to player profile
-                  </Label>
-                  <Switch
-                    id="save-profile-toggle"
-                    checked={saveToProfile}
-                    onCheckedChange={setSaveToProfile}
-                  />
-                </div>
-
-                {photoError && <p className="text-xs text-destructive">{photoError}</p>}
-              </div>
+              <PhotoControls photo={photo} activeSize={activeSize} />
             )}
           </div>
 
           <div className="space-y-3">
             {captionsEnabled && (
               <>
-                <Tabs value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
+                <Tabs value={platform} onValueChange={(v) => setPlatform(v as typeof platform)}>
                   <TabsList className="w-full">
                     {PLATFORMS.map((p) => (
                       <TabsTrigger key={p.value} value={p.value} className="flex-1 text-xs">
