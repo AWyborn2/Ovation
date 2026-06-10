@@ -8203,6 +8203,10 @@ components:
         competition:
           type: string
           nullable: true
+        rank:
+          type: integer
+          nullable: true
+          description: 1-based rank for ranked list boards (points, win counts).
 
     BoardEntry:
       type: object
@@ -8242,24 +8246,23 @@ components:
       required:
         - id
         - category
+        - layout
         - title
         - entries
       properties:
         id:
           type: string
-          description: Stable board id (also the per-board override / kiosk key).
+          description: Stable board id (also the kiosk sequence key).
         category:
           type: string
+          description: Free-text board category used for grouping/labelling.
+        layout:
+          type: string
           enum:
-            - premierships
-            - centuries
-            - five_wicket_hauls
-            - life_members
-            - club_champions
-            - captains
-            - club_records
-            - awards
-          description: Board category.
+            - premiership
+            - teamOfDecade
+            - list
+          description: Natural render layout for this board (skin only changes the look).
         title:
           type: string
         subtitle:
@@ -8274,9 +8277,6 @@ components:
       type: object
       required:
         - defaultTemplate
-        - boardOverrides
-        - showTabs
-        - allowViewerTemplateSwitch
         - kioskSequence
         - kioskDwellMs
         - kioskScrollSpeed
@@ -8285,18 +8285,7 @@ components:
         defaultTemplate:
           type: string
           enum: [p1, p2, p3, p4, p5, p6, p7]
-          description: Club-wide default template (skin).
-        boardOverrides:
-          type: object
-          additionalProperties:
-            type: string
-          description: Per-board template overrides, keyed by board id -> p1..p7.
-        showTabs:
-          type: boolean
-          description: Whether the public display page shows category tabs.
-        allowViewerTemplateSwitch:
-          type: boolean
-          description: Whether visitors may switch skins (false locks to default).
+          description: The single club-wide skin every board renders in.
         kioskSequence:
           type: array
           items:
@@ -8318,14 +8307,6 @@ components:
         defaultTemplate:
           type: string
           enum: [p1, p2, p3, p4, p5, p6, p7]
-        boardOverrides:
-          type: object
-          additionalProperties:
-            type: string
-        showTabs:
-          type: boolean
-        allowViewerTemplateSwitch:
-          type: boolean
         kioskSequence:
           type: array
           items:

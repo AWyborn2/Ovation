@@ -6,13 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BoardEntry } from './boardEntry';
-import type { DisplayBoardCategory } from './displayBoardCategory';
+import type { DisplayBoardLayout } from './displayBoardLayout';
 
 export interface DisplayBoard {
-  /** Stable board id (also the per-board override / kiosk key). */
+  /** Stable board id (also the kiosk sequence key). */
   id: string;
-  /** Board category. */
-  category: DisplayBoardCategory;
+  /** Free-text board category used for grouping/labelling. */
+  category: string;
+  /** Natural render layout for this board (skin only changes the look). */
+  layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;
   entries: BoardEntry[];

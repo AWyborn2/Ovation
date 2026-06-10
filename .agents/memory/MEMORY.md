@@ -59,3 +59,4 @@
 - [Animated share-card audio](animated-card-audio.md) — admin video clips mux WebAudio→gain→captureStream before recorder (pickVideoMime needs audio codec); curated mp3s in public storage; sandbox has no process.env (upload via bash); gifenc must be installed.
 - [Server-side card video render](server-card-video-render.md) — admin MP4: Puppeteer drives the real /__card-render harness (preview parity, no 2nd renderer); options.size must be a SIZES key (square/portrait/story); needs chromium+ffmpeg.
 - [Cricket-club env install drift](cricket-club-env-drift.md) — isolated envs can lack lockfile deps (e.g. gifenc) → Vite 500s the whole module on a dynamic import; fix via pnpm install --frozen-lockfile, not code.
+- [Honour display + kiosk](honour-display-rework.md) — admin-only TV boards; 3 layouts dispatched on board.layout, ONE skin as .hb.skin-pX (cosmetic vars only), approaching milestones client-injected; routes gated via AdminOnly not just nav.

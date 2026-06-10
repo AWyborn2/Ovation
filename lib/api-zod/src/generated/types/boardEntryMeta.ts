@@ -15,4 +15,6 @@ export interface BoardEntryMeta {
   /** P7 grade-filter key (e.g. "A", "Female A", "U21 Colts"). */
   parentGrade?: string | null;
   competition?: string | null;
+  /** 1-based rank for ranked list boards (points, win counts). */
+  rank?: number | null;
 }

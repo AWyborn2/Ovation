@@ -4631,8 +4631,9 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
  */
 export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
-  "id": zod.string().describe('Stable board id (also the per-board override \/ kiosk key).'),
-  "category": zod.enum(['premierships', 'centuries', 'five_wicket_hauls', 'life_members', 'club_champions', 'captains', 'club_records', 'awards']).describe('Board category.'),
+  "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
+  "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -4648,7 +4649,8 @@ export const GetHonourDisplayResponse = zod.object({
   "captain": zod.string().nullish(),
   "grade": zod.string().nullish(),
   "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
-  "competition": zod.string().nullish()
+  "competition": zod.string().nullish(),
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -4667,10 +4669,7 @@ export const GetHonourDisplayResponse = zod.object({
   "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
 }),
   "settings": zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('Club-wide default template (skin).'),
-  "boardOverrides": zod.record(zod.string(), zod.string()).describe('Per-board template overrides, keyed by board id -> p1..p7.'),
-  "showTabs": zod.boolean().describe('Whether the public display page shows category tabs.'),
-  "allowViewerTemplateSwitch": zod.boolean().describe('Whether visitors may switch skins (false locks to default).'),
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('The single club-wide skin every board renders in.'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
@@ -4684,9 +4683,6 @@ export const GetHonourDisplayResponse = zod.object({
  */
 export const UpdateHonourDisplaySettingsBody = zod.object({
   "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).optional(),
-  "boardOverrides": zod.record(zod.string(), zod.string()).optional(),
-  "showTabs": zod.boolean().optional(),
-  "allowViewerTemplateSwitch": zod.boolean().optional(),
   "kioskSequence": zod.array(zod.string()).optional(),
   "kioskDwellMs": zod.number().optional(),
   "kioskScrollSpeed": zod.number().optional(),
@@ -4694,10 +4690,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
 })
 
 export const UpdateHonourDisplaySettingsResponse = zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('Club-wide default template (skin).'),
-  "boardOverrides": zod.record(zod.string(), zod.string()).describe('Per-board template overrides, keyed by board id -> p1..p7.'),
-  "showTabs": zod.boolean().describe('Whether the public display page shows category tabs.'),
-  "allowViewerTemplateSwitch": zod.boolean().describe('Whether visitors may switch skins (false locks to default).'),
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('The single club-wide skin every board renders in.'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),

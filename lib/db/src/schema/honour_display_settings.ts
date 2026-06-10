@@ -1,24 +1,13 @@
-import { pgTable, serial, text, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
 
-// Singleton settings (id=1) for the Digital Honour Boards Display + TV kiosk.
-// Holds the club-wide default template (skin), optional per-board template
-// overrides, viewer/tab toggles, and the kiosk rotation config. App-config
-// (never replaced by the master ETL).
+// Singleton settings (id=1) for the Digital Honour Boards Display + TV kiosk
+// (admin-only clubroom tools). Holds the SINGLE club-wide skin and the kiosk
+// rotation config. App-config (never replaced by the master ETL).
 export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
   id: serial("id").primaryKey(),
-  // Club-wide default template id: one of p1..p7.
+  // The one skin every board renders in: one of p1..p7. Each board keeps its
+  // natural layout; the skin only changes the look.
   defaultTemplate: text("default_template").notNull().default("p1"),
-  // Per-board template overrides, keyed by board id -> template id (p1..p7).
-  boardOverrides: jsonb("board_overrides")
-    .$type<Record<string, string>>()
-    .notNull()
-    .default({}),
-  // Whether the public display page shows the category tab switcher.
-  showTabs: boolean("show_tabs").notNull().default(true),
-  // Whether visitors may switch skins; false locks them to the default.
-  allowViewerTemplateSwitch: boolean("allow_viewer_template_switch")
-    .notNull()
-    .default(true),
   // Ordered list of board ids the kiosk rotates through. Empty = all boards.
   kioskSequence: jsonb("kiosk_sequence")
     .$type<string[]>()

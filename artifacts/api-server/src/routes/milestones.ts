@@ -33,7 +33,7 @@ const SIG_CAREER_STEP = 100;
 
 const MAX_ITEMS = 100;
 
-type MilestoneItem = {
+export type MilestoneItem = {
   id: string;
   kind: "debut" | "century" | "fiveFor" | "hatTrick" | "career";
   playerId: number;
@@ -80,7 +80,19 @@ function addWeeks(iso: string, weeks: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-router.get("/milestones", async (_req, res): Promise<void> => {
+export type MilestonesResult = {
+  recencyWeeks: number;
+  windowStart: string | null;
+  featured: boolean;
+  items: MilestoneItem[];
+};
+
+/**
+ * Build the ordered milestones feed (recently-achieved + significant). Shared by
+ * the public GET /milestones route and the honour-display board assembler so both
+ * surfaces use one source of truth.
+ */
+export async function buildMilestones(): Promise<MilestonesResult> {
   // --- Settings (recency window + significance tiers).
   const [settings] = await db
     .select()
@@ -298,12 +310,16 @@ router.get("/milestones", async (_req, res): Promise<void> => {
     featured = false;
   }
 
-  res.json({
+  return {
     recencyWeeks,
     windowStart,
     featured,
     items: ordered.slice(0, MAX_ITEMS),
-  });
+  };
+}
+
+router.get("/milestones", async (_req, res): Promise<void> => {
+  res.json(await buildMilestones());
 });
 
 /**

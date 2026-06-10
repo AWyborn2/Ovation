@@ -7,7 +7,7 @@
  */
 
 /**
- * Club-wide default template (skin).
+ * The single club-wide skin every board renders in.
  */
 export type HonourDisplaySettingsDefaultTemplate = typeof HonourDisplaySettingsDefaultTemplate[keyof typeof HonourDisplaySettingsDefaultTemplate];
 

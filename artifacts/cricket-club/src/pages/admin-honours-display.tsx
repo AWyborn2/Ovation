@@ -4,7 +4,6 @@ import {
   useUpdateHonourDisplaySettings,
   getGetHonourDisplayQueryKey,
   type HonourDisplayBundle,
-  type HonourDisplaySettings,
   type HonourDisplaySettingsUpdate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,9 +25,11 @@ export default function AdminHonoursDisplay() {
       <div>
         <h1 className="text-3xl font-serif font-bold">Honour boards display &amp; kiosk</h1>
         <p className="text-muted-foreground mt-1">
-          Pick the default skin for the public Digital Honour Boards page, override the skin
-          per board, and configure the auto-rotating clubroom TV kiosk. The public page lives
-          at <code>/honours-display</code>; the TV mode at <code>/honours-display/kiosk</code>.
+          Pick the single skin every honour board renders in, and configure the
+          auto-rotating clubroom TV kiosk. These pages are admin-only: the display lives
+          at <code>/honours-display</code> and the TV mode at{" "}
+          <code>/honours-display/kiosk</code>. Each board keeps its natural layout — the
+          skin only changes the look.
         </p>
       </div>
 
@@ -54,10 +55,10 @@ const TEMPLATE_BLURB: Record<TemplateId, string> = {
   p1: "Carved heritage timber board with gold lettering.",
   p2: "Painted club-colours plaque in navy & gold.",
   p3: "Frosted glass / etched modern panel.",
-  p4: "Clean light card grid — best on small screens.",
-  p5: "Broadcast hero stats with a scrolling ticker.",
-  p6: "Interactive searchable player cards.",
-  p7: "App-style flags with grade filters (premierships).",
+  p4: "Clean light card — best on small screens.",
+  p5: "Broadcast hero styling on black.",
+  p6: "Soft, rounded cards on a light backdrop.",
+  p7: "App-style flags with bright accents.",
 };
 
 function SettingsForm({
@@ -76,11 +77,6 @@ function SettingsForm({
   const [defaultTemplate, setDefaultTemplate] = useState<TemplateId>(
     settings.defaultTemplate as TemplateId,
   );
-  const [overrides, setOverrides] = useState<Record<string, string>>(
-    settings.boardOverrides ?? {},
-  );
-  const [showTabs, setShowTabs] = useState(settings.showTabs);
-  const [allowSwitch, setAllowSwitch] = useState(settings.allowViewerTemplateSwitch);
   const [sequence, setSequence] = useState<string[]>(settings.kioskSequence ?? []);
   const [dwell, setDwell] = useState(String(settings.kioskDwellMs));
   const [speed, setSpeed] = useState(String(settings.kioskScrollSpeed));
@@ -89,9 +85,6 @@ function SettingsForm({
 
   useEffect(() => {
     setDefaultTemplate(settings.defaultTemplate as TemplateId);
-    setOverrides(settings.boardOverrides ?? {});
-    setShowTabs(settings.showTabs);
-    setAllowSwitch(settings.allowViewerTemplateSwitch);
     setSequence(settings.kioskSequence ?? []);
     setDwell(String(settings.kioskDwellMs));
     setSpeed(String(settings.kioskScrollSpeed));
@@ -123,15 +116,6 @@ function SettingsForm({
     if (id) setSequence((prev) => [...prev, id]);
   };
 
-  const setOverride = (boardId: string, value: string) => {
-    setOverrides((prev) => {
-      const next = { ...prev };
-      if (!value) delete next[boardId];
-      else next[boardId] = value;
-      return next;
-    });
-  };
-
   const save = () => {
     setError(null);
     const d = parseInt(dwell, 10);
@@ -143,9 +127,6 @@ function SettingsForm({
     if (s < 1) return setError("Scroll speed must be at least 1 px/sec.");
     const data: HonourDisplaySettingsUpdate = {
       defaultTemplate,
-      boardOverrides: overrides,
-      showTabs,
-      allowViewerTemplateSwitch: allowSwitch,
       kioskSequence: sequence,
       kioskDwellMs: d,
       kioskScrollSpeed: s,
@@ -158,14 +139,15 @@ function SettingsForm({
 
   return (
     <div className="space-y-6">
-      {/* Template gallery + default */}
+      {/* Single skin picker */}
       <Card>
         <CardHeader>
-          <CardTitle>Default skin</CardTitle>
+          <CardTitle>Skin</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            The skin every board uses unless it has its own override below.
+            The one skin every board renders in. Each board still uses its own natural
+            layout (premierships, team of the decade, lists) — only the look changes.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {TEMPLATES.map((t) => (
@@ -190,74 +172,6 @@ function SettingsForm({
         </CardContent>
       </Card>
 
-      {/* Viewer behaviour */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Viewer options</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <label className="flex items-center gap-3 border rounded p-3 cursor-pointer hover:bg-muted">
-            <input
-              type="checkbox"
-              checked={showTabs}
-              onChange={(e) => setShowTabs(e.target.checked)}
-              data-testid="toggle-show-tabs"
-            />
-            <span className="text-sm font-medium">
-              Show board tabs (visitors pick one board at a time). Off = all boards stacked.
-            </span>
-          </label>
-          <label className="flex items-center gap-3 border rounded p-3 cursor-pointer hover:bg-muted">
-            <input
-              type="checkbox"
-              checked={allowSwitch}
-              onChange={(e) => setAllowSwitch(e.target.checked)}
-              data-testid="toggle-allow-switch"
-            />
-            <span className="text-sm font-medium">
-              Let visitors switch the skin themselves with an on-page picker.
-            </span>
-          </label>
-        </CardContent>
-      </Card>
-
-      {/* Per-board overrides */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Per-board skin overrides</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground mb-3">
-            Leave as “Use default” unless a particular board looks better in another skin
-            (e.g. premierships in the App-style P7).
-          </p>
-          <div className="space-y-1 max-w-2xl">
-            {boards.map((b) => (
-              <div
-                key={b.id}
-                className="flex items-center gap-3 border rounded px-3 py-2 bg-card"
-              >
-                <span className="flex-1 text-sm font-medium">{b.title}</span>
-                <span className="text-xs text-muted-foreground">{b.entries.length}</span>
-                <select
-                  value={overrides[b.id] ?? ""}
-                  onChange={(e) => setOverride(b.id, e.target.value)}
-                  className="px-2 py-1.5 rounded border bg-card text-sm min-w-[12rem]"
-                  data-testid={`override-${b.id}`}
-                >
-                  <option value="">Use default</option>
-                  {TEMPLATES.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Kiosk config */}
       <Card>
         <CardHeader>
@@ -270,7 +184,6 @@ function SettingsForm({
             </h3>
             <p className="text-xs text-muted-foreground mb-3">
               Boards shown in order on the clubroom TV. Empty = every board in default order.
-              Each board uses its override skin (or the default skin) above.
             </p>
             <ul className="space-y-1 max-w-2xl">
               {sequence.map((id, idx) => (

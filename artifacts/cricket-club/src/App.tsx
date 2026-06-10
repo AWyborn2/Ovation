@@ -1,11 +1,13 @@
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
 import { AdminShell } from "@/components/admin-shell";
+import { useCurrentAdmin } from "@/lib/admin-auth";
 import Home from "@/pages/home";
 import HonourBoards from "@/pages/honour-boards";
 import Players from "@/pages/players";
@@ -58,7 +60,6 @@ function PublicRoutes() {
         <Route path="/grades/:grade" component={GradeLeaderboard} />
         <Route path="/records" component={Records} />
         <Route path="/premierships" component={Premierships} />
-        <Route path="/honours-display" component={HonoursDisplay} />
         <Route path="/compare" component={Compare} />
         <Route path="/stats/:id" component={StatDetail} />
         <Route path="/juniors" component={JuniorsDashboard} />
@@ -167,11 +168,37 @@ function CaptainRoutes() {
   );
 }
 
+/**
+ * Gate admin-only public-chrome pages (honour display + kiosk). Non-admins are
+ * redirected to the admin sign-in hub rather than shown the page.
+ */
+function AdminOnly({ children }: { children: ReactNode }) {
+  const me = useCurrentAdmin();
+  if (me.isLoading) {
+    return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
+  }
+  if (!me.data) {
+    return <Redirect to="/admin" />;
+  }
+  return <>{children}</>;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/__card-render" component={CardRenderHarness} />
-      <Route path="/honours-display/kiosk" component={HonoursKiosk} />
+      <Route path="/honours-display/kiosk">
+        <AdminOnly>
+          <HonoursKiosk />
+        </AdminOnly>
+      </Route>
+      <Route path="/honours-display">
+        <Layout>
+          <AdminOnly>
+            <HonoursDisplay />
+          </AdminOnly>
+        </Layout>
+      </Route>
       <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
       <Route path="/captain" component={CaptainRoutes} />

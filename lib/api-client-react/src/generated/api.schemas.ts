@@ -2858,6 +2858,8 @@ export interface BoardEntryMeta {
   /** P7 grade-filter key (e.g. "A", "Female A", "U21 Colts"). */
   parentGrade?: string | null;
   competition?: string | null;
+  /** 1-based rank for ranked list boards (points, win counts). */
+  rank?: number | null;
 }
 
 export interface BoardEntry {
@@ -2877,34 +2879,31 @@ export interface BoardEntry {
 }
 
 /**
- * Board category.
+ * Natural render layout for this board (skin only changes the look).
  */
-export type DisplayBoardCategory = typeof DisplayBoardCategory[keyof typeof DisplayBoardCategory];
+export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
 
 
-export const DisplayBoardCategory = {
-  premierships: 'premierships',
-  centuries: 'centuries',
-  five_wicket_hauls: 'five_wicket_hauls',
-  life_members: 'life_members',
-  club_champions: 'club_champions',
-  captains: 'captains',
-  club_records: 'club_records',
-  awards: 'awards',
+export const DisplayBoardLayout = {
+  premiership: 'premiership',
+  teamOfDecade: 'teamOfDecade',
+  list: 'list',
 } as const;
 
 export interface DisplayBoard {
-  /** Stable board id (also the per-board override / kiosk key). */
+  /** Stable board id (also the kiosk sequence key). */
   id: string;
-  /** Board category. */
-  category: DisplayBoardCategory;
+  /** Free-text board category used for grouping/labelling. */
+  category: string;
+  /** Natural render layout for this board (skin only changes the look). */
+  layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;
   entries: BoardEntry[];
 }
 
 /**
- * Club-wide default template (skin).
+ * The single club-wide skin every board renders in.
  */
 export type HonourDisplaySettingsDefaultTemplate = typeof HonourDisplaySettingsDefaultTemplate[keyof typeof HonourDisplaySettingsDefaultTemplate];
 
@@ -2919,20 +2918,9 @@ export const HonourDisplaySettingsDefaultTemplate = {
   p7: 'p7',
 } as const;
 
-/**
- * Per-board template overrides, keyed by board id -> p1..p7.
- */
-export type HonourDisplaySettingsBoardOverrides = {[key: string]: string};
-
 export interface HonourDisplaySettings {
-  /** Club-wide default template (skin). */
+  /** The single club-wide skin every board renders in. */
   defaultTemplate: HonourDisplaySettingsDefaultTemplate;
-  /** Per-board template overrides, keyed by board id -> p1..p7. */
-  boardOverrides: HonourDisplaySettingsBoardOverrides;
-  /** Whether the public display page shows category tabs. */
-  showTabs: boolean;
-  /** Whether visitors may switch skins (false locks to default). */
-  allowViewerTemplateSwitch: boolean;
   /** Ordered board ids the kiosk rotates through. Empty = all boards. */
   kioskSequence: string[];
   /** Hold (ms) on each board before any credit-scroll begins. */
@@ -2956,13 +2944,8 @@ export const HonourDisplaySettingsUpdateDefaultTemplate = {
   p7: 'p7',
 } as const;
 
-export type HonourDisplaySettingsUpdateBoardOverrides = {[key: string]: string};
-
 export interface HonourDisplaySettingsUpdate {
   defaultTemplate?: HonourDisplaySettingsUpdateDefaultTemplate;
-  boardOverrides?: HonourDisplaySettingsUpdateBoardOverrides;
-  showTabs?: boolean;
-  allowViewerTemplateSwitch?: boolean;
   kioskSequence?: string[];
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;

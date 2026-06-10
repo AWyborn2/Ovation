@@ -5,14 +5,10 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
-import type { HonourDisplaySettingsUpdateBoardOverrides } from './honourDisplaySettingsUpdateBoardOverrides';
 import type { HonourDisplaySettingsUpdateDefaultTemplate } from './honourDisplaySettingsUpdateDefaultTemplate';
 
 export interface HonourDisplaySettingsUpdate {
   defaultTemplate?: HonourDisplaySettingsUpdateDefaultTemplate;
-  boardOverrides?: HonourDisplaySettingsUpdateBoardOverrides;
-  showTabs?: boolean;
-  allowViewerTemplateSwitch?: boolean;
   kioskSequence?: string[];
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;

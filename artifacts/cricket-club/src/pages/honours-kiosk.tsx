@@ -3,13 +3,17 @@ import { useLocation } from "wouter";
 import { useGetHonourDisplay } from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
 import { brandStyle } from "@/components/honours-display/theme";
+import { skinClass } from "@/components/honours-display/types";
 import type { DisplayBoard, TemplateId } from "@/components/honours-display/types";
+import { useApproachingBoard } from "@/components/honours-display/useApproachingBoard";
 import "@/styles/honour-boards.css";
 
-/** Stagger the row-reveal animation across a freshly shown board (ported). */
+/** Stagger the row-reveal animation across a freshly shown board. */
 function stagger(root: HTMLElement) {
   root
-    .querySelectorAll<HTMLElement>("tr, .flag, .row, .stat, .pc")
+    .querySelectorAll<HTMLElement>(
+      ".row, .hb-flag, .hb-lineup-row, tr",
+    )
     .forEach((el, i) => {
       el.style.animation = "none";
       void el.offsetWidth;
@@ -19,39 +23,29 @@ function stagger(root: HTMLElement) {
 
 export default function HonoursKiosk() {
   const { data, refetch } = useGetHonourDisplay();
+  const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
 
-  const boards = data?.boards ?? [];
+  const boards = useMemo(() => {
+    const base = data?.boards ?? [];
+    return approachingBoard ? [...base, approachingBoard] : base;
+  }, [data?.boards, approachingBoard]);
   const settings = data?.settings;
   const brand = data?.brand;
 
-  // Default kiosk timings (overridden by settings when present).
   const DWELL = settings?.kioskDwellMs ?? 3500;
   const ENDHOLD = settings?.kioskEndHoldMs ?? 3000;
   const SPEED = settings?.kioskScrollSpeed ?? 36;
 
-  // Resolve the kiosk sequence into the ordered list of (board, template) to show.
+  // Resolve the kiosk sequence into the ordered list of boards to show.
   const sequence = useMemo(() => {
-    if (!boards.length || !settings) return [] as { board: DisplayBoard; template: TemplateId }[];
+    if (!boards.length || !settings) return [] as DisplayBoard[];
     const byId = new Map(boards.map((b) => [b.id, b]));
-    const tmplFor = (b: DisplayBoard): TemplateId =>
-      (settings.boardOverrides?.[b.id] as TemplateId) ||
-      (settings.defaultTemplate as TemplateId);
-
     const seq = (settings.kioskSequence ?? [])
-      .map((entry) => {
-        // Sequence items are board ids; allow "boardId:template" override too.
-        const [id, tmpl] = entry.split(":");
-        const board = byId.get(id!);
-        if (!board) return null;
-        return { board, template: (tmpl as TemplateId) || tmplFor(board) };
-      })
-      .filter((x): x is { board: DisplayBoard; template: TemplateId } => x !== null);
-
-    if (seq.length) return seq;
-    // Fallback: every board in its resolved template.
-    return boards.map((b) => ({ board: b, template: tmplFor(b) }));
+      .map((id) => byId.get(id))
+      .filter((b): b is DisplayBoard => b != null);
+    return seq.length ? seq : boards;
   }, [boards, settings]);
 
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +76,7 @@ export default function HonoursKiosk() {
     const myCycle = cycleRef.current;
     const alive = () => cycleRef.current === myCycle;
 
-    const fr = frameRef.current?.querySelector<HTMLElement>(".frame");
+    const fr = frameRef.current?.querySelector<HTMLElement>(".hb-board");
     if (frameRef.current) stagger(frameRef.current);
     if (fr) fr.scrollTop = 0;
 
@@ -110,7 +104,6 @@ export default function HonoursKiosk() {
 
     function advance() {
       if (!alive()) return;
-      // Refetch each full loop so the TV picks up new results without a reload.
       if (index + 1 >= sequence.length) refetch();
       setIndex((i) => (i + 1) % sequence.length);
     }
@@ -130,18 +123,14 @@ export default function HonoursKiosk() {
     );
   }
 
+  const skin = settings.defaultTemplate as TemplateId;
   const current = sequence[index % sequence.length]!;
 
   return (
     <div className="hb-kiosk">
-      <div className="hb" style={brandStyle(brand)}>
+      <div className={`hb ${skinClass(skin)}`} style={brandStyle(brand)}>
         <div className="preset active" ref={frameRef}>
-          <BoardRenderer
-            board={current.board}
-            template={current.template}
-            brand={brand}
-            kiosk
-          />
+          <BoardRenderer board={current} brand={brand} kiosk />
         </div>
       </div>
       <button className="hb-kexit" onClick={exit}>

@@ -18,6 +18,10 @@ export type {
   HonourDisplayBundle,
 };
 
+/** Natural render layout for a board (skin only changes the look). */
+export type BoardLayout = "premiership" | "teamOfDecade" | "list";
+
+/** The one skin id every board renders in. */
 export type TemplateId = "p1" | "p2" | "p3" | "p4" | "p5" | "p6" | "p7";
 
 export const TEMPLATES: { id: TemplateId; label: string }[] = [
@@ -26,8 +30,14 @@ export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p3", label: "P3 · Glass / Etched" },
   { id: "p4", label: "P4 · Modern Minimal" },
   { id: "p5", label: "P5 · Broadcast" },
-  { id: "p6", label: "P6 · Interactive" },
+  { id: "p6", label: "P6 · Soft Cards" },
   { id: "p7", label: "P7 · App Style" },
 ];
 
-export const LEDGER_PAGE_SIZE = 80;
+/** CSS class that applies the chosen skin at the `.hb` root. */
+export function skinClass(template: TemplateId): string {
+  return `skin-${template}`;
+}
+
+/** Page size for long list boards in interactive (non-kiosk) mode. */
+export const LIST_PAGE_SIZE = 80;

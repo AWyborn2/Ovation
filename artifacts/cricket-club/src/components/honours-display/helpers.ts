@@ -6,7 +6,7 @@ export function initials(name: string): string {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-/** Grade badge label for the P7 flag (ported verbatim from the demo). */
+/** Compact grade-chip label. */
 export function gradeBadge(g: string): string {
   if (g.startsWith("Female")) return g.replace("Female ", "F-");
   if (g === "U21 Colts") return "U21";
@@ -25,31 +25,6 @@ export function formatDate(d: string | null | undefined): string {
     month: "short",
     year: "numeric",
   });
-}
-
-/** P7 grade-chip groups (ported from the demo). */
-export const P7_GROUPS: { label: string; filter: string | string[] | null }[] = [
-  { label: "All", filter: null },
-  { label: "A Grade", filter: "A" },
-  { label: "B Grade", filter: "B" },
-  { label: "C Grade", filter: "C" },
-  { label: "D Grade", filter: "D" },
-  { label: "E Grade", filter: "E" },
-  { label: "F Grade", filter: "F" },
-  { label: "PPL / T20", filter: "PPL" },
-  { label: "Female", filter: ["Female A", "Female B"] },
-  { label: "Colts", filter: ["U21 Colts"] },
-];
-
-export function matchesGroup(
-  parentGrade: string | null | undefined,
-  filter: string | string[] | null,
-): boolean {
-  if (!filter) return true;
-  if (!parentGrade) return false;
-  return Array.isArray(filter)
-    ? filter.includes(parentGrade)
-    : parentGrade === filter;
 }
 
 export function chunk<T>(arr: T[], size: number): T[][] {

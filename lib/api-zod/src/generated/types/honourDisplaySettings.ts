@@ -5,18 +5,11 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
-import type { HonourDisplaySettingsBoardOverrides } from './honourDisplaySettingsBoardOverrides';
 import type { HonourDisplaySettingsDefaultTemplate } from './honourDisplaySettingsDefaultTemplate';
 
 export interface HonourDisplaySettings {
-  /** Club-wide default template (skin). */
+  /** The single club-wide skin every board renders in. */
   defaultTemplate: HonourDisplaySettingsDefaultTemplate;
-  /** Per-board template overrides, keyed by board id -> p1..p7. */
-  boardOverrides: HonourDisplaySettingsBoardOverrides;
-  /** Whether the public display page shows category tabs. */
-  showTabs: boolean;
-  /** Whether visitors may switch skins (false locks to default). */
-  allowViewerTemplateSwitch: boolean;
   /** Ordered board ids the kiosk rotates through. Empty = all boards. */
   kioskSequence: string[];
   /** Hold (ms) on each board before any credit-scroll begins. */

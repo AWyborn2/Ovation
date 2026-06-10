@@ -12,21 +12,42 @@ import {
   lifeMembersTable,
   awardsTable,
   awardWinnersTable,
+  awardPointsConfigTable,
   clubRolesTable,
+  partnershipRecordsTable,
+  teamOfDecadeBoardsTable,
+  teamOfDecadeMembersTable,
+  playerGradeStatsTable,
 } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getHallsHeadBrand } from "../lib/halls-head-brand";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
+import { computeLeaderboard } from "../lib/points";
+import { buildMilestones } from "./milestones";
 
 const router: IRouter = Router();
 
 const DISPLAY_SETTINGS_ID = 1;
 
-// The award that represents the club's overall champion (best & fairest). Its
-// winners render as the dedicated "Club Champions" board, so it is excluded from
-// the generic per-award boards to avoid duplication.
-const CLUB_CHAMPION_AWARD_KEY = "peter-wyllie-medal";
+// Seniority order for grade-grouped boards (captains, records-by-grade) so they
+// roll A Grade → Colts.
+const GRADE_ORDER = [
+  "A Grade",
+  "B Grade",
+  "C Grade",
+  "D Grade",
+  "E Grade",
+  "F Grade",
+  "Female A Grade",
+  "Female B Grade",
+  "PPL",
+  "Colts",
+];
+function gradeRank(g: string): number {
+  const i = GRADE_ORDER.indexOf(g);
+  return i === -1 ? GRADE_ORDER.length : i;
+}
 
 // ---------------------------------------------------------------------------
 // Settings singleton
@@ -45,14 +66,9 @@ async function ensureHonourDisplaySettings() {
   return created;
 }
 
-function serializeSettings(
-  row: typeof honourDisplaySettingsTable.$inferSelect,
-) {
+function serializeSettings(row: typeof honourDisplaySettingsTable.$inferSelect) {
   return {
     defaultTemplate: row.defaultTemplate,
-    boardOverrides: row.boardOverrides ?? {},
-    showTabs: row.showTabs,
-    allowViewerTemplateSwitch: row.allowViewerTemplateSwitch,
     kioskSequence: row.kioskSequence ?? [],
     kioskDwellMs: row.kioskDwellMs,
     kioskScrollSpeed: row.kioskScrollSpeed,
@@ -78,6 +94,7 @@ interface BoardEntryMeta {
   grade?: string | null;
   parentGrade?: string | null;
   competition?: string | null;
+  rank?: number | null;
 }
 
 interface BoardEntry {
@@ -90,23 +107,19 @@ interface BoardEntry {
   squad?: BoardSquadMember[] | null;
 }
 
+// Each board keeps its NATURAL layout; the chosen skin only changes the look.
+type BoardLayout = "premiership" | "teamOfDecade" | "list";
+
 interface HonourBoardOut {
   id: string;
-  category:
-    | "premierships"
-    | "centuries"
-    | "five_wicket_hauls"
-    | "life_members"
-    | "club_champions"
-    | "captains"
-    | "club_records"
-    | "awards";
+  category: string;
+  layout: BoardLayout;
   title: string;
   subtitle?: string | null;
   entries: BoardEntry[];
 }
 
-/** Map a flat premiership grade to the P7 grade-filter parent key. */
+/** Map a flat premiership grade to the grade-filter parent key. */
 function premParentGrade(grade: string): string {
   switch (grade) {
     case "A Grade":
@@ -134,7 +147,7 @@ function premParentGrade(grade: string): string {
   }
 }
 
-/** Display grade label fed to the P7 `badge()` helper (mirrors the demo). */
+/** Display grade label for the premiership card. */
 function premDisplayGrade(grade: string, competition: string): string {
   const parent = premParentGrade(grade);
   const isMidYearT20 = /MID-?YEAR/i.test(competition) && /T20/i.test(competition);
@@ -215,7 +228,7 @@ async function buildPremierships(): Promise<HonourBoardOut | null> {
     const motmName = motmRow?.name ?? p.mom ?? null;
     return {
       season: seasonLabel(startYear),
-      primaryText: captainName ? `${captainName} (c)` : tidyCompetition(p.competition),
+      primaryText: tidyCompetition(p.competition),
       detail: p.result ?? null,
       playerId: captainRow?.playerId ?? null,
       matchId: linkPremiershipMatch(p, gfByKey, finalsByKey),
@@ -239,6 +252,7 @@ async function buildPremierships(): Promise<HonourBoardOut | null> {
   return {
     id: "premierships",
     category: "premierships",
+    layout: "premiership",
     title: "Premierships",
     subtitle: "Grand Final winners",
     entries,
@@ -254,6 +268,7 @@ async function buildCenturies(): Promise<HonourBoardOut | null> {
   return {
     id: "centuries",
     category: "centuries",
+    layout: "list",
     title: "Centuries",
     subtitle: "Hundreds for the club",
     entries: rows.map((r) => ({
@@ -275,6 +290,7 @@ async function buildFiveWicketHauls(): Promise<HonourBoardOut | null> {
   return {
     id: "five_wicket_hauls",
     category: "five_wicket_hauls",
+    layout: "list",
     title: "Five-Wicket Hauls",
     subtitle: "Five or more in an innings",
     entries: rows.map((r) => ({
@@ -296,6 +312,7 @@ async function buildLifeMembers(): Promise<HonourBoardOut | null> {
   return {
     id: "life_members",
     category: "life_members",
+    layout: "list",
     title: "Life Members",
     subtitle: "Honoured for outstanding service",
     entries: rows.map((r) => ({
@@ -316,6 +333,7 @@ async function buildClubRecords(): Promise<HonourBoardOut | null> {
   return {
     id: "club_records",
     category: "club_records",
+    layout: "list",
     title: "Club Records",
     subtitle: "All-time record holders",
     entries: rows.map((r) => ({
@@ -327,43 +345,434 @@ async function buildClubRecords(): Promise<HonourBoardOut | null> {
   };
 }
 
-async function buildCaptains(): Promise<HonourBoardOut | null> {
+/** Grade captains — ONE board per grade that has any published captain. */
+async function buildCaptains(): Promise<HonourBoardOut[]> {
   const rows = await db
     .select()
     .from(clubRolesTable)
     .where(
-      and(
-        eq(clubRolesTable.role, "Grade Captain"),
-        eq(clubRolesTable.grade, "A Grade"),
-        eq(clubRolesTable.published, true),
-      ),
+      and(eq(clubRolesTable.role, "Grade Captain"), eq(clubRolesTable.published, true)),
     )
-    .orderBy(desc(clubRolesTable.season));
-  if (rows.length === 0) return null;
+    .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder));
+  if (rows.length === 0) return [];
+
+  const byGrade = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const grade = r.grade ?? "";
+    if (!grade) continue;
+    if (!byGrade.has(grade)) byGrade.set(grade, []);
+    byGrade.get(grade)!.push(r);
+  }
+
+  return [...byGrade.entries()]
+    .sort((a, b) => gradeRank(a[0]) - gradeRank(b[0]) || a[0].localeCompare(b[0]))
+    .map(([grade, recs]) => ({
+      id: `captains:${grade}`,
+      category: "captains",
+      layout: "list" as const,
+      title: `${grade} Captains`,
+      subtitle: "Season-by-season leaders",
+      entries: recs.map((r) => ({
+        season: seasonLabel(r.season),
+        primaryText: r.name,
+        detail: null,
+        playerId: r.playerId ?? null,
+      })),
+    }));
+}
+
+/** Committee / office bearers — published club roles with NO grade (grade null). */
+async function buildCommittee(): Promise<HonourBoardOut | null> {
+  const rows = await db
+    .select()
+    .from(clubRolesTable)
+    .where(eq(clubRolesTable.published, true))
+    .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder), asc(clubRolesTable.id));
+  const officeBearers = rows.filter((r) => r.grade == null);
+  if (officeBearers.length === 0) return null;
   return {
-    id: "captains",
-    category: "captains",
-    title: "A Grade Captains",
-    subtitle: "First XI leaders",
-    entries: rows.map((r) => ({
+    id: "committee",
+    category: "committee",
+    layout: "list",
+    title: "Committee & Office Bearers",
+    subtitle: "Those who served off the field",
+    entries: officeBearers.map((r) => ({
       season: seasonLabel(r.season),
       primaryText: r.name,
-      detail: null,
+      detail: r.role,
       playerId: r.playerId ?? null,
     })),
   };
 }
 
-async function buildAwardBoards(): Promise<{
-  clubChampions: HonourBoardOut | null;
-  awards: HonourBoardOut[];
-}> {
+/** Partnership records — highest stand per wicket per grade. */
+async function buildPartnerships(): Promise<HonourBoardOut | null> {
+  const rows = await db
+    .select()
+    .from(partnershipRecordsTable)
+    .orderBy(
+      asc(partnershipRecordsTable.grade),
+      desc(partnershipRecordsTable.runs),
+      asc(partnershipRecordsTable.id),
+    );
+  if (rows.length === 0) return null;
+  return {
+    id: "partnerships",
+    category: "partnerships",
+    layout: "list",
+    title: "Partnership Records",
+    subtitle: "Record stands per wicket",
+    entries: rows.map((r) => {
+      const bits = [`${r.runs} runs`, `${r.wicket} wkt`];
+      if (r.opposition) bits.push(`v ${r.opposition}`);
+      return {
+        season: r.season ?? "",
+        primaryText: r.batsmen,
+        detail: bits.join(" · "),
+        meta: { grade: r.grade },
+      };
+    }),
+  };
+}
+
+/** Recently-achieved milestones (reuses the /milestones feed). */
+async function buildMilestoneBoard(): Promise<HonourBoardOut | null> {
+  const { items } = await buildMilestones();
+  if (items.length === 0) return null;
+  return {
+    id: "milestones",
+    category: "milestones",
+    layout: "list",
+    title: "Recent Milestones",
+    subtitle: "Latest achievements across the club",
+    entries: items.map((m) => ({
+      season: m.matchDate ?? (m.season != null ? seasonLabel(m.season) : ""),
+      primaryText: m.playerName,
+      detail: m.detail ?? m.label,
+      playerId: m.playerId,
+      matchId: m.matchId ?? null,
+      meta: { grade: m.grade },
+    })),
+  };
+}
+
+/** Award points leaderboards (published, visible configs only). */
+async function buildAwardPoints(): Promise<HonourBoardOut[]> {
+  const configs = await db
+    .select()
+    .from(awardPointsConfigTable)
+    .where(eq(awardPointsConfigTable.leaderboardVisible, true))
+    .orderBy(desc(awardPointsConfigTable.season));
+  if (configs.length === 0) return [];
+  const awards = await db.select().from(awardsTable);
+  const awardById = new Map(awards.map((a) => [a.id, a]));
+
+  const out: HonourBoardOut[] = [];
+  for (const config of configs) {
+    const award = awardById.get(config.awardId);
+    if (!award || !award.published || !award.pointsGrade) continue;
+    const { entries } = await computeLeaderboard(config, award.pointsGrade);
+    if (entries.length === 0) continue;
+    out.push({
+      id: `award_points:${config.id}`,
+      category: "award_points",
+      layout: "list",
+      title: `${award.title} — Points`,
+      subtitle: `${award.pointsGrade} · ${seasonLabel(config.season)}`,
+      entries: entries.map((e, i) => ({
+        season: "",
+        primaryText: e.name,
+        detail: `${e.points} pts`,
+        playerId: e.playerId,
+        meta: { rank: i + 1 },
+      })),
+    });
+  }
+  return out;
+}
+
+// --- Notable honour-board records (role tenures + award win counts) ---
+
+function normalizeName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+type Tally = {
+  name: string;
+  playerId: number | null;
+  playerIdConflict: boolean;
+  seasons: Set<number>;
+};
+
+function tallyEntries(
+  records: { name: string; playerId: number | null; season: number }[],
+  unit: string,
+  limit = 10,
+): BoardEntry[] {
+  const byPerson = new Map<string, Tally>();
+  for (const r of records) {
+    const name = r.name.trim();
+    if (!name) continue;
+    const key = normalizeName(name);
+    let t = byPerson.get(key);
+    if (!t) {
+      t = { name, playerId: null, playerIdConflict: false, seasons: new Set() };
+      byPerson.set(key, t);
+    }
+    t.seasons.add(r.season);
+    if (r.playerId != null) {
+      if (t.playerId == null) t.playerId = r.playerId;
+      else if (t.playerId !== r.playerId) t.playerIdConflict = true;
+    }
+  }
+  return [...byPerson.values()]
+    .map((t) => ({
+      name: t.name,
+      playerId: t.playerIdConflict ? null : t.playerId,
+      count: t.seasons.size,
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, limit)
+    .map((e, i) => ({
+      season: "",
+      primaryText: e.name,
+      detail: `${e.count} ${unit}`,
+      playerId: e.playerId,
+      meta: { rank: i + 1 },
+    }));
+}
+
+const ROLE_ORDER = [
+  "President",
+  "Vice President",
+  "Secretary",
+  "Treasurer",
+  "Director of Cricket",
+  "Club Captain",
+  "Coach",
+];
+function roleRank(role: string): number {
+  const i = ROLE_ORDER.indexOf(role);
+  return i === -1 ? ROLE_ORDER.length : i;
+}
+
+async function buildRecordsLeaderboards(): Promise<HonourBoardOut[]> {
+  const roleRows = await db
+    .select({
+      role: clubRolesTable.role,
+      season: clubRolesTable.season,
+      name: clubRolesTable.name,
+      playerId: clubRolesTable.playerId,
+      grade: clubRolesTable.grade,
+    })
+    .from(clubRolesTable)
+    .where(eq(clubRolesTable.published, true));
+
+  const byRole = new Map<string, { name: string; playerId: number | null; season: number }[]>();
+  for (const r of roleRows) {
+    if (r.grade != null) continue; // grade captains surfaced per grade
+    if (!byRole.has(r.role)) byRole.set(r.role, []);
+    byRole.get(r.role)!.push({ name: r.name, playerId: r.playerId, season: r.season });
+  }
+
+  const out: HonourBoardOut[] = [];
+  for (const [role, recs] of [...byRole.entries()].sort(
+    (a, b) => roleRank(a[0]) - roleRank(b[0]) || a[0].localeCompare(b[0]),
+  )) {
+    const entries = tallyEntries(recs, "seasons");
+    if ((entries[0]?.detail ? parseInt(entries[0].detail, 10) : 0) < 2) continue;
+    out.push({
+      id: `record_lb:role:${role}`,
+      category: "records_leaderboard",
+      layout: "list",
+      title: `Most Seasons as ${role}`,
+      subtitle: "Notable honour-board records",
+      entries,
+    });
+  }
+
   const awards = await db
     .select()
     .from(awardsTable)
     .where(eq(awardsTable.published, true))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
-  if (awards.length === 0) return { clubChampions: null, awards: [] };
+  const awardIds = awards.map((a) => a.id);
+  const winners = awardIds.length
+    ? await db
+        .select({
+          awardId: awardWinnersTable.awardId,
+          season: awardWinnersTable.season,
+          name: awardWinnersTable.name,
+          playerId: awardWinnersTable.playerId,
+        })
+        .from(awardWinnersTable)
+        .where(
+          and(
+            inArray(awardWinnersTable.awardId, awardIds),
+            eq(awardWinnersTable.published, true),
+          ),
+        )
+    : [];
+  const byAward = new Map<number, { name: string; playerId: number | null; season: number }[]>();
+  for (const w of winners) {
+    if (!byAward.has(w.awardId)) byAward.set(w.awardId, []);
+    byAward.get(w.awardId)!.push({ name: w.name, playerId: w.playerId, season: w.season });
+  }
+  for (const a of awards) {
+    const entries = tallyEntries(byAward.get(a.id) ?? [], "wins");
+    if ((entries[0]?.detail ? parseInt(entries[0].detail, 10) : 0) < 2) continue;
+    out.push({
+      id: `record_lb:award:${a.key}`,
+      category: "records_leaderboard",
+      layout: "list",
+      title: `Most ${a.title} Wins`,
+      subtitle: "Notable honour-board records",
+      entries,
+    });
+  }
+
+  return out;
+}
+
+/** Per-grade statistical record holders (mirrors the Records "By Grade" tab). */
+async function buildRecordsByGrade(): Promise<HonourBoardOut[]> {
+  const rows = await db
+    .select({
+      playerId: playerGradeStatsTable.playerId,
+      givenName: playerGradeStatsTable.givenName,
+      surname: playerGradeStatsTable.surname,
+      grade: playerGradeStatsTable.grade,
+      games: playerGradeStatsTable.games,
+      runs: playerGradeStatsTable.runs,
+      wickets: playerGradeStatsTable.wickets,
+      catches: playerGradeStatsTable.catches,
+      highScore: playerGradeStatsTable.highScore,
+      bestBowling: playerGradeStatsTable.bestBowling,
+    })
+    .from(playerGradeStatsTable);
+  if (rows.length === 0) return [];
+
+  const byGrade = new Map<string, typeof rows>();
+  for (const r of rows) {
+    if (!byGrade.has(r.grade)) byGrade.set(r.grade, []);
+    byGrade.get(r.grade)!.push(r);
+  }
+
+  const parseHs = (hs: string | null) => (hs ? parseInt(hs.replace("*", ""), 10) || 0 : 0);
+  const parseBb = (bb: string | null) =>
+    bb && bb !== "" ? parseInt(bb.split("/")[0]!, 10) || 0 : 0;
+
+  type Row = (typeof rows)[number];
+  const name = (r: Row) => `${r.givenName} ${r.surname}`.trim();
+
+  const out: HonourBoardOut[] = [];
+  for (const [grade, recs] of [...byGrade.entries()].sort(
+    (a, b) => gradeRank(a[0]) - gradeRank(b[0]) || a[0].localeCompare(b[0]),
+  )) {
+    const entries: BoardEntry[] = [];
+    const pushTop = (
+      label: string,
+      pick: Row | undefined,
+      value: string | number | null,
+    ) => {
+      if (!pick || value == null || value === "" || value === 0) return;
+      entries.push({
+        season: "",
+        primaryText: label,
+        detail: `${value} — ${name(pick)}`,
+        playerId: pick.playerId,
+      });
+    };
+    const topBy = (sel: (r: Row) => number) =>
+      recs.slice().sort((a, b) => sel(b) - sel(a))[0];
+
+    const mostGames = topBy((r) => r.games ?? 0);
+    const mostRuns = topBy((r) => r.runs ?? 0);
+    const mostWickets = topBy((r) => r.wickets ?? 0);
+    const mostCatches = topBy((r) => r.catches ?? 0);
+    const highScore = recs.slice().sort((a, b) => parseHs(b.highScore) - parseHs(a.highScore))[0];
+    const bestBowling = recs
+      .slice()
+      .sort((a, b) => parseBb(b.bestBowling) - parseBb(a.bestBowling))[0];
+
+    pushTop("Most Games", mostGames, mostGames?.games ?? 0);
+    pushTop("Most Runs", mostRuns, mostRuns?.runs ?? 0);
+    pushTop("Highest Score", highScore, highScore?.highScore ?? null);
+    pushTop("Most Wickets", mostWickets, mostWickets?.wickets ?? 0);
+    pushTop("Best Bowling", bestBowling, bestBowling?.bestBowling ?? null);
+    pushTop("Most Catches", mostCatches, mostCatches?.catches ?? 0);
+
+    if (entries.length === 0) continue;
+    out.push({
+      id: `records_grade:${grade}`,
+      category: "records_by_grade",
+      layout: "list",
+      title: `${grade} Records`,
+      subtitle: "Leading performances in this grade",
+      entries,
+    });
+  }
+  return out;
+}
+
+/** Team of the Decade — published boards only, full XI lineup. */
+async function buildTeamOfDecade(): Promise<HonourBoardOut[]> {
+  const boards = await db
+    .select()
+    .from(teamOfDecadeBoardsTable)
+    .where(eq(teamOfDecadeBoardsTable.published, true))
+    .orderBy(asc(teamOfDecadeBoardsTable.displayOrder), asc(teamOfDecadeBoardsTable.id));
+  if (boards.length === 0) return [];
+  const boardIds = boards.map((b) => b.id);
+  const members = await db
+    .select()
+    .from(teamOfDecadeMembersTable)
+    .where(inArray(teamOfDecadeMembersTable.boardId, boardIds))
+    .orderBy(
+      asc(teamOfDecadeMembersTable.battingOrder),
+      asc(teamOfDecadeMembersTable.displayOrder),
+      asc(teamOfDecadeMembersTable.id),
+    );
+  const byBoard = new Map<number, typeof members>();
+  for (const m of members) {
+    if (!byBoard.has(m.boardId)) byBoard.set(m.boardId, []);
+    byBoard.get(m.boardId)!.push(m);
+  }
+
+  return boards
+    .filter((b) => (byBoard.get(b.id) ?? []).length > 0)
+    .map((b) => ({
+      id: `team_of_decade:${b.key}`,
+      category: "team_of_decade",
+      layout: "teamOfDecade" as const,
+      title: b.title,
+      subtitle: [b.teamLabel, b.periodLabel, b.subtitle].filter(Boolean).join(" · ") || null,
+      entries: (byBoard.get(b.id) ?? []).map((m) => {
+        const marks = [
+          m.isCaptain ? "(c)" : "",
+          m.isViceCaptain ? "(vc)" : "",
+          m.isWicketkeeper ? "(wk)" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return {
+          season: "",
+          primaryText: marks ? `${m.name} ${marks}` : m.name,
+          detail: m.role || null,
+          playerId: m.playerId ?? null,
+        };
+      }),
+    }));
+}
+
+/** Per-published-award honour boards, each under its REAL award title. */
+async function buildAwardBoards(): Promise<HonourBoardOut[]> {
+  const awards = await db
+    .select()
+    .from(awardsTable)
+    .where(eq(awardsTable.published, true))
+    .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
+  if (awards.length === 0) return [];
 
   const awardIds = awards.map((a) => a.id);
   const winners = await db
@@ -382,68 +791,75 @@ async function buildAwardBoards(): Promise<{
     byAward.get(w.awardId)!.push(w);
   }
 
-  const toEntries = (awardId: number): BoardEntry[] =>
-    (byAward.get(awardId) ?? []).map((w) => ({
-      season: seasonLabel(w.season),
-      primaryText: w.name,
-      detail: null,
-      playerId: w.playerId ?? null,
-    }));
-
-  let clubChampions: HonourBoardOut | null = null;
-  const awardBoards: HonourBoardOut[] = [];
+  const boards: HonourBoardOut[] = [];
   for (const a of awards) {
-    const entries = toEntries(a.id);
-    if (entries.length === 0) continue;
-    if (a.key === CLUB_CHAMPION_AWARD_KEY) {
-      clubChampions = {
-        id: "club_champions",
-        category: "club_champions",
-        title: "Club Champions",
-        subtitle: a.title,
-        entries,
-      };
-      continue;
-    }
-    awardBoards.push({
+    const winRows = byAward.get(a.id) ?? [];
+    if (winRows.length === 0) continue;
+    boards.push({
       id: `award:${a.key}`,
       category: "awards",
+      layout: "list",
       title: a.title,
       subtitle: a.description || null,
-      entries,
+      entries: winRows.map((w) => ({
+        season: seasonLabel(w.season),
+        primaryText: w.name,
+        detail: null,
+        playerId: w.playerId ?? null,
+      })),
     });
   }
-  return { clubChampions, awards: awardBoards };
+  return boards;
 }
 
 async function assembleBoards(): Promise<HonourBoardOut[]> {
   const [
     premierships,
+    awards,
     centuries,
     fiveFor,
     lifeMembers,
     captains,
+    committee,
+    partnerships,
+    milestones,
+    awardPoints,
+    recordsLeaderboards,
+    recordsByGrade,
+    teamOfDecade,
     clubRecords,
-    awardResult,
   ] = await Promise.all([
     buildPremierships(),
+    buildAwardBoards(),
     buildCenturies(),
     buildFiveWicketHauls(),
     buildLifeMembers(),
     buildCaptains(),
+    buildCommittee(),
+    buildPartnerships(),
+    buildMilestoneBoard(),
+    buildAwardPoints(),
+    buildRecordsLeaderboards(),
+    buildRecordsByGrade(),
+    buildTeamOfDecade(),
     buildClubRecords(),
-    buildAwardBoards(),
   ]);
 
   const boards: HonourBoardOut[] = [];
   if (premierships) boards.push(premierships);
-  if (awardResult.clubChampions) boards.push(awardResult.clubChampions);
+  boards.push(...awards);
+  boards.push(...teamOfDecade);
+  if (clubRecords) boards.push(clubRecords);
+  boards.push(...recordsByGrade);
+  if (partnerships) boards.push(partnerships);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
+  if (milestones) boards.push(milestones);
+  boards.push(...awardPoints);
+  boards.push(...recordsLeaderboards);
+  boards.push(...captains);
+  if (committee) boards.push(committee);
   if (lifeMembers) boards.push(lifeMembers);
-  if (captains) boards.push(captains);
-  if (clubRecords) boards.push(clubRecords);
-  boards.push(...awardResult.awards);
   return boards;
 }
 
@@ -473,10 +889,10 @@ async function buildBrand() {
 }
 
 // ---------------------------------------------------------------------------
-// Routes
+// Routes (admin-only: the display + kiosk are clubroom/admin tools)
 // ---------------------------------------------------------------------------
 
-router.get("/honour-display", async (_req, res): Promise<void> => {
+router.get("/honour-display", requireAdmin, async (_req, res): Promise<void> => {
   const [boards, brand, settingsRow] = await Promise.all([
     assembleBoards(),
     buildBrand(),
