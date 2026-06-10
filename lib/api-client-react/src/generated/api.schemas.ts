@@ -2335,6 +2335,7 @@ export const CardLayoutLayerKind = {
   image: 'image',
   sticker: 'sticker',
   text: 'text',
+  libsticker: 'libsticker',
 } as const;
 
 export type CardLayoutLayerVAnchor = typeof CardLayoutLayerVAnchor[keyof typeof CardLayoutLayerVAnchor];
@@ -2403,6 +2404,8 @@ export interface CardLayoutLayer {
   align?: CardLayoutLayerAlign;
   fontFamily?: CardLayoutLayerFontFamily;
   uppercase?: boolean;
+  assetId?: string;
+  field?: string;
 }
 
 export interface CardLayout {

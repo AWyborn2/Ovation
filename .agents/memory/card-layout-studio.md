@@ -34,3 +34,8 @@ The `add` helper forces `resizable: l.selectable` (overrides whatever a call sit
 
 ## Two-axis snapping + align to other layers (FIX C)
 `EditorCanvas.onPointerMove` snaps BOTH axes. Targets = card edges/midline AND every other visible selectable layer's left/centre/right (x) and top/centre/bottom (y). Vertical snap is computed in **top-origin units (fraction of 1080)** to neutralise per-layer `vAnchor`, then converted back. Picks the single closest target per axis (min distance, no accumulation). Renders both vertical (`vx`) and horizontal (`hy`) guides.
+
+## Built-in sticker / clip-art library
+Curated assets live in `sticker-library.ts` (StickerAsset has a single `draw(ctx,x,y,w,h,opts)` used by BOTH picker thumbnails via `renderStickerThumb` AND the renderer). Categories: icons (lucide ISC SVGs rasterised + recoloured via canvas), cricket motifs, shapes, frames, data-bound badges. A `libsticker` EditorLayer carries `assetId` (+ `color`, `field`). `drawCustomLibSticker` resolves data-bound text via `resolveTextField(field, input, tplCtx)` → manual `text` → asset `defaultText`. Editor adds via click or HTML drag-and-drop (`application/x-sticker` dataTransfer) onto the canvas; Inspector shows palette swatches when `recolourable` and a field `<select>` (from `fieldsForKind`) + text override when `dataBound`.
+
+**Gotcha — adding any new custom layer kind:** you MUST update the openapi `CardLayoutLayer` schema in TWO places — the `kind` enum AND any new property defs (e.g. `assetId`, `field`) — then run `pnpm --filter @workspace/api-spec run codegen`. Enum-only edits compile the editor but the generated `CardLayoutLayer` lacks the props, so `share-card.ts` fails typecheck with "Property 'X' does not exist on type 'CardLayoutLayer'".

@@ -14,4 +14,5 @@ export const CardLayoutLayerKind = {
   image: 'image',
   sticker: 'sticker',
   text: 'text',
+  libsticker: 'libsticker',
 } as const;

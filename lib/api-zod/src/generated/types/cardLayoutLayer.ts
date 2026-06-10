@@ -36,4 +36,6 @@ export interface CardLayoutLayer {
   align?: CardLayoutLayerAlign;
   fontFamily?: CardLayoutLayerFontFamily;
   uppercase?: boolean;
+  assetId?: string;
+  field?: string;
 }

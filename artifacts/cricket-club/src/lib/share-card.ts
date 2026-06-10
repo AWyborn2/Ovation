@@ -8,6 +8,7 @@ import {
   resolvePhotoField,
   type TemplateContext,
 } from "./card-template";
+import { getSticker } from "./sticker-library";
 
 const TIER_ICONS: LucideIcon[] = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
 
@@ -1523,7 +1524,7 @@ type PxRect = { x: number; y: number; w: number; h: number };
 
 type RenderLayer = {
   id: string;
-  editKind: "element" | "image" | "sticker" | "text";
+  editKind: "element" | "image" | "sticker" | "text" | "libsticker";
   label: string;
   natural: PxRect;
   rect: PxRect;
@@ -1547,7 +1548,7 @@ type RenderLayer = {
 // (vAnchor "top") or the bottom (vAnchor "bottom") edge.
 export type EditorLayer = {
   id: string;
-  editKind: "element" | "image" | "sticker" | "text";
+  editKind: "element" | "image" | "sticker" | "text" | "libsticker";
   label: string;
   selectable: boolean;
   resizable: boolean;
@@ -1572,6 +1573,10 @@ export type EditorLayer = {
   align?: "left" | "center" | "right";
   fontFamily?: "sans" | "serif";
   uppercase?: boolean;
+  // libsticker layers: which catalog asset, and (for data-bound badges) which
+  // card field auto-fills the text slot.
+  assetId?: string;
+  field?: string;
 };
 
 // Shared asset preload for the standard body (theme bg, player photo, club logo).
@@ -2580,9 +2585,22 @@ const savedRectToPx = (s: CardLayoutLayer, H: number): PxRect => {
 
 // Build a custom (image/sticker/text) layer from a saved entry. These draw
 // directly within their rect (drawsAtNatural = false).
-const buildCustomLayer = (s: CardLayoutLayer, H: number, z: number): RenderLayer => {
+const buildCustomLayer = (
+  s: CardLayoutLayer,
+  H: number,
+  z: number,
+  input: ShareCardInput,
+  tplCtx: TemplateContext,
+): RenderLayer => {
   const rect = savedRectToPx(s, H);
-  const label = s.kind === "image" ? "Image" : s.kind === "sticker" ? "Shape" : "Text";
+  const label =
+    s.kind === "image"
+      ? "Image"
+      : s.kind === "sticker"
+        ? "Shape"
+        : s.kind === "libsticker"
+          ? getSticker(s.assetId)?.name ?? "Sticker"
+          : "Text";
   return {
     id: s.id,
     editKind: s.kind,
@@ -2597,6 +2615,7 @@ const buildCustomLayer = (s: CardLayoutLayer, H: number, z: number): RenderLayer
     drawsAtNatural: false,
     draw: (ctx) => {
       if (s.kind === "image") return drawCustomImage(ctx, s, rect);
+      if (s.kind === "libsticker") return drawCustomLibSticker(ctx, s, rect, input, tplCtx);
       if (s.kind === "sticker") drawCustomSticker(ctx, s, rect);
       else drawCustomText(ctx, s, rect);
       return undefined;
@@ -2650,6 +2669,30 @@ const drawCustomSticker = (ctx: CanvasRenderingContext2D, s: CardLayoutLayer, r:
   }
 };
 
+// Draw a built-in library sticker. The asset's own canvas draw fn recolours to
+// `color`; data-bound badges auto-fill their text from a card field (falling
+// back to a manual override or the asset's default label).
+const drawCustomLibSticker = async (
+  ctx: CanvasRenderingContext2D,
+  s: CardLayoutLayer,
+  r: PxRect,
+  input: ShareCardInput,
+  tplCtx: TemplateContext,
+) => {
+  const asset = getSticker(s.assetId);
+  if (!asset) return;
+  let text = asset.defaultText ?? "";
+  if (asset.dataBound && s.field) {
+    const resolved = resolveTextField(input, s.field, tplCtx);
+    if (resolved) text = resolved;
+    else if (s.text) text = s.text;
+  } else if (s.text) {
+    text = s.text;
+  }
+  const color = s.color || "#FBAC27";
+  await asset.draw(ctx, r.x, r.y, r.w, r.h, { color, text });
+};
+
 const drawCustomText = (ctx: CanvasRenderingContext2D, s: CardLayoutLayer, r: PxRect) => {
   const px = Math.max(8, (s.fontSize ?? 0.05) * 1080);
   const family = s.fontFamily === "serif" ? "Georgia, 'Times New Roman', serif" : CARD_FONT;
@@ -2672,6 +2715,8 @@ const applyLayout = (
   builtins: RenderLayer[],
   saved: CardLayoutLayer[],
   H: number,
+  input: ShareCardInput,
+  tplCtx: TemplateContext,
 ): RenderLayer[] => {
   const byId = new Map(builtins.map((l) => [l.id, l]));
   const customs: RenderLayer[] = [];
@@ -2698,7 +2743,7 @@ const applyLayout = (
       }
     } else {
       const z = typeof s.z === "number" ? s.z : builtins.length + customs.length;
-      customs.push(buildCustomLayer(s, H, z));
+      customs.push(buildCustomLayer(s, H, z, input, tplCtx));
     }
   }
   return [...builtins, ...customs];
@@ -2779,7 +2824,14 @@ export const computeCardLayers = async (
       order.push({
         id: s.id,
         editKind: s.kind,
-        label: s.kind === "image" ? "Image" : s.kind === "sticker" ? "Shape" : "Text",
+        label:
+          s.kind === "image"
+            ? "Image"
+            : s.kind === "sticker"
+              ? "Shape"
+              : s.kind === "libsticker"
+                ? getSticker(s.assetId)?.name ?? "Sticker"
+                : "Text",
         selectable: true,
         resizable: true,
         x: s.x ?? 0,
@@ -2803,6 +2855,8 @@ export const computeCardLayers = async (
         align: s.align,
         fontFamily: s.fontFamily,
         uppercase: s.uppercase,
+        assetId: s.assetId,
+        field: s.field,
       });
     }
   }
@@ -2865,7 +2919,14 @@ export const renderShareCard = async (
   // element rects/z/visibility and appends custom image/sticker/text layers.
   const assets = await loadCardAssets(input, opts);
   const builtins = buildLayers(input, opts, p, W, H, scale, assets);
-  const layers = opts.layout?.length ? applyLayout(builtins, opts.layout, H) : builtins;
+  const tplCtx: TemplateContext = {
+    clubUrl: opts.clubUrl,
+    hashtag: opts.hashtag,
+    photoUrl: opts.photoUrl,
+  };
+  const layers = opts.layout?.length
+    ? applyLayout(builtins, opts.layout, H, input, tplCtx)
+    : builtins;
   await drawLayers(ctx, layers);
 
   return new Promise<Blob>((resolve, reject) => {

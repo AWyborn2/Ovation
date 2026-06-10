@@ -3828,7 +3828,7 @@ export const ListCardLayoutsResponseItem = zod.object({
   "cardKind": zod.string(),
   "layers": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -3849,7 +3849,9 @@ export const ListCardLayoutsResponseItem = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional()
 }))
 })
 export const ListCardLayoutsResponse = zod.array(ListCardLayoutsResponseItem)
@@ -3865,7 +3867,7 @@ export const UpsertCardLayoutParams = zod.object({
 export const UpsertCardLayoutBody = zod.object({
   "layers": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -3886,7 +3888,9 @@ export const UpsertCardLayoutBody = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional()
 }))
 })
 
@@ -3895,7 +3899,7 @@ export const UpsertCardLayoutResponse = zod.object({
   "cardKind": zod.string(),
   "layers": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -3916,7 +3920,9 @@ export const UpsertCardLayoutResponse = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional()
 }))
 })
 

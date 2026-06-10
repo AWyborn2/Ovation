@@ -7321,7 +7321,7 @@ components:
           type: string
         kind:
           type: string
-          enum: [element, image, sticker, text]
+          enum: [element, image, sticker, text, libsticker]
         x:
           type: number
         y:
@@ -7369,6 +7369,10 @@ components:
           enum: [sans, serif]
         uppercase:
           type: boolean
+        assetId:
+          type: string
+        field:
+          type: string
 
     CardLayout:
       type: object

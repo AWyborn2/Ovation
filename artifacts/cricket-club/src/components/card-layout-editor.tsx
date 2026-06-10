@@ -27,7 +27,18 @@ import {
   RotateCcw,
   Save,
   X,
+  Sticker,
 } from "lucide-react";
+import {
+  STICKER_ASSETS,
+  STICKER_CATEGORIES,
+  searchStickers,
+  renderStickerThumb,
+  getSticker,
+  type StickerAsset,
+  type StickerCategory,
+} from "@/lib/sticker-library";
+import { fieldsForKind } from "@/lib/card-template";
 import {
   SIZES,
   computeCardLayers,
@@ -150,6 +161,8 @@ function editorToSaved(
         align: l.align,
         fontFamily: l.fontFamily,
         uppercase: l.uppercase,
+        assetId: l.assetId,
+        field: l.field,
       });
     }
   }
@@ -215,6 +228,7 @@ export function CardLayoutEditor({
   const [layers, setLayers] = useState<EditorLayer[]>([]);
   const [pristine, setPristine] = useState<EditorLayer[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showStickers, setShowStickers] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [computing, setComputing] = useState(true);
   const [rendering, setRendering] = useState(false);
@@ -330,6 +344,41 @@ export function CardLayoutEditor({
     if (r) addLayer("image", { url: `/api/storage${r.objectPath}`, shape: "rect", fit: "cover", zoom: 1, focalX: 0.5, focalY: 0.5 });
   };
 
+  // Add a built-in library sticker as a normal movable/resizable layer. When
+  // `at` (normalised drop point, fractions of 1080) is given the sticker is
+  // centred there; otherwise it lands centred-ish on the card.
+  const addSticker = (asset: StickerAsset, at?: { x: number; y: number }) => {
+    const maxZ = layers.reduce((m, l) => Math.max(m, l.z), 0);
+    const w = 0.28;
+    const h = clamp(w / asset.aspect, 0.04, 1.4);
+    const x = at ? clamp(at.x - w / 2, 0, 1 - w) : 0.36;
+    const y = at ? Math.max(0, at.y - h / 2) : 0.36;
+    const layer: EditorLayer = {
+      id: newId(),
+      editKind: "libsticker",
+      label: asset.name,
+      selectable: true,
+      resizable: true,
+      x,
+      y,
+      w,
+      h,
+      vAnchor: "top",
+      z: maxZ + 1,
+      hidden: false,
+      assetId: asset.id,
+      color: "#FBAC27",
+      field: asset.dataBound ? asset.defaultField : undefined,
+    };
+    setLayers((ls) => [...ls, layer]);
+    setSelectedId(layer.id);
+  };
+
+  const handleDropSticker = (assetId: string, at: { x: number; y: number }) => {
+    const asset = getSticker(assetId);
+    if (asset) addSticker(asset, at);
+  };
+
   const handleSave = () => {
     setError(null);
     if (controlled) {
@@ -403,6 +452,7 @@ export function CardLayoutEditor({
             H={H}
             onSelect={setSelectedId}
             onChange={patchLayer}
+            onDropSticker={handleDropSticker}
           />
 
           <div className="space-y-3">
@@ -449,7 +499,17 @@ export function CardLayoutEditor({
               >
                 <Type className="mr-1 h-3.5 w-3.5" /> Text
               </Button>
+              <Button
+                size="sm"
+                variant={showStickers ? "default" : "outline"}
+                className="flex-1"
+                onClick={() => setShowStickers((s) => !s)}
+              >
+                <Sticker className="mr-1 h-3.5 w-3.5" /> Stickers
+              </Button>
             </div>
+
+            {showStickers && <StickerPicker onPick={(a) => addSticker(a)} />}
 
             <LayerList
               layers={layers}
@@ -462,6 +522,7 @@ export function CardLayoutEditor({
             {selected && (
               <Inspector
                 layer={selected}
+                cardKind={cardKind}
                 onChange={(patch) => patchLayer(selected.id, patch)}
                 onRemove={() => removeLayer(selected.id)}
               />
@@ -493,6 +554,94 @@ export function CardLayoutEditor({
   );
 }
 
+function StickerPicker({ onPick }: { onPick: (asset: StickerAsset) => void }) {
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState<StickerCategory | "all">("all");
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries: Array<[string, string]> = [];
+      for (const a of STICKER_ASSETS) {
+        try {
+          const url = await renderStickerThumb(a, "#FBAC27", 88);
+          if (url) entries.push([a.id, url]);
+        } catch {
+          /* skip thumbs that fail to render */
+        }
+        if (cancelled) return;
+      }
+      if (!cancelled) setThumbs(Object.fromEntries(entries));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const list = searchStickers(cat, q);
+
+  return (
+    <div className="space-y-2 rounded border p-2">
+      <Input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search stickers…"
+        className="h-8 text-xs"
+      />
+      <div className="flex flex-wrap gap-1">
+        {[{ id: "all", label: "All" }, ...STICKER_CATEGORIES].map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => setCat(c.id as StickerCategory | "all")}
+            className={`rounded px-1.5 py-0.5 text-[10px] ${
+              cat === c.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid max-h-52 grid-cols-3 gap-1.5 overflow-y-auto">
+        {list.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            title={a.name}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/x-sticker", a.id);
+              e.dataTransfer.effectAllowed = "copy";
+            }}
+            onClick={() => onPick(a)}
+            className="flex aspect-square items-center justify-center rounded border bg-card p-1 hover:border-primary"
+          >
+            {thumbs[a.id] ? (
+              <img
+                src={thumbs[a.id]}
+                alt={a.name}
+                className="h-full w-full object-contain"
+                draggable={false}
+              />
+            ) : (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </button>
+        ))}
+        {list.length === 0 && (
+          <p className="col-span-3 py-4 text-center text-[11px] text-muted-foreground">
+            No stickers found
+          </p>
+        )}
+      </div>
+      <p className="text-[10px] text-muted-foreground">Click to add, or drag onto the card.</p>
+    </div>
+  );
+}
+
 function EditorCanvas({
   previewUrl,
   rendering,
@@ -502,6 +651,7 @@ function EditorCanvas({
   H,
   onSelect,
   onChange,
+  onDropSticker,
 }: {
   previewUrl: string | null;
   rendering: boolean;
@@ -511,6 +661,7 @@ function EditorCanvas({
   H: number;
   onSelect: (id: string | null) => void;
   onChange: (id: string, patch: Partial<EditorLayer>) => void;
+  onDropSticker: (assetId: string, at: { x: number; y: number }) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -687,6 +838,21 @@ function EditorCanvas({
       className="relative w-full select-none touch-none overflow-hidden rounded-md border bg-muted"
       style={{ aspectRatio: `${W} / ${H}`, maxHeight: 460 }}
       onPointerDown={() => onSelect(null)}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("application/x-sticker")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }
+      }}
+      onDrop={(e) => {
+        const id = e.dataTransfer.getData("application/x-sticker");
+        if (!id || !ref.current) return;
+        e.preventDefault();
+        const rect = ref.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * (W / 1080);
+        const y = ((e.clientY - rect.top) / rect.height) * (H / 1080);
+        onDropSticker(id, { x, y });
+      }}
     >
       {previewUrl ? (
         <img
@@ -825,14 +991,17 @@ function LayerList({
 
 function Inspector({
   layer,
+  cardKind,
   onChange,
   onRemove,
 }: {
   layer: EditorLayer;
+  cardKind: ShareCardInput["kind"];
   onChange: (patch: Partial<EditorLayer>) => void;
   onRemove: () => void;
 }) {
   const isCustom = layer.editKind !== "element";
+  const sticker = layer.editKind === "libsticker" ? getSticker(layer.assetId) : undefined;
   return (
     <div className="space-y-2 rounded border p-2">
       <div className="flex items-center justify-between">
@@ -936,6 +1105,49 @@ function Inspector({
               value={layer.radius ?? 0.008}
               onChange={(v) => onChange({ radius: v })}
             />
+          )}
+        </>
+      )}
+
+      {layer.editKind === "libsticker" && sticker && (
+        <>
+          {sticker.recolourable && (
+            <div className="flex items-center gap-2">
+              <PaletteSwatches
+                value={layer.color ?? "#FBAC27"}
+                onChange={(color) => onChange({ color })}
+              />
+            </div>
+          )}
+          {sticker.dataBound && (
+            <>
+              <Label className="text-[10px] text-muted-foreground">Auto-fill from</Label>
+              <select
+                value={layer.field ?? ""}
+                onChange={(e) => onChange({ field: e.target.value || undefined })}
+                className="h-8 w-full rounded border bg-card px-1 text-xs"
+              >
+                <option value="">— None (manual text) —</option>
+                {fieldsForKind(cardKind)
+                  .filter((f) => f.type === "text")
+                  .map((f) => (
+                    <option key={f.key} value={f.key}>
+                      {f.label}
+                    </option>
+                  ))}
+              </select>
+              <Input
+                value={layer.text ?? ""}
+                onChange={(e) => onChange({ text: e.target.value })}
+                placeholder={sticker.defaultText ?? "Text"}
+                className="h-8 text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                {layer.field
+                  ? "Auto-fills from card data; the text above is a fallback."
+                  : "Enter the text to display on the badge."}
+              </p>
+            </>
           )}
         </>
       )}
