@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt } from "drizzle-orm";
 import {
   db,
   honourDisplaySettingsTable,
@@ -19,6 +19,10 @@ import {
   teamOfDecadeBoardsTable,
   teamOfDecadeMembersTable,
   playerGradeStatsTable,
+  playersTable,
+  type HonourDisplaySettingsRow,
+  type BoardDisplayConfigJson,
+  type CompositeDefJson,
 } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -77,6 +81,8 @@ function serializeSettings(
     kioskDwellMs: row.kioskDwellMs,
     kioskScrollSpeed: row.kioskScrollSpeed,
     kioskEndHoldMs: row.kioskEndHoldMs,
+    boardConfigs: row.boardConfigs ?? {},
+    composites: row.composites ?? [],
     // Only surface the kiosk token to authenticated admins. The public
     // kiosk feed omits it so it never leaks to the rotation client.
     ...(opts.includeToken ? { kioskToken: row.kioskToken ?? null } : {}),
@@ -126,7 +132,23 @@ interface BoardEntry {
 }
 
 // Each board keeps its NATURAL layout; the chosen skin only changes the look.
-type BoardLayout = "premiership" | "teamOfDecade" | "list";
+// "columns" is a composite layout: several list boards rendered side-by-side.
+type BoardLayout = "premiership" | "teamOfDecade" | "list" | "columns";
+
+type BoardTransition = "scroll" | "slide";
+
+// Resolved (always-present) per-board display config sent to the client.
+interface BoardDisplayOut {
+  columns: number; // multi-column list flow count (1..3); 1 for non-list layouts
+  transition: BoardTransition;
+  fit: boolean; // drop the height cap and fill the viewport
+}
+
+// One column of a composite "columns" board.
+interface BoardColumnOut {
+  heading: string;
+  entries: BoardEntry[];
+}
 
 interface HonourBoardOut {
   id: string;
@@ -135,6 +157,33 @@ interface HonourBoardOut {
   title: string;
   subtitle?: string | null;
   entries: BoardEntry[];
+  // Only set for the "columns" layout (composite boards).
+  columns?: BoardColumnOut[] | null;
+  // Stamped onto every board by assembleBoards before serialization.
+  display?: BoardDisplayOut;
+}
+
+const DEFAULT_DISPLAY: BoardDisplayOut = {
+  columns: 1,
+  transition: "scroll",
+  fit: false,
+};
+
+/** Resolve a board's display config: defaults merged with the admin override. */
+function resolveDisplay(
+  layout: BoardLayout,
+  override: BoardDisplayConfigJson | undefined,
+): BoardDisplayOut {
+  // Multi-column flow only makes sense for plain lists; other layouts stay 1.
+  const cols =
+    layout === "list"
+      ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1)))
+      : 1;
+  return {
+    columns: cols,
+    transition: override?.transition ?? DEFAULT_DISPLAY.transition,
+    fit: override?.fit ?? DEFAULT_DISPLAY.fit,
+  };
 }
 
 /** Map a flat premiership grade to the grade-filter parent key. */
@@ -830,7 +879,149 @@ async function buildAwardBoards(): Promise<HonourBoardOut[]> {
   return boards;
 }
 
-async function assembleBoards(): Promise<HonourBoardOut[]> {
+/** Most career appearances — real players only (id < 90000), games > 0. */
+async function buildMostGames(): Promise<HonourBoardOut | null> {
+  const rows = await db
+    .select({
+      id: playersTable.id,
+      surname: playersTable.surname,
+      givenName: playersTable.givenName,
+      totalGames: playersTable.totalGames,
+    })
+    .from(playersTable)
+    .where(and(lt(playersTable.id, 90000), gt(playersTable.totalGames, 0)))
+    .orderBy(desc(playersTable.totalGames), asc(playersTable.surname))
+    .limit(50);
+  if (rows.length === 0) return null;
+  return {
+    id: "most_games",
+    category: "most_games",
+    layout: "list",
+    title: "Most Games Played",
+    subtitle: "Career appearances for the club",
+    entries: rows.map((r, i) => ({
+      season: "",
+      primaryText: `${r.givenName ?? ""} ${r.surname}`.trim(),
+      detail: `${r.totalGames} games`,
+      playerId: r.id,
+      meta: { rank: i + 1 },
+    })),
+  };
+}
+
+/** Parse the leading start-year from a season label ("2024/25" -> 2024). */
+function seasonStartYearFromLabel(label: string): number {
+  const m = label.match(/(\d{4})/);
+  return m ? parseInt(m[1]!, 10) : -1;
+}
+
+// Refs that can never be a composite column source.
+const NON_COMPOSITE_REFS = new Set(["approaching"]);
+
+/**
+ * Build admin-defined composite "columns" boards from settings.composites.
+ * Free columns are the core mechanism (each list board becomes a column).
+ * seasonAligned is a guarded transform: only applied when EVERY referenced
+ * column has a non-empty season on every entry; otherwise we fall back to the
+ * free-columns layout so a board without seasons never collapses to empty.
+ */
+function buildComposites(
+  defs: CompositeDefJson[],
+  baseBoards: HonourBoardOut[],
+): HonourBoardOut[] {
+  const byId = new Map(baseBoards.map((b) => [b.id, b]));
+  const out: HonourBoardOut[] = [];
+  for (const def of defs) {
+    if (typeof def?.id !== "string" || !def.id.startsWith("composite:")) continue;
+    const cols: BoardColumnOut[] = [];
+    for (const ref of def.columns ?? []) {
+      if (!ref || NON_COMPOSITE_REFS.has(ref.boardId)) continue;
+      if (ref.boardId.startsWith("composite:")) continue; // no nesting
+      const src = byId.get(ref.boardId);
+      if (!src || src.layout !== "list") continue; // only list boards
+      cols.push({
+        heading: (ref.heading ?? "").trim() || src.title,
+        entries: src.entries,
+      });
+    }
+    if (cols.length === 0) continue;
+
+    const canAlign =
+      def.seasonAligned &&
+      cols.every(
+        (c) =>
+          c.entries.length > 0 &&
+          c.entries.every((e) => (e.season ?? "") !== ""),
+      );
+
+    let columns: BoardColumnOut[];
+    if (canAlign) {
+      // Union of all seasons across the columns, newest first.
+      const yearByLabel = new Map<string, number>();
+      for (const c of cols)
+        for (const e of c.entries)
+          yearByLabel.set(e.season, seasonStartYearFromLabel(e.season));
+      const seasons = [...yearByLabel.entries()]
+        .sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))
+        .map(([label]) => label);
+      const seasonCol: BoardColumnOut = {
+        heading: "Season",
+        entries: seasons.map((s) => ({ season: s, primaryText: s })),
+      };
+      const aligned = cols.map((c) => {
+        const bySeason = new Map<string, BoardEntry[]>();
+        for (const e of c.entries) {
+          if (!bySeason.has(e.season)) bySeason.set(e.season, []);
+          bySeason.get(e.season)!.push(e);
+        }
+        return {
+          heading: c.heading,
+          entries: seasons.map((s): BoardEntry => {
+            const hits = bySeason.get(s) ?? [];
+            if (hits.length === 0) return { season: s, primaryText: "" };
+            if (hits.length === 1) {
+              const h = hits[0]!;
+              return {
+                season: s,
+                primaryText: h.primaryText,
+                detail: h.detail ?? null,
+                playerId: h.playerId ?? null,
+                matchId: h.matchId ?? null,
+              };
+            }
+            return {
+              season: s,
+              primaryText: hits.map((h) => h.primaryText).join(", "),
+              detail:
+                hits
+                  .map((h) => h.detail)
+                  .filter((d): d is string => !!d)
+                  .join(" · ") || null,
+            };
+          }),
+        };
+      });
+      columns = [seasonCol, ...aligned];
+    } else {
+      columns = cols;
+    }
+
+    out.push({
+      id: def.id,
+      category: "composite",
+      layout: "columns",
+      title: def.title,
+      subtitle: def.subtitle ?? null,
+      entries: [],
+      columns,
+    });
+  }
+  return out;
+}
+
+async function assembleBoards(
+  settings: HonourDisplaySettingsRow,
+): Promise<HonourBoardOut[]> {
   const [
     premierships,
     awards,
@@ -846,6 +1037,7 @@ async function assembleBoards(): Promise<HonourBoardOut[]> {
     recordsByGrade,
     teamOfDecade,
     clubRecords,
+    mostGames,
   ] = await Promise.all([
     buildPremierships(),
     buildAwardBoards(),
@@ -861,6 +1053,7 @@ async function assembleBoards(): Promise<HonourBoardOut[]> {
     buildRecordsByGrade(),
     buildTeamOfDecade(),
     buildClubRecords(),
+    buildMostGames(),
   ]);
 
   const boards: HonourBoardOut[] = [];
@@ -872,12 +1065,32 @@ async function assembleBoards(): Promise<HonourBoardOut[]> {
   if (partnerships) boards.push(partnerships);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
+  if (mostGames) boards.push(mostGames);
   if (milestones) boards.push(milestones);
   boards.push(...awardPoints);
   boards.push(...recordsLeaderboards);
   boards.push(...captains);
   if (committee) boards.push(committee);
   if (lifeMembers) boards.push(lifeMembers);
+
+  // Composite "columns" boards reference the base boards above, so build them
+  // last (after Most Games) and append.
+  boards.push(...buildComposites(settings.composites ?? [], boards));
+
+  // Stamp the resolved display config onto every board.
+  const boardConfigs = settings.boardConfigs ?? {};
+  for (const b of boards) {
+    if (b.layout === "columns") {
+      const def = (settings.composites ?? []).find((d) => d.id === b.id);
+      b.display = {
+        columns: 1,
+        transition: def?.transition ?? "scroll",
+        fit: def?.fit ?? true,
+      };
+    } else {
+      b.display = resolveDisplay(b.layout, boardConfigs[b.id]);
+    }
+  }
   return boards;
 }
 
@@ -911,10 +1124,10 @@ async function buildBrand() {
 // ---------------------------------------------------------------------------
 
 router.get("/honour-display", requireAdmin, async (_req, res): Promise<void> => {
-  const [boards, brand, settingsRow] = await Promise.all([
-    assembleBoards(),
+  const settingsRow = await ensureHonourDisplaySettings();
+  const [boards, brand] = await Promise.all([
+    assembleBoards(settingsRow),
     buildBrand(),
-    ensureHonourDisplaySettings(),
   ]);
   res.json({
     boards,
@@ -932,7 +1145,10 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
     res.status(403).json({ error: "Invalid or revoked kiosk token" });
     return;
   }
-  const [boards, brand] = await Promise.all([assembleBoards(), buildBrand()]);
+  const [boards, brand] = await Promise.all([
+    assembleBoards(settingsRow),
+    buildBrand(),
+  ]);
   res.json({ boards, brand, settings: serializeSettings(settingsRow) });
 });
 

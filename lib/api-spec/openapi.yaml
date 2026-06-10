@@ -8349,6 +8349,117 @@ components:
             $ref: "#/components/schemas/BoardSquadMember"
           description: Premiership squad (premiership_players) for P7 "View team".
 
+    BoardDisplay:
+      type: object
+      description: >-
+        Resolved per-board display config the server stamps onto every board
+        (defaults merged with the admin's per-board overrides). Drives the
+        display + kiosk render.
+      required:
+        - columns
+        - transition
+        - fit
+      properties:
+        columns:
+          type: integer
+          minimum: 1
+          maximum: 3
+          description: Column count for multi-column list flow (1 = single column).
+        transition:
+          type: string
+          enum:
+            - scroll
+            - slide
+          description: Kiosk transition — continuous credit-scroll or paged slide.
+        fit:
+          type: boolean
+          description: Fill the full screen width on the kiosk (drop the narrow cap).
+
+    BoardDisplayConfig:
+      type: object
+      description: >-
+        Admin per-board override (all fields optional; unset falls back to the
+        board's natural default). Stored keyed by board id in settings.boardConfigs.
+      properties:
+        columns:
+          type: integer
+          minimum: 1
+          maximum: 3
+        transition:
+          type: string
+          enum:
+            - scroll
+            - slide
+        fit:
+          type: boolean
+
+    BoardColumn:
+      type: object
+      description: A single column of a composite 'columns' layout board.
+      required:
+        - heading
+        - entries
+      properties:
+        heading:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoardEntry"
+
+    CompositeColumnRef:
+      type: object
+      description: One column of a composite board — a reference to an existing list board.
+      required:
+        - boardId
+        - heading
+      properties:
+        boardId:
+          type: string
+          description: Id of the source list-layout board to pull entries from.
+        heading:
+          type: string
+          description: Column heading shown above the source board's entries.
+
+    CompositeDef:
+      type: object
+      description: >-
+        Admin-defined composite board that places several existing list boards
+        side-by-side as columns (like the club's physical honour board).
+      required:
+        - id
+        - title
+        - seasonAligned
+        - columns
+      properties:
+        id:
+          type: string
+          description: Stable composite id, e.g. "composite:<uuid>" (never reused).
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        seasonAligned:
+          type: boolean
+          description: >-
+            When true and every source column is season-based, the server emits
+            a leading SEASON column and aligns rows by season; otherwise it
+            falls back to free side-by-side columns.
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompositeColumnRef"
+        transition:
+          type: string
+          enum:
+            - scroll
+            - slide
+          nullable: true
+        fit:
+          type: boolean
+          nullable: true
+
     DisplayBoard:
       type: object
       required:
@@ -8357,6 +8468,7 @@ components:
         - layout
         - title
         - entries
+        - display
       properties:
         id:
           type: string
@@ -8370,6 +8482,7 @@ components:
             - premiership
             - teamOfDecade
             - list
+            - columns
           description: Natural render layout for this board (skin only changes the look).
         title:
           type: string
@@ -8380,6 +8493,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BoardEntry"
+        columns:
+          type: array
+          nullable: true
+          description: Side-by-side columns for the 'columns' layout (else null).
+          items:
+            $ref: "#/components/schemas/BoardColumn"
+        display:
+          $ref: "#/components/schemas/BoardDisplay"
 
     HonourDisplaySettings:
       type: object
@@ -8389,10 +8510,12 @@ components:
         - kioskDwellMs
         - kioskScrollSpeed
         - kioskEndHoldMs
+        - boardConfigs
+        - composites
       properties:
         defaultTemplate:
           type: string
-          enum: [p1, p2, p3, p4, p5, p6, p7]
+          enum: [p1, p2, p3, p4, p5, p6, p7, p8]
           description: The single club-wide skin every board renders in.
         kioskSequence:
           type: array
@@ -8414,6 +8537,16 @@ components:
           description: >-
             Long-lived read-only kiosk access token (admin bundle only; null
             when no link has been issued). Omitted from the public kiosk feed.
+        boardConfigs:
+          type: object
+          description: Per-board display overrides keyed by board id.
+          additionalProperties:
+            $ref: "#/components/schemas/BoardDisplayConfig"
+        composites:
+          type: array
+          description: Admin-defined composite 'columns' boards.
+          items:
+            $ref: "#/components/schemas/CompositeDef"
 
     KioskTokenResponse:
       type: object
@@ -8430,7 +8563,7 @@ components:
       properties:
         defaultTemplate:
           type: string
-          enum: [p1, p2, p3, p4, p5, p6, p7]
+          enum: [p1, p2, p3, p4, p5, p6, p7, p8]
         kioskSequence:
           type: array
           items:
@@ -8441,6 +8574,14 @@ components:
           type: integer
         kioskEndHoldMs:
           type: integer
+        boardConfigs:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/BoardDisplayConfig"
+        composites:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompositeDef"
 
     HonourDisplayBundle:
       type: object

@@ -5,7 +5,10 @@ import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
 import { brandStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import type { TemplateId } from "@/components/honours-display/types";
-import { useApproachingBoard } from "@/components/honours-display/useApproachingBoard";
+import {
+  useApproachingBoard,
+  applyBoardConfig,
+} from "@/components/honours-display/useApproachingBoard";
 import { QueryError } from "@/components/data-states";
 import "@/styles/honour-boards.css";
 
@@ -15,8 +18,9 @@ export default function HonoursDisplay() {
 
   const boards = useMemo(() => {
     const base = data?.boards ?? [];
-    return approachingBoard ? [...base, approachingBoard] : base;
-  }, [data?.boards, approachingBoard]);
+    if (!approachingBoard) return base;
+    return [...base, applyBoardConfig(approachingBoard, data?.settings?.boardConfigs)];
+  }, [data?.boards, data?.settings, approachingBoard]);
 
   const settings = data?.settings;
   const brand = data?.brand;

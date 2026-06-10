@@ -84,7 +84,7 @@ export type CardTemplateSlot = {
   color?: string;
   fontWeight?: number; // 400-900
   align?: "left" | "center" | "right";
-  fontFamily?: "sans" | "serif";
+  fontFamily?: "sans" | "serif" | "oswald" | "cinzel" | "garamond" | "mono" | "inter";
   uppercase?: boolean;
   // Photo styling (photo slots only).
   photoFit?: "cover" | "contain";
@@ -181,7 +181,7 @@ export type CardLayoutLayer = {
   fontSize?: number; // fraction of base width 1080
   fontWeight?: number; // 400-900
   align?: "left" | "center" | "right";
-  fontFamily?: "sans" | "serif";
+  fontFamily?: "sans" | "serif" | "oswald" | "cinzel" | "garamond" | "mono" | "inter";
   uppercase?: boolean;
   // `libsticker` only: which catalog sticker, and (for data-bound badges) which
   // card field auto-fills its text slot.

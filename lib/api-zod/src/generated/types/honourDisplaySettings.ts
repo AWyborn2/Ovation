@@ -5,6 +5,8 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CompositeDef } from './compositeDef';
+import type { HonourDisplaySettingsBoardConfigs } from './honourDisplaySettingsBoardConfigs';
 import type { HonourDisplaySettingsDefaultTemplate } from './honourDisplaySettingsDefaultTemplate';
 
 export interface HonourDisplaySettings {
@@ -20,4 +22,8 @@ export interface HonourDisplaySettings {
   kioskEndHoldMs: number;
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
+  /** Per-board display overrides keyed by board id. */
+  boardConfigs: HonourDisplaySettingsBoardConfigs;
+  /** Admin-defined composite 'columns' boards. */
+  composites: CompositeDef[];
 }

@@ -307,6 +307,55 @@
   white-space: nowrap;
 }
 
+/* ---- Multi-column list flow (board.display.columns >= 2) ---------------- */
+
+.hb-list-cols {
+  display: grid;
+  gap: 0 clamp(16px, 2.5vw, 36px);
+  align-items: start;
+}
+.hb-list-col {
+  min-width: 0;
+}
+
+/* ---- Composite "columns" layout (side-by-side list boards) -------------- */
+
+.hb-cols {
+  display: grid;
+  gap: 0 clamp(14px, 2vw, 28px);
+  align-items: stretch;
+}
+.hb-col-head {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: clamp(11px, 1.2vw, 14px);
+  color: var(--hb-accent);
+  padding: 6px 8px;
+  border-bottom: 2px solid var(--hb-head-border);
+}
+.hb-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px;
+  border-bottom: 1px solid var(--hb-faint);
+  font-size: clamp(13px, 1.4vw, 16px);
+  min-height: 1em;
+}
+.hb-cell .hb-name {
+  font-weight: 700;
+  color: var(--hb-ink);
+}
+.hb-cell-detail {
+  color: var(--hb-muted);
+  font-size: 0.85em;
+}
+.hb-cell-season .hb-season {
+  color: var(--hb-accent);
+  font-weight: 800;
+}
+
 /* ---- Interactive pager (non-kiosk long lists) --------------------------- */
 
 .hb-pager {
@@ -504,6 +553,35 @@
   background: linear-gradient(135deg, var(--hb-faint), #ffffff);
 }
 
+/* P8 · App Dark — modern dark mobile-app surfaces with club accent */
+.hb.skin-p8 {
+  --hb-bg: #0b0f17;
+  --hb-board-bg: #131a26;
+  --hb-board-border: rgba(255, 255, 255, 0.08);
+  --hb-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --hb-radius: 20px;
+  --hb-ink: #f1f5f9;
+  --hb-muted: #94a3b8;
+  --hb-faint: rgba(255, 255, 255, 0.05);
+  --hb-row-stripe: rgba(255, 255, 255, 0.04);
+  --hb-accent: var(--club-primary, #38bdf8);
+  --hb-accent-ink: #0b0f17;
+  --hb-head-border: rgba(255, 255, 255, 0.1);
+  --hb-crest-bg: var(--club-primary, #38bdf8);
+  --hb-crest-ink: #0b0f17;
+  --hb-chip-bg: color-mix(in srgb, var(--club-primary, #38bdf8) 22%, #131a26);
+  --hb-chip-ink: var(--club-primary, #38bdf8);
+  --hb-title-font: "Helvetica Neue", Arial, sans-serif;
+}
+.hb.skin-p8 .hb-flag {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+}
+.hb.skin-p8 .hb-squad-name {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 /* ===========================================================================
    3. Kiosk — fullscreen rotator
    =========================================================================== */
@@ -534,6 +612,13 @@
 .hb-kiosk .preset.active {
   opacity: 1;
   transform: none;
+}
+/* Full-screen fit — drop the narrow centred cap and use the whole width. */
+.hb-kiosk .preset.fit {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(12px, 2vh, 28px) clamp(16px, 3vw, 48px);
 }
 /* The scrollable board frame the kiosk auto-scrolls. */
 .hb-kiosk .hb-board {

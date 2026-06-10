@@ -4830,11 +4830,17 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
  * Assembles every honours category (premierships, centuries, five-wicket hauls, life members, club champions, captains, club records, awards) into the unified HonourBoard shape, alongside the club brand/theme and the display/kiosk settings. Drives the public Display page and kiosk.
  * @summary Assembled Honour Boards Display bundle (boards + brand + settings)
  */
+export const getHonourDisplayResponseBoardsItemDisplayColumnsMax = 3;
+
+export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
+
+
+
 export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -4858,7 +4864,37 @@ export const GetHonourDisplayResponse = zod.object({
   "playerId": zod.number().nullish(),
   "isCaptain": zod.boolean()
 })).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+})),
+  "columns": zod.array(zod.object({
+  "heading": zod.string(),
+  "entries": zod.array(zod.object({
+  "season": zod.string().describe('Season \/ year label, e.g. \"2024\/25\" (may be empty).'),
+  "primaryText": zod.string().describe('Name \/ captain \/ record type.'),
+  "detail": zod.string().nullish().describe('e.g. \"147\* v Mandurah\", \"def. Pinjarra\", \"642 pts\".'),
+  "playerId": zod.number().nullish().describe('Link to player profile when known.'),
+  "matchId": zod.number().nullish().describe('Link to match scorecard when derivable (P7 grand finals).'),
+  "meta": zod.object({
+  "venue": zod.string().nullish(),
+  "date": zod.string().nullish(),
+  "motm": zod.string().nullish(),
+  "captain": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
+  "competition": zod.string().nullish(),
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+}).optional(),
+  "squad": zod.array(zod.object({
+  "name": zod.string(),
+  "playerId": zod.number().nullish(),
+  "isCaptain": zod.boolean()
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
 }))
+}).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
+  "display": zod.object({
+  "columns": zod.number().min(1).max(getHonourDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
+  "transition": zod.enum(['scroll', 'slide']).describe('Kiosk transition — continuous credit-scroll or paged slide.'),
+  "fit": zod.boolean().describe('Fill the full screen width on the kiosk (drop the narrow cap).')
+}).describe('Resolved per-board display config the server stamps onto every board (defaults merged with the admin\'s per-board overrides). Drives the display + kiosk render.')
 })),
   "brand": zod.object({
   "name": zod.string().describe('Full club name.'),
@@ -4870,12 +4906,29 @@ export const GetHonourDisplayResponse = zod.object({
   "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
 }),
   "settings": zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('The single club-wide skin every board renders in.'),
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).describe('The single club-wide skin every board renders in.'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
   "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
-  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.')
+  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
+  "boardConfigs": zod.record(zod.string(), zod.object({
+  "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
+  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "fit": zod.boolean().optional()
+}).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
+  "composites": zod.array(zod.object({
+  "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "seasonAligned": zod.boolean().describe('When true and every source column is season-based, the server emits a leading SEASON column and aligns rows by season; otherwise it falls back to free side-by-side columns.'),
+  "columns": zod.array(zod.object({
+  "boardId": zod.string().describe('Id of the source list-layout board to pull entries from.'),
+  "heading": zod.string().describe('Column heading shown above the source board\'s entries.')
+}).describe('One column of a composite board — a reference to an existing list board.')),
+  "transition": zod.enum(['scroll', 'slide']).nullish(),
+  "fit": zod.boolean().nullish()
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.')
 })
 })
 
@@ -4888,11 +4941,17 @@ export const GetKioskDisplayQueryParams = zod.object({
   "token": zod.coerce.string().describe('The kiosk access token issued by an admin.')
 })
 
+export const getKioskDisplayResponseBoardsItemDisplayColumnsMax = 3;
+
+export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
+
+
+
 export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -4916,7 +4975,37 @@ export const GetKioskDisplayResponse = zod.object({
   "playerId": zod.number().nullish(),
   "isCaptain": zod.boolean()
 })).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+})),
+  "columns": zod.array(zod.object({
+  "heading": zod.string(),
+  "entries": zod.array(zod.object({
+  "season": zod.string().describe('Season \/ year label, e.g. \"2024\/25\" (may be empty).'),
+  "primaryText": zod.string().describe('Name \/ captain \/ record type.'),
+  "detail": zod.string().nullish().describe('e.g. \"147\* v Mandurah\", \"def. Pinjarra\", \"642 pts\".'),
+  "playerId": zod.number().nullish().describe('Link to player profile when known.'),
+  "matchId": zod.number().nullish().describe('Link to match scorecard when derivable (P7 grand finals).'),
+  "meta": zod.object({
+  "venue": zod.string().nullish(),
+  "date": zod.string().nullish(),
+  "motm": zod.string().nullish(),
+  "captain": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
+  "competition": zod.string().nullish(),
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+}).optional(),
+  "squad": zod.array(zod.object({
+  "name": zod.string(),
+  "playerId": zod.number().nullish(),
+  "isCaptain": zod.boolean()
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
 }))
+}).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
+  "display": zod.object({
+  "columns": zod.number().min(1).max(getKioskDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
+  "transition": zod.enum(['scroll', 'slide']).describe('Kiosk transition — continuous credit-scroll or paged slide.'),
+  "fit": zod.boolean().describe('Fill the full screen width on the kiosk (drop the narrow cap).')
+}).describe('Resolved per-board display config the server stamps onto every board (defaults merged with the admin\'s per-board overrides). Drives the display + kiosk render.')
 })),
   "brand": zod.object({
   "name": zod.string().describe('Full club name.'),
@@ -4928,12 +5017,29 @@ export const GetKioskDisplayResponse = zod.object({
   "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
 }),
   "settings": zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('The single club-wide skin every board renders in.'),
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).describe('The single club-wide skin every board renders in.'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
   "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
-  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.')
+  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
+  "boardConfigs": zod.record(zod.string(), zod.object({
+  "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
+  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "fit": zod.boolean().optional()
+}).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
+  "composites": zod.array(zod.object({
+  "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "seasonAligned": zod.boolean().describe('When true and every source column is season-based, the server emits a leading SEASON column and aligns rows by season; otherwise it falls back to free side-by-side columns.'),
+  "columns": zod.array(zod.object({
+  "boardId": zod.string().describe('Id of the source list-layout board to pull entries from.'),
+  "heading": zod.string().describe('Column heading shown above the source board\'s entries.')
+}).describe('One column of a composite board — a reference to an existing list board.')),
+  "transition": zod.enum(['scroll', 'slide']).nullish(),
+  "fit": zod.boolean().nullish()
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.')
 })
 })
 
@@ -4959,21 +5065,63 @@ export const RevokeKioskTokenResponse = zod.object({
 /**
  * @summary Update the Honour Boards Display + kiosk settings (admin)
  */
+export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
+
+
+
 export const UpdateHonourDisplaySettingsBody = zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).optional(),
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).optional(),
   "kioskSequence": zod.array(zod.string()).optional(),
   "kioskDwellMs": zod.number().optional(),
   "kioskScrollSpeed": zod.number().optional(),
-  "kioskEndHoldMs": zod.number().optional()
+  "kioskEndHoldMs": zod.number().optional(),
+  "boardConfigs": zod.record(zod.string(), zod.object({
+  "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
+  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "fit": zod.boolean().optional()
+}).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).optional(),
+  "composites": zod.array(zod.object({
+  "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "seasonAligned": zod.boolean().describe('When true and every source column is season-based, the server emits a leading SEASON column and aligns rows by season; otherwise it falls back to free side-by-side columns.'),
+  "columns": zod.array(zod.object({
+  "boardId": zod.string().describe('Id of the source list-layout board to pull entries from.'),
+  "heading": zod.string().describe('Column heading shown above the source board\'s entries.')
+}).describe('One column of a composite board — a reference to an existing list board.')),
+  "transition": zod.enum(['scroll', 'slide']).nullish(),
+  "fit": zod.boolean().nullish()
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).optional()
 })
 
+export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
+
+
+
 export const UpdateHonourDisplaySettingsResponse = zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('The single club-wide skin every board renders in.'),
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).describe('The single club-wide skin every board renders in.'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
   "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
-  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.')
+  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
+  "boardConfigs": zod.record(zod.string(), zod.object({
+  "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
+  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "fit": zod.boolean().optional()
+}).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
+  "composites": zod.array(zod.object({
+  "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "seasonAligned": zod.boolean().describe('When true and every source column is season-based, the server emits a leading SEASON column and aligns rows by season; otherwise it falls back to free side-by-side columns.'),
+  "columns": zod.array(zod.object({
+  "boardId": zod.string().describe('Id of the source list-layout board to pull entries from.'),
+  "heading": zod.string().describe('Column heading shown above the source board\'s entries.')
+}).describe('One column of a composite board — a reference to an existing list board.')),
+  "transition": zod.enum(['scroll', 'slide']).nullish(),
+  "fit": zod.boolean().nullish()
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.')
 })
 
 

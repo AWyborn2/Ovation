@@ -10,20 +10,78 @@ import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
 import { brandStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import type { DisplayBoard, TemplateId } from "@/components/honours-display/types";
-import { useApproachingBoard } from "@/components/honours-display/useApproachingBoard";
+import {
+  useApproachingBoard,
+  applyBoardConfig,
+} from "@/components/honours-display/useApproachingBoard";
 import "@/styles/honour-boards.css";
 
 /** Stagger the row-reveal animation across a freshly shown board. */
 function stagger(root: HTMLElement) {
   root
     .querySelectorAll<HTMLElement>(
-      ".row, .hb-flag, .hb-lineup-row, tr",
+      ".row, .hb-flag, .hb-lineup-row, .hb-cell, tr",
     )
     .forEach((el, i) => {
       el.style.animation = "none";
       void el.offsetWidth;
       el.style.animation = "hb-rowin .6s ease both " + Math.min(i * 70, 2200) + "ms";
     });
+}
+
+/** A single kiosk frame: one board (possibly a paginated slice of a larger one). */
+interface Frame {
+  board: DisplayBoard;
+  transition: "scroll" | "slide";
+  fit: boolean;
+  key: string;
+}
+
+/** Approximate how many list rows fit one screen (recomputed on resize). */
+function computeRowsPerPage(): number {
+  const h = typeof window !== "undefined" ? window.innerHeight : 900;
+  return Math.max(6, Math.floor((h - 220) / 46));
+}
+
+/**
+ * Split a board into screen-sized pages for "slide" mode. List boards page by
+ * entries (× column count so a multi-column board fills the page); composite
+ * "columns" boards page by row window across every column. Other layouts and
+ * boards that already fit return a single frame.
+ */
+function paginate(board: DisplayBoard, rowsPerPage: number): DisplayBoard[] {
+  const per = Math.max(1, rowsPerPage);
+  if (board.layout === "list") {
+    const cols = Math.min(3, Math.max(1, board.display.columns));
+    const perPage = per * cols;
+    if (board.entries.length <= perPage) return [board];
+    const pages: DisplayBoard[] = [];
+    for (let i = 0; i < board.entries.length; i += perPage) {
+      pages.push({
+        ...board,
+        id: `${board.id}#${i}`,
+        entries: board.entries.slice(i, i + perPage),
+      });
+    }
+    return pages;
+  }
+  if (board.layout === "columns" && board.columns) {
+    const maxRows = board.columns.reduce((m, c) => Math.max(m, c.entries.length), 0);
+    if (maxRows <= per) return [board];
+    const pages: DisplayBoard[] = [];
+    for (let r = 0; r < maxRows; r += per) {
+      pages.push({
+        ...board,
+        id: `${board.id}#${r}`,
+        columns: board.columns.map((c) => ({
+          ...c,
+          entries: c.entries.slice(r, r + per),
+        })),
+      });
+    }
+    return pages;
+  }
+  return [board];
 }
 
 export default function HonoursKiosk() {
@@ -49,11 +107,20 @@ export default function HonoursKiosk() {
   const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(computeRowsPerPage);
+
+  // Recompute how many rows fit a screen when the viewport resizes.
+  useEffect(() => {
+    const onResize = () => setRowsPerPage(computeRowsPerPage());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const boards = useMemo(() => {
     const base = data?.boards ?? [];
-    return approachingBoard ? [...base, approachingBoard] : base;
-  }, [data?.boards, approachingBoard]);
+    if (!approachingBoard) return base;
+    return [...base, applyBoardConfig(approachingBoard, data?.settings?.boardConfigs)];
+  }, [data?.boards, data?.settings, approachingBoard]);
   const settings = data?.settings;
   const brand = data?.brand;
 
@@ -70,6 +137,25 @@ export default function HonoursKiosk() {
       .filter((b): b is DisplayBoard => b != null);
     return seq.length ? seq : boards;
   }, [boards, settings]);
+
+  // Flatten the sequence into individual frames: a "scroll" board is one frame
+  // (credit-scrolled); a "slide" board is paginated into screen-sized frames.
+  const frames = useMemo<Frame[]>(
+    () =>
+      sequence.flatMap((b): Frame[] => {
+        const fit = b.display.fit;
+        if (b.display.transition === "slide") {
+          return paginate(b, rowsPerPage).map((pb, i) => ({
+            board: pb,
+            transition: "slide" as const,
+            fit,
+            key: `${b.id}:slide:${i}`,
+          }));
+        }
+        return [{ board: b, transition: "scroll" as const, fit, key: `${b.id}:scroll` }];
+      }),
+    [sequence, rowsPerPage],
+  );
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -94,43 +180,48 @@ export default function HonoursKiosk() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Drive the rotation: dwell, credit-scroll, end-hold, then advance + refetch.
+  // Drive the rotation: dwell, then either credit-scroll (scroll frames) or just
+  // hold (slide frames already fit), then advance + refetch on wrap.
   useEffect(() => {
-    if (!sequence.length) return;
+    if (!frames.length) return;
     cycleRef.current += 1;
     const myCycle = cycleRef.current;
     const alive = () => cycleRef.current === myCycle;
 
+    const isSlide = frames[index % frames.length]?.transition === "slide";
     const fr = frameRef.current?.querySelector<HTMLElement>(".hb-board");
     if (frameRef.current) stagger(frameRef.current);
     if (fr) fr.scrollTop = 0;
 
     timerRef.current = setTimeout(() => {
-      if (!alive() || !fr) return;
-      const dist = fr.scrollHeight - fr.clientHeight;
-      if (dist > 10) {
-        const dur = (dist / SPEED) * 1000;
-        const t0 = performance.now();
-        const scroll = (now: number) => {
-          if (!alive()) return;
-          const p = Math.min((now - t0) / dur, 1);
-          fr.scrollTop = dist * (p < 0.04 ? (p * p) / 0.04 : p); // soft start
-          if (p < 1) {
-            rafRef.current = requestAnimationFrame(scroll);
-          } else {
-            timerRef.current = setTimeout(advance, ENDHOLD);
-          }
-        };
-        rafRef.current = requestAnimationFrame(scroll);
-      } else {
-        timerRef.current = setTimeout(advance, ENDHOLD);
+      if (!alive()) return;
+      if (!isSlide && fr) {
+        const dist = fr.scrollHeight - fr.clientHeight;
+        if (dist > 10) {
+          const dur = (dist / SPEED) * 1000;
+          const t0 = performance.now();
+          const scroll = (now: number) => {
+            if (!alive()) return;
+            const p = Math.min((now - t0) / dur, 1);
+            fr.scrollTop = dist * (p < 0.04 ? (p * p) / 0.04 : p); // soft start
+            if (p < 1) {
+              rafRef.current = requestAnimationFrame(scroll);
+            } else {
+              timerRef.current = setTimeout(advance, ENDHOLD);
+            }
+          };
+          rafRef.current = requestAnimationFrame(scroll);
+          return;
+        }
       }
+      // Slide frame, or a scroll frame that already fits: just hold then advance.
+      timerRef.current = setTimeout(advance, ENDHOLD);
     }, DWELL);
 
     function advance() {
       if (!alive()) return;
-      if (index + 1 >= sequence.length) refetch();
-      setIndex((i) => (i + 1) % sequence.length);
+      if (index + 1 >= frames.length) refetch();
+      setIndex((i) => (i + 1) % frames.length);
     }
 
     return () => {
@@ -138,9 +229,9 @@ export default function HonoursKiosk() {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, sequence, DWELL, ENDHOLD, SPEED]);
+  }, [index, frames, DWELL, ENDHOLD, SPEED]);
 
-  if (!data || !settings || !brand || !sequence.length) {
+  if (!data || !settings || !brand || !frames.length) {
     return (
       <div className="hb-kiosk flex items-center justify-center text-white">
         <div className="text-sm opacity-70">Preparing honour boards…</div>
@@ -149,13 +240,16 @@ export default function HonoursKiosk() {
   }
 
   const skin = settings.defaultTemplate as TemplateId;
-  const current = sequence[index % sequence.length]!;
+  const current = frames[index % frames.length]!;
 
   return (
     <div className="hb-kiosk">
       <div className={`hb ${skinClass(skin)}`} style={brandStyle(brand)}>
-        <div className="preset active" ref={frameRef}>
-          <BoardRenderer board={current} brand={brand} kiosk />
+        <div
+          className={`preset active${current.fit ? " fit" : ""}`}
+          ref={frameRef}
+        >
+          <BoardRenderer board={current.board} brand={brand} kiosk />
         </div>
       </div>
       <button className="hb-kexit" onClick={exit}>

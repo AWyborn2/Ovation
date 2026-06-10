@@ -5,6 +5,8 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CompositeDef } from './compositeDef';
+import type { HonourDisplaySettingsUpdateBoardConfigs } from './honourDisplaySettingsUpdateBoardConfigs';
 import type { HonourDisplaySettingsUpdateDefaultTemplate } from './honourDisplaySettingsUpdateDefaultTemplate';
 
 export interface HonourDisplaySettingsUpdate {
@@ -13,4 +15,6 @@ export interface HonourDisplaySettingsUpdate {
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;
   kioskEndHoldMs?: number;
+  boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
+  composites?: CompositeDef[];
 }

@@ -2927,6 +2927,95 @@ export interface BoardEntry {
 }
 
 /**
+ * Kiosk transition — continuous credit-scroll or paged slide.
+ */
+export type BoardDisplayTransition = typeof BoardDisplayTransition[keyof typeof BoardDisplayTransition];
+
+
+export const BoardDisplayTransition = {
+  scroll: 'scroll',
+  slide: 'slide',
+} as const;
+
+/**
+ * Resolved per-board display config the server stamps onto every board (defaults merged with the admin's per-board overrides). Drives the display + kiosk render.
+ */
+export interface BoardDisplay {
+  /**
+     * Column count for multi-column list flow (1 = single column).
+     * @minimum 1
+     * @maximum 3
+     */
+  columns: number;
+  /** Kiosk transition — continuous credit-scroll or paged slide. */
+  transition: BoardDisplayTransition;
+  /** Fill the full screen width on the kiosk (drop the narrow cap). */
+  fit: boolean;
+}
+
+export type BoardDisplayConfigTransition = typeof BoardDisplayConfigTransition[keyof typeof BoardDisplayConfigTransition];
+
+
+export const BoardDisplayConfigTransition = {
+  scroll: 'scroll',
+  slide: 'slide',
+} as const;
+
+/**
+ * Admin per-board override (all fields optional; unset falls back to the board's natural default). Stored keyed by board id in settings.boardConfigs.
+ */
+export interface BoardDisplayConfig {
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  columns?: number;
+  transition?: BoardDisplayConfigTransition;
+  fit?: boolean;
+}
+
+/**
+ * A single column of a composite 'columns' layout board.
+ */
+export interface BoardColumn {
+  heading: string;
+  entries: BoardEntry[];
+}
+
+/**
+ * One column of a composite board — a reference to an existing list board.
+ */
+export interface CompositeColumnRef {
+  /** Id of the source list-layout board to pull entries from. */
+  boardId: string;
+  /** Column heading shown above the source board's entries. */
+  heading: string;
+}
+
+export type CompositeDefTransition = typeof CompositeDefTransition[keyof typeof CompositeDefTransition] | null;
+
+
+export const CompositeDefTransition = {
+  scroll: 'scroll',
+  slide: 'slide',
+} as const;
+
+/**
+ * Admin-defined composite board that places several existing list boards side-by-side as columns (like the club's physical honour board).
+ */
+export interface CompositeDef {
+  /** Stable composite id, e.g. "composite:<uuid>" (never reused). */
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  /** When true and every source column is season-based, the server emits a leading SEASON column and aligns rows by season; otherwise it falls back to free side-by-side columns. */
+  seasonAligned: boolean;
+  columns: CompositeColumnRef[];
+  transition?: CompositeDefTransition;
+  fit?: boolean | null;
+}
+
+/**
  * Natural render layout for this board (skin only changes the look).
  */
 export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
@@ -2936,6 +3025,7 @@ export const DisplayBoardLayout = {
   premiership: 'premiership',
   teamOfDecade: 'teamOfDecade',
   list: 'list',
+  columns: 'columns',
 } as const;
 
 export interface DisplayBoard {
@@ -2948,6 +3038,9 @@ export interface DisplayBoard {
   title: string;
   subtitle?: string | null;
   entries: BoardEntry[];
+  /** Side-by-side columns for the 'columns' layout (else null). */
+  columns?: BoardColumn[] | null;
+  display: BoardDisplay;
 }
 
 /**
@@ -2964,7 +3057,13 @@ export const HonourDisplaySettingsDefaultTemplate = {
   p5: 'p5',
   p6: 'p6',
   p7: 'p7',
+  p8: 'p8',
 } as const;
+
+/**
+ * Per-board display overrides keyed by board id.
+ */
+export type HonourDisplaySettingsBoardConfigs = {[key: string]: BoardDisplayConfig};
 
 export interface HonourDisplaySettings {
   /** The single club-wide skin every board renders in. */
@@ -2979,6 +3078,10 @@ export interface HonourDisplaySettings {
   kioskEndHoldMs: number;
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
+  /** Per-board display overrides keyed by board id. */
+  boardConfigs: HonourDisplaySettingsBoardConfigs;
+  /** Admin-defined composite 'columns' boards. */
+  composites: CompositeDef[];
 }
 
 export interface KioskTokenResponse {
@@ -2997,7 +3100,10 @@ export const HonourDisplaySettingsUpdateDefaultTemplate = {
   p5: 'p5',
   p6: 'p6',
   p7: 'p7',
+  p8: 'p8',
 } as const;
+
+export type HonourDisplaySettingsUpdateBoardConfigs = {[key: string]: BoardDisplayConfig};
 
 export interface HonourDisplaySettingsUpdate {
   defaultTemplate?: HonourDisplaySettingsUpdateDefaultTemplate;
@@ -3005,6 +3111,8 @@ export interface HonourDisplaySettingsUpdate {
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;
   kioskEndHoldMs?: number;
+  boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
+  composites?: CompositeDef[];
 }
 
 export interface HonourDisplayBundle {

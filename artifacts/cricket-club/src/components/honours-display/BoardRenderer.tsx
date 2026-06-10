@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import type { DisplayBoard, HonourBrand } from "./types";
 import { LIST_PAGE_SIZE } from "./types";
-import { PremiershipBoard, TeamOfDecadeBoard, ListBoard } from "./templates";
+import {
+  PremiershipBoard,
+  TeamOfDecadeBoard,
+  ListBoard,
+  ColumnsBoard,
+} from "./templates";
 
 interface BoardRendererProps {
   board: DisplayBoard;
@@ -27,6 +32,9 @@ export function BoardRenderer({ board, brand, kiosk }: BoardRendererProps) {
   }
   if (board.layout === "teamOfDecade") {
     return <TeamOfDecadeBoard board={board} brand={brand} kiosk={kiosk} />;
+  }
+  if (board.layout === "columns") {
+    return <ColumnsBoard board={board} brand={brand} kiosk={kiosk} />;
   }
 
   // List layout: paginate ~80 rows in interactive mode; show all in kiosk.

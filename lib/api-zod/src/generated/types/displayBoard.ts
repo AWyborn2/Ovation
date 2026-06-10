@@ -5,6 +5,8 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BoardColumn } from './boardColumn';
+import type { BoardDisplay } from './boardDisplay';
 import type { BoardEntry } from './boardEntry';
 import type { DisplayBoardLayout } from './displayBoardLayout';
 
@@ -18,4 +20,7 @@ export interface DisplayBoard {
   title: string;
   subtitle?: string | null;
   entries: BoardEntry[];
+  /** Side-by-side columns for the 'columns' layout (else null). */
+  columns?: BoardColumn[] | null;
+  display: BoardDisplay;
 }

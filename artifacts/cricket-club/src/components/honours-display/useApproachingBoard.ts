@@ -11,7 +11,39 @@ import {
   DEFAULT_MILESTONE_THRESHOLDS,
   type MilestoneThresholds,
 } from "@/lib/honour-boards";
-import type { DisplayBoard } from "./types";
+import type {
+  DisplayBoard,
+  BoardDisplay,
+  BoardDisplayConfig,
+} from "./types";
+
+/** Client-side default display for the approaching board (no server row). */
+export const CLIENT_DEFAULT_DISPLAY: BoardDisplay = {
+  columns: 1,
+  transition: "scroll",
+  fit: false,
+};
+
+/**
+ * Merge an admin per-board config onto a board's display. Server boards arrive
+ * pre-merged; the client-only approaching board is merged here using
+ * settings.boardConfigs['approaching'].
+ */
+export function applyBoardConfig(
+  board: DisplayBoard,
+  configs?: Record<string, BoardDisplayConfig> | null,
+): DisplayBoard {
+  const cfg = configs?.[board.id];
+  if (!cfg) return board;
+  return {
+    ...board,
+    display: {
+      columns: cfg.columns ?? board.display.columns,
+      transition: cfg.transition ?? board.display.transition,
+      fit: cfg.fit ?? board.display.fit,
+    },
+  };
+}
 
 /**
  * Build the "Approaching milestones" board client-side (it has no route — the
@@ -68,6 +100,7 @@ export function useApproachingBoard(): DisplayBoard | null {
         playerId: a.playerId,
         meta: { grade: a.boardLabel },
       })),
+      display: { ...CLIENT_DEFAULT_DISPLAY },
     } satisfies DisplayBoard;
   }, [showApproaching, allStats, thresholds]);
 }
