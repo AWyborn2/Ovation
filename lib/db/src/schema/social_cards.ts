@@ -168,6 +168,23 @@ export const cardLayoutsTable = pgTable(
 
 export type CardLayoutRow = typeof cardLayoutsTable.$inferSelect;
 
+// --- Reusable layer effect presets -----------------------------------------
+// A named, reusable bundle of per-layer visual effects (the same shape stored
+// on a layer's `effects`). Admins save the current layer's effects as a preset
+// and apply it to any layer in one click. A handful of curated built-in presets
+// ship in the client; these rows are the admin-created additions.
+export const cardEffectPresetsTable = pgTable("card_effect_presets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  // A LayerEffects object (CardLayerEffects in the OpenAPI spec). Opaque jsonb
+  // here so new effect fields need no schema change.
+  effects: jsonb("effects").$type<Record<string, unknown>>().notNull().default({}),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CardEffectPresetRow = typeof cardEffectPresetsTable.$inferSelect;
+
 // --- Multi-card / carousel sets --------------------------------------------
 // One slide in a carousel set. A slide bundles the bound card data (`input`, a
 // ShareCardInput JSON frozen from real club data at bind time) with its own

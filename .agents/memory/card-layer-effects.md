@@ -39,3 +39,14 @@ the gradient overlay + border paint on the main ctx over the layer `rect`.
   and must degrade to ungraded, not crash.
 - Animation/video export reuses `renderShareCard` → effects flow into video for
   free at all three sizes; no separate path.
+
+**Reusable effect presets:** a named bundle of LayerEffects, applied to a layer
+in one click. Built-in presets ship as client constants (`BUILTIN_EFFECT_PRESETS`
+in share-card.ts, **negative ids** so they never collide with saved rows);
+admin-saved presets persist in `card_effect_presets` (jsonb effects) via
+`/api/card-effect-presets` (GET public, POST/DELETE admin). The editor's
+`EffectPresets` (in card-layout-editor.tsx) merges built-ins + saved. Applying a
+preset replaces the layer's effects with `{...DEFAULT_LAYER_EFFECTS, ...preset}`
+so all intensity fields are present; an empty bundle clears effects (stays off
+the offscreen path). Effects stored opaquely (no per-field codegen on the preset
+table) — same opaque-jsonb trick as card_layouts.

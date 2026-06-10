@@ -54,6 +54,8 @@ export * from './captainLoginRequest';
 export * from './captainUpdate';
 export * from './captionTemplate';
 export * from './captionTemplateInput';
+export * from './cardEffectPreset';
+export * from './cardEffectPresetInput';
 export * from './cardKind';
 export * from './cardLayerEffects';
 export * from './cardLayerEffectsGradientDir';

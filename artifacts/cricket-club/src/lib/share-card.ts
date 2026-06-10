@@ -858,6 +858,82 @@ export const DEFAULT_LAYER_EFFECTS: LayerEffects = {
   borderWidth: 0.006,
 };
 
+// A named, reusable bundle of layer effects. Built-in presets ship with the app
+// (negative ids so they never collide with saved rows); admin-saved presets come
+// from the card_effect_presets table.
+export type EffectPreset = {
+  id: number;
+  name: string;
+  effects: LayerEffects;
+  builtIn?: boolean;
+};
+
+// Curated on-brand presets that ship by default. Each is a full LayerEffects
+// bundle an admin can apply to any layer in one click.
+export const BUILTIN_EFFECT_PRESETS: EffectPreset[] = [
+  {
+    id: -1,
+    name: "Duotone hero",
+    builtIn: true,
+    effects: {
+      tone: "duotone",
+      toneColor: "#FBAC27",
+      toneIntensity: 0.85,
+      gradient: true,
+      gradientColor: "#1A1A1A",
+      gradientIntensity: 0.55,
+      gradientDir: "bottom",
+    },
+  },
+  {
+    id: -2,
+    name: "Soft feather portrait",
+    builtIn: true,
+    effects: {
+      mask: "feather",
+      maskRadius: 0.35,
+      shadow: true,
+      shadowColor: "#1A1A1A",
+      shadowIntensity: 0.45,
+    },
+  },
+  {
+    id: -3,
+    name: "Gold border tile",
+    builtIn: true,
+    effects: {
+      mask: "rounded",
+      maskRadius: 0.12,
+      border: true,
+      borderColor: "#FBAC27",
+      borderWidth: 0.008,
+      shadow: true,
+      shadowColor: "#1A1A1A",
+      shadowIntensity: 0.4,
+    },
+  },
+  {
+    id: -4,
+    name: "Black & white classic",
+    builtIn: true,
+    effects: {
+      tone: "bw",
+      toneIntensity: 1,
+    },
+  },
+  {
+    id: -5,
+    name: "Circle headshot",
+    builtIn: true,
+    effects: {
+      mask: "circle",
+      border: true,
+      borderColor: "#FBAC27",
+      borderWidth: 0.006,
+    },
+  },
+];
+
 export type RenderOptions = {
   size: CardSize;
   sponsors?: CardSponsor[];

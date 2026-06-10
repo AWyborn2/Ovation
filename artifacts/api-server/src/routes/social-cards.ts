@@ -9,6 +9,7 @@ import {
   cardThemesTable,
   cardTemplatesTable,
   cardLayoutsTable,
+  cardEffectPresetsTable,
   cardSetsTable,
 } from "@workspace/db";
 import {
@@ -30,6 +31,8 @@ import {
   UpsertCardLayoutBody,
   UpsertCardLayoutParams,
   DeleteCardLayoutParams,
+  CreateCardEffectPresetBody,
+  DeleteCardEffectPresetParams,
   CreateCardSetBody,
   UpdateCardSetBody,
   UpdateCardSetParams,
@@ -478,6 +481,51 @@ router.delete("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise
     .returning({ id: cardLayoutsTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card layout not found" });
+    return;
+  }
+  res.status(204).end();
+});
+
+// Reusable layer effect presets. Built-in presets ship in the client; these
+// rows are admin-saved additions. Reading is public (the editor merges them in);
+// saving / deleting is admin-only.
+router.get("/card-effect-presets", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(cardEffectPresetsTable)
+    .orderBy(asc(cardEffectPresetsTable.displayOrder), asc(cardEffectPresetsTable.id));
+  res.json(rows);
+});
+
+router.post("/card-effect-presets", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = CreateCardEffectPresetBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const [row] = await db
+    .insert(cardEffectPresetsTable)
+    .values({
+      name: parsed.data.name,
+      effects: parsed.data.effects as Record<string, unknown>,
+      displayOrder: parsed.data.displayOrder ?? 0,
+    })
+    .returning();
+  res.status(201).json(row);
+});
+
+router.delete("/card-effect-presets/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeleteCardEffectPresetParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const result = await db
+    .delete(cardEffectPresetsTable)
+    .where(eq(cardEffectPresetsTable.id, params.data.id))
+    .returning({ id: cardEffectPresetsTable.id });
+  if (result.length === 0) {
+    res.status(404).json({ error: "Card effect preset not found" });
     return;
   }
   res.status(204).end();

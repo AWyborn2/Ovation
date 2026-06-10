@@ -3821,6 +3821,68 @@ export const DeleteCardTemplateParams = zod.object({
 
 
 /**
+ * @summary List saved reusable layer effect presets (ordered)
+ */
+export const ListCardEffectPresetsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).'),
+  "displayOrder": zod.number()
+})
+export const ListCardEffectPresetsResponse = zod.array(ListCardEffectPresetsResponseItem)
+
+
+/**
+ * @summary Save a named reusable layer effect preset
+ */
+export const CreateCardEffectPresetBody = zod.object({
+  "name": zod.string(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).'),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a saved layer effect preset
+ */
+export const DeleteCardEffectPresetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all custom built-in-card layouts (one per card kind)
  */
 export const ListCardLayoutsResponseItem = zod.object({

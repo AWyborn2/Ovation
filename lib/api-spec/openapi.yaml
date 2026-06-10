@@ -2973,6 +2973,55 @@ paths:
         "404":
           description: Not found
 
+  /card-effect-presets:
+    get:
+      operationId: listCardEffectPresets
+      tags: [socialCards]
+      summary: List saved reusable layer effect presets (ordered)
+      responses:
+        "200":
+          description: Card effect preset list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardEffectPreset"
+    post:
+      operationId: createCardEffectPreset
+      tags: [socialCards]
+      summary: Save a named reusable layer effect preset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardEffectPresetInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardEffectPreset"
+
+  /card-effect-presets/{id}:
+    delete:
+      operationId: deleteCardEffectPreset
+      tags: [socialCards]
+      summary: Delete a saved layer effect preset
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /card-layouts:
     get:
       operationId: listCardLayouts
@@ -7437,6 +7486,30 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CardLayoutLayer"
+
+    CardEffectPreset:
+      type: object
+      required: [id, name, effects, displayOrder]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        effects:
+          $ref: "#/components/schemas/CardLayerEffects"
+        displayOrder:
+          type: integer
+
+    CardEffectPresetInput:
+      type: object
+      required: [name, effects]
+      properties:
+        name:
+          type: string
+        effects:
+          $ref: "#/components/schemas/CardLayerEffects"
+        displayOrder:
+          type: integer
 
     CardSetSlide:
       type: object

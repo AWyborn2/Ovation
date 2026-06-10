@@ -52,6 +52,8 @@ import type {
   CaptainUpdate,
   CaptionTemplate,
   CaptionTemplateInput,
+  CardEffectPreset,
+  CardEffectPresetInput,
   CardLayout,
   CardLayoutInput,
   CardSet,
@@ -10562,6 +10564,224 @@ export const useDeleteCardTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCardTemplateMutationOptions(options));
+    }
+
+export const getListCardEffectPresetsUrl = () => {
+
+
+
+
+  return `/api/card-effect-presets`
+}
+
+/**
+ * @summary List saved reusable layer effect presets (ordered)
+ */
+export const listCardEffectPresets = async ( options?: RequestInit): Promise<CardEffectPreset[]> => {
+
+  return customFetch<CardEffectPreset[]>(getListCardEffectPresetsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardEffectPresetsQueryKey = () => {
+    return [
+    `/api/card-effect-presets`
+    ] as const;
+    }
+
+
+export const getListCardEffectPresetsQueryOptions = <TData = Awaited<ReturnType<typeof listCardEffectPresets>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardEffectPresets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardEffectPresetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCardEffectPresets>>> = ({ signal }) => listCardEffectPresets({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCardEffectPresets>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardEffectPresetsQueryResult = NonNullable<Awaited<ReturnType<typeof listCardEffectPresets>>>
+export type ListCardEffectPresetsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List saved reusable layer effect presets (ordered)
+ */
+
+export function useListCardEffectPresets<TData = Awaited<ReturnType<typeof listCardEffectPresets>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardEffectPresets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardEffectPresetsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCardEffectPresetUrl = () => {
+
+
+
+
+  return `/api/card-effect-presets`
+}
+
+/**
+ * @summary Save a named reusable layer effect preset
+ */
+export const createCardEffectPreset = async (cardEffectPresetInput: CardEffectPresetInput, options?: RequestInit): Promise<CardEffectPreset> => {
+
+  return customFetch<CardEffectPreset>(getCreateCardEffectPresetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardEffectPresetInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardEffectPresetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardEffectPreset>>, TError,{data: BodyType<CardEffectPresetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardEffectPreset>>, TError,{data: BodyType<CardEffectPresetInput>}, TContext> => {
+
+const mutationKey = ['createCardEffectPreset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardEffectPreset>>, {data: BodyType<CardEffectPresetInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardEffectPreset(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardEffectPresetMutationResult = NonNullable<Awaited<ReturnType<typeof createCardEffectPreset>>>
+    export type CreateCardEffectPresetMutationBody = BodyType<CardEffectPresetInput>
+    export type CreateCardEffectPresetMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save a named reusable layer effect preset
+ */
+export const useCreateCardEffectPreset = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardEffectPreset>>, TError,{data: BodyType<CardEffectPresetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardEffectPreset>>,
+        TError,
+        {data: BodyType<CardEffectPresetInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardEffectPresetMutationOptions(options));
+    }
+
+export const getDeleteCardEffectPresetUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-effect-presets/${id}`
+}
+
+/**
+ * @summary Delete a saved layer effect preset
+ */
+export const deleteCardEffectPreset = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardEffectPresetUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCardEffectPresetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardEffectPreset>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCardEffectPreset>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCardEffectPreset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCardEffectPreset>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCardEffectPreset(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardEffectPresetMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCardEffectPreset>>>
+
+    export type DeleteCardEffectPresetMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a saved layer effect preset
+ */
+export const useDeleteCardEffectPreset = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardEffectPreset>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCardEffectPreset>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCardEffectPresetMutationOptions(options));
     }
 
 export const getListCardLayoutsUrl = () => {

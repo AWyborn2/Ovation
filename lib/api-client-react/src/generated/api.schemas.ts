@@ -2467,6 +2467,19 @@ export interface CardLayoutInput {
   layers: CardLayoutLayer[];
 }
 
+export interface CardEffectPreset {
+  id: number;
+  name: string;
+  effects: CardLayerEffects;
+  displayOrder: number;
+}
+
+export interface CardEffectPresetInput {
+  name: string;
+  effects: CardLayerEffects;
+  displayOrder?: number;
+}
+
 export type CardSetSlideInput = { [key: string]: unknown };
 
 export interface CardSetSlide {
