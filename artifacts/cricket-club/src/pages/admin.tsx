@@ -1,7 +1,10 @@
 import { Link } from "wouter";
+import { HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
+import { launchAdminTour } from "@/lib/tour";
 
 const TILES_FALLBACK: ResolvedNavItem[] = [
   { label: "Social Media", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory, card builders, junior cards and the review queue." },
@@ -16,9 +19,21 @@ export default function AdminHub() {
   const tiles = useNavSurface("admin_tiles", TILES_FALLBACK);
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold">Admin</h1>
-        <p className="text-muted-foreground mt-1">Manage club data and the public honour boards.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-serif font-bold">Admin</h1>
+          <p className="text-muted-foreground mt-1">Manage club data and the public honour boards.</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => launchAdminTour()}
+          data-testid="admin-tour-start"
+          className="gap-1.5"
+        >
+          <HelpCircle className="h-4 w-4" />
+          Take the admin tour
+        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t, idx) => {

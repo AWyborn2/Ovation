@@ -56,7 +56,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
           <div className="font-medium">{admin.displayName}</div>
           <div className="text-xs text-muted-foreground">@{admin.username}</div>
         </div>
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1" data-tour="admin-nav">
           {NAV.map((item) => {
             const active =
               location === item.href ||
@@ -67,6 +67,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={`admin-nav-${item.href}`}
                 className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm ${
                   active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                 }`}

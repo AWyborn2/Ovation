@@ -224,7 +224,7 @@ export default function Home() {
       ) : (
         <>
           {/* Totals */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-tour="home-totals">
             <StatCard label="Players" value={data.totals.players.toLocaleString()} />
             <StatCard label="Games" value={data.totals.games.toLocaleString()} />
             <StatCard label="Runs" value={data.totals.runs.toLocaleString()} />
@@ -233,7 +233,7 @@ export default function Home() {
           </div>
 
           {/* Quick links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="quick-links">
             {quickLinks.map((item, idx) => (
               <QuickLink key={`${item.target}-${idx}`} item={item} />
             ))}
@@ -241,7 +241,7 @@ export default function Home() {
 
           {/* Recent matches */}
           {data.recentMatches.length > 0 && (
-            <section className="space-y-3">
+            <section className="space-y-3" data-tour="recent-matches">
               <div className="flex items-baseline justify-between gap-3 flex-wrap">
                 <h2 className="text-xl font-serif font-bold text-primary">Recent Matches</h2>
                 {data.latestSeasonLabel && (
@@ -259,7 +259,7 @@ export default function Home() {
           )}
 
           {/* Top performers with season picker + grade filter */}
-          <section className="space-y-3">
+          <section className="space-y-3" data-tour="top-performers">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
               <Select

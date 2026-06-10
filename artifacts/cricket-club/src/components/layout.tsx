@@ -1,9 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Trophy, Baby } from "lucide-react";
+import { Menu, X, Trophy, Baby, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { useBrandLogo } from "@/lib/use-brand";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
+import { launchFanTour, launchAdminTour } from "@/lib/tour";
+import { WelcomeGuide } from "@/components/welcome-guide";
 
 // Hard-coded fallbacks used until the nav config loads (or if it fails). These
 // mirror the seeded senior/junior menus so the site is never blank.
@@ -41,6 +43,7 @@ function SectionToggle({ isJuniors }: { isJuniors: boolean }) {
       className="inline-flex rounded-full border-2 border-primary overflow-hidden font-serif text-sm uppercase tracking-wider shadow-sm"
       role="group"
       aria-label="Switch between senior and junior cricket"
+      data-tour="section-toggle"
     >
       <Link
         href="/"
@@ -61,6 +64,34 @@ function SectionToggle({ isJuniors }: { isJuniors: boolean }) {
         Juniors
       </Link>
     </div>
+  );
+}
+
+// Persistent "Help / Take a tour" control. Launches the admin walkthrough when
+// a signed-in admin is on an admin page, otherwise the public fan tour.
+function HelpButton({ className }: { className?: string }) {
+  const [location, navigate] = useLocation();
+  const me = useCurrentAdmin();
+  const onAdmin = location === "/admin" || location.startsWith("/admin/");
+  const launch = () => {
+    if (onAdmin && me.data) {
+      launchAdminTour();
+    } else {
+      launchFanTour(navigate, location);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={launch}
+      data-tour="help-button"
+      aria-label="Help and guided tour"
+      title="Help / Take a tour"
+      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/60 px-3 py-1.5 text-primary text-sm font-serif uppercase tracking-wider transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className ?? ""}`}
+    >
+      <HelpCircle className="h-4 w-4" />
+      <span className="hidden lg:inline">Help</span>
+    </button>
   );
 }
 
@@ -104,6 +135,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col text-foreground">
+      <WelcomeGuide />
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/90">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -118,7 +150,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation + section toggle */}
             <div className="hidden md:flex items-center gap-6">
-              <nav className="flex items-center space-x-6">
+              <nav className="flex items-center space-x-6" data-tour="main-nav">
                 {navigation.map((item, idx) => {
                   const isActive = !item.isExternal && isItemActive(location, item.target);
                   const cls = `font-serif text-base lg:text-lg uppercase tracking-wider transition-colors py-2 border-b-2 ${
@@ -138,14 +170,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 })}
               </nav>
               <SectionToggle isJuniors={isJuniors} />
+              <HelpButton />
             </div>
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-3">
               <SectionToggle isJuniors={isJuniors} />
+              <HelpButton />
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="text-primary hover:text-primary/80 focus:outline-none"
+                data-tour="main-nav"
+                aria-label="Open navigation menu"
               >
                 {isMobileMenuOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
               </button>
