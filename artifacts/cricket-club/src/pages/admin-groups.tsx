@@ -85,13 +85,14 @@ function AdminTabGroup({
 export function AdminSocialGroup() {
   return (
     <AdminTabGroup
-      title="Social Media"
+      title="Social Media Studio"
       description="Branded share-card factory, card builders, junior cards and the review queue."
       basePath="/admin/social"
       tabs={[
         { value: "cards", label: "Cards", path: "/admin/social", element: <AdminSocial /> },
         { value: "create", label: "Create a card", path: "/admin/social/create", element: <AdminSocialCreate /> },
         { value: "juniors", label: "Junior cards", path: "/admin/social/juniors", element: <AdminJuniorSocial /> },
+        { value: "trading-cards", label: "Trading cards", path: "/admin/social/trading-cards", element: <AdminTradingCards /> },
         { value: "queue", label: "Queue", path: "/admin/social/queue", element: <AdminSocialQueue /> },
       ]}
     />
@@ -107,7 +108,6 @@ export function AdminSettingsGroup() {
       tabs={[
         { value: "matches", label: "Matches page", path: "/admin/settings", element: <AdminMatchDisplay /> },
         { value: "records", label: "Records page", path: "/admin/settings/records", element: <AdminRecordsDisplay /> },
-        { value: "trading-cards", label: "Trading cards", path: "/admin/settings/trading-cards", element: <AdminTradingCards /> },
         { value: "honour-boards", label: "Honour boards", path: "/admin/settings/honour-boards", element: <AdminHonourBoards /> },
         { value: "milestone-board", label: "Milestone board", path: "/admin/settings/milestone-board", element: <AdminMilestoneBoard /> },
         { value: "junior-matches", label: "Junior matches", path: "/admin/settings/junior-matches", element: <AdminJuniorMatchDisplay /> },

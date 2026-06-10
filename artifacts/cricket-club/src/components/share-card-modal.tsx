@@ -7,9 +7,13 @@ import {
   getListCardThemesQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
+  useListCardLayouts,
+  getListCardLayoutsQueryKey,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
   type CardTemplate,
+  type CardLayout,
+  type CardLayoutLayer,
 } from "@workspace/api-client-react";
 import {
   Dialog,
@@ -41,6 +45,9 @@ import {
   type RenderOptions,
 } from "@/lib/share-card";
 import { templateAppliesToKind } from "@/lib/card-template";
+import { CardLayoutEditor } from "@/components/card-layout-editor";
+import { useCurrentAdmin } from "@/lib/admin-auth";
+import { Wand2 } from "lucide-react";
 import { PLATFORM_LIMITS } from "@/lib/captions";
 import { PLATFORMS, MOTION_OPTIONS, type EngineKey, type Props } from "@/components/share-card-modal/constants";
 import { AnimatedCardPreview } from "@/components/share-card-modal/animated-card-preview";
@@ -134,6 +141,30 @@ export function ShareCardModal({
     [isJunior, layoutId, applicableTemplates],
   );
 
+  // Admin-only layer authoring. The saved custom layout (if any) drives every
+  // render — preview, PNG and zip — for both admins and the public; only admins
+  // get the "Customise layout" editor.
+  const adminQ = useCurrentAdmin();
+  const isAdmin = !!adminQ.data;
+  const layoutsQ = useListCardLayouts({
+    query: { enabled: open, queryKey: getListCardLayoutsQueryKey() },
+  });
+  const savedLayout = useMemo<CardLayoutLayer[]>(() => {
+    if (!input) return [];
+    const row = (layoutsQ.data as CardLayout[] | undefined)?.find(
+      (l) => l.cardKind === input.kind,
+    );
+    return row?.layers ?? [];
+  }, [layoutsQ.data, input]);
+  const layoutSig = useMemo(
+    () => (savedLayout.length ? JSON.stringify(savedLayout) : "none"),
+    [savedLayout],
+  );
+  const [editingLayout, setEditingLayout] = useState(false);
+  useEffect(() => {
+    if (!open) setEditingLayout(false);
+  }, [open]);
+
   // Motion preset. Defaults to the selected template's own preset (so an
   // animated template animates out of the box) until the club picks one.
   const [motion, setMotion] = useState<MotionPreset>("none");
@@ -197,6 +228,7 @@ export function ShareCardModal({
     theme: selectedTheme,
     brand: bundle?.brand,
     template: selectedTemplate,
+    layout: savedLayout,
     photoUrl: effectivePhotoUrl,
     photoPlacement,
     photoTransform: transform,
@@ -210,8 +242,8 @@ export function ShareCardModal({
     activeSize,
     renderTransform,
     buildOpts,
-    renderDeps: [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, selectedTemplate, effectivePhotoUrl, photoPlacement, renderTransform],
-    invalidateDeps: [includeSponsors, input, selectedThemeId, layoutId, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform],
+    renderDeps: [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, selectedTemplate, layoutSig, effectivePhotoUrl, photoPlacement, renderTransform],
+    invalidateDeps: [includeSponsors, input, selectedThemeId, layoutId, layoutSig, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform],
   });
 
   const {
@@ -318,6 +350,35 @@ export function ShareCardModal({
           </DialogDescription>
         </DialogHeader>
 
+        {isAdmin && !selectedTemplate && input.kind !== "matchSummary" && (
+          <div className="flex items-center justify-between rounded border border-dashed px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              {savedLayout.length > 0
+                ? "This card uses a custom layout."
+                : "Move, resize and add elements to this card."}
+            </span>
+            {!editingLayout && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditingLayout(true)}
+              >
+                <Wand2 className="h-3.5 w-3.5 mr-1" />
+                Customise layout
+              </Button>
+            )}
+          </div>
+        )}
+
+        {editingLayout && isAdmin ? (
+          <CardLayoutEditor
+            input={input}
+            baseOpts={buildOpts(activeSize, photoTransform)}
+            activeSize={activeSize}
+            onClose={() => setEditingLayout(false)}
+          />
+        ) : (
         <div className="grid gap-4 md:grid-cols-[2fr_3fr]">
           <div className="space-y-3">
             <Tabs value={activeSize} onValueChange={(v) => setActiveSize(v as CardSize)}>
@@ -491,6 +552,7 @@ export function ShareCardModal({
             )}
           </div>
         </div>
+        )}
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button

@@ -2973,6 +2973,61 @@ paths:
         "404":
           description: Not found
 
+  /card-layouts:
+    get:
+      operationId: listCardLayouts
+      tags: [socialCards]
+      summary: List all custom built-in-card layouts (one per card kind)
+      responses:
+        "200":
+          description: Card layout list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardLayout"
+
+  /card-layouts/{cardKind}:
+    put:
+      operationId: upsertCardLayout
+      tags: [socialCards]
+      summary: Save (create or replace) the custom layout for a card kind
+      parameters:
+        - name: cardKind
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardLayoutInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardLayout"
+    delete:
+      operationId: deleteCardLayout
+      tags: [socialCards]
+      summary: Reset a card kind to its built-in layout (delete the custom layout)
+      parameters:
+        - name: cardKind
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Reset
+        "404":
+          description: Not found
+
   /social-settings:
     get:
       operationId: getSocialSettings
@@ -7146,6 +7201,85 @@ components:
           type: boolean
         displayOrder:
           type: integer
+
+    CardLayoutLayer:
+      type: object
+      required: [id, kind]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [element, image, sticker, text]
+        x:
+          type: number
+        y:
+          type: number
+        w:
+          type: number
+        h:
+          type: number
+        vAnchor:
+          type: string
+          enum: [top, bottom]
+        z:
+          type: number
+        hidden:
+          type: boolean
+        url:
+          type: string
+        shape:
+          type: string
+          enum: [rect, circle, line]
+        fit:
+          type: string
+          enum: [cover, contain]
+        focalX:
+          type: number
+        focalY:
+          type: number
+        zoom:
+          type: number
+        color:
+          type: string
+        radius:
+          type: number
+        text:
+          type: string
+        fontSize:
+          type: number
+        fontWeight:
+          type: integer
+        align:
+          type: string
+          enum: [left, center, right]
+        fontFamily:
+          type: string
+          enum: [sans, serif]
+        uppercase:
+          type: boolean
+
+    CardLayout:
+      type: object
+      required: [id, cardKind, layers]
+      properties:
+        id:
+          type: integer
+        cardKind:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardLayoutLayer"
+
+    CardLayoutInput:
+      type: object
+      required: [layers]
+      properties:
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardLayoutLayer"
 
     SocialSettings:
       type: object

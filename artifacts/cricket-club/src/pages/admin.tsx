@@ -8,8 +8,8 @@ import { navIcon } from "@/lib/nav-icons";
 import { launchAdminTour } from "@/lib/tour";
 
 const TILES_FALLBACK: ResolvedNavItem[] = [
-  { label: "Social Media", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory, card builders, junior cards and the review queue." },
-  { label: "Display & Settings", target: "/admin/settings", isExternal: false, iconKey: "settings", description: "Defaults for Matches, Records, trading cards, honour & milestone boards, junior matches and site navigation." },
+  { label: "Social Media Studio", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory, card builders, trading cards, junior cards and the review queue." },
+  { label: "Display & Settings", target: "/admin/settings", isExternal: false, iconKey: "settings", description: "Defaults for Matches, Records, honour & milestone boards, junior matches and site navigation." },
   { label: "People", target: "/admin/people", isExternal: false, iconKey: "users", description: "Players, stats, committee, captains, junior office bearers and non-player officials." },
   { label: "Honours & Records", target: "/admin/honours", isExternal: false, iconKey: "trophy", description: "Premierships, awards, Team of the Decade, cap register, life members and junior premierships." },
   { label: "Import CSV", target: "/admin/import", isExternal: false, iconKey: "upload", description: "Upload a PlayCricket combined CSV or a single match scorecard." },

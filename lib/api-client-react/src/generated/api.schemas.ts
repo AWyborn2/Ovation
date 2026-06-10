@@ -2327,6 +2327,94 @@ export interface CardTemplateUpdate {
   displayOrder?: number;
 }
 
+export type CardLayoutLayerKind = typeof CardLayoutLayerKind[keyof typeof CardLayoutLayerKind];
+
+
+export const CardLayoutLayerKind = {
+  element: 'element',
+  image: 'image',
+  sticker: 'sticker',
+  text: 'text',
+} as const;
+
+export type CardLayoutLayerVAnchor = typeof CardLayoutLayerVAnchor[keyof typeof CardLayoutLayerVAnchor];
+
+
+export const CardLayoutLayerVAnchor = {
+  top: 'top',
+  bottom: 'bottom',
+} as const;
+
+export type CardLayoutLayerShape = typeof CardLayoutLayerShape[keyof typeof CardLayoutLayerShape];
+
+
+export const CardLayoutLayerShape = {
+  rect: 'rect',
+  circle: 'circle',
+  line: 'line',
+} as const;
+
+export type CardLayoutLayerFit = typeof CardLayoutLayerFit[keyof typeof CardLayoutLayerFit];
+
+
+export const CardLayoutLayerFit = {
+  cover: 'cover',
+  contain: 'contain',
+} as const;
+
+export type CardLayoutLayerAlign = typeof CardLayoutLayerAlign[keyof typeof CardLayoutLayerAlign];
+
+
+export const CardLayoutLayerAlign = {
+  left: 'left',
+  center: 'center',
+  right: 'right',
+} as const;
+
+export type CardLayoutLayerFontFamily = typeof CardLayoutLayerFontFamily[keyof typeof CardLayoutLayerFontFamily];
+
+
+export const CardLayoutLayerFontFamily = {
+  sans: 'sans',
+  serif: 'serif',
+} as const;
+
+export interface CardLayoutLayer {
+  id: string;
+  kind: CardLayoutLayerKind;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  vAnchor?: CardLayoutLayerVAnchor;
+  z?: number;
+  hidden?: boolean;
+  url?: string;
+  shape?: CardLayoutLayerShape;
+  fit?: CardLayoutLayerFit;
+  focalX?: number;
+  focalY?: number;
+  zoom?: number;
+  color?: string;
+  radius?: number;
+  text?: string;
+  fontSize?: number;
+  fontWeight?: number;
+  align?: CardLayoutLayerAlign;
+  fontFamily?: CardLayoutLayerFontFamily;
+  uppercase?: boolean;
+}
+
+export interface CardLayout {
+  id: number;
+  cardKind: string;
+  layers: CardLayoutLayer[];
+}
+
+export interface CardLayoutInput {
+  layers: CardLayoutLayer[];
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;

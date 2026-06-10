@@ -3821,6 +3821,115 @@ export const DeleteCardTemplateParams = zod.object({
 
 
 /**
+ * @summary List all custom built-in-card layouts (one per card kind)
+ */
+export const ListCardLayoutsResponseItem = zod.object({
+  "id": zod.number(),
+  "cardKind": zod.string(),
+  "layers": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+}))
+})
+export const ListCardLayoutsResponse = zod.array(ListCardLayoutsResponseItem)
+
+
+/**
+ * @summary Save (create or replace) the custom layout for a card kind
+ */
+export const UpsertCardLayoutParams = zod.object({
+  "cardKind": zod.coerce.string()
+})
+
+export const UpsertCardLayoutBody = zod.object({
+  "layers": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+}))
+})
+
+export const UpsertCardLayoutResponse = zod.object({
+  "id": zod.number(),
+  "cardKind": zod.string(),
+  "layers": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+}))
+})
+
+
+/**
+ * @summary Reset a card kind to its built-in layout (delete the custom layout)
+ */
+export const DeleteCardLayoutParams = zod.object({
+  "cardKind": zod.coerce.string()
+})
+
+
+/**
  * @summary Get social card settings (engines, sizes, sponsors, captions)
  */
 export const GetSocialSettingsResponse = zod.object({

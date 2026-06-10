@@ -101,6 +101,73 @@ export const cardTemplatesTable = pgTable("card_templates", {
 
 export type CardTemplateRow = typeof cardTemplatesTable.$inferSelect;
 
+// --- Layer-based card design studio ----------------------------------------
+// A single layer in a custom layout for a BUILT-IN card kind. Unlike template
+// slots (which sit over an uploaded background), these layers compose the
+// built-in card itself: `element` layers OVERRIDE the position/visibility/stack
+// of a built-in piece (photo, title, name, each stat, logo, sponsor, ...) keyed
+// by a stable semantic id; `image` / `sticker` / `text` layers are admin-added
+// extras. All geometry is normalized as a fraction (0-1) of the card's base
+// WIDTH (1080) for BOTH axes — width is constant across square/portrait/story,
+// so one layout maps cleanly onto every size and circles stay circular.
+export type CardLayoutLayer = {
+  id: string;
+  kind: "element" | "image" | "sticker" | "text";
+  // Geometry (fractions of base width 1080). Optional for `element` layers that
+  // only toggle visibility / stacking; required for added layers.
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  // Whether y is measured from the top (default) or the bottom of the frame, so
+  // bottom-anchored chrome (footer / sponsors) stays glued to the bottom edge.
+  vAnchor?: "top" | "bottom";
+  // Stacking order (ascending). Defaults to the element's natural order.
+  z?: number;
+  // `element` only: hide a built-in piece.
+  hidden?: boolean;
+  // `image` only: uploaded asset URL.
+  url?: string;
+  // `image` / `sticker`: outline shape.
+  shape?: "rect" | "circle" | "line";
+  // `image` only: object-fit behaviour.
+  fit?: "cover" | "contain";
+  // `image` only: focal point + zoom for cover crop (matches feature-photo math).
+  focalX?: number;
+  focalY?: number;
+  zoom?: number;
+  // `sticker` / `text`: colour (hex; constrained to the club palette in the UI).
+  color?: string;
+  // `sticker` (rect): corner radius as a fraction of width; (line): thickness.
+  radius?: number;
+  // `text` only.
+  text?: string;
+  fontSize?: number; // fraction of base width 1080
+  fontWeight?: number; // 400-900
+  align?: "left" | "center" | "right";
+  fontFamily?: "sans" | "serif";
+  uppercase?: boolean;
+};
+
+// One custom layout per built-in card kind. Absent row = the card uses its
+// pristine built-in layout (pixel-identical to the original design). Present
+// row = the renderer applies these layer overrides + extra layers.
+export const cardLayoutsTable = pgTable(
+  "card_layouts",
+  {
+    id: serial("id").primaryKey(),
+    // ShareCardInput["kind"] this layout customises (one row per kind).
+    cardKind: text("card_kind").notNull(),
+    layers: jsonb("layers").$type<CardLayoutLayer[]>().notNull().default([]),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqCardKind: uniqueIndex("card_layouts_card_kind_unique").on(t.cardKind),
+  }),
+);
+
+export type CardLayoutRow = typeof cardLayoutsTable.$inferSelect;
+
 export const socialSettingsTable = pgTable("social_settings", {
   id: serial("id").primaryKey(),
   engineOnDemand: boolean("engine_on_demand").notNull().default(true),

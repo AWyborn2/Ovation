@@ -52,6 +52,8 @@ import type {
   CaptainUpdate,
   CaptionTemplate,
   CaptionTemplateInput,
+  CardLayout,
+  CardLayoutInput,
   CardTemplate,
   CardTemplateInput,
   CardTemplateUpdate,
@@ -10555,6 +10557,225 @@ export const useDeleteCardTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCardTemplateMutationOptions(options));
+    }
+
+export const getListCardLayoutsUrl = () => {
+
+
+
+
+  return `/api/card-layouts`
+}
+
+/**
+ * @summary List all custom built-in-card layouts (one per card kind)
+ */
+export const listCardLayouts = async ( options?: RequestInit): Promise<CardLayout[]> => {
+
+  return customFetch<CardLayout[]>(getListCardLayoutsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardLayoutsQueryKey = () => {
+    return [
+    `/api/card-layouts`
+    ] as const;
+    }
+
+
+export const getListCardLayoutsQueryOptions = <TData = Awaited<ReturnType<typeof listCardLayouts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardLayouts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardLayoutsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCardLayouts>>> = ({ signal }) => listCardLayouts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCardLayouts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardLayoutsQueryResult = NonNullable<Awaited<ReturnType<typeof listCardLayouts>>>
+export type ListCardLayoutsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all custom built-in-card layouts (one per card kind)
+ */
+
+export function useListCardLayouts<TData = Awaited<ReturnType<typeof listCardLayouts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardLayouts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardLayoutsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertCardLayoutUrl = (cardKind: string,) => {
+
+
+
+
+  return `/api/card-layouts/${cardKind}`
+}
+
+/**
+ * @summary Save (create or replace) the custom layout for a card kind
+ */
+export const upsertCardLayout = async (cardKind: string,
+    cardLayoutInput: CardLayoutInput, options?: RequestInit): Promise<CardLayout> => {
+
+  return customFetch<CardLayout>(getUpsertCardLayoutUrl(cardKind),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardLayoutInput,)
+  }
+);}
+
+
+
+
+export const getUpsertCardLayoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertCardLayout>>, TError,{cardKind: string;data: BodyType<CardLayoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertCardLayout>>, TError,{cardKind: string;data: BodyType<CardLayoutInput>}, TContext> => {
+
+const mutationKey = ['upsertCardLayout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertCardLayout>>, {cardKind: string;data: BodyType<CardLayoutInput>}> = (props) => {
+          const {cardKind,data} = props ?? {};
+
+          return  upsertCardLayout(cardKind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertCardLayoutMutationResult = NonNullable<Awaited<ReturnType<typeof upsertCardLayout>>>
+    export type UpsertCardLayoutMutationBody = BodyType<CardLayoutInput>
+    export type UpsertCardLayoutMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save (create or replace) the custom layout for a card kind
+ */
+export const useUpsertCardLayout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertCardLayout>>, TError,{cardKind: string;data: BodyType<CardLayoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertCardLayout>>,
+        TError,
+        {cardKind: string;data: BodyType<CardLayoutInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertCardLayoutMutationOptions(options));
+    }
+
+export const getDeleteCardLayoutUrl = (cardKind: string,) => {
+
+
+
+
+  return `/api/card-layouts/${cardKind}`
+}
+
+/**
+ * @summary Reset a card kind to its built-in layout (delete the custom layout)
+ */
+export const deleteCardLayout = async (cardKind: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardLayoutUrl(cardKind),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCardLayoutMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardLayout>>, TError,{cardKind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCardLayout>>, TError,{cardKind: string}, TContext> => {
+
+const mutationKey = ['deleteCardLayout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCardLayout>>, {cardKind: string}> = (props) => {
+          const {cardKind} = props ?? {};
+
+          return  deleteCardLayout(cardKind,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardLayoutMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCardLayout>>>
+
+    export type DeleteCardLayoutMutationError = ErrorType<void>
+
+    /**
+ * @summary Reset a card kind to its built-in layout (delete the custom layout)
+ */
+export const useDeleteCardLayout = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardLayout>>, TError,{cardKind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCardLayout>>,
+        TError,
+        {cardKind: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCardLayoutMutationOptions(options));
     }
 
 export const getGetSocialSettingsUrl = () => {

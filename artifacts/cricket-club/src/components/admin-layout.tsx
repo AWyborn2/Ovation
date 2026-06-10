@@ -26,7 +26,7 @@ const NAV: {
   badge?: "social-queue";
 }[] = [
   { href: "/admin", label: "Hub", icon: LayoutGrid },
-  { href: "/admin/social", label: "Social Media", icon: Image, badge: "social-queue" },
+  { href: "/admin/social", label: "Social Media Studio", icon: Image, badge: "social-queue" },
   { href: "/admin/settings", label: "Display & Settings", icon: Settings },
   { href: "/admin/people", label: "People", icon: Users },
   { href: "/admin/honours", label: "Honours & Records", icon: Trophy },

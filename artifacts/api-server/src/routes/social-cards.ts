@@ -8,6 +8,7 @@ import {
   captionTemplatesTable,
   cardThemesTable,
   cardTemplatesTable,
+  cardLayoutsTable,
 } from "@workspace/db";
 import {
   CreateSponsorBody,
@@ -25,7 +26,11 @@ import {
   UpdateCardTemplateBody,
   UpdateCardTemplateParams,
   DeleteCardTemplateParams,
+  UpsertCardLayoutBody,
+  UpsertCardLayoutParams,
+  DeleteCardLayoutParams,
 } from "@workspace/api-zod";
+import type { CardLayoutLayer } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
 import { getHallsHeadBrand } from "../lib/halls-head-brand";
@@ -417,6 +422,57 @@ router.delete("/card-templates/:id", requireAdmin, async (req, res): Promise<voi
     .returning({ id: cardTemplatesTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card template not found" });
+    return;
+  }
+  res.status(204).end();
+});
+
+// --- Layer-based card layouts ----------------------------------------------
+// Custom layouts for BUILT-IN card kinds. Reading is public (the public card
+// renderer needs the saved layout); saving / resetting is admin-only.
+router.get("/card-layouts", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(cardLayoutsTable)
+    .orderBy(asc(cardLayoutsTable.cardKind));
+  res.json(rows);
+});
+
+router.put("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpsertCardLayoutParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpsertCardLayoutBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const layers = body.data.layers as CardLayoutLayer[];
+  const [row] = await db
+    .insert(cardLayoutsTable)
+    .values({ cardKind: params.data.cardKind, layers, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: cardLayoutsTable.cardKind,
+      set: { layers, updatedAt: new Date() },
+    })
+    .returning();
+  res.json(row);
+});
+
+router.delete("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeleteCardLayoutParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const result = await db
+    .delete(cardLayoutsTable)
+    .where(eq(cardLayoutsTable.cardKind, params.data.cardKind))
+    .returning({ id: cardLayoutsTable.id });
+  if (result.length === 0) {
+    res.status(404).json({ error: "Card layout not found" });
     return;
   }
   res.status(204).end();

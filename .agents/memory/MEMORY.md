@@ -53,3 +53,4 @@
 - [Cricket-club admin consolidated groups](admin-consolidated-groups.md) — web admin is 6 entries + Hub; 4 are shadcn-Tabs group pages with URL-driven deep-linkable tabs; old flat /admin/* URLs redirect; leaf pages drop their own h1.
 - [Junior "Games" consistency](junior-games-consistency.md) — canonical junior games = distinct HH roster appearances via rosterGamesByParticipant; every junior tab uses it; directory scopes games+runs+wickets together when filtered.
 - [Guided tour (driver.js)](guided-tour.md) — web-only onboarding: driver.js fan + admin tours, first-visit welcome (localStorage flag), data-tour markers; runTour resolves first VISIBLE match for responsive dup markers.
+- [Card layout studio](card-layout-studio.md) — layer-based card editor: unified renderShareCard builder, rects normed as fractions of 1080 BOTH axes, identity transform keeps un-customised cards pixel-identical; matchSummary/template stay off the layer path.
