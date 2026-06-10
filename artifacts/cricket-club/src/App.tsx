@@ -183,14 +183,27 @@ function AdminOnly({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Kiosk gate. A long-lived `?token=` (issued by an admin) lets a fixed clubroom
+ * TV / Raspberry Pi load the rotation with no admin login; without a token the
+ * page stays admin-only (used for the in-app admin preview).
+ */
+function KioskGate() {
+  const hasToken = new URLSearchParams(window.location.search).has("token");
+  if (hasToken) return <HonoursKiosk />;
+  return (
+    <AdminOnly>
+      <HonoursKiosk />
+    </AdminOnly>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/__card-render" component={CardRenderHarness} />
       <Route path="/honours-display/kiosk">
-        <AdminOnly>
-          <HonoursKiosk />
-        </AdminOnly>
+        <KioskGate />
       </Route>
       <Route path="/honours-display">
         <Layout>

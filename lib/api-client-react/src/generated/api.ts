@@ -81,6 +81,7 @@ import type {
   ErrorEnvelope,
   FiveWicketHaul,
   GetJuniorSeasonTopPerformersParams,
+  GetKioskDisplayParams,
   GetSeniorSeasonTopPerformersParams,
   GradeSummary,
   HealthStatus,
@@ -111,6 +112,7 @@ import type {
   JuniorPremiershipUpdate,
   JuniorSeasonTopPerformers,
   JuniorSocialMilestone,
+  KioskTokenResponse,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
@@ -12405,6 +12407,233 @@ export function useGetHonourDisplay<TData = Awaited<ReturnType<typeof getHonourD
 
 
 
+
+export const getGetKioskDisplayUrl = (params: GetKioskDisplayParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/honour-display/kiosk?${stringifiedParams}` : `/api/honour-display/kiosk`
+}
+
+/**
+ * Returns the same assembled bundle as GET /honour-display, but is authenticated by a long-lived kiosk token (query param) instead of an admin session. Lets a wall-mounted TV / Raspberry Pi run the rotation without exposing the rest of the admin surface. The kioskToken field is omitted from the returned settings.
+ * @summary Public token-gated kiosk bundle for a fixed clubroom TV
+ */
+export const getKioskDisplay = async (params: GetKioskDisplayParams, options?: RequestInit): Promise<HonourDisplayBundle> => {
+
+  return customFetch<HonourDisplayBundle>(getGetKioskDisplayUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKioskDisplayQueryKey = (params?: GetKioskDisplayParams,) => {
+    return [
+    `/api/honour-display/kiosk`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetKioskDisplayQueryOptions = <TData = Awaited<ReturnType<typeof getKioskDisplay>>, TError = ErrorType<void>>(params: GetKioskDisplayParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKioskDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKioskDisplayQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKioskDisplay>>> = ({ signal }) => getKioskDisplay(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKioskDisplay>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKioskDisplayQueryResult = NonNullable<Awaited<ReturnType<typeof getKioskDisplay>>>
+export type GetKioskDisplayQueryError = ErrorType<void>
+
+
+/**
+ * @summary Public token-gated kiosk bundle for a fixed clubroom TV
+ */
+
+export function useGetKioskDisplay<TData = Awaited<ReturnType<typeof getKioskDisplay>>, TError = ErrorType<void>>(
+ params: GetKioskDisplayParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKioskDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKioskDisplayQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGenerateKioskTokenUrl = () => {
+
+
+
+
+  return `/api/honour-display/kiosk-token`
+}
+
+/**
+ * Issues a fresh long-lived kiosk token, replacing any existing one (which immediately stops working). Returns the new token.
+ * @summary Generate (or rotate) the clubroom TV kiosk access token (admin)
+ */
+export const generateKioskToken = async ( options?: RequestInit): Promise<KioskTokenResponse> => {
+
+  return customFetch<KioskTokenResponse>(getGenerateKioskTokenUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getGenerateKioskTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,void, TContext> => {
+
+const mutationKey = ['generateKioskToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateKioskToken>>, void> = () => {
+
+
+          return  generateKioskToken(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateKioskTokenMutationResult = NonNullable<Awaited<ReturnType<typeof generateKioskToken>>>
+
+    export type GenerateKioskTokenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate (or rotate) the clubroom TV kiosk access token (admin)
+ */
+export const useGenerateKioskToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateKioskToken>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGenerateKioskTokenMutationOptions(options));
+    }
+
+export const getRevokeKioskTokenUrl = () => {
+
+
+
+
+  return `/api/honour-display/kiosk-token`
+}
+
+/**
+ * Clears the kiosk token so any existing kiosk link stops working.
+ * @summary Revoke the clubroom TV kiosk access token (admin)
+ */
+export const revokeKioskToken = async ( options?: RequestInit): Promise<KioskTokenResponse> => {
+
+  return customFetch<KioskTokenResponse>(getRevokeKioskTokenUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeKioskTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeKioskToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeKioskToken>>, TError,void, TContext> => {
+
+const mutationKey = ['revokeKioskToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeKioskToken>>, void> = () => {
+
+
+          return  revokeKioskToken(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeKioskTokenMutationResult = NonNullable<Awaited<ReturnType<typeof revokeKioskToken>>>
+
+    export type RevokeKioskTokenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoke the clubroom TV kiosk access token (admin)
+ */
+export const useRevokeKioskToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeKioskToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeKioskToken>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRevokeKioskTokenMutationOptions(options));
+    }
 
 export const getUpdateHonourDisplaySettingsUrl = () => {
 

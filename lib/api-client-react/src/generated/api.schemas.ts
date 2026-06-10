@@ -2965,6 +2965,13 @@ export interface HonourDisplaySettings {
   kioskScrollSpeed: number;
   /** Hold (ms) at the bottom of a board before advancing. */
   kioskEndHoldMs: number;
+  /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
+  kioskToken?: string | null;
+}
+
+export interface KioskTokenResponse {
+  /** The active kiosk token, or null when revoked / not issued. */
+  token: string | null;
 }
 
 export type HonourDisplaySettingsUpdateDefaultTemplate = typeof HonourDisplaySettingsUpdateDefaultTemplate[keyof typeof HonourDisplaySettingsUpdateDefaultTemplate];
@@ -3883,6 +3890,13 @@ export type UploadMatchScorecardBody = {
 export type UploadMatchBatchBody = {
   /** One or more .xlsx scorecards, and/or a .zip of them */
   files: Blob[];
+};
+
+export type GetKioskDisplayParams = {
+/**
+ * The kiosk access token issued by an admin.
+ */
+token: string;
 };
 
 export type ListNavItemsParams = {

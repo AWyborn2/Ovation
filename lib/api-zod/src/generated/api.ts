@@ -4861,8 +4861,85 @@ export const GetHonourDisplayResponse = zod.object({
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
-  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.')
+  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
+  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.')
 })
+})
+
+
+/**
+ * Returns the same assembled bundle as GET /honour-display, but is authenticated by a long-lived kiosk token (query param) instead of an admin session. Lets a wall-mounted TV / Raspberry Pi run the rotation without exposing the rest of the admin surface. The kioskToken field is omitted from the returned settings.
+ * @summary Public token-gated kiosk bundle for a fixed clubroom TV
+ */
+export const GetKioskDisplayQueryParams = zod.object({
+  "token": zod.coerce.string().describe('The kiosk access token issued by an admin.')
+})
+
+export const GetKioskDisplayResponse = zod.object({
+  "boards": zod.array(zod.object({
+  "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
+  "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list']).describe('Natural render layout for this board (skin only changes the look).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "entries": zod.array(zod.object({
+  "season": zod.string().describe('Season \/ year label, e.g. \"2024\/25\" (may be empty).'),
+  "primaryText": zod.string().describe('Name \/ captain \/ record type.'),
+  "detail": zod.string().nullish().describe('e.g. \"147\* v Mandurah\", \"def. Pinjarra\", \"642 pts\".'),
+  "playerId": zod.number().nullish().describe('Link to player profile when known.'),
+  "matchId": zod.number().nullish().describe('Link to match scorecard when derivable (P7 grand finals).'),
+  "meta": zod.object({
+  "venue": zod.string().nullish(),
+  "date": zod.string().nullish(),
+  "motm": zod.string().nullish(),
+  "captain": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
+  "competition": zod.string().nullish(),
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+}).optional(),
+  "squad": zod.array(zod.object({
+  "name": zod.string(),
+  "playerId": zod.number().nullish(),
+  "isCaptain": zod.boolean()
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+}))
+})),
+  "brand": zod.object({
+  "name": zod.string().describe('Full club name.'),
+  "shortName": zod.string().describe('Short club name \/ abbreviation.'),
+  "monogram": zod.string().describe('2-letter crest fallback (e.g. \"HH\").'),
+  "logoUrl": zod.string().nullish().describe('Club crest image URL; null falls back to the monogram.'),
+  "primaryColour": zod.string().describe('Club primary colour (--club-primary), e.g. navy \"#333F48\".'),
+  "secondaryColour": zod.string().describe('Club secondary \/ gold accent (--club-secondary), e.g. \"#FBAC27\".'),
+  "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
+}),
+  "settings": zod.object({
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('The single club-wide skin every board renders in.'),
+  "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
+  "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
+  "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
+  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
+  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.')
+})
+})
+
+
+/**
+ * Issues a fresh long-lived kiosk token, replacing any existing one (which immediately stops working). Returns the new token.
+ * @summary Generate (or rotate) the clubroom TV kiosk access token (admin)
+ */
+export const GenerateKioskTokenResponse = zod.object({
+  "token": zod.string().nullable().describe('The active kiosk token, or null when revoked \/ not issued.')
+})
+
+
+/**
+ * Clears the kiosk token so any existing kiosk link stops working.
+ * @summary Revoke the clubroom TV kiosk access token (admin)
+ */
+export const RevokeKioskTokenResponse = zod.object({
+  "token": zod.string().nullable().describe('The active kiosk token, or null when revoked \/ not issued.')
 })
 
 
@@ -4882,7 +4959,8 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
-  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.')
+  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
+  "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.')
 })
 
 

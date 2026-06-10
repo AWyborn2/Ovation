@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import {
   db,
@@ -66,14 +67,31 @@ async function ensureHonourDisplaySettings() {
   return created;
 }
 
-function serializeSettings(row: typeof honourDisplaySettingsTable.$inferSelect) {
+function serializeSettings(
+  row: typeof honourDisplaySettingsTable.$inferSelect,
+  opts: { includeToken?: boolean } = {},
+) {
   return {
     defaultTemplate: row.defaultTemplate,
     kioskSequence: row.kioskSequence ?? [],
     kioskDwellMs: row.kioskDwellMs,
     kioskScrollSpeed: row.kioskScrollSpeed,
     kioskEndHoldMs: row.kioskEndHoldMs,
+    // Only surface the kiosk token to authenticated admins. The public
+    // kiosk feed omits it so it never leaks to the rotation client.
+    ...(opts.includeToken ? { kioskToken: row.kioskToken ?? null } : {}),
   };
+}
+
+/** Constant-time match of a presented kiosk token against the stored one. */
+function kioskTokenMatches(stored: string | null, presented: unknown): boolean {
+  if (!stored || typeof presented !== "string" || presented.length === 0) {
+    return false;
+  }
+  const a = Buffer.from(stored);
+  const b = Buffer.from(presented);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 // ---------------------------------------------------------------------------
@@ -898,8 +916,55 @@ router.get("/honour-display", requireAdmin, async (_req, res): Promise<void> => 
     buildBrand(),
     ensureHonourDisplaySettings(),
   ]);
+  res.json({
+    boards,
+    brand,
+    settings: serializeSettings(settingsRow, { includeToken: true }),
+  });
+});
+
+// Public, token-gated kiosk feed. A fixed clubroom TV / Raspberry Pi can run
+// the rotation with a long-lived token instead of an admin session, without
+// exposing the rest of the admin surface.
+router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
+  const settingsRow = await ensureHonourDisplaySettings();
+  if (!kioskTokenMatches(settingsRow.kioskToken, req.query.token)) {
+    res.status(403).json({ error: "Invalid or revoked kiosk token" });
+    return;
+  }
+  const [boards, brand] = await Promise.all([assembleBoards(), buildBrand()]);
   res.json({ boards, brand, settings: serializeSettings(settingsRow) });
 });
+
+// Generate (or rotate) the kiosk token. Replaces any existing one, so the
+// previous link immediately stops working.
+router.post(
+  "/honour-display/kiosk-token",
+  requireAdmin,
+  async (_req, res): Promise<void> => {
+    await ensureHonourDisplaySettings();
+    const token = randomBytes(24).toString("base64url");
+    await db
+      .update(honourDisplaySettingsTable)
+      .set({ kioskToken: token, updatedAt: new Date() })
+      .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+    res.json({ token });
+  },
+);
+
+// Revoke the kiosk token so any existing link stops working.
+router.delete(
+  "/honour-display/kiosk-token",
+  requireAdmin,
+  async (_req, res): Promise<void> => {
+    await ensureHonourDisplaySettings();
+    await db
+      .update(honourDisplaySettingsTable)
+      .set({ kioskToken: null, updatedAt: new Date() })
+      .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+    res.json({ token: null });
+  },
+);
 
 router.patch(
   "/honour-display-settings",

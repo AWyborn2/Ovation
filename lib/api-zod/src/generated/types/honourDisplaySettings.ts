@@ -18,4 +18,6 @@ export interface HonourDisplaySettings {
   kioskScrollSpeed: number;
   /** Hold (ms) at the bottom of a board before advancing. */
   kioskEndHoldMs: number;
+  /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
+  kioskToken?: string | null;
 }

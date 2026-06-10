@@ -3393,6 +3393,63 @@ paths:
               schema:
                 $ref: "#/components/schemas/HonourDisplayBundle"
 
+  /honour-display/kiosk:
+    get:
+      operationId: getKioskDisplay
+      tags: [honours]
+      summary: Public token-gated kiosk bundle for a fixed clubroom TV
+      description: >-
+        Returns the same assembled bundle as GET /honour-display, but is
+        authenticated by a long-lived kiosk token (query param) instead of an
+        admin session. Lets a wall-mounted TV / Raspberry Pi run the rotation
+        without exposing the rest of the admin surface. The kioskToken field is
+        omitted from the returned settings.
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: The kiosk access token issued by an admin.
+      responses:
+        "200":
+          description: Honour boards, brand and display settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HonourDisplayBundle"
+        "403":
+          description: Missing, revoked, or invalid kiosk token
+
+  /honour-display/kiosk-token:
+    post:
+      operationId: generateKioskToken
+      tags: [honours]
+      summary: Generate (or rotate) the clubroom TV kiosk access token (admin)
+      description: >-
+        Issues a fresh long-lived kiosk token, replacing any existing one
+        (which immediately stops working). Returns the new token.
+      responses:
+        "200":
+          description: The newly issued kiosk token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KioskTokenResponse"
+    delete:
+      operationId: revokeKioskToken
+      tags: [honours]
+      summary: Revoke the clubroom TV kiosk access token (admin)
+      description: >-
+        Clears the kiosk token so any existing kiosk link stops working.
+      responses:
+        "200":
+          description: Token revoked (token is null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KioskTokenResponse"
+
   /honour-display-settings:
     patch:
       operationId: updateHonourDisplaySettings
@@ -8345,6 +8402,22 @@ components:
         kioskEndHoldMs:
           type: integer
           description: Hold (ms) at the bottom of a board before advancing.
+        kioskToken:
+          type: string
+          nullable: true
+          description: >-
+            Long-lived read-only kiosk access token (admin bundle only; null
+            when no link has been issued). Omitted from the public kiosk feed.
+
+    KioskTokenResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          nullable: true
+          description: The active kiosk token, or null when revoked / not issued.
 
     HonourDisplaySettingsUpdate:
       type: object

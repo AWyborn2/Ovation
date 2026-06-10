@@ -19,6 +19,10 @@ export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
   kioskScrollSpeed: integer("kiosk_scroll_speed").notNull().default(36),
   // Hold (ms) at the bottom of a scrolled board / on short boards before advancing.
   kioskEndHoldMs: integer("kiosk_end_hold_ms").notNull().default(3000),
+  // Long-lived read-only access token that lets a fixed clubroom TV / Raspberry
+  // Pi load the kiosk rotation without an admin login. NULL = no link issued
+  // (kiosk token access disabled). Rotating/clearing this revokes old links.
+  kioskToken: text("kiosk_token"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

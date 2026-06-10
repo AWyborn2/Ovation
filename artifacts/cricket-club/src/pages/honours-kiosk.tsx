@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { useGetHonourDisplay } from "@workspace/api-client-react";
+import {
+  useGetHonourDisplay,
+  useGetKioskDisplay,
+  getGetHonourDisplayQueryKey,
+  getGetKioskDisplayQueryKey,
+} from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
 import { brandStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
@@ -22,7 +27,25 @@ function stagger(root: HTMLElement) {
 }
 
 export default function HonoursKiosk() {
-  const { data, refetch } = useGetHonourDisplay();
+  // A `?token=` (issued by an admin) drives the public, login-free kiosk feed
+  // for a fixed clubroom TV. Without one we're the in-app admin preview.
+  const kioskToken = useMemo(
+    () => new URLSearchParams(window.location.search).get("token"),
+    [],
+  );
+  const adminQ = useGetHonourDisplay({
+    query: { enabled: !kioskToken, queryKey: getGetHonourDisplayQueryKey() },
+  });
+  const tokenQ = useGetKioskDisplay(
+    { token: kioskToken ?? "" },
+    {
+      query: {
+        enabled: !!kioskToken,
+        queryKey: getGetKioskDisplayQueryKey({ token: kioskToken ?? "" }),
+      },
+    },
+  );
+  const { data, refetch } = kioskToken ? tokenQ : adminQ;
   const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
@@ -55,7 +78,9 @@ export default function HonoursKiosk() {
 
   const exit = () => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    navigate("/honours-display");
+    // Token kiosks (clubroom TV) have no admin to return to — just leave
+    // fullscreen and stay on the rotation. Admin previews go back to the display.
+    if (!kioskToken) navigate("/honours-display");
   };
 
   // Enter fullscreen on first user interaction (browsers block auto-fullscreen).

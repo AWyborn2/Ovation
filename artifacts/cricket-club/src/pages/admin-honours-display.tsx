@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   useGetHonourDisplay,
   useUpdateHonourDisplaySettings,
+  useGenerateKioskToken,
+  useRevokeKioskToken,
   getGetHonourDisplayQueryKey,
   type HonourDisplayBundle,
   type HonourDisplaySettingsUpdate,
@@ -10,7 +12,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2, ArrowUp, ArrowDown, Plus, X } from "lucide-react";
+import {
+  Save,
+  Loader2,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  X,
+  Tv,
+  Copy,
+  Check,
+  Link2,
+  Trash2,
+} from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { TEMPLATES } from "@/components/honours-display/types";
@@ -305,6 +319,156 @@ function SettingsForm({
           Save settings
         </Button>
       </div>
+
+      <KioskLinkCard token={settings.kioskToken ?? null} onChanged={onSaved} />
     </div>
+  );
+}
+
+function KioskLinkCard({
+  token,
+  onChanged,
+}: {
+  token: string | null;
+  onChanged: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const kioskUrl = useMemo(() => {
+    if (!token) return null;
+    const base = `${window.location.origin}${import.meta.env.BASE_URL}`.replace(
+      /\/+$/,
+      "/",
+    );
+    return `${base}honours-display/kiosk?token=${encodeURIComponent(token)}`;
+  }, [token]);
+
+  const generate = useGenerateKioskToken({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        setCopied(false);
+        onChanged();
+      },
+      onError: (e) => setError(handleAdminMutationError(e)),
+    },
+  });
+  const revoke = useRevokeKioskToken({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        setCopied(false);
+        onChanged();
+      },
+      onError: (e) => setError(handleAdminMutationError(e)),
+    },
+  });
+  const busy = generate.isPending || revoke.isPending;
+
+  const copy = async () => {
+    if (!kioskUrl) return;
+    try {
+      await navigator.clipboard.writeText(kioskUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Couldn't copy — select the link and copy it manually.");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Tv className="h-5 w-5" /> Clubroom TV link
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Generate a private link that loads <em>only</em> the rotating kiosk —
+          no admin sign-in needed. Open it on a wall-mounted TV or Raspberry Pi
+          browser (it auto-runs the rotation). The link doesn't expose any other
+          admin page. Revoke it any time to stop a lost or shared link working.
+        </p>
+
+        {token && kioskUrl ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={kioskUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                className="font-mono text-xs"
+                data-testid="input-kiosk-url"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copy}
+                data-testid="button-copy-kiosk-url"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 mr-2 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => generate.mutate()}
+                data-testid="button-regenerate-kiosk-token"
+              >
+                {generate.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Link2 className="h-4 w-4 mr-2" />
+                )}
+                Regenerate link
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={busy}
+                onClick={() => revoke.mutate()}
+                data-testid="button-revoke-kiosk-token"
+              >
+                {revoke.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Revoke link
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Regenerating or revoking immediately stops the current link from
+              working — re-open the kiosk on the TV with the new link afterwards.
+            </p>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => generate.mutate()}
+            data-testid="button-generate-kiosk-token"
+          >
+            {generate.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Link2 className="h-4 w-4 mr-2" />
+            )}
+            Generate kiosk link
+          </Button>
+        )}
+
+        {error && <div className="text-sm text-destructive">{error}</div>}
+      </CardContent>
+    </Card>
   );
 }
