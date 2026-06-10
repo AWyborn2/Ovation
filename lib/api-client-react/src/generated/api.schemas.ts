@@ -2380,6 +2380,54 @@ export const CardLayoutLayerFontFamily = {
   serif: 'serif',
 } as const;
 
+export type CardLayerEffectsTone = typeof CardLayerEffectsTone[keyof typeof CardLayerEffectsTone];
+
+
+export const CardLayerEffectsTone = {
+  bw: 'bw',
+  duotone: 'duotone',
+} as const;
+
+export type CardLayerEffectsMask = typeof CardLayerEffectsMask[keyof typeof CardLayerEffectsMask];
+
+
+export const CardLayerEffectsMask = {
+  rounded: 'rounded',
+  circle: 'circle',
+  feather: 'feather',
+} as const;
+
+export type CardLayerEffectsGradientDir = typeof CardLayerEffectsGradientDir[keyof typeof CardLayerEffectsGradientDir];
+
+
+export const CardLayerEffectsGradientDir = {
+  top: 'top',
+  bottom: 'bottom',
+  left: 'left',
+  right: 'right',
+} as const;
+
+/**
+ * Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).
+ */
+export interface CardLayerEffects {
+  tone?: CardLayerEffectsTone;
+  toneColor?: string;
+  toneIntensity?: number;
+  mask?: CardLayerEffectsMask;
+  maskRadius?: number;
+  gradient?: boolean;
+  gradientColor?: string;
+  gradientIntensity?: number;
+  gradientDir?: CardLayerEffectsGradientDir;
+  shadow?: boolean;
+  shadowColor?: string;
+  shadowIntensity?: number;
+  border?: boolean;
+  borderColor?: string;
+  borderWidth?: number;
+}
+
 export interface CardLayoutLayer {
   id: string;
   kind: CardLayoutLayerKind;
@@ -2406,6 +2454,7 @@ export interface CardLayoutLayer {
   uppercase?: boolean;
   assetId?: string;
   field?: string;
+  effects?: CardLayerEffects;
 }
 
 export interface CardLayout {

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardLayerEffects } from './cardLayerEffects';
 import type { CardLayoutLayerAlign } from './cardLayoutLayerAlign';
 import type { CardLayoutLayerFit } from './cardLayoutLayerFit';
 import type { CardLayoutLayerFontFamily } from './cardLayoutLayerFontFamily';
@@ -38,4 +39,5 @@ export interface CardLayoutLayer {
   uppercase?: boolean;
   assetId?: string;
   field?: string;
+  effects?: CardLayerEffects;
 }

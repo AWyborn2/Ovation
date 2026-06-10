@@ -7373,6 +7373,48 @@ components:
           type: string
         field:
           type: string
+        effects:
+          $ref: "#/components/schemas/CardLayerEffects"
+
+    CardLayerEffects:
+      type: object
+      description: >-
+        Optional per-layer visual treatments authored in the card layout studio.
+        Absent or all-empty means the layer renders untouched (pixel-identical).
+      properties:
+        tone:
+          type: string
+          enum: [bw, duotone]
+        toneColor:
+          type: string
+        toneIntensity:
+          type: number
+        mask:
+          type: string
+          enum: [rounded, circle, feather]
+        maskRadius:
+          type: number
+        gradient:
+          type: boolean
+        gradientColor:
+          type: string
+        gradientIntensity:
+          type: number
+        gradientDir:
+          type: string
+          enum: [top, bottom, left, right]
+        shadow:
+          type: boolean
+        shadowColor:
+          type: string
+        shadowIntensity:
+          type: number
+        border:
+          type: boolean
+        borderColor:
+          type: string
+        borderWidth:
+          type: number
 
     CardLayout:
       type: object

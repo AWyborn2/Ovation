@@ -3851,7 +3851,24 @@ export const ListCardLayoutsResponseItem = zod.object({
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
   "uppercase": zod.boolean().optional(),
   "assetId": zod.string().optional(),
-  "field": zod.string().optional()
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 }))
 })
 export const ListCardLayoutsResponse = zod.array(ListCardLayoutsResponseItem)
@@ -3890,7 +3907,24 @@ export const UpsertCardLayoutBody = zod.object({
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
   "uppercase": zod.boolean().optional(),
   "assetId": zod.string().optional(),
-  "field": zod.string().optional()
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 }))
 })
 
@@ -3922,7 +3956,24 @@ export const UpsertCardLayoutResponse = zod.object({
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
   "uppercase": zod.boolean().optional(),
   "assetId": zod.string().optional(),
-  "field": zod.string().optional()
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 }))
 })
 
@@ -3947,7 +3998,7 @@ export const ListCardSetsResponseItem = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
   "layout": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -3968,7 +4019,26 @@ export const ListCardSetsResponseItem = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
   "motionPreset": zod.string().optional()
@@ -3995,7 +4065,7 @@ export const CreateCardSetBody = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
   "layout": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -4016,7 +4086,26 @@ export const CreateCardSetBody = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
   "motionPreset": zod.string().optional()
@@ -4046,7 +4135,7 @@ export const UpdateCardSetBody = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
   "layout": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -4067,7 +4156,26 @@ export const UpdateCardSetBody = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
   "motionPreset": zod.string().optional()
@@ -4084,7 +4192,7 @@ export const UpdateCardSetResponse = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
   "layout": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
   "x": zod.number().optional(),
   "y": zod.number().optional(),
   "w": zod.number().optional(),
@@ -4105,7 +4213,26 @@ export const UpdateCardSetResponse = zod.object({
   "fontWeight": zod.number().optional(),
   "align": zod.enum(['left', 'center', 'right']).optional(),
   "fontFamily": zod.enum(['sans', 'serif']).optional(),
-  "uppercase": zod.boolean().optional()
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional()
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
   "motionPreset": zod.string().optional()

@@ -806,6 +806,58 @@ export const DEFAULT_PHOTO_TRANSFORM: PhotoTransform = {
   zoom: 1,
 };
 
+// --- Per-layer visual effects ------------------------------------------------
+// A small, curated set of on-brand treatments any selectable layer can carry.
+// Effects are applied by drawLayers AFTER the layer's own draw closure runs, by
+// compositing the layer through an offscreen canvas — so they never touch the
+// layer's data binding and an un-effected layer stays on the pixel-identical
+// fast path. All colours come from the club palette; intensities are 0-1.
+export type LayerTone = "bw" | "duotone";
+export type LayerMask = "rounded" | "circle" | "feather";
+export type LayerGradientDir = "top" | "bottom" | "left" | "right";
+
+export type LayerEffects = {
+  // Colour grade: black & white, or a two-tone wash in a club colour.
+  tone?: LayerTone;
+  toneColor?: string; // duotone hue (palette); ignored for "bw"
+  toneIntensity?: number; // 0-1 blend from original to graded
+  // Photo mask shape clipped onto the layer content.
+  mask?: LayerMask;
+  maskRadius?: number; // rounded: corner as fraction of min(w,h); feather: softness 0-1
+  // Linear gradient overlay fading from a colour to transparent.
+  gradient?: boolean;
+  gradientColor?: string;
+  gradientIntensity?: number; // 0-1 max opacity
+  gradientDir?: LayerGradientDir;
+  // Drop shadow cast by the layer's silhouette.
+  shadow?: boolean;
+  shadowColor?: string;
+  shadowIntensity?: number; // 0-1 → blur + offset + opacity
+  // Solid border following the mask shape (or the layer rect when unmasked).
+  border?: boolean;
+  borderColor?: string;
+  borderWidth?: number; // fraction of the 1080 base width
+};
+
+// True when an effects object actually requests at least one treatment. Keeps
+// un-effected layers off the offscreen compositing path (pixel-identical).
+export const hasLayerEffects = (fx?: LayerEffects | null): boolean =>
+  !!fx &&
+  (!!fx.tone || !!fx.mask || !!fx.gradient || !!fx.shadow || !!fx.border);
+
+export const DEFAULT_LAYER_EFFECTS: LayerEffects = {
+  toneColor: "#FBAC27",
+  toneIntensity: 1,
+  maskRadius: 0.18,
+  gradientColor: "#1A1A1A",
+  gradientIntensity: 0.55,
+  gradientDir: "bottom",
+  shadowColor: "#1A1A1A",
+  shadowIntensity: 0.5,
+  borderColor: "#FBAC27",
+  borderWidth: 0.006,
+};
+
 export type RenderOptions = {
   size: CardSize;
   sponsors?: CardSponsor[];
@@ -1611,6 +1663,9 @@ type RenderLayer = {
   // the rest frame is identical. Non-numeric layers omit both (count-up fades).
   numeric?: boolean;
   drawCount?: (ctx: CanvasRenderingContext2D, frac: number) => void;
+  // Optional per-layer visual effects (applyLayout / buildCustomLayer fill these
+  // from the saved layout). Absent/empty → the layer stays on the fast path.
+  effects?: LayerEffects;
   draw: (ctx: CanvasRenderingContext2D) => void | Promise<void>;
 };
 
@@ -1648,6 +1703,7 @@ export type EditorLayer = {
   // card field auto-fills the text slot.
   assetId?: string;
   field?: string;
+  effects?: LayerEffects;
 };
 
 // Shared asset preload for the standard body (theme bg, player photo, club logo).
@@ -2699,6 +2755,7 @@ const buildCustomLayer = (
     selectable: true,
     resizable: true,
     drawsAtNatural: false,
+    ...(hasLayerEffects(s.effects) ? { effects: s.effects } : {}),
     draw: (ctx) => {
       if (s.kind === "image") return drawCustomImage(ctx, s, rect);
       if (s.kind === "libsticker") return drawCustomLibSticker(ctx, s, rect, input, tplCtx);
@@ -2820,6 +2877,7 @@ const applyLayout = (
       }
       if (typeof s.z === "number") l.z = s.z;
       if (typeof s.hidden === "boolean") l.hidden = s.hidden;
+      if (hasLayerEffects(s.effects)) l.effects = s.effects;
       if (l.photoTransform) {
         l.photoTransform = {
           focalX: typeof s.focalX === "number" ? s.focalX : l.photoTransform.focalX,
@@ -2848,18 +2906,221 @@ const applyLayerTransform = (ctx: CanvasRenderingContext2D, l: RenderLayer) => {
   }
 };
 
+// Apply the natural→rect transform a built-in layer expects, then run its draw.
+const drawLayerContent = async (ctx: CanvasRenderingContext2D, l: RenderLayer) => {
+  ctx.save();
+  applyLayerTransform(ctx, l);
+  try {
+    await l.draw(ctx);
+  } catch {}
+  ctx.restore();
+};
+
+// Mix a hex colour toward an [r,g,b] target by amount (0-1).
+const mixToward = (hex: string, target: [number, number, number], amt: number): [number, number, number] => {
+  const [r, g, b] = hexToRgb(hex);
+  return [
+    Math.round(r + (target[0] - r) * amt),
+    Math.round(g + (target[1] - g) * amt),
+    Math.round(b + (target[2] - b) * amt),
+  ];
+};
+
+// Re-grade the pixels inside `rect` of an offscreen canvas to black & white or a
+// two-tone wash, blended back toward the original by intensity. Alpha (and thus
+// any mask/transparent area) is preserved untouched. Tainted canvases throw on
+// getImageData — we swallow that and leave the layer ungraded.
+const applyToneToCanvas = (
+  cv: HTMLCanvasElement,
+  rect: PxRect,
+  tone: LayerTone,
+  color: string,
+  intensity: number,
+) => {
+  const ctx = cv.getContext("2d");
+  if (!ctx) return;
+  const x = Math.max(0, Math.floor(rect.x));
+  const y = Math.max(0, Math.floor(rect.y));
+  const w = Math.min(cv.width - x, Math.ceil(rect.w + (rect.x - x)));
+  const h = Math.min(cv.height - y, Math.ceil(rect.h + (rect.y - y)));
+  if (w <= 0 || h <= 0) return;
+  const k = Math.max(0, Math.min(1, intensity));
+  const [loR, loG, loB] = mixToward(color, [0, 0, 0], 0.5);
+  const [hiR, hiG, hiB] = mixToward(color, [255, 255, 255], 0.6);
+  let data: ImageData;
+  try {
+    data = ctx.getImageData(x, y, w, h);
+  } catch {
+    return;
+  }
+  const d = data.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+    let gr: number, gg: number, gb: number;
+    if (tone === "bw") {
+      const v = lum * 255;
+      gr = v;
+      gg = v;
+      gb = v;
+    } else {
+      gr = loR + (hiR - loR) * lum;
+      gg = loG + (hiG - loG) * lum;
+      gb = loB + (hiB - loB) * lum;
+    }
+    d[i] = d[i] + (gr - d[i]) * k;
+    d[i + 1] = d[i + 1] + (gg - d[i + 1]) * k;
+    d[i + 2] = d[i + 2] + (gb - d[i + 2]) * k;
+  }
+  ctx.putImageData(data, x, y);
+};
+
+// Trace the mask outline (or the plain rect when unmasked) into the current
+// path so it can be used for clipping or stroking. Feather falls back to an
+// ellipse outline for clip/stroke purposes.
+const traceLayerShape = (
+  ctx: CanvasRenderingContext2D,
+  rect: PxRect,
+  mask: LayerMask | undefined,
+  maskRadius: number,
+) => {
+  const { x, y, w, h } = rect;
+  ctx.beginPath();
+  if (mask === "circle") {
+    ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+  } else if (mask === "feather") {
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+  } else if (mask === "rounded") {
+    const rad = Math.max(0, Math.min(0.5, maskRadius)) * Math.min(w, h);
+    ctx.roundRect(x, y, w, h, rad);
+  } else {
+    ctx.rect(x, y, w, h);
+  }
+  ctx.closePath();
+};
+
+// Clip an offscreen layer canvas to the mask shape via destination-in. Feather
+// uses a radial gradient so the layer edges fade out softly.
+const applyMaskToCanvas = (
+  cv: HTMLCanvasElement,
+  rect: PxRect,
+  mask: LayerMask,
+  maskRadius: number,
+) => {
+  const ctx = cv.getContext("2d");
+  if (!ctx) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-in";
+  if (mask === "feather") {
+    const cx = rect.x + rect.w / 2;
+    const cy = rect.y + rect.h / 2;
+    const rad = Math.max(rect.w, rect.h) / 2;
+    const soft = Math.max(0, Math.min(0.95, maskRadius));
+    const g = ctx.createRadialGradient(cx, cy, rad * (1 - soft), cx, cy, rad);
+    g.addColorStop(0, "rgba(0,0,0,1)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    // Scale the radial circle into the rect's aspect so it feathers as an oval.
+    ctx.translate(cx, cy);
+    ctx.scale(rect.w / Math.max(rect.w, rect.h), rect.h / Math.max(rect.w, rect.h));
+    ctx.translate(-cx, -cy);
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  } else {
+    ctx.fillStyle = "#000";
+    traceLayerShape(ctx, rect, mask, maskRadius);
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
+// Overlay a linear gradient (colour → transparent) across the layer rect,
+// clipped to the mask shape so it hugs the layer.
+const drawGradientOverlay = (
+  ctx: CanvasRenderingContext2D,
+  rect: PxRect,
+  fx: LayerEffects,
+) => {
+  const { x, y, w, h } = rect;
+  const dir = fx.gradientDir ?? "bottom";
+  const alpha = Math.max(0, Math.min(1, fx.gradientIntensity ?? 0.55));
+  const color = fx.gradientColor || "#1A1A1A";
+  let g: CanvasGradient;
+  if (dir === "top") g = ctx.createLinearGradient(0, y, 0, y + h);
+  else if (dir === "bottom") g = ctx.createLinearGradient(0, y + h, 0, y);
+  else if (dir === "left") g = ctx.createLinearGradient(x, 0, x + w, 0);
+  else g = ctx.createLinearGradient(x + w, 0, x, 0);
+  g.addColorStop(0, rgba(color, alpha));
+  g.addColorStop(1, rgba(color, 0));
+  ctx.save();
+  traceLayerShape(ctx, rect, fx.mask, fx.maskRadius ?? 0.18);
+  ctx.clip();
+  ctx.fillStyle = g;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+};
+
+// Stroke a border following the mask shape (or the rect when unmasked).
+const drawLayerBorder = (
+  ctx: CanvasRenderingContext2D,
+  rect: PxRect,
+  fx: LayerEffects,
+) => {
+  const lw = Math.max(0, (fx.borderWidth ?? 0.006) * 1080);
+  if (lw <= 0) return;
+  ctx.save();
+  ctx.strokeStyle = fx.borderColor || "#FBAC27";
+  ctx.lineWidth = lw;
+  traceLayerShape(ctx, rect, fx.mask, fx.maskRadius ?? 0.18);
+  ctx.stroke();
+  ctx.restore();
+};
+
 // Draw all visible layers in ascending z order, applying the natural→rect
-// transform for built-in layers (identity when rect === natural).
+// transform for built-in layers (identity when rect === natural). Layers with
+// effects composite through an offscreen canvas; un-effected layers stay on the
+// pixel-identical fast path.
 const drawLayers = async (ctx: CanvasRenderingContext2D, layers: RenderLayer[]) => {
   const ordered = [...layers].sort((a, b) => a.z - b.z);
+  const W = ctx.canvas.width;
+  const H = ctx.canvas.height;
   for (const l of ordered) {
     if (l.hidden) continue;
+    const fx = l.effects;
+    // Fast path: no effects → draw straight onto the main ctx (pixel-identical).
+    if (!hasLayerEffects(fx)) {
+      await drawLayerContent(ctx, l);
+      continue;
+    }
+    // Effected layer: render it in isolation to an offscreen canvas at the same
+    // size, grade/mask its pixels, then composite it back (with an optional drop
+    // shadow), and finally paint the gradient overlay + border on top.
+    const off = document.createElement("canvas");
+    off.width = W;
+    off.height = H;
+    const octx = off.getContext("2d");
+    if (!octx) {
+      await drawLayerContent(ctx, l);
+      continue;
+    }
+    await drawLayerContent(octx, l);
+    const rect = l.rect;
+    if (fx!.tone) {
+      applyToneToCanvas(off, rect, fx!.tone, fx!.toneColor || "#FBAC27", fx!.toneIntensity ?? 1);
+    }
+    if (fx!.mask) {
+      applyMaskToCanvas(off, rect, fx!.mask, fx!.maskRadius ?? 0.18);
+    }
     ctx.save();
-    applyLayerTransform(ctx, l);
-    try {
-      await l.draw(ctx);
-    } catch {}
+    if (fx!.shadow) {
+      const k = Math.max(0, Math.min(1, fx!.shadowIntensity ?? 0.5));
+      ctx.shadowColor = rgba(fx!.shadowColor || "#1A1A1A", 0.25 + k * 0.55);
+      ctx.shadowBlur = k * 48;
+      ctx.shadowOffsetY = k * 14;
+    }
+    ctx.drawImage(off, 0, 0);
     ctx.restore();
+    if (fx!.gradient) drawGradientOverlay(ctx, rect, fx!);
+    if (fx!.border) drawLayerBorder(ctx, rect, fx!);
   }
 };
 
@@ -2948,6 +3209,7 @@ export const computeCardLayers = async (
     focalX: l.photoTransform?.focalX,
     focalY: l.photoTransform?.focalY,
     zoom: l.photoTransform?.zoom,
+    effects: l.effects,
   });
   const order: EditorLayer[] = builtins.map(toNorm);
   const byId = new Map(order.map((e) => [e.id, e]));
@@ -2964,6 +3226,7 @@ export const computeCardLayers = async (
       if (typeof s.focalX === "number") e.focalX = s.focalX;
       if (typeof s.focalY === "number") e.focalY = s.focalY;
       if (typeof s.zoom === "number") e.zoom = s.zoom;
+      if (hasLayerEffects(s.effects)) e.effects = s.effects;
     } else {
       order.push({
         id: s.id,
@@ -3001,6 +3264,7 @@ export const computeCardLayers = async (
         uppercase: s.uppercase,
         assetId: s.assetId,
         field: s.field,
+        effects: hasLayerEffects(s.effects) ? s.effects : undefined,
       });
     }
   }
@@ -3261,8 +3525,15 @@ export const prepareAnimation = async (
   }
   const assets = await loadCardAssets(input, opts);
   const builtins = buildLayers(input, opts, p, W, H, scale, assets);
+  const tplCtx: TemplateContext = {
+    clubUrl: opts.clubUrl,
+    hashtag: opts.hashtag,
+    photoUrl: opts.photoUrl,
+  };
   const laidOut =
-    opts.layout && opts.layout.length > 0 ? applyLayout(builtins, opts.layout, H) : builtins;
+    opts.layout && opts.layout.length > 0
+      ? applyLayout(builtins, opts.layout, H, input, tplCtx)
+      : builtins;
   const ordered = laidOut.filter((l) => !l.hidden).sort((a, b) => a.z - b.z);
   const baked = await Promise.all(ordered.map((l) => bakeLayer(l, W, H)));
   const fg = baked.filter((b) => b.layer.id !== "background");
