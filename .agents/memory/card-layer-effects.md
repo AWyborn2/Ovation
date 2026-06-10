@@ -26,9 +26,17 @@ the gradient overlay + border paint on the main ctx over the layer `rect`.
   drawsAtNatural built-ins and custom layers) — use it for tone region, mask
   shape, gradient bounds, and border outline.
 - Effects work for ALL layer kinds automatically because they wrap the draw
-  closure — they never touch data binding. Feature/hero photo is the
-  non-selectable `background` layer, so it's out of effects scope; the
-  selectable headshot `photo` layer and stat tiles are in scope.
+  closure — they never touch data binding. The full-bleed feature/hero photo is
+  the `background` layer: it stays non-selectable (so it can't be dragged/resized
+  on the canvas) but IS effectable — reachable via the LayerList (which never
+  filters on `selectable`) + the Inspector's always-on EffectsSection, and
+  relabelled "Feature photo" when a hero image is present.
+- **Cross-size constraint for the background (and any non-resizable element):**
+  NEVER persist its geometry. Its natural rect IS the render canvas, which
+  differs per size (W=1080 always, H=1080/1350/1920). `savedRectToPx` scales by
+  1080, so a square-authored h would shrink the bg on taller sizes. `editorToSaved`
+  gates geometry on `!geometryLocked` (`geometryLocked = !l.resizable`) and emits
+  only effects/z/hidden for the bg, leaving rect at the built-in full-bleed.
 - Persistence: a new effect field must be threaded through five places or it
   won't round-trip — OpenAPI `CardLayerEffects` schema (then re-run codegen),
   `RenderLayer`/`EditorLayer` types, `applyLayout` + `buildCustomLayer` (saved →
@@ -37,8 +45,12 @@ the gradient overlay + border paint on the main ctx over the layer `rect`.
   an effect-only edit on an unmoved built-in element saves nothing).
 - Tone uses getImageData → wrap in try/catch: a tainted (non-CORS) photo throws
   and must degrade to ungraded, not crash.
-- Animation/video export reuses `renderShareCard` → effects flow into video for
-  free at all three sizes; no separate path.
+- Animation/video export does NOT reuse `renderShareCard` — the built-in animated
+  path bakes each layer to a bitmap via `bakeLayer`, which originally ran only the
+  raw draw and so SILENTLY DROPPED all effects in video. Effect compositing is now
+  factored into `drawEffectedLayer(ctx,l,W,H)` shared by BOTH `drawLayers` (still)
+  and `bakeLayer` (video). Any future effect MUST flow through that one helper, or
+  it'll render in PNG but vanish in MP4/WebM export.
 
 **Reusable effect presets:** a named bundle of LayerEffects, applied to a layer
 in one click. Built-in presets ship as client constants (`BUILTIN_EFFECT_PRESETS`

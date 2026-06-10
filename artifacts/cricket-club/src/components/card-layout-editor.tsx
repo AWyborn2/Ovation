@@ -120,31 +120,43 @@ function editorToSaved(
     if (l.editKind === "element") {
       const p = pById.get(l.id);
       if (!p) continue;
+      // The full-bleed feature/background layer can't be moved or resized, so its
+      // geometry must NEVER be persisted: its natural rect is the render canvas,
+      // which differs per size (square/portrait/story). Persisting a square-sized
+      // rect would shrink the background on taller sizes via savedRectToPx (which
+      // scales by 1080, not the render height). Only its effects/z/visibility are
+      // meaningful, so we emit those and leave geometry to the built-in default.
+      const geometryLocked = !l.resizable;
       const changed =
-        p.x !== l.x ||
-        p.y !== l.y ||
-        p.w !== l.w ||
-        p.h !== l.h ||
+        (!geometryLocked &&
+          (p.x !== l.x ||
+            p.y !== l.y ||
+            p.w !== l.w ||
+            p.h !== l.h ||
+            p.focalX !== l.focalX ||
+            p.focalY !== l.focalY ||
+            p.zoom !== l.zoom)) ||
         p.z !== l.z ||
         p.hidden !== l.hidden ||
-        p.focalX !== l.focalX ||
-        p.focalY !== l.focalY ||
-        p.zoom !== l.zoom ||
         JSON.stringify(p.effects ?? null) !== JSON.stringify(l.effects ?? null);
       if (!changed) continue;
       out.push({
         id: l.id,
         kind: "element",
-        x: l.x,
-        y: l.y,
-        w: l.w,
-        h: l.h,
+        ...(geometryLocked
+          ? {}
+          : {
+              x: l.x,
+              y: l.y,
+              w: l.w,
+              h: l.h,
+              focalX: l.focalX,
+              focalY: l.focalY,
+              zoom: l.zoom,
+            }),
         z: l.z,
         hidden: l.hidden,
         vAnchor: l.vAnchor,
-        focalX: l.focalX,
-        focalY: l.focalY,
-        zoom: l.zoom,
         effects: l.effects,
       });
     } else {
@@ -1241,7 +1253,14 @@ function Inspector({
         </>
       )}
 
-      {!isCustom && layer.id !== "photo" && (
+      {!isCustom && layer.id === "background" && (
+        <p className="text-[11px] text-muted-foreground">
+          The full-bleed feature photo. Use the effects below to tone, gradient
+          or mask it; it always covers the whole card.
+        </p>
+      )}
+
+      {!isCustom && layer.id !== "photo" && layer.id !== "background" && (
         <p className="text-[11px] text-muted-foreground">
           Drag on the canvas to move or resize. Hide it from the layer list.
         </p>

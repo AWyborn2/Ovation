@@ -1927,7 +1927,9 @@ const buildLayers = (
   add({
     id: "background",
     editKind: "element",
-    label: "Background",
+    // When a full-bleed hero/feature photo backs the card, label it as such so
+    // admins can find it in the layer list and apply effects (tone/gradient/mask).
+    label: featureImg ? "Feature photo" : "Background",
     natural: { x: 0, y: 0, w: W, h: H },
     vAnchor: "top",
     selectable: false,
@@ -3151,52 +3153,61 @@ const drawLayerBorder = (
   ctx.restore();
 };
 
-// Draw all visible layers in ascending z order, applying the natural→rect
-// transform for built-in layers (identity when rect === natural). Layers with
-// effects composite through an offscreen canvas; un-effected layers stay on the
-// pixel-identical fast path.
+// Composite a single effected layer onto `ctx`: render it in isolation to a
+// W×H offscreen canvas, grade/mask its pixels, draw it back (with an optional
+// drop shadow), then paint the gradient overlay + border on top. Shared by the
+// still renderer (drawLayers) and the animation baker (bakeLayer) so effects —
+// including a duotone/feather treatment on the full-bleed feature photo — render
+// identically in PNG export and video export. Falls back to a plain draw if the
+// offscreen context can't be created.
+const drawEffectedLayer = async (
+  ctx: CanvasRenderingContext2D,
+  l: RenderLayer,
+  W: number,
+  H: number,
+) => {
+  const fx = l.effects!;
+  const off = document.createElement("canvas");
+  off.width = W;
+  off.height = H;
+  const octx = off.getContext("2d");
+  if (!octx) {
+    await drawLayerContent(ctx, l);
+    return;
+  }
+  await drawLayerContent(octx, l);
+  const rect = l.rect;
+  if (fx.tone) {
+    applyToneToCanvas(off, rect, fx.tone, fx.toneColor || "#FBAC27", fx.toneIntensity ?? 1);
+  }
+  if (fx.mask) {
+    applyMaskToCanvas(off, rect, fx.mask, fx.maskRadius ?? 0.18);
+  }
+  ctx.save();
+  if (fx.shadow) {
+    const k = Math.max(0, Math.min(1, fx.shadowIntensity ?? 0.5));
+    ctx.shadowColor = rgba(fx.shadowColor || "#1A1A1A", 0.25 + k * 0.55);
+    ctx.shadowBlur = k * 48;
+    ctx.shadowOffsetY = k * 14;
+  }
+  ctx.drawImage(off, 0, 0);
+  ctx.restore();
+  if (fx.gradient) drawGradientOverlay(ctx, rect, fx);
+  if (fx.border) drawLayerBorder(ctx, rect, fx);
+};
+
 const drawLayers = async (ctx: CanvasRenderingContext2D, layers: RenderLayer[]) => {
   const ordered = [...layers].sort((a, b) => a.z - b.z);
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
   for (const l of ordered) {
     if (l.hidden) continue;
-    const fx = l.effects;
     // Fast path: no effects → draw straight onto the main ctx (pixel-identical).
-    if (!hasLayerEffects(fx)) {
+    if (!hasLayerEffects(l.effects)) {
       await drawLayerContent(ctx, l);
       continue;
     }
-    // Effected layer: render it in isolation to an offscreen canvas at the same
-    // size, grade/mask its pixels, then composite it back (with an optional drop
-    // shadow), and finally paint the gradient overlay + border on top.
-    const off = document.createElement("canvas");
-    off.width = W;
-    off.height = H;
-    const octx = off.getContext("2d");
-    if (!octx) {
-      await drawLayerContent(ctx, l);
-      continue;
-    }
-    await drawLayerContent(octx, l);
-    const rect = l.rect;
-    if (fx!.tone) {
-      applyToneToCanvas(off, rect, fx!.tone, fx!.toneColor || "#FBAC27", fx!.toneIntensity ?? 1);
-    }
-    if (fx!.mask) {
-      applyMaskToCanvas(off, rect, fx!.mask, fx!.maskRadius ?? 0.18);
-    }
-    ctx.save();
-    if (fx!.shadow) {
-      const k = Math.max(0, Math.min(1, fx!.shadowIntensity ?? 0.5));
-      ctx.shadowColor = rgba(fx!.shadowColor || "#1A1A1A", 0.25 + k * 0.55);
-      ctx.shadowBlur = k * 48;
-      ctx.shadowOffsetY = k * 14;
-    }
-    ctx.drawImage(off, 0, 0);
-    ctx.restore();
-    if (fx!.gradient) drawGradientOverlay(ctx, rect, fx!);
-    if (fx!.border) drawLayerBorder(ctx, rect, fx!);
+    await drawEffectedLayer(ctx, l, W, H);
   }
 };
 
@@ -3237,12 +3248,13 @@ const bakeLayer = async (
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return { layer: l, bitmap: null, ...meta };
-  ctx.save();
-  applyLayerTransform(ctx, l);
-  try {
-    await l.draw(ctx);
-  } catch {}
-  ctx.restore();
+  // Bake with the same effect-compositing the still renderer uses, so a toned /
+  // masked / gradient feature photo (or any effected layer) carries into video.
+  if (hasLayerEffects(l.effects)) {
+    await drawEffectedLayer(ctx, l, W, H);
+  } else {
+    await drawLayerContent(ctx, l);
+  }
   try {
     const bitmap = await createImageBitmap(canvas);
     return { layer: l, bitmap, ...meta };
