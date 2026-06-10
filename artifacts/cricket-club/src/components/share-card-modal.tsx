@@ -34,9 +34,7 @@ import {
   videoFormatLabel,
   downloadBlob,
   cardBaseFilename,
-  sponsorAppliesToKind,
   type CardSize,
-  type CardSponsor,
   type ShareCardInput,
   type PhotoTransform,
   type MotionPreset,
@@ -49,6 +47,9 @@ import { AnimatedCardPreview } from "@/components/share-card-modal/animated-card
 import { usePhotoControls } from "@/components/share-card-modal/use-photo-controls";
 import { PhotoControls } from "@/components/share-card-modal/photo-controls";
 import { useCaptions } from "@/components/share-card-modal/use-captions";
+import { useSponsors } from "@/components/share-card-modal/use-sponsors";
+import { useCardPreview } from "@/components/share-card-modal/use-card-preview";
+import { useVideoExport } from "@/components/share-card-modal/use-video-export";
 
 export type { EngineKey } from "@/components/share-card-modal/constants";
 
@@ -160,23 +161,7 @@ export function ShareCardModal({
   );
   const videoSupported = useMemo(() => canExportVideo(), []);
   const videoFormat = useMemo(() => videoFormatLabel(), []);
-  const [videoExporting, setVideoExporting] = useState(false);
-  // The most recently rendered video clip, held back for review before saving.
-  // Playing this exact blob in a <video> lets admins confirm the real output
-  // (MediaRecorder timing/codec quirks can diverge from the live canvas).
-  const [videoPreview, setVideoPreview] = useState<{
-    url: string;
-    blob: Blob;
-    ext: string;
-    size: CardSize;
-  } | null>(null);
   const [includeSponsors, setIncludeSponsors] = useState(true);
-  const [previewUrls, setPreviewUrls] = useState<Record<CardSize, string | null>>({
-    square: null,
-    portrait: null,
-    story: null,
-  });
-  const [rendering, setRendering] = useState(false);
   const [zipping, setZipping] = useState(false);
   const [approving, setApproving] = useState(false);
 
@@ -186,15 +171,7 @@ export function ShareCardModal({
     }
   }, [open, enabledSizes, activeSize]);
 
-  const sponsors: CardSponsor[] = useMemo(() => {
-    if (!bundle?.settings.sponsorsEnabled || !includeSponsors || !input) return [];
-    return (bundle?.activeSponsors ?? [])
-      .filter((s) => sponsorAppliesToKind(s.cardKinds, input.kind))
-      .map((s) => ({
-        name: s.name,
-        logoUrl: s.logoUrl,
-      }));
-  }, [bundle, includeSponsors, input]);
+  const { sponsors, sponsorSig } = useSponsors({ bundle, includeSponsors, input });
 
   const clubUrl = bundle?.settings.clubUrl ?? "hallsheadcricket.com.au";
   const hashtag = bundle?.settings.clubHashtag ?? "#HHCC";
@@ -208,49 +185,6 @@ export function ShareCardModal({
     copied,
     handleCopyCaption,
   } = useCaptions({ open, input, bundle, engine, appPath, trackedSlug, clubUrl, hashtag });
-
-  // Reset the held-back video clip whenever the modal (re)opens.
-  useEffect(() => {
-    if (open) {
-      setVideoPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev.url);
-        return null;
-      });
-    }
-  }, [open]);
-
-  // Render preview when size/sponsors/input changes.
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (!open || !input) return;
-      if (animated) return; // animated cards preview live on a canvas instead
-      if (previewUrls[activeSize]) return; // cache hit
-      setRendering(true);
-      try {
-        const blob = await renderShareCard(input, buildOpts(activeSize, renderTransform));
-        if (cancelled) return;
-        const url = URL.createObjectURL(blob);
-        setPreviewUrls((prev) => ({ ...prev, [activeSize]: url }));
-      } catch (e) {
-        console.error("Card render failed", e);
-      } finally {
-        if (!cancelled) setRendering(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, selectedTemplate, effectivePhotoUrl, photoPlacement, renderTransform]);
-
-  // Stable signature of the resolved sponsor set so previews re-render when the
-  // sponsor list loads async or its card-kind filtering changes the result.
-  const sponsorSig = useMemo(
-    () => sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~"),
-    [sponsors],
-  );
 
   // Build the render options shared by the still preview, PNG/zip export and the
   // animated preview/video export. `transform` is supplied separately because
@@ -269,6 +203,25 @@ export function ShareCardModal({
     motionPreset: motion,
   });
 
+  const { previewUrls, rendering } = useCardPreview({
+    open,
+    input,
+    animated,
+    activeSize,
+    renderTransform,
+    buildOpts,
+    renderDeps: [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, selectedTemplate, effectivePhotoUrl, photoPlacement, renderTransform],
+    invalidateDeps: [includeSponsors, input, selectedThemeId, layoutId, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform],
+  });
+
+  const {
+    videoExporting,
+    videoPreview,
+    handleDownloadVideo,
+    handleSaveVideo,
+    closeVideoPreview,
+  } = useVideoExport({ open, input, buildOpts, photoTransform });
+
   // Stable key for the animated preview so it only re-prepares when something
   // that affects the animation actually changes.
   const animSig = useMemo(
@@ -286,77 +239,10 @@ export function ShareCardModal({
     [activeSize, layoutId, selectedThemeId, motion, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
   );
 
-  // Invalidate cached previews when sponsors flip or the theme changes.
-  useEffect(() => {
-    setPreviewUrls((prev) => {
-      Object.values(prev).forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
-      });
-      return { square: null, portrait: null, story: null };
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeSponsors, input, selectedThemeId, layoutId, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform]);
-
-  // Cleanup URLs on close.
-  useEffect(() => {
-    if (!open) {
-      Object.values(previewUrls).forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
-      });
-      setPreviewUrls({ square: null, portrait: null, story: null });
-      setVideoPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev.url);
-        return null;
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   const handleDownload = async (size: CardSize) => {
     if (!input) return;
     const blob = await renderShareCard(input, buildOpts(size, photoTransform));
     downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
-  };
-
-  // Record the animated card to a video clip (MP4 where supported, else WebM)
-  // and hold it back for review — the admin plays the exact rendered blob before
-  // deciding to save it or re-record. This catches MediaRecorder timing/codec
-  // quirks (first-frame flash, loop seam) that the live canvas preview can hide.
-  const handleDownloadVideo = async (size: CardSize) => {
-    if (!input) return;
-    setVideoExporting(true);
-    try {
-      const { blob, ext } = await renderShareCardVideo(input, buildOpts(size, photoTransform));
-      const url = URL.createObjectURL(blob);
-      setVideoPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev.url);
-        return { url, blob, ext, size };
-      });
-    } catch (e) {
-      console.error("Card video export failed", e);
-    } finally {
-      setVideoExporting(false);
-    }
-  };
-
-  // Save the reviewed clip to disk.
-  const handleSaveVideo = () => {
-    if (!input || !videoPreview) return;
-    downloadBlob(
-      videoPreview.blob,
-      `${cardBaseFilename(input)}-${SIZES[videoPreview.size].code}.${videoPreview.ext}`,
-    );
-    setVideoPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev.url);
-      return null;
-    });
-  };
-
-  const closeVideoPreview = () => {
-    setVideoPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev.url);
-      return null;
-    });
   };
 
   const handleDownloadAll = async () => {
