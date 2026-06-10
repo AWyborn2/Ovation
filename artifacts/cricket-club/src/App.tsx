@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import HonourBoards from "@/pages/honour-boards";
 import Players from "@/pages/players";
 import PlayerDetail from "@/pages/player-detail";
+import PersonDetail from "@/pages/person-detail";
 import Matches from "@/pages/matches";
 import MatchDetail from "@/pages/match-detail";
 import Grades from "@/pages/grades";
@@ -46,6 +47,7 @@ import AdminTradingCards from "@/pages/admin-trading-cards";
 import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
 import AdminCaptains from "@/pages/admin-captains";
 import AdminCommittee from "@/pages/admin-committee";
+import AdminPeople from "@/pages/admin-people";
 import AdminJuniorCommittee from "@/pages/admin-junior-committee";
 import AdminJuniorPremierships from "@/pages/admin-junior-premierships";
 import AdminNav from "@/pages/admin-nav";
@@ -62,6 +64,7 @@ function PublicRoutes() {
         <Route path="/honour-boards" component={HonourBoards} />
         <Route path="/players" component={Players} />
         <Route path="/players/:id" component={PlayerDetail} />
+        <Route path="/people/:id" component={PersonDetail} />
         <Route path="/matches" component={Matches} />
         <Route path="/matches/:id" component={MatchDetail} />
         <Route path="/grades" component={Grades} />
@@ -106,6 +109,7 @@ function AdminRoutes() {
           <Route path="/admin/team-of-decade" component={AdminTeamOfDecade} />
           <Route path="/admin/captains" component={AdminCaptains} />
           <Route path="/admin/committee" component={AdminCommittee} />
+          <Route path="/admin/people" component={AdminPeople} />
           <Route
             path="/admin/junior-committee"
             component={AdminJuniorCommittee}

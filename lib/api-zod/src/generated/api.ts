@@ -3206,6 +3206,7 @@ export const ListClubRolesResponseItem = zod.object({
   "role": zod.string(),
   "grade": zod.string().nullish(),
   "playerId": zod.number().nullish(),
+  "nonPlayerId": zod.number().nullish().describe('Optional link to a non-player official (mutually exclusive with playerId).'),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -3221,6 +3222,7 @@ export const CreateClubRoleBody = zod.object({
   "role": zod.string(),
   "grade": zod.string().nullish(),
   "playerId": zod.number().nullish(),
+  "nonPlayerId": zod.number().nullish(),
   "name": zod.string(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -3236,6 +3238,7 @@ export const ListAllClubRolesResponseItem = zod.object({
   "role": zod.string(),
   "grade": zod.string().nullish(),
   "playerId": zod.number().nullish(),
+  "nonPlayerId": zod.number().nullish().describe('Optional link to a non-player official (mutually exclusive with playerId).'),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -3255,6 +3258,7 @@ export const UpdateClubRoleBody = zod.object({
   "role": zod.string().optional(),
   "grade": zod.string().nullish(),
   "playerId": zod.number().nullish(),
+  "nonPlayerId": zod.number().nullish(),
   "name": zod.string().optional(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -3266,6 +3270,7 @@ export const UpdateClubRoleResponse = zod.object({
   "role": zod.string(),
   "grade": zod.string().nullish(),
   "playerId": zod.number().nullish(),
+  "nonPlayerId": zod.number().nullish().describe('Optional link to a non-player official (mutually exclusive with playerId).'),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -3276,6 +3281,70 @@ export const UpdateClubRoleResponse = zod.object({
  * @summary Delete a club role record (admin)
  */
 export const DeleteClubRoleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Public list of non-player people (club officials who never played for
+the club), ordered by name.
+
+ * @summary List non-player club officials
+ */
+export const ListPeopleResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish()
+})
+export const ListPeopleResponse = zod.array(ListPeopleResponseItem)
+
+
+/**
+ * @summary Create a non-player person (admin)
+ */
+export const CreatePersonBody = zod.object({
+  "name": zod.string(),
+  "bio": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get a single non-player person
+ */
+export const GetPersonParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPersonResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a non-player person (admin)
+ */
+export const UpdatePersonParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdatePersonBody = zod.object({
+  "name": zod.string().optional(),
+  "bio": zod.string().nullish()
+})
+
+export const UpdatePersonResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a non-player person (admin)
+ */
+export const DeletePersonParams = zod.object({
   "id": zod.coerce.number()
 })
 

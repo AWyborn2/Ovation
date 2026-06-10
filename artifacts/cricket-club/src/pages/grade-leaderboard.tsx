@@ -187,9 +187,13 @@ export default function GradeLeaderboard() {
                     {formatSeasonRange(c.season)}
                   </span>
                   <span>
-                    {c.playerId != null ? (
+                    {c.playerId != null || c.nonPlayerId != null ? (
                       <Link
-                        href={`/players/${c.playerId}`}
+                        href={
+                          c.playerId != null
+                            ? `/players/${c.playerId}`
+                            : `/people/${c.nonPlayerId}`
+                        }
                         className="font-semibold text-primary hover:underline"
                       >
                         {c.name}

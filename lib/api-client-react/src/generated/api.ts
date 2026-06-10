@@ -123,6 +123,9 @@ import type {
   NavItemUpdate,
   NavOptions,
   NavReorderInput,
+  NonPlayerPerson,
+  NonPlayerPersonInput,
+  NonPlayerPersonUpdate,
   Partnerships,
   PendingDraftCount,
   Player,
@@ -8619,6 +8622,376 @@ export const useDeleteClubRole = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteClubRoleMutationOptions(options));
+    }
+
+export const getListPeopleUrl = () => {
+
+
+
+
+  return `/api/people`
+}
+
+/**
+ * Public list of non-player people (club officials who never played for
+the club), ordered by name.
+
+ * @summary List non-player club officials
+ */
+export const listPeople = async ( options?: RequestInit): Promise<NonPlayerPerson[]> => {
+
+  return customFetch<NonPlayerPerson[]>(getListPeopleUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPeopleQueryKey = () => {
+    return [
+    `/api/people`
+    ] as const;
+    }
+
+
+export const getListPeopleQueryOptions = <TData = Awaited<ReturnType<typeof listPeople>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPeople>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPeopleQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPeople>>> = ({ signal }) => listPeople({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPeople>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPeopleQueryResult = NonNullable<Awaited<ReturnType<typeof listPeople>>>
+export type ListPeopleQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List non-player club officials
+ */
+
+export function useListPeople<TData = Awaited<ReturnType<typeof listPeople>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPeople>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPeopleQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreatePersonUrl = () => {
+
+
+
+
+  return `/api/people`
+}
+
+/**
+ * @summary Create a non-player person (admin)
+ */
+export const createPerson = async (nonPlayerPersonInput: NonPlayerPersonInput, options?: RequestInit): Promise<NonPlayerPerson> => {
+
+  return customFetch<NonPlayerPerson>(getCreatePersonUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nonPlayerPersonInput,)
+  }
+);}
+
+
+
+
+export const getCreatePersonMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPerson>>, TError,{data: BodyType<NonPlayerPersonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPerson>>, TError,{data: BodyType<NonPlayerPersonInput>}, TContext> => {
+
+const mutationKey = ['createPerson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPerson>>, {data: BodyType<NonPlayerPersonInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPerson(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePersonMutationResult = NonNullable<Awaited<ReturnType<typeof createPerson>>>
+    export type CreatePersonMutationBody = BodyType<NonPlayerPersonInput>
+    export type CreatePersonMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a non-player person (admin)
+ */
+export const useCreatePerson = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPerson>>, TError,{data: BodyType<NonPlayerPersonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPerson>>,
+        TError,
+        {data: BodyType<NonPlayerPersonInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePersonMutationOptions(options));
+    }
+
+export const getGetPersonUrl = (id: number,) => {
+
+
+
+
+  return `/api/people/${id}`
+}
+
+/**
+ * @summary Get a single non-player person
+ */
+export const getPerson = async (id: number, options?: RequestInit): Promise<NonPlayerPerson> => {
+
+  return customFetch<NonPlayerPerson>(getGetPersonUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPersonQueryKey = (id: number,) => {
+    return [
+    `/api/people/${id}`
+    ] as const;
+    }
+
+
+export const getGetPersonQueryOptions = <TData = Awaited<ReturnType<typeof getPerson>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPerson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPersonQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPerson>>> = ({ signal }) => getPerson(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPerson>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPersonQueryResult = NonNullable<Awaited<ReturnType<typeof getPerson>>>
+export type GetPersonQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single non-player person
+ */
+
+export function useGetPerson<TData = Awaited<ReturnType<typeof getPerson>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPerson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPersonQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdatePersonUrl = (id: number,) => {
+
+
+
+
+  return `/api/people/${id}`
+}
+
+/**
+ * @summary Update a non-player person (admin)
+ */
+export const updatePerson = async (id: number,
+    nonPlayerPersonUpdate: NonPlayerPersonUpdate, options?: RequestInit): Promise<NonPlayerPerson> => {
+
+  return customFetch<NonPlayerPerson>(getUpdatePersonUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nonPlayerPersonUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdatePersonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePerson>>, TError,{id: number;data: BodyType<NonPlayerPersonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePerson>>, TError,{id: number;data: BodyType<NonPlayerPersonUpdate>}, TContext> => {
+
+const mutationKey = ['updatePerson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePerson>>, {id: number;data: BodyType<NonPlayerPersonUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePerson(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePersonMutationResult = NonNullable<Awaited<ReturnType<typeof updatePerson>>>
+    export type UpdatePersonMutationBody = BodyType<NonPlayerPersonUpdate>
+    export type UpdatePersonMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a non-player person (admin)
+ */
+export const useUpdatePerson = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePerson>>, TError,{id: number;data: BodyType<NonPlayerPersonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePerson>>,
+        TError,
+        {id: number;data: BodyType<NonPlayerPersonUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePersonMutationOptions(options));
+    }
+
+export const getDeletePersonUrl = (id: number,) => {
+
+
+
+
+  return `/api/people/${id}`
+}
+
+/**
+ * @summary Delete a non-player person (admin)
+ */
+export const deletePerson = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePersonUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePersonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePerson>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePerson>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePerson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePerson>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePerson(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePersonMutationResult = NonNullable<Awaited<ReturnType<typeof deletePerson>>>
+
+    export type DeletePersonMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a non-player person (admin)
+ */
+export const useDeletePerson = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePerson>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePerson>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePersonMutationOptions(options));
     }
 
 export const getListJuniorOfficeBearersUrl = () => {

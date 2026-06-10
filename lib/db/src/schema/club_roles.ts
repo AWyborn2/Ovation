@@ -1,5 +1,6 @@
 import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
+import { nonPlayerPeopleTable } from "./non_player_people";
 
 /**
  * Club roles by season — a uniform model for both club office bearers (President,
@@ -28,6 +29,12 @@ export const clubRolesTable = pgTable(
     playerId: integer("player_id").references(() => playersTable.id, {
       onDelete: "set null",
     }),
+    // Alternative link target for office bearers who never played (no row in
+    // `players`). Mutually exclusive with `playerId` at the app level.
+    nonPlayerId: integer("non_player_id").references(
+      () => nonPlayerPeopleTable.id,
+      { onDelete: "set null" },
+    ),
     name: text("name").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
     published: boolean("published").notNull().default(false),

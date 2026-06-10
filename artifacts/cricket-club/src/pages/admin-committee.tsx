@@ -5,10 +5,11 @@ import {
   useCreateClubRole,
   useUpdateClubRole,
   useDeleteClubRole,
+  useListPeople,
   getListAllClubRolesQueryKey,
   getListClubRolesQueryKey,
 } from "@workspace/api-client-react";
-import type { ClubRole } from "@workspace/api-client-react";
+import type { ClubRole, NonPlayerPerson } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ type RoleFormValues = {
   role: string;
   grade: string | null;
   playerId: number | null;
+  nonPlayerId: number | null;
   name: string;
   displayOrder: number;
   published: boolean;
@@ -152,6 +154,7 @@ export default function AdminCommittee() {
                 role: OFFICE_ROLES[0],
                 grade: null,
                 playerId: null,
+                nonPlayerId: null,
                 name: "",
                 displayOrder: 0,
                 published: true,
@@ -166,6 +169,7 @@ export default function AdminCommittee() {
                       role: values.role,
                       grade: values.grade,
                       playerId: values.playerId,
+                      nonPlayerId: values.nonPlayerId,
                       name: values.name,
                       displayOrder: values.displayOrder,
                       published: values.published,
@@ -242,6 +246,7 @@ export default function AdminCommittee() {
                           role: r.role,
                           grade: r.grade ?? null,
                           playerId: r.playerId ?? null,
+                          nonPlayerId: r.nonPlayerId ?? null,
                           name: r.name,
                           displayOrder: r.displayOrder,
                           published: r.published,
@@ -257,6 +262,7 @@ export default function AdminCommittee() {
                                 role: values.role,
                                 grade: values.grade,
                                 playerId: values.playerId,
+                                nonPlayerId: values.nonPlayerId,
                                 name: values.name,
                                 displayOrder: values.displayOrder,
                                 published: values.published,
@@ -353,6 +359,7 @@ function RoleForm({
   submitLabel: string;
 }) {
   const [values, setValues] = useState<RoleFormValues>(initial);
+  const { data: people } = useListPeople();
   const selectedPlayer: SelectedPlayer | null =
     values.playerId != null ? splitName(values.playerId, values.name) : null;
 
@@ -446,9 +453,14 @@ function RoleForm({
           value={selectedPlayer}
           onChange={(p) => {
             if (p) {
-              set("playerId", p.id);
-              if (!values.name.trim())
-                set("name", `${p.givenName} ${p.surname}`.trim());
+              setValues((prev) => ({
+                ...prev,
+                playerId: p.id,
+                nonPlayerId: null,
+                name: prev.name.trim()
+                  ? prev.name
+                  : `${p.givenName} ${p.surname}`.trim(),
+              }));
             } else {
               set("playerId", null);
             }
@@ -456,6 +468,43 @@ function RoleForm({
         />
         <p className="text-xs text-muted-foreground">
           Leave unlinked for joint captains or names without a player record.
+        </p>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">
+          Or link a non-player official (optional)
+        </Label>
+        <select
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+          value={values.nonPlayerId ?? ""}
+          disabled={values.playerId != null}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (!v) {
+              set("nonPlayerId", null);
+              return;
+            }
+            const personId = parseInt(v, 10);
+            const person = (people ?? []).find((p) => p.id === personId);
+            setValues((prev) => ({
+              ...prev,
+              nonPlayerId: personId,
+              playerId: null,
+              name: prev.name.trim() ? prev.name : person?.name ?? prev.name,
+            }));
+          }}
+        >
+          <option value="">— None —</option>
+          {(people ?? []).map((p: NonPlayerPerson) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground">
+          For club officials who never played. Manage them under Admin ·
+          Non-player people.
         </p>
       </div>
 

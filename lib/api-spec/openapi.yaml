@@ -38,6 +38,8 @@ tags:
     description: Curated Team of the Decade honour boards (best XI per team/period)
   - name: clubRoles
     description: Season-by-season club office bearers and grade captains
+  - name: people
+    description: Non-player club officials (served the club but never played) with lightweight profiles
   - name: records
     description: Derived notable honour-board records (role tenures, award counts)
   - name: juniors
@@ -2480,6 +2482,102 @@ paths:
       operationId: deleteClubRole
       tags: [clubRoles]
       summary: Delete a club role record (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /people:
+    get:
+      operationId: listPeople
+      tags: [people]
+      summary: List non-player club officials
+      description: |
+        Public list of non-player people (club officials who never played for
+        the club), ordered by name.
+      responses:
+        "200":
+          description: Non-player people
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NonPlayerPerson"
+    post:
+      operationId: createPerson
+      tags: [people]
+      summary: Create a non-player person (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NonPlayerPersonInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NonPlayerPerson"
+
+  /people/{id}:
+    get:
+      operationId: getPerson
+      tags: [people]
+      summary: Get a single non-player person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Non-player person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NonPlayerPerson"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePerson
+      tags: [people]
+      summary: Update a non-player person (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NonPlayerPersonUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NonPlayerPerson"
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePerson
+      tags: [people]
+      summary: Delete a non-player person (admin)
       parameters:
         - name: id
           in: path
@@ -6479,6 +6577,9 @@ components:
           type: ["string", "null"]
         playerId:
           type: ["integer", "null"]
+        nonPlayerId:
+          type: ["integer", "null"]
+          description: Optional link to a non-player official (mutually exclusive with playerId).
         name:
           type: string
         displayOrder:
@@ -6498,6 +6599,8 @@ components:
           type: ["string", "null"]
         playerId:
           type: ["integer", "null"]
+        nonPlayerId:
+          type: ["integer", "null"]
         name:
           type: string
         displayOrder:
@@ -6516,12 +6619,42 @@ components:
           type: ["string", "null"]
         playerId:
           type: ["integer", "null"]
+        nonPlayerId:
+          type: ["integer", "null"]
         name:
           type: string
         displayOrder:
           type: integer
         published:
           type: boolean
+
+    NonPlayerPerson:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        bio:
+          type: ["string", "null"]
+
+    NonPlayerPersonInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        bio:
+          type: ["string", "null"]
+
+    NonPlayerPersonUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        bio:
+          type: ["string", "null"]
 
     JuniorOfficeBearer:
       type: object

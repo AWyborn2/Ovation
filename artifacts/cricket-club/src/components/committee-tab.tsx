@@ -24,17 +24,21 @@ function roleRank(role: string): number {
   return i === -1 ? ROLE_ORDER.length : i;
 }
 
-const RoleName = ({ role }: { role: ClubRole }) =>
-  role.playerId != null ? (
-    <Link
-      href={`/players/${role.playerId}`}
-      className="font-semibold text-primary hover:underline"
-    >
+const RoleName = ({ role }: { role: ClubRole }) => {
+  const href =
+    role.playerId != null
+      ? `/players/${role.playerId}`
+      : role.nonPlayerId != null
+        ? `/people/${role.nonPlayerId}`
+        : null;
+  return href != null ? (
+    <Link href={href} className="font-semibold text-primary hover:underline">
       {role.name}
     </Link>
   ) : (
     <span className="font-semibold text-foreground">{role.name}</span>
   );
+};
 
 type SeasonGroup = { season: number; roles: ClubRole[] };
 

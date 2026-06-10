@@ -13,6 +13,11 @@
  *
  * Reconciliation: links a role-holder to a player when confident, otherwise
  * stores plain text (e.g. joint captains "A. B / C. D" are never linked).
+ *
+ * Non-player officials (people who served but never played, so they have no
+ * `players` row) are NOT auto-created here — admins create them under
+ * `/admin/people` and link `club_roles.nonPlayerId` from `/admin/committee`,
+ * turning otherwise-dead plain text into a clickable lightweight profile.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

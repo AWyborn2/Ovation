@@ -46,6 +46,7 @@ router.post("/club-roles", requireAdmin, async (req, res): Promise<void> => {
       role: parsed.data.role,
       grade: parsed.data.grade ?? null,
       playerId: parsed.data.playerId ?? null,
+      nonPlayerId: parsed.data.nonPlayerId ?? null,
       name: parsed.data.name,
       displayOrder: parsed.data.displayOrder ?? 0,
       published: parsed.data.published ?? false,

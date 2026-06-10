@@ -18,6 +18,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
   { label: "Life members", target: "/admin/life-members", isExternal: false, iconKey: "star", description: "Honour-board life members." },
   { label: "Awards", target: "/admin/awards", isExternal: false, iconKey: "award", description: "Create club awards and record past winners." },
   { label: "Team of the Decade", target: "/admin/team-of-decade", isExternal: false, iconKey: "trophy", description: "Curate best-XI honour boards with draft/publish." },
+  { label: "Non-player people", target: "/admin/people", isExternal: false, iconKey: "users", description: "Profiles for club officials who served but never played." },
   { label: "Junior office bearers", target: "/admin/junior-committee", isExternal: false, iconKey: "baby", description: "Season-by-season junior committee (separate from seniors)." },
   { label: "Junior premierships", target: "/admin/junior-premierships", isExternal: false, iconKey: "crown", description: "Set captain and man-of-the-match on junior premiership plaques." },
   { label: "Social cards", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory: sizes, sponsors, captions." },

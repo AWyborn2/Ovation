@@ -75,6 +75,7 @@ const ADMIN_TILES: Seed[] = [
   { label: "Life members", target: "/admin/life-members", iconKey: "star", description: "Honour-board life members." },
   { label: "Awards", target: "/admin/awards", iconKey: "award", description: "Create club awards and record past winners." },
   { label: "Team of the Decade", target: "/admin/team-of-decade", iconKey: "trophy", description: "Curate best-XI honour boards with draft/publish." },
+  { label: "Non-player people", target: "/admin/people", iconKey: "users", description: "Profiles for club officials who served but never played." },
   { label: "Junior office bearers", target: "/admin/junior-committee", iconKey: "baby", description: "Season-by-season junior committee (separate from seniors)." },
   { label: "Social cards", target: "/admin/social", iconKey: "image", description: "Share-card factory: sizes, sponsors, captions." },
   { label: "Create a card", target: "/admin/social/create", iconKey: "image", description: "Build a Match Summary card from a match or by hand." },

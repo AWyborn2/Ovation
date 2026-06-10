@@ -1902,6 +1902,11 @@ export interface ClubRole {
   grade?: string | null;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Optional link to a non-player official (mutually exclusive with playerId).
+     * @nullable
+     */
+  nonPlayerId?: number | null;
   name: string;
   displayOrder: number;
   published: boolean;
@@ -1914,6 +1919,8 @@ export interface ClubRoleInput {
   grade?: string | null;
   /** @nullable */
   playerId?: number | null;
+  /** @nullable */
+  nonPlayerId?: number | null;
   name: string;
   displayOrder?: number;
   published?: boolean;
@@ -1926,9 +1933,30 @@ export interface ClubRoleUpdate {
   grade?: string | null;
   /** @nullable */
   playerId?: number | null;
+  /** @nullable */
+  nonPlayerId?: number | null;
   name?: string;
   displayOrder?: number;
   published?: boolean;
+}
+
+export interface NonPlayerPerson {
+  id: number;
+  name: string;
+  /** @nullable */
+  bio?: string | null;
+}
+
+export interface NonPlayerPersonInput {
+  name: string;
+  /** @nullable */
+  bio?: string | null;
+}
+
+export interface NonPlayerPersonUpdate {
+  name?: string;
+  /** @nullable */
+  bio?: string | null;
 }
 
 export interface JuniorOfficeBearer {

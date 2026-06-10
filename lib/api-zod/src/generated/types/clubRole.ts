@@ -14,6 +14,11 @@ export interface ClubRole {
   grade?: string | null;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Optional link to a non-player official (mutually exclusive with playerId).
+     * @nullable
+     */
+  nonPlayerId?: number | null;
   name: string;
   displayOrder: number;
   published: boolean;

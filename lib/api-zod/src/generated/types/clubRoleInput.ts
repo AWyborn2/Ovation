@@ -13,6 +13,8 @@ export interface ClubRoleInput {
   grade?: string | null;
   /** @nullable */
   playerId?: number | null;
+  /** @nullable */
+  nonPlayerId?: number | null;
   name: string;
   displayOrder?: number;
   published?: boolean;
