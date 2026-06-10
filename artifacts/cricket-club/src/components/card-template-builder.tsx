@@ -75,7 +75,7 @@ const toDraft = (t: CardTemplate): DraftTemplate => ({
   id: t.id,
   name: t.name,
   cardKinds: t.cardKinds,
-  backgroundImageUrl: t.backgroundImageUrl,
+  backgroundImageUrl: t.backgroundImageUrl ?? "",
   bgWidth: t.bgWidth,
   bgHeight: t.bgHeight,
   backgroundKind: (t.backgroundKind as BackgroundKind | undefined) ?? "image",
@@ -145,7 +145,7 @@ export function TemplatesCard() {
               <div key={t.id} className="flex items-center gap-3 border rounded p-2">
                 {t.backgroundKind === "video" ? (
                   <video
-                    src={t.backgroundImageUrl}
+                    src={t.backgroundImageUrl ?? undefined}
                     className="h-12 w-12 object-cover rounded bg-muted"
                     muted
                     loop
@@ -153,7 +153,7 @@ export function TemplatesCard() {
                   />
                 ) : (
                   <img
-                    src={t.backgroundImageUrl}
+                    src={t.backgroundImageUrl ?? undefined}
                     alt={t.name}
                     className="h-12 w-12 object-cover rounded bg-muted"
                   />

@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AdminSocial from "@/pages/admin-social";
+import AdminSocialStudio from "@/pages/admin-social-studio";
 import AdminSocialCreate from "@/pages/admin-social-create";
 import AdminSocialSets from "@/pages/admin-social-sets";
 import AdminJuniorSocial from "@/pages/admin-junior-social";
@@ -91,7 +92,8 @@ export function AdminSocialGroup() {
       description="Branded share-card factory, card builders, junior cards and the review queue."
       basePath="/admin/social"
       tabs={[
-        { value: "cards", label: "Cards", path: "/admin/social", element: <AdminSocial /> },
+        { value: "studio", label: "Studio", path: "/admin/social", element: <AdminSocialStudio /> },
+        { value: "cards", label: "Cards", path: "/admin/social/cards", element: <AdminSocial /> },
         { value: "create", label: "Create a card", path: "/admin/social/create", element: <AdminSocialCreate /> },
         { value: "sets", label: "Carousel sets", path: "/admin/social/sets", element: <AdminSocialSets /> },
         { value: "juniors", label: "Junior cards", path: "/admin/social/juniors", element: <AdminJuniorSocial /> },

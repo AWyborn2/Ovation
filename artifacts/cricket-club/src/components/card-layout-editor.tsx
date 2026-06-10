@@ -43,6 +43,7 @@ import {
   type StickerCategory,
 } from "@/lib/sticker-library";
 import { fieldsForKind } from "@/lib/card-template";
+import { CARD_KIND_OPTIONS, CardKindPicker } from "@/components/card-kind-picker";
 import {
   SIZES,
   computeCardLayers,
@@ -50,6 +51,7 @@ import {
   hasLayerEffects,
   DEFAULT_LAYER_EFFECTS,
   BUILTIN_EFFECT_PRESETS,
+  type CardKind,
   type CardSize,
   type EditorLayer,
   type EffectPreset,
@@ -193,6 +195,23 @@ function editorToSaved(
   return out;
 }
 
+// Template mode (Social Studio): the editor authors a NAMED reusable layer
+// template instead of persisting to the per-kind `card_layouts` table. It seeds
+// from `controlledLayout` (the template's saved layers), exposes name / assign /
+// default-for fields, and hands the whole payload back via `onSaveTemplate`.
+export type TemplateMode = {
+  initialName: string;
+  initialCardKinds: string[];
+  initialDefaultForKinds: string[];
+  saving: boolean;
+  onSaveTemplate: (data: {
+    name: string;
+    cardKinds: string[];
+    defaultForKinds: string[];
+    layers: CardLayoutLayer[];
+  }) => void;
+};
+
 export function CardLayoutEditor({
   input,
   baseOpts,
@@ -200,6 +219,7 @@ export function CardLayoutEditor({
   onClose,
   controlledLayout,
   onSaveLayout,
+  templateMode,
 }: {
   input: ShareCardInput;
   // Render options WITHOUT a layout — the editor manages the layout itself.
@@ -212,9 +232,15 @@ export function CardLayoutEditor({
   // `onSaveLayout`, so each carousel slide carries its own independent layout.
   controlledLayout?: CardLayoutLayer[];
   onSaveLayout?: (layers: CardLayoutLayer[]) => void;
+  // Template mode (Social Studio): author a named reusable template. Seeds from
+  // `controlledLayout` like controlled mode but saves via `onSaveTemplate`.
+  templateMode?: TemplateMode;
 }) {
   const cardKind = input.kind;
-  const controlled = !!onSaveLayout;
+  const isTemplate = !!templateMode;
+  // Template mode also seeds from `controlledLayout` and never touches the
+  // per-kind card_layouts table, so it shares the controlled seeding path.
+  const controlled = !!onSaveLayout || isTemplate;
   const qc = useQueryClient();
   const confirm = useConfirm();
 
@@ -257,6 +283,15 @@ export function CardLayoutEditor({
   const [computing, setComputing] = useState(true);
   const [rendering, setRendering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Template-mode form state (name + assigned card types + per-type default).
+  const [tplName, setTplName] = useState(templateMode?.initialName ?? "");
+  const [tplKinds, setTplKinds] = useState<CardKind[]>(
+    (templateMode?.initialCardKinds ?? []) as CardKind[],
+  );
+  const [tplDefaults, setTplDefaults] = useState<CardKind[]>(
+    (templateMode?.initialDefaultForKinds ?? []) as CardKind[],
+  );
 
   // Build pristine defaults + the working set (defaults merged with saved
   // overrides) whenever the card, size or saved layout changes.
@@ -405,6 +440,19 @@ export function CardLayoutEditor({
 
   const handleSave = () => {
     setError(null);
+    if (isTemplate) {
+      if (!tplName.trim()) {
+        setError("Give the template a name.");
+        return;
+      }
+      templateMode!.onSaveTemplate({
+        name: tplName.trim(),
+        cardKinds: tplKinds,
+        defaultForKinds: tplDefaults.filter((k) => tplKinds.includes(k)),
+        layers: editorToSaved(layers, pristine),
+      });
+      return;
+    }
     if (controlled) {
       onSaveLayout!(editorToSaved(layers, pristine));
       onClose();
@@ -427,6 +475,12 @@ export function CardLayoutEditor({
       }))
     )
       return;
+    if (isTemplate) {
+      // Template mode: just clear the working overlays back to the built-in
+      // design; the named template is only persisted on Save.
+      setLayers(pristine.map((l) => ({ ...l })));
+      return;
+    }
     if (controlled) {
       setLayers(pristine.map((l) => ({ ...l })));
       onSaveLayout!([]);
@@ -443,13 +497,17 @@ export function CardLayoutEditor({
   };
 
   const selected = layers.find((l) => l.id === selectedId) ?? null;
-  const pending = upsert.isPending || remove.isPending;
+  const pending = isTemplate
+    ? templateMode!.saving
+    : upsert.isPending || remove.isPending;
   const { w: W, h: H } = SIZES[activeSize];
 
   return (
     <div className="space-y-3 rounded-md border p-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Customise layout — {cardKind}</h3>
+        <h3 className="text-sm font-semibold">
+          {isTemplate ? "Design template" : `Customise layout — ${cardKind}`}
+        </h3>
         <Button size="icon" variant="ghost" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -460,6 +518,68 @@ export function CardLayoutEditor({
         shapes or text, restack with the layer list, then save. Changes apply to
         every size; reset restores the built-in design.
       </p>
+
+      {isTemplate && (
+        <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Template name</Label>
+            <Input
+              value={tplName}
+              onChange={(e) => setTplName(e.target.value)}
+              placeholder="e.g. Gold milestone frame"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Assign to card types</Label>
+            <CardKindPicker
+              value={tplKinds}
+              onChange={(next) => {
+                setTplKinds(next);
+                setTplDefaults((d) => d.filter((k) => next.includes(k)));
+              }}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Card types this template can be applied to. Empty = available for
+              all types.
+            </p>
+          </div>
+          {tplKinds.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Make default for</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {tplKinds.map((k) => {
+                  const active = tplDefaults.includes(k);
+                  const label =
+                    CARD_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() =>
+                        setTplDefaults((d) =>
+                          active ? d.filter((x) => x !== k) : [...d, k],
+                        )
+                      }
+                      className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-transparent text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                A default template is applied automatically to that card type.
+                Only one default per type — setting this one replaces any other.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {computing ? (
         <div className="flex h-64 items-center justify-center">
@@ -565,12 +685,12 @@ export function CardLayoutEditor({
             Cancel
           </Button>
           <Button size="sm" onClick={handleSave} disabled={pending || computing}>
-            {upsert.isPending ? (
+            {pending ? (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="mr-1 h-3.5 w-3.5" />
             )}
-            Save layout
+            {isTemplate ? "Save template" : "Save layout"}
           </Button>
         </div>
       </div>

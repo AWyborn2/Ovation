@@ -124,12 +124,17 @@ export function ShareCardModal({
   // `null` = built-in layout; otherwise a template id.
   const [layoutId, setLayoutId] = useState<number | null>(null);
   const [layoutTouched, setLayoutTouched] = useState(false);
-  // Pre-select the default template when it applies; otherwise keep built-in.
+  // Pre-select the per-kind default template when one applies; otherwise keep
+  // built-in. A template is the default for kind K iff K ∈ defaultForKinds;
+  // fall back to the legacy global `isDefault` flag for older templates.
   useEffect(() => {
-    if (!open || layoutTouched) return;
-    const def = applicableTemplates.find((t) => t.isDefault);
+    if (!open || layoutTouched || !input) return;
+    const def =
+      applicableTemplates.find((t) =>
+        t.defaultForKinds?.includes(input.kind),
+      ) ?? applicableTemplates.find((t) => t.isDefault);
     if (def) setLayoutId(def.id);
-  }, [open, layoutTouched, applicableTemplates]);
+  }, [open, layoutTouched, applicableTemplates, input]);
   // Reset the layout choice each time the modal opens or the card changes.
   useEffect(() => {
     if (open) {
@@ -145,6 +150,15 @@ export function ShareCardModal({
         ? null
         : applicableTemplates.find((t) => t.id === layoutId) ?? null,
     [isJunior, layoutId, applicableTemplates],
+  );
+  // A layer-source template feeds the layer pipeline (opts.layout); only a
+  // background template drives opts.template. Splitting them here keeps the rest
+  // of the modal (animation, dropdown) using the single `selectedTemplate` pick.
+  const isLayerTemplate = selectedTemplate?.source === "layers";
+  const bgTemplate = isLayerTemplate ? null : selectedTemplate;
+  const templateLayers = useMemo<CardLayoutLayer[] | null>(
+    () => (isLayerTemplate ? selectedTemplate?.layers ?? [] : null),
+    [isLayerTemplate, selectedTemplate],
   );
 
   // Admin-only layer authoring. The saved custom layout (if any) drives every
@@ -243,8 +257,8 @@ export function ShareCardModal({
 
   // A video/GIF template always animates; otherwise the motion preset decides.
   const animated = useMemo(
-    () => isAnimatedCard({ size: activeSize, template: selectedTemplate, motionPreset: motion }),
-    [activeSize, selectedTemplate, motion],
+    () => isAnimatedCard({ size: activeSize, template: bgTemplate, motionPreset: motion }),
+    [activeSize, bgTemplate, motion],
   );
   const videoSupported = useMemo(() => canExportVideo(), []);
   const videoFormat = useMemo(() => videoFormatLabel(), []);
@@ -283,8 +297,8 @@ export function ShareCardModal({
     hashtag,
     theme: selectedTheme,
     brand: bundle?.brand,
-    template: selectedTemplate,
-    layout: savedLayout,
+    template: bgTemplate,
+    layout: templateLayers ?? savedLayout,
     photoUrl: effectivePhotoUrl,
     photoPlacement,
     photoTransform: transform,
@@ -435,7 +449,7 @@ export function ShareCardModal({
           </DialogDescription>
         </DialogHeader>
 
-        {isAdmin && !selectedTemplate && input.kind !== "matchSummary" && (
+        {isAdmin && !selectedTemplate && (
           <div className="flex items-center justify-between rounded border border-dashed px-3 py-2">
             <span className="text-xs text-muted-foreground">
               {savedLayout.length > 0

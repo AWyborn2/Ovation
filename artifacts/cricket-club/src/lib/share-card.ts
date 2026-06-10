@@ -1079,6 +1079,9 @@ const loadTemplateBg = async (
   template: CardTemplate,
   play: boolean,
 ): Promise<TemplateBgSource | null> => {
+  // Layer templates (source="layers") carry no background image.
+  if (!template.backgroundImageUrl) return null;
+  const bgUrl = template.backgroundImageUrl;
   const kind = template.backgroundKind ?? "image";
   if (kind === "video") {
     return await new Promise<TemplateBgSource | null>((resolve) => {
@@ -1110,10 +1113,10 @@ const loadTemplateBg = async (
           }
         };
       }
-      video.src = template.backgroundImageUrl;
+      video.src = bgUrl;
     });
   }
-  const img = await loadImage(template.backgroundImageUrl).catch(() => null);
+  const img = await loadImage(bgUrl).catch(() => null);
   if (!img) return null;
   return {
     source: img,
@@ -3282,14 +3285,78 @@ const bakeLayer = async (
   }
 };
 
+// Match Summary as a single base layer: the bespoke two-innings scorecard is
+// painted onto an offscreen canvas at natural full-frame size, then wrapped as
+// one geometry-locked `element` layer so it flows through the same
+// computeCardLayers / applyLayout / drawLayers pipeline as every other card.
+// With no saved layout the layer draws 1:1 at (0,0) under an identity transform,
+// so the output is byte-identical to the original bespoke renderer; admins can
+// still add image/text/sticker overlays and toggle / restack / effect it.
+const buildMatchSummaryLayers = async (
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  opts: RenderOptions,
+  p: Palette,
+  W: number,
+  H: number,
+  scale: number,
+): Promise<RenderLayer[]> => {
+  const off = document.createElement("canvas");
+  off.width = W;
+  off.height = H;
+  const offCtx = off.getContext("2d");
+  if (offCtx) {
+    await renderMatchSummaryCard(offCtx, W, H, scale, input, opts, p);
+  }
+  const natural: PxRect = { x: 0, y: 0, w: W, h: H };
+  return [
+    {
+      id: "scorecard",
+      editKind: "element",
+      label: "Scorecard",
+      natural,
+      rect: { ...natural },
+      vAnchor: "top",
+      z: 0,
+      hidden: false,
+      selectable: true,
+      // Geometry-locked (like the background): the full-frame scorecard never
+      // persists x/y/w/h, so it stays correct across square/portrait/story.
+      resizable: false,
+      drawsAtNatural: true,
+      draw: (ctx) => {
+        ctx.drawImage(off, 0, 0);
+      },
+    },
+  ];
+};
+
+// The built-in layer source for a card kind: matchSummary renders its bespoke
+// scorecard into a single base layer; every other kind builds the standard body.
+// Shared by the editor, the still renderer, and the animation baker so all three
+// agree on the layer model.
+const buildBuiltinLayers = async (
+  input: ShareCardInput,
+  opts: RenderOptions,
+  p: Palette,
+  W: number,
+  H: number,
+  scale: number,
+): Promise<RenderLayer[]> => {
+  if (input.kind === "matchSummary") {
+    return buildMatchSummaryLayers(input, opts, p, W, H, scale);
+  }
+  const assets = await loadCardAssets(input, opts);
+  return buildLayers(input, opts, p, W, H, scale, assets);
+};
+
 // Exported for the editor: compute the normalised editable layers for a card,
-// merging any saved layout. Returns [] for kinds that keep their own render path
-// (matchSummary) or when a custom template is selected.
+// merging any saved layout. Returns [] only when a custom template is selected
+// (matchSummary now flows through the layer pipeline as a base scorecard layer).
 export const computeCardLayers = async (
   input: ShareCardInput,
   opts: RenderOptions,
 ): Promise<EditorLayer[]> => {
-  if (input.kind === "matchSummary" || opts.template) return [];
+  if (opts.template) return [];
   if (document.fonts?.ready) {
     try {
       await document.fonts.ready;
@@ -3298,8 +3365,7 @@ export const computeCardLayers = async (
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
   const p = isJuniorInput(input) ? resolvePalette(JUNIOR_THEME) : resolvePalette(opts.theme);
-  const assets = await loadCardAssets(input, opts);
-  const builtins = buildLayers(input, opts, p, W, H, scale, assets);
+  const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const toNorm = (l: RenderLayer): EditorLayer => ({
     id: l.id,
     editKind: l.editKind,
@@ -3416,24 +3482,13 @@ export const renderShareCard = async (
     });
   }
 
-  // Match Summary path: a self-contained two-innings scorecard tile with its own
-  // team-coloured chrome, so it bails out before the standard header/ribbon flow.
-  if (input.kind === "matchSummary") {
-    await renderMatchSummaryCard(ctx, W, H, scale, input, opts, p);
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("Could not export canvas to blob"));
-      }, "image/png");
-    });
-  }
-
-  // Build the standard card as an ordered layer list, then draw. With no saved
-  // layout this is pixel-identical to the pre-studio renderer (each layer draws
-  // at its natural coords under an identity transform); a saved layout overrides
-  // element rects/z/visibility and appends custom image/sticker/text layers.
-  const assets = await loadCardAssets(input, opts);
-  const builtins = buildLayers(input, opts, p, W, H, scale, assets);
+  // Build the card as an ordered layer list, then draw. With no saved layout
+  // this is pixel-identical to the pre-studio renderer (each layer draws at its
+  // natural coords under an identity transform); a saved layout overrides element
+  // rects/z/visibility and appends custom image/sticker/text layers. matchSummary
+  // collapses to a single full-frame base scorecard layer (still byte-identical
+  // when no layout is applied).
+  const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const tplCtx: TemplateContext = {
     clubUrl: opts.clubUrl,
     hashtag: opts.hashtag,
@@ -3630,8 +3685,7 @@ export const prepareAnimation = async (
       await document.fonts.ready;
     } catch {}
   }
-  const assets = await loadCardAssets(input, opts);
-  const builtins = buildLayers(input, opts, p, W, H, scale, assets);
+  const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const tplCtx: TemplateContext = {
     clubUrl: opts.clubUrl,
     hashtag: opts.hashtag,

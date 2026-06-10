@@ -97,10 +97,21 @@ export type CardTemplateSlot = {
 export const cardTemplatesTable = pgTable("card_templates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  // Which ShareCardInput["kind"] values this template may be used for.
-  // Empty = applies to every card kind.
+  // Which ShareCardInput["kind"] values this template is ASSIGNED to (the asset
+  // types it may be used for). Empty = applies to every card kind.
   cardKinds: text("card_kinds").array().notNull().default([]),
-  backgroundImageUrl: text("background_image_url").notNull(),
+  // The design source. "background" = a "bring your own" flattened image with
+  // data-bound slots (the original BYO templates). "layers" = a design authored
+  // in the layer editor (built-in chrome overrides + extra image/text/sticker
+  // layers); stored in `layers` and consumed via the renderer's `layout` option.
+  source: text("source").notNull().default("background"),
+  // The card kind a "layers" design was authored against (drives the editor's
+  // field/element context + the gallery thumbnail). Null for BYO backgrounds.
+  baseKind: text("base_kind"),
+  // Layer-editor design (source = "layers"). Empty for BYO backgrounds.
+  layers: jsonb("layers").$type<CardLayoutLayer[]>().notNull().default([]),
+  // Nullable: BYO backgrounds carry an image URL; "layers" designs have none.
+  backgroundImageUrl: text("background_image_url"),
   // Media kind of the uploaded background: "image" (still PNG/JPG/WebP), "gif"
   // (self-animating), or "video" (MP4/WebM). Drives whether the card animates.
   backgroundKind: text("background_kind").notNull().default("image"),
@@ -114,7 +125,12 @@ export const cardTemplatesTable = pgTable("card_templates", {
   bgHeight: integer("bg_height").notNull().default(1080),
   slots: jsonb("slots").$type<CardTemplateSlot[]>().notNull().default([]),
   isActive: boolean("is_active").notNull().default(true),
+  // Legacy single global default (kept for back-compat reads). Per-asset defaults
+  // are driven by `defaultForKinds` below.
   isDefault: boolean("is_default").notNull().default(false),
+  // The card kinds for which THIS template is the default applied by the app.
+  // A kind appears in at most one template's array (enforced in the route).
+  defaultForKinds: text("default_for_kinds").array().notNull().default([]),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -132,7 +148,7 @@ export type CardTemplateRow = typeof cardTemplatesTable.$inferSelect;
 // so one layout maps cleanly onto every size and circles stay circular.
 export type CardLayoutLayer = {
   id: string;
-  kind: "element" | "image" | "sticker" | "text";
+  kind: "element" | "image" | "sticker" | "text" | "libsticker";
   // Geometry (fractions of base width 1080). Optional for `element` layers that
   // only toggle visibility / stacking; required for added layers.
   x?: number;
@@ -167,6 +183,12 @@ export type CardLayoutLayer = {
   align?: "left" | "center" | "right";
   fontFamily?: "sans" | "serif";
   uppercase?: boolean;
+  // `libsticker` only: which catalog sticker, and (for data-bound badges) which
+  // card field auto-fills its text slot.
+  assetId?: string;
+  field?: string;
+  // Optional per-layer visual effects (opaque here; CardLayerEffects in the spec).
+  effects?: Record<string, unknown>;
 };
 
 // One custom layout per built-in card kind. Absent row = the card uses its

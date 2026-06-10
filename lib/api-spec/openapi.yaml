@@ -7485,7 +7485,7 @@ components:
     CardTemplate:
       type: object
       required:
-        [id, name, cardKinds, backgroundImageUrl, bgWidth, bgHeight, slots, isActive, isDefault, displayOrder]
+        [id, name, cardKinds, source, layers, bgWidth, bgHeight, slots, isActive, isDefault, defaultForKinds, displayOrder]
       properties:
         id:
           type: integer
@@ -7495,8 +7495,23 @@ components:
           type: array
           items:
             type: string
+        source:
+          type: string
+          enum: [background, layers]
+        baseKind:
+          type: string
+          nullable: true
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardLayoutLayer"
+        defaultForKinds:
+          type: array
+          items:
+            type: string
         backgroundImageUrl:
           type: string
+          nullable: true
         backgroundKind:
           type: string
           enum: [image, gif, video]
@@ -7523,7 +7538,7 @@ components:
 
     CardTemplateInput:
       type: object
-      required: [name, backgroundImageUrl, bgWidth, bgHeight]
+      required: [name]
       properties:
         name:
           type: string
@@ -7531,8 +7546,23 @@ components:
           type: array
           items:
             type: string
+        source:
+          type: string
+          enum: [background, layers]
+        baseKind:
+          type: string
+          nullable: true
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardLayoutLayer"
+        defaultForKinds:
+          type: array
+          items:
+            type: string
         backgroundImageUrl:
           type: string
+          nullable: true
         backgroundKind:
           type: string
           enum: [image, gif, video]
@@ -7566,8 +7596,23 @@ components:
           type: array
           items:
             type: string
+        source:
+          type: string
+          enum: [background, layers]
+        baseKind:
+          type: string
+          nullable: true
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardLayoutLayer"
+        defaultForKinds:
+          type: array
+          items:
+            type: string
         backgroundImageUrl:
           type: string
+          nullable: true
         backgroundKind:
           type: string
           enum: [image, gif, video]

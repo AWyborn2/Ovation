@@ -2282,6 +2282,14 @@ export interface CardTemplateSlot {
   shape?: CardTemplateSlotShape;
 }
 
+export type CardTemplateSource = typeof CardTemplateSource[keyof typeof CardTemplateSource];
+
+
+export const CardTemplateSource = {
+  background: 'background',
+  layers: 'layers',
+} as const;
+
 export type CardTemplateBackgroundKind = typeof CardTemplateBackgroundKind[keyof typeof CardTemplateBackgroundKind];
 
 
@@ -2300,90 +2308,6 @@ export const CardTemplateMotionPreset = {
   slideUp: 'slideUp',
   countUp: 'countUp',
 } as const;
-
-export interface CardTemplate {
-  id: number;
-  name: string;
-  cardKinds: string[];
-  backgroundImageUrl: string;
-  backgroundKind?: CardTemplateBackgroundKind;
-  backgroundDurationMs?: number | null;
-  motionPreset?: CardTemplateMotionPreset;
-  bgWidth: number;
-  bgHeight: number;
-  slots: CardTemplateSlot[];
-  isActive: boolean;
-  isDefault: boolean;
-  displayOrder: number;
-}
-
-export type CardTemplateInputBackgroundKind = typeof CardTemplateInputBackgroundKind[keyof typeof CardTemplateInputBackgroundKind];
-
-
-export const CardTemplateInputBackgroundKind = {
-  image: 'image',
-  gif: 'gif',
-  video: 'video',
-} as const;
-
-export type CardTemplateInputMotionPreset = typeof CardTemplateInputMotionPreset[keyof typeof CardTemplateInputMotionPreset];
-
-
-export const CardTemplateInputMotionPreset = {
-  none: 'none',
-  fadeIn: 'fadeIn',
-  slideUp: 'slideUp',
-  countUp: 'countUp',
-} as const;
-
-export interface CardTemplateInput {
-  name: string;
-  cardKinds?: string[];
-  backgroundImageUrl: string;
-  backgroundKind?: CardTemplateInputBackgroundKind;
-  backgroundDurationMs?: number | null;
-  motionPreset?: CardTemplateInputMotionPreset;
-  bgWidth: number;
-  bgHeight: number;
-  slots?: CardTemplateSlot[];
-  isActive?: boolean;
-  isDefault?: boolean;
-  displayOrder?: number;
-}
-
-export type CardTemplateUpdateBackgroundKind = typeof CardTemplateUpdateBackgroundKind[keyof typeof CardTemplateUpdateBackgroundKind];
-
-
-export const CardTemplateUpdateBackgroundKind = {
-  image: 'image',
-  gif: 'gif',
-  video: 'video',
-} as const;
-
-export type CardTemplateUpdateMotionPreset = typeof CardTemplateUpdateMotionPreset[keyof typeof CardTemplateUpdateMotionPreset];
-
-
-export const CardTemplateUpdateMotionPreset = {
-  none: 'none',
-  fadeIn: 'fadeIn',
-  slideUp: 'slideUp',
-  countUp: 'countUp',
-} as const;
-
-export interface CardTemplateUpdate {
-  name?: string;
-  cardKinds?: string[];
-  backgroundImageUrl?: string;
-  backgroundKind?: CardTemplateUpdateBackgroundKind;
-  backgroundDurationMs?: number | null;
-  motionPreset?: CardTemplateUpdateMotionPreset;
-  bgWidth?: number;
-  bgHeight?: number;
-  slots?: CardTemplateSlot[];
-  isActive?: boolean;
-  isDefault?: boolean;
-  displayOrder?: number;
-}
 
 export type CardLayoutLayerKind = typeof CardLayoutLayerKind[keyof typeof CardLayoutLayerKind];
 
@@ -2513,6 +2437,118 @@ export interface CardLayoutLayer {
   assetId?: string;
   field?: string;
   effects?: CardLayerEffects;
+}
+
+export interface CardTemplate {
+  id: number;
+  name: string;
+  cardKinds: string[];
+  source: CardTemplateSource;
+  baseKind?: string | null;
+  layers: CardLayoutLayer[];
+  defaultForKinds: string[];
+  backgroundImageUrl?: string | null;
+  backgroundKind?: CardTemplateBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateMotionPreset;
+  bgWidth: number;
+  bgHeight: number;
+  slots: CardTemplateSlot[];
+  isActive: boolean;
+  isDefault: boolean;
+  displayOrder: number;
+}
+
+export type CardTemplateInputSource = typeof CardTemplateInputSource[keyof typeof CardTemplateInputSource];
+
+
+export const CardTemplateInputSource = {
+  background: 'background',
+  layers: 'layers',
+} as const;
+
+export type CardTemplateInputBackgroundKind = typeof CardTemplateInputBackgroundKind[keyof typeof CardTemplateInputBackgroundKind];
+
+
+export const CardTemplateInputBackgroundKind = {
+  image: 'image',
+  gif: 'gif',
+  video: 'video',
+} as const;
+
+export type CardTemplateInputMotionPreset = typeof CardTemplateInputMotionPreset[keyof typeof CardTemplateInputMotionPreset];
+
+
+export const CardTemplateInputMotionPreset = {
+  none: 'none',
+  fadeIn: 'fadeIn',
+  slideUp: 'slideUp',
+  countUp: 'countUp',
+} as const;
+
+export interface CardTemplateInput {
+  name: string;
+  cardKinds?: string[];
+  source?: CardTemplateInputSource;
+  baseKind?: string | null;
+  layers?: CardLayoutLayer[];
+  defaultForKinds?: string[];
+  backgroundImageUrl?: string | null;
+  backgroundKind?: CardTemplateInputBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateInputMotionPreset;
+  bgWidth?: number;
+  bgHeight?: number;
+  slots?: CardTemplateSlot[];
+  isActive?: boolean;
+  isDefault?: boolean;
+  displayOrder?: number;
+}
+
+export type CardTemplateUpdateSource = typeof CardTemplateUpdateSource[keyof typeof CardTemplateUpdateSource];
+
+
+export const CardTemplateUpdateSource = {
+  background: 'background',
+  layers: 'layers',
+} as const;
+
+export type CardTemplateUpdateBackgroundKind = typeof CardTemplateUpdateBackgroundKind[keyof typeof CardTemplateUpdateBackgroundKind];
+
+
+export const CardTemplateUpdateBackgroundKind = {
+  image: 'image',
+  gif: 'gif',
+  video: 'video',
+} as const;
+
+export type CardTemplateUpdateMotionPreset = typeof CardTemplateUpdateMotionPreset[keyof typeof CardTemplateUpdateMotionPreset];
+
+
+export const CardTemplateUpdateMotionPreset = {
+  none: 'none',
+  fadeIn: 'fadeIn',
+  slideUp: 'slideUp',
+  countUp: 'countUp',
+} as const;
+
+export interface CardTemplateUpdate {
+  name?: string;
+  cardKinds?: string[];
+  source?: CardTemplateUpdateSource;
+  baseKind?: string | null;
+  layers?: CardLayoutLayer[];
+  defaultForKinds?: string[];
+  backgroundImageUrl?: string | null;
+  backgroundKind?: CardTemplateUpdateBackgroundKind;
+  backgroundDurationMs?: number | null;
+  motionPreset?: CardTemplateUpdateMotionPreset;
+  bgWidth?: number;
+  bgHeight?: number;
+  slots?: CardTemplateSlot[];
+  isActive?: boolean;
+  isDefault?: boolean;
+  displayOrder?: number;
 }
 
 export interface CardLayout {

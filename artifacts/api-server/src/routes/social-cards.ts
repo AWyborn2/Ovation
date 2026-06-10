@@ -426,6 +426,32 @@ router.delete("/card-audio-tracks/:id", requireAdmin, async (req, res): Promise<
 
 // --- Custom "bring your own" card templates -------------------------------
 
+// A card kind may be the default for at most one template. Before a template
+// claims a set of kinds as its defaults, strip those kinds from every other
+// template's `default_for_kinds` array. `exceptId` skips the template being
+// written so it can keep kinds it already owns.
+const clearDefaultKinds = async (
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  kinds: string[],
+  exceptId?: number,
+): Promise<void> => {
+  await tx
+    .update(cardTemplatesTable)
+    .set({
+      defaultForKinds: sql`COALESCE((
+        SELECT array_agg(k)
+        FROM unnest(${cardTemplatesTable.defaultForKinds}) AS k
+        WHERE k <> ALL(${kinds}::text[])
+      ), '{}')`,
+    })
+    .where(
+      and(
+        sql`${cardTemplatesTable.defaultForKinds} && ${kinds}::text[]`,
+        exceptId !== undefined ? sql`${cardTemplatesTable.id} <> ${exceptId}` : undefined,
+      ),
+    );
+};
+
 router.get("/card-templates", async (_req, res): Promise<void> => {
   const rows = await db
     .select()
@@ -444,17 +470,25 @@ router.post("/card-templates", requireAdmin, async (req, res): Promise<void> => 
     if (parsed.data.isDefault) {
       await tx.update(cardTemplatesTable).set({ isDefault: false });
     }
+    const defaultForKinds = parsed.data.defaultForKinds ?? [];
+    if (defaultForKinds.length > 0) {
+      await clearDefaultKinds(tx, defaultForKinds);
+    }
     const [created] = await tx
       .insert(cardTemplatesTable)
       .values({
         name: parsed.data.name,
         cardKinds: parsed.data.cardKinds ?? [],
-        backgroundImageUrl: parsed.data.backgroundImageUrl,
+        source: parsed.data.source ?? "background",
+        baseKind: parsed.data.baseKind ?? null,
+        layers: parsed.data.layers ?? [],
+        defaultForKinds,
+        backgroundImageUrl: parsed.data.backgroundImageUrl ?? null,
         backgroundKind: parsed.data.backgroundKind ?? "image",
         backgroundDurationMs: parsed.data.backgroundDurationMs ?? null,
         motionPreset: parsed.data.motionPreset ?? "none",
-        bgWidth: parsed.data.bgWidth,
-        bgHeight: parsed.data.bgHeight,
+        bgWidth: parsed.data.bgWidth ?? 1080,
+        bgHeight: parsed.data.bgHeight ?? 1080,
         slots: parsed.data.slots ?? [],
         isActive: parsed.data.isActive ?? true,
         isDefault: parsed.data.isDefault ?? false,
@@ -480,6 +514,11 @@ router.patch("/card-templates/:id", requireAdmin, async (req, res): Promise<void
   const row = await db.transaction(async (tx) => {
     if (body.data.isDefault === true) {
       await tx.update(cardTemplatesTable).set({ isDefault: false });
+    }
+    // Per-asset default: a kind may be the default for at most one template, so
+    // claiming a kind here strips it from every OTHER template first.
+    if (body.data.defaultForKinds && body.data.defaultForKinds.length > 0) {
+      await clearDefaultKinds(tx, body.data.defaultForKinds, params.data.id);
     }
     const [updated] = await tx
       .update(cardTemplatesTable)
