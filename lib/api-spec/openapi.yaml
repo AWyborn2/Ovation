@@ -7796,6 +7796,12 @@ components:
           type: string
         borderWidth:
           type: number
+        opacity:
+          type: number
+          description: >-
+            Whole-layer alpha (0-1). Absent or 1 renders fully opaque
+            (pixel-identical). Below 1 makes the entire layer partly
+            see-through in the preview and all exports.
 
     CardLayout:
       type: object

@@ -129,15 +129,30 @@ function editorToSaved(
       // scales by 1080, not the render height). Only its effects/z/visibility are
       // meaningful, so we emit those and leave geometry to the built-in default.
       const geometryLocked = !l.resizable;
+      // The Background layer is geometry-locked but may carry an uploaded
+      // full-bleed image. We persist ONLY its image fields (url/fit/focal/zoom),
+      // never its locked geometry, so the custom background round-trips while
+      // staying correct across square/portrait/story sizes.
+      const bgImage = l.id === "background";
+      const geomChanged =
+        !geometryLocked &&
+        (p.x !== l.x ||
+          p.y !== l.y ||
+          p.w !== l.w ||
+          p.h !== l.h ||
+          p.focalX !== l.focalX ||
+          p.focalY !== l.focalY ||
+          p.zoom !== l.zoom);
+      const imgChanged =
+        bgImage &&
+        (p.url !== l.url ||
+          p.fit !== l.fit ||
+          p.focalX !== l.focalX ||
+          p.focalY !== l.focalY ||
+          p.zoom !== l.zoom);
       const changed =
-        (!geometryLocked &&
-          (p.x !== l.x ||
-            p.y !== l.y ||
-            p.w !== l.w ||
-            p.h !== l.h ||
-            p.focalX !== l.focalX ||
-            p.focalY !== l.focalY ||
-            p.zoom !== l.zoom)) ||
+        geomChanged ||
+        imgChanged ||
         p.z !== l.z ||
         p.hidden !== l.hidden ||
         JSON.stringify(p.effects ?? null) !== JSON.stringify(l.effects ?? null);
@@ -156,6 +171,15 @@ function editorToSaved(
               focalY: l.focalY,
               zoom: l.zoom,
             }),
+        ...(bgImage && l.url
+          ? {
+              url: l.url,
+              fit: l.fit ?? "cover",
+              focalX: l.focalX,
+              focalY: l.focalY,
+              zoom: l.zoom,
+            }
+          : {}),
         z: l.z,
         hidden: l.hidden,
         vAnchor: l.vAnchor,
@@ -401,6 +425,14 @@ export function CardLayoutEditor({
     setError(null);
     const r = await imgUpload.uploadFile(file);
     if (r) addLayer("image", { url: `/api/storage${r.objectPath}`, shape: "rect", fit: "cover", zoom: 1, focalX: 0.5, focalY: 0.5 });
+  };
+
+  // Upload an image and return its public URL (used by the Background layer's
+  // full-bleed image upload in the inspector). Returns null on failure.
+  const uploadImage = async (file: File): Promise<string | null> => {
+    setError(null);
+    const r = await imgUpload.uploadFile(file);
+    return r ? `/api/storage${r.objectPath}` : null;
   };
 
   // Add a built-in library sticker as a normal movable/resizable layer. When
@@ -669,6 +701,8 @@ export function CardLayoutEditor({
                 cardKind={cardKind}
                 onChange={(patch) => patchLayer(selected.id, patch)}
                 onRemove={() => removeLayer(selected.id)}
+                onUploadImage={uploadImage}
+                uploading={imgUpload.isUploading}
               />
             )}
           </div>
@@ -1138,11 +1172,15 @@ function Inspector({
   cardKind,
   onChange,
   onRemove,
+  onUploadImage,
+  uploading,
 }: {
   layer: EditorLayer;
   cardKind: ShareCardInput["kind"];
   onChange: (patch: Partial<EditorLayer>) => void;
   onRemove: () => void;
+  onUploadImage: (file: File) => Promise<string | null>;
+  uploading: boolean;
 }) {
   const isCustom = layer.editKind !== "element";
   const sticker = layer.editKind === "libsticker" ? getSticker(layer.assetId) : undefined;
@@ -1374,10 +1412,119 @@ function Inspector({
       )}
 
       {!isCustom && layer.id === "background" && (
-        <p className="text-[11px] text-muted-foreground">
-          The full-bleed feature photo. Use the effects below to tone, gradient
-          or mask it; it always covers the whole card.
-        </p>
+        <>
+          <p className="text-[11px] text-muted-foreground">
+            Upload a full-bleed background image, or leave it empty to use the
+            theme/feature photo. Use the effects below to tone, gradient or mask
+            it; it always covers the whole card.
+          </p>
+          {layer.url ? (
+            <>
+              <div className="flex items-center gap-2">
+                <img
+                  src={layer.url}
+                  alt="Background"
+                  className="h-10 w-10 rounded border object-cover"
+                />
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      const url = await onUploadImage(file);
+                      if (url) onChange({ url });
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full cursor-pointer"
+                    disabled={uploading}
+                    asChild
+                  >
+                    <span>
+                      {uploading ? (
+                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="mr-1 h-3.5 w-3.5" />
+                      )}
+                      Replace
+                    </span>
+                  </Button>
+                </label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onChange({ url: undefined })}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
+              <RangeRow
+                label="Zoom"
+                min={1}
+                max={3}
+                step={0.05}
+                value={layer.zoom ?? 1}
+                onChange={(v) => onChange({ zoom: v })}
+              />
+              <RangeRow
+                label="X"
+                min={0}
+                max={1}
+                step={0.02}
+                value={layer.focalX ?? 0.5}
+                onChange={(v) => onChange({ focalX: v })}
+              />
+              <RangeRow
+                label="Y"
+                min={0}
+                max={1}
+                step={0.02}
+                value={layer.focalY ?? 0.5}
+                onChange={(v) => onChange({ focalY: v })}
+              />
+            </>
+          ) : (
+            <label className="block">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  const url = await onUploadImage(file);
+                  if (url) onChange({ url, fit: layer.fit ?? "cover" });
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full cursor-pointer"
+                disabled={uploading}
+                asChild
+              >
+                <span>
+                  {uploading ? (
+                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ImageIcon className="mr-1 h-3.5 w-3.5" />
+                  )}
+                  Upload background image
+                </span>
+              </Button>
+            </label>
+          )}
+        </>
       )}
 
       {!isCustom && layer.id !== "photo" && layer.id !== "background" && (
@@ -1430,6 +1577,16 @@ function EffectsSection({
       <EffectPresets
         current={cur}
         onApply={(eff) => onChange(hasLayerEffects(eff) ? { ...DEFAULT_LAYER_EFFECTS, ...eff } : undefined)}
+      />
+
+      {/* Whole-layer transparency. 1 = fully opaque (cleared from effects). */}
+      <RangeRow
+        label="Opacity"
+        min={0.1}
+        max={1}
+        step={0.05}
+        value={cur.opacity ?? 1}
+        onChange={(v) => update({ opacity: v >= 1 ? undefined : v })}
       />
 
       {/* Colour grade */}

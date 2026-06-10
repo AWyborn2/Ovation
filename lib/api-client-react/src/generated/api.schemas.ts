@@ -2408,6 +2408,8 @@ export interface CardLayerEffects {
   border?: boolean;
   borderColor?: string;
   borderWidth?: number;
+  /** Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports. */
+  opacity?: number;
 }
 
 export interface CardLayoutLayer {

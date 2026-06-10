@@ -62,3 +62,10 @@ preset replaces the layer's effects with `{...DEFAULT_LAYER_EFFECTS, ...preset}`
 so all intensity fields are present; an empty bundle clears effects (stays off
 the offscreen path). Effects stored opaquely (no per-field codegen on the preset
 table) — same opaque-jsonb trick as card_layouts.
+
+## Per-layer opacity + Background image upload (Social Studio)
+- `CardLayerEffects.opacity` (0-1) is the ONLY new persisted field; absent/1 = opaque fast path (no offscreen). `hasLayerEffects` returns true when `opacity < 1` so the layer routes through `drawEffectedLayer`.
+- **Why bake-then-fade:** when `alpha < 1`, gradient+border are drawn into the offscreen FIRST, then the whole offscreen composites under one `globalAlpha`, so content+overlays fade uniformly. `alpha >= 1` keeps the original main-ctx draw order byte-identical (pixel-identical for old cards).
+- Background image reuses existing image fields (url/fit/focalX/focalY/zoom) on the `id:"background"` element — NO new schema. `editorToSaved` persists ONLY those image fields for the background, never its locked full-bleed geometry (locked geometry at a square size would shrink on portrait/story).
+- `loadCardAssets` pre-scans `opts.layout` for the background element's url → `customBg`; `buildLayers` hero priority = customBg > feature photo > theme texture (custom+feature use the hero scrim).
+- countUp numeric layers redraw live (not baked bitmap) so `drawFg` must multiply in `effects.opacity` explicitly; baked paths already composite it.

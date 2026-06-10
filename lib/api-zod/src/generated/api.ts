@@ -3778,7 +3778,8 @@ export const ListCardTemplatesResponseItem = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })),
   "defaultForKinds": zod.array(zod.string()),
@@ -3861,7 +3862,8 @@ export const CreateCardTemplateBody = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "defaultForKinds": zod.array(zod.string()).optional(),
@@ -3947,7 +3949,8 @@ export const UpdateCardTemplateBody = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "defaultForKinds": zod.array(zod.string()).optional(),
@@ -4026,7 +4029,8 @@ export const UpdateCardTemplateResponse = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })),
   "defaultForKinds": zod.array(zod.string()),
@@ -4088,7 +4092,8 @@ export const ListCardEffectPresetsResponseItem = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).'),
   "displayOrder": zod.number()
 })
@@ -4115,7 +4120,8 @@ export const CreateCardEffectPresetBody = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).'),
   "displayOrder": zod.number().optional()
 })
@@ -4176,7 +4182,8 @@ export const ListCardLayoutsResponseItem = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 }))
 })
@@ -4232,7 +4239,8 @@ export const UpsertCardLayoutBody = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 }))
 })
@@ -4281,7 +4289,8 @@ export const UpsertCardLayoutResponse = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 }))
 })
@@ -4346,7 +4355,8 @@ export const ListCardSetsResponseItem = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
@@ -4413,7 +4423,8 @@ export const CreateCardSetBody = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
@@ -4483,7 +4494,8 @@ export const UpdateCardSetBody = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),
@@ -4540,7 +4552,8 @@ export const UpdateCardSetResponse = zod.object({
   "shadowIntensity": zod.number().optional(),
   "border": zod.boolean().optional(),
   "borderColor": zod.string().optional(),
-  "borderWidth": zod.number().optional()
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
 }).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
 })).optional(),
   "themeId": zod.number().nullish(),

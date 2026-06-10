@@ -837,13 +837,22 @@ export type LayerEffects = {
   border?: boolean;
   borderColor?: string;
   borderWidth?: number; // fraction of the 1080 base width
+  // Whole-layer transparency. Absent or 1 = fully opaque (fast path);
+  // below 1 multiplies the entire layer's alpha in every render path.
+  opacity?: number; // 0-1
 };
 
 // True when an effects object actually requests at least one treatment. Keeps
-// un-effected layers off the offscreen compositing path (pixel-identical).
+// un-effected layers off the offscreen compositing path (pixel-identical). A
+// sub-1 opacity also counts so a partly-transparent layer composites correctly.
 export const hasLayerEffects = (fx?: LayerEffects | null): boolean =>
   !!fx &&
-  (!!fx.tone || !!fx.mask || !!fx.gradient || !!fx.shadow || !!fx.border);
+  (!!fx.tone ||
+    !!fx.mask ||
+    !!fx.gradient ||
+    !!fx.shadow ||
+    !!fx.border ||
+    (typeof fx.opacity === "number" && fx.opacity < 1));
 
 export const DEFAULT_LAYER_EFFECTS: LayerEffects = {
   toneColor: "#FBAC27",
@@ -1812,6 +1821,9 @@ type CardAssets = {
   featureImg: HTMLImageElement | null;
   photoImg: HTMLImageElement | null;
   logoImg: HTMLImageElement | null;
+  // An admin-uploaded full-bleed background image stored on the Background
+  // layer (saved layout). When present it replaces the theme background.
+  customBg: { img: HTMLImageElement; focalX: number; focalY: number; zoom: number } | null;
 };
 
 const loadCardAssets = async (
@@ -1820,6 +1832,23 @@ const loadCardAssets = async (
 ): Promise<CardAssets> => {
   const bgImg = opts.theme?.backgroundImageUrl
     ? await loadImage(opts.theme.backgroundImageUrl).catch(() => null)
+    : null;
+  // The Background layer may carry an uploaded image (url/focal/zoom) in the
+  // saved layout. Geometry is never persisted for it (locked full-bleed), only
+  // the image fields, so we draw it cover-focal across the whole card.
+  const savedBg = opts.layout?.find(
+    (l) => l.kind === "element" && l.id === "background" && !!l.url,
+  );
+  const customBgImg = savedBg?.url
+    ? await loadImage(savedBg.url).catch(() => null)
+    : null;
+  const customBg = customBgImg
+    ? {
+        img: customBgImg,
+        focalX: savedBg!.focalX ?? 0.5,
+        focalY: savedBg!.focalY ?? 0.5,
+        zoom: savedBg!.zoom ?? 1,
+      }
     : null;
   const placement: PhotoPlacement = opts.photoPlacement ?? "headshot";
   const photoUrl =
@@ -1834,7 +1863,7 @@ const loadCardAssets = async (
   const logoSrc =
     opts.theme?.logoUrl || opts.brand?.logoUrl || HALLS_HEAD_BRAND.logoUrl || "";
   const logoImg = logoSrc ? await loadImage(logoSrc).catch(() => null) : null;
-  return { bgImg, featureImg, photoImg, logoImg };
+  return { bgImg, featureImg, photoImg, logoImg, customBg };
 };
 
 // Synchronous header draw using a preloaded logo (mirrors the async drawHeader
@@ -1884,7 +1913,17 @@ const buildLayers = (
   scale: number,
   assets: CardAssets,
 ): RenderLayer[] => {
-  const { bgImg, featureImg, photoImg, logoImg } = assets;
+  const { bgImg, featureImg, photoImg, logoImg, customBg } = assets;
+  // Priority for the full-bleed background: an admin-uploaded custom image wins,
+  // then a feature-placement hero photo, then the theme texture. The custom and
+  // feature images both use the "hero" scrim so foreground text stays legible.
+  const heroImg = customBg?.img ?? featureImg ?? bgImg;
+  const heroFeature = !!(customBg || featureImg);
+  const heroTransform: PhotoTransform | null | undefined = customBg
+    ? { focalX: customBg.focalX, focalY: customBg.focalY, zoom: customBg.zoom }
+    : featureImg
+      ? opts.photoTransform
+      : undefined;
   const GOLD = p.accent;
   const GOLD_SOFT = p.accentSoft;
   const TEXT_LIGHT = p.textLight;
@@ -1956,16 +1995,7 @@ const buildLayers = (
     vAnchor: "top",
     selectable: false,
     resizable: false,
-    draw: (ctx) =>
-      drawBackground(
-        ctx,
-        W,
-        H,
-        p,
-        featureImg ?? bgImg,
-        !!featureImg,
-        featureImg ? opts.photoTransform : undefined,
-      ),
+    draw: (ctx) => drawBackground(ctx, W, H, p, heroImg, heroFeature, heroTransform),
   });
 
   // --- Header ---------------------------------------------------------------
@@ -3189,12 +3219,16 @@ const drawEffectedLayer = async (
   H: number,
 ) => {
   const fx = l.effects!;
+  const alpha = Math.max(0, Math.min(1, fx.opacity ?? 1));
   const off = document.createElement("canvas");
   off.width = W;
   off.height = H;
   const octx = off.getContext("2d");
   if (!octx) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
     await drawLayerContent(ctx, l);
+    ctx.restore();
     return;
   }
   await drawLayerContent(octx, l);
@@ -3205,7 +3239,17 @@ const drawEffectedLayer = async (
   if (fx.mask) {
     applyMaskToCanvas(off, rect, fx.mask, fx.maskRadius ?? 0.18);
   }
+  // When the layer is partly transparent, bake its gradient + border into the
+  // offscreen first so the WHOLE layer (content + overlays) fades uniformly
+  // under one alpha. Fully-opaque layers keep the original main-ctx draw order,
+  // so their pixels are byte-identical to before.
+  const fade = alpha < 1;
+  if (fade) {
+    if (fx.gradient) drawGradientOverlay(octx, rect, fx);
+    if (fx.border) drawLayerBorder(octx, rect, fx);
+  }
   ctx.save();
+  if (fade) ctx.globalAlpha = alpha;
   if (fx.shadow) {
     const k = Math.max(0, Math.min(1, fx.shadowIntensity ?? 0.5));
     ctx.shadowColor = rgba(fx.shadowColor || "#1A1A1A", 0.25 + k * 0.55);
@@ -3214,8 +3258,10 @@ const drawEffectedLayer = async (
   }
   ctx.drawImage(off, 0, 0);
   ctx.restore();
-  if (fx.gradient) drawGradientOverlay(ctx, rect, fx);
-  if (fx.border) drawLayerBorder(ctx, rect, fx);
+  if (!fade) {
+    if (fx.gradient) drawGradientOverlay(ctx, rect, fx);
+    if (fx.border) drawLayerBorder(ctx, rect, fx);
+  }
 };
 
 const drawLayers = async (ctx: CanvasRenderingContext2D, layers: RenderLayer[]) => {
@@ -3399,6 +3445,9 @@ export const computeCardLayers = async (
       if (typeof s.focalX === "number") e.focalX = s.focalX;
       if (typeof s.focalY === "number") e.focalY = s.focalY;
       if (typeof s.zoom === "number") e.zoom = s.zoom;
+      // The Background element can carry an uploaded full-bleed image.
+      if (typeof s.url === "string") e.url = s.url;
+      if (s.fit) e.fit = s.fit;
       if (hasLayerEffects(s.effects)) e.effects = s.effects;
     } else {
       order.push({
@@ -3727,7 +3776,9 @@ export const prepareAnimation = async (
     // fades in alongside (alpha = lp). drawCount(1) === draw() so rest matches.
     if (motion === "countUp" && b.layer.numeric && b.layer.drawCount) {
       ctx.save();
-      ctx.globalAlpha = easeOutCubic(lp);
+      // countUp redraws live (not the baked bitmap), so fold in the layer's own
+      // opacity here — the baked path already has it composited in.
+      ctx.globalAlpha = easeOutCubic(lp) * Math.max(0, Math.min(1, b.layer.effects?.opacity ?? 1));
       applyLayerTransform(ctx, b.layer);
       try {
         b.layer.drawCount(ctx, lp);
