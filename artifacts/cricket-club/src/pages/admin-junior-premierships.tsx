@@ -28,7 +28,6 @@ export default function AdminJuniorPremierships() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Junior premierships</h1>
         <p className="text-muted-foreground mt-1">
           Set the captain and man-of-the-match for each junior premiership. These
           aren&apos;t in the source data, so they&apos;re added by hand here and

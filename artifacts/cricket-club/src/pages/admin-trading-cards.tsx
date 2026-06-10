@@ -21,7 +21,6 @@ export default function AdminTradingCards() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Trading card contents</h1>
         <p className="text-muted-foreground mt-1">
           Choose which statistics and awards appear on player trading cards. Set a default that
           applies to every card, then optionally override the stats per player role (Batsman,

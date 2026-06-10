@@ -35,8 +35,7 @@ export default function AdminHonourBoards() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-serif font-bold">Honour boards</h1>
+      <div className="flex items-center justify-end gap-4">
         <Button onClick={() => setShowNew((v) => !v)}>{showNew ? "Close" : "Add board"}</Button>
       </div>
       {error && (

@@ -29,27 +29,14 @@ const INTERNAL_TARGETS: { value: string; label: string; section: "senior" | "jun
   { value: "/juniors/premierships", label: "Juniors Premierships", section: "junior" },
   { value: "/juniors/players", label: "Juniors Players", section: "junior" },
   { value: "/juniors/office-bearers", label: "Juniors Office Bearers", section: "junior" },
-  // Admin pages
+  // Admin pages (consolidated groups; each group page is tabbed)
   { value: "/admin", label: "Admin Hub", section: "admin" },
-  { value: "/admin/users", label: "Admin users", section: "admin" },
-  { value: "/admin/stats", label: "Stats", section: "admin" },
-  { value: "/admin/players", label: "Players", section: "admin" },
-  { value: "/admin/premierships", label: "Premierships", section: "admin" },
-  { value: "/admin/honour-boards", label: "Honour boards", section: "admin" },
-  { value: "/admin/milestone-board", label: "Milestone board", section: "admin" },
-  { value: "/admin/match-display", label: "Matches page display", section: "admin" },
+  { value: "/admin/social", label: "Social Media", section: "admin" },
+  { value: "/admin/settings", label: "Display & Settings", section: "admin" },
+  { value: "/admin/people", label: "People", section: "admin" },
+  { value: "/admin/honours", label: "Honours & Records", section: "admin" },
   { value: "/admin/import", label: "Import CSV", section: "admin" },
-  { value: "/admin/caps", label: "Cap register", section: "admin" },
-  { value: "/admin/life-members", label: "Life members", section: "admin" },
-  { value: "/admin/awards", label: "Awards", section: "admin" },
-  { value: "/admin/team-of-decade", label: "Team of the Decade", section: "admin" },
-  { value: "/admin/committee", label: "Committee", section: "admin" },
-  { value: "/admin/captains", label: "Captains", section: "admin" },
-  { value: "/admin/junior-committee", label: "Junior office bearers", section: "admin" },
-  { value: "/admin/social", label: "Social cards", section: "admin" },
-  { value: "/admin/social/create", label: "Create a card", section: "admin" },
-  { value: "/admin/social/queue", label: "Social queue", section: "admin" },
-  { value: "/admin/nav", label: "Navigation & menus", section: "admin" },
+  { value: "/admin/users", label: "Admin users", section: "admin" },
 ];
 
 // Curated icon keys. The client maps each key to a lucide icon; keep this list

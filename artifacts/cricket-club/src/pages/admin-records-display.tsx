@@ -61,7 +61,6 @@ export default function AdminRecordsDisplay() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Records page display</h1>
         <p className="text-muted-foreground mt-1">
           Control how the public Records page behaves by default: which tab opens first, the
           default grade for the By Grade and Partnerships tabs, and the default sort order for

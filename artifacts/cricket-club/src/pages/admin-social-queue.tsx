@@ -249,7 +249,6 @@ export default function AdminSocialQueue() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Social card queue</h1>
         <p className="text-muted-foreground text-sm">
           Auto-detected milestones, generated round-ups, and tracked share links.
         </p>

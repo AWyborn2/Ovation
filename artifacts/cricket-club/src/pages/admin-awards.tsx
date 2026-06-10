@@ -120,7 +120,6 @@ export default function AdminAwards() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">Admin · Awards</h1>
           <p className="text-muted-foreground mt-1">
             Create club awards and record their past winners. Each award appears
             as its own honour board on the website and mobile app.

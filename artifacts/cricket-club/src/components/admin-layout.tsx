@@ -8,28 +8,30 @@ import {
 } from "@workspace/api-client-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import { Button } from "@/components/ui/button";
+import {
+  LayoutGrid,
+  Image,
+  Settings,
+  Users,
+  Trophy,
+  Upload,
+  UserCog,
+  type LucideIcon,
+} from "lucide-react";
 
-const NAV = [
-  { href: "/admin", label: "Hub" },
-  { href: "/admin/users", label: "Admins" },
-  { href: "/admin/stats", label: "Stats" },
-  { href: "/admin/players", label: "Players" },
-  { href: "/admin/premierships", label: "Premierships" },
-  { href: "/admin/honour-boards", label: "Honour boards" },
-  { href: "/admin/milestone-board", label: "Milestone board" },
-  { href: "/admin/match-display", label: "Matches page display" },
-  { href: "/admin/records-display", label: "Records page display" },
-  { href: "/admin/trading-cards", label: "Trading card contents" },
-  { href: "/admin/junior-match-display", label: "Junior matches display" },
-  { href: "/admin/import", label: "Import CSV" },
-  { href: "/admin/social/queue", label: "Social queue", badge: "social-queue" as const },
-  { href: "/admin/caps", label: "Cap register" },
-  { href: "/admin/life-members", label: "Life members" },
-  { href: "/admin/awards", label: "Awards" },
-  { href: "/admin/team-of-decade", label: "Team of the Decade" },
-  { href: "/admin/committee", label: "Committee" },
-  { href: "/admin/captains", label: "Captains" },
-  { href: "/admin/nav", label: "Navigation & menus" },
+const NAV: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: "social-queue";
+}[] = [
+  { href: "/admin", label: "Hub", icon: LayoutGrid },
+  { href: "/admin/social", label: "Social Media", icon: Image, badge: "social-queue" },
+  { href: "/admin/settings", label: "Display & Settings", icon: Settings },
+  { href: "/admin/people", label: "People", icon: Users },
+  { href: "/admin/honours", label: "Honours & Records", icon: Trophy },
+  { href: "/admin/import", label: "Import CSV", icon: Upload },
+  { href: "/admin/users", label: "Admin users", icon: UserCog },
 ];
 
 export function AdminLayout({ admin, children }: { admin: Admin; children: ReactNode }) {
@@ -57,8 +59,10 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
         <nav className="flex flex-col gap-1">
           {NAV.map((item) => {
             const active =
-              location === item.href || (item.href !== "/admin" && location.startsWith(item.href));
+              location === item.href ||
+              (item.href !== "/admin" && location.startsWith(`${item.href}/`));
             const showBadge = item.badge === "social-queue" && pendingCount > 0;
+            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
@@ -67,7 +71,10 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
                   active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                 }`}
               >
-                <span>{item.label}</span>
+                <span className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                </span>
                 {showBadge && (
                   <span
                     className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${

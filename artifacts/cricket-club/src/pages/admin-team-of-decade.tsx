@@ -92,9 +92,6 @@ export default function AdminTeamOfDecade() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">
-            Admin · Team of the Decade
-          </h1>
           <p className="text-muted-foreground mt-1">
             Curate best-XI honour boards. Each board appears as its own card on
             the Honour Boards page once published. Drafts stay hidden from the

@@ -64,7 +64,6 @@ export default function AdminCaptains() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">Admin · Captains</h1>
           <p className="text-muted-foreground mt-1">
             Create grade captain logins and grant each one the grades they vote
             for. Captains sign in at <code>/captain</code> to submit their 3-2-1

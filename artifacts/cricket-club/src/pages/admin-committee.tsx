@@ -123,7 +123,6 @@ export default function AdminCommittee() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">Admin · Committee</h1>
           <p className="text-muted-foreground mt-1">
             Record club office bearers and grade captains for each season. Office
             bearers appear on the public Committee board; grade captains appear on

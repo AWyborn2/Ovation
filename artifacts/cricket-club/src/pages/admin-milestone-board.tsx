@@ -79,7 +79,6 @@ export default function AdminMilestoneBoard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Significant milestones board</h1>
         <p className="text-muted-foreground mt-1">
           Control what the Significant Milestones section on the public Honour Boards page shows.
         </p>

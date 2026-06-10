@@ -32,7 +32,6 @@ export default function AdminJuniorSocial() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Junior social cards</h1>
         <p className="text-muted-foreground mt-1">
           Generate brown-branded junior milestone and match-summary cards for
           Instagram, Facebook, TikTok and X. Private junior players are never

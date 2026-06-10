@@ -66,8 +66,7 @@ export default function AdminStats() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <h1 className="text-3xl font-serif font-bold">Stats</h1>
+      <div className="flex items-start justify-end gap-4">
         <Button onClick={() => setShowNew((v) => !v)}>{showNew ? "Close" : "Add stat"}</Button>
       </div>
       {error && (

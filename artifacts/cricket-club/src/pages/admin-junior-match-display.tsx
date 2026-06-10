@@ -27,7 +27,6 @@ export default function AdminJuniorMatchDisplay() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Junior Matches page display</h1>
         <p className="text-muted-foreground mt-1">
           Control how the public Junior Matches page behaves by default: which age group and
           season load first, and the order age groups appear in the dropdown. Visitors can

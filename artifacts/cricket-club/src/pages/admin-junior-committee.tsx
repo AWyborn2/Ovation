@@ -105,9 +105,6 @@ export default function AdminJuniorCommittee() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">
-            Admin · Junior Office Bearers
-          </h1>
           <p className="text-muted-foreground mt-1">
             Record Halls Head Junior Cricket Club office bearers for each season.
             Published seasons appear on the public Juniors → Office Bearers page.

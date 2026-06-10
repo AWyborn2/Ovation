@@ -78,7 +78,6 @@ export default function AdminCaps() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-serif font-bold">Admin · A Grade Caps</h1>
           <p className="text-muted-foreground mt-1">
             Manage the A Grade cap lists. Changes apply immediately to the public honour boards page.
           </p>

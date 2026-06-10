@@ -4,28 +4,12 @@ import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
 
 const TILES_FALLBACK: ResolvedNavItem[] = [
+  { label: "Social Media", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory, card builders, junior cards and the review queue." },
+  { label: "Display & Settings", target: "/admin/settings", isExternal: false, iconKey: "settings", description: "Defaults for Matches, Records, trading cards, honour & milestone boards, junior matches and site navigation." },
+  { label: "People", target: "/admin/people", isExternal: false, iconKey: "users", description: "Players, stats, committee, captains, junior office bearers and non-player officials." },
+  { label: "Honours & Records", target: "/admin/honours", isExternal: false, iconKey: "trophy", description: "Premierships, awards, Team of the Decade, cap register, life members and junior premierships." },
+  { label: "Import CSV", target: "/admin/import", isExternal: false, iconKey: "upload", description: "Upload a PlayCricket combined CSV or a single match scorecard." },
   { label: "Admin users", target: "/admin/users", isExternal: false, iconKey: "userCog", description: "Add, rename, reset passwords, remove admins." },
-  { label: "Stats", target: "/admin/stats", isExternal: false, iconKey: "barChart3", description: "Search, edit and delete per-grade stat rows." },
-  { label: "Players", target: "/admin/players", isExternal: false, iconKey: "users", description: "Rename, mark deceased, merge duplicates, delete." },
-  { label: "Premierships", target: "/admin/premierships", isExternal: false, iconKey: "crown", description: "Add and edit premiership records and squads." },
-  { label: "Honour boards", target: "/admin/honour-boards", isExternal: false, iconKey: "scrollText", description: "Edit board titles and pin/hide overrides." },
-  { label: "Milestone board", target: "/admin/milestone-board", isExternal: false, iconKey: "medal", description: "Show recent / approaching milestones and set thresholds." },
-  { label: "Matches page display", target: "/admin/match-display", isExternal: false, iconKey: "clipboardList", description: "Default grade/season, grade menu order, round order." },
-  { label: "Records page display", target: "/admin/records-display", isExternal: false, iconKey: "clipboardList", description: "Default tab, By Grade / Partnerships grade, table sorts." },
-  { label: "Trading card contents", target: "/admin/trading-cards", isExternal: false, iconKey: "clipboardList", description: "Which stats and awards show on every player's trading card." },
-  { label: "Import CSV", target: "/admin/import", isExternal: false, iconKey: "upload", description: "Upload a PlayCricket combined CSV for a season." },
-  { label: "Cap register", target: "/admin/caps", isExternal: false, iconKey: "ticket", description: "A Grade cap numbers and links." },
-  { label: "Life members", target: "/admin/life-members", isExternal: false, iconKey: "star", description: "Honour-board life members." },
-  { label: "Awards", target: "/admin/awards", isExternal: false, iconKey: "award", description: "Create club awards and record past winners." },
-  { label: "Team of the Decade", target: "/admin/team-of-decade", isExternal: false, iconKey: "trophy", description: "Curate best-XI honour boards with draft/publish." },
-  { label: "Non-player people", target: "/admin/people", isExternal: false, iconKey: "users", description: "Profiles for club officials who served but never played." },
-  { label: "Junior office bearers", target: "/admin/junior-committee", isExternal: false, iconKey: "baby", description: "Season-by-season junior committee (separate from seniors)." },
-  { label: "Junior premierships", target: "/admin/junior-premierships", isExternal: false, iconKey: "crown", description: "Set captain and man-of-the-match on junior premiership plaques." },
-  { label: "Social cards", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory: sizes, sponsors, captions." },
-  { label: "Create a card", target: "/admin/social/create", isExternal: false, iconKey: "image", description: "Build a Match Summary card from a match or by hand." },
-  { label: "Junior social cards", target: "/admin/social/juniors", isExternal: false, iconKey: "image", description: "Brown-branded junior milestone and match cards." },
-  { label: "Social queue", target: "/admin/social/queue", isExternal: false, iconKey: "listChecks", description: "Auto-detected milestones, round-ups, tracked links." },
-  { label: "Navigation & menus", target: "/admin/nav", isExternal: false, iconKey: "layoutGrid", description: "Configure menus and quick-link cards across the site." },
 ];
 
 export default function AdminHub() {

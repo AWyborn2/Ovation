@@ -61,7 +61,6 @@ export default function AdminPlayers() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-serif font-bold">Players</h1>
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}

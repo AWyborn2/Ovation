@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -27,30 +27,13 @@ import JuniorsPlayerDetail from "@/pages/juniors-player-detail";
 import JuniorsOfficeBearers from "@/pages/juniors-office-bearers";
 import AdminHub from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
-import AdminStats from "@/pages/admin-stats";
-import AdminPlayers from "@/pages/admin-players";
-import AdminPremierships from "@/pages/admin-premierships";
-import AdminHonourBoards from "@/pages/admin-honour-boards";
 import AdminImport from "@/pages/admin-import";
-import AdminCaps from "@/pages/admin-caps";
-import AdminLifeMembers from "@/pages/admin-life-members";
-import AdminAwards from "@/pages/admin-awards";
-import AdminTeamOfDecade from "@/pages/admin-team-of-decade";
-import AdminSocial from "@/pages/admin-social";
-import AdminSocialCreate from "@/pages/admin-social-create";
-import AdminJuniorSocial from "@/pages/admin-junior-social";
-import AdminSocialQueue from "@/pages/admin-social-queue";
-import AdminMilestoneBoard from "@/pages/admin-milestone-board";
-import AdminMatchDisplay from "@/pages/admin-match-display";
-import AdminRecordsDisplay from "@/pages/admin-records-display";
-import AdminTradingCards from "@/pages/admin-trading-cards";
-import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
-import AdminCaptains from "@/pages/admin-captains";
-import AdminCommittee from "@/pages/admin-committee";
-import AdminPeople from "@/pages/admin-people";
-import AdminJuniorCommittee from "@/pages/admin-junior-committee";
-import AdminJuniorPremierships from "@/pages/admin-junior-premierships";
-import AdminNav from "@/pages/admin-nav";
+import {
+  AdminSocialGroup,
+  AdminSettingsGroup,
+  AdminPeopleGroup,
+  AdminHonoursGroup,
+} from "@/pages/admin-groups";
 import CaptainPage from "@/pages/captain";
 import NotFound from "@/pages/not-found";
 
@@ -93,36 +76,71 @@ function AdminRoutes() {
         <Switch>
           <Route path="/admin" component={AdminHub} />
           <Route path="/admin/users" component={AdminUsers} />
-          <Route path="/admin/stats" component={AdminStats} />
-          <Route path="/admin/players" component={AdminPlayers} />
-          <Route path="/admin/premierships" component={AdminPremierships} />
-          <Route path="/admin/honour-boards" component={AdminHonourBoards} />
-          <Route path="/admin/milestone-board" component={AdminMilestoneBoard} />
-          <Route path="/admin/match-display" component={AdminMatchDisplay} />
-          <Route path="/admin/records-display" component={AdminRecordsDisplay} />
-          <Route path="/admin/trading-cards" component={AdminTradingCards} />
-          <Route path="/admin/junior-match-display" component={AdminJuniorMatchDisplay} />
           <Route path="/admin/import" component={AdminImport} />
-          <Route path="/admin/caps" component={AdminCaps} />
-          <Route path="/admin/life-members" component={AdminLifeMembers} />
-          <Route path="/admin/awards" component={AdminAwards} />
-          <Route path="/admin/team-of-decade" component={AdminTeamOfDecade} />
-          <Route path="/admin/captains" component={AdminCaptains} />
-          <Route path="/admin/committee" component={AdminCommittee} />
-          <Route path="/admin/people" component={AdminPeople} />
-          <Route
-            path="/admin/junior-committee"
-            component={AdminJuniorCommittee}
-          />
-          <Route
-            path="/admin/junior-premierships"
-            component={AdminJuniorPremierships}
-          />
-          <Route path="/admin/social" component={AdminSocial} />
-          <Route path="/admin/social/create" component={AdminSocialCreate} />
-          <Route path="/admin/social/juniors" component={AdminJuniorSocial} />
-          <Route path="/admin/social/queue" component={AdminSocialQueue} />
-          <Route path="/admin/nav" component={AdminNav} />
+
+          {/* Consolidated tabbed groups (each tab is a deep-linkable path). */}
+          <Route path="/admin/social/:tab?" component={AdminSocialGroup} />
+          <Route path="/admin/settings/:tab?" component={AdminSettingsGroup} />
+          <Route path="/admin/people/:tab?" component={AdminPeopleGroup} />
+          <Route path="/admin/honours/:tab?" component={AdminHonoursGroup} />
+
+          {/* Back-compat: old flat admin URLs redirect to their new group+tab
+              so existing bookmarks and in-app cross-links keep working. */}
+          <Route path="/admin/stats">
+            <Redirect to="/admin/people/stats" />
+          </Route>
+          <Route path="/admin/players">
+            <Redirect to="/admin/people/players" />
+          </Route>
+          <Route path="/admin/committee">
+            <Redirect to="/admin/people/committee" />
+          </Route>
+          <Route path="/admin/captains">
+            <Redirect to="/admin/people/captains" />
+          </Route>
+          <Route path="/admin/junior-committee">
+            <Redirect to="/admin/people/junior-office-bearers" />
+          </Route>
+          <Route path="/admin/premierships">
+            <Redirect to="/admin/honours/premierships" />
+          </Route>
+          <Route path="/admin/awards">
+            <Redirect to="/admin/honours/awards" />
+          </Route>
+          <Route path="/admin/team-of-decade">
+            <Redirect to="/admin/honours/team-of-decade" />
+          </Route>
+          <Route path="/admin/caps">
+            <Redirect to="/admin/honours/caps" />
+          </Route>
+          <Route path="/admin/life-members">
+            <Redirect to="/admin/honours/life-members" />
+          </Route>
+          <Route path="/admin/junior-premierships">
+            <Redirect to="/admin/honours/junior-premierships" />
+          </Route>
+          <Route path="/admin/honour-boards">
+            <Redirect to="/admin/settings/honour-boards" />
+          </Route>
+          <Route path="/admin/milestone-board">
+            <Redirect to="/admin/settings/milestone-board" />
+          </Route>
+          <Route path="/admin/match-display">
+            <Redirect to="/admin/settings/matches" />
+          </Route>
+          <Route path="/admin/records-display">
+            <Redirect to="/admin/settings/records" />
+          </Route>
+          <Route path="/admin/trading-cards">
+            <Redirect to="/admin/settings/trading-cards" />
+          </Route>
+          <Route path="/admin/junior-match-display">
+            <Redirect to="/admin/settings/junior-matches" />
+          </Route>
+          <Route path="/admin/nav">
+            <Redirect to="/admin/settings/nav" />
+          </Route>
+
           <Route component={NotFound} />
         </Switch>
       </AdminShell>

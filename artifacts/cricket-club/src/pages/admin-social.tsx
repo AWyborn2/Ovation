@@ -71,7 +71,6 @@ export default function AdminSocial() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Social cards</h1>
         <p className="text-muted-foreground mt-1">
           Branded share-card factory for Instagram, Facebook, TikTok and X.
         </p>

@@ -75,7 +75,6 @@ export default function AdminNav() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Navigation &amp; menus</h1>
         <p className="text-muted-foreground mt-1">
           Add, rename, reorder, hide or remove items across the site's menus and card grids.
           Each item can link to an internal page or an external website (external links open in a

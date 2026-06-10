@@ -39,7 +39,6 @@ export default function AdminPeople() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">Admin · Non-player people</h1>
           <p className="text-muted-foreground mt-1">
             Club officials who served the club but never played (e.g. Secretaries
             and Treasurers). Add them here, then link them on committee or captain

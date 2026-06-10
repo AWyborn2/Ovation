@@ -48,7 +48,6 @@ export default function AdminSocialCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Create a match summary</h1>
         <p className="text-muted-foreground mt-1">
           Build a branded Match Summary card from a stored match or from scratch,
           then preview, theme and export it.
