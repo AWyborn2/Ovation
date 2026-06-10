@@ -3028,6 +3028,80 @@ paths:
         "404":
           description: Not found
 
+  /card-sets:
+    get:
+      operationId: listCardSets
+      tags: [socialCards]
+      summary: List all carousel card sets
+      responses:
+        "200":
+          description: Card set list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardSet"
+    post:
+      operationId: createCardSet
+      tags: [socialCards]
+      summary: Create a new carousel card set
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardSetInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSet"
+
+  /card-sets/{id}:
+    put:
+      operationId: updateCardSet
+      tags: [socialCards]
+      summary: Update a carousel card set (name, size, slides)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardSetInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSet"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCardSet
+      tags: [socialCards]
+      summary: Delete a carousel card set
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /social-settings:
     get:
       operationId: getSocialSettings
@@ -7317,6 +7391,67 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CardLayoutLayer"
+
+    CardSetSlide:
+      type: object
+      required: [id, input]
+      properties:
+        id:
+          type: string
+        # Bound card data: a ShareCardInput JSON frozen from real club data.
+        # Opaque here (the union lives in the frontend); validated by shape.
+        input:
+          type: object
+          additionalProperties: true
+        layout:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardLayoutLayer"
+        themeId:
+          type: integer
+          nullable: true
+        motionPreset:
+          type: string
+
+    CardSet:
+      type: object
+      required: [id, name, platformSize, slides, isPublished]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        platformSize:
+          type: string
+          enum: [square, portrait, story]
+        slides:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardSetSlide"
+        isPublished:
+          type: boolean
+
+    CardSetInput:
+      type: object
+      required: [name, platformSize, slides]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        platformSize:
+          type: string
+          enum: [square, portrait, story]
+        # A carousel holds between 0 and 10 slides while being drafted; the 2-slide
+        # floor for a publishable/exportable set is enforced on publish, not here,
+        # so admins can save work-in-progress drafts.
+        slides:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/CardSetSlide"
+        isPublished:
+          type: boolean
 
     SocialSettings:
       type: object

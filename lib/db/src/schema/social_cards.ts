@@ -168,6 +168,38 @@ export const cardLayoutsTable = pgTable(
 
 export type CardLayoutRow = typeof cardLayoutsTable.$inferSelect;
 
+// --- Multi-card / carousel sets --------------------------------------------
+// One slide in a carousel set. A slide bundles the bound card data (`input`, a
+// ShareCardInput JSON frozen from real club data at bind time) with its own
+// per-slide render config: an optional studio `layout` (reusing the single-card
+// layer model), an optional theme override and a motion preset. The `input`
+// field is left opaque here (the db lib must not depend on the frontend's
+// ShareCardInput union); the client casts it on the way in/out.
+export type CardSetSlide = {
+  id: string;
+  input: Record<string, unknown>;
+  layout?: CardLayoutLayer[];
+  themeId?: number | null;
+  motionPreset?: string;
+};
+
+// An ordered set of linked social slides (a carousel). Authored by admins;
+// exported as numbered images / video at a chosen platform size.
+export const cardSetsTable = pgTable("card_sets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().default("Untitled set"),
+  // Chosen export platform size: "square" | "portrait" | "story".
+  platformSize: text("platform_size").notNull().default("square"),
+  slides: jsonb("slides").$type<CardSetSlide[]>().notNull().default([]),
+  // Draft/published state. Public reads only see published sets; admins see all.
+  // New sets start as drafts so in-progress carousels stay private.
+  isPublished: boolean("is_published").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CardSetRow = typeof cardSetsTable.$inferSelect;
+
 export const socialSettingsTable = pgTable("social_settings", {
   id: serial("id").primaryKey(),
   engineOnDemand: boolean("engine_on_demand").notNull().default(true),

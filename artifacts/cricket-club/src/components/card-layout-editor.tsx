@@ -161,24 +161,34 @@ export function CardLayoutEditor({
   baseOpts,
   activeSize,
   onClose,
+  controlledLayout,
+  onSaveLayout,
 }: {
   input: ShareCardInput;
   // Render options WITHOUT a layout — the editor manages the layout itself.
   baseOpts: RenderOptions;
   activeSize: CardSize;
   onClose: () => void;
+  // Controlled mode (carousel sets): when `onSaveLayout` is provided the editor
+  // does NOT persist to the global per-card-kind `card_layouts` table. Instead
+  // it seeds from `controlledLayout` and hands the edited layers back via
+  // `onSaveLayout`, so each carousel slide carries its own independent layout.
+  controlledLayout?: CardLayoutLayer[];
+  onSaveLayout?: (layers: CardLayoutLayer[]) => void;
 }) {
   const cardKind = input.kind;
+  const controlled = !!onSaveLayout;
   const qc = useQueryClient();
   const confirm = useConfirm();
 
   const layoutsQ = useListCardLayouts();
   const savedLayers = useMemo<CardLayoutLayer[]>(() => {
+    if (controlled) return controlledLayout ?? [];
     const row = (layoutsQ.data as CardLayout[] | undefined)?.find(
       (l) => l.cardKind === cardKind,
     );
     return row?.layers ?? [];
-  }, [layoutsQ.data, cardKind]);
+  }, [controlled, controlledLayout, layoutsQ.data, cardKind]);
 
   const invalidate = () =>
     qc.invalidateQueries({ queryKey: getListCardLayoutsQueryKey() });
@@ -322,6 +332,11 @@ export function CardLayoutEditor({
 
   const handleSave = () => {
     setError(null);
+    if (controlled) {
+      onSaveLayout!(editorToSaved(layers, pristine));
+      onClose();
+      return;
+    }
     upsert.mutate({
       cardKind,
       data: { layers: editorToSaved(layers, pristine) },
@@ -339,6 +354,12 @@ export function CardLayoutEditor({
       }))
     )
       return;
+    if (controlled) {
+      setLayers(pristine.map((l) => ({ ...l })));
+      onSaveLayout!([]);
+      onClose();
+      return;
+    }
     if (savedLayers.length === 0) {
       // Nothing persisted — just restore the working set to defaults.
       setLayers(pristine.map((l) => ({ ...l })));

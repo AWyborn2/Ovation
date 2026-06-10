@@ -2415,6 +2415,54 @@ export interface CardLayoutInput {
   layers: CardLayoutLayer[];
 }
 
+export type CardSetSlideInput = { [key: string]: unknown };
+
+export interface CardSetSlide {
+  id: string;
+  input: CardSetSlideInput;
+  layout?: CardLayoutLayer[];
+  themeId?: number | null;
+  motionPreset?: string;
+}
+
+export type CardSetPlatformSize = typeof CardSetPlatformSize[keyof typeof CardSetPlatformSize];
+
+
+export const CardSetPlatformSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+} as const;
+
+export interface CardSet {
+  id: number;
+  name: string;
+  platformSize: CardSetPlatformSize;
+  slides: CardSetSlide[];
+  isPublished: boolean;
+}
+
+export type CardSetInputPlatformSize = typeof CardSetInputPlatformSize[keyof typeof CardSetInputPlatformSize];
+
+
+export const CardSetInputPlatformSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+} as const;
+
+export interface CardSetInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  platformSize: CardSetInputPlatformSize;
+  /** @maxItems 10 */
+  slides: CardSetSlide[];
+  isPublished?: boolean;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;

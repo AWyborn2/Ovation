@@ -3930,6 +3930,193 @@ export const DeleteCardLayoutParams = zod.object({
 
 
 /**
+ * @summary List all carousel card sets
+ */
+export const ListCardSetsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "slides": zod.array(zod.object({
+  "id": zod.string(),
+  "input": zod.record(zod.string(), zod.unknown()),
+  "layout": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+})).optional(),
+  "themeId": zod.number().nullish(),
+  "motionPreset": zod.string().optional()
+})),
+  "isPublished": zod.boolean()
+})
+export const ListCardSetsResponse = zod.array(ListCardSetsResponseItem)
+
+
+/**
+ * @summary Create a new carousel card set
+ */
+export const createCardSetBodyNameMax = 120;
+
+export const createCardSetBodySlidesMax = 10;
+
+
+
+export const CreateCardSetBody = zod.object({
+  "name": zod.string().min(1).max(createCardSetBodyNameMax),
+  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "slides": zod.array(zod.object({
+  "id": zod.string(),
+  "input": zod.record(zod.string(), zod.unknown()),
+  "layout": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+})).optional(),
+  "themeId": zod.number().nullish(),
+  "motionPreset": zod.string().optional()
+})).max(createCardSetBodySlidesMax),
+  "isPublished": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a carousel card set (name, size, slides)
+ */
+export const UpdateCardSetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateCardSetBodyNameMax = 120;
+
+export const updateCardSetBodySlidesMax = 10;
+
+
+
+export const UpdateCardSetBody = zod.object({
+  "name": zod.string().min(1).max(updateCardSetBodyNameMax),
+  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "slides": zod.array(zod.object({
+  "id": zod.string(),
+  "input": zod.record(zod.string(), zod.unknown()),
+  "layout": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+})).optional(),
+  "themeId": zod.number().nullish(),
+  "motionPreset": zod.string().optional()
+})).max(updateCardSetBodySlidesMax),
+  "isPublished": zod.boolean().optional()
+})
+
+export const UpdateCardSetResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "slides": zod.array(zod.object({
+  "id": zod.string(),
+  "input": zod.record(zod.string(), zod.unknown()),
+  "layout": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif']).optional(),
+  "uppercase": zod.boolean().optional()
+})).optional(),
+  "themeId": zod.number().nullish(),
+  "motionPreset": zod.string().optional()
+})),
+  "isPublished": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a carousel card set
+ */
+export const DeleteCardSetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get social card settings (engines, sizes, sponsors, captions)
  */
 export const GetSocialSettingsResponse = zod.object({

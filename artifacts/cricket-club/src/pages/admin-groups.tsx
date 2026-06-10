@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AdminSocial from "@/pages/admin-social";
 import AdminSocialCreate from "@/pages/admin-social-create";
+import AdminSocialSets from "@/pages/admin-social-sets";
 import AdminJuniorSocial from "@/pages/admin-junior-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
 import AdminMatchDisplay from "@/pages/admin-match-display";
@@ -92,6 +93,7 @@ export function AdminSocialGroup() {
       tabs={[
         { value: "cards", label: "Cards", path: "/admin/social", element: <AdminSocial /> },
         { value: "create", label: "Create a card", path: "/admin/social/create", element: <AdminSocialCreate /> },
+        { value: "sets", label: "Carousel sets", path: "/admin/social/sets", element: <AdminSocialSets /> },
         { value: "juniors", label: "Junior cards", path: "/admin/social/juniors", element: <AdminJuniorSocial /> },
         { value: "trading-cards", label: "Trading cards", path: "/admin/social/trading-cards", element: <AdminTradingCards /> },
         { value: "queue", label: "Queue", path: "/admin/social/queue", element: <AdminSocialQueue /> },

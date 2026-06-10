@@ -9,6 +9,7 @@ import {
   cardThemesTable,
   cardTemplatesTable,
   cardLayoutsTable,
+  cardSetsTable,
 } from "@workspace/db";
 import {
   CreateSponsorBody,
@@ -29,9 +30,13 @@ import {
   UpsertCardLayoutBody,
   UpsertCardLayoutParams,
   DeleteCardLayoutParams,
+  CreateCardSetBody,
+  UpdateCardSetBody,
+  UpdateCardSetParams,
+  DeleteCardSetParams,
 } from "@workspace/api-zod";
-import type { CardLayoutLayer } from "@workspace/db";
-import { requireAdmin } from "../middlewares/require-admin";
+import type { CardLayoutLayer, CardSetSlide } from "@workspace/db";
+import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
 import { getHallsHeadBrand } from "../lib/halls-head-brand";
 
@@ -473,6 +478,114 @@ router.delete("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise
     .returning({ id: cardLayoutsTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card layout not found" });
+    return;
+  }
+  res.status(204).end();
+});
+
+// --- Multi-card / carousel sets --------------------------------------------
+// Reading is public, but the public only ever sees PUBLISHED sets; admins see
+// every set (drafts included) so they can keep editing. Authoring (create /
+// update / delete) is admin-only.
+
+// A publishable / exportable carousel must hold between 2 and 10 slides. The
+// upper bound is also enforced by the generated zod body (maxItems: 10); this
+// guards the 2-slide floor, which only applies once a set is published.
+const CARD_SET_MIN_SLIDES = 2;
+const CARD_SET_MAX_SLIDES = 10;
+
+router.get("/card-sets", async (req, res): Promise<void> => {
+  const admin = await resolveAdmin(req);
+  const rows = await db
+    .select()
+    .from(cardSetsTable)
+    .where(admin ? undefined : eq(cardSetsTable.isPublished, true))
+    .orderBy(asc(cardSetsTable.name));
+  res.json(rows);
+});
+
+router.post("/card-sets", requireAdmin, async (req, res): Promise<void> => {
+  const body = CreateCardSetBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const isPublished = body.data.isPublished ?? false;
+  if (
+    isPublished &&
+    (body.data.slides.length < CARD_SET_MIN_SLIDES ||
+      body.data.slides.length > CARD_SET_MAX_SLIDES)
+  ) {
+    res.status(400).json({
+      error: `A published carousel must have between ${CARD_SET_MIN_SLIDES} and ${CARD_SET_MAX_SLIDES} slides`,
+    });
+    return;
+  }
+  const [row] = await db
+    .insert(cardSetsTable)
+    .values({
+      name: body.data.name,
+      platformSize: body.data.platformSize,
+      slides: body.data.slides as unknown as CardSetSlide[],
+      isPublished,
+      updatedAt: new Date(),
+    })
+    .returning();
+  res.status(201).json(row);
+});
+
+router.put("/card-sets/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateCardSetParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpdateCardSetBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const isPublished = body.data.isPublished ?? false;
+  if (
+    isPublished &&
+    (body.data.slides.length < CARD_SET_MIN_SLIDES ||
+      body.data.slides.length > CARD_SET_MAX_SLIDES)
+  ) {
+    res.status(400).json({
+      error: `A published carousel must have between ${CARD_SET_MIN_SLIDES} and ${CARD_SET_MAX_SLIDES} slides`,
+    });
+    return;
+  }
+  const [row] = await db
+    .update(cardSetsTable)
+    .set({
+      name: body.data.name,
+      platformSize: body.data.platformSize,
+      slides: body.data.slides as unknown as CardSetSlide[],
+      isPublished,
+      updatedAt: new Date(),
+    })
+    .where(eq(cardSetsTable.id, params.data.id))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Card set not found" });
+    return;
+  }
+  res.json(row);
+});
+
+router.delete("/card-sets/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeleteCardSetParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const result = await db
+    .delete(cardSetsTable)
+    .where(eq(cardSetsTable.id, params.data.id))
+    .returning({ id: cardSetsTable.id });
+  if (result.length === 0) {
+    res.status(404).json({ error: "Card set not found" });
     return;
   }
   res.status(204).end();

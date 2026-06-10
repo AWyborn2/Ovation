@@ -54,6 +54,8 @@ import type {
   CaptionTemplateInput,
   CardLayout,
   CardLayoutInput,
+  CardSet,
+  CardSetInput,
   CardTemplate,
   CardTemplateInput,
   CardTemplateUpdate,
@@ -10779,6 +10781,296 @@ export const useDeleteCardLayout = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCardLayoutMutationOptions(options));
+    }
+
+export const getListCardSetsUrl = () => {
+
+
+
+
+  return `/api/card-sets`
+}
+
+/**
+ * @summary List all carousel card sets
+ */
+export const listCardSets = async ( options?: RequestInit): Promise<CardSet[]> => {
+
+  return customFetch<CardSet[]>(getListCardSetsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardSetsQueryKey = () => {
+    return [
+    `/api/card-sets`
+    ] as const;
+    }
+
+
+export const getListCardSetsQueryOptions = <TData = Awaited<ReturnType<typeof listCardSets>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardSets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardSetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCardSets>>> = ({ signal }) => listCardSets({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCardSets>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardSetsQueryResult = NonNullable<Awaited<ReturnType<typeof listCardSets>>>
+export type ListCardSetsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all carousel card sets
+ */
+
+export function useListCardSets<TData = Awaited<ReturnType<typeof listCardSets>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardSets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardSetsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCardSetUrl = () => {
+
+
+
+
+  return `/api/card-sets`
+}
+
+/**
+ * @summary Create a new carousel card set
+ */
+export const createCardSet = async (cardSetInput: CardSetInput, options?: RequestInit): Promise<CardSet> => {
+
+  return customFetch<CardSet>(getCreateCardSetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardSetInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardSetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardSet>>, TError,{data: BodyType<CardSetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardSet>>, TError,{data: BodyType<CardSetInput>}, TContext> => {
+
+const mutationKey = ['createCardSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardSet>>, {data: BodyType<CardSetInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardSet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardSetMutationResult = NonNullable<Awaited<ReturnType<typeof createCardSet>>>
+    export type CreateCardSetMutationBody = BodyType<CardSetInput>
+    export type CreateCardSetMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new carousel card set
+ */
+export const useCreateCardSet = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardSet>>, TError,{data: BodyType<CardSetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardSet>>,
+        TError,
+        {data: BodyType<CardSetInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardSetMutationOptions(options));
+    }
+
+export const getUpdateCardSetUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-sets/${id}`
+}
+
+/**
+ * @summary Update a carousel card set (name, size, slides)
+ */
+export const updateCardSet = async (id: number,
+    cardSetInput: CardSetInput, options?: RequestInit): Promise<CardSet> => {
+
+  return customFetch<CardSet>(getUpdateCardSetUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardSetInput,)
+  }
+);}
+
+
+
+
+export const getUpdateCardSetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCardSet>>, TError,{id: number;data: BodyType<CardSetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCardSet>>, TError,{id: number;data: BodyType<CardSetInput>}, TContext> => {
+
+const mutationKey = ['updateCardSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCardSet>>, {id: number;data: BodyType<CardSetInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCardSet(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCardSetMutationResult = NonNullable<Awaited<ReturnType<typeof updateCardSet>>>
+    export type UpdateCardSetMutationBody = BodyType<CardSetInput>
+    export type UpdateCardSetMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a carousel card set (name, size, slides)
+ */
+export const useUpdateCardSet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCardSet>>, TError,{id: number;data: BodyType<CardSetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCardSet>>,
+        TError,
+        {id: number;data: BodyType<CardSetInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateCardSetMutationOptions(options));
+    }
+
+export const getDeleteCardSetUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-sets/${id}`
+}
+
+/**
+ * @summary Delete a carousel card set
+ */
+export const deleteCardSet = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardSetUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCardSetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardSet>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCardSet>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCardSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCardSet>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCardSet(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardSetMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCardSet>>>
+
+    export type DeleteCardSetMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a carousel card set
+ */
+export const useDeleteCardSet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardSet>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCardSet>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCardSetMutationOptions(options));
     }
 
 export const getGetSocialSettingsUrl = () => {
