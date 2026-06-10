@@ -36,7 +36,7 @@ type LbCol = {
 };
 
 const LB_COLS: LbCol[] = [
-  { key: "matches", label: "Mat", title: "Matches", group: "bat", num: (r) => r.matches, render: (r) => r.matches },
+  { key: "matches", label: "Games", title: "Games played (team appearances)", group: "bat", num: (r) => r.matches, render: (r) => r.matches },
   { key: "innings", label: "Inns", title: "Innings batted", group: "bat", num: (r) => r.innings, render: (r) => r.innings },
   { key: "notOuts", label: "NO", title: "Not outs", group: "bat", num: (r) => r.notOuts, render: (r) => r.notOuts },
   { key: "runs", label: "Runs", title: "Runs scored", group: "bat", num: (r) => r.runs, render: (r) => <span className="font-bold">{r.runs}</span> },
@@ -219,7 +219,7 @@ export default function JuniorsPlayers() {
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="px-3 py-2">Player</th>
                     <th className="px-3 py-2">Seasons</th>
-                    <th className="px-3 py-2 text-right">Matches</th>
+                    <th className="px-3 py-2 text-right">Games</th>
                     <th className="px-3 py-2 text-right">Runs</th>
                     <th className="px-3 py-2 text-right">Wickets</th>
                   </tr>
@@ -439,7 +439,7 @@ export default function JuniorsPlayers() {
                   <th className="px-3 py-2 w-10">#</th>
                   <th className="px-3 py-2">Player</th>
                   <th className="px-3 py-2 text-right">Wickets</th>
-                  <th className="px-3 py-2 text-right">Matches</th>
+                  <th className="px-3 py-2 text-right">Games</th>
                   <th className="px-3 py-2 text-right">Best</th>
                   <th className="px-3 py-2 text-right">Econ</th>
                 </tr>

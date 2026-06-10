@@ -588,20 +588,42 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
     .where(and(...conds))
     .orderBy(juniorParticipantsTable.displayName);
 
-  // Aggregate runs / wickets / matches across HH appearances, keyed by pid.
-  const [runsRows, wktsRows, matchRows] = await Promise.all([
+  // Aggregate runs / wickets / games across HH appearances, keyed by pid. The
+  // "matches" column uses the canonical roster-appearances count
+  // (rosterGamesByParticipant) so the directory + Most Games board show the SAME
+  // games figure as every other leaderboard tab, rather than a union of
+  // batting/bowling/roster match ids. All three figures honour the season/age
+  // filter when present (so a filtered row stays internally consistent — games,
+  // runs and wickets all describe the same scope); unfiltered they are all-time,
+  // which is what the always-unfiltered Most Games board reads.
+  const battingAggConds = [
+    eq(juniorMatchBattingTable.isHallsHead, true),
+    isNotNull(juniorMatchBattingTable.participantId),
+  ];
+  const bowlingAggConds = [
+    eq(juniorMatchBowlingTable.isHallsHead, true),
+    isNotNull(juniorMatchBowlingTable.participantId),
+  ];
+  if (season) {
+    battingAggConds.push(eq(juniorMatchesTable.season, season));
+    bowlingAggConds.push(eq(juniorMatchesTable.season, season));
+  }
+  if (ageGroup) {
+    battingAggConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
+    bowlingAggConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
+  }
+  const [runsRows, wktsRows, matchesBy] = await Promise.all([
     db
       .select({
         pid: juniorMatchBattingTable.participantId,
         runs: sql<number>`coalesce(sum(${juniorMatchBattingTable.runs}),0)::int`,
       })
       .from(juniorMatchBattingTable)
-      .where(
-        and(
-          eq(juniorMatchBattingTable.isHallsHead, true),
-          isNotNull(juniorMatchBattingTable.participantId),
-        ),
+      .innerJoin(
+        juniorMatchesTable,
+        eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
       )
+      .where(and(...battingAggConds))
       .groupBy(juniorMatchBattingTable.participantId),
     db
       .select({
@@ -609,34 +631,17 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
         wickets: sql<number>`coalesce(sum(${juniorMatchBowlingTable.wickets}),0)::int`,
       })
       .from(juniorMatchBowlingTable)
-      .where(
-        and(
-          eq(juniorMatchBowlingTable.isHallsHead, true),
-          isNotNull(juniorMatchBowlingTable.participantId),
-        ),
+      .innerJoin(
+        juniorMatchesTable,
+        eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
       )
+      .where(and(...bowlingAggConds))
       .groupBy(juniorMatchBowlingTable.participantId),
-    db.execute(sql`
-      SELECT participant_id AS pid, count(DISTINCT match_id)::int AS matches
-      FROM (
-        SELECT participant_id, match_id FROM junior_match_batting WHERE is_halls_head AND participant_id IS NOT NULL
-        UNION
-        SELECT participant_id, match_id FROM junior_match_bowling WHERE is_halls_head AND participant_id IS NOT NULL
-        UNION
-        SELECT participant_id, match_id FROM junior_match_rosters WHERE is_halls_head AND participant_id IS NOT NULL
-      ) t
-      GROUP BY participant_id
-    `),
+    rosterGamesByParticipant({ season, ageGroup }),
   ]);
 
   const runsBy = new Map(runsRows.map((r) => [r.pid, r.runs]));
   const wktsBy = new Map(wktsRows.map((r) => [r.pid, r.wickets]));
-  const matchesBy = new Map<string, number>(
-    (matchRows.rows as { pid: string; matches: number }[]).map((r) => [
-      r.pid,
-      Number(r.matches),
-    ]),
-  );
 
   res.json(
     participants.map((p) => ({
@@ -931,7 +936,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
       .select({
         participantId: juniorParticipantsTable.participantId,
         displayName: juniorParticipantsTable.displayName,
-        matchId: juniorMatchBattingTable.matchId,
         runs: juniorMatchBattingTable.runs,
         dismissal: juniorMatchBattingTable.dismissal,
       })
@@ -949,7 +953,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
       .select({
         participantId: juniorParticipantsTable.participantId,
         displayName: juniorParticipantsTable.displayName,
-        matchId: juniorMatchBowlingTable.matchId,
         wickets: juniorMatchBowlingTable.wickets,
         runs: juniorMatchBowlingTable.runs,
       })
@@ -968,7 +971,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   type Agg = {
     participantId: string;
     displayName: string;
-    matchIds: Set<number>;
     innings: number;
     notOuts: number;
     runs: number;
@@ -990,7 +992,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
       a = {
         participantId,
         displayName: displayName ?? "",
-        matchIds: new Set(),
         innings: 0,
         notOuts: 0,
         runs: 0,
@@ -1012,7 +1013,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 
   for (const r of battingRows) {
     const a = ensure(r.participantId, r.displayName);
-    a.matchIds.add(r.matchId);
     a.innings += 1;
     const runs = r.runs ?? 0;
     a.runs += runs;
@@ -1025,7 +1025,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 
   for (const r of bowlingRows) {
     const a = ensure(r.participantId, r.displayName);
-    a.matchIds.add(r.matchId);
     a.hasBowled = true;
     const wkts = r.wickets ?? 0;
     const conceded = r.runs ?? 0;
@@ -1039,10 +1038,15 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
     }
   }
 
+  // Canonical Games (roster appearances) under the same season/age scope, so the
+  // "Mat" column matches the directory / Most Games / Most Wickets tabs instead
+  // of counting only matches batted (which under-counts roster appearances).
+  const rosterGames = await rosterGamesByParticipant({ season, ageGroup });
+
   const rows = Array.from(aggByPlayer.values()).map((a) => ({
     participantId: a.participantId,
     displayName: a.displayName,
-    matches: a.matchIds.size,
+    matches: rosterGames.get(a.participantId) ?? 0,
     innings: a.innings,
     notOuts: a.notOuts,
     runs: a.runs,
@@ -1435,6 +1439,45 @@ router.patch(
 // filters are available; the 1:1 join never changes the aggregate when unfiltered.
 type LeaderScope = { season?: string; ageGroup?: string };
 
+/**
+ * Canonical "Games" per HH participant: the count of DISTINCT matches the player
+ * was named in the team roster. This is the single source of truth for every
+ * game/match column across the junior leaderboards so a player shows the SAME
+ * number on every tab (the roster is the true appearance record — a player can
+ * be in the XI without batting or bowling, so batting-innings or bowling-spell
+ * counts under-count appearances). Unscoped it equals
+ * junior_participants.roster_appearances; with a season/age scope it counts only
+ * matches in that scope, so the figure tracks whatever filter the tab applies.
+ * Opposition lines have is_halls_head = false and are excluded.
+ */
+async function rosterGamesByParticipant(
+  scope: LeaderScope = {},
+): Promise<Map<string, number>> {
+  const conds = [
+    eq(juniorMatchRostersTable.isHallsHead, true),
+    isNotNull(juniorMatchRostersTable.participantId),
+  ];
+  if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
+  if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
+  const rows = await db
+    .select({
+      pid: juniorMatchRostersTable.participantId,
+      games: sql<number>`count(distinct ${juniorMatchRostersTable.matchId})::int`,
+    })
+    .from(juniorMatchRostersTable)
+    .innerJoin(
+      juniorMatchesTable,
+      eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId),
+    )
+    .where(and(...conds))
+    .groupBy(juniorMatchRostersTable.participantId);
+  return new Map(
+    rows
+      .filter((r): r is { pid: string; games: number } => r.pid != null)
+      .map((r) => [r.pid, Number(r.games)]),
+  );
+}
+
 async function battingLeaders(limit: number, scope: LeaderScope = {}) {
   const conds = [
     eq(juniorMatchBattingTable.isHallsHead, true),
@@ -1487,7 +1530,6 @@ async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
       participantId: juniorParticipantsTable.participantId,
       displayName: juniorParticipantsTable.displayName,
       wickets: sql<number>`coalesce(sum(${juniorMatchBowlingTable.wickets}),0)::int`,
-      matches: sql<number>`count(distinct ${juniorMatchBowlingTable.matchId})::int`,
       bestWickets: sql<number>`max(${juniorMatchBowlingTable.wickets})`,
       runs: sql<number>`coalesce(sum(${juniorMatchBowlingTable.runs}),0)::int`,
       // Ball notation → balls (whole*6 + tenths) before summing, not decimal overs.
@@ -1507,11 +1549,14 @@ async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
     .having(sql`sum(${juniorMatchBowlingTable.wickets}) > 0`)
     .orderBy(sql`sum(${juniorMatchBowlingTable.wickets}) desc nulls last`)
     .limit(limit);
+  // Canonical Games (roster appearances) under the same scope — NOT distinct
+  // bowling matches, so "Matches" matches every other tab for the same player.
+  const rosterGames = await rosterGamesByParticipant(scope);
   return rows.map((r) => ({
     participantId: r.participantId,
     displayName: r.displayName ?? "",
     wickets: r.wickets,
-    matches: r.matches,
+    matches: rosterGames.get(r.participantId) ?? 0,
     bestWickets: r.bestWickets,
     economy:
       r.balls > 0

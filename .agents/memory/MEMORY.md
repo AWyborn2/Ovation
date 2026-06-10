@@ -51,3 +51,4 @@
 - [Raw SQL bigint sums return as strings](raw-sql-bigint-strings.md) — db.execute SUM/int8/numeric arrive as JS strings; cast aggregates ::int or client totals string-concatenate.
 - [Non-player people profiles](non-player-people.md) — club_roles links EITHER playerId OR nonPlayerId (mutual exclusivity UI-only); non_player_people = lightweight bio for officials who never played; public /people/:id + admin /admin/people.
 - [Cricket-club admin consolidated groups](admin-consolidated-groups.md) — web admin is 6 entries + Hub; 4 are shadcn-Tabs group pages with URL-driven deep-linkable tabs; old flat /admin/* URLs redirect; leaf pages drop their own h1.
+- [Junior "Games" consistency](junior-games-consistency.md) — canonical junior games = distinct HH roster appearances via rosterGamesByParticipant; every junior tab uses it; directory scopes games+runs+wickets together when filtered.
