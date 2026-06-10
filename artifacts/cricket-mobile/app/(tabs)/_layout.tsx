@@ -1,9 +1,26 @@
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 
+import { useOnboarding } from "@/components/onboarding-provider";
 import { useColors } from "@/hooks/useColors";
+
+function HelpButton() {
+  const colors = useColors();
+  const { showWelcome } = useOnboarding();
+  return (
+    <TouchableOpacity
+      onPress={showWelcome}
+      hitSlop={12}
+      style={{ marginRight: 16 }}
+      accessibilityRole="button"
+      accessibilityLabel="Open help and app tour"
+    >
+      <Feather name="help-circle" size={22} color={colors.primary} />
+    </TouchableOpacity>
+  );
+}
 
 export default function TabLayout() {
   const colors = useColors();
@@ -53,6 +70,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Feather name="home" size={22} color={color} />
           ),
+          headerRight: () => <HelpButton />,
         }}
       />
       <Tabs.Screen

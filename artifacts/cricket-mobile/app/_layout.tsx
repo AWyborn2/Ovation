@@ -20,6 +20,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OnboardingProvider } from "@/components/onboarding-provider";
 import colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -86,7 +87,9 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <RootLayoutNav />
+              <OnboardingProvider>
+                <RootLayoutNav />
+              </OnboardingProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
