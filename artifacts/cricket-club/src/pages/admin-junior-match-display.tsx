@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { LoadingState, QueryError } from "@/components/data-states";
 
 type SeasonMode = JuniorMatchDisplaySettings["defaultSeasonMode"];
 
@@ -34,8 +35,10 @@ export default function AdminJuniorMatchDisplay() {
         </p>
       </div>
 
-      {settingsQ.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      {settingsQ.isError ? (
+        <QueryError onRetry={() => settingsQ.refetch()} />
+      ) : settingsQ.isLoading ? (
+        <LoadingState label="Loading junior match display settings…" />
       ) : settingsQ.data ? (
         <SettingsCard
           settings={settingsQ.data}
@@ -46,7 +49,7 @@ export default function AdminJuniorMatchDisplay() {
           }
         />
       ) : (
-        <div className="text-sm text-destructive">Failed to load settings.</div>
+        <QueryError onRetry={() => settingsQ.refetch()} />
       )}
     </div>
   );

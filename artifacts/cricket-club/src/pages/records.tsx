@@ -20,6 +20,7 @@ import { Award, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
 import { GradeBadge, GradeBadgeList, sortGradesBySeniority } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
 import type { ShareCardInput } from "@/lib/share-card";
+import { CardGridSkeleton, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 type Tab = "total" | "by-grade" | "partnerships" | "centuries" | "five-for";
 
@@ -287,7 +288,7 @@ const TableShell = ({
 }) => (
   <div className="bg-card border border-border rounded-md overflow-hidden shadow-md">
     {empty ? (
-      <div className="p-12 text-center text-muted-foreground">No records yet.</div>
+      <EmptyState title="No records yet" message="Records appear here as data is imported." />
     ) : (
       <div className="overflow-x-auto">
         <table className="w-full text-sm sticky-id-col">
@@ -339,7 +340,7 @@ const PartnershipsSection = ({
   settings: RecordsDisplaySettings | undefined;
   gradeRank: (g: string) => number;
 }) => {
-  const { data, isLoading } = useGetPartnerships();
+  const { data, isLoading, isError, refetch } = useGetPartnerships();
   const records = useMemo(() => data?.records ?? [], [data]);
   const fiftyPlus = useMemo(() => data?.fiftyPlus ?? [], [data]);
 
@@ -393,8 +394,11 @@ const PartnershipsSection = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fiftyPlus, grade, fiftySort]);
 
+  if (isError) {
+    return <QueryError onRetry={() => refetch()} />;
+  }
   if (isLoading) {
-    return <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>;
+    return <TableSkeleton />;
   }
 
   const row = (p: PartnershipRecord) => (
@@ -460,7 +464,7 @@ const CenturiesSection = ({
   gradeRank: (g: string) => number;
   grades: string[];
 }) => {
-  const { data, isLoading } = useListCenturies();
+  const { data, isLoading, isError, refetch } = useListCenturies();
   const all = useMemo(() => data ?? [], [data]);
   const [grade, setGrade] = useState<string>("");
   const [sort, onSort] = useSort(parseSort(settings?.centuriesSort, "season"));
@@ -481,8 +485,11 @@ const CenturiesSection = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [all, grade, sort]);
 
+  if (isError) {
+    return <QueryError onRetry={() => refetch()} />;
+  }
   if (isLoading) {
-    return <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>;
+    return <TableSkeleton />;
   }
 
   return (
@@ -521,7 +528,7 @@ const FiveForSection = ({
   gradeRank: (g: string) => number;
   grades: string[];
 }) => {
-  const { data, isLoading } = useListFiveWicketHauls();
+  const { data, isLoading, isError, refetch } = useListFiveWicketHauls();
   const all = useMemo(() => data ?? [], [data]);
   const [grade, setGrade] = useState<string>("");
   const [sort, onSort] = useSort(parseSort(settings?.fiveForSort, "season"));
@@ -542,8 +549,11 @@ const FiveForSection = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [all, grade, sort]);
 
+  if (isError) {
+    return <QueryError onRetry={() => refetch()} />;
+  }
   if (isLoading) {
-    return <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>;
+    return <TableSkeleton />;
   }
 
   return (
@@ -582,7 +592,7 @@ export default function Records() {
   const [tabApplied, setTabApplied] = useState(false);
   const [gradeApplied, setGradeApplied] = useState(false);
 
-  const { data: records, isLoading: loadingTotal } = useGetRecords();
+  const { data: records, isLoading: loadingTotal, isError: errorTotal, refetch: refetchTotal } = useGetRecords();
   const { data: gradesList } = useListGrades();
   const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
 
@@ -611,7 +621,7 @@ export default function Records() {
     setGradeApplied(true);
   }, [grades, settingsSettled, settings, gradeApplied]);
 
-  const { data: gradeStats, isLoading: loadingGrade } = useGetGradeLeaderboard(selectedGrade, {
+  const { data: gradeStats, isLoading: loadingGrade, isError: errorGrade, refetch: refetchGrade } = useGetGradeLeaderboard(selectedGrade, {
     query: { enabled: tab === "by-grade" && !!selectedGrade, queryKey: getGetGradeLeaderboardQueryKey(selectedGrade) },
   });
 
@@ -637,6 +647,8 @@ export default function Records() {
 
   const rows = tab === "total" ? totalRows : gradeRows;
   const loading = tab === "total" ? loadingTotal : loadingGrade;
+  const error = tab === "total" ? errorTotal : errorGrade;
+  const refetch = tab === "total" ? refetchTotal : refetchGrade;
 
   return (
     <div className="space-y-6">
@@ -704,8 +716,10 @@ export default function Records() {
         <CenturiesSection settings={settings} gradeRank={gradeRank} grades={grades} />
       ) : tab === "five-for" ? (
         <FiveForSection settings={settings} gradeRank={gradeRank} grades={grades} />
+      ) : error ? (
+        <QueryError onRetry={() => refetch()} />
       ) : loading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">Loading…</div>
+        <CardGridSkeleton count={8} className="lg:grid-cols-4" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {rows.map((r) => <RecordCard key={r.title} row={r} />)}

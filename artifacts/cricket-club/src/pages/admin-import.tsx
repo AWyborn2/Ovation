@@ -32,6 +32,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Mode = "csv" | "match" | "batch";
 
@@ -331,6 +333,7 @@ function NetEffectPanel({
 export default function AdminImport() {
   const queryClient = useQueryClient();
   const invalidateAdmin = useInvalidateAdmin();
+  const confirm = useConfirm();
   const [mode, setMode] = useState<Mode>("csv");
   const [file, setFile] = useState<File | null>(null);
   const [season, setSeason] = useState<number>(new Date().getFullYear());
@@ -374,7 +377,12 @@ export default function AdminImport() {
     setResolutions(seed);
   };
 
-  const { data: imports, refetch: refetchImports } = useListImports();
+  const {
+    data: imports,
+    refetch: refetchImports,
+    isError: importsError,
+    isLoading: importsLoading,
+  } = useListImports();
   const commit = useCommitImport();
   const del = useDeleteImport();
   const undoSeason = useUndoSeason();
@@ -700,8 +708,17 @@ export default function AdminImport() {
     );
   };
 
-  const onDeleteImport = (id: number) => {
-    if (!confirm("Delete this import? Aggregates will be re-derived without its contribution.")) return;
+  const onDeleteImport = async (id: number) => {
+    if (
+      !(await confirm({
+        title: "Delete import",
+        description:
+          "Delete this import? Aggregates will be re-derived without its contribution.",
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
     del.mutate(
       { id },
       {
@@ -1418,8 +1435,15 @@ export default function AdminImport() {
           <CardTitle>Past imports</CardTitle>
         </CardHeader>
         <CardContent>
-          {!imports || imports.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No imports yet.</p>
+          {importsError ? (
+            <QueryError onRetry={() => refetchImports()} />
+          ) : importsLoading ? (
+            <TableSkeleton />
+          ) : !imports || imports.length === 0 ? (
+            <EmptyState
+              title="No imports yet"
+              message="Imported seasons and matches will appear here."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -1478,20 +1502,25 @@ function UndoSeasonCard({
   disabled: boolean;
   onUndo: (grade: string, season: number) => Promise<string>;
 }) {
+  const confirm = useConfirm();
   const [grade, setGrade] = useState<string>(GRADES[0]);
   const [season, setSeason] = useState<number>(new Date().getFullYear());
   const [result, setResult] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const run = () => {
+  const run = async () => {
     setResult(null);
     setErr(null);
     if (
-      !confirm(
-        `Undo every match imported for ${grade} ${seasonLabel(season)}? ` +
+      !(await confirm({
+        title: "Undo season's matches",
+        description:
+          `Undo every match imported for ${grade} ${seasonLabel(season)}? ` +
           "This removes those matches, rolls back the season totals, any auto-created caps, " +
           "and players who no longer have any games.",
-      )
+        confirmText: "Undo",
+        destructive: true,
+      }))
     )
       return;
     onUndo(grade, season)

@@ -33,6 +33,8 @@ import type { CardKind } from "@/lib/share-card";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { CardKindPicker } from "@/components/card-kind-picker";
 import { TemplatesCard } from "@/components/card-template-builder";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const ENGINES: { value: "ondemand" | "milestone" | "roundup" | "recap"; label: string; desc: string }[] = [
   { value: "ondemand", label: "On-demand share", desc: "Share buttons on player, record and leaderboard pages." },
@@ -76,8 +78,10 @@ export default function AdminSocial() {
         </p>
       </div>
 
-      {bundle.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      {bundle.isError ? (
+        <QueryError onRetry={() => bundle.refetch()} />
+      ) : bundle.isLoading ? (
+        <LoadingState label="Loading social settings…" />
       ) : bundle.data ? (
         <>
           <SettingsCard settings={bundle.data.settings} onSaved={invalidate} />
@@ -90,7 +94,7 @@ export default function AdminSocial() {
           />
         </>
       ) : (
-        <div className="text-sm text-destructive">Failed to load settings.</div>
+        <QueryError onRetry={() => bundle.refetch()} />
       )}
     </div>
   );
@@ -243,6 +247,7 @@ function SponsorsCard({
   sponsors: Sponsor[];
   onChanged: () => void;
 }) {
+  const confirm = useConfirm();
   const create = useCreateSponsor({ mutation: { onSuccess: onChanged } });
   const remove = useDeleteSponsor({ mutation: { onSuccess: onChanged } });
   const update = useUpdateSponsor({ mutation: { onSuccess: onChanged } });
@@ -389,7 +394,10 @@ function SponsorsCard({
 
         <div className="space-y-2">
           {sponsors.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No sponsors yet.</div>
+            <EmptyState
+              title="No sponsors yet"
+              message="Add a sponsor above to feature their logo on share cards."
+            />
           ) : (
             sponsors.map((s) => (
               <div key={s.id} className="border rounded p-2 space-y-2">
@@ -415,8 +423,16 @@ function SponsorsCard({
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => {
-                      if (confirm(`Delete sponsor "${s.name}"?`)) remove.mutate({ id: s.id });
+                    onClick={async () => {
+                      if (
+                        await confirm({
+                          title: "Delete sponsor",
+                          description: `Delete sponsor "${s.name}"?`,
+                          confirmText: "Delete",
+                          destructive: true,
+                        })
+                      )
+                        remove.mutate({ id: s.id });
                     }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -451,6 +467,7 @@ function ThemesCard({
   themes: CardTheme[];
   onChanged: () => void;
 }) {
+  const confirm = useConfirm();
   const create = useCreateCardTheme({ mutation: { onSuccess: onChanged } });
   const update = useUpdateCardTheme({ mutation: { onSuccess: onChanged } });
   const remove = useDeleteCardTheme({ mutation: { onSuccess: onChanged } });
@@ -603,7 +620,10 @@ function ThemesCard({
 
         <div className="space-y-2">
           {themes.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No themes yet.</div>
+            <EmptyState
+              title="No themes yet"
+              message="Create a theme above to restyle your share cards."
+            />
           ) : (
             themes.map((t) => (
               <div key={t.id} className="flex items-center gap-3 border rounded p-2">
@@ -639,8 +659,16 @@ function ThemesCard({
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => {
-                    if (confirm(`Delete theme "${t.name}"?`)) remove.mutate({ id: t.id });
+                  onClick={async () => {
+                    if (
+                      await confirm({
+                        title: "Delete theme",
+                        description: `Delete theme "${t.name}"?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      })
+                    )
+                      remove.mutate({ id: t.id });
                   }}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />

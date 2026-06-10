@@ -11,6 +11,7 @@ import {
   type JuniorLeaderboardRow,
 } from "@workspace/api-client-react";
 import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
+import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 type Tab = "directory" | "leaderboard" | "runs" | "wickets" | "games" | "innings" | "bowling";
 
@@ -72,7 +73,7 @@ export default function JuniorsPlayers() {
   const listSeason = inDirectory ? seasonArg : undefined;
   const listAge = inDirectory ? ageArg : undefined;
 
-  const { data: players, isLoading: playersLoading } = useListJuniorPlayers(
+  const { data: players, isLoading: playersLoading, isError: playersError, refetch: refetchPlayers } = useListJuniorPlayers(
     { search: listSearch, season: listSeason, ageGroup: listAge },
     {
       query: {
@@ -90,7 +91,7 @@ export default function JuniorsPlayers() {
     [players],
   );
 
-  const { data: leaderboards, isLoading: lbLoading } = useGetJuniorLeaderboards({
+  const { data: leaderboards, isLoading: lbLoading, isError: lbError, refetch: refetchLb } = useGetJuniorLeaderboards({
     query: {
       enabled: tab !== "directory" && tab !== "games" && tab !== "leaderboard",
       queryKey: getGetJuniorLeaderboardsQueryKey(),
@@ -101,7 +102,7 @@ export default function JuniorsPlayers() {
   // and name search happen client-side over that result set.
   const inLeaderboard = tab === "leaderboard";
   const richParams = { season: seasonArg, ageGroup: ageArg };
-  const { data: richRows, isLoading: richLoading } = useListJuniorLeaderboard(richParams, {
+  const { data: richRows, isLoading: richLoading, isError: richError, refetch: refetchRich } = useListJuniorLeaderboard(richParams, {
     query: { enabled: inLeaderboard, queryKey: getListJuniorLeaderboardQueryKey(richParams) },
   });
 
@@ -208,10 +209,12 @@ export default function JuniorsPlayers() {
             </div>
           </div>
 
-          {playersLoading ? (
-            <div className="p-8 text-center">Loading...</div>
+          {playersError ? (
+            <QueryError onRetry={() => refetchPlayers()} />
+          ) : playersLoading ? (
+            <TableSkeleton />
           ) : !players || players.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No junior players found.</div>
+            <EmptyState title="No junior players found" message="No junior players match these filters." />
           ) : (
             <div className="overflow-x-auto bg-card border border-border rounded-md">
               <table className="w-full text-sm">
@@ -290,10 +293,12 @@ export default function JuniorsPlayers() {
             </div>
           </div>
 
-          {richLoading ? (
-            <div className="p-8 text-center">Loading...</div>
+          {richError ? (
+            <QueryError onRetry={() => refetchRich()} />
+          ) : richLoading ? (
+            <TableSkeleton />
           ) : sortedRich.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No junior leaderboard data for this filter.</div>
+            <EmptyState title="No leaderboard data" message="No junior leaderboard data for this filter." />
           ) : (
             <div className="overflow-x-auto bg-card border border-border rounded-md">
               <table className="w-full text-sm whitespace-nowrap">
@@ -361,10 +366,12 @@ export default function JuniorsPlayers() {
           )}
         </>
       ) : tab === "games" ? (
-        playersLoading ? (
-          <div className="p-8 text-center">Loading...</div>
+        playersError ? (
+          <QueryError onRetry={() => refetchPlayers()} />
+        ) : playersLoading ? (
+          <TableSkeleton />
         ) : gamesRanked.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">No leaderboard data available.</div>
+          <EmptyState title="No leaderboard data" message="No junior games data is available yet." />
         ) : (
           <div className="overflow-x-auto bg-card border border-border rounded-md">
             <table className="w-full text-sm">
@@ -395,10 +402,12 @@ export default function JuniorsPlayers() {
             </table>
           </div>
         )
+      ) : lbError ? (
+        <QueryError onRetry={() => refetchLb()} />
       ) : lbLoading ? (
-        <div className="p-8 text-center">Loading...</div>
+        <TableSkeleton />
       ) : !leaderboards ? (
-        <div className="p-8 text-center text-muted-foreground">No leaderboard data available.</div>
+        <EmptyState title="No leaderboard data" message="No junior leaderboard data is available yet." />
       ) : (
         <div className="overflow-x-auto bg-card border border-border rounded-md">
           {tab === "runs" && (

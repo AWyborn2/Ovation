@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type FormPlayer = {
   playerId: number | null;
@@ -49,7 +51,8 @@ const emptyForm = (): FormValues => ({
 
 export default function AdminPremierships() {
   const qc = useQueryClient();
-  const { data, isLoading } = useListPremierships();
+  const confirm = useConfirm();
+  const { data, isLoading, isError, refetch } = useListPremierships();
   const create = useCreatePremiership();
   const update = useUpdatePremiership();
   const del = useDeletePremiership();
@@ -93,10 +96,17 @@ export default function AdminPremierships() {
         />
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
+      ) : !data?.length ? (
+        <EmptyState
+          title="No premierships yet"
+          message="Add a premiership to record the club's flags."
+        />
       ) : (
-        data?.map((p) => (
+        data.map((p) => (
           <Card key={p.id}>
             <CardHeader className="flex flex-row justify-between items-start gap-3">
               <CardTitle>
@@ -113,8 +123,16 @@ export default function AdminPremierships() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    if (!confirm(`Delete the ${p.year} ${p.grade} premiership?`)) return;
+                  onClick={async () => {
+                    if (
+                      !(await confirm({
+                        title: "Delete premiership",
+                        description: `Delete the ${p.year} ${p.grade} premiership?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
+                    )
+                      return;
                     setError(null);
                     del.mutate({ id: p.id }, { onSuccess: invalidate, onError: onErr });
                   }}

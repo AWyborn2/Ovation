@@ -29,6 +29,8 @@ import type { CardKind, MotionPreset } from "@/lib/share-card";
 import { fieldsForKinds, fieldLabel } from "@/lib/card-template";
 import { CardKindPicker } from "@/components/card-kind-picker";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -87,6 +89,7 @@ const toDraft = (t: CardTemplate): DraftTemplate => ({
 
 export function TemplatesCard() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const templatesQ = useListCardTemplates();
   const templates = templatesQ.data ?? [];
   const invalidate = () =>
@@ -127,8 +130,15 @@ export function TemplatesCard() {
               setEditing(null);
             }}
           />
+        ) : templatesQ.isError ? (
+          <QueryError onRetry={() => templatesQ.refetch()} />
+        ) : templatesQ.isLoading ? (
+          <ListSkeleton />
         ) : templates.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No templates yet.</div>
+          <EmptyState
+            title="No templates yet"
+            message="Create a template to customise your share-card designs."
+          />
         ) : (
           <div className="space-y-2">
             {templates.map((t) => (
@@ -183,8 +193,16 @@ export function TemplatesCard() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => {
-                    if (confirm(`Delete template "${t.name}"?`)) remove.mutate({ id: t.id });
+                  onClick={async () => {
+                    if (
+                      await confirm({
+                        title: "Delete template",
+                        description: `Delete template "${t.name}"?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      })
+                    )
+                      remove.mutate({ id: t.id });
                   }}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />

@@ -25,12 +25,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { ListSkeleton, EmptyState, QueryError, LoadingState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 import { TradingCardModal } from "@/components/trading-card";
 import { CARD_ROLES, deriveRole } from "@/lib/trading-card";
 import { aggregateCareer } from "@/lib/honour-boards";
 
 export default function AdminPlayers() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export default function AdminPlayers() {
   const [newSurname, setNewSurname] = useState("");
   const [newGiven, setNewGiven] = useState("");
 
-  const { data, isLoading } = useListPlayers({
+  const { data, isLoading, isError, refetch } = useListPlayers({
     search: search || undefined,
     page,
     limit: 25,
@@ -118,9 +121,17 @@ export default function AdminPlayers() {
             className="max-w-md"
           />
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <ListSkeleton rows={8} />
+          ) : isError ? (
+            <QueryError
+              message="We couldn’t load the players list. Please try again."
+              onRetry={() => refetch()}
+            />
           ) : !data?.players.length ? (
-            <p className="text-sm text-muted-foreground italic">No players.</p>
+            <EmptyState
+              title="No players found"
+              message={search ? "No players match your search." : "Add a player to get started."}
+            />
           ) : (
             <div className="space-y-2">
               {data.players.map((p) => (
@@ -134,15 +145,26 @@ export default function AdminPlayers() {
                       { onSuccess: invalidate, onError: onErr },
                     )
                   }
-                  onDelete={() => {
+                  onDelete={async () => {
                     if ((p.totalGames ?? 0) > 0 || (p.totalRuns ?? 0) > 0 || (p.totalWickets ?? 0) > 0) {
                       if (
-                        !confirm(
-                          `${p.surname}, ${p.givenName} has stats. Deleting will cascade those stats. Continue?`,
-                        )
+                        !(await confirm({
+                          title: "Delete player with stats?",
+                          description: `${p.surname}, ${p.givenName} has stats. Deleting will cascade those stats. Continue?`,
+                          confirmText: "Delete",
+                          destructive: true,
+                        }))
                       )
                         return;
-                    } else if (!confirm(`Delete ${p.surname}, ${p.givenName}?`)) return;
+                    } else if (
+                      !(await confirm({
+                        title: "Delete player?",
+                        description: `Delete ${p.surname}, ${p.givenName}?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
+                    )
+                      return;
                     setError(null);
                     deletePlayer.mutate(
                       { id: p.id },
@@ -411,7 +433,7 @@ function PlayerGallery({ playerId }: { playerId: number }) {
       </div>
       {galleryError && <p className="text-xs text-destructive">{galleryError}</p>}
       {isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading…</p>
+        <LoadingState label="Loading photos…" className="py-4" />
       ) : !images || images.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No photos yet. Add one — the first becomes the default.

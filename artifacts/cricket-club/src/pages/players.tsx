@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { GradeBadgeListFromString } from "@/components/grade-badge";
+import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 export default function Players() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useListPlayers({ search, page, limit: 20 });
+  const { data, isLoading, isError, refetch } = useListPlayers({ search, page, limit: 20 });
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [surname, setSurname] = useState("");
   const [givenName, setGivenName] = useState("");
@@ -70,10 +71,15 @@ export default function Players() {
         />
       </div>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1,2,3].map(i => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
-        </div>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <TableSkeleton />
+      ) : !data?.players.length ? (
+        <EmptyState
+          title="No players found"
+          message="Try a different search, or add a player to get started."
+        />
       ) : (
         <div className="bg-card rounded-lg border shadow-sm overflow-x-auto">
           <table className="w-full text-sm">

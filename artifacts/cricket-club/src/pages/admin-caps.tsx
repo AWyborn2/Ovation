@@ -17,10 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 export default function AdminCaps() {
   const queryClient = useQueryClient();
-  const { data: caps, isLoading } = useListCaps();
+  const confirm = useConfirm();
+  const { data: caps, isLoading, isError, refetch } = useListCaps();
   const createCap = useCreateCap();
   const updateCap = useUpdateCap();
   const deleteCap = useDeleteCap();
@@ -142,10 +145,15 @@ export default function AdminCaps() {
             className="max-w-md"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+          {isError ? (
+            <QueryError onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <TableSkeleton />
           ) : !filtered.length ? (
-            <p className="text-sm text-muted-foreground italic">No cap entries.</p>
+            <EmptyState
+              title="No cap entries"
+              message="No caps match this list or filter yet."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -210,8 +218,16 @@ export default function AdminCaps() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              if (!confirm(`Delete cap #${cap.capNumber} (${cap.name})?`)) return;
+                            onClick={async () => {
+                              if (
+                                !(await confirm({
+                                  title: "Delete cap entry",
+                                  description: `Delete cap #${cap.capNumber} (${cap.name})?`,
+                                  confirmText: "Delete",
+                                  destructive: true,
+                                }))
+                              )
+                                return;
                               setError(null);
                               deleteCap.mutate(
                                 { id: cap.id },

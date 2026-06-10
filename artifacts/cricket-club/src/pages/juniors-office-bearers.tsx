@@ -6,6 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { Users } from "lucide-react";
 import { JUNIOR_ACCENT } from "@/lib/juniors";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 function formatSeason(year: number): string {
   const next = (year + 1) % 100;
@@ -45,7 +46,7 @@ const BearerName = ({ bearer }: { bearer: JuniorOfficeBearer }) =>
 type SeasonGroup = { season: number; bearers: JuniorOfficeBearer[] };
 
 export default function JuniorsOfficeBearers() {
-  const { data: bearers, isLoading } = useListJuniorOfficeBearers();
+  const { data: bearers, isLoading, isError, refetch } = useListJuniorOfficeBearers();
 
   const seasons = useMemo<SeasonGroup[]>(() => {
     const bySeason = new Map<number, JuniorOfficeBearer[]>();
@@ -81,14 +82,15 @@ export default function JuniorsOfficeBearers() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
-          Loading office bearers…
-        </div>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : seasons.length === 0 ? (
-        <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-          No junior office bearers have been published yet.
-        </div>
+        <EmptyState
+          title="No office bearers yet"
+          message="No junior office bearers have been published yet."
+        />
       ) : (
         <div className="grid gap-4">
           {seasons.map((g) => (

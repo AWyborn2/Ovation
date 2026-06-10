@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { STAT_CATALOG, CARD_ROLES, type CardRole } from "@/lib/trading-card";
+import { LoadingState, QueryError } from "@/components/data-states";
 
 export default function AdminTradingCards() {
   const qc = useQueryClient();
@@ -30,8 +31,10 @@ export default function AdminTradingCards() {
         </p>
       </div>
 
-      {settingsQ.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      {settingsQ.isError ? (
+        <QueryError onRetry={() => settingsQ.refetch()} />
+      ) : settingsQ.isLoading ? (
+        <LoadingState label="Loading trading card settings…" />
       ) : settingsQ.data ? (
         <SettingsCard
           settings={settingsQ.data}
@@ -43,7 +46,7 @@ export default function AdminTradingCards() {
           }
         />
       ) : (
-        <div className="text-sm text-destructive">Failed to load settings.</div>
+        <QueryError onRetry={() => settingsQ.refetch()} />
       )}
     </div>
   );

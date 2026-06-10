@@ -37,6 +37,13 @@ import {
 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { navIcon, NAV_ICON_MAP } from "@/lib/nav-icons";
+import {
+  ListSkeleton,
+  LoadingState,
+  QueryError,
+  EmptyState,
+} from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const SURFACES: { surface: NavSurface; title: string; blurb: string; hasDescription: boolean; section: "senior" | "junior" | "admin" }[] = [
   {
@@ -82,8 +89,10 @@ export default function AdminNav() {
         </p>
       </div>
 
-      {optionsQ.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      {optionsQ.isError ? (
+        <QueryError onRetry={() => optionsQ.refetch()} />
+      ) : optionsQ.isLoading ? (
+        <ListSkeleton />
       ) : optionsQ.data ? (
         <div className="space-y-8">
           {SURFACES.map((s) => (
@@ -169,10 +178,12 @@ function SurfaceSection({ config, options }: { config: SurfaceConfig; options: N
       </CardHeader>
       <CardContent className="space-y-3">
         {error && <div className="text-sm text-destructive">{error}</div>}
-        {listQ.isLoading ? (
-          <div className="text-sm text-muted-foreground">Loading items…</div>
+        {listQ.isError ? (
+          <QueryError onRetry={() => listQ.refetch()} />
+        ) : listQ.isLoading ? (
+          <LoadingState label="Loading items…" />
         ) : items.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No items yet.</div>
+          <EmptyState title="No items yet" message="Add an item to this menu." />
         ) : (
           <div className="space-y-2">
             {items.map((item, idx) => (
@@ -246,6 +257,7 @@ function NavItemRow({
   onDrop: () => void;
   onDragEnd: () => void;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const update = useUpdateNavItem();
@@ -260,8 +272,16 @@ function NavItemRow({
     );
   };
 
-  const remove = () => {
-    if (!confirm(`Delete "${item.label}"?`)) return;
+  const remove = async () => {
+    if (
+      !(await confirm({
+        title: "Delete item",
+        description: `Delete "${item.label}"?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
     setError(null);
     del.mutate(
       { id: item.id },

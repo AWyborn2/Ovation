@@ -19,10 +19,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 export default function AdminHonourBoards() {
   const qc = useQueryClient();
-  const { data: boards, isLoading } = useListHonourBoards();
+  const confirm = useConfirm();
+  const { data: boards, isLoading, isError, refetch } = useListHonourBoards();
   const createBoard = useCreateHonourBoard();
   const updateBoard = useUpdateHonourBoard();
   const deleteBoard = useDeleteHonourBoard();
@@ -64,10 +67,17 @@ export default function AdminHonourBoards() {
         />
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
+      ) : !boards?.length ? (
+        <EmptyState
+          title="No honour boards yet"
+          message="Add a board to start recording club honours."
+        />
       ) : (
-        boards?.map((b) => (
+        boards.map((b) => (
           <Card key={b.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-3">
               <div>
@@ -87,8 +97,16 @@ export default function AdminHonourBoards() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    if (!confirm(`Delete honour board "${b.label}"?`)) return;
+                  onClick={async () => {
+                    if (
+                      !(await confirm({
+                        title: "Delete honour board",
+                        description: `Delete honour board "${b.label}"?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
+                    )
+                      return;
                     setError(null);
                     deleteBoard.mutate(
                       { key: b.key },

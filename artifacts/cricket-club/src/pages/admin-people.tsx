@@ -13,12 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type PersonFormValues = { name: string; bio: string };
 
 export default function AdminPeople() {
   const queryClient = useQueryClient();
-  const { data: people, isLoading } = useListPeople();
+  const confirm = useConfirm();
+  const { data: people, isLoading, isError, refetch } = useListPeople();
   const createPerson = useCreatePerson();
   const updatePerson = useUpdatePerson();
   const deletePerson = useDeletePerson();
@@ -88,14 +91,15 @@ export default function AdminPeople() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : (people ?? []).length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No non-player people yet.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No non-player people yet"
+          message="Add a club official who never played to link them on committee or captain rows."
+        />
       ) : (
         <Card>
           <CardContent className="space-y-2 pt-6">
@@ -158,11 +162,14 @@ export default function AdminPeople() {
                       size="sm"
                       variant="outline"
                       disabled={deletePerson.isPending}
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          !confirm(
-                            `Delete "${p.name}"? Any committee/captain rows linked to them will revert to plain text.`,
-                          )
+                          !(await confirm({
+                            title: "Delete person",
+                            description: `Delete "${p.name}"? Any committee/captain rows linked to them will revert to plain text.`,
+                            confirmText: "Delete",
+                            destructive: true,
+                          }))
                         )
                           return;
                         setError(null);

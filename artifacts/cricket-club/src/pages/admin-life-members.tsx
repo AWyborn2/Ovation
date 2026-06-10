@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type FormValues = {
   name: string;
@@ -26,7 +28,8 @@ type FormValues = {
 
 export default function AdminLifeMembers() {
   const queryClient = useQueryClient();
-  const { data: members, isLoading } = useListLifeMembers();
+  const confirm = useConfirm();
+  const { data: members, isLoading, isError, refetch } = useListLifeMembers();
   const createMember = useCreateLifeMember();
   const updateMember = useUpdateLifeMember();
   const deleteMember = useDeleteLifeMember();
@@ -105,14 +108,15 @@ export default function AdminLifeMembers() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : sorted.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No life members yet.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No life members yet"
+          message="Add a life member to populate the honour board."
+        />
       ) : (
         sorted.map((m) => (
           <Card key={m.id}>
@@ -141,8 +145,16 @@ export default function AdminLifeMembers() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    if (!confirm(`Delete life member "${m.name}"?`)) return;
+                  onClick={async () => {
+                    if (
+                      !(await confirm({
+                        title: "Delete life member",
+                        description: `Delete life member "${m.name}"?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
+                    )
+                      return;
                     setError(null);
                     deleteMember.mutate(
                       { id: m.id },

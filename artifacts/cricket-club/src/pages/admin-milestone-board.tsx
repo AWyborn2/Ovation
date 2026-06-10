@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { LoadingState, QueryError } from "@/components/data-states";
 
 type DisplayMode = MilestoneBoardSettings["displayMode"];
 
@@ -84,8 +85,10 @@ export default function AdminMilestoneBoard() {
         </p>
       </div>
 
-      {settingsQ.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      {settingsQ.isError ? (
+        <QueryError onRetry={() => settingsQ.refetch()} />
+      ) : settingsQ.isLoading ? (
+        <LoadingState label="Loading milestone board settings…" />
       ) : settingsQ.data ? (
         <SettingsCard
           settings={settingsQ.data}
@@ -94,7 +97,7 @@ export default function AdminMilestoneBoard() {
           }
         />
       ) : (
-        <div className="text-sm text-destructive">Failed to load settings.</div>
+        <QueryError onRetry={() => settingsQ.refetch()} />
       )}
     </div>
   );

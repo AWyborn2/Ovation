@@ -23,6 +23,8 @@ import { ShareButton } from "@/components/share-card-modal";
 import type { ShareCardInput } from "@/lib/share-card";
 import { TradingCardModal } from "@/components/trading-card";
 import { IdCard } from "lucide-react";
+import { LoadingState, QueryError } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const fmtNum = (n: number) => n.toLocaleString();
 
@@ -95,7 +97,7 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
 export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
   const playerId = parseInt(id, 10);
-  const { data: player, isLoading } = useGetPlayer(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) } });
+  const { data: player, isLoading, isError, refetch } = useGetPlayer(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) } });
   const { data: caps } = useListCaps();
   const { data: matchLines } = useGetPlayerMatches(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerMatchesQueryKey(playerId) } });
   const { data: seasonStats } = useGetPlayerSeasons(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerSeasonsQueryKey(playerId) } });
@@ -208,8 +210,16 @@ export default function PlayerDetail() {
     });
   }, [seasonStats]);
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this player?")) {
+  const confirm = useConfirm();
+  const handleDelete = async () => {
+    if (
+      await confirm({
+        title: "Delete player?",
+        description: "Are you sure you want to delete this player? This cannot be undone.",
+        confirmText: "Delete",
+        destructive: true,
+      })
+    ) {
       deletePlayer.mutate({ id: playerId }, {
         onSuccess: () => {
           window.location.href = "/players";
@@ -218,7 +228,15 @@ export default function PlayerDetail() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isLoading) return <LoadingState className="py-20" label="Loading player…" />;
+  if (isError)
+    return (
+      <QueryError
+        className="my-12"
+        message="We couldn’t load this player’s profile. Please try again."
+        onRetry={() => refetch()}
+      />
+    );
   if (!player) return <div className="p-8 text-center text-muted-foreground">Player not found.</div>;
 
   const aggregated = aggregateCareer(player.stats)[0];

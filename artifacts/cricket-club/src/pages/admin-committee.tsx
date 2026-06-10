@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const OFFICE_ROLES = [
   "President",
@@ -69,7 +71,8 @@ type RoleFormValues = {
 
 export default function AdminCommittee() {
   const queryClient = useQueryClient();
-  const { data: roles, isLoading } = useListAllClubRoles();
+  const confirm = useConfirm();
+  const { data: roles, isLoading, isError, refetch } = useListAllClubRoles();
   const createRole = useCreateClubRole();
   const updateRole = useUpdateClubRole();
   const deleteRole = useDeleteClubRole();
@@ -190,14 +193,15 @@ export default function AdminCommittee() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : seasons.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No role records yet.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No role records yet"
+          message="Add a role record to start building the committee board."
+        />
       ) : (
         seasons.map((group) => {
           const allPublished = group.roles.every((r) => r.published);
@@ -315,11 +319,14 @@ export default function AdminCommittee() {
                           size="sm"
                           variant="outline"
                           disabled={deleteRole.isPending}
-                          onClick={() => {
+                          onClick={async () => {
                             if (
-                              !confirm(
-                                `Delete "${r.name}" as ${r.grade != null ? `${r.grade} captain` : r.role} for ${formatSeason(r.season)}?`,
-                              )
+                              !(await confirm({
+                                title: "Delete role record",
+                                description: `Delete "${r.name}" as ${r.grade != null ? `${r.grade} captain` : r.role} for ${formatSeason(r.season)}?`,
+                                confirmText: "Delete",
+                                destructive: true,
+                              }))
                             )
                               return;
                             setError(null);

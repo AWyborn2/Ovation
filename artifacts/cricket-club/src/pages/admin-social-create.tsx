@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus, Loader2, Image as ImageIcon } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
+import { LoadingState, QueryError } from "@/components/data-states";
 import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
 import type {
   ShareCardInput,
@@ -182,11 +183,11 @@ function FromMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
           </div>
         </div>
 
-        {matchesQ.isLoading && (
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading matches…
-          </div>
-        )}
+        {matchesQ.isError ? (
+          <QueryError onRetry={() => matchesQ.refetch()} />
+        ) : matchesQ.isLoading ? (
+          <LoadingState label="Loading matches…" />
+        ) : null}
 
         <div className="flex justify-end">
           <Button

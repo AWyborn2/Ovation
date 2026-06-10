@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { sortGradesBySeniority } from "@/components/grade-badge";
+import { LoadingState, QueryError } from "@/components/data-states";
 
 type SeasonMode = MatchDisplaySettings["defaultSeasonMode"];
 type RoundOrder = MatchDisplaySettings["roundOrder"];
@@ -45,8 +46,10 @@ export default function AdminMatchDisplay() {
         </p>
       </div>
 
-      {settingsQ.isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      {settingsQ.isError ? (
+        <QueryError onRetry={() => settingsQ.refetch()} />
+      ) : settingsQ.isLoading ? (
+        <LoadingState label="Loading match display settings…" />
       ) : settingsQ.data ? (
         <SettingsCard
           settings={settingsQ.data}
@@ -56,7 +59,7 @@ export default function AdminMatchDisplay() {
           }
         />
       ) : (
-        <div className="text-sm text-destructive">Failed to load settings.</div>
+        <QueryError onRetry={() => settingsQ.refetch()} />
       )}
     </div>
   );

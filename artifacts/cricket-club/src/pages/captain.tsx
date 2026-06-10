@@ -12,6 +12,7 @@ import {
 import { CaptainShell } from "@/components/captain-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 import { handleCaptainMutationError } from "@/lib/captain-auth";
 
 function formatSeason(year: number): string {
@@ -28,21 +29,21 @@ export default function CaptainPage() {
 }
 
 function VotingBoard() {
-  const { data, isLoading } = useGetCaptainVotingBoard();
+  const { data, isLoading, isError, refetch } = useGetCaptainVotingBoard();
 
+  if (isError) {
+    return <QueryError onRetry={() => refetch()} />;
+  }
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading your rounds…</p>;
+    return <LoadingState label="Loading your rounds…" />;
   }
   const awards = data ?? [];
   if (awards.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-sm text-muted-foreground italic">
-          You have no awards open for voting right now. Once an admin opens an
-          award for one of your grades and a match scorecard is imported, the
-          rounds will appear here.
-        </CardContent>
-      </Card>
+      <EmptyState
+        title="No awards open for voting"
+        message="Once an admin opens an award for one of your grades and a match scorecard is imported, the rounds will appear here."
+      />
     );
   }
   return (

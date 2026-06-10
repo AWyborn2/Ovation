@@ -6,11 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { LoadingState, QueryError } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 export default function StatDetail() {
   const { id } = useParams<{ id: string }>();
   const statId = parseInt(id, 10);
-  const { data: stat, isLoading } = useGetStat(statId, { query: { enabled: !!statId, queryKey: getGetStatQueryKey(statId) } });
+  const confirm = useConfirm();
+  const { data: stat, isLoading, isError, refetch } = useGetStat(statId, { query: { enabled: !!statId, queryKey: getGetStatQueryKey(statId) } });
   
   const queryClient = useQueryClient();
   const updateStat = useUpdateStat();
@@ -48,8 +51,15 @@ export default function StatDetail() {
     });
   };
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this stat record?")) {
+  const handleDelete = async () => {
+    if (
+      await confirm({
+        title: "Delete record?",
+        description: "Are you sure you want to delete this stat record? This cannot be undone.",
+        confirmText: "Delete",
+        destructive: true,
+      })
+    ) {
       deleteStat.mutate({ id: statId }, {
         onSuccess: () => {
           window.history.back();
@@ -58,7 +68,15 @@ export default function StatDetail() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isLoading) return <LoadingState className="py-20" label="Loading record…" />;
+  if (isError)
+    return (
+      <QueryError
+        className="my-12"
+        message="We couldn’t load this record. Please try again."
+        onRetry={() => refetch()}
+      />
+    );
   if (!stat) return <div className="p-8 text-center">Stat not found.</div>;
 
   return (

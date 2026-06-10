@@ -10,6 +10,7 @@ import {
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin } from "lucide-react";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 // Compact opposition crest for match cards; falls back silently to nothing
 // (the opponent name is always shown beside it).
@@ -68,7 +69,7 @@ export default function Matches() {
   );
 
   // Displayed list: filtered by grade + season.
-  const { data: matches, isLoading } = useListMatches(
+  const { data: matches, isLoading, isError, refetch } = useListMatches(
     { grade: gradeArg, season: seasonArg },
     {
       query: {
@@ -164,12 +165,15 @@ export default function Matches() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="p-8 text-center">Loading...</div>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <CardGridSkeleton />
       ) : !matches || matches.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
-          No matches found. Match scorecards appear here once per-match imports are committed.
-        </div>
+        <EmptyState
+          title="No matches found"
+          message="Match scorecards appear here once per-match imports are committed."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matches.map((m) => (

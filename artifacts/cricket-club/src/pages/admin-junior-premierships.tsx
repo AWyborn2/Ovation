@@ -11,13 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const premTitle = (p: JuniorPremiership) =>
   [p.ageGroup ?? "Junior", p.season].filter(Boolean).join(" · ");
 
 export default function AdminJuniorPremierships() {
   const qc = useQueryClient();
-  const { data, isLoading } = useListJuniorPremierships();
+  const { data, isLoading, isError, refetch } = useListJuniorPremierships();
   const update = useUpdateJuniorPremiership();
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -41,10 +42,15 @@ export default function AdminJuniorPremierships() {
         </div>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : (data?.length ?? 0) === 0 ? (
-        <p className="text-sm text-muted-foreground">No junior premierships found.</p>
+        <EmptyState
+          title="No junior premierships found"
+          message="Junior premierships will appear here once they're in the data."
+        />
       ) : (
         data!.map((p) => (
           <Card key={p.id}>

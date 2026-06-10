@@ -6,6 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { useBrandLogo } from "@/lib/use-brand";
 import { PlaqueLightbox } from "@/components/plaque-lightbox";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const PLAQUE_FONT = "'Inter', sans-serif";
 const TRACK = "0.0103em";
@@ -154,7 +155,7 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
 
 export default function JuniorsPremierships() {
   const logoUrl = useBrandLogo();
-  const { data, isLoading } = useListJuniorPremierships();
+  const { data, isLoading, isError, refetch } = useListJuniorPremierships();
   const [ageGroup, setAgeGroup] = useState("All");
   const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
 
@@ -226,10 +227,12 @@ export default function JuniorsPremierships() {
           </span>
         </div>
 
-        {isLoading ? (
-          <div className="p-12 text-center text-white/70">Loading premierships…</div>
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <CardGridSkeleton />
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-white/70 italic">No junior premierships found.</div>
+          <EmptyState title="No junior premierships found" message="There are no junior premierships to show for this filter." />
         ) : (
           <div
             className="grid gap-[3px] justify-center"

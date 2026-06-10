@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { CalendarDays, MapPin } from "lucide-react";
 import { JUNIOR_ACCENT, fmtJuniorDate } from "@/lib/juniors";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 // Compact opposition crest for junior match cards; falls back silently to
 // nothing (the opponent name is always shown beside it). Most metro junior
@@ -85,7 +86,7 @@ export default function JuniorsMatches() {
   const ageArg = ageGroup || undefined;
   const ready = season !== null && ageGroup !== null;
 
-  const { data: matches, isLoading } = useListJuniorMatches(
+  const { data: matches, isLoading, isError, refetch } = useListJuniorMatches(
     { season: seasonArg, ageGroup: ageArg },
     {
       query: {
@@ -136,10 +137,12 @@ export default function JuniorsMatches() {
         </div>
       </div>
 
-      {!ready || isLoading ? (
-        <div className="p-8 text-center">Loading...</div>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : !ready || isLoading ? (
+        <CardGridSkeleton />
       ) : !matches || matches.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">No junior matches found for these filters.</div>
+        <EmptyState title="No junior matches found" message="No junior matches match these filters." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matches.map((m) => (

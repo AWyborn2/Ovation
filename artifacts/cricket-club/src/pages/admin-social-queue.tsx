@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ShareCardModal } from "@/components/share-card-modal";
+import { CardGridSkeleton, ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { Loader2, Check, X, ExternalLink, Copy } from "lucide-react";
 import type { ShareCardInput } from "@/lib/share-card";
 
@@ -132,9 +133,21 @@ export default function AdminSocialQueue() {
       : `/go/${slug}`;
 
   const renderList = (list: SocialDraft[]) => {
-    if (draftsQ.isLoading) return <p className="text-muted-foreground">Loading…</p>;
+    if (draftsQ.isLoading) return <CardGridSkeleton count={4} className="md:grid-cols-2" />;
+    if (draftsQ.isError)
+      return (
+        <QueryError
+          message="We couldn’t load the social queue. Please try again."
+          onRetry={() => draftsQ.refetch()}
+        />
+      );
     if (list.length === 0)
-      return <p className="text-muted-foreground text-sm">Nothing here yet.</p>;
+      return (
+        <EmptyState
+          title="Nothing here yet"
+          message="Approved, posted, and auto-detected cards will appear here."
+        />
+      );
     return (
       <div className="grid gap-3 md:grid-cols-2">
         {list.map((d) => {
@@ -322,9 +335,17 @@ export default function AdminSocialQueue() {
         </TabsContent>
         <TabsContent value="links" className="mt-4">
           {linksQ.isLoading ? (
-            <p className="text-muted-foreground">Loading…</p>
+            <ListSkeleton rows={5} />
+          ) : linksQ.isError ? (
+            <QueryError
+              message="We couldn’t load tracked links. Please try again."
+              onRetry={() => linksQ.refetch()}
+            />
           ) : (linksQ.data ?? []).length === 0 ? (
-            <p className="text-muted-foreground text-sm">No tracked links yet.</p>
+            <EmptyState
+              title="No tracked links yet"
+              message="Short links are minted when you approve a card."
+            />
           ) : (
             <div className="border rounded-md divide-y">
               {(linksQ.data ?? []).map((l) => (

@@ -5,6 +5,7 @@ import {
   getGetPersonQueryKey,
   useListClubRoles,
 } from "@workspace/api-client-react";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 function formatSeason(year: number): string {
   const next = (year + 1) % 100;
@@ -14,7 +15,7 @@ function formatSeason(year: number): string {
 export default function PersonDetail() {
   const params = useParams();
   const id = Number(params.id);
-  const { data: person, isLoading, error } = useGetPerson(id, {
+  const { data: person, isLoading, isError, refetch } = useGetPerson(id, {
     query: { queryKey: getGetPersonQueryKey(id), enabled: Number.isFinite(id) },
   });
   const { data: roles } = useListClubRoles();
@@ -30,20 +31,21 @@ export default function PersonDetail() {
       }));
   }, [roles, id]);
 
-  if (isLoading) {
-    return (
-      <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
-        Loading…
-      </div>
-    );
+  if (isError) {
+    return <QueryError onRetry={() => refetch()} />;
   }
 
-  if (error || !person) {
+  if (isLoading) {
+    return <LoadingState label="Loading…" />;
+  }
+
+  if (!person) {
     return (
       <div className="space-y-4">
-        <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-          This person could not be found.
-        </div>
+        <EmptyState
+          title="Person not found"
+          message="This person could not be found."
+        />
         <Link href="/honour-boards" className="text-primary hover:underline">
           ← Back to honour boards
         </Link>

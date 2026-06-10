@@ -16,6 +16,12 @@ import { Loader2, Image as ImageIcon, Trophy } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
 import { juniorMatchToSummaryInput } from "@/lib/junior-match-summary";
 import type { ShareCardInput } from "@/lib/share-card";
+import {
+  LoadingState,
+  CardGridSkeleton,
+  QueryError,
+  EmptyState,
+} from "@/components/data-states";
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -178,11 +184,11 @@ function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
           </div>
         </div>
 
-        {matchesQ.isLoading && (
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading matches…
-          </div>
-        )}
+        {matchesQ.isError ? (
+          <QueryError onRetry={() => matchesQ.refetch()} />
+        ) : matchesQ.isLoading ? (
+          <LoadingState label="Loading matches…" />
+        ) : null}
 
         <div className="flex justify-end">
           <Button
@@ -270,14 +276,15 @@ function JuniorMilestones({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
           </div>
         </div>
 
-        {milestonesQ.isLoading ? (
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading milestones…
-          </div>
+        {milestonesQ.isError ? (
+          <QueryError onRetry={() => milestonesQ.refetch()} />
+        ) : milestonesQ.isLoading ? (
+          <CardGridSkeleton />
         ) : filtered.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            No milestones match your filters.
-          </div>
+          <EmptyState
+            title="No milestones found"
+            message="No milestones match your filters."
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {filtered.map((m) => (

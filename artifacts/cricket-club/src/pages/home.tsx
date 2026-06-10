@@ -18,6 +18,7 @@ import {
 import { matchLabel } from "@/lib/utils";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const SENIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
   { label: "Honour Boards", target: "/honour-boards", isExternal: false, iconKey: "scrollText", description: "Premierships, life members, awards and records." },
@@ -158,7 +159,7 @@ function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[]
 type SeasonChoice = "latest" | "all" | number;
 
 export default function Home() {
-  const { data, isLoading } = useGetSeniorOverview();
+  const { data, isLoading, isError, refetch } = useGetSeniorOverview();
   const quickLinks = useNavSurface("senior_menu", SENIOR_QUICK_LINKS_FALLBACK);
   const [gradeFilter, setGradeFilter] = useState<string>("");
   const [season, setSeason] = useState<SeasonChoice>("latest");
@@ -211,10 +212,15 @@ export default function Home() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="p-8 text-center text-muted-foreground">Loading...</div>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <CardGridSkeleton />
       ) : !data ? (
-        <div className="p-8 text-center text-muted-foreground">No senior data available yet.</div>
+        <EmptyState
+          title="No senior data yet"
+          message="Senior stats appear here once imports are committed."
+        />
       ) : (
         <>
           {/* Totals */}

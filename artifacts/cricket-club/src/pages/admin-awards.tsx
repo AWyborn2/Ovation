@@ -44,6 +44,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { ListSkeleton, LoadingState, EmptyState, QueryError } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const slugify = (s: string) =>
   s
@@ -73,7 +75,8 @@ type WinnerFormValues = {
 
 export default function AdminAwards() {
   const queryClient = useQueryClient();
-  const { data: awards, isLoading } = useListAdminAwards();
+  const confirm = useConfirm();
+  const { data: awards, isLoading, isError, refetch } = useListAdminAwards();
   const createAward = useCreateAward();
   const updateAward = useUpdateAward();
   const deleteAward = useDeleteAward();
@@ -176,13 +179,14 @@ export default function AdminAwards() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <ListSkeleton rows={4} />
+      ) : isError ? (
+        <QueryError
+          message="We couldn’t load awards. Please try again."
+          onRetry={() => refetch()}
+        />
       ) : sorted.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No awards yet.
-          </CardContent>
-        </Card>
+        <EmptyState title="No awards yet" message="Create an award to get started." />
       ) : (
         sorted.map((award, index) => (
           <Card key={award.id}>
@@ -255,11 +259,14 @@ export default function AdminAwards() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     if (
-                      !confirm(
-                        `Delete award "${award.title}" and all its winners?`,
-                      )
+                      !(await confirm({
+                        title: "Delete award?",
+                        description: `Delete award "${award.title}" and all its winners?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
                     )
                       return;
                     setError(null);
@@ -373,7 +380,7 @@ function VotingManager({
   onAwardChanged: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: configs, isLoading } = useListAwardVotingConfigs(award.id);
+  const { data: configs, isLoading, isError, refetch } = useListAwardVotingConfigs(award.id);
   const upsert = useUpsertAwardVotingConfig();
   const [showNew, setShowNew] = useState(false);
   const [season, setSeason] = useState(new Date().getFullYear());
@@ -444,7 +451,12 @@ function VotingManager({
       )}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading voting…</p>
+        <LoadingState label="Loading voting…" className="py-4" />
+      ) : isError ? (
+        <QueryError
+          message="We couldn’t load voting seasons. Please try again."
+          onRetry={() => refetch()}
+        />
       ) : sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
           No voting seasons configured. Add a season to let captains vote 3-2-1
@@ -484,6 +496,7 @@ function VotingConfigCard({
   onChanged: () => void;
 }) {
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const update = useUpdateAwardVotingConfig();
   const remove = useDeleteAwardVotingConfig();
   const finalise = useFinaliseVotingConfig();
@@ -537,11 +550,14 @@ function VotingConfigCard({
           size="sm"
           variant="outline"
           disabled={remove.isPending}
-          onClick={() => {
+          onClick={async () => {
             if (
-              !confirm(
-                `Delete voting for ${formatSeasonRange(config.season)}? All ballots will be removed.`,
-              )
+              !(await confirm({
+                title: "Delete voting season?",
+                description: `Delete voting for ${formatSeasonRange(config.season)}? All ballots will be removed.`,
+                confirmText: "Delete",
+                destructive: true,
+              }))
             )
               return;
             setError(null);
@@ -638,11 +654,13 @@ function VotingConfigCard({
         <Button
           size="sm"
           disabled={finalise.isPending}
-          onClick={() => {
+          onClick={async () => {
             if (
-              !confirm(
-                `Finalise ${award.title} ${formatSeasonRange(config.season)}? The current leader(s) will be recorded as the winner(s) and voting will close.`,
-              )
+              !(await confirm({
+                title: "Finalise voting?",
+                description: `Finalise ${award.title} ${formatSeasonRange(config.season)}? The current leader(s) will be recorded as the winner(s) and voting will close.`,
+                confirmText: "Finalise",
+              }))
             )
               return;
             setError(null);
@@ -663,8 +681,15 @@ function VotingConfigCard({
 }
 
 function TallyView({ configId }: { configId: number }) {
-  const { data, isLoading } = useGetVotingConfigTally(configId);
-  if (isLoading) return <p className="text-sm text-muted-foreground">Loading tally…</p>;
+  const { data, isLoading, isError, refetch } = useGetVotingConfigTally(configId);
+  if (isLoading) return <LoadingState label="Loading tally…" className="py-4" />;
+  if (isError)
+    return (
+      <QueryError
+        message="We couldn’t load the tally. Please try again."
+        onRetry={() => refetch()}
+      />
+    );
   if (!data || data.entries.length === 0) {
     return (
       <p className="text-sm text-muted-foreground italic">
@@ -715,9 +740,16 @@ function splitName(id: number, fullName: string): SelectedPlayer {
 }
 
 function BallotsView({ configId, finalised }: { configId: number; finalised: boolean }) {
-  const { data, isLoading } = useListVotingConfigBallots(configId);
+  const { data, isLoading, isError, refetch } = useListVotingConfigBallots(configId);
   const [editingId, setEditingId] = useState<number | null>(null);
-  if (isLoading) return <p className="text-sm text-muted-foreground">Loading ballots…</p>;
+  if (isLoading) return <LoadingState label="Loading ballots…" className="py-4" />;
+  if (isError)
+    return (
+      <QueryError
+        message="We couldn’t load ballots. Please try again."
+        onRetry={() => refetch()}
+      />
+    );
   if (!data || data.length === 0) {
     return <p className="text-sm text-muted-foreground italic">No ballots submitted yet.</p>;
   }
@@ -792,14 +824,23 @@ function ClearBallotButton({
   ballotId: number;
 }) {
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const remove = useDeleteConfigBallot();
   return (
     <Button
       size="sm"
       variant="outline"
       disabled={remove.isPending}
-      onClick={() => {
-        if (!confirm("Clear this captain's ballot for this round?")) return;
+      onClick={async () => {
+        if (
+          !(await confirm({
+            title: "Clear ballot?",
+            description: "Clear this captain's ballot for this round?",
+            confirmText: "Clear",
+            destructive: true,
+          }))
+        )
+          return;
         remove.mutate(
           { id: configId, ballotId },
           {
@@ -930,7 +971,7 @@ function PointsManager({
   onAwardChanged: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: configs, isLoading } = useListAwardPointsConfigs(award.id);
+  const { data: configs, isLoading, isError, refetch } = useListAwardPointsConfigs(award.id);
   const upsert = useUpsertAwardPointsConfig();
   const [showNew, setShowNew] = useState(false);
   const [season, setSeason] = useState(new Date().getFullYear());
@@ -1004,7 +1045,12 @@ function PointsManager({
       )}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading points config…</p>
+        <LoadingState label="Loading points config…" className="py-4" />
+      ) : isError ? (
+        <QueryError
+          message="We couldn’t load points config. Please try again."
+          onRetry={() => refetch()}
+        />
       ) : sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
           No seasons configured. Add a season to score players from their match
@@ -1039,6 +1085,7 @@ function PointsConfigCard({
   onChanged: () => void;
 }) {
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const update = useUpdateAwardPointsConfig();
   const remove = useDeleteAwardPointsConfig();
   const finalise = useFinalisePointsConfig();
@@ -1084,11 +1131,14 @@ function PointsConfigCard({
           size="sm"
           variant="outline"
           disabled={remove.isPending}
-          onClick={() => {
+          onClick={async () => {
             if (
-              !confirm(
-                `Delete points config for ${formatSeasonRange(config.season)}?`,
-              )
+              !(await confirm({
+                title: "Delete points config?",
+                description: `Delete points config for ${formatSeasonRange(config.season)}?`,
+                confirmText: "Delete",
+                destructive: true,
+              }))
             )
               return;
             setError(null);
@@ -1185,11 +1235,13 @@ function PointsConfigCard({
         <Button
           size="sm"
           disabled={finalise.isPending || !award.pointsGrade}
-          onClick={() => {
+          onClick={async () => {
             if (
-              !confirm(
-                `Finalise ${award.title} ${formatSeasonRange(config.season)}? The current leader(s) will be recorded as the winner(s).`,
-              )
+              !(await confirm({
+                title: "Finalise points award?",
+                description: `Finalise ${award.title} ${formatSeasonRange(config.season)}? The current leader(s) will be recorded as the winner(s).`,
+                confirmText: "Finalise",
+              }))
             )
               return;
             setError(null);
@@ -1213,9 +1265,16 @@ function PointsConfigCard({
 }
 
 function PointsBoardView({ configId }: { configId: number }) {
-  const { data, isLoading } = useGetPointsConfigLeaderboard(configId);
+  const { data, isLoading, isError, refetch } = useGetPointsConfigLeaderboard(configId);
   if (isLoading)
-    return <p className="text-sm text-muted-foreground">Loading leaderboard…</p>;
+    return <LoadingState label="Loading leaderboard…" className="py-4" />;
+  if (isError)
+    return (
+      <QueryError
+        message="We couldn’t load the leaderboard. Please try again."
+        onRetry={() => refetch()}
+      />
+    );
   if (!data || data.entries.length === 0) {
     return (
       <p className="text-sm text-muted-foreground italic">
@@ -1268,6 +1327,7 @@ function WinnersManager({
   onError: (e: unknown) => void;
   onChanged: () => void;
 }) {
+  const confirm = useConfirm();
   const createWinner = useCreateAwardWinner();
   const updateWinner = useUpdateAwardWinner();
   const deleteWinner = useDeleteAwardWinner();
@@ -1426,11 +1486,14 @@ function WinnersManager({
                     size="sm"
                     variant="outline"
                     disabled={deleteWinner.isPending}
-                    onClick={() => {
+                    onClick={async () => {
                       if (
-                        !confirm(
-                          `Remove ${w.name} (${formatSeason(w.season)}) from this award?`,
-                        )
+                        !(await confirm({
+                          title: "Remove winner?",
+                          description: `Remove ${w.name} (${formatSeason(w.season)}) from this award?`,
+                          confirmText: "Remove",
+                          destructive: true,
+                        }))
                       )
                         return;
                       deleteWinner.mutate(

@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const GRADES = [
   "A Grade",
@@ -36,7 +38,8 @@ type CaptainFormValues = {
 
 export default function AdminCaptains() {
   const queryClient = useQueryClient();
-  const { data: captains, isLoading } = useListCaptains();
+  const confirm = useConfirm();
+  const { data: captains, isLoading, isError, refetch } = useListCaptains();
   const createCaptain = useCreateCaptain();
   const deleteCaptain = useDeleteCaptain();
   const [showNew, setShowNew] = useState(false);
@@ -111,14 +114,15 @@ export default function AdminCaptains() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : sorted.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No captains yet.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No captains yet"
+          message="Create a captain login to let them submit votes."
+        />
       ) : (
         sorted.map((captain) => (
           <Card key={captain.id}>
@@ -144,8 +148,16 @@ export default function AdminCaptains() {
                   size="sm"
                   variant="outline"
                   disabled={deleteCaptain.isPending}
-                  onClick={() => {
-                    if (!confirm(`Delete captain "${captain.displayName}"?`)) return;
+                  onClick={async () => {
+                    if (
+                      !(await confirm({
+                        title: "Delete captain",
+                        description: `Delete captain "${captain.displayName}"?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
+                    )
+                      return;
                     setError(null);
                     deleteCaptain.mutate(
                       { id: captain.id },

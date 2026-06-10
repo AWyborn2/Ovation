@@ -23,6 +23,8 @@ import {
   PlayerTypeahead,
   type SelectedPlayer,
 } from "@/components/player-typeahead";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 import { GripVertical } from "lucide-react";
 
 const slugify = (s: string) =>
@@ -44,7 +46,9 @@ type BoardFormValues = {
 
 export default function AdminTeamOfDecade() {
   const queryClient = useQueryClient();
-  const { data: boards, isLoading } = useListAdminTeamOfDecadeBoards();
+  const confirm = useConfirm();
+  const { data: boards, isLoading, isError, refetch } =
+    useListAdminTeamOfDecadeBoards();
   const createBoard = useCreateTeamOfDecadeBoard();
   const updateBoard = useUpdateTeamOfDecadeBoard();
   const deleteBoard = useDeleteTeamOfDecadeBoard();
@@ -151,14 +155,15 @@ export default function AdminTeamOfDecade() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : sorted.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No Team of the Decade boards yet.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No Team of the Decade boards yet"
+          message="Create a board above to start building your XI."
+        />
       ) : (
         sorted.map((board, index) => (
           <Card key={board.id}>
@@ -236,11 +241,14 @@ export default function AdminTeamOfDecade() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     if (
-                      !confirm(
-                        `Delete board "${board.title}" and all its players?`,
-                      )
+                      !(await confirm({
+                        title: "Delete board",
+                        description: `Delete board "${board.title}" and all its players?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
                     )
                       return;
                     setError(null);
@@ -639,6 +647,7 @@ function MemberRow({
 }) {
   const update = useUpdateTeamOfDecadeMember();
   const remove = useDeleteTeamOfDecadeMember();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [player, setPlayer] = useState<SelectedPlayer | null>(
     member.playerId != null ? splitName(member.playerId, member.name) : null,
@@ -724,8 +733,16 @@ function MemberRow({
             size="sm"
             variant="outline"
             disabled={remove.isPending}
-            onClick={() => {
-              if (!confirm(`Remove ${member.name} from this XI?`)) return;
+            onClick={async () => {
+              if (
+                !(await confirm({
+                  title: "Remove player",
+                  description: `Remove ${member.name} from this XI?`,
+                  confirmText: "Remove",
+                  destructive: true,
+                }))
+              )
+                return;
               remove.mutate(
                 { id: member.id },
                 { onSuccess: onChanged, onError },

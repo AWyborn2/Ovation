@@ -13,11 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError, useCurrentAdmin } from "@/lib/admin-auth";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 export default function AdminUsers() {
   const qc = useQueryClient();
   const me = useCurrentAdmin();
-  const { data: admins, isLoading } = useListAdmins();
+  const confirm = useConfirm();
+  const { data: admins, isLoading, isError, refetch } = useListAdmins();
   const createAdmin = useCreateAdmin();
   const updateAdmin = useUpdateAdmin();
   const deleteAdmin = useDeleteAdmin();
@@ -88,10 +91,12 @@ export default function AdminUsers() {
           <CardTitle>Existing admins</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+          {isError ? (
+            <QueryError onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <ListSkeleton />
           ) : !admins?.length ? (
-            <p className="text-sm text-muted-foreground italic">No admins.</p>
+            <EmptyState title="No admins" message="Add an admin user to get started." />
           ) : (
             <div className="space-y-3">
               {admins.map((a) => (
@@ -105,8 +110,16 @@ export default function AdminUsers() {
                       { onSuccess: invalidate, onError: onErr },
                     )
                   }
-                  onDelete={() => {
-                    if (!confirm(`Delete admin "${a.username}"?`)) return;
+                  onDelete={async () => {
+                    if (
+                      !(await confirm({
+                        title: "Delete admin",
+                        description: `Delete admin "${a.username}"?`,
+                        confirmText: "Delete",
+                        destructive: true,
+                      }))
+                    )
+                      return;
                     setError(null);
                     deleteAdmin.mutate(
                       { id: a.id },

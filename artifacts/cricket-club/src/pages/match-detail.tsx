@@ -16,6 +16,7 @@ import { ShareCardModal } from "@/components/share-card-modal";
 import { matchToSummaryInput } from "@/lib/match-summary";
 import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame, Share2 } from "lucide-react";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 const FINALS_STAGES = Object.values(MatchStage);
 
@@ -31,7 +32,7 @@ const fmtDate = (d: string | null | undefined) => {
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const matchId = parseInt(id, 10);
-  const { data: match, isLoading } = useGetMatch(matchId, {
+  const { data: match, isLoading, isError, refetch } = useGetMatch(matchId, {
     query: { enabled: !!matchId, queryKey: getGetMatchQueryKey(matchId) },
   });
 
@@ -112,8 +113,9 @@ export default function MatchDetail() {
     );
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
-  if (!match) return <div className="p-8 text-center text-muted-foreground">Match not found.</div>;
+  if (isError) return <QueryError onRetry={() => refetch()} />;
+  if (isLoading) return <LoadingState label="Loading match…" />;
+  if (!match) return <EmptyState title="Match not found" message="This match could not be found." />;
 
   const hatTrickIds = new Set(match.hatTrickPlayerIds ?? []);
   // Admins manage hat-tricks on Halls Head bowlers (real players only).

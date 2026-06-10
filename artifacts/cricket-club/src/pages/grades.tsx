@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Trophy } from "lucide-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 export default function Grades() {
-  const { data, isLoading } = useListGrades();
+  const { data, isLoading, isError, refetch } = useListGrades();
   const { data: premierships } = useListPremierships();
 
   const premsByGrade = useMemo(() => {
@@ -17,7 +18,8 @@ export default function Grades() {
     return map;
   }, [premierships]);
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isError) return <QueryError onRetry={() => refetch()} />;
+  if (isLoading) return <CardGridSkeleton />;
 
   const grades = (data ?? []).filter((g) => g.grade !== "CLUB TOTAL");
   const order = sortGradesBySeniority(grades.map((g) => g.grade));
@@ -32,6 +34,12 @@ export default function Grades() {
         <p className="text-muted-foreground mt-1">Overview of performance across all grades.</p>
       </div>
 
+      {ordered.length === 0 ? (
+        <EmptyState
+          title="No grades yet"
+          message="Grade summaries appear here once imports are committed."
+        />
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ordered.map((grade) => (
           <Link key={grade.grade} href={`/grades/${encodeURIComponent(grade.grade)}`}>
@@ -73,6 +81,7 @@ export default function Grades() {
           </Link>
         ))}
       </div>
+      )}
     </div>
   );
 }

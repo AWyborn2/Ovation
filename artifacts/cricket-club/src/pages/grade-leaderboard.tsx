@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-card-modal";
+import { TableSkeleton, QueryError } from "@/components/data-states";
 
 const STAT_COLUMN_COUNT = 13;
 
@@ -34,7 +35,7 @@ export default function GradeLeaderboard() {
 
   const isValid = decodedGrade !== "CLUB TOTAL";
   const isAGrade = decodedGrade === "A Grade";
-  const { data: stats, isLoading } = useGetGradeLeaderboard(decodedGrade, {
+  const { data: stats, isLoading, isError, refetch } = useGetGradeLeaderboard(decodedGrade, {
     query: { enabled: !!decodedGrade && isValid, queryKey: getGetGradeLeaderboardQueryKey(decodedGrade) },
   });
   const { data: caps } = useListCaps({ query: { enabled: isAGrade, queryKey: getListCapsQueryKey() } });
@@ -61,7 +62,8 @@ export default function GradeLeaderboard() {
   }, [isAGrade, caps, stats]);
 
   if (!isValid) return <div className="p-8 text-center text-muted-foreground">Redirecting…</div>;
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isError) return <QueryError onRetry={() => refetch()} />;
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <div className="space-y-6">

@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
+import { TableSkeleton, EmptyState, QueryError } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const GRADES = [
   "A Grade",
@@ -34,6 +36,7 @@ const GRADES = [
 
 export default function AdminStats() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [grade, setGrade] = useState<string>("");
   const [sortBy, setSortBy] = useState<ListStatsSortByType>(ListStatsSortBy.name);
@@ -42,7 +45,7 @@ export default function AdminStats() {
   const [error, setError] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
 
-  const { data, isLoading } = useListStats({
+  const { data, isLoading, isError, refetch } = useListStats({
     search: search || undefined,
     grade: grade || undefined,
     sortBy,
@@ -150,9 +153,17 @@ export default function AdminStats() {
           </div>
 
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <TableSkeleton rows={8} />
+          ) : isError ? (
+            <QueryError
+              message="We couldn’t load the stats list. Please try again."
+              onRetry={() => refetch()}
+            />
           ) : !data?.stats.length ? (
-            <p className="text-sm text-muted-foreground italic">No stats match these filters.</p>
+            <EmptyState
+              title="No stats match these filters"
+              message="Try clearing the search or grade filter, or add a stat record."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -189,8 +200,16 @@ export default function AdminStats() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            if (!confirm(`Delete ${s.surname}, ${s.givenName} — ${s.grade}?`)) return;
+                          onClick={async () => {
+                            if (
+                              !(await confirm({
+                                title: "Delete stat record?",
+                                description: `Delete ${s.surname}, ${s.givenName} — ${s.grade}?`,
+                                confirmText: "Delete",
+                                destructive: true,
+                              }))
+                            )
+                              return;
                             setError(null);
                             deleteStat.mutate(
                               { id: s.id },

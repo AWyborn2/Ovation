@@ -4,6 +4,7 @@ import { useListPremierships } from "@workspace/api-client-react";
 import type { Premiership, PremiershipPlayer } from "@workspace/api-client-react";
 import { useBrandLogo } from "@/lib/use-brand";
 import { PlaqueLightbox } from "@/components/plaque-lightbox";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const PLAQUE_FONT = "'Inter', sans-serif";
 
@@ -136,7 +137,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
 
 export default function Premierships() {
   const logoUrl = useBrandLogo();
-  const { data: premierships, isLoading } = useListPremierships();
+  const { data: premierships, isLoading, isError, refetch } = useListPremierships();
   const [selectedGrade, setSelectedGrade] = useState<string>("All");
   const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
 
@@ -205,10 +206,12 @@ export default function Premierships() {
           </span>
         </div>
 
-        {isLoading ? (
-          <div className="p-12 text-center text-white/70">Loading premierships…</div>
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <CardGridSkeleton />
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-white/70 italic">No premierships found.</div>
+          <EmptyState title="No premierships found" message="No premierships match the selected grade." />
         ) : (
           <div
             className="grid gap-[3px] justify-center"

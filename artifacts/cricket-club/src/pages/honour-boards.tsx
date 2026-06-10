@@ -45,6 +45,7 @@ import {
   statToAggregated,
 } from "@/lib/honour-boards";
 import { useBrandLogo } from "@/lib/use-brand";
+import { LoadingState, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { CapRegisterTab } from "@/components/cap-register-tab";
 import { LifeMembersTab } from "@/components/life-members-tab";
 import { AwardsTab } from "@/components/awards-tab";
@@ -183,9 +184,10 @@ const BoardView = ({ tiers, board, premMap }: { tiers: BoardTier[]; board: (type
       <p className="text-muted-foreground italic mt-3 mb-0">{board.subtitle}</p>
     </div>
     {tiers.length === 0 ? (
-      <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-        No players qualify yet.
-      </div>
+      <EmptyState
+        title="No players qualify yet"
+        message="Players appear on this board as their career totals grow."
+      />
     ) : (
       tiers.map((t) => <BoardCard key={t.label} tier={t} board={board} premMap={premMap} />)
     )}
@@ -540,6 +542,7 @@ export default function HonourBoards() {
   );
 
   const isLoadingBoards = leaderboardQueries.some((q) => q.isLoading);
+  const isErrorBoards = leaderboardQueries.some((q) => q.isError);
 
   const aggregatedPlayers = useMemo(() => {
     if (scope === "career") return aggregateCareer(allStats);
@@ -645,7 +648,7 @@ export default function HonourBoards() {
 
   // Search
   const searchParams = { search: searchTerm, page: 1, limit: 12 };
-  const { data: searchResults, isLoading: isSearchLoading } = useListPlayers(
+  const { data: searchResults, isLoading: isSearchLoading, isError: isSearchError, refetch: refetchSearch } = useListPlayers(
     searchParams,
     {
       query: {
@@ -974,14 +977,15 @@ export default function HonourBoards() {
             <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
               Start typing to search the club roster.
             </div>
+          ) : isSearchError ? (
+            <QueryError onRetry={() => refetchSearch()} />
           ) : isSearchLoading ? (
-            <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground">
-              Searching…
-            </div>
+            <LoadingState label="Searching…" />
           ) : !searchResults?.players?.length ? (
-            <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-              No players matched "{searchTerm}".
-            </div>
+            <EmptyState
+              title="No players found"
+              message={`No players matched "${searchTerm}".`}
+            />
           ) : (
             <div className="grid gap-3">
               {searchResults.players.map((p) => (
@@ -990,10 +994,10 @@ export default function HonourBoards() {
             </div>
           )}
         </div>
+      ) : isErrorBoards ? (
+        <QueryError onRetry={() => leaderboardQueries.forEach((q) => q.refetch())} />
       ) : isLoadingBoards ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
-          Loading honour boards…
-        </div>
+        <TableSkeleton />
       ) : (
         (() => {
           const board = BOARDS.find((b) => b.key === (activeTab as BoardKey))!;

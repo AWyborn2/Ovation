@@ -3,11 +3,12 @@ import { useGetJuniorMatch, getGetJuniorMatchQueryKey } from "@workspace/api-cli
 import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import { JuniorScorecard } from "@/components/scorecard/junior-scorecard";
 import { fmtJuniorDate } from "@/lib/juniors";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 export default function JuniorsMatchDetail() {
   const params = useParams();
   const id = Number(params.id);
-  const { data: match, isLoading, isError } = useGetJuniorMatch(id, {
+  const { data: match, isLoading, isError, refetch } = useGetJuniorMatch(id, {
     query: { enabled: Number.isFinite(id), queryKey: getGetJuniorMatchQueryKey(id) },
   });
 
@@ -20,9 +21,11 @@ export default function JuniorsMatchDetail() {
       </Link>
 
       {isLoading ? (
-        <div className="p-8 text-center">Loading...</div>
-      ) : isError || !match ? (
-        <div className="p-8 text-center text-muted-foreground">Match not found.</div>
+        <LoadingState label="Loading match…" />
+      ) : isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : !match ? (
+        <EmptyState title="Match not found" message="We couldn't find this junior match." />
       ) : (
         <>
           <div className="bg-card border border-border rounded-md p-5 shadow-sm space-y-3">

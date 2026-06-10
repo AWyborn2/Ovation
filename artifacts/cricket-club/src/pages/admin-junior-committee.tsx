@@ -18,6 +18,8 @@ import {
   JuniorPlayerTypeahead,
   type SelectedJuniorPlayer,
 } from "@/components/junior-player-typeahead";
+import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const OFFICE_ROLES = [
   "President",
@@ -47,7 +49,9 @@ type FormValues = {
 
 export default function AdminJuniorCommittee() {
   const queryClient = useQueryClient();
-  const { data: bearers, isLoading } = useListAllJuniorOfficeBearers();
+  const confirm = useConfirm();
+  const { data: bearers, isLoading, isError, refetch } =
+    useListAllJuniorOfficeBearers();
   const createBearer = useCreateJuniorOfficeBearer();
   const updateBearer = useUpdateJuniorOfficeBearer();
   const deleteBearer = useDeleteJuniorOfficeBearer();
@@ -171,14 +175,15 @@ export default function AdminJuniorCommittee() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
       ) : seasons.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground italic">
-            No junior office bearers yet.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No junior office bearers yet"
+          message="Add an office bearer to start building the junior committee board."
+        />
       ) : (
         seasons.map((group) => {
           const allPublished = group.bearers.every((r) => r.published);
@@ -296,11 +301,14 @@ export default function AdminJuniorCommittee() {
                           size="sm"
                           variant="outline"
                           disabled={deleteBearer.isPending}
-                          onClick={() => {
+                          onClick={async () => {
                             if (
-                              !confirm(
-                                `Delete "${r.name}" as ${r.role} for ${formatSeason(r.season)}?`,
-                              )
+                              !(await confirm({
+                                title: "Delete office bearer",
+                                description: `Delete "${r.name}" as ${r.role} for ${formatSeason(r.season)}?`,
+                                confirmText: "Delete",
+                                destructive: true,
+                              }))
                             )
                               return;
                             setError(null);

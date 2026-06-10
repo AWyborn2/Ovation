@@ -2,6 +2,7 @@ import { Link, useParams } from "wouter";
 import { useGetJuniorPlayer, getGetJuniorPlayerQueryKey } from "@workspace/api-client-react";
 import { ArrowLeft } from "lucide-react";
 import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
@@ -15,7 +16,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 export default function JuniorsPlayerDetail() {
   const params = useParams();
   const id = params.id ?? "";
-  const { data: player, isLoading, isError } = useGetJuniorPlayer(id, {
+  const { data: player, isLoading, isError, refetch } = useGetJuniorPlayer(id, {
     query: { enabled: !!id, queryKey: getGetJuniorPlayerQueryKey(id) },
   });
 
@@ -28,9 +29,11 @@ export default function JuniorsPlayerDetail() {
       </Link>
 
       {isLoading ? (
-        <div className="p-8 text-center">Loading...</div>
-      ) : isError || !player ? (
-        <div className="p-8 text-center text-muted-foreground">Player not found.</div>
+        <LoadingState label="Loading player…" />
+      ) : isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : !player ? (
+        <EmptyState title="Player not found" message="We couldn't find this junior player." />
       ) : (
         <>
           <div>

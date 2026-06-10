@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
+import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
   { label: "Matches", target: "/juniors/matches", isExternal: false, iconKey: "clipboardList", description: "Browse junior games and full scorecards." },
@@ -54,7 +55,7 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
 type SeasonChoice = "latest" | "all" | string;
 
 export default function JuniorsDashboard() {
-  const { data, isLoading } = useGetJuniorsOverview();
+  const { data, isLoading, isError, refetch } = useGetJuniorsOverview();
   const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
   const { data: filters } = useGetJuniorsFilters();
   const [ageFilter, setAgeFilter] = useState<string>("");
@@ -109,10 +110,12 @@ export default function JuniorsDashboard() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="p-8 text-center text-muted-foreground">Loading...</div>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <CardGridSkeleton />
       ) : !data ? (
-        <div className="p-8 text-center text-muted-foreground">No junior data available yet.</div>
+        <EmptyState title="No junior data yet" message="There's no junior data available to show yet." />
       ) : (
         <>
           {/* Totals */}
