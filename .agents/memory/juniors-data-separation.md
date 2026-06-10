@@ -35,3 +35,7 @@ A handful of `junior_participants` rows have `is_private = true`. They must be h
 - `match_date` and scores are frequently NULL; statuses include "Played (stats not recorded)" / "No Result".
 - HH vs opponent score is derived from `team1/team2` + `team1_score/team2_score`: if `team1 == opponent_name` then HH is team2, else team1.
 - `innings` aligns batting and bowling: innings N batting side = batting team, the innings-N bowling rows are the fielding side.
+
+## Reloading: loader commit can exceed the agent tool timeout
+
+`load-juniors-db -- --commit` rebuilds the ~25MB `juniors_staging` schema AND runs the ETL in one go, which can blow past a 2-minute tool timeout (the single-transaction ETL just rolls back cleanly on kill). The preview run already builds `juniors_staging` and leaves it intact, so on timeout just run the pure-SQL ETL directly against the existing staging: `psql "$DATABASE_URL" --single-transaction -f scripts/sql/juniors-etl.sql` — same result the loader produces. Verify by re-checking `public.junior_*` counts afterward.
