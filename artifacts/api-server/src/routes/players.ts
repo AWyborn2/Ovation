@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, and, desc, asc, count, sql } from "drizzle-orm";
+import { eq, ilike, or, and, desc, asc, count, sql, inArray } from "drizzle-orm";
 import {
   db,
   playersTable,
@@ -74,8 +74,7 @@ router.get("/players", async (req, res): Promise<void> => {
       return;
     }
 
-    const whereClause =
-      sql`${playersTable.id} = ANY(ARRAY[${sql.raw(playerIds.join(","))}]::int[])`;
+    const whereClause = inArray(playersTable.id, playerIds);
 
     const orderCol = getPlayerOrderCol(sortBy, sortOrder);
     const [players, totalResult] = await Promise.all([

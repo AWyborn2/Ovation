@@ -9,6 +9,7 @@ import {
   verifyPassword,
 } from "../lib/auth";
 import { resolveCaptain, getCaptainGrades } from "../middlewares/require-captain";
+import { loginRateLimiter } from "../middlewares/rate-limit";
 
 const router: IRouter = Router();
 
@@ -22,7 +23,7 @@ function serializeCaptain(c: CaptainRow, grades: string[]) {
   };
 }
 
-router.post("/captain-auth/login", async (req, res): Promise<void> => {
+router.post("/captain-auth/login", loginRateLimiter, async (req, res): Promise<void> => {
   const parsed = CaptainLoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
