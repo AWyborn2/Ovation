@@ -155,3 +155,32 @@
     @apply font-serif tracking-normal uppercase text-primary;
   }
 }
+
+@layer components {
+  /*
+   * Wide stat tables freeze their first (identity/anchor) column on small
+   * screens, so a fan can read across a row without losing track of who/what
+   * it belongs to while the rest of the columns scroll horizontally inside the
+   * contained `overflow-x-auto` wrapper. Desktop (>=768px) is unchanged: the
+   * column reverts to static/transparent so layouts look exactly as before.
+   * `:where()` keeps specificity at 0 so any explicit cell utility still wins.
+   */
+  .sticky-id-col :where(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: hsl(var(--card));
+    box-shadow: 1px 0 0 0 hsl(var(--border));
+  }
+  .sticky-id-col thead th:first-child {
+    z-index: 2;
+  }
+  @media (min-width: 768px) {
+    .sticky-id-col :where(th, td):first-child {
+      position: static;
+      z-index: auto;
+      background-color: transparent;
+      box-shadow: none;
+    }
+  }
+}

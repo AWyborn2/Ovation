@@ -131,7 +131,7 @@ const BoardCard = ({ tier, board, premMap }: { tier: BoardTier; board: (typeof B
       <span className="text-xs whitespace-nowrap">{tier.rows.length} {tier.rows.length === 1 ? "player" : "players"}</span>
     </div>
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm sticky-id-col">
         <thead>
           <tr className="bg-black/25">
             <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-14">#</th>
@@ -341,7 +341,7 @@ const SearchResultCard = ({ playerId }: { playerId: number }) => {
       )}
       {player.stats.length > 0 && (
         <div className="overflow-x-auto mt-4">
-          <table className="w-full text-xs">
+          <table className="w-full text-xs sticky-id-col">
             <thead>
               <tr className="bg-black/25">
                 <th className="text-left font-serif uppercase tracking-wider text-primary p-2">Grade</th>

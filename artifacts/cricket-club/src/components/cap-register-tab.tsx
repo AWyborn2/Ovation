@@ -107,7 +107,7 @@ export function CapRegisterTab() {
       ) : (
         <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm sticky-id-col">
               <thead>
                 <tr className="bg-black/25">
                   <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-16">

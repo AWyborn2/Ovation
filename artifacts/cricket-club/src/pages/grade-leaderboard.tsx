@@ -85,7 +85,7 @@ export default function GradeLeaderboard() {
       )}
 
       <div className="bg-card border rounded-lg overflow-x-auto shadow-sm">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm sticky-id-col">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left font-medium p-4">Player</th>

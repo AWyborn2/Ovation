@@ -290,7 +290,7 @@ const TableShell = ({
       <div className="p-12 text-center text-muted-foreground">No records yet.</div>
     ) : (
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm sticky-id-col">
           <thead>
             <tr className="bg-muted/50 text-left">{head}</tr>
           </thead>

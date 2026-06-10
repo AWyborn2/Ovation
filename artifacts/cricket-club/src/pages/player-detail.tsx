@@ -457,7 +457,7 @@ export default function PlayerDetail() {
                   <span className="font-semibold text-primary">{grade}</span>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm sticky-id-col">
                     <thead>
                       <tr className="border-b bg-muted/50">
                         <th className="text-left font-medium p-3">Season</th>
@@ -574,7 +574,7 @@ export default function PlayerDetail() {
             <div className="text-sm text-muted-foreground italic">No matches for the selected filters.</div>
           ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm sticky-id-col">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left font-medium p-3">Season</th>
@@ -631,7 +631,7 @@ export default function PlayerDetail() {
       )}
 
       <div className="bg-card border rounded-lg overflow-x-auto shadow-sm">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm sticky-id-col">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left font-medium p-4">Grade</th>
