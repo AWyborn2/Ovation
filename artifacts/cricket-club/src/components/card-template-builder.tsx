@@ -25,7 +25,8 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import type { CardKind, MotionPreset } from "@/lib/share-card";
+import { CARD_FONT_OPTIONS } from "@/lib/share-card";
+import type { CardFontKey, CardKind, MotionPreset } from "@/lib/share-card";
 import { fieldsForKinds, fieldLabel } from "@/lib/card-template";
 import { CardKindPicker } from "@/components/card-kind-picker";
 import { handleAdminMutationError } from "@/lib/admin-auth";
@@ -753,11 +754,14 @@ function SlotInspector({
               <Label className="text-xs">Font</Label>
               <select
                 value={slot.fontFamily ?? "sans"}
-                onChange={(e) => onChange({ fontFamily: e.target.value as "sans" | "serif" })}
+                onChange={(e) => onChange({ fontFamily: e.target.value as CardFontKey })}
                 className="w-full px-2 py-1 rounded border bg-card text-sm"
               >
-                <option value="sans">Sans</option>
-                <option value="serif">Serif</option>
+                {CARD_FONT_OPTIONS.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

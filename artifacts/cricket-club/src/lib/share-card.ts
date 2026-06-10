@@ -638,6 +638,87 @@ const drawFooter = (
 // custom themes still apply. Type is Montserrat to match the app + trading card.
 const CARD_FONT = "'Montserrat', sans-serif";
 
+// Selectable card fonts. "sans"/"serif" keep their original stacks (Montserrat /
+// Georgia) so existing cards stay byte-identical; the rest are extra families the
+// app declares via @font-face (see index.html / index.css). Because these only
+// ever appear in canvas font stacks, the browser never fetches the less-common
+// ones on its own (canvas ctx.font does not trigger a load, and
+// document.fonts.ready resolves without them) — so ensureCardFonts() explicitly
+// loads every family before any canvas text is drawn in each render path.
+export type CardFontKey =
+  | "sans"
+  | "serif"
+  | "oswald"
+  | "cinzel"
+  | "garamond"
+  | "mono"
+  | "inter";
+
+const EXTRA_FONT_STACKS: Record<Exclude<CardFontKey, "sans" | "serif">, string> = {
+  oswald: "'Oswald', sans-serif",
+  cinzel: "'Cinzel', serif",
+  garamond: "'EB Garamond', Georgia, serif",
+  mono: "'Space Mono', monospace",
+  inter: "'Inter', sans-serif",
+};
+
+// The CSS stack for an extra font key, or null for the built-in sans/serif so
+// each call site keeps its own original default (Montserrat for custom text,
+// Helvetica for summary slots) and unchanged cards render identically.
+const extraFontStack = (k?: string | null): string | null =>
+  k && k in EXTRA_FONT_STACKS
+    ? EXTRA_FONT_STACKS[k as keyof typeof EXTRA_FONT_STACKS]
+    : null;
+
+// Font choices surfaced in the Social Studio editor's font dropdown.
+export const CARD_FONT_OPTIONS: { value: CardFontKey; label: string }[] = [
+  { value: "sans", label: "Sans (Montserrat)" },
+  { value: "serif", label: "Serif (Georgia)" },
+  { value: "oswald", label: "Oswald" },
+  { value: "cinzel", label: "Cinzel" },
+  { value: "garamond", label: "Garamond" },
+  { value: "mono", label: "Space Mono" },
+  { value: "inter", label: "Inter" },
+];
+
+// The actual CSS family names behind every selectable card font (Georgia is a
+// system serif and needs no fetch, so it is omitted). Montserrat is the app's
+// default sans but we load it here too so a card export never beats the app's
+// own lazy fetch of it.
+const CARD_FONT_FAMILIES = [
+  "Montserrat",
+  "Oswald",
+  "Cinzel",
+  "EB Garamond",
+  "Space Mono",
+  "Inter",
+];
+
+// Force-load every card font (at light + bold) before drawing. Canvas text does
+// not trigger a font fetch and document.fonts.ready only waits on fonts the DOM
+// has already requested, so without this the rarer families silently fall back
+// to a system font in both the live preview and the exported image. Best-effort:
+// failures (e.g. offline) just fall through to document.fonts.ready.
+const ensureCardFonts = async (): Promise<void> => {
+  const fonts = (document as Document).fonts;
+  if (!fonts) return;
+  if (typeof fonts.load === "function") {
+    try {
+      await Promise.all(
+        CARD_FONT_FAMILIES.flatMap((f) => [
+          fonts.load(`400 32px '${f}'`),
+          fonts.load(`700 32px '${f}'`),
+        ]),
+      );
+    } catch {}
+  }
+  if (fonts.ready) {
+    try {
+      await fonts.ready;
+    } catch {}
+  }
+};
+
 // Shrink `weight px family` until `text` fits within maxW (down to a floor) and
 // leave that font set on ctx. Returns the chosen pixel size.
 const fitFontSize = (
@@ -1344,9 +1425,10 @@ const drawTemplateFrame = (
     if (slot.uppercase) text = text.toUpperCase();
     const fontPx = Math.max(8, (slot.fontSize ?? 0.05) * drawnH);
     const family =
-      slot.fontFamily === "serif"
+      extraFontStack(slot.fontFamily) ??
+      (slot.fontFamily === "serif"
         ? "Georgia, 'Times New Roman', serif"
-        : "'Helvetica Neue', Arial, sans-serif";
+        : "'Helvetica Neue', Arial, sans-serif");
     const weight = slot.fontWeight ?? 700;
     ctx.font = `${weight} ${fontPx}px ${family}`;
     ctx.fillStyle = slot.color || p.textLight;
@@ -1804,7 +1886,7 @@ export type EditorLayer = {
   fontSize?: number;
   fontWeight?: number;
   align?: "left" | "center" | "right";
-  fontFamily?: "sans" | "serif";
+  fontFamily?: CardFontKey;
   uppercase?: boolean;
   // libsticker layers: which catalog asset, and (for data-bound badges) which
   // card field auto-fills the text slot.
@@ -2968,7 +3050,9 @@ const drawCustomLibSticker = async (
 
 const drawCustomText = (ctx: CanvasRenderingContext2D, s: CardLayoutLayer, r: PxRect) => {
   const px = Math.max(8, (s.fontSize ?? 0.05) * 1080);
-  const family = s.fontFamily === "serif" ? "Georgia, 'Times New Roman', serif" : CARD_FONT;
+  const family =
+    extraFontStack(s.fontFamily) ??
+    (s.fontFamily === "serif" ? "Georgia, 'Times New Roman', serif" : CARD_FONT);
   ctx.font = `${s.fontWeight ?? 700} ${px}px ${family}`;
   ctx.fillStyle = s.color || "#F5F2E8";
   ctx.textBaseline = "top";
@@ -3403,11 +3487,7 @@ export const computeCardLayers = async (
   opts: RenderOptions,
 ): Promise<EditorLayer[]> => {
   if (opts.template) return [];
-  if (document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch {}
-  }
+  await ensureCardFonts();
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
   const p = isJuniorInput(input) ? resolvePalette(JUNIOR_THEME) : resolvePalette(opts.theme);
@@ -3505,13 +3585,9 @@ export const renderShareCard = async (
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get canvas 2D context");
 
-  // Ensure web fonts (Montserrat) are ready so canvas text matches the app and
-  // the trading card rather than falling back to a system sans.
-  if (document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch {}
-  }
+  // Ensure web fonts are loaded so canvas text matches the app and the trading
+  // card rather than falling back to a system font (see ensureCardFonts).
+  await ensureCardFonts();
 
   // Junior cards force the brown palette regardless of the selected theme so
   // junior content is always visually distinct from the navy senior cards.
@@ -3729,11 +3805,7 @@ export const prepareAnimation = async (
   // background draws immediately (full alpha, no flash); foreground layers
   // composite in z-order with a per-layer stagger + entrance. "countUp" redraws
   // numeric layers live (drawCount) instead of compositing their bitmap.
-  if (document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch {}
-  }
+  await ensureCardFonts();
   const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const tplCtx: TemplateContext = {
     clubUrl: opts.clubUrl,

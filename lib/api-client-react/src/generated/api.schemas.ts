@@ -2246,6 +2246,11 @@ export type CardTemplateSlotFontFamily = typeof CardTemplateSlotFontFamily[keyof
 export const CardTemplateSlotFontFamily = {
   sans: 'sans',
   serif: 'serif',
+  oswald: 'oswald',
+  cinzel: 'cinzel',
+  garamond: 'garamond',
+  mono: 'mono',
+  inter: 'inter',
 } as const;
 
 export type CardTemplateSlotPhotoFit = typeof CardTemplateSlotPhotoFit[keyof typeof CardTemplateSlotPhotoFit];
@@ -2360,6 +2365,11 @@ export type CardLayoutLayerFontFamily = typeof CardLayoutLayerFontFamily[keyof t
 export const CardLayoutLayerFontFamily = {
   sans: 'sans',
   serif: 'serif',
+  oswald: 'oswald',
+  cinzel: 'cinzel',
+  garamond: 'garamond',
+  mono: 'mono',
+  inter: 'inter',
 } as const;
 
 export type CardLayerEffectsTone = typeof CardLayerEffectsTone[keyof typeof CardLayerEffectsTone];

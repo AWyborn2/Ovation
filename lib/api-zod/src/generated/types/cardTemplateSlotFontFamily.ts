@@ -12,4 +12,9 @@ export type CardTemplateSlotFontFamily = typeof CardTemplateSlotFontFamily[keyof
 export const CardTemplateSlotFontFamily = {
   sans: 'sans',
   serif: 'serif',
+  oswald: 'oswald',
+  cinzel: 'cinzel',
+  garamond: 'garamond',
+  mono: 'mono',
+  inter: 'inter',
 } as const;

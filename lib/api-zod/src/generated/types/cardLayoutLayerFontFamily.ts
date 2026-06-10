@@ -12,4 +12,9 @@ export type CardLayoutLayerFontFamily = typeof CardLayoutLayerFontFamily[keyof t
 export const CardLayoutLayerFontFamily = {
   sans: 'sans',
   serif: 'serif',
+  oswald: 'oswald',
+  cinzel: 'cinzel',
+  garamond: 'garamond',
+  mono: 'mono',
+  inter: 'inter',
 } as const;

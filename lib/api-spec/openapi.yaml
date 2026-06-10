@@ -7529,7 +7529,7 @@ components:
           enum: [left, center, right]
         fontFamily:
           type: string
-          enum: [sans, serif]
+          enum: [sans, serif, oswald, cinzel, garamond, mono, inter]
         uppercase:
           type: boolean
         photoFit:
@@ -7747,7 +7747,7 @@ components:
           enum: [left, center, right]
         fontFamily:
           type: string
-          enum: [sans, serif]
+          enum: [sans, serif, oswald, cinzel, garamond, mono, inter]
         uppercase:
           type: boolean
         assetId:

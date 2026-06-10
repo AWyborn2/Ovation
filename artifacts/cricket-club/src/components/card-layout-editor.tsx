@@ -51,6 +51,7 @@ import {
   hasLayerEffects,
   DEFAULT_LAYER_EFFECTS,
   BUILTIN_EFFECT_PRESETS,
+  CARD_FONT_OPTIONS,
   type CardKind,
   type CardSize,
   type EditorLayer,
@@ -72,8 +73,9 @@ const newId = () =>
 // Snap threshold expressed as a fraction of the 1080 base width.
 const SNAP = 0.012;
 
-// Brand palette — colour choices for text/sticker layers are constrained to
-// these club tokens (senior gold + junior brown chrome) so cards stay on-brand.
+// Brand palette — quick on-brand colour presets (senior gold + junior brown
+// chrome). Admins aren't limited to these: PaletteSwatches also exposes a colour
+// picker and a hex-code field so any colour can be entered.
 const PALETTE: { value: string; label: string }[] = [
   { value: "#FBAC27", label: "Gold" },
   { value: "#F5F2E8", label: "Cream" },
@@ -82,6 +84,21 @@ const PALETTE: { value: string; label: string }[] = [
   { value: "#1A1A1A", label: "Black" },
 ];
 
+// Normalise a typed colour to #RRGGBB (expanding #abc → #aabbcc); null if invalid.
+const normaliseHex = (raw: string): string | null => {
+  let v = raw.trim();
+  if (!v) return null;
+  if (!v.startsWith("#")) v = `#${v}`;
+  if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+    v = `#${v
+      .slice(1)
+      .split("")
+      .map((c) => c + c)
+      .join("")}`;
+  }
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : null;
+};
+
 function PaletteSwatches({
   value,
   onChange,
@@ -89,8 +106,16 @@ function PaletteSwatches({
   value: string;
   onChange: (color: string) => void;
 }) {
+  const [hex, setHex] = useState(value || "");
+  useEffect(() => setHex(value || ""), [value]);
+  const commit = (raw: string) => {
+    const n = normaliseHex(raw);
+    if (n) onChange(n);
+    else setHex(value || "");
+  };
+  const wellValue = normaliseHex(value || "") ?? "#FBAC27";
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       {PALETTE.map((c) => {
         const active = (value || "").toUpperCase() === c.value.toUpperCase();
         return (
@@ -104,6 +129,27 @@ function PaletteSwatches({
           />
         );
       })}
+      <input
+        type="color"
+        aria-label="Pick any colour"
+        title="Pick any colour"
+        value={wellValue}
+        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        className="h-6 w-6 cursor-pointer rounded border bg-transparent p-0"
+      />
+      <input
+        type="text"
+        aria-label="Hex colour code"
+        value={hex}
+        onChange={(e) => setHex(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit((e.target as HTMLInputElement).value);
+        }}
+        placeholder="#RRGGBB"
+        spellCheck={false}
+        className="h-6 w-[68px] rounded border bg-card px-1 text-[11px] uppercase"
+      />
     </div>
   );
 }
@@ -1203,31 +1249,45 @@ function Inspector({
             placeholder="Text"
             className="h-8 text-xs"
           />
-          <div className="flex items-center gap-2">
-            <PaletteSwatches
-              value={layer.color ?? "#F5F2E8"}
-              onChange={(color) => onChange({ color })}
-            />
+          <PaletteSwatches
+            value={layer.color ?? "#F5F2E8"}
+            onChange={(color) => onChange({ color })}
+          />
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={layer.align ?? "center"}
               onChange={(e) => onChange({ align: e.target.value as EditorLayer["align"] })}
-              className="h-8 flex-1 rounded border bg-card px-1 text-xs"
+              className="h-8 min-w-[88px] flex-1 rounded border bg-card px-1 text-xs"
             >
               <option value="left">Left</option>
               <option value="center">Centre</option>
               <option value="right">Right</option>
             </select>
-          </div>
-          <div className="flex items-center gap-2">
             <select
               value={layer.fontFamily ?? "sans"}
               onChange={(e) =>
                 onChange({ fontFamily: e.target.value as EditorLayer["fontFamily"] })
               }
-              className="h-8 flex-1 rounded border bg-card px-1 text-xs"
+              className="h-8 min-w-[88px] flex-1 rounded border bg-card px-1 text-xs"
             >
-              <option value="sans">Sans</option>
-              <option value="serif">Serif</option>
+              {CARD_FONT_OPTIONS.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={String(layer.fontWeight ?? 700)}
+              onChange={(e) => onChange({ fontWeight: Number(e.target.value) })}
+              className="h-8 min-w-[88px] flex-1 rounded border bg-card px-1 text-xs"
+            >
+              <option value="400">Regular</option>
+              <option value="500">Medium</option>
+              <option value="600">Semibold</option>
+              <option value="700">Bold</option>
+              <option value="800">Black</option>
             </select>
             <label className="flex items-center gap-1 text-[11px]">
               <input
@@ -1251,11 +1311,11 @@ function Inspector({
 
       {layer.editKind === "sticker" && (
         <>
+          <PaletteSwatches
+            value={layer.color ?? "#FBAC27"}
+            onChange={(color) => onChange({ color })}
+          />
           <div className="flex items-center gap-2">
-            <PaletteSwatches
-              value={layer.color ?? "#FBAC27"}
-              onChange={(color) => onChange({ color })}
-            />
             <div className="flex gap-1">
               <ShapeBtn active={layer.shape === "rect" || !layer.shape} onClick={() => onChange({ shape: "rect" })}>
                 <Square className="h-3.5 w-3.5" />
