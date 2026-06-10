@@ -35,3 +35,21 @@ id = "WGoM0jt-KHN4f6PYPo3Bb"
 uri = "file://exports/premierships.csv"
 type = "table"
 title = "Premiership Board — Teams & Results (CSV)"
+
+[[outputs]]
+id = "eEYEFBi9n0QK_-nJO2Vpw"
+uri = "file://attached_assets/generated_audio/music_sports_hype_loop.mp3"
+type = "audio"
+title = "sports hype loop"
+
+[[outputs]]
+id = "3IzrfRc-0Bwp55WVLuYxV"
+uri = "file://attached_assets/generated_audio/music_epic_triumph_loop.mp3"
+type = "audio"
+title = "epic triumph loop"
+
+[[outputs]]
+id = "7hxAOdDf01VsZTsZLryGI"
+uri = "file://attached_assets/generated_audio/music_chill_groove_loop.mp3"
+type = "audio"
+title = "chill groove loop"

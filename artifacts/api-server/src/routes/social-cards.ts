@@ -7,6 +7,7 @@ import {
   milestoneBoardSettingsTable,
   captionTemplatesTable,
   cardThemesTable,
+  cardAudioTracksTable,
   cardTemplatesTable,
   cardLayoutsTable,
   cardEffectPresetsTable,
@@ -24,6 +25,10 @@ import {
   UpdateCardThemeBody,
   UpdateCardThemeParams,
   DeleteCardThemeParams,
+  CreateCardAudioTrackBody,
+  UpdateCardAudioTrackBody,
+  UpdateCardAudioTrackParams,
+  DeleteCardAudioTrackParams,
   CreateCardTemplateBody,
   UpdateCardTemplateBody,
   UpdateCardTemplateParams,
@@ -343,6 +348,78 @@ router.delete("/card-themes/:id", requireAdmin, async (req, res): Promise<void> 
         .set({ isDefault: true })
         .where(eq(cardThemesTable.id, first.id));
     }
+  }
+  res.status(204).end();
+});
+
+// --- Card audio tracks (background music for animated clips) ---------------
+// A track is OPTIONAL on any clip; no track = silent export. There is no
+// "default" track — silence is the default — so this CRUD is a plain ordered
+// list with no default-promotion logic (unlike themes).
+
+router.get("/card-audio-tracks", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(cardAudioTracksTable)
+    .orderBy(asc(cardAudioTracksTable.displayOrder), asc(cardAudioTracksTable.id));
+  res.json(rows);
+});
+
+router.post("/card-audio-tracks", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = CreateCardAudioTrackBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const [created] = await db
+    .insert(cardAudioTracksTable)
+    .values({
+      name: parsed.data.name,
+      url: parsed.data.url,
+      durationMs: parsed.data.durationMs ?? null,
+      isCurated: parsed.data.isCurated ?? false,
+      displayOrder: parsed.data.displayOrder ?? 0,
+    })
+    .returning();
+  res.status(201).json(created);
+});
+
+router.patch("/card-audio-tracks/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateCardAudioTrackParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpdateCardAudioTrackBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const [updated] = await db
+    .update(cardAudioTracksTable)
+    .set(body.data)
+    .where(eq(cardAudioTracksTable.id, params.data.id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Card audio track not found" });
+    return;
+  }
+  res.json(updated);
+});
+
+router.delete("/card-audio-tracks/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeleteCardAudioTrackParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const result = await db
+    .delete(cardAudioTracksTable)
+    .where(eq(cardAudioTracksTable.id, params.data.id))
+    .returning({ id: cardAudioTracksTable.id });
+  if (result.length === 0) {
+    res.status(404).json({ error: "Card audio track not found" });
+    return;
   }
   res.status(204).end();
 });

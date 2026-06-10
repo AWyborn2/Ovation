@@ -2165,6 +2165,34 @@ export interface CardThemeUpdate {
   displayOrder?: number;
 }
 
+export interface CardAudioTrack {
+  id: number;
+  name: string;
+  url: string;
+  /** @nullable */
+  durationMs?: number | null;
+  isCurated: boolean;
+  displayOrder: number;
+}
+
+export interface CardAudioTrackInput {
+  name: string;
+  url: string;
+  /** @nullable */
+  durationMs?: number | null;
+  isCurated?: boolean;
+  displayOrder?: number;
+}
+
+export interface CardAudioTrackUpdate {
+  name?: string;
+  url?: string;
+  /** @nullable */
+  durationMs?: number | null;
+  isCurated?: boolean;
+  displayOrder?: number;
+}
+
 export type CardTemplateSlotType = typeof CardTemplateSlotType[keyof typeof CardTemplateSlotType];
 
 

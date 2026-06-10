@@ -52,6 +52,9 @@ import type {
   CaptainUpdate,
   CaptionTemplate,
   CaptionTemplateInput,
+  CardAudioTrack,
+  CardAudioTrackInput,
+  CardAudioTrackUpdate,
   CardEffectPreset,
   CardEffectPresetInput,
   CardLayout,
@@ -10274,6 +10277,296 @@ export const useDeleteCardTheme = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCardThemeMutationOptions(options));
+    }
+
+export const getListCardAudioTracksUrl = () => {
+
+
+
+
+  return `/api/card-audio-tracks`
+}
+
+/**
+ * @summary List all card audio tracks (ordered)
+ */
+export const listCardAudioTracks = async ( options?: RequestInit): Promise<CardAudioTrack[]> => {
+
+  return customFetch<CardAudioTrack[]>(getListCardAudioTracksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardAudioTracksQueryKey = () => {
+    return [
+    `/api/card-audio-tracks`
+    ] as const;
+    }
+
+
+export const getListCardAudioTracksQueryOptions = <TData = Awaited<ReturnType<typeof listCardAudioTracks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardAudioTracks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardAudioTracksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCardAudioTracks>>> = ({ signal }) => listCardAudioTracks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCardAudioTracks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardAudioTracksQueryResult = NonNullable<Awaited<ReturnType<typeof listCardAudioTracks>>>
+export type ListCardAudioTracksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all card audio tracks (ordered)
+ */
+
+export function useListCardAudioTracks<TData = Awaited<ReturnType<typeof listCardAudioTracks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardAudioTracks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardAudioTracksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCardAudioTrackUrl = () => {
+
+
+
+
+  return `/api/card-audio-tracks`
+}
+
+/**
+ * @summary Create a card audio track
+ */
+export const createCardAudioTrack = async (cardAudioTrackInput: CardAudioTrackInput, options?: RequestInit): Promise<CardAudioTrack> => {
+
+  return customFetch<CardAudioTrack>(getCreateCardAudioTrackUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardAudioTrackInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardAudioTrackMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardAudioTrack>>, TError,{data: BodyType<CardAudioTrackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardAudioTrack>>, TError,{data: BodyType<CardAudioTrackInput>}, TContext> => {
+
+const mutationKey = ['createCardAudioTrack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardAudioTrack>>, {data: BodyType<CardAudioTrackInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardAudioTrack(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardAudioTrackMutationResult = NonNullable<Awaited<ReturnType<typeof createCardAudioTrack>>>
+    export type CreateCardAudioTrackMutationBody = BodyType<CardAudioTrackInput>
+    export type CreateCardAudioTrackMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a card audio track
+ */
+export const useCreateCardAudioTrack = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardAudioTrack>>, TError,{data: BodyType<CardAudioTrackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardAudioTrack>>,
+        TError,
+        {data: BodyType<CardAudioTrackInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardAudioTrackMutationOptions(options));
+    }
+
+export const getUpdateCardAudioTrackUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-audio-tracks/${id}`
+}
+
+/**
+ * @summary Update a card audio track
+ */
+export const updateCardAudioTrack = async (id: number,
+    cardAudioTrackUpdate: CardAudioTrackUpdate, options?: RequestInit): Promise<CardAudioTrack> => {
+
+  return customFetch<CardAudioTrack>(getUpdateCardAudioTrackUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardAudioTrackUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCardAudioTrackMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCardAudioTrack>>, TError,{id: number;data: BodyType<CardAudioTrackUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCardAudioTrack>>, TError,{id: number;data: BodyType<CardAudioTrackUpdate>}, TContext> => {
+
+const mutationKey = ['updateCardAudioTrack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCardAudioTrack>>, {id: number;data: BodyType<CardAudioTrackUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCardAudioTrack(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCardAudioTrackMutationResult = NonNullable<Awaited<ReturnType<typeof updateCardAudioTrack>>>
+    export type UpdateCardAudioTrackMutationBody = BodyType<CardAudioTrackUpdate>
+    export type UpdateCardAudioTrackMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a card audio track
+ */
+export const useUpdateCardAudioTrack = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCardAudioTrack>>, TError,{id: number;data: BodyType<CardAudioTrackUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCardAudioTrack>>,
+        TError,
+        {id: number;data: BodyType<CardAudioTrackUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCardAudioTrackMutationOptions(options));
+    }
+
+export const getDeleteCardAudioTrackUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-audio-tracks/${id}`
+}
+
+/**
+ * @summary Delete a card audio track
+ */
+export const deleteCardAudioTrack = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardAudioTrackUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCardAudioTrackMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardAudioTrack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCardAudioTrack>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCardAudioTrack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCardAudioTrack>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCardAudioTrack(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardAudioTrackMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCardAudioTrack>>>
+
+    export type DeleteCardAudioTrackMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a card audio track
+ */
+export const useDeleteCardAudioTrack = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardAudioTrack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCardAudioTrack>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCardAudioTrackMutationOptions(options));
     }
 
 export const getListCardTemplatesUrl = () => {

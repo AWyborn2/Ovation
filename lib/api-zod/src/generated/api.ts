@@ -3670,6 +3670,65 @@ export const DeleteCardThemeParams = zod.object({
 
 
 /**
+ * @summary List all card audio tracks (ordered)
+ */
+export const ListCardAudioTracksResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "durationMs": zod.number().nullish(),
+  "isCurated": zod.boolean(),
+  "displayOrder": zod.number()
+})
+export const ListCardAudioTracksResponse = zod.array(ListCardAudioTracksResponseItem)
+
+
+/**
+ * @summary Create a card audio track
+ */
+export const CreateCardAudioTrackBody = zod.object({
+  "name": zod.string(),
+  "url": zod.string(),
+  "durationMs": zod.number().nullish(),
+  "isCurated": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a card audio track
+ */
+export const UpdateCardAudioTrackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCardAudioTrackBody = zod.object({
+  "name": zod.string().optional(),
+  "url": zod.string().optional(),
+  "durationMs": zod.number().nullish(),
+  "isCurated": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const UpdateCardAudioTrackResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "durationMs": zod.number().nullish(),
+  "isCurated": zod.boolean(),
+  "displayOrder": zod.number()
+})
+
+
+/**
+ * @summary Delete a card audio track
+ */
+export const DeleteCardAudioTrackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all custom card templates (ordered)
  */
 export const ListCardTemplatesResponseItem = zod.object({

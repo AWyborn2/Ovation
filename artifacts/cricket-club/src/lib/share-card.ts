@@ -993,6 +993,25 @@ export type RenderOptions = {
    * Ignored for matchSummary + custom-template cards (they keep their own paths).
    */
   layout?: CardLayoutLayer[] | null;
+  /**
+   * Background music for animated VIDEO export (and the live preview's optional
+   * sound toggle). Admin-authored only; omitted / null = silent (unchanged).
+   * `url` is a storage object path served via /api/storage. The clip uses a
+   * window of the track starting at `trimStartMs`, looped if shorter than the
+   * clip. Ignored by the still PNG renderer and the GIF export (GIF has no
+   * audio). A failed load degrades gracefully to a silent clip — never throws.
+   */
+  audio?: CardAudioSpec | null;
+};
+
+/** Resolved background-music selection for an animated clip. */
+export type CardAudioSpec = {
+  /** Storage object path (served via /api/storage/...). */
+  url: string;
+  /** Playback gain, 0–1 (1 = full track volume). */
+  volume: number;
+  /** Offset into the source track where the clip's audio window begins (ms). */
+  trimStartMs: number;
 };
 
 // Draw `img` so it fits inside the rect (object-fit: contain), centred.
@@ -3710,16 +3729,96 @@ export const prepareAnimation = async (
 
 // Pick the best MediaRecorder container the browser supports. MP4 is preferred
 // (broad social-platform support); WebM is the universal fallback in Chromium.
-export const pickVideoMime = (): { mime: string; ext: string } => {
+// When `withAudio` is set, prefer mime strings that name an audio codec too
+// (avc1+mp4a for MP4, vp9/vp8+opus for WebM) so the muxed track is actually
+// encoded — a video-only mime can silently drop the audio track.
+export const pickVideoMime = (withAudio = false): { mime: string; ext: string } => {
   const supported = (m: string): boolean =>
     typeof MediaRecorder !== "undefined" &&
     typeof MediaRecorder.isTypeSupported === "function" &&
     MediaRecorder.isTypeSupported(m);
+  if (withAudio) {
+    if (supported("video/mp4;codecs=avc1,mp4a.40.2"))
+      return { mime: "video/mp4;codecs=avc1,mp4a.40.2", ext: "mp4" };
+    if (supported("video/mp4")) return { mime: "video/mp4", ext: "mp4" };
+    if (supported("video/webm;codecs=vp9,opus"))
+      return { mime: "video/webm;codecs=vp9,opus", ext: "webm" };
+    if (supported("video/webm;codecs=vp8,opus"))
+      return { mime: "video/webm;codecs=vp8,opus", ext: "webm" };
+    if (supported("video/webm")) return { mime: "video/webm", ext: "webm" };
+    return { mime: "", ext: "webm" };
+  }
   if (supported("video/mp4;codecs=avc1")) return { mime: "video/mp4;codecs=avc1", ext: "mp4" };
   if (supported("video/mp4")) return { mime: "video/mp4", ext: "mp4" };
   if (supported("video/webm;codecs=vp9")) return { mime: "video/webm;codecs=vp9", ext: "webm" };
   if (supported("video/webm")) return { mime: "video/webm", ext: "webm" };
   return { mime: "", ext: "webm" };
+};
+
+// Load + decode a track and build a looping audio graph feeding a MediaStream
+// audio track, ready to mux into the canvas capture stream. Returns the stream
+// track plus start/stop controls and a cleanup, or null if anything fails (so
+// the caller degrades to a silent clip instead of throwing). The source loops
+// from `trimStartMs` so a clip longer than the (trimmed) track never falls
+// silent; volume is applied via a GainNode.
+type ClipAudio = {
+  track: MediaStreamTrack;
+  start: (when: number) => void;
+  stop: () => void;
+  cleanup: () => void;
+};
+const prepareClipAudio = async (spec: CardAudioSpec): Promise<ClipAudio | null> => {
+  try {
+    const AudioCtx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioCtx) return null;
+    const res = await fetch(spec.url);
+    if (!res.ok) return null;
+    const arrayBuf = await res.arrayBuffer();
+    const ctx = new AudioCtx();
+    const buffer = await ctx.decodeAudioData(arrayBuf);
+    const dest = ctx.createMediaStreamDestination();
+    const gain = ctx.createGain();
+    gain.gain.value = Math.max(0, Math.min(1, spec.volume));
+    gain.connect(dest);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    // Loop the trimmed window: playback starts at trimStart and wraps back to
+    // it (not to 0) so the clip keeps using the admin-chosen section.
+    const trimStart = Math.max(0, Math.min(spec.trimStartMs / 1000, buffer.duration));
+    src.loopStart = trimStart;
+    src.loopEnd = buffer.duration;
+    src.connect(gain);
+    const track = dest.stream.getAudioTracks()[0];
+    if (!track) {
+      void ctx.close();
+      return null;
+    }
+    return {
+      track,
+      start: (when: number) => {
+        void ctx.resume().catch(() => {});
+        src.start(when, trimStart);
+      },
+      stop: () => {
+        try {
+          src.stop();
+        } catch {}
+      },
+      cleanup: () => {
+        try {
+          src.disconnect();
+          gain.disconnect();
+        } catch {}
+        void ctx.close().catch(() => {});
+      },
+    };
+  } catch {
+    return null;
+  }
 };
 
 // Human-facing label for the export format the current browser will produce
@@ -3752,8 +3851,14 @@ export const renderShareCardVideo = async (
   // Paint the first frame before the recorder starts so the clip opens cleanly.
   anim.draw(ctx, 0);
 
-  const { mime, ext } = pickVideoMime();
+  // Optional background music: build a looping audio graph and mux its stream
+  // track into the canvas capture stream BEFORE constructing the recorder (a
+  // track added after start() is not encoded). A failed decode/load yields null
+  // → silent clip, never a thrown error.
+  const clipAudio = opts.audio ? await prepareClipAudio(opts.audio) : null;
+  const { mime, ext } = pickVideoMime(!!clipAudio);
   const stream = canvas.captureStream(30);
+  if (clipAudio) stream.addTrack(clipAudio.track);
   const recorder = new MediaRecorder(
     stream,
     mime ? { mimeType: mime, videoBitsPerSecond: 8_000_000 } : undefined,
@@ -3767,6 +3872,8 @@ export const renderShareCardVideo = async (
   });
 
   recorder.start();
+  // Start the music in lockstep with recording so the audio aligns with frame 0.
+  if (clipAudio) clipAudio.start(0);
   const start = performance.now();
   await new Promise<void>((resolve) => {
     const tick = (now: number) => {
@@ -3784,6 +3891,10 @@ export const renderShareCardVideo = async (
   recorder.stop();
 
   const blob = await stopped;
+  if (clipAudio) {
+    clipAudio.stop();
+    clipAudio.cleanup();
+  }
   anim.cleanup();
   return { blob, ext };
 };

@@ -5,12 +5,15 @@ import {
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useListCardAudioTracks,
+  getListCardAudioTracksQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
   useListCardLayouts,
   getListCardLayoutsQueryKey,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
+  type CardAudioTrack as ApiCardAudioTrack,
   type CardTemplate,
   type CardLayout,
   type CardLayoutLayer,
@@ -187,6 +190,46 @@ export function ShareCardModal({
     }
   }, [open]);
 
+  // Admin-only background music for animated clips. No track = silent export
+  // (the default). `selectedAudioId === null` means "No music"; volume 0–1;
+  // trim is the offset (ms) into the track where the clip's audio window starts.
+  const audioTracksQ = useListCardAudioTracks({
+    query: { enabled: open, queryKey: getListCardAudioTracksQueryKey() },
+  });
+  const audioTracks = (audioTracksQ.data ?? []) as ApiCardAudioTrack[];
+  const [selectedAudioId, setSelectedAudioId] = useState<number | null>(null);
+  const [audioVolume, setAudioVolume] = useState<number>(0.8);
+  const [audioTrimStartMs, setAudioTrimStartMs] = useState<number>(0);
+  const [previewSoundOn, setPreviewSoundOn] = useState<boolean>(false);
+  useEffect(() => {
+    if (!open) {
+      setSelectedAudioId(null);
+      setAudioVolume(0.8);
+      setAudioTrimStartMs(0);
+      setPreviewSoundOn(false);
+    }
+  }, [open]);
+  const selectedAudioTrack = useMemo(
+    () => audioTracks.find((t) => t.id === selectedAudioId) ?? null,
+    [audioTracks, selectedAudioId],
+  );
+  // Reset the trim when the chosen track changes (offsets are track-specific).
+  useEffect(() => {
+    setAudioTrimStartMs(0);
+  }, [selectedAudioId]);
+  // The resolved audio selection threaded into render options (null = silent).
+  const audioSpec = useMemo(
+    () =>
+      selectedAudioTrack
+        ? {
+            url: `/api/storage${selectedAudioTrack.url}`.replace("/api/storage/api/storage", "/api/storage"),
+            volume: audioVolume,
+            trimStartMs: audioTrimStartMs,
+          }
+        : null,
+    [selectedAudioTrack, audioVolume, audioTrimStartMs],
+  );
+
   const enabledSizes: CardSize[] = useMemo(() => {
     const s = bundle?.settings;
     const out: CardSize[] = [];
@@ -248,6 +291,7 @@ export function ShareCardModal({
     motionPreset: motion,
     durationMs,
     speed,
+    audio: audioSpec,
   });
 
   const { previewUrls, rendering } = useCardPreview({
@@ -438,6 +482,7 @@ export function ShareCardModal({
                         input={input}
                         opts={buildOpts(s, renderTransform)}
                         sig={animSig}
+                        soundOn={isAdmin && previewSoundOn && !!audioSpec}
                       />
                     ) : rendering && !previewUrls[s] ? (
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -543,6 +588,95 @@ export function ShareCardModal({
                     : animated && !videoSupported
                       ? " Your browser can't record video; only the still image will download."
                       : ""}
+                </p>
+              </div>
+            )}
+
+            {isAdmin && animated && (
+              <div className="space-y-2 rounded border px-3 py-2">
+                <Label htmlFor="audio-select" className="text-sm">
+                  Background music
+                </Label>
+                <select
+                  id="audio-select"
+                  value={selectedAudioId ?? ""}
+                  onChange={(e) =>
+                    setSelectedAudioId(e.target.value === "" ? null : Number(e.target.value))
+                  }
+                  className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                >
+                  <option value="">No music (silent)</option>
+                  {audioTracks.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.isCurated ? " (library)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {selectedAudioTrack && (
+                  <>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="audio-volume" className="text-xs">
+                          Volume
+                        </Label>
+                        <span className="text-xs text-muted-foreground">
+                          {Math.round(audioVolume * 100)}%
+                        </span>
+                      </div>
+                      <input
+                        id="audio-volume"
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={audioVolume}
+                        onChange={(e) => setAudioVolume(Number(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    {selectedAudioTrack.durationMs &&
+                      selectedAudioTrack.durationMs > durationMs && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="audio-trim" className="text-xs">
+                              Start from
+                            </Label>
+                            <span className="text-xs text-muted-foreground">
+                              {(audioTrimStartMs / 1000).toFixed(1)}s
+                            </span>
+                          </div>
+                          <input
+                            id="audio-trim"
+                            type="range"
+                            min={0}
+                            max={Math.max(0, selectedAudioTrack.durationMs - durationMs)}
+                            step={500}
+                            value={Math.min(
+                              audioTrimStartMs,
+                              Math.max(0, selectedAudioTrack.durationMs - durationMs),
+                            )}
+                            onChange={(e) => setAudioTrimStartMs(Number(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                    <div className="flex items-center justify-between pt-1">
+                      <Label htmlFor="audio-preview-toggle" className="text-xs">
+                        Play sound in preview
+                      </Label>
+                      <Switch
+                        id="audio-preview-toggle"
+                        checked={previewSoundOn}
+                        onCheckedChange={setPreviewSoundOn}
+                      />
+                    </div>
+                  </>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {selectedAudioTrack
+                    ? "The exported video clip includes this track, mixed and trimmed to the clip. GIFs stay silent."
+                    : "Pick a track to add background music to the exported video clip. No track = silent (default)."}
                 </p>
               </div>
             )}

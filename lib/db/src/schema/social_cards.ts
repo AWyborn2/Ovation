@@ -44,6 +44,26 @@ export const cardThemesTable = pgTable("card_themes", {
 
 export type CardThemeRow = typeof cardThemesTable.$inferSelect;
 
+// Curated / admin-uploaded background music tracks for animated share-card video
+// clips. A track is OPTIONAL on any clip (no track = silent export, unchanged).
+// `url` is a storage object path (served via /api/storage/...) — either a curated
+// library track or an admin upload. `durationMs` is the source track length when
+// known (purely informational for the trim UI); the clip itself only ever uses a
+// `durationMs`-long window starting at the admin-chosen trim offset.
+export const cardAudioTracksTable = pgTable("card_audio_tracks", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  durationMs: integer("duration_ms"),
+  // Marks the small built-in royalty-free library so it can be visually
+  // distinguished from admin uploads (and protected from accidental deletion).
+  isCurated: boolean("is_curated").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CardAudioTrackRow = typeof cardAudioTracksTable.$inferSelect;
+
 // One labelled, data-bound region painted over a custom uploaded design.
 // All geometry is stored as a fraction (0-1) of the BACKGROUND image so the
 // renderer can map it through an object-fit:cover transform onto any card size

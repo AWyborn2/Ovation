@@ -2899,6 +2899,80 @@ paths:
         "404":
           description: Not found
 
+  /card-audio-tracks:
+    get:
+      operationId: listCardAudioTracks
+      tags: [socialCards]
+      summary: List all card audio tracks (ordered)
+      responses:
+        "200":
+          description: Card audio track list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardAudioTrack"
+    post:
+      operationId: createCardAudioTrack
+      tags: [socialCards]
+      summary: Create a card audio track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardAudioTrackInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardAudioTrack"
+
+  /card-audio-tracks/{id}:
+    patch:
+      operationId: updateCardAudioTrack
+      tags: [socialCards]
+      summary: Update a card audio track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardAudioTrackUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardAudioTrack"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCardAudioTrack
+      tags: [socialCards]
+      summary: Delete a card audio track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /card-templates:
     get:
       operationId: listCardTemplates
@@ -7208,6 +7282,52 @@ components:
         logoUrl:
           type: ["string", "null"]
         isDefault:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardAudioTrack:
+      type: object
+      required: [id, name, url, isCurated, displayOrder]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+        durationMs:
+          type: ["integer", "null"]
+        isCurated:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardAudioTrackInput:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        durationMs:
+          type: ["integer", "null"]
+        isCurated:
+          type: boolean
+        displayOrder:
+          type: integer
+
+    CardAudioTrackUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        durationMs:
+          type: ["integer", "null"]
+        isCurated:
           type: boolean
         displayOrder:
           type: integer
