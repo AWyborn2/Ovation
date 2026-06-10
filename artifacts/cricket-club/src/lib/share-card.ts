@@ -771,11 +771,24 @@ const drawPill = (
   return y + h;
 };
 
-// Built-in motion presets applied to a card. "none" is a still card; "fadeIn"
-// and "slideUp" are whole-card / per-slot entrances; "countUp" ticks numeric
-// slot values up from zero (template slots only — a flat built-in card falls
-// back to "fadeIn" since its baked-in numbers can't be re-counted).
-export type MotionPreset = "none" | "fadeIn" | "slideUp" | "countUp";
+// Built-in motion presets applied to a card.
+// - "none"    — still card (no animation).
+// - "fadeIn"  — whole-card fade (all elements together — the simple case).
+// - "slideUp" — whole-card rise + fade (all elements together).
+// - "popIn"   — each element scales/pops in independently, staggered.
+// - "wipe"    — each element is revealed left→right, staggered.
+// - "stagger" — each element slides up + fades in one-by-one (staggered list).
+// - "countUp" — each element fades in and numeric values tick up from zero.
+// On built-in cards every preset now animates the real layer model, so elements
+// can enter independently; fadeIn/slideUp keep zero stagger for the simple case.
+export type MotionPreset =
+  | "none"
+  | "fadeIn"
+  | "slideUp"
+  | "popIn"
+  | "wipe"
+  | "stagger"
+  | "countUp";
 
 export type PhotoPlacement = "feature" | "headshot";
 
@@ -833,6 +846,18 @@ export type RenderOptions = {
    */
   motionPreset?: MotionPreset;
   /**
+   * Total clip length in milliseconds for animated cards (preview + video + GIF
+   * export). Clamped to a safe band (see `clampDuration`) and defaulted to
+   * `DEFAULT_DURATION_MS` when omitted. Ignored by the still PNG renderer.
+   */
+  durationMs?: number;
+  /**
+   * Animation speed multiplier (0.5 = slow … 2 = fast, 1 = default). Compresses
+   * each element's entrance + the per-element stagger so the motion finishes
+   * sooner (and holds longer) without changing the clip length. Clamped 0.5–2.
+   */
+  speed?: number;
+  /**
    * A saved per-card-kind layer layout from the card design studio. When present
    * (and non-empty), each built-in element is repositioned/restacked/hidden by
    * its matching `element` entry and any `image`/`sticker`/`text` entries are
@@ -868,6 +893,19 @@ const drawImageContain = (
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 const easeOutCubic = (n: number): number => 1 - Math.pow(1 - clamp01(n), 3);
+// Overshoot ease for the "popIn" preset (settles slightly past 1 then back).
+const easeOutBack = (n: number): number => {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  const x = clamp01(n);
+  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+};
+
+// Scale a stat value for the count-up preset. Numbers tick from 0→full; strings
+// (e.g. "3/22", "1,234 runs") scale their first numeric run via applyCountUp so
+// drawCount(1) renders identically to the static draw (rest-frame parity).
+const countValue = (v: string | number, frac: number): string | number =>
+  typeof v === "number" ? Math.round(v * clamp01(frac)) : applyCountUp(v, frac);
 
 // Replace the first run of digits in `text` with the same number scaled by
 // `frac` (0-1). Powers the count-up preset: "1,234 Runs" → "740 Runs" mid-way.
@@ -1039,6 +1077,7 @@ const drawTemplateFrame = (
   logos: Map<string, HTMLImageElement>,
   motion: MotionPreset,
   t: number,
+  speed: number = 1,
 ) => {
   const tctx: TemplateContext = {
     clubUrl: opts.clubUrl,
@@ -1072,16 +1111,42 @@ const drawTemplateFrame = (
     const cw = slot.w * drawnW;
     const ch = slot.h * drawnH;
 
-    // Per-slot entrance progress: slots stagger in across the first ~60% of the
-    // timeline, then hold. Motion "none" shows everything fully (local unused).
-    const stagger = slots.length > 1 ? (i / slots.length) * 0.3 : 0;
-    const local = easeOutCubic((t - stagger) / 0.6);
+    // Per-slot entrance progress. fadeIn/slideUp move as one block (no spread);
+    // popIn/wipe/countUp spread a little, stagger spreads more. Window + spread
+    // shrink with speed so faster = snappier. Motion "none" shows everything.
+    const spread =
+      (motion === "stagger"
+        ? 0.55
+        : motion === "popIn" || motion === "wipe" || motion === "countUp"
+          ? 0.3
+          : motion === "slideUp" || motion === "fadeIn"
+            ? 0
+            : 0) / speed;
+    const win = 0.6 / speed;
+    const start = slots.length > 1 ? (i / slots.length) * spread : 0;
+    const localRaw = clamp01((t - start) / win);
+    const local = easeOutCubic(localRaw);
     const alpha = motion === "none" ? 1 : local;
     if (alpha <= 0) return;
 
     ctx.save();
-    ctx.globalAlpha = alpha;
-    if (motion === "slideUp") ctx.translate(0, (1 - local) * 0.06 * H);
+    if (motion === "popIn") {
+      const s = easeOutBack(localRaw);
+      const ccx = cx + cw / 2;
+      const ccy = cy + ch / 2;
+      ctx.globalAlpha = local;
+      ctx.translate(ccx, ccy);
+      ctx.scale(s, s);
+      ctx.translate(-ccx, -ccy);
+    } else if (motion === "wipe") {
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.rect(cx, cy, Math.max(1, cw * local), ch);
+      ctx.clip();
+    } else {
+      ctx.globalAlpha = alpha;
+      if (motion === "slideUp" || motion === "stagger") ctx.translate(0, (1 - local) * 0.06 * H);
+    }
 
     if (slot.type === "photo") {
       const url = resolvePhotoField(input, tctx);
@@ -1540,6 +1605,12 @@ type RenderLayer = {
   // editor can override (applyLayout writes saved values here). Defaults to a
   // centred, un-zoomed crop so un-customised photos stay pixel-identical.
   photoTransform?: { focalX: number; focalY: number; zoom: number };
+  // Numeric value layers (stat tiles, big serif figures) set `numeric` and a
+  // synchronous `drawCount` so the "countUp" animation can re-render them live
+  // each frame with a scaled value. drawCount(1) MUST match draw() exactly so
+  // the rest frame is identical. Non-numeric layers omit both (count-up fades).
+  numeric?: boolean;
+  drawCount?: (ctx: CanvasRenderingContext2D, frac: number) => void;
   draw: (ctx: CanvasRenderingContext2D) => void | Promise<void>;
 };
 
@@ -1927,8 +1998,11 @@ const buildLayers = (
       vAnchor: "top",
       selectable: true,
       resizable: true,
+      numeric: true,
       draw: (ctx) =>
         drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, currentValue, milestoneLabel, scale, p, true),
+      drawCount: (ctx, frac) =>
+        drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, countValue(currentValue, frac), milestoneLabel, scale, p, true),
     });
     y = tileTop + tileH + Math.round(28 * scale);
 
@@ -2056,7 +2130,10 @@ const buildLayers = (
           vAnchor: "top",
           selectable: true,
           resizable: true,
+          numeric: true,
           draw: (ctx) => drawStatTile(ctx, tx, ty, tileW, tileH, s.value, s.label, scale, p, false),
+          drawCount: (ctx, frac) =>
+            drawStatTile(ctx, tx, ty, tileW, tileH, countValue(s.value, frac), s.label, scale, p, false),
         });
       });
     }
@@ -2091,6 +2168,13 @@ const buildLayers = (
     });
     y = titleTop + Math.round(60 * scale);
     const valueTop = y;
+    const drawRecordValue = (ctx: CanvasRenderingContext2D, v: string | number) => {
+      ctx.fillStyle = TEXT_LIGHT;
+      ctx.font = `900 ${Math.round(180 * scale)}px Georgia, 'Times New Roman', serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(String(fmt(v)), W / 2, valueTop);
+    };
     add({
       id: "value",
       editKind: "element",
@@ -2099,13 +2183,9 @@ const buildLayers = (
       vAnchor: "top",
       selectable: true,
       resizable: true,
-      draw: (ctx) => {
-        ctx.fillStyle = TEXT_LIGHT;
-        ctx.font = `900 ${Math.round(180 * scale)}px Georgia, 'Times New Roman', serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText(String(fmt(value)), W / 2, valueTop);
-      },
+      numeric: true,
+      draw: (ctx) => drawRecordValue(ctx, value),
+      drawCount: (ctx, frac) => drawRecordValue(ctx, countValue(value, frac)),
     });
     y = valueTop + Math.round(200 * scale);
     m.font = `700 ${Math.round(48 * scale)}px Georgia, 'Times New Roman', serif`;
@@ -2195,6 +2275,16 @@ const buildLayers = (
     });
     y = nameTop + nameLines.length * Math.round(76 * scale) + Math.round(40 * scale);
     const valueTop = y;
+    const drawLeaderValue = (ctx: CanvasRenderingContext2D, v: string | number) => {
+      ctx.fillStyle = GOLD;
+      ctx.font = `900 ${Math.round(150 * scale)}px Georgia, 'Times New Roman', serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(String(fmt(v)), W / 2, valueTop);
+      ctx.fillStyle = TEXT_MUTED;
+      ctx.font = `600 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.fillText(category.toUpperCase(), W / 2, valueTop + Math.round(170 * scale));
+    };
     add({
       id: "value",
       editKind: "element",
@@ -2203,16 +2293,9 @@ const buildLayers = (
       vAnchor: "top",
       selectable: true,
       resizable: true,
-      draw: (ctx) => {
-        ctx.fillStyle = GOLD;
-        ctx.font = `900 ${Math.round(150 * scale)}px Georgia, 'Times New Roman', serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText(String(fmt(value)), W / 2, valueTop);
-        ctx.fillStyle = TEXT_MUTED;
-        ctx.font = `600 ${Math.round(22 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-        ctx.fillText(category.toUpperCase(), W / 2, valueTop + Math.round(170 * scale));
-      },
+      numeric: true,
+      draw: (ctx) => drawLeaderValue(ctx, value),
+      drawCount: (ctx, frac) => drawLeaderValue(ctx, countValue(value, frac)),
     });
   } else if (input.kind === "premiership") {
     const grade = input.grade;
@@ -2511,7 +2594,10 @@ const buildLayers = (
       vAnchor: "top",
       selectable: true,
       resizable: true,
+      numeric: true,
       draw: (ctx) => drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, bigValue, tileLabel, scale, p, true),
+      drawCount: (ctx, frac) =>
+        drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, countValue(bigValue, frac), tileLabel, scale, p, true),
     });
     y = tileTop + tileH + Math.round(28 * scale);
 
@@ -2749,6 +2835,19 @@ const applyLayout = (
   return [...builtins, ...customs];
 };
 
+// Apply a built-in layer's natural→rect transform to the context (identity when
+// rect === natural). Shared by the still renderer and the animation baker so a
+// baked layer lands in exactly the same pixels as the static draw.
+const applyLayerTransform = (ctx: CanvasRenderingContext2D, l: RenderLayer) => {
+  if (l.drawsAtNatural && l.natural.w > 0 && l.natural.h > 0) {
+    const sx = l.rect.w / l.natural.w;
+    const sy = l.rect.h / l.natural.h;
+    ctx.translate(l.rect.x, l.rect.y);
+    ctx.scale(sx, sy);
+    ctx.translate(-l.natural.x, -l.natural.y);
+  }
+};
+
 // Draw all visible layers in ascending z order, applying the natural→rect
 // transform for built-in layers (identity when rect === natural).
 const drawLayers = async (ctx: CanvasRenderingContext2D, layers: RenderLayer[]) => {
@@ -2756,17 +2855,62 @@ const drawLayers = async (ctx: CanvasRenderingContext2D, layers: RenderLayer[]) 
   for (const l of ordered) {
     if (l.hidden) continue;
     ctx.save();
-    if (l.drawsAtNatural && l.natural.w > 0 && l.natural.h > 0) {
-      const sx = l.rect.w / l.natural.w;
-      const sy = l.rect.h / l.natural.h;
-      ctx.translate(l.rect.x, l.rect.y);
-      ctx.scale(sx, sy);
-      ctx.translate(-l.natural.x, -l.natural.y);
-    }
+    applyLayerTransform(ctx, l);
     try {
       await l.draw(ctx);
     } catch {}
     ctx.restore();
+  }
+};
+
+// A baked layer: its draw() output rendered once onto a full-frame transparent
+// canvas (so its pixels already sit at final position). Compositing the bitmap
+// with a per-layer alpha/transform is what lets every element animate
+// independently without re-running its (sometimes async) draw each frame.
+type BakedLayer = {
+  layer: RenderLayer;
+  bitmap: ImageBitmap | null;
+  // Element-space centre + bounds (final pixels) for popIn scaling / wipe clip.
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+  rw: number;
+  rh: number;
+};
+
+// Render a single layer onto its own full-frame canvas and snapshot it. Returns
+// a null bitmap if the layer is empty/zero-sized (composited as a no-op).
+const bakeLayer = async (
+  l: RenderLayer,
+  W: number,
+  H: number,
+): Promise<BakedLayer> => {
+  const rect = l.rect;
+  const meta = {
+    cx: rect.x + rect.w / 2,
+    cy: rect.y + rect.h / 2,
+    rx: rect.x,
+    ry: rect.y,
+    rw: rect.w,
+    rh: rect.h,
+  };
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { layer: l, bitmap: null, ...meta };
+  ctx.save();
+  applyLayerTransform(ctx, l);
+  try {
+    await l.draw(ctx);
+  } catch {}
+  ctx.restore();
+  try {
+    const bitmap = await createImageBitmap(canvas);
+    return { layer: l, bitmap, ...meta };
+  } catch {
+    return { layer: l, bitmap: null, ...meta };
   }
 };
 
@@ -3001,8 +3145,37 @@ export type AnimationHandle = {
   cleanup: () => void;
 };
 
+// Default clip length when no admin override is supplied.
+export const DEFAULT_DURATION_MS = 3500;
+// Safe clip-length band (admin-configurable; bounds protect export feasibility).
+export const MIN_DURATION_MS = 1500;
+export const MAX_DURATION_MS = 10000;
+// Safe animation-speed band (1 = default).
+export const MIN_SPEED = 0.5;
+export const MAX_SPEED = 2;
+
 // Animated cards are short looping clips. Clamp every duration into a sane band.
-const clampDuration = (ms: number): number => Math.max(1500, Math.min(8000, ms));
+const clampDuration = (ms: number): number =>
+  Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, Math.round(ms)));
+
+// Clamp the animation speed multiplier into its safe band (default 1).
+const clampSpeed = (s: number): number =>
+  Math.max(MIN_SPEED, Math.min(MAX_SPEED, s));
+
+// The effective clip length for a card: an explicit admin override wins (clamped),
+// else a video template's own background duration, else the default.
+export const effectiveDuration = (opts: RenderOptions): number => {
+  if (typeof opts.durationMs === "number" && Number.isFinite(opts.durationMs)) {
+    return clampDuration(opts.durationMs);
+  }
+  return DEFAULT_DURATION_MS;
+};
+
+// The effective animation speed for a card (clamped; default 1).
+export const effectiveSpeed = (opts: RenderOptions): number =>
+  typeof opts.speed === "number" && Number.isFinite(opts.speed)
+    ? clampSpeed(opts.speed)
+    : 1;
 
 // Build an animation for a card. Preloads every asset up front so each draw()
 // call is synchronous and cheap (safe to run inside a rAF / capture loop).
@@ -3012,8 +3185,9 @@ export const prepareAnimation = async (
 ): Promise<AnimationHandle> => {
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
-  const p = resolvePalette(opts.theme);
+  const p = isJuniorInput(input) ? resolvePalette(JUNIOR_THEME) : resolvePalette(opts.theme);
   const motion = effectiveMotion(opts);
+  const speed = effectiveSpeed(opts);
 
   // Template-based animated card: animated/still background + data-bound slots.
   if (opts.template) {
@@ -3029,8 +3203,9 @@ export const prepareAnimation = async (
     const photoImg = purl ? await loadImage(purl).catch(() => null) : null;
     const logos = await loadSponsorLogos(opts.sponsors ?? []);
 
-    let durationMs = motion === "none" ? 4000 : 3500;
-    if (bgKind === "video" && bg?.video) {
+    // Admin clip length wins; else a video bg's own duration; else the default.
+    let durationMs = effectiveDuration(opts);
+    if (typeof opts.durationMs !== "number" && bgKind === "video" && bg?.video) {
       const vid = bg.video.duration ? bg.video.duration * 1000 : 4000;
       durationMs = clampDuration(template.backgroundDurationMs ?? vid);
     }
@@ -3041,7 +3216,7 @@ export const prepareAnimation = async (
       durationMs,
       loop: true,
       draw: (ctx, t) =>
-        drawTemplateFrame(ctx, W, H, scale, input, template, opts, p, bg, photoImg, logos, motion, t),
+        drawTemplateFrame(ctx, W, H, scale, input, template, opts, p, bg, photoImg, logos, motion, t, speed),
       cleanup: () => {
         const v = bg?.video;
         if (v) {
@@ -3054,27 +3229,123 @@ export const prepareAnimation = async (
     };
   }
 
-  // Built-in card: render the still once, then apply a whole-card entrance.
-  // A flat image can't re-count numbers, so "countUp" degrades to "fadeIn".
-  const stillBlob = await renderShareCard(input, { ...opts, template: null, motionPreset: "none" });
-  const bmp = await createImageBitmap(stillBlob);
-  const wholeMotion: MotionPreset = motion === "countUp" ? "fadeIn" : motion;
+  const durationMs = effectiveDuration(opts);
+
+  // Built-in still card (motion "none" or no real layers): render once, draw flat.
+  if (motion === "none") {
+    const stillBlob = await renderShareCard(input, { ...opts, template: null, motionPreset: "none" });
+    const bmp = await createImageBitmap(stillBlob);
+    return {
+      width: W,
+      height: H,
+      durationMs,
+      loop: true,
+      draw: (ctx, t) => {
+        void t;
+        ctx.clearRect(0, 0, W, H);
+        ctx.drawImage(bmp, 0, 0, W, H);
+      },
+      cleanup: () => bmp.close(),
+    };
+  }
+
+  // Built-in animated card: build the real layer model and bake every visible
+  // layer to its own bitmap so each element can enter independently. The
+  // background draws immediately (full alpha, no flash); foreground layers
+  // composite in z-order with a per-layer stagger + entrance. "countUp" redraws
+  // numeric layers live (drawCount) instead of compositing their bitmap.
+  if (document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {}
+  }
+  const assets = await loadCardAssets(input, opts);
+  const builtins = buildLayers(input, opts, p, W, H, scale, assets);
+  const laidOut =
+    opts.layout && opts.layout.length > 0 ? applyLayout(builtins, opts.layout, H) : builtins;
+  const ordered = laidOut.filter((l) => !l.hidden).sort((a, b) => a.z - b.z);
+  const baked = await Promise.all(ordered.map((l) => bakeLayer(l, W, H)));
+  const fg = baked.filter((b) => b.layer.id !== "background");
+  const bgBaked = baked.filter((b) => b.layer.id === "background");
+
+  // Per-preset stagger spread (fraction of timeline the element starts spread
+  // over) and per-element entrance window. fadeIn/slideUp move as one block
+  // (zero spread); the per-element presets spread their starts out. Both shrink
+  // with speed so faster = snappier and holds longer.
+  const spreadBase =
+    motion === "popIn" || motion === "wipe" || motion === "countUp"
+      ? 0.3
+      : motion === "stagger"
+        ? 0.55
+        : 0;
+  const winBase = 0.45;
+  const spread = spreadBase / speed;
+  const win = winBase / speed;
+  const n = Math.max(1, fg.length);
+  const layerProgress = (idx: number, t: number): number => {
+    const start = n > 1 ? (idx / (n - 1)) * spread : 0;
+    return clamp01((t - start) / win);
+  };
+
+  // Composite one foreground baked layer at local progress `lp` (0-1) under the
+  // active preset's entrance. Skips zero-progress layers (avoids a blank flash).
+  const drawFg = (ctx: CanvasRenderingContext2D, b: BakedLayer, lp: number) => {
+    if (lp <= 0) return;
+    // countUp: re-render numeric layers live so the figure ticks up; the value
+    // fades in alongside (alpha = lp). drawCount(1) === draw() so rest matches.
+    if (motion === "countUp" && b.layer.numeric && b.layer.drawCount) {
+      ctx.save();
+      ctx.globalAlpha = easeOutCubic(lp);
+      applyLayerTransform(ctx, b.layer);
+      try {
+        b.layer.drawCount(ctx, lp);
+      } catch {}
+      ctx.restore();
+      return;
+    }
+    if (!b.bitmap) return;
+    const e = easeOutCubic(lp);
+    ctx.save();
+    if (motion === "popIn") {
+      const s = easeOutBack(lp);
+      ctx.globalAlpha = e;
+      ctx.translate(b.cx, b.cy);
+      ctx.scale(s, s);
+      ctx.translate(-b.cx, -b.cy);
+      ctx.drawImage(b.bitmap, 0, 0, W, H);
+    } else if (motion === "wipe") {
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.rect(b.rx, b.ry, Math.max(1, b.rw * e), b.rh);
+      ctx.clip();
+      ctx.drawImage(b.bitmap, 0, 0, W, H);
+    } else {
+      // fadeIn / slideUp / stagger / countUp(non-numeric): fade (+ rise).
+      ctx.globalAlpha = e;
+      if (motion === "slideUp" || motion === "stagger") {
+        ctx.translate(0, (1 - e) * 0.06 * H);
+      }
+      ctx.drawImage(b.bitmap, 0, 0, W, H);
+    }
+    ctx.restore();
+  };
 
   return {
     width: W,
     height: H,
-    durationMs: 3500,
+    durationMs,
     loop: true,
     draw: (ctx, t) => {
       ctx.clearRect(0, 0, W, H);
-      const e = easeOutCubic(t / 0.6);
-      ctx.save();
-      ctx.globalAlpha = wholeMotion === "none" ? 1 : e;
-      if (wholeMotion === "slideUp") ctx.translate(0, (1 - e) * 0.05 * H);
-      ctx.drawImage(bmp, 0, 0, W, H);
-      ctx.restore();
+      // Background is always fully visible from frame 0 so nothing flashes.
+      for (const b of bgBaked) {
+        if (b.bitmap) ctx.drawImage(b.bitmap, 0, 0, W, H);
+      }
+      fg.forEach((b, idx) => drawFg(ctx, b, layerProgress(idx, t)));
     },
-    cleanup: () => bmp.close(),
+    cleanup: () => {
+      for (const b of baked) b.bitmap?.close();
+    },
   };
 };
 
@@ -3156,4 +3427,64 @@ export const renderShareCardVideo = async (
   const blob = await stopped;
   anim.cleanup();
   return { blob, ext };
+};
+
+// Whether GIF export is feasible in this browser (needs an offscreen 2D canvas
+// + createImageBitmap, both used by the animation pipeline). gifenc itself is
+// pure JS and loaded on demand.
+export const canExportGif = (): boolean =>
+  typeof document !== "undefined" &&
+  typeof document.createElement("canvas").getContext === "function" &&
+  typeof createImageBitmap === "function";
+
+// Render a card to a looping GIF via gifenc. Downscales to ~540px wide (GIFs are
+// heavy) at ~12fps over a single pass of the animation, then quantises each
+// frame to a 256-colour palette and writes a looping image. Returns the blob +
+// "gif" extension. Loaded dynamically so gifenc stays out of the main bundle.
+export const renderShareCardGif = async (
+  input: ShareCardInput,
+  opts: RenderOptions,
+): Promise<{ blob: Blob; ext: string }> => {
+  if (!canExportGif()) {
+    throw new Error("This browser can't export GIF.");
+  }
+  const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
+  const anim = await prepareAnimation(input, opts);
+
+  // Downscale: GIF palette + size make full-res clips huge. Cap the long edge.
+  const maxW = 540;
+  const ratio = anim.height / anim.width;
+  const gw = Math.min(maxW, anim.width);
+  const gh = Math.round(gw * ratio);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = gw;
+  canvas.height = gh;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not get canvas 2D context");
+
+  const fps = 12;
+  const frameCount = Math.max(2, Math.round((anim.durationMs / 1000) * fps));
+  const delay = Math.round(1000 / fps);
+  const gif = GIFEncoder();
+
+  for (let i = 0; i < frameCount; i++) {
+    const t = frameCount > 1 ? i / (frameCount - 1) : 1;
+    ctx.clearRect(0, 0, gw, gh);
+    // The animation draws at full size; scale the whole frame down to GIF size.
+    ctx.save();
+    ctx.scale(gw / anim.width, gh / anim.height);
+    anim.draw(ctx, t);
+    ctx.restore();
+    const { data } = ctx.getImageData(0, 0, gw, gh);
+    const palette = quantize(data, 256);
+    const indexed = applyPalette(data, palette);
+    gif.writeFrame(indexed, gw, gh, { palette, delay, repeat: 0 });
+  }
+
+  gif.finish();
+  anim.cleanup();
+  const bytes = gif.bytes();
+  const blob = new Blob([bytes as BlobPart], { type: "image/gif" });
+  return { blob, ext: "gif" };
 };

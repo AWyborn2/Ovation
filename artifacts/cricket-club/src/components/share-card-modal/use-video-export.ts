@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   SIZES,
   renderShareCardVideo,
+  renderShareCardGif,
+  canExportGif,
   downloadBlob,
   cardBaseFilename,
   type CardSize,
@@ -26,6 +28,8 @@ export function useVideoExport({
   photoTransform: PhotoTransform;
 }) {
   const [videoExporting, setVideoExporting] = useState(false);
+  const [gifExporting, setGifExporting] = useState(false);
+  const gifSupported = canExportGif();
   // The most recently rendered video clip, held back for review before saving.
   const [videoPreview, setVideoPreview] = useState<{
     url: string;
@@ -83,11 +87,30 @@ export function useVideoExport({
     });
   };
 
+  // Render the animated card to a looping GIF and download it straight away. A
+  // GIF is a plain image (no codec/seam quirks to review), so it skips the
+  // hold-back preview the video flow uses.
+  const handleDownloadGif = async (size: CardSize) => {
+    if (!input) return;
+    setGifExporting(true);
+    try {
+      const { blob, ext } = await renderShareCardGif(input, buildOpts(size, photoTransform));
+      downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.${ext}`);
+    } catch (e) {
+      console.error("Card GIF export failed", e);
+    } finally {
+      setGifExporting(false);
+    }
+  };
+
   return {
     videoExporting,
     videoPreview,
     handleDownloadVideo,
     handleSaveVideo,
     closeVideoPreview,
+    gifExporting,
+    gifSupported,
+    handleDownloadGif,
   };
 }

@@ -349,7 +349,9 @@ function TemplateEditor({
       bgHeight: draft.bgHeight,
       backgroundKind: draft.backgroundKind,
       backgroundDurationMs: draft.backgroundDurationMs,
-      motionPreset: draft.motionPreset,
+      // Templates persist only the original presets; the richer modal-only
+      // presets (popIn/wipe/stagger) aren't part of the template contract.
+      motionPreset: draft.motionPreset as "none" | "fadeIn" | "slideUp" | "countUp",
       slots: draft.slots,
       isActive: draft.isActive,
       isDefault: draft.isDefault,

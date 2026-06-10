@@ -33,9 +33,12 @@ import {
   SIZES,
   renderShareCard,
   renderShareCardVideo,
+  renderShareCardGif,
   isAnimatedCard,
   canExportVideo,
+  canExportGif,
   videoFormatLabel,
+  DEFAULT_DURATION_MS,
   downloadBlob,
   cardBaseFilename,
   type CardSize,
@@ -49,7 +52,7 @@ import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { Wand2 } from "lucide-react";
 import { PLATFORM_LIMITS } from "@/lib/captions";
-import { PLATFORMS, MOTION_OPTIONS, type EngineKey, type Props } from "@/components/share-card-modal/constants";
+import { PLATFORMS, MOTION_OPTIONS, LENGTH_OPTIONS, SPEED_OPTIONS, type EngineKey, type Props } from "@/components/share-card-modal/constants";
 import { AnimatedCardPreview } from "@/components/share-card-modal/animated-card-preview";
 import { usePhotoControls } from "@/components/share-card-modal/use-photo-controls";
 import { PhotoControls } from "@/components/share-card-modal/photo-controls";
@@ -174,6 +177,16 @@ export function ShareCardModal({
     setMotion((selectedTemplate?.motionPreset as MotionPreset | undefined) ?? "none");
   }, [open, motionTouched, selectedTemplate]);
 
+  // Admin-only clip length + speed controls (safe bounds enforced in the engine).
+  const [durationMs, setDurationMs] = useState<number>(DEFAULT_DURATION_MS);
+  const [speed, setSpeed] = useState<number>(1);
+  useEffect(() => {
+    if (!open) {
+      setDurationMs(DEFAULT_DURATION_MS);
+      setSpeed(1);
+    }
+  }, [open]);
+
   const enabledSizes: CardSize[] = useMemo(() => {
     const s = bundle?.settings;
     const out: CardSize[] = [];
@@ -233,6 +246,8 @@ export function ShareCardModal({
     photoPlacement,
     photoTransform: transform,
     motionPreset: motion,
+    durationMs,
+    speed,
   });
 
   const { previewUrls, rendering } = useCardPreview({
@@ -252,6 +267,9 @@ export function ShareCardModal({
     handleDownloadVideo,
     handleSaveVideo,
     closeVideoPreview,
+    gifExporting,
+    gifSupported,
+    handleDownloadGif,
   } = useVideoExport({ open, input, buildOpts, photoTransform });
 
   // Stable key for the animated preview so it only re-prepares when something
@@ -263,12 +281,14 @@ export function ShareCardModal({
         layoutId ?? "builtin",
         selectedThemeId ?? "none",
         motion,
+        durationMs,
+        speed,
         effectivePhotoUrl ?? "nophoto",
         photoPlacement,
         `${renderTransform.focalX},${renderTransform.focalY},${renderTransform.zoom}`,
         sponsorSig,
       ].join("|"),
-    [activeSize, layoutId, selectedThemeId, motion, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
+    [activeSize, layoutId, selectedThemeId, motion, durationMs, speed, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
   );
 
   const handleDownload = async (size: CardSize) => {
@@ -288,13 +308,14 @@ export function ShareCardModal({
         const blob = await renderShareCard(input, buildOpts(size, photoTransform));
         zip.file(`${base}-${SIZES[size].code}.png`, blob);
       }
-      // Animated cards also carry a video clip per size. Video export is
+      // Admins additionally get an animated video clip per size. Video export is
       // real-time (canvas.captureStream + MediaRecorder), so recording the sizes
       // one after another makes the wait the SUM of every clip's duration.
       // Each renderShareCardVideo uses its own offscreen canvas/stream/recorder,
       // so we record all sizes concurrently — the wait collapses to roughly a
-      // single clip's duration instead of the serial sum.
-      if (animated && videoSupported) {
+      // single clip's duration instead of the serial sum. Admin-only: public
+      // visitors only ever get the still PNG.
+      if (animated && videoSupported && isAdmin) {
         const results = await Promise.all(
           enabledSizes.map((size) =>
             renderShareCardVideo(input, buildOpts(size, photoTransform))
@@ -306,6 +327,22 @@ export function ShareCardModal({
           ),
         );
         for (const r of results) {
+          if (r) zip.file(`${base}-${SIZES[r.size].code}.${r.ext}`, r.blob);
+        }
+      }
+      // Admins additionally get a looping GIF per size (heavier, so admin-only).
+      if (animated && gifSupported && isAdmin) {
+        const gifs = await Promise.all(
+          enabledSizes.map((size) =>
+            renderShareCardGif(input, buildOpts(size, photoTransform))
+              .then((r) => ({ size, ...r }))
+              .catch((e) => {
+                console.error("Card GIF export failed", e);
+                return null;
+              }),
+          ),
+        );
+        for (const r of gifs) {
           if (r) zip.file(`${base}-${SIZES[r.size].code}.${r.ext}`, r.blob);
         }
       }
@@ -439,36 +476,76 @@ export function ShareCardModal({
               </div>
             )}
 
-            <div className="space-y-1.5 rounded border px-3 py-2">
-              <Label htmlFor="motion-select" className="text-sm">
-                Motion
-              </Label>
-              <select
-                id="motion-select"
-                value={motion}
-                onChange={(e) => {
-                  setMotionTouched(true);
-                  setMotion(e.target.value as MotionPreset);
-                }}
-                className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
-              >
-                {MOTION_OPTIONS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                {motion === "countUp"
-                  ? "Numbers tick up from zero on bound stat slots; other cards fade in."
-                  : "Adds an entrance animation to the card content."}
-                {animated && videoSupported
-                  ? ` Export plays as ${videoFormat}.`
-                  : animated && !videoSupported
-                    ? " Your browser can't record video; only the still image will download."
-                    : ""}
-              </p>
-            </div>
+            {isAdmin && (
+              <div className="space-y-1.5 rounded border px-3 py-2">
+                <Label htmlFor="motion-select" className="text-sm">
+                  Motion
+                </Label>
+                <select
+                  id="motion-select"
+                  value={motion}
+                  onChange={(e) => {
+                    setMotionTouched(true);
+                    setMotion(e.target.value as MotionPreset);
+                  }}
+                  className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                >
+                  {MOTION_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                {motion !== "none" && (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="space-y-1">
+                      <Label htmlFor="length-select" className="text-xs">
+                        Clip length
+                      </Label>
+                      <select
+                        id="length-select"
+                        value={durationMs}
+                        onChange={(e) => setDurationMs(Number(e.target.value))}
+                        className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                      >
+                        {LENGTH_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="speed-select" className="text-xs">
+                        Speed
+                      </Label>
+                      <select
+                        id="speed-select"
+                        value={speed}
+                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                      >
+                        {SPEED_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {motion === "countUp"
+                    ? "Numbers tick up from zero on stat values; other elements fade in."
+                    : "Adds an entrance animation; each element enters independently."}
+                  {animated && videoSupported
+                    ? ` Video exports as ${videoFormat}${gifSupported ? "; GIF also available" : ""}.`
+                    : animated && !videoSupported
+                      ? " Your browser can't record video; only the still image will download."
+                      : ""}
+                </p>
+              </div>
+            )}
 
             {!isJunior && selectedTemplate === null && themes.length > 1 && (
               <div className="space-y-1.5 rounded border px-3 py-2">
@@ -563,12 +640,12 @@ export function ShareCardModal({
             <Download className="h-4 w-4 mr-2" />
             Download {SIZES[activeSize].label}
           </Button>
-          {animated && videoSupported && (
+          {isAdmin && animated && videoSupported && (
             <Button
               type="button"
               variant="secondary"
               onClick={() => handleDownloadVideo(activeSize)}
-              disabled={videoExporting || zipping || approving}
+              disabled={videoExporting || gifExporting || zipping || approving}
             >
               {videoExporting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -576,6 +653,21 @@ export function ShareCardModal({
                 <Download className="h-4 w-4 mr-2" />
               )}
               {videoExporting ? "Rendering…" : "Preview video"}
+            </Button>
+          )}
+          {isAdmin && animated && gifSupported && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => handleDownloadGif(activeSize)}
+              disabled={gifExporting || videoExporting || zipping || approving}
+            >
+              {gifExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              {gifExporting ? "Rendering GIF…" : "Download GIF"}
             </Button>
           )}
           <Button
