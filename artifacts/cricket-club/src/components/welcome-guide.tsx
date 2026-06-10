@@ -10,7 +10,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { hasSeenWelcome, markWelcomeSeen, launchFanTour } from "@/lib/tour";
+import { useGetTourContent } from "@workspace/api-client-react";
+import {
+  hasSeenWelcome,
+  markWelcomeSeen,
+  launchFanTour,
+  resolveWelcomeTitle,
+  resolveWelcomeBody,
+} from "@/lib/tour";
 
 const CAN_DO: { icon: typeof Users; text: string }[] = [
   { icon: Users, text: "Browse every player and their career stats" },
@@ -26,6 +33,8 @@ const CAN_DO: { icon: typeof Users; text: string }[] = [
 export function WelcomeGuide() {
   const [open, setOpen] = useState(false);
   const [location, navigate] = useLocation();
+  const tourContentQ = useGetTourContent();
+  const content = tourContentQ.data;
 
   useEffect(() => {
     if (!hasSeenWelcome()) {
@@ -42,7 +51,7 @@ export function WelcomeGuide() {
     markWelcomeSeen();
     setOpen(false);
     // Let the dialog close before the spotlight overlay mounts.
-    window.setTimeout(() => launchFanTour(navigate, location), 200);
+    window.setTimeout(() => launchFanTour(navigate, location, content), 200);
   };
 
   return (
@@ -55,11 +64,8 @@ export function WelcomeGuide() {
               Halls Head Cricket Club
             </span>
           </div>
-          <DialogTitle className="text-2xl">Welcome to the club portal</DialogTitle>
-          <DialogDescription>
-            Your home for Halls Head's players, matches, records and honours —
-            seniors and juniors alike.
-          </DialogDescription>
+          <DialogTitle className="text-2xl">{resolveWelcomeTitle(content)}</DialogTitle>
+          <DialogDescription>{resolveWelcomeBody(content)}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

@@ -167,6 +167,8 @@ import type {
   TeamOfDecadeMember,
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
+  TourContent,
+  TourContentUpdate,
   TrackedLink,
   TradingCardSettings,
   TradingCardSettingsUpdate,
@@ -10997,6 +10999,154 @@ export const useUpdateMatchDisplaySettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMatchDisplaySettingsMutationOptions(options));
+    }
+
+export const getGetTourContentUrl = () => {
+
+
+
+
+  return `/api/tour-content`
+}
+
+/**
+ * @summary Get admin-editable onboarding tour & welcome copy
+ */
+export const getTourContent = async ( options?: RequestInit): Promise<TourContent> => {
+
+  return customFetch<TourContent>(getGetTourContentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTourContentQueryKey = () => {
+    return [
+    `/api/tour-content`
+    ] as const;
+    }
+
+
+export const getGetTourContentQueryOptions = <TData = Awaited<ReturnType<typeof getTourContent>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTourContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTourContentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTourContent>>> = ({ signal }) => getTourContent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTourContent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTourContentQueryResult = NonNullable<Awaited<ReturnType<typeof getTourContent>>>
+export type GetTourContentQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get admin-editable onboarding tour & welcome copy
+ */
+
+export function useGetTourContent<TData = Awaited<ReturnType<typeof getTourContent>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTourContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTourContentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateTourContentUrl = () => {
+
+
+
+
+  return `/api/tour-content`
+}
+
+/**
+ * @summary Update admin-editable onboarding tour & welcome copy
+ */
+export const updateTourContent = async (tourContentUpdate: TourContentUpdate, options?: RequestInit): Promise<TourContent> => {
+
+  return customFetch<TourContent>(getUpdateTourContentUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tourContentUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTourContentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTourContent>>, TError,{data: BodyType<TourContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTourContent>>, TError,{data: BodyType<TourContentUpdate>}, TContext> => {
+
+const mutationKey = ['updateTourContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTourContent>>, {data: BodyType<TourContentUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateTourContent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTourContentMutationResult = NonNullable<Awaited<ReturnType<typeof updateTourContent>>>
+    export type UpdateTourContentMutationBody = BodyType<TourContentUpdate>
+    export type UpdateTourContentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update admin-editable onboarding tour & welcome copy
+ */
+export const useUpdateTourContent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTourContent>>, TError,{data: BodyType<TourContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTourContent>>,
+        TError,
+        {data: BodyType<TourContentUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTourContentMutationOptions(options));
     }
 
 export const getGetRecordsDisplaySettingsUrl = () => {

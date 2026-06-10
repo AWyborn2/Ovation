@@ -2567,6 +2567,33 @@ export interface MatchDisplaySettingsUpdate {
   roundOrder?: MatchDisplaySettingsUpdateRoundOrder;
 }
 
+export interface TourStepContent {
+  /** Stable id matching an in-code tour step definition. */
+  key: string;
+  /** Step heading. Empty string falls back to the in-code default. */
+  title: string;
+  /** Step body. Empty string falls back to the in-code default. */
+  description: string;
+}
+
+export interface TourContent {
+  /** First-visit welcome dialog heading. Empty string falls back to the in-code default. */
+  welcomeTitle: string;
+  /** First-visit welcome dialog body. Empty string falls back to the in-code default. */
+  welcomeBody: string;
+  /** Per-step copy overrides for the public fan/visitor walkthrough. */
+  fanSteps: TourStepContent[];
+  /** Per-step copy overrides for the admin walkthrough. */
+  adminSteps: TourStepContent[];
+}
+
+export interface TourContentUpdate {
+  welcomeTitle?: string;
+  welcomeBody?: string;
+  fanSteps?: TourStepContent[];
+  adminSteps?: TourStepContent[];
+}
+
 /**
  * Tab pre-selected when the Records page first opens.
  */

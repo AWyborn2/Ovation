@@ -3991,6 +3991,59 @@ export const UpdateMatchDisplaySettingsResponse = zod.object({
 
 
 /**
+ * @summary Get admin-editable onboarding tour & welcome copy
+ */
+export const GetTourContentResponse = zod.object({
+  "welcomeTitle": zod.string().describe('First-visit welcome dialog heading. Empty string falls back to the in-code default.'),
+  "welcomeBody": zod.string().describe('First-visit welcome dialog body. Empty string falls back to the in-code default.'),
+  "fanSteps": zod.array(zod.object({
+  "key": zod.string().describe('Stable id matching an in-code tour step definition.'),
+  "title": zod.string().describe('Step heading. Empty string falls back to the in-code default.'),
+  "description": zod.string().describe('Step body. Empty string falls back to the in-code default.')
+})).describe('Per-step copy overrides for the public fan\/visitor walkthrough.'),
+  "adminSteps": zod.array(zod.object({
+  "key": zod.string().describe('Stable id matching an in-code tour step definition.'),
+  "title": zod.string().describe('Step heading. Empty string falls back to the in-code default.'),
+  "description": zod.string().describe('Step body. Empty string falls back to the in-code default.')
+})).describe('Per-step copy overrides for the admin walkthrough.')
+})
+
+
+/**
+ * @summary Update admin-editable onboarding tour & welcome copy
+ */
+export const UpdateTourContentBody = zod.object({
+  "welcomeTitle": zod.string().optional(),
+  "welcomeBody": zod.string().optional(),
+  "fanSteps": zod.array(zod.object({
+  "key": zod.string().describe('Stable id matching an in-code tour step definition.'),
+  "title": zod.string().describe('Step heading. Empty string falls back to the in-code default.'),
+  "description": zod.string().describe('Step body. Empty string falls back to the in-code default.')
+})).optional(),
+  "adminSteps": zod.array(zod.object({
+  "key": zod.string().describe('Stable id matching an in-code tour step definition.'),
+  "title": zod.string().describe('Step heading. Empty string falls back to the in-code default.'),
+  "description": zod.string().describe('Step body. Empty string falls back to the in-code default.')
+})).optional()
+})
+
+export const UpdateTourContentResponse = zod.object({
+  "welcomeTitle": zod.string().describe('First-visit welcome dialog heading. Empty string falls back to the in-code default.'),
+  "welcomeBody": zod.string().describe('First-visit welcome dialog body. Empty string falls back to the in-code default.'),
+  "fanSteps": zod.array(zod.object({
+  "key": zod.string().describe('Stable id matching an in-code tour step definition.'),
+  "title": zod.string().describe('Step heading. Empty string falls back to the in-code default.'),
+  "description": zod.string().describe('Step body. Empty string falls back to the in-code default.')
+})).describe('Per-step copy overrides for the public fan\/visitor walkthrough.'),
+  "adminSteps": zod.array(zod.object({
+  "key": zod.string().describe('Stable id matching an in-code tour step definition.'),
+  "title": zod.string().describe('Step heading. Empty string falls back to the in-code default.'),
+  "description": zod.string().describe('Step body. Empty string falls back to the in-code default.')
+})).describe('Per-step copy overrides for the admin walkthrough.')
+})
+
+
+/**
  * @summary Get the public Records page display defaults
  */
 export const GetRecordsDisplaySettingsResponse = zod.object({

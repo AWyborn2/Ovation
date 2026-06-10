@@ -3,6 +3,7 @@ import { HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
+import { useGetTourContent } from "@workspace/api-client-react";
 import { navIcon } from "@/lib/nav-icons";
 import { launchAdminTour } from "@/lib/tour";
 
@@ -17,6 +18,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
 
 export default function AdminHub() {
   const tiles = useNavSurface("admin_tiles", TILES_FALLBACK);
+  const tourContentQ = useGetTourContent();
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -27,7 +29,7 @@ export default function AdminHub() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => launchAdminTour()}
+          onClick={() => launchAdminTour(tourContentQ.data)}
           data-testid="admin-tour-start"
           className="gap-1.5"
         >

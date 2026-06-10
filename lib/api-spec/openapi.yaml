@@ -3063,6 +3063,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/MatchDisplaySettings"
 
+  /tour-content:
+    get:
+      operationId: getTourContent
+      tags: [tour]
+      summary: Get admin-editable onboarding tour & welcome copy
+      responses:
+        "200":
+          description: Tour content overrides (welcome dialog + fan/admin tour steps)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourContent"
+    patch:
+      operationId: updateTourContent
+      tags: [tour]
+      summary: Update admin-editable onboarding tour & welcome copy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TourContentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourContent"
+
   /records-display-settings:
     get:
       operationId: getRecordsDisplaySettings
@@ -7445,6 +7475,68 @@ components:
         roundOrder:
           type: string
           enum: [asc, desc]
+
+    TourStepContent:
+      type: object
+      required:
+        - key
+        - title
+        - description
+      properties:
+        key:
+          type: string
+          description: Stable id matching an in-code tour step definition.
+        title:
+          type: string
+          description: Step heading. Empty string falls back to the in-code default.
+        description:
+          type: string
+          description: Step body. Empty string falls back to the in-code default.
+
+    TourContent:
+      type: object
+      required:
+        - welcomeTitle
+        - welcomeBody
+        - fanSteps
+        - adminSteps
+      properties:
+        welcomeTitle:
+          type: string
+          description: >-
+            First-visit welcome dialog heading. Empty string falls back to the
+            in-code default.
+        welcomeBody:
+          type: string
+          description: >-
+            First-visit welcome dialog body. Empty string falls back to the
+            in-code default.
+        fanSteps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TourStepContent"
+          description: Per-step copy overrides for the public fan/visitor walkthrough.
+        adminSteps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TourStepContent"
+          description: Per-step copy overrides for the admin walkthrough.
+
+    TourContentUpdate:
+      type: object
+      properties:
+        welcomeTitle:
+          type: string
+        welcomeBody:
+          type: string
+        fanSteps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TourStepContent"
+        adminSteps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TourStepContent"
 
     RecordsDisplaySettings:
       type: object

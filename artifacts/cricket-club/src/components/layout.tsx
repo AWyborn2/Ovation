@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { useBrandLogo } from "@/lib/use-brand";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
+import { useGetTourContent } from "@workspace/api-client-react";
 import { launchFanTour, launchAdminTour } from "@/lib/tour";
 import { WelcomeGuide } from "@/components/welcome-guide";
 
@@ -72,12 +73,13 @@ function SectionToggle({ isJuniors }: { isJuniors: boolean }) {
 function HelpButton({ className }: { className?: string }) {
   const [location, navigate] = useLocation();
   const me = useCurrentAdmin();
+  const tourContentQ = useGetTourContent();
   const onAdmin = location === "/admin" || location.startsWith("/admin/");
   const launch = () => {
     if (onAdmin && me.data) {
-      launchAdminTour();
+      launchAdminTour(tourContentQ.data);
     } else {
-      launchFanTour(navigate, location);
+      launchFanTour(navigate, location, tourContentQ.data);
     }
   };
   return (
