@@ -3178,6 +3178,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordsDisplaySettings"
 
+  /honour-display:
+    get:
+      operationId: getHonourDisplay
+      tags: [honours]
+      summary: Assembled Honour Boards Display bundle (boards + brand + settings)
+      description: >-
+        Assembles every honours category (premierships, centuries, five-wicket
+        hauls, life members, club champions, captains, club records, awards)
+        into the unified HonourBoard shape, alongside the club brand/theme and
+        the display/kiosk settings. Drives the public Display page and kiosk.
+      responses:
+        "200":
+          description: Honour boards, brand and display settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HonourDisplayBundle"
+
+  /honour-display-settings:
+    patch:
+      operationId: updateHonourDisplaySettings
+      tags: [honours]
+      summary: Update the Honour Boards Display + kiosk settings (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HonourDisplaySettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HonourDisplaySettings"
+
   /trading-card-settings:
     get:
       operationId: getTradingCardSettings
@@ -7609,6 +7646,228 @@ components:
         roundOrder:
           type: string
           enum: [asc, desc]
+
+    HonourBrand:
+      type: object
+      required:
+        - name
+        - shortName
+        - monogram
+        - primaryColour
+        - secondaryColour
+        - tertiaryColour
+      properties:
+        name:
+          type: string
+          description: Full club name.
+        shortName:
+          type: string
+          description: Short club name / abbreviation.
+        monogram:
+          type: string
+          description: 2-letter crest fallback (e.g. "HH").
+        logoUrl:
+          type: string
+          nullable: true
+          description: Club crest image URL; null falls back to the monogram.
+        primaryColour:
+          type: string
+          description: Club primary colour (--club-primary), e.g. navy "#333F48".
+        secondaryColour:
+          type: string
+          description: Club secondary / gold accent (--club-secondary), e.g. "#FBAC27".
+        tertiaryColour:
+          type: string
+          description: Club tertiary colour (--club-accent).
+
+    BoardSquadMember:
+      type: object
+      required:
+        - name
+        - isCaptain
+      properties:
+        name:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
+        isCaptain:
+          type: boolean
+
+    BoardEntryMeta:
+      type: object
+      properties:
+        venue:
+          type: string
+          nullable: true
+        date:
+          type: string
+          nullable: true
+        motm:
+          type: string
+          nullable: true
+        captain:
+          type: string
+          nullable: true
+        grade:
+          type: string
+          nullable: true
+        parentGrade:
+          type: string
+          nullable: true
+          description: P7 grade-filter key (e.g. "A", "Female A", "U21 Colts").
+        competition:
+          type: string
+          nullable: true
+
+    BoardEntry:
+      type: object
+      required:
+        - season
+        - primaryText
+      properties:
+        season:
+          type: string
+          description: Season / year label, e.g. "2024/25" (may be empty).
+        primaryText:
+          type: string
+          description: Name / captain / record type.
+        detail:
+          type: string
+          nullable: true
+          description: 'e.g. "147* v Mandurah", "def. Pinjarra", "642 pts".'
+        playerId:
+          type: integer
+          nullable: true
+          description: Link to player profile when known.
+        matchId:
+          type: integer
+          nullable: true
+          description: Link to match scorecard when derivable (P7 grand finals).
+        meta:
+          $ref: "#/components/schemas/BoardEntryMeta"
+        squad:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/BoardSquadMember"
+          description: Premiership squad (premiership_players) for P7 "View team".
+
+    DisplayBoard:
+      type: object
+      required:
+        - id
+        - category
+        - title
+        - entries
+      properties:
+        id:
+          type: string
+          description: Stable board id (also the per-board override / kiosk key).
+        category:
+          type: string
+          enum:
+            - premierships
+            - centuries
+            - five_wicket_hauls
+            - life_members
+            - club_champions
+            - captains
+            - club_records
+            - awards
+          description: Board category.
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoardEntry"
+
+    HonourDisplaySettings:
+      type: object
+      required:
+        - defaultTemplate
+        - boardOverrides
+        - showTabs
+        - allowViewerTemplateSwitch
+        - kioskSequence
+        - kioskDwellMs
+        - kioskScrollSpeed
+        - kioskEndHoldMs
+      properties:
+        defaultTemplate:
+          type: string
+          enum: [p1, p2, p3, p4, p5, p6, p7]
+          description: Club-wide default template (skin).
+        boardOverrides:
+          type: object
+          additionalProperties:
+            type: string
+          description: Per-board template overrides, keyed by board id -> p1..p7.
+        showTabs:
+          type: boolean
+          description: Whether the public display page shows category tabs.
+        allowViewerTemplateSwitch:
+          type: boolean
+          description: Whether visitors may switch skins (false locks to default).
+        kioskSequence:
+          type: array
+          items:
+            type: string
+          description: Ordered board ids the kiosk rotates through. Empty = all boards.
+        kioskDwellMs:
+          type: integer
+          description: Hold (ms) on each board before any credit-scroll begins.
+        kioskScrollSpeed:
+          type: integer
+          description: Credit-scroll speed (px/sec) for tall boards.
+        kioskEndHoldMs:
+          type: integer
+          description: Hold (ms) at the bottom of a board before advancing.
+
+    HonourDisplaySettingsUpdate:
+      type: object
+      properties:
+        defaultTemplate:
+          type: string
+          enum: [p1, p2, p3, p4, p5, p6, p7]
+        boardOverrides:
+          type: object
+          additionalProperties:
+            type: string
+        showTabs:
+          type: boolean
+        allowViewerTemplateSwitch:
+          type: boolean
+        kioskSequence:
+          type: array
+          items:
+            type: string
+        kioskDwellMs:
+          type: integer
+        kioskScrollSpeed:
+          type: integer
+        kioskEndHoldMs:
+          type: integer
+
+    HonourDisplayBundle:
+      type: object
+      required:
+        - boards
+        - brand
+        - settings
+      properties:
+        boards:
+          type: array
+          items:
+            $ref: "#/components/schemas/DisplayBoard"
+        brand:
+          $ref: "#/components/schemas/HonourBrand"
+        settings:
+          $ref: "#/components/schemas/HonourDisplaySettings"
 
     TourStepContent:
       type: object

@@ -17,6 +17,8 @@ import Grades from "@/pages/grades";
 import GradeLeaderboard from "@/pages/grade-leaderboard";
 import Records from "@/pages/records";
 import Premierships from "@/pages/premierships";
+import HonoursDisplay from "@/pages/honours-display";
+import HonoursKiosk from "@/pages/honours-kiosk";
 import Compare from "@/pages/compare";
 import StatDetail from "@/pages/stat-detail";
 import JuniorsDashboard from "@/pages/juniors-dashboard";
@@ -55,6 +57,7 @@ function PublicRoutes() {
         <Route path="/grades/:grade" component={GradeLeaderboard} />
         <Route path="/records" component={Records} />
         <Route path="/premierships" component={Premierships} />
+        <Route path="/honours-display" component={HonoursDisplay} />
         <Route path="/compare" component={Compare} />
         <Route path="/stats/:id" component={StatDetail} />
         <Route path="/juniors" component={JuniorsDashboard} />
@@ -166,6 +169,7 @@ function CaptainRoutes() {
 function Router() {
   return (
     <Switch>
+      <Route path="/honours-display/kiosk" component={HonoursKiosk} />
       <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
       <Route path="/captain" component={CaptainRoutes} />

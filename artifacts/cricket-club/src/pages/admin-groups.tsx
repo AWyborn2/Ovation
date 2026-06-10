@@ -25,6 +25,7 @@ import AdminTeamOfDecade from "@/pages/admin-team-of-decade";
 import AdminCaps from "@/pages/admin-caps";
 import AdminLifeMembers from "@/pages/admin-life-members";
 import AdminJuniorPremierships from "@/pages/admin-junior-premierships";
+import AdminHonoursDisplay from "@/pages/admin-honours-display";
 
 type AdminTab = { value: string; label: string; path: string; element: ReactNode };
 
@@ -149,6 +150,7 @@ export function AdminHonoursGroup() {
         { value: "caps", label: "Cap register", path: "/admin/honours/caps", element: <AdminCaps /> },
         { value: "life-members", label: "Life members", path: "/admin/honours/life-members", element: <AdminLifeMembers /> },
         { value: "junior-premierships", label: "Junior premierships", path: "/admin/honours/junior-premierships", element: <AdminJuniorPremierships /> },
+        { value: "display", label: "Display & kiosk", path: "/admin/honours/display", element: <AdminHonoursDisplay /> },
       ]}
     />
   );

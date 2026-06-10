@@ -2655,6 +2655,155 @@ export interface MatchDisplaySettingsUpdate {
   roundOrder?: MatchDisplaySettingsUpdateRoundOrder;
 }
 
+export interface HonourBrand {
+  /** Full club name. */
+  name: string;
+  /** Short club name / abbreviation. */
+  shortName: string;
+  /** 2-letter crest fallback (e.g. "HH"). */
+  monogram: string;
+  /** Club crest image URL; null falls back to the monogram. */
+  logoUrl?: string | null;
+  /** Club primary colour (--club-primary), e.g. navy "#333F48". */
+  primaryColour: string;
+  /** Club secondary / gold accent (--club-secondary), e.g. "#FBAC27". */
+  secondaryColour: string;
+  /** Club tertiary colour (--club-accent). */
+  tertiaryColour: string;
+}
+
+export interface BoardSquadMember {
+  name: string;
+  playerId?: number | null;
+  isCaptain: boolean;
+}
+
+export interface BoardEntryMeta {
+  venue?: string | null;
+  date?: string | null;
+  motm?: string | null;
+  captain?: string | null;
+  grade?: string | null;
+  /** P7 grade-filter key (e.g. "A", "Female A", "U21 Colts"). */
+  parentGrade?: string | null;
+  competition?: string | null;
+}
+
+export interface BoardEntry {
+  /** Season / year label, e.g. "2024/25" (may be empty). */
+  season: string;
+  /** Name / captain / record type. */
+  primaryText: string;
+  /** e.g. "147* v Mandurah", "def. Pinjarra", "642 pts". */
+  detail?: string | null;
+  /** Link to player profile when known. */
+  playerId?: number | null;
+  /** Link to match scorecard when derivable (P7 grand finals). */
+  matchId?: number | null;
+  meta?: BoardEntryMeta;
+  /** Premiership squad (premiership_players) for P7 "View team". */
+  squad?: BoardSquadMember[] | null;
+}
+
+/**
+ * Board category.
+ */
+export type DisplayBoardCategory = typeof DisplayBoardCategory[keyof typeof DisplayBoardCategory];
+
+
+export const DisplayBoardCategory = {
+  premierships: 'premierships',
+  centuries: 'centuries',
+  five_wicket_hauls: 'five_wicket_hauls',
+  life_members: 'life_members',
+  club_champions: 'club_champions',
+  captains: 'captains',
+  club_records: 'club_records',
+  awards: 'awards',
+} as const;
+
+export interface DisplayBoard {
+  /** Stable board id (also the per-board override / kiosk key). */
+  id: string;
+  /** Board category. */
+  category: DisplayBoardCategory;
+  title: string;
+  subtitle?: string | null;
+  entries: BoardEntry[];
+}
+
+/**
+ * Club-wide default template (skin).
+ */
+export type HonourDisplaySettingsDefaultTemplate = typeof HonourDisplaySettingsDefaultTemplate[keyof typeof HonourDisplaySettingsDefaultTemplate];
+
+
+export const HonourDisplaySettingsDefaultTemplate = {
+  p1: 'p1',
+  p2: 'p2',
+  p3: 'p3',
+  p4: 'p4',
+  p5: 'p5',
+  p6: 'p6',
+  p7: 'p7',
+} as const;
+
+/**
+ * Per-board template overrides, keyed by board id -> p1..p7.
+ */
+export type HonourDisplaySettingsBoardOverrides = {[key: string]: string};
+
+export interface HonourDisplaySettings {
+  /** Club-wide default template (skin). */
+  defaultTemplate: HonourDisplaySettingsDefaultTemplate;
+  /** Per-board template overrides, keyed by board id -> p1..p7. */
+  boardOverrides: HonourDisplaySettingsBoardOverrides;
+  /** Whether the public display page shows category tabs. */
+  showTabs: boolean;
+  /** Whether visitors may switch skins (false locks to default). */
+  allowViewerTemplateSwitch: boolean;
+  /** Ordered board ids the kiosk rotates through. Empty = all boards. */
+  kioskSequence: string[];
+  /** Hold (ms) on each board before any credit-scroll begins. */
+  kioskDwellMs: number;
+  /** Credit-scroll speed (px/sec) for tall boards. */
+  kioskScrollSpeed: number;
+  /** Hold (ms) at the bottom of a board before advancing. */
+  kioskEndHoldMs: number;
+}
+
+export type HonourDisplaySettingsUpdateDefaultTemplate = typeof HonourDisplaySettingsUpdateDefaultTemplate[keyof typeof HonourDisplaySettingsUpdateDefaultTemplate];
+
+
+export const HonourDisplaySettingsUpdateDefaultTemplate = {
+  p1: 'p1',
+  p2: 'p2',
+  p3: 'p3',
+  p4: 'p4',
+  p5: 'p5',
+  p6: 'p6',
+  p7: 'p7',
+} as const;
+
+export type HonourDisplaySettingsUpdateBoardOverrides = {[key: string]: string};
+
+export interface HonourDisplaySettingsUpdate {
+  defaultTemplate?: HonourDisplaySettingsUpdateDefaultTemplate;
+  boardOverrides?: HonourDisplaySettingsUpdateBoardOverrides;
+  showTabs?: boolean;
+  allowViewerTemplateSwitch?: boolean;
+  kioskSequence?: string[];
+  kioskDwellMs?: number;
+  kioskScrollSpeed?: number;
+  kioskEndHoldMs?: number;
+}
+
+export interface HonourDisplayBundle {
+  boards: DisplayBoard[];
+  brand: HonourBrand;
+  settings: HonourDisplaySettings;
+}
+
 export interface TourStepContent {
   /** Stable id matching an in-code tour step definition. */
   key: string;

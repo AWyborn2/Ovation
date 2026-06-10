@@ -29,6 +29,7 @@ import navItemsRouter from "./nav-items";
 import storageRouter from "./storage";
 import tradingCardSettingsRouter from "./trading-card-settings";
 import tourContentRouter from "./tour-content";
+import honourDisplayRouter from "./honour-display";
 
 const router: IRouter = Router();
 
@@ -62,5 +63,6 @@ router.use(navItemsRouter);
 router.use(storageRouter);
 router.use(tradingCardSettingsRouter);
 router.use(tourContentRouter);
+router.use(honourDisplayRouter);
 
 export default router;

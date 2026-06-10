@@ -17,6 +17,7 @@ const SENIOR_NAV_FALLBACK: ResolvedNavItem[] = [
   { label: "Grades", target: "/grades", isExternal: false, iconKey: "trophy", description: "" },
   { label: "Records", target: "/records", isExternal: false, iconKey: "award", description: "" },
   { label: "Premierships", target: "/premierships", isExternal: false, iconKey: "crown", description: "" },
+  { label: "Honour Display", target: "/honours-display", isExternal: false, iconKey: "layoutGrid", description: "" },
   { label: "Compare", target: "/compare", isExternal: false, iconKey: "gitCompare", description: "" },
 ];
 

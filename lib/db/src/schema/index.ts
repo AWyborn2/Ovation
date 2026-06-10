@@ -21,6 +21,7 @@ export * from "./social_cards";
 export * from "./match_display_settings";
 export * from "./tour_content";
 export * from "./records_display_settings";
+export * from "./honour_display_settings";
 export * from "./trading_card_settings";
 export * from "./nav_items";
 export * from "./team_of_decade";

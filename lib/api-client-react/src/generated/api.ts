@@ -80,6 +80,9 @@ import type {
   HonourBoardOverride,
   HonourBoardOverrideInput,
   HonourBoardUpdate,
+  HonourDisplayBundle,
+  HonourDisplaySettings,
+  HonourDisplaySettingsUpdate,
   ImportPreview,
   ImportRecord,
   JuniorFilters,
@@ -11516,6 +11519,155 @@ export const useUpdateRecordsDisplaySettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateRecordsDisplaySettingsMutationOptions(options));
+    }
+
+export const getGetHonourDisplayUrl = () => {
+
+
+
+
+  return `/api/honour-display`
+}
+
+/**
+ * Assembles every honours category (premierships, centuries, five-wicket hauls, life members, club champions, captains, club records, awards) into the unified HonourBoard shape, alongside the club brand/theme and the display/kiosk settings. Drives the public Display page and kiosk.
+ * @summary Assembled Honour Boards Display bundle (boards + brand + settings)
+ */
+export const getHonourDisplay = async ( options?: RequestInit): Promise<HonourDisplayBundle> => {
+
+  return customFetch<HonourDisplayBundle>(getGetHonourDisplayUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHonourDisplayQueryKey = () => {
+    return [
+    `/api/honour-display`
+    ] as const;
+    }
+
+
+export const getGetHonourDisplayQueryOptions = <TData = Awaited<ReturnType<typeof getHonourDisplay>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHonourDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHonourDisplayQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHonourDisplay>>> = ({ signal }) => getHonourDisplay({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHonourDisplay>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHonourDisplayQueryResult = NonNullable<Awaited<ReturnType<typeof getHonourDisplay>>>
+export type GetHonourDisplayQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Assembled Honour Boards Display bundle (boards + brand + settings)
+ */
+
+export function useGetHonourDisplay<TData = Awaited<ReturnType<typeof getHonourDisplay>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHonourDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHonourDisplayQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateHonourDisplaySettingsUrl = () => {
+
+
+
+
+  return `/api/honour-display-settings`
+}
+
+/**
+ * @summary Update the Honour Boards Display + kiosk settings (admin)
+ */
+export const updateHonourDisplaySettings = async (honourDisplaySettingsUpdate: HonourDisplaySettingsUpdate, options?: RequestInit): Promise<HonourDisplaySettings> => {
+
+  return customFetch<HonourDisplaySettings>(getUpdateHonourDisplaySettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      honourDisplaySettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateHonourDisplaySettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHonourDisplaySettings>>, TError,{data: BodyType<HonourDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateHonourDisplaySettings>>, TError,{data: BodyType<HonourDisplaySettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateHonourDisplaySettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateHonourDisplaySettings>>, {data: BodyType<HonourDisplaySettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateHonourDisplaySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateHonourDisplaySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateHonourDisplaySettings>>>
+    export type UpdateHonourDisplaySettingsMutationBody = BodyType<HonourDisplaySettingsUpdate>
+    export type UpdateHonourDisplaySettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the Honour Boards Display + kiosk settings (admin)
+ */
+export const useUpdateHonourDisplaySettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHonourDisplaySettings>>, TError,{data: BodyType<HonourDisplaySettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateHonourDisplaySettings>>,
+        TError,
+        {data: BodyType<HonourDisplaySettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateHonourDisplaySettingsMutationOptions(options));
     }
 
 export const getGetTradingCardSettingsUrl = () => {

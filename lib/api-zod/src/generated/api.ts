@@ -4185,6 +4185,86 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
 
 
 /**
+ * Assembles every honours category (premierships, centuries, five-wicket hauls, life members, club champions, captains, club records, awards) into the unified HonourBoard shape, alongside the club brand/theme and the display/kiosk settings. Drives the public Display page and kiosk.
+ * @summary Assembled Honour Boards Display bundle (boards + brand + settings)
+ */
+export const GetHonourDisplayResponse = zod.object({
+  "boards": zod.array(zod.object({
+  "id": zod.string().describe('Stable board id (also the per-board override \/ kiosk key).'),
+  "category": zod.enum(['premierships', 'centuries', 'five_wicket_hauls', 'life_members', 'club_champions', 'captains', 'club_records', 'awards']).describe('Board category.'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "entries": zod.array(zod.object({
+  "season": zod.string().describe('Season \/ year label, e.g. \"2024\/25\" (may be empty).'),
+  "primaryText": zod.string().describe('Name \/ captain \/ record type.'),
+  "detail": zod.string().nullish().describe('e.g. \"147\* v Mandurah\", \"def. Pinjarra\", \"642 pts\".'),
+  "playerId": zod.number().nullish().describe('Link to player profile when known.'),
+  "matchId": zod.number().nullish().describe('Link to match scorecard when derivable (P7 grand finals).'),
+  "meta": zod.object({
+  "venue": zod.string().nullish(),
+  "date": zod.string().nullish(),
+  "motm": zod.string().nullish(),
+  "captain": zod.string().nullish(),
+  "grade": zod.string().nullish(),
+  "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
+  "competition": zod.string().nullish()
+}).optional(),
+  "squad": zod.array(zod.object({
+  "name": zod.string(),
+  "playerId": zod.number().nullish(),
+  "isCaptain": zod.boolean()
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+}))
+})),
+  "brand": zod.object({
+  "name": zod.string().describe('Full club name.'),
+  "shortName": zod.string().describe('Short club name \/ abbreviation.'),
+  "monogram": zod.string().describe('2-letter crest fallback (e.g. \"HH\").'),
+  "logoUrl": zod.string().nullish().describe('Club crest image URL; null falls back to the monogram.'),
+  "primaryColour": zod.string().describe('Club primary colour (--club-primary), e.g. navy \"#333F48\".'),
+  "secondaryColour": zod.string().describe('Club secondary \/ gold accent (--club-secondary), e.g. \"#FBAC27\".'),
+  "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
+}),
+  "settings": zod.object({
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('Club-wide default template (skin).'),
+  "boardOverrides": zod.record(zod.string(), zod.string()).describe('Per-board template overrides, keyed by board id -> p1..p7.'),
+  "showTabs": zod.boolean().describe('Whether the public display page shows category tabs.'),
+  "allowViewerTemplateSwitch": zod.boolean().describe('Whether visitors may switch skins (false locks to default).'),
+  "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
+  "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
+  "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
+  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.')
+})
+})
+
+
+/**
+ * @summary Update the Honour Boards Display + kiosk settings (admin)
+ */
+export const UpdateHonourDisplaySettingsBody = zod.object({
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).optional(),
+  "boardOverrides": zod.record(zod.string(), zod.string()).optional(),
+  "showTabs": zod.boolean().optional(),
+  "allowViewerTemplateSwitch": zod.boolean().optional(),
+  "kioskSequence": zod.array(zod.string()).optional(),
+  "kioskDwellMs": zod.number().optional(),
+  "kioskScrollSpeed": zod.number().optional(),
+  "kioskEndHoldMs": zod.number().optional()
+})
+
+export const UpdateHonourDisplaySettingsResponse = zod.object({
+  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']).describe('Club-wide default template (skin).'),
+  "boardOverrides": zod.record(zod.string(), zod.string()).describe('Per-board template overrides, keyed by board id -> p1..p7.'),
+  "showTabs": zod.boolean().describe('Whether the public display page shows category tabs.'),
+  "allowViewerTemplateSwitch": zod.boolean().describe('Whether visitors may switch skins (false locks to default).'),
+  "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
+  "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
+  "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
+  "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.')
+})
+
+
+/**
  * @summary Get the global trading-card display settings
  */
 export const GetTradingCardSettingsResponse = zod.object({
