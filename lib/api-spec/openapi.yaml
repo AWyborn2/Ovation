@@ -4091,8 +4091,118 @@ paths:
               schema:
                 $ref: "#/components/schemas/JuniorMatchDisplaySettings"
 
+  /card-video/jobs:
+    post:
+      operationId: createCardVideoJob
+      tags: [social]
+      summary: Start a server-side MP4 render of an animated share-card (admin only)
+      description: >-
+        Renders the EXACT same data-bound card the browser previews into a
+        guaranteed-compatible H.264/MP4, off the main thread, as a job. `input`
+        and `options` are the opaque ShareCardInput + RenderOptions JSON the
+        client already builds for the preview (the union lives in the frontend).
+        Returns a job id to poll; the browser MediaRecorder path remains as a
+        fallback. Admin-only (enforced by route middleware).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardVideoJobInput"
+      responses:
+        "201":
+          description: Render job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardVideoJob"
+
+  /card-video/jobs/{id}:
+    get:
+      operationId: getCardVideoJob
+      tags: [social]
+      summary: Poll the status/progress of a card-video render job (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardVideoJob"
+        "404":
+          description: Unknown job
+
+  /card-video/jobs/{id}/download:
+    get:
+      operationId: downloadCardVideoJob
+      tags: [social]
+      summary: Download the finished MP4 for a completed job (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The rendered MP4 file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Unknown job or not yet finished
+
 components:
   schemas:
+    CardVideoJobInput:
+      type: object
+      required: [input, options]
+      properties:
+        # The opaque ShareCardInput JSON the client builds for the preview.
+        # The union lives in the frontend; validated here by shape only.
+        input:
+          type: object
+          additionalProperties: true
+        # The opaque RenderOptions JSON (size, theme, brand, sponsors, template,
+        # layout, photo, motion, duration, speed) — identical to the preview.
+        options:
+          type: object
+          additionalProperties: true
+        # Optional frame rate override (defaults to 30).
+        fps:
+          type: integer
+          nullable: true
+    CardVideoJob:
+      type: object
+      required: [id, status, progress]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, rendering, encoding, done, error]
+        # 0..1 overall progress (capture + encode).
+        progress:
+          type: number
+        error:
+          type: string
+          nullable: true
+        # Suggested download filename (set once the render succeeds).
+        filename:
+          type: string
+          nullable: true
+        # Size code of the rendered clip (e.g. "1x1", "4x5", "9x16").
+        sizeCode:
+          type: string
+          nullable: true
     HealthStatus:
       type: object
       properties:

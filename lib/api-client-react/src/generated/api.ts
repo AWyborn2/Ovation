@@ -67,6 +67,8 @@ import type {
   CardTheme,
   CardThemeInput,
   CardThemeUpdate,
+  CardVideoJob,
+  CardVideoJobInput,
   Century,
   ClubRecords,
   ClubRole,
@@ -14899,4 +14901,230 @@ export const useUpdateJuniorMatchDisplaySettings = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getUpdateJuniorMatchDisplaySettingsMutationOptions(options));
     }
+
+export const getCreateCardVideoJobUrl = () => {
+
+
+
+
+  return `/api/card-video/jobs`
+}
+
+/**
+ * Renders the EXACT same data-bound card the browser previews into a guaranteed-compatible H.264/MP4, off the main thread, as a job. `input` and `options` are the opaque ShareCardInput + RenderOptions JSON the client already builds for the preview (the union lives in the frontend). Returns a job id to poll; the browser MediaRecorder path remains as a fallback. Admin-only (enforced by route middleware).
+ * @summary Start a server-side MP4 render of an animated share-card (admin only)
+ */
+export const createCardVideoJob = async (cardVideoJobInput: CardVideoJobInput, options?: RequestInit): Promise<CardVideoJob> => {
+
+  return customFetch<CardVideoJob>(getCreateCardVideoJobUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardVideoJobInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardVideoJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardVideoJob>>, TError,{data: BodyType<CardVideoJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardVideoJob>>, TError,{data: BodyType<CardVideoJobInput>}, TContext> => {
+
+const mutationKey = ['createCardVideoJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardVideoJob>>, {data: BodyType<CardVideoJobInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardVideoJob(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardVideoJobMutationResult = NonNullable<Awaited<ReturnType<typeof createCardVideoJob>>>
+    export type CreateCardVideoJobMutationBody = BodyType<CardVideoJobInput>
+    export type CreateCardVideoJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a server-side MP4 render of an animated share-card (admin only)
+ */
+export const useCreateCardVideoJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardVideoJob>>, TError,{data: BodyType<CardVideoJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardVideoJob>>,
+        TError,
+        {data: BodyType<CardVideoJobInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardVideoJobMutationOptions(options));
+    }
+
+export const getGetCardVideoJobUrl = (id: string,) => {
+
+
+
+
+  return `/api/card-video/jobs/${id}`
+}
+
+/**
+ * @summary Poll the status/progress of a card-video render job (admin only)
+ */
+export const getCardVideoJob = async (id: string, options?: RequestInit): Promise<CardVideoJob> => {
+
+  return customFetch<CardVideoJob>(getGetCardVideoJobUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCardVideoJobQueryKey = (id: string,) => {
+    return [
+    `/api/card-video/jobs/${id}`
+    ] as const;
+    }
+
+
+export const getGetCardVideoJobQueryOptions = <TData = Awaited<ReturnType<typeof getCardVideoJob>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardVideoJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCardVideoJobQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCardVideoJob>>> = ({ signal }) => getCardVideoJob(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCardVideoJob>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCardVideoJobQueryResult = NonNullable<Awaited<ReturnType<typeof getCardVideoJob>>>
+export type GetCardVideoJobQueryError = ErrorType<void>
+
+
+/**
+ * @summary Poll the status/progress of a card-video render job (admin only)
+ */
+
+export function useGetCardVideoJob<TData = Awaited<ReturnType<typeof getCardVideoJob>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardVideoJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCardVideoJobQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDownloadCardVideoJobUrl = (id: string,) => {
+
+
+
+
+  return `/api/card-video/jobs/${id}/download`
+}
+
+/**
+ * @summary Download the finished MP4 for a completed job (admin only)
+ */
+export const downloadCardVideoJob = async (id: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadCardVideoJobUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadCardVideoJobQueryKey = (id: string,) => {
+    return [
+    `/api/card-video/jobs/${id}/download`
+    ] as const;
+    }
+
+
+export const getDownloadCardVideoJobQueryOptions = <TData = Awaited<ReturnType<typeof downloadCardVideoJob>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadCardVideoJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadCardVideoJobQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCardVideoJob>>> = ({ signal }) => downloadCardVideoJob(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCardVideoJob>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadCardVideoJobQueryResult = NonNullable<Awaited<ReturnType<typeof downloadCardVideoJob>>>
+export type DownloadCardVideoJobQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download the finished MP4 for a completed job (admin only)
+ */
+
+export function useDownloadCardVideoJob<TData = Awaited<ReturnType<typeof downloadCardVideoJob>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadCardVideoJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadCardVideoJobQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

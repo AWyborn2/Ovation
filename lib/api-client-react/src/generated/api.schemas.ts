@@ -5,6 +5,36 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+export type CardVideoJobInputInput = { [key: string]: unknown };
+
+export type CardVideoJobInputOptions = { [key: string]: unknown };
+
+export interface CardVideoJobInput {
+  input: CardVideoJobInputInput;
+  options: CardVideoJobInputOptions;
+  fps?: number | null;
+}
+
+export type CardVideoJobStatus = typeof CardVideoJobStatus[keyof typeof CardVideoJobStatus];
+
+
+export const CardVideoJobStatus = {
+  queued: 'queued',
+  rendering: 'rendering',
+  encoding: 'encoding',
+  done: 'done',
+  error: 'error',
+} as const;
+
+export interface CardVideoJob {
+  id: string;
+  status: CardVideoJobStatus;
+  progress: number;
+  error?: string | null;
+  filename?: string | null;
+  sizeCode?: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }

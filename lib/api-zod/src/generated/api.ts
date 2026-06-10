@@ -5513,3 +5513,39 @@ export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
 })
 
 
+/**
+ * Renders the EXACT same data-bound card the browser previews into a guaranteed-compatible H.264/MP4, off the main thread, as a job. `input` and `options` are the opaque ShareCardInput + RenderOptions JSON the client already builds for the preview (the union lives in the frontend). Returns a job id to poll; the browser MediaRecorder path remains as a fallback. Admin-only (enforced by route middleware).
+ * @summary Start a server-side MP4 render of an animated share-card (admin only)
+ */
+export const CreateCardVideoJobBody = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "options": zod.record(zod.string(), zod.unknown()),
+  "fps": zod.number().nullish()
+})
+
+
+/**
+ * @summary Poll the status/progress of a card-video render job (admin only)
+ */
+export const GetCardVideoJobParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetCardVideoJobResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['queued', 'rendering', 'encoding', 'done', 'error']),
+  "progress": zod.number(),
+  "error": zod.string().nullish(),
+  "filename": zod.string().nullish(),
+  "sizeCode": zod.string().nullish()
+})
+
+
+/**
+ * @summary Download the finished MP4 for a completed job (admin only)
+ */
+export const DownloadCardVideoJobParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+

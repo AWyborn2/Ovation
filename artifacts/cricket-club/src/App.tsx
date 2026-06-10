@@ -38,6 +38,7 @@ import {
   AdminHonoursGroup,
 } from "@/pages/admin-groups";
 import CaptainPage from "@/pages/captain";
+import CardRenderHarness from "@/pages/card-render-harness";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -169,6 +170,7 @@ function CaptainRoutes() {
 function Router() {
   return (
     <Switch>
+      <Route path="/__card-render" component={CardRenderHarness} />
       <Route path="/honours-display/kiosk" component={HonoursKiosk} />
       <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />

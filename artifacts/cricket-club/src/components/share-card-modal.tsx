@@ -314,6 +314,10 @@ export function ShareCardModal({
     gifExporting,
     gifSupported,
     handleDownloadGif,
+    serverRendering,
+    serverProgress,
+    serverError,
+    handleServerRender,
   } = useVideoExport({ open, input, buildOpts, photoTransform });
 
   // Stable key for the animated preview so it only re-prepares when something
@@ -765,6 +769,13 @@ export function ShareCardModal({
         </div>
         )}
 
+        {isAdmin && animated && serverError && (
+          <p className="text-xs text-destructive">
+            Server render failed ({serverError}). Use “Preview (browser)” to
+            record the clip locally instead.
+          </p>
+        )}
+
         <DialogFooter className="gap-2 sm:gap-2">
           <Button
             type="button"
@@ -774,19 +785,37 @@ export function ShareCardModal({
             <Download className="h-4 w-4 mr-2" />
             Download {SIZES[activeSize].label}
           </Button>
+          {isAdmin && animated && (
+            <Button
+              type="button"
+              onClick={() => {
+                void handleServerRender(activeSize);
+              }}
+              disabled={serverRendering || videoExporting || gifExporting || zipping || approving}
+            >
+              {serverRendering ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              {serverRendering
+                ? `Rendering MP4… ${Math.round(serverProgress * 100)}%`
+                : "Render MP4"}
+            </Button>
+          )}
           {isAdmin && animated && videoSupported && (
             <Button
               type="button"
               variant="secondary"
               onClick={() => handleDownloadVideo(activeSize)}
-              disabled={videoExporting || gifExporting || zipping || approving}
+              disabled={videoExporting || serverRendering || gifExporting || zipping || approving}
             >
               {videoExporting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}
-              {videoExporting ? "Rendering…" : "Preview video"}
+              {videoExporting ? "Rendering…" : "Preview (browser)"}
             </Button>
           )}
           {isAdmin && animated && gifSupported && (
