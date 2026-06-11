@@ -2953,12 +2953,52 @@ export interface BoardDisplay {
   fit: boolean;
 }
 
+export type HonourBackgroundKind = typeof HonourBackgroundKind[keyof typeof HonourBackgroundKind];
+
+
+export const HonourBackgroundKind = {
+  none: 'none',
+  url: 'url',
+  texture: 'texture',
+} as const;
+
+/**
+ * A board / page background source. kind "none" clears any inherited image; "url" is an image URL or uploaded object path; "texture" is a built-in CSS texture id.
+ */
+export interface HonourBackground {
+  kind: HonourBackgroundKind;
+  value?: string | null;
+}
+
 export type BoardDisplayConfigTransition = typeof BoardDisplayConfigTransition[keyof typeof BoardDisplayConfigTransition];
 
 
 export const BoardDisplayConfigTransition = {
   scroll: 'scroll',
   slide: 'slide',
+} as const;
+
+/**
+ * Per-board text scale.
+ */
+export type BoardDisplayConfigTextSize = typeof BoardDisplayConfigTextSize[keyof typeof BoardDisplayConfigTextSize];
+
+
+export const BoardDisplayConfigTextSize = {
+  sm: 'sm',
+  md: 'md',
+  lg: 'lg',
+} as const;
+
+/**
+ * Per-board row density.
+ */
+export type BoardDisplayConfigDensity = typeof BoardDisplayConfigDensity[keyof typeof BoardDisplayConfigDensity];
+
+
+export const BoardDisplayConfigDensity = {
+  comfortable: 'comfortable',
+  compact: 'compact',
 } as const;
 
 /**
@@ -2972,6 +3012,22 @@ export interface BoardDisplayConfig {
   columns?: number;
   transition?: BoardDisplayConfigTransition;
   fit?: boolean;
+  /** Override the board's heading/title. */
+  heading?: string | null;
+  /** Override the board's subtitle. */
+  subtitle?: string | null;
+  /** Per-board text scale. */
+  textSize?: BoardDisplayConfigTextSize;
+  /** Per-board row density. */
+  density?: BoardDisplayConfigDensity;
+  /** Per-board title font stack (overrides skin / default font). */
+  font?: string | null;
+  /** Show the club crest in this board's header (default true). */
+  logo?: boolean;
+  /** Per-board background image. */
+  background?: HonourBackground | null;
+  /** Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout. */
+  gridColumns?: string[] | null;
 }
 
 /**
@@ -3026,7 +3082,42 @@ export const DisplayBoardLayout = {
   teamOfDecade: 'teamOfDecade',
   list: 'list',
   columns: 'columns',
+  grid: 'grid',
 } as const;
+
+/**
+ * One name within a grid cell (a cell may hold several, e.g. joint holders).
+ */
+export interface BoardGridEntry {
+  text: string;
+  playerId?: number | null;
+}
+
+/**
+ * A single cell of a season grid (zero or more names).
+ */
+export interface BoardGridCell {
+  entries: BoardGridEntry[];
+}
+
+/**
+ * One row of a season grid — a leading heading plus a cell per column.
+ */
+export interface BoardGridRow {
+  /** Leading-column label for the row (e.g. the season). */
+  heading: string;
+  cells: BoardGridCell[];
+}
+
+/**
+ * A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list/columns layout when the board has no configured columns.
+ */
+export interface BoardGrid {
+  /** Heading for the leading column (e.g. "Season"). */
+  rowHeading: string;
+  columnHeadings: string[];
+  rows: BoardGridRow[];
+}
 
 export interface DisplayBoard {
   /** Stable board id (also the kiosk sequence key). */
@@ -3040,25 +3131,61 @@ export interface DisplayBoard {
   entries: BoardEntry[];
   /** Side-by-side columns for the 'columns' layout (else null). */
   columns?: BoardColumn[] | null;
+  /** Season-grid matrix for the 'grid' layout (else null). */
+  grid?: BoardGrid | null;
   display: BoardDisplay;
 }
 
 /**
- * The single club-wide skin every board renders in.
+ * An available column an admin can add to a grid-capable board.
  */
-export type HonourDisplaySettingsDefaultTemplate = typeof HonourDisplaySettingsDefaultTemplate[keyof typeof HonourDisplaySettingsDefaultTemplate];
+export interface GridColumnOption {
+  key: string;
+  label: string;
+}
 
+/**
+ * A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.
+ */
+export interface GridCatalogEntry {
+  /** Board id this configures (matches a board / boardConfigs key). */
+  id: string;
+  title: string;
+  options: GridColumnOption[];
+}
 
-export const HonourDisplaySettingsDefaultTemplate = {
-  p1: 'p1',
-  p2: 'p2',
-  p3: 'p3',
-  p4: 'p4',
-  p5: 'p5',
-  p6: 'p6',
-  p7: 'p7',
-  p8: 'p8',
-} as const;
+/**
+ * An admin-authored skin/theme applied via inline CSS variables.
+ */
+export interface HonourSkin {
+  /** Stable skin id, e.g. "custom:<uuid>". */
+  id: string;
+  name: string;
+  /** Page backdrop (colour or gradient). */
+  background: string;
+  /** Board surface colour. */
+  boardBg: string;
+  /** Primary text colour. */
+  ink: string;
+  /** Secondary text colour. */
+  muted: string;
+  /** Gold / accent colour. */
+  accent: string;
+  /** Text colour on the accent. */
+  accentInk: string;
+  /** Title font stack. */
+  font: string;
+  backgroundImage?: HonourBackground | null;
+}
+
+/**
+ * Club-wide colour overrides layered on top of the active skin. Each is optional; an unset/empty value restores the skin's own colour.
+ */
+export interface HonourColourOverrides {
+  background?: string | null;
+  text?: string | null;
+  accent?: string | null;
+}
 
 /**
  * Per-board display overrides keyed by board id.
@@ -3066,8 +3193,8 @@ export const HonourDisplaySettingsDefaultTemplate = {
 export type HonourDisplaySettingsBoardConfigs = {[key: string]: BoardDisplayConfig};
 
 export interface HonourDisplaySettings {
-  /** The single club-wide skin every board renders in. */
-  defaultTemplate: HonourDisplaySettingsDefaultTemplate;
+  /** The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id ("custom:<uuid>"). */
+  defaultTemplate: string;
   /** Ordered board ids the kiosk rotates through. Empty = all boards. */
   kioskSequence: string[];
   /** Hold (ms) on each board before any credit-scroll begins. */
@@ -3082,6 +3209,11 @@ export interface HonourDisplaySettings {
   boardConfigs: HonourDisplaySettingsBoardConfigs;
   /** Admin-defined composite 'columns' boards. */
   composites: CompositeDef[];
+  /** Admin-authored skins/themes (built-in p1..p8 not listed). */
+  skins?: HonourSkin[];
+  colourOverrides?: HonourColourOverrides;
+  /** Club-wide default title font stack (null = the skin's font). */
+  defaultFont?: string | null;
 }
 
 export interface KioskTokenResponse {
@@ -3089,36 +3221,27 @@ export interface KioskTokenResponse {
   token: string | null;
 }
 
-export type HonourDisplaySettingsUpdateDefaultTemplate = typeof HonourDisplaySettingsUpdateDefaultTemplate[keyof typeof HonourDisplaySettingsUpdateDefaultTemplate];
-
-
-export const HonourDisplaySettingsUpdateDefaultTemplate = {
-  p1: 'p1',
-  p2: 'p2',
-  p3: 'p3',
-  p4: 'p4',
-  p5: 'p5',
-  p6: 'p6',
-  p7: 'p7',
-  p8: 'p8',
-} as const;
-
 export type HonourDisplaySettingsUpdateBoardConfigs = {[key: string]: BoardDisplayConfig};
 
 export interface HonourDisplaySettingsUpdate {
-  defaultTemplate?: HonourDisplaySettingsUpdateDefaultTemplate;
+  defaultTemplate?: string;
   kioskSequence?: string[];
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;
   kioskEndHoldMs?: number;
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
+  skins?: HonourSkin[];
+  colourOverrides?: HonourColourOverrides;
+  defaultFont?: string | null;
 }
 
 export interface HonourDisplayBundle {
   boards: DisplayBoard[];
   brand: HonourBrand;
   settings: HonourDisplaySettings;
+  /** Grid-capable boards and their selectable columns, for the admin season-grid column pickers. */
+  gridCatalog?: GridCatalogEntry[];
 }
 
 export interface TourStepContent {

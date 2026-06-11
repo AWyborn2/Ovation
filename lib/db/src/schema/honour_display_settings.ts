@@ -1,11 +1,53 @@
 import { pgTable, serial, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
 
+// A board / page background source. kind "none" clears any inherited image;
+// "url" is an arbitrary image URL (or uploaded object path); "texture" is one
+// of the built-in CSS textures keyed by id.
+export interface HonourBackgroundJson {
+  kind: "none" | "url" | "texture";
+  value?: string | null;
+}
+
 // Per-board display override (all optional; unset falls back to the board's
 // natural default). Stored keyed by board id in board_configs.
 export interface BoardDisplayConfigJson {
   columns?: number;
   transition?: "scroll" | "slide";
   fit?: boolean;
+  // Per-board content/style overrides (all optional).
+  heading?: string | null;
+  subtitle?: string | null;
+  textSize?: "sm" | "md" | "lg";
+  density?: "comfortable" | "compact";
+  font?: string | null;
+  logo?: boolean;
+  background?: HonourBackgroundJson | null;
+  // Ordered column keys for grid-capable boards (offices, award keys, grades).
+  // Non-empty switches a grid-capable board into its season-grid layout.
+  gridColumns?: string[];
+}
+
+// An admin-authored skin/theme. Built-in skins (p1..p8) are CSS-only and not
+// stored here; these are admin-created presets applied via inline CSS vars.
+export interface HonourSkinJson {
+  id: string; // "custom:<uuid>"
+  name: string;
+  background: string; // page backdrop (colour or gradient)
+  boardBg: string; // board surface
+  ink: string; // primary text
+  muted: string; // secondary text
+  accent: string; // gold / accent
+  accentInk: string; // text on the accent
+  font: string; // title font stack
+  backgroundImage?: HonourBackgroundJson | null; // optional page background image
+}
+
+// Club-wide colour overrides layered on top of the active skin. Each is
+// optional; an unset/empty value restores the skin's own colour.
+export interface HonourColourOverridesJson {
+  background?: string | null;
+  text?: string | null;
+  accent?: string | null;
 }
 
 // Admin-defined composite "columns" board (several existing list boards placed
@@ -53,6 +95,18 @@ export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
     .$type<CompositeDefJson[]>()
     .notNull()
     .default([]),
+  // Admin-authored skins/themes (built-in p1..p8 are CSS-only, not stored here).
+  skins: jsonb("skins")
+    .$type<HonourSkinJson[]>()
+    .notNull()
+    .default([]),
+  // Club-wide colour overrides layered on top of the active skin.
+  colourOverrides: jsonb("colour_overrides")
+    .$type<HonourColourOverridesJson>()
+    .notNull()
+    .default({}),
+  // Club-wide default title font stack (null = the skin's own font).
+  defaultFont: text("default_font"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

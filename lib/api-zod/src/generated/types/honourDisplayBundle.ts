@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DisplayBoard } from './displayBoard';
+import type { GridCatalogEntry } from './gridCatalogEntry';
 import type { HonourBrand } from './honourBrand';
 import type { HonourDisplaySettings } from './honourDisplaySettings';
 
@@ -13,4 +14,6 @@ export interface HonourDisplayBundle {
   boards: DisplayBoard[];
   brand: HonourBrand;
   settings: HonourDisplaySettings;
+  /** Grid-capable boards and their selectable columns, for the admin season-grid column pickers. */
+  gridCatalog?: GridCatalogEntry[];
 }

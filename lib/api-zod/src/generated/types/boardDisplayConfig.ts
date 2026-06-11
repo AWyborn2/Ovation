@@ -5,7 +5,10 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BoardDisplayConfigDensity } from './boardDisplayConfigDensity';
+import type { BoardDisplayConfigTextSize } from './boardDisplayConfigTextSize';
 import type { BoardDisplayConfigTransition } from './boardDisplayConfigTransition';
+import type { HonourBackground } from './honourBackground';
 
 /**
  * Admin per-board override (all fields optional; unset falls back to the board's natural default). Stored keyed by board id in settings.boardConfigs.
@@ -18,4 +21,20 @@ export interface BoardDisplayConfig {
   columns?: number;
   transition?: BoardDisplayConfigTransition;
   fit?: boolean;
+  /** Override the board's heading/title. */
+  heading?: string | null;
+  /** Override the board's subtitle. */
+  subtitle?: string | null;
+  /** Per-board text scale. */
+  textSize?: BoardDisplayConfigTextSize;
+  /** Per-board row density. */
+  density?: BoardDisplayConfigDensity;
+  /** Per-board title font stack (overrides skin / default font). */
+  font?: string | null;
+  /** Show the club crest in this board's header (default true). */
+  logo?: boolean;
+  /** Per-board background image. */
+  background?: HonourBackground | null;
+  /** Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout. */
+  gridColumns?: string[] | null;
 }

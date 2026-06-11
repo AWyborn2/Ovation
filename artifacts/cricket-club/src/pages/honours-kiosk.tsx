@@ -7,9 +7,9 @@ import {
   getGetKioskDisplayQueryKey,
 } from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
-import { brandStyle } from "@/components/honours-display/theme";
+import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
-import type { DisplayBoard, TemplateId } from "@/components/honours-display/types";
+import type { DisplayBoard } from "@/components/honours-display/types";
 import {
   useApproachingBoard,
   applyBoardConfig,
@@ -77,6 +77,19 @@ function paginate(board: DisplayBoard, rowsPerPage: number): DisplayBoard[] {
           ...c,
           entries: c.entries.slice(r, r + per),
         })),
+      });
+    }
+    return pages;
+  }
+  if (board.layout === "grid" && board.grid) {
+    const rows = board.grid.rows;
+    if (rows.length <= per) return [board];
+    const pages: DisplayBoard[] = [];
+    for (let r = 0; r < rows.length; r += per) {
+      pages.push({
+        ...board,
+        id: `${board.id}#${r}`,
+        grid: { ...board.grid, rows: rows.slice(r, r + per) },
       });
     }
     return pages;
@@ -239,17 +252,22 @@ export default function HonoursKiosk() {
     );
   }
 
-  const skin = settings.defaultTemplate as TemplateId;
+  const skin = settings.defaultTemplate;
   const current = frames[index % frames.length]!;
 
   return (
     <div className="hb-kiosk">
-      <div className={`hb ${skinClass(skin)}`} style={brandStyle(brand)}>
+      <div className={`hb ${skinClass(skin)}`} style={rootStyle(brand, settings)}>
         <div
           className={`preset active${current.fit ? " fit" : ""}`}
           ref={frameRef}
         >
-          <BoardRenderer board={current.board} brand={brand} kiosk />
+          <BoardRenderer
+            board={current.board}
+            brand={brand}
+            kiosk
+            cfg={settings.boardConfigs?.[current.board.id.split("#")[0]!]}
+          />
         </div>
       </div>
       <button className="hb-kexit" onClick={exit}>

@@ -83,6 +83,9 @@ function serializeSettings(
     kioskEndHoldMs: row.kioskEndHoldMs,
     boardConfigs: row.boardConfigs ?? {},
     composites: row.composites ?? [],
+    skins: row.skins ?? [],
+    colourOverrides: row.colourOverrides ?? {},
+    defaultFont: row.defaultFont ?? null,
     // Only surface the kiosk token to authenticated admins. The public
     // kiosk feed omits it so it never leaks to the rotation client.
     ...(opts.includeToken ? { kioskToken: row.kioskToken ?? null } : {}),
@@ -133,9 +136,43 @@ interface BoardEntry {
 
 // Each board keeps its NATURAL layout; the chosen skin only changes the look.
 // "columns" is a composite layout: several list boards rendered side-by-side.
-type BoardLayout = "premiership" | "teamOfDecade" | "list" | "columns";
+// "grid" is the opt-in season-grid matrix (rows × admin-chosen columns).
+type BoardLayout =
+  | "premiership"
+  | "teamOfDecade"
+  | "list"
+  | "columns"
+  | "grid";
 
 type BoardTransition = "scroll" | "slide";
+
+// --- Season-grid matrix (opt-in layout) ---
+interface GridCellEntryOut {
+  text: string;
+  playerId?: number | null;
+}
+interface GridCellOut {
+  entries: GridCellEntryOut[];
+}
+interface GridRowOut {
+  heading: string;
+  cells: GridCellOut[];
+}
+interface BoardGridOut {
+  rowHeading: string;
+  columnHeadings: string[];
+  rows: GridRowOut[];
+}
+
+interface GridColumnOptionOut {
+  key: string;
+  label: string;
+}
+interface GridCatalogEntryOut {
+  id: string;
+  title: string;
+  options: GridColumnOptionOut[];
+}
 
 // Resolved (always-present) per-board display config sent to the client.
 interface BoardDisplayOut {
@@ -159,8 +196,54 @@ interface HonourBoardOut {
   entries: BoardEntry[];
   // Only set for the "columns" layout (composite boards).
   columns?: BoardColumnOut[] | null;
+  // Only set for the "grid" layout (season-grid matrix).
+  grid?: BoardGridOut | null;
   // Stamped onto every board by assembleBoards before serialization.
   display?: BoardDisplayOut;
+}
+
+// Generic season-grid composer. Rows are seasons (newest first); columns are
+// the supplied {key,label} list in order; each record drops its text (and
+// optional playerId) into the (season, colKey) cell, stacking joint holders.
+function composeSeasonGrid(
+  rowHeading: string,
+  columns: GridColumnOptionOut[],
+  records: {
+    seasonLabel: string;
+    startYear: number;
+    colKey: string;
+    text: string;
+    playerId?: number | null;
+  }[],
+): BoardGridOut {
+  const seasonYear = new Map<string, number>();
+  const bySeasonCol = new Map<string, Map<string, GridCellEntryOut[]>>();
+  for (const r of records) {
+    if (!r.text) continue;
+    seasonYear.set(r.seasonLabel, r.startYear);
+    let m = bySeasonCol.get(r.seasonLabel);
+    if (!m) {
+      m = new Map();
+      bySeasonCol.set(r.seasonLabel, m);
+    }
+    let arr = m.get(r.colKey);
+    if (!arr) {
+      arr = [];
+      m.set(r.colKey, arr);
+    }
+    arr.push({ text: r.text, playerId: r.playerId ?? null });
+  }
+  const seasons = [...seasonYear.entries()]
+    .sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))
+    .map(([label]) => label);
+  const rows: GridRowOut[] = seasons.map((s) => {
+    const m = bySeasonCol.get(s) ?? new Map<string, GridCellEntryOut[]>();
+    return {
+      heading: s,
+      cells: columns.map((c) => ({ entries: m.get(c.key) ?? [] })),
+    };
+  });
+  return { rowHeading, columnHeadings: columns.map((c) => c.label), rows };
 }
 
 const DEFAULT_DISPLAY: BoardDisplayOut = {
@@ -448,8 +531,14 @@ async function buildCaptains(): Promise<HonourBoardOut[]> {
     }));
 }
 
-/** Committee / office bearers — published club roles with NO grade (grade null). */
-async function buildCommittee(): Promise<HonourBoardOut | null> {
+/**
+ * Committee / office bearers — published club roles with NO grade (grade null).
+ * Renders as a list by default; switches to a season × office grid when the
+ * admin has chosen grid columns (each column is an office/role).
+ */
+async function buildCommittee(
+  gridColumns?: string[],
+): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(clubRolesTable)
@@ -457,6 +546,34 @@ async function buildCommittee(): Promise<HonourBoardOut | null> {
     .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder), asc(clubRolesTable.id));
   const officeBearers = rows.filter((r) => r.grade == null);
   if (officeBearers.length === 0) return null;
+
+  if (gridColumns && gridColumns.length > 0) {
+    const columns: GridColumnOptionOut[] = gridColumns.map((k) => ({
+      key: k,
+      label: k,
+    }));
+    const grid = composeSeasonGrid(
+      "Season",
+      columns,
+      officeBearers.map((r) => ({
+        seasonLabel: seasonLabel(r.season),
+        startYear: r.season,
+        colKey: r.role,
+        text: r.name,
+        playerId: r.playerId ?? null,
+      })),
+    );
+    return {
+      id: "committee",
+      category: "committee",
+      layout: "grid",
+      title: "Committee & Office Bearers",
+      subtitle: "Those who served off the field",
+      entries: [],
+      grid,
+    };
+  }
+
   return {
     id: "committee",
     category: "committee",
@@ -469,6 +586,156 @@ async function buildCommittee(): Promise<HonourBoardOut | null> {
       detail: r.role,
       playerId: r.playerId ?? null,
     })),
+  };
+}
+
+/**
+ * NEW merged "Award Winners" grid — season × award matrix across all published
+ * awards (the admin can narrow the columns). Distinct from the per-award list
+ * boards, which remain. Always emitted when there are published award winners.
+ */
+async function buildAwardWinnersGrid(
+  gridColumns?: string[],
+): Promise<HonourBoardOut | null> {
+  const awards = await db
+    .select()
+    .from(awardsTable)
+    .where(eq(awardsTable.published, true))
+    .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
+  if (awards.length === 0) return null;
+
+  const awardIds = awards.map((a) => a.id);
+  const winners = await db
+    .select()
+    .from(awardWinnersTable)
+    .where(
+      and(
+        inArray(awardWinnersTable.awardId, awardIds),
+        eq(awardWinnersTable.published, true),
+      ),
+    );
+  if (winners.length === 0) return null;
+
+  const awardById = new Map(awards.map((a) => [a.id, a]));
+  // Default to every published award; narrow to the admin's chosen keys (in
+  // their order) when set.
+  const selectedKeys =
+    gridColumns && gridColumns.length > 0
+      ? gridColumns.filter((k) => awards.some((a) => a.key === k))
+      : awards.map((a) => a.key);
+  if (selectedKeys.length === 0) return null;
+  const columns: GridColumnOptionOut[] = selectedKeys.map((k) => ({
+    key: k,
+    label: awards.find((a) => a.key === k)!.title,
+  }));
+
+  const grid = composeSeasonGrid(
+    "Season",
+    columns,
+    winners.map((w) => ({
+      seasonLabel: seasonLabel(w.season),
+      startYear: w.season,
+      colKey: awardById.get(w.awardId)?.key ?? "",
+      text: w.name,
+      playerId: w.playerId ?? null,
+    })),
+  );
+  return {
+    id: "award_winners",
+    category: "award_winners",
+    layout: "grid",
+    title: "Award Winners",
+    subtitle: "Season-by-season honour roll",
+    entries: [],
+    grid,
+  };
+}
+
+/**
+ * Opt-in grade-captains grid — season × grade matrix. Emitted ONLY when the
+ * admin configures columns; the per-grade list boards (buildCaptains) remain.
+ */
+async function buildCaptainsGrid(
+  gridColumns?: string[],
+): Promise<HonourBoardOut | null> {
+  if (!gridColumns || gridColumns.length === 0) return null;
+  const rows = await db
+    .select()
+    .from(clubRolesTable)
+    .where(
+      and(eq(clubRolesTable.role, "Grade Captain"), eq(clubRolesTable.published, true)),
+    )
+    .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder));
+  if (rows.length === 0) return null;
+
+  const columns: GridColumnOptionOut[] = gridColumns.map((k) => ({
+    key: k,
+    label: k,
+  }));
+  const grid = composeSeasonGrid(
+    "Season",
+    columns,
+    rows
+      .filter((r) => r.grade != null)
+      .map((r) => ({
+        seasonLabel: seasonLabel(r.season),
+        startYear: r.season,
+        colKey: r.grade!,
+        text: r.name,
+        playerId: r.playerId ?? null,
+      })),
+  );
+  return {
+    id: "captains_grid",
+    category: "captains",
+    layout: "grid",
+    title: "Grade Captains",
+    subtitle: "Season-by-season leaders by grade",
+    entries: [],
+    grid,
+  };
+}
+
+/**
+ * Opt-in premierships grid — season × grade matrix of grand-final wins. Emitted
+ * ONLY when the admin configures columns; the premiership-layout board remains.
+ */
+async function buildPremiershipsGrid(
+  gridColumns?: string[],
+): Promise<HonourBoardOut | null> {
+  if (!gridColumns || gridColumns.length === 0) return null;
+  const prems = await db
+    .select()
+    .from(premiershipsTable)
+    .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade));
+  if (prems.length === 0) return null;
+
+  const columns: GridColumnOptionOut[] = gridColumns.map((k) => ({
+    key: k,
+    label: premParentGrade(k),
+  }));
+  const grid = composeSeasonGrid(
+    "Season",
+    columns,
+    prems.map((p) => {
+      const startYear = premiershipSeasons(p.year, p.matchDate)[0]!;
+      return {
+        seasonLabel: seasonLabel(startYear),
+        startYear,
+        colKey: p.grade,
+        text: p.result || tidyCompetition(p.competition) || "Premiers",
+        playerId: null,
+      };
+    }),
+  );
+  return {
+    id: "premierships_grid",
+    category: "premierships",
+    layout: "grid",
+    title: "Premierships",
+    subtitle: "Grand Final wins by grade & season",
+    entries: [],
+    grid,
   };
 }
 
@@ -1022,13 +1289,19 @@ function buildComposites(
 async function assembleBoards(
   settings: HonourDisplaySettingsRow,
 ): Promise<HonourBoardOut[]> {
+  const boardConfigsAll = settings.boardConfigs ?? {};
+  const gridCols = (id: string): string[] | undefined =>
+    boardConfigsAll[id]?.gridColumns;
   const [
     premierships,
+    premiershipsGrid,
     awards,
+    awardWinnersGrid,
     centuries,
     fiveFor,
     lifeMembers,
     captains,
+    captainsGrid,
     committee,
     partnerships,
     milestones,
@@ -1040,12 +1313,15 @@ async function assembleBoards(
     mostGames,
   ] = await Promise.all([
     buildPremierships(),
+    buildPremiershipsGrid(gridCols("premierships_grid")),
     buildAwardBoards(),
+    buildAwardWinnersGrid(gridCols("award_winners")),
     buildCenturies(),
     buildFiveWicketHauls(),
     buildLifeMembers(),
     buildCaptains(),
-    buildCommittee(),
+    buildCaptainsGrid(gridCols("captains_grid")),
+    buildCommittee(gridCols("committee")),
     buildPartnerships(),
     buildMilestoneBoard(),
     buildAwardPoints(),
@@ -1058,7 +1334,9 @@ async function assembleBoards(
 
   const boards: HonourBoardOut[] = [];
   if (premierships) boards.push(premierships);
+  if (premiershipsGrid) boards.push(premiershipsGrid);
   boards.push(...awards);
+  if (awardWinnersGrid) boards.push(awardWinnersGrid);
   boards.push(...teamOfDecade);
   if (clubRecords) boards.push(clubRecords);
   boards.push(...recordsByGrade);
@@ -1070,6 +1348,7 @@ async function assembleBoards(
   boards.push(...awardPoints);
   boards.push(...recordsLeaderboards);
   boards.push(...captains);
+  if (captainsGrid) boards.push(captainsGrid);
   if (committee) boards.push(committee);
   if (lifeMembers) boards.push(lifeMembers);
 
@@ -1106,6 +1385,81 @@ function deriveMonogram(name: string, shortName: string | null): string {
   return (shortName || source || "HH").slice(0, 2).toUpperCase();
 }
 
+/**
+ * Grid-capable boards + their selectable columns, driving the admin column
+ * pickers. Covers committee (offices), award_winners (awards), captains_grid
+ * and premierships_grid (grades).
+ */
+async function buildGridCatalog(): Promise<GridCatalogEntryOut[]> {
+  const [roleRows, awards, prems] = await Promise.all([
+    db
+      .select({
+        role: clubRolesTable.role,
+        grade: clubRolesTable.grade,
+        displayOrder: clubRolesTable.displayOrder,
+      })
+      .from(clubRolesTable)
+      .where(eq(clubRolesTable.published, true)),
+    db
+      .select()
+      .from(awardsTable)
+      .where(eq(awardsTable.published, true))
+      .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id)),
+    db
+      .select({ grade: premiershipsTable.grade })
+      .from(premiershipsTable),
+  ]);
+
+  // Distinct offices (grade-null roles), ranked by the office order.
+  const officeSet = new Map<string, number>();
+  for (const r of roleRows) {
+    if (r.grade != null) continue;
+    if (!officeSet.has(r.role)) officeSet.set(r.role, r.displayOrder ?? 0);
+  }
+  const offices = [...officeSet.keys()].sort(
+    (a, b) => roleRank(a) - roleRank(b) || a.localeCompare(b),
+  );
+
+  // Distinct grades with published grade captains, in seniority order.
+  const capGradeSet = new Set<string>();
+  for (const r of roleRows) {
+    if (r.role === "Grade Captain" && r.grade) capGradeSet.add(r.grade);
+  }
+  const capGrades = [...capGradeSet].sort(
+    (a, b) => gradeRank(a) - gradeRank(b) || a.localeCompare(b),
+  );
+
+  // Distinct premiership grades, in seniority order.
+  const premGradeSet = new Set<string>();
+  for (const p of prems) if (p.grade) premGradeSet.add(p.grade);
+  const premGrades = [...premGradeSet].sort(
+    (a, b) => gradeRank(a) - gradeRank(b) || a.localeCompare(b),
+  );
+
+  return [
+    {
+      id: "committee",
+      title: "Committee & Office Bearers",
+      options: offices.map((o) => ({ key: o, label: o })),
+    },
+    {
+      id: "award_winners",
+      title: "Award Winners",
+      options: awards.map((a) => ({ key: a.key, label: a.title })),
+    },
+    {
+      id: "captains_grid",
+      title: "Grade Captains (grid)",
+      options: capGrades.map((g) => ({ key: g, label: g })),
+    },
+    {
+      id: "premierships_grid",
+      title: "Premierships (grid)",
+      options: premGrades.map((g) => ({ key: g, label: premParentGrade(g) })),
+    },
+  ];
+}
+
 async function buildBrand() {
   const b = await getHallsHeadBrand();
   return {
@@ -1125,14 +1479,16 @@ async function buildBrand() {
 
 router.get("/honour-display", requireAdmin, async (_req, res): Promise<void> => {
   const settingsRow = await ensureHonourDisplaySettings();
-  const [boards, brand] = await Promise.all([
+  const [boards, brand, gridCatalog] = await Promise.all([
     assembleBoards(settingsRow),
     buildBrand(),
+    buildGridCatalog(),
   ]);
   res.json({
     boards,
     brand,
     settings: serializeSettings(settingsRow, { includeToken: true }),
+    gridCatalog,
   });
 });
 

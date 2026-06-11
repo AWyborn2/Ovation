@@ -1,12 +1,19 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
-import type { DisplayBoard, BoardEntry, HonourBrand } from "./types";
+import type {
+  DisplayBoard,
+  BoardEntry,
+  BoardDisplayConfig,
+  HonourBrand,
+} from "./types";
 import { gradeBadge, formatDate } from "./helpers";
 
 interface LayoutProps {
   board: DisplayBoard;
   brand: HonourBrand;
   kiosk?: boolean;
+  /** Per-board admin config (logo toggle, heading/subtitle override). */
+  cfg?: BoardDisplayConfig | null;
   /** Pre-paged subset for long list boards; defaults to all board entries. */
   entries?: BoardEntry[];
 }
@@ -29,21 +36,40 @@ function NameLink({
   );
 }
 
+/** The club crest as a real image, falling back to the monogram initials. */
+function Crest({ brand }: { brand: HonourBrand }) {
+  if (brand.logoUrl) {
+    return (
+      <div className="hb-crest hb-crest-img">
+        <img src={brand.logoUrl} alt={`${brand.name} crest`} />
+      </div>
+    );
+  }
+  return <div className="hb-crest">{brand.monogram}</div>;
+}
+
 /** Shared board header: crest, club name, title, optional subtitle. */
 function BoardHead({
   board,
   brand,
+  cfg,
 }: {
   board: DisplayBoard;
   brand: HonourBrand;
+  cfg?: BoardDisplayConfig | null;
 }) {
+  // Logo defaults on; admins can hide the crest per board.
+  const showLogo = cfg?.logo !== false;
+  const title = cfg?.heading || board.title;
+  const subtitle =
+    cfg?.subtitle != null ? cfg.subtitle : (board.subtitle ?? "");
   return (
     <header className="hb-head">
-      <div className="hb-crest">{brand.monogram}</div>
+      {showLogo ? <Crest brand={brand} /> : null}
       <div className="hb-titles">
         <div className="hb-club">{brand.name}</div>
-        <h2 className="hb-title">{board.title}</h2>
-        {board.subtitle ? <p className="hb-sub">{board.subtitle}</p> : null}
+        <h2 className="hb-title">{title}</h2>
+        {subtitle ? <p className="hb-sub">{subtitle}</p> : null}
       </div>
     </header>
   );
@@ -53,10 +79,10 @@ function BoardHead({
 // Premiership layout — same info as /premierships (grade, result, squad…).
 // ---------------------------------------------------------------------------
 
-export function PremiershipBoard({ board, brand, kiosk }: LayoutProps) {
+export function PremiershipBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   return (
     <div className="hb-board hb-premiership">
-      <BoardHead board={board} brand={brand} />
+      <BoardHead board={board} brand={brand} cfg={cfg} />
       <div className="hb-flags">
         {board.entries.map((e, i) => (
           <article className="hb-flag" key={i}>
@@ -129,10 +155,10 @@ export function PremiershipBoard({ board, brand, kiosk }: LayoutProps) {
 // Team of the Decade layout — XI lineup in batting order.
 // ---------------------------------------------------------------------------
 
-export function TeamOfDecadeBoard({ board, brand, kiosk }: LayoutProps) {
+export function TeamOfDecadeBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   return (
     <div className="hb-board hb-tod">
-      <BoardHead board={board} brand={brand} />
+      <BoardHead board={board} brand={brand} cfg={cfg} />
       <ol className="hb-lineup">
         {board.entries.map((e, i) => (
           <li className="hb-lineup-row" key={i}>
@@ -154,7 +180,7 @@ export function TeamOfDecadeBoard({ board, brand, kiosk }: LayoutProps) {
 // Generic list layout — rank/season · name (+grade) · detail.
 // ---------------------------------------------------------------------------
 
-export function ListBoard({ board, brand, kiosk, entries }: LayoutProps) {
+export function ListBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
   const rows = entries ?? board.entries;
   const ranked = rows.some((e) => e.meta?.rank != null);
   const colCount = Math.min(3, Math.max(1, board.display?.columns ?? 1));
@@ -211,7 +237,7 @@ export function ListBoard({ board, brand, kiosk, entries }: LayoutProps) {
 
   return (
     <div className="hb-board hb-list">
-      <BoardHead board={board} brand={brand} />
+      <BoardHead board={board} brand={brand} cfg={cfg} />
       {body}
     </div>
   );
@@ -223,14 +249,14 @@ export function ListBoard({ board, brand, kiosk, entries }: LayoutProps) {
 // season-aligned transform, where every column is index-aligned by season).
 // ---------------------------------------------------------------------------
 
-export function ColumnsBoard({ board, brand, kiosk }: LayoutProps) {
+export function ColumnsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   const cols = board.columns ?? [];
   const colCount = Math.max(1, cols.length);
   const maxRows = cols.reduce((m, c) => Math.max(m, c.entries.length), 0);
 
   return (
     <div className="hb-board hb-columns">
-      <BoardHead board={board} brand={brand} />
+      <BoardHead board={board} brand={brand} cfg={cfg} />
       <div
         className="hb-cols"
         style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -266,6 +292,62 @@ export function ColumnsBoard({ board, brand, kiosk }: LayoutProps) {
           }),
         )}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Season-grid layout — a matrix: leading row-heading column (usually the
+// season) by admin-chosen columns (offices, awards, grades). Each cell may
+// hold several names (joint holders). Reusable across committee / award
+// winners / captains / premierships boards.
+// ---------------------------------------------------------------------------
+
+export function GridBoard({ board, brand, kiosk, cfg }: LayoutProps) {
+  const grid = board.grid;
+  return (
+    <div className="hb-board hb-grid">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      {grid && grid.rows.length ? (
+        <div className="hb-grid-scroll">
+          <table className="hb-grid-table">
+            <thead>
+              <tr>
+                <th className="hb-grid-rowhead">{grid.rowHeading}</th>
+                {grid.columnHeadings.map((h, ci) => (
+                  <th key={ci}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {grid.rows.map((row, ri) => (
+                <tr className="row" key={ri}>
+                  <td className="hb-grid-rowhead">
+                    <span className="hb-season">{row.heading}</span>
+                  </td>
+                  {row.cells.map((cell, ci) => (
+                    <td key={ci}>
+                      {cell.entries.length ? (
+                        cell.entries.map((en, ei) => (
+                          <span className="hb-grid-name" key={ei}>
+                            <NameLink playerId={en.playerId} kiosk={kiosk}>
+                              {en.text}
+                            </NameLink>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="hb-grid-empty">—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="hb-sub">No data for the selected columns.</p>
+      )}
     </div>
   );
 }

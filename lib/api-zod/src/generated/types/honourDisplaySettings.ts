@@ -6,12 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompositeDef } from './compositeDef';
+import type { HonourColourOverrides } from './honourColourOverrides';
 import type { HonourDisplaySettingsBoardConfigs } from './honourDisplaySettingsBoardConfigs';
-import type { HonourDisplaySettingsDefaultTemplate } from './honourDisplaySettingsDefaultTemplate';
+import type { HonourSkin } from './honourSkin';
 
 export interface HonourDisplaySettings {
-  /** The single club-wide skin every board renders in. */
-  defaultTemplate: HonourDisplaySettingsDefaultTemplate;
+  /** The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id ("custom:<uuid>"). */
+  defaultTemplate: string;
   /** Ordered board ids the kiosk rotates through. Empty = all boards. */
   kioskSequence: string[];
   /** Hold (ms) on each board before any credit-scroll begins. */
@@ -26,4 +27,9 @@ export interface HonourDisplaySettings {
   boardConfigs: HonourDisplaySettingsBoardConfigs;
   /** Admin-defined composite 'columns' boards. */
   composites: CompositeDef[];
+  /** Admin-authored skins/themes (built-in p1..p8 not listed). */
+  skins?: HonourSkin[];
+  colourOverrides?: HonourColourOverrides;
+  /** Club-wide default title font stack (null = the skin's font). */
+  defaultFont?: string | null;
 }

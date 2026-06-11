@@ -6,15 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompositeDef } from './compositeDef';
+import type { HonourColourOverrides } from './honourColourOverrides';
 import type { HonourDisplaySettingsUpdateBoardConfigs } from './honourDisplaySettingsUpdateBoardConfigs';
-import type { HonourDisplaySettingsUpdateDefaultTemplate } from './honourDisplaySettingsUpdateDefaultTemplate';
+import type { HonourSkin } from './honourSkin';
 
 export interface HonourDisplaySettingsUpdate {
-  defaultTemplate?: HonourDisplaySettingsUpdateDefaultTemplate;
+  defaultTemplate?: string;
   kioskSequence?: string[];
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;
   kioskEndHoldMs?: number;
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
+  skins?: HonourSkin[];
+  colourOverrides?: HonourColourOverrides;
+  defaultFont?: string | null;
 }

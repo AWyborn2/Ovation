@@ -4840,7 +4840,7 @@ export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -4890,6 +4890,19 @@ export const GetHonourDisplayResponse = zod.object({
 })).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
+  "grid": zod.object({
+  "rowHeading": zod.string().describe('Heading for the leading column (e.g. \"Season\").'),
+  "columnHeadings": zod.array(zod.string()),
+  "rows": zod.array(zod.object({
+  "heading": zod.string().describe('Leading-column label for the row (e.g. the season).'),
+  "cells": zod.array(zod.object({
+  "entries": zod.array(zod.object({
+  "text": zod.string(),
+  "playerId": zod.number().nullish()
+}).describe('One name within a grid cell (a cell may hold several, e.g. joint holders).'))
+}).describe('A single cell of a season grid (zero or more names).'))
+}).describe('One row of a season grid — a leading heading plus a cell per column.'))
+}).describe('A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list\/columns layout when the board has no configured columns.').nullish().describe('Season-grid matrix for the \'grid\' layout (else null).'),
   "display": zod.object({
   "columns": zod.number().min(1).max(getHonourDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
   "transition": zod.enum(['scroll', 'slide']).describe('Kiosk transition — continuous credit-scroll or paged slide.'),
@@ -4906,7 +4919,7 @@ export const GetHonourDisplayResponse = zod.object({
   "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
 }),
   "settings": zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).describe('The single club-wide skin every board renders in.'),
+  "defaultTemplate": zod.string().describe('The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id (\"custom:<uuid>\").'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
@@ -4915,7 +4928,18 @@ export const GetHonourDisplayResponse = zod.object({
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide']).optional(),
-  "fit": zod.boolean().optional()
+  "fit": zod.boolean().optional(),
+  "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
+  "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
+  "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
+  "density": zod.enum(['comfortable', 'compact']).optional().describe('Per-board row density.'),
+  "font": zod.string().nullish().describe('Per-board title font stack (overrides skin \/ default font).'),
+  "logo": zod.boolean().optional().describe('Show the club crest in this board\'s header (default true).'),
+  "background": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -4928,8 +4952,37 @@ export const GetHonourDisplayResponse = zod.object({
 }).describe('One column of a composite board — a reference to an existing list board.')),
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
-}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.')
-})
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.'),
+  "skins": zod.array(zod.object({
+  "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
+  "name": zod.string(),
+  "background": zod.string().describe('Page backdrop (colour or gradient).'),
+  "boardBg": zod.string().describe('Board surface colour.'),
+  "ink": zod.string().describe('Primary text colour.'),
+  "muted": zod.string().describe('Secondary text colour.'),
+  "accent": zod.string().describe('Gold \/ accent colour.'),
+  "accentInk": zod.string().describe('Text colour on the accent.'),
+  "font": zod.string().describe('Title font stack.'),
+  "backgroundImage": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p8 not listed).'),
+  "colourOverrides": zod.object({
+  "background": zod.string().nullish(),
+  "text": zod.string().nullish(),
+  "accent": zod.string().nullish()
+}).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
+  "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
+}),
+  "gridCatalog": zod.array(zod.object({
+  "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
+  "title": zod.string(),
+  "options": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string()
+}).describe('An available column an admin can add to a grid-capable board.'))
+}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.')
 })
 
 
@@ -4951,7 +5004,7 @@ export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -5001,6 +5054,19 @@ export const GetKioskDisplayResponse = zod.object({
 })).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
+  "grid": zod.object({
+  "rowHeading": zod.string().describe('Heading for the leading column (e.g. \"Season\").'),
+  "columnHeadings": zod.array(zod.string()),
+  "rows": zod.array(zod.object({
+  "heading": zod.string().describe('Leading-column label for the row (e.g. the season).'),
+  "cells": zod.array(zod.object({
+  "entries": zod.array(zod.object({
+  "text": zod.string(),
+  "playerId": zod.number().nullish()
+}).describe('One name within a grid cell (a cell may hold several, e.g. joint holders).'))
+}).describe('A single cell of a season grid (zero or more names).'))
+}).describe('One row of a season grid — a leading heading plus a cell per column.'))
+}).describe('A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list\/columns layout when the board has no configured columns.').nullish().describe('Season-grid matrix for the \'grid\' layout (else null).'),
   "display": zod.object({
   "columns": zod.number().min(1).max(getKioskDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
   "transition": zod.enum(['scroll', 'slide']).describe('Kiosk transition — continuous credit-scroll or paged slide.'),
@@ -5017,7 +5083,7 @@ export const GetKioskDisplayResponse = zod.object({
   "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
 }),
   "settings": zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).describe('The single club-wide skin every board renders in.'),
+  "defaultTemplate": zod.string().describe('The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id (\"custom:<uuid>\").'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
@@ -5026,7 +5092,18 @@ export const GetKioskDisplayResponse = zod.object({
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide']).optional(),
-  "fit": zod.boolean().optional()
+  "fit": zod.boolean().optional(),
+  "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
+  "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
+  "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
+  "density": zod.enum(['comfortable', 'compact']).optional().describe('Per-board row density.'),
+  "font": zod.string().nullish().describe('Per-board title font stack (overrides skin \/ default font).'),
+  "logo": zod.boolean().optional().describe('Show the club crest in this board\'s header (default true).'),
+  "background": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -5039,8 +5116,37 @@ export const GetKioskDisplayResponse = zod.object({
 }).describe('One column of a composite board — a reference to an existing list board.')),
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
-}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.')
-})
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.'),
+  "skins": zod.array(zod.object({
+  "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
+  "name": zod.string(),
+  "background": zod.string().describe('Page backdrop (colour or gradient).'),
+  "boardBg": zod.string().describe('Board surface colour.'),
+  "ink": zod.string().describe('Primary text colour.'),
+  "muted": zod.string().describe('Secondary text colour.'),
+  "accent": zod.string().describe('Gold \/ accent colour.'),
+  "accentInk": zod.string().describe('Text colour on the accent.'),
+  "font": zod.string().describe('Title font stack.'),
+  "backgroundImage": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p8 not listed).'),
+  "colourOverrides": zod.object({
+  "background": zod.string().nullish(),
+  "text": zod.string().nullish(),
+  "accent": zod.string().nullish()
+}).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
+  "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
+}),
+  "gridCatalog": zod.array(zod.object({
+  "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
+  "title": zod.string(),
+  "options": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string()
+}).describe('An available column an admin can add to a grid-capable board.'))
+}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.')
 })
 
 
@@ -5070,7 +5176,7 @@ export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
 
 export const UpdateHonourDisplaySettingsBody = zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).optional(),
+  "defaultTemplate": zod.string().optional(),
   "kioskSequence": zod.array(zod.string()).optional(),
   "kioskDwellMs": zod.number().optional(),
   "kioskScrollSpeed": zod.number().optional(),
@@ -5078,7 +5184,18 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide']).optional(),
-  "fit": zod.boolean().optional()
+  "fit": zod.boolean().optional(),
+  "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
+  "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
+  "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
+  "density": zod.enum(['comfortable', 'compact']).optional().describe('Per-board row density.'),
+  "font": zod.string().nullish().describe('Per-board title font stack (overrides skin \/ default font).'),
+  "logo": zod.boolean().optional().describe('Show the club crest in this board\'s header (default true).'),
+  "background": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).optional(),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -5091,7 +5208,28 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
 }).describe('One column of a composite board — a reference to an existing list board.')),
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
-}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).optional()
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).optional(),
+  "skins": zod.array(zod.object({
+  "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
+  "name": zod.string(),
+  "background": zod.string().describe('Page backdrop (colour or gradient).'),
+  "boardBg": zod.string().describe('Board surface colour.'),
+  "ink": zod.string().describe('Primary text colour.'),
+  "muted": zod.string().describe('Secondary text colour.'),
+  "accent": zod.string().describe('Gold \/ accent colour.'),
+  "accentInk": zod.string().describe('Text colour on the accent.'),
+  "font": zod.string().describe('Title font stack.'),
+  "backgroundImage": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional(),
+  "colourOverrides": zod.object({
+  "background": zod.string().nullish(),
+  "text": zod.string().nullish(),
+  "accent": zod.string().nullish()
+}).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
+  "defaultFont": zod.string().nullish()
 })
 
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
@@ -5099,7 +5237,7 @@ export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
 
 export const UpdateHonourDisplaySettingsResponse = zod.object({
-  "defaultTemplate": zod.enum(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']).describe('The single club-wide skin every board renders in.'),
+  "defaultTemplate": zod.string().describe('The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id (\"custom:<uuid>\").'),
   "kioskSequence": zod.array(zod.string()).describe('Ordered board ids the kiosk rotates through. Empty = all boards.'),
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
@@ -5108,7 +5246,18 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide']).optional(),
-  "fit": zod.boolean().optional()
+  "fit": zod.boolean().optional(),
+  "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
+  "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
+  "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
+  "density": zod.enum(['comfortable', 'compact']).optional().describe('Per-board row density.'),
+  "font": zod.string().nullish().describe('Per-board title font stack (overrides skin \/ default font).'),
+  "logo": zod.boolean().optional().describe('Show the club crest in this board\'s header (default true).'),
+  "background": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -5121,7 +5270,28 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
 }).describe('One column of a composite board — a reference to an existing list board.')),
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
-}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.')
+}).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.'),
+  "skins": zod.array(zod.object({
+  "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
+  "name": zod.string(),
+  "background": zod.string().describe('Page backdrop (colour or gradient).'),
+  "boardBg": zod.string().describe('Board surface colour.'),
+  "ink": zod.string().describe('Primary text colour.'),
+  "muted": zod.string().describe('Secondary text colour.'),
+  "accent": zod.string().describe('Gold \/ accent colour.'),
+  "accentInk": zod.string().describe('Text colour on the accent.'),
+  "font": zod.string().describe('Title font stack.'),
+  "backgroundImage": zod.object({
+  "kind": zod.enum(['none', 'url', 'texture']),
+  "value": zod.string().nullish()
+}).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p8 not listed).'),
+  "colourOverrides": zod.object({
+  "background": zod.string().nullish(),
+  "text": zod.string().nullish(),
+  "accent": zod.string().nullish()
+}).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
+  "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
 })
 
 

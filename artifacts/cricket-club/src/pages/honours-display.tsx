@@ -2,9 +2,8 @@ import { useMemo } from "react";
 import { Link } from "wouter";
 import { useGetHonourDisplay } from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
-import { brandStyle } from "@/components/honours-display/theme";
+import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
-import type { TemplateId } from "@/components/honours-display/types";
 import {
   useApproachingBoard,
   applyBoardConfig,
@@ -41,7 +40,7 @@ export default function HonoursDisplay() {
     );
   }
 
-  const skin = settings.defaultTemplate as TemplateId;
+  const skin = settings.defaultTemplate;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -60,9 +59,17 @@ export default function HonoursDisplay() {
         </Link>
       </div>
 
-      <div className={`hb ${skinClass(skin)} space-y-10`} style={brandStyle(brand)}>
+      <div
+        className={`hb ${skinClass(skin)} space-y-10`}
+        style={rootStyle(brand, settings)}
+      >
         {boards.map((board) => (
-          <BoardRenderer key={board.id} board={board} brand={brand} />
+          <BoardRenderer
+            key={board.id}
+            board={board}
+            brand={brand}
+            cfg={settings.boardConfigs?.[board.id]}
+          />
         ))}
       </div>
     </div>

@@ -17,4 +17,5 @@ export const DisplayBoardLayout = {
   teamOfDecade: 'teamOfDecade',
   list: 'list',
   columns: 'columns',
+  grid: 'grid',
 } as const;

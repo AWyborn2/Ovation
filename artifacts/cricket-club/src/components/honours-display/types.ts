@@ -6,6 +6,15 @@ import type {
   BoardColumn,
   BoardDisplay,
   BoardDisplayConfig,
+  BoardGrid,
+  BoardGridRow,
+  BoardGridCell,
+  BoardGridEntry,
+  GridCatalogEntry,
+  GridColumnOption,
+  HonourSkin,
+  HonourColourOverrides,
+  HonourBackground,
   CompositeDef,
   CompositeColumnRef,
   HonourBrand,
@@ -21,6 +30,15 @@ export type {
   BoardColumn,
   BoardDisplay,
   BoardDisplayConfig,
+  BoardGrid,
+  BoardGridRow,
+  BoardGridCell,
+  BoardGridEntry,
+  GridCatalogEntry,
+  GridColumnOption,
+  HonourSkin,
+  HonourColourOverrides,
+  HonourBackground,
   CompositeDef,
   CompositeColumnRef,
   HonourBrand,
@@ -30,11 +48,17 @@ export type {
 
 /**
  * Natural render layout for a board (skin only changes the look). "columns" is
- * a composite board: several list boards rendered side-by-side as columns.
+ * a composite board: several list boards rendered side-by-side as columns;
+ * "grid" is a reusable season-grid matrix (rows × admin-chosen columns).
  */
-export type BoardLayout = "premiership" | "teamOfDecade" | "list" | "columns";
+export type BoardLayout =
+  | "premiership"
+  | "teamOfDecade"
+  | "list"
+  | "columns"
+  | "grid";
 
-/** The one skin id every board renders in. */
+/** The built-in skin ids (admin skins use "custom:<uuid>"). */
 export type TemplateId =
   | "p1"
   | "p2"
@@ -56,9 +80,20 @@ export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p8", label: "P8 · App Dark" },
 ];
 
-/** CSS class that applies the chosen skin at the `.hb` root. */
-export function skinClass(template: TemplateId): string {
-  return `skin-${template}`;
+const BUILTIN_IDS = new Set<string>(TEMPLATES.map((t) => t.id));
+
+/** True for a built-in skin id (p1..p8); false for an admin "custom:" skin. */
+export function isBuiltinSkin(id: string | null | undefined): id is TemplateId {
+  return !!id && BUILTIN_IDS.has(id);
+}
+
+/**
+ * CSS class that applies a built-in skin at the `.hb` root. Admin skins are
+ * applied via inline CSS variables (see theme.ts) and carry no class, so this
+ * returns "" for any non-built-in id.
+ */
+export function skinClass(template: string | null | undefined): string {
+  return isBuiltinSkin(template) ? `skin-${template}` : "";
 }
 
 /** Page size for long list boards in interactive (non-kiosk) mode. */

@@ -8,6 +8,7 @@
 import type { BoardColumn } from './boardColumn';
 import type { BoardDisplay } from './boardDisplay';
 import type { BoardEntry } from './boardEntry';
+import type { BoardGrid } from './boardGrid';
 import type { DisplayBoardLayout } from './displayBoardLayout';
 
 export interface DisplayBoard {
@@ -22,5 +23,7 @@ export interface DisplayBoard {
   entries: BoardEntry[];
   /** Side-by-side columns for the 'columns' layout (else null). */
   columns?: BoardColumn[] | null;
+  /** Season-grid matrix for the 'grid' layout (else null). */
+  grid?: BoardGrid | null;
   display: BoardDisplay;
 }
