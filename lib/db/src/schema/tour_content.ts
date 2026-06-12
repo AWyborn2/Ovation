@@ -1,4 +1,5 @@
 import { pgTable, serial, text, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { tenantIdColumn } from "./_tenant";
 
 // One editable tour step's copy. `key` matches an in-code step definition in the
 // frontend (src/lib/tour.ts); only the title + description are admin-editable —
@@ -18,6 +19,9 @@ export type TourStepContent = {
 // copy without a developer. App-config (never replaced by the master ETL).
 export const tourContentTable = pgTable("tour_content", {
   id: serial("id").primaryKey(),
+  // NOTE(tenant): singleton (id=1) today; per-tenant copy needs the singleton
+  // keyed by tenant_id (follow-up). Column added so the row carries its tenant.
+  tenantId: tenantIdColumn(),
   welcomeTitle: text("welcome_title").notNull().default(""),
   welcomeBody: text("welcome_body").notNull().default(""),
   fanSteps: jsonb("fan_steps").$type<TourStepContent[]>().notNull().default([]),

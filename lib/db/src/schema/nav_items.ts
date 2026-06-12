@@ -1,4 +1,5 @@
 import { pgTable, serial, text, integer, boolean, timestamp, index } from "drizzle-orm/pg-core";
+import { tenantIdColumn } from "./_tenant";
 
 // Admin-configurable navigation items, one row per item across four public
 // surfaces: the senior top menu, the junior top menu, the junior dashboard
@@ -15,6 +16,7 @@ export const navItemsTable = pgTable(
   "nav_items",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     surface: text("surface").notNull(),
     label: text("label").notNull(),
     // Description for card-style surfaces (junior quick-links, admin tiles).

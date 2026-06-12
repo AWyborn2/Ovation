@@ -2,9 +2,11 @@ import { pgTable, serial, integer, text, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { playersTable } from "./players";
+import { tenantIdColumn } from "./_tenant";
 
 export const premiershipsTable = pgTable("premierships", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   year: integer("year").notNull(),
   grade: text("grade").notNull(),
   competition: text("competition").notNull(),
@@ -17,6 +19,7 @@ export const premiershipsTable = pgTable("premierships", {
 
 export const premiershipPlayersTable = pgTable("premiership_players", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   premiershipId: integer("premiership_id")
     .notNull()
     .references(() => premiershipsTable.id, { onDelete: "cascade" }),

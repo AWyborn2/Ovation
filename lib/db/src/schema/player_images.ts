@@ -2,6 +2,7 @@ import { pgTable, serial, integer, text, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { playersTable } from "./players";
+import { tenantIdColumn } from "./_tenant";
 
 // A player's photo gallery. One row per image; `is_default` marks the single
 // image surfaced wherever a single player photo is needed (trading card, share
@@ -9,6 +10,7 @@ import { playersTable } from "./players";
 // row is the default so existing single-photo readers keep working.
 export const playerImagesTable = pgTable("player_images", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   playerId: integer("player_id")
     .notNull()
     .references(() => playersTable.id, { onDelete: "cascade" }),

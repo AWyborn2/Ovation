@@ -1,4 +1,5 @@
 import { pgTable, serial, text } from "drizzle-orm/pg-core";
+import { tenantIdColumn } from "./_tenant";
 
 /**
  * Non-player people — club officials who served the club (e.g. Secretaries,
@@ -11,6 +12,7 @@ import { pgTable, serial, text } from "drizzle-orm/pg-core";
  */
 export const nonPlayerPeopleTable = pgTable("non_player_people", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull(),
   bio: text("bio"),
 });

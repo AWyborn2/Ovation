@@ -9,6 +9,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { clubsTable } from "./clubs";
+import { tenantIdColumn } from "./_tenant";
 
 /**
  * Halls Head JUNIORS data — kept COMPLETELY SEPARATE from the senior tables by
@@ -25,6 +26,7 @@ import { clubsTable } from "./clubs";
  */
 export const juniorMatchesTable = pgTable("junior_matches", {
   id: integer("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   playhqMatchId: text("playhq_match_id"),
   season: text("season"),
   seasonStartYear: integer("season_start_year"),
@@ -138,6 +140,7 @@ export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
  */
 export const juniorParticipantsTable = pgTable("junior_participants", {
   participantId: text("participant_id").primaryKey(),
+  tenantId: tenantIdColumn(),
   displayName: text("display_name"),
   isPrivate: boolean("is_private").notNull().default(false),
   scorecardLines: integer("scorecard_lines"),
@@ -152,6 +155,7 @@ export type JuniorParticipantRow = typeof juniorParticipantsTable.$inferSelect;
 
 export const juniorPremiershipsTable = pgTable("junior_premierships", {
   id: integer("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   season: text("season"),
   // age_group holds the unified school-year BAND (see juniorMatchesTable.ageGroup);
   // ageGroupRaw keeps the original Under-age / year label for traceability.
@@ -213,6 +217,7 @@ export const juniorOfficeBearersTable = pgTable(
   "junior_office_bearers",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     season: integer("season").notNull(),
     role: text("role").notNull(),
     name: text("name").notNull(),

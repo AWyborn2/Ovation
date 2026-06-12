@@ -9,9 +9,13 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
+import { tenantIdColumn } from "./_tenant";
 
 export const honourBoardsTable = pgTable("honour_boards", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
+  // NOTE(tenant): `key` is globally unique today; a true multi-tenant setup
+  // wants UNIQUE(tenant_id, key) (move to ensure-constraints.ts per the gotcha).
   key: text("key").notNull().unique(),
   label: text("label").notNull(),
   title: text("title").notNull(),
@@ -26,6 +30,7 @@ export const honourBoardOverridesTable = pgTable(
   "honour_board_overrides",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     boardKey: text("board_key").notNull(),
     playerId: integer("player_id")
       .notNull()

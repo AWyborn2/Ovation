@@ -1,5 +1,6 @@
 import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
+import { tenantIdColumn } from "./_tenant";
 
 /**
  * Curated historical record lists loaded from the master DB. These are
@@ -10,6 +11,7 @@ import { playersTable } from "./players";
  */
 export const centuriesTable = pgTable("centuries", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   playerId: integer("player_id").references(() => playersTable.id, {
     onDelete: "set null",
   }),
@@ -21,6 +23,7 @@ export const centuriesTable = pgTable("centuries", {
 
 export const fiveWicketHaulsTable = pgTable("five_wicket_hauls", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   playerId: integer("player_id").references(() => playersTable.id, {
     onDelete: "set null",
   }),
@@ -33,6 +36,7 @@ export const fiveWicketHaulsTable = pgTable("five_wicket_hauls", {
 /** The club's hand-kept record holders (e.g. "GAMES RECORD HOLDERS"). */
 export const clubRecordsTable = pgTable("club_records", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   recordType: text("record_type").notNull(),
   grade: text("grade"),
   detail: text("detail"),
@@ -41,6 +45,7 @@ export const clubRecordsTable = pgTable("club_records", {
 /** Administrative honour-board records (e.g. "Most Seasons as President"). */
 export const honourBoardRecordsTable = pgTable("honour_board_records", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   category: text("category").notNull(),
   rank: integer("rank"),
   name: text("name"),

@@ -1,6 +1,7 @@
 import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
 import { nonPlayerPeopleTable } from "./non_player_people";
+import { tenantIdColumn } from "./_tenant";
 
 /**
  * Club roles by season — a uniform model for both club office bearers (President,
@@ -23,6 +24,7 @@ export const clubRolesTable = pgTable(
   "club_roles",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     season: integer("season").notNull(),
     role: text("role").notNull(),
     grade: text("grade"),

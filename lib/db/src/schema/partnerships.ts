@@ -1,4 +1,5 @@
 import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
+import { tenantIdColumn } from "./_tenant";
 
 /**
  * Partnership records, loaded from the master DB. The master's partnership data
@@ -8,6 +9,7 @@ import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
  */
 export const partnershipRecordsTable = pgTable("partnership_records", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   grade: text("grade").notNull(),
   wicket: text("wicket").notNull(),
   runs: integer("runs").notNull(),
@@ -18,6 +20,7 @@ export const partnershipRecordsTable = pgTable("partnership_records", {
 
 export const partnerships50PlusTable = pgTable("partnerships_50plus", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   grade: text("grade").notNull(),
   wicket: text("wicket").notNull(),
   runs: integer("runs").notNull(),

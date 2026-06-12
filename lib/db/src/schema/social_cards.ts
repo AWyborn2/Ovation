@@ -9,9 +9,11 @@ import {
   jsonb,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { tenantIdColumn } from "./_tenant";
 
 export const sponsorsTable = pgTable("sponsors", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull(),
   logoUrl: text("logo_url").notNull(),
   link: text("link").notNull().default(""),
@@ -30,6 +32,7 @@ export type SponsorRow = typeof sponsorsTable.$inferSelect;
 // Admins pick a theme per social card; one row is flagged isDefault.
 export const cardThemesTable = pgTable("card_themes", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull(),
   bgDark: text("bg_dark").notNull().default("#322F3D"),
   bgPanel: text("bg_panel").notNull().default("#3F3C4C"),

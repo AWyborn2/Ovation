@@ -7,9 +7,12 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
+import { tenantIdColumn } from "./_tenant";
 
 export const awardsTable = pgTable("awards", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
+  // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
   key: text("key").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull().default(""),
@@ -29,6 +32,7 @@ export const awardWinnersTable = pgTable(
   "award_winners",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     awardId: integer("award_id")
       .notNull()
       .references(() => awardsTable.id, { onDelete: "cascade" }),

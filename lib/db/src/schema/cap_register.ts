@@ -6,6 +6,7 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
+import { tenantIdColumn } from "./_tenant";
 
 // NOTE: Postgres enforces a composite UNIQUE constraint
 // `cap_register_category_cap_number_unique` on (category, cap_number) — one cap
@@ -21,6 +22,7 @@ import { playersTable } from "./players";
 // raw SQL by `scripts/src/ensure-constraints.ts`, run from post-merge.
 export const capRegisterTable = pgTable("cap_register", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   capNumber: integer("cap_number").notNull(),
   category: text("category").notNull().default("male"),
   name: text("name").notNull(),
