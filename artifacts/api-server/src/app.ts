@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { tenantContext } from "./middlewares/tenant-context";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin } from "./lib/auth";
@@ -76,7 +77,9 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", router);
+// Resolve the tenant (header → env → default) for every API request before the
+// routes run, so handlers can read it via getTenantId(req).
+app.use("/api", tenantContext, router);
 app.use(goRedirectRouter);
 
 // Seed first admin from ADMIN_PASSWORD if no admins exist.

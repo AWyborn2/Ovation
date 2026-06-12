@@ -26,7 +26,7 @@ import {
 } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
-import { getHallsHeadBrand } from "../lib/halls-head-brand";
+import { getHallsHeadBrand } from "../lib/tenant-brand";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
 import { computeLeaderboard } from "../lib/points";

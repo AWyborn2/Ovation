@@ -31,3 +31,4 @@ export * from "./clubs";
 export * from "./partnerships";
 export * from "./historical_records";
 export * from "./juniors";
+export * from "./tenants";

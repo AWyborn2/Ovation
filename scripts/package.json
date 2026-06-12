@@ -24,10 +24,12 @@
     "load-matches": "tsx ./src/load-matches.ts",
     "backfill-innings-order": "tsx ./src/backfill-innings-order.ts",
     "compare-central-leaderboard": "tsx ./src/compare-central-leaderboard.ts",
+    "seed-tenants": "tsx ./src/seed-tenants.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
+    "@workspace/scorecard": "workspace:*",
     "drizzle-orm": "catalog:",
     "xlsx": "^0.18.5"
   },

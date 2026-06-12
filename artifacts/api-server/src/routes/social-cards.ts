@@ -47,7 +47,8 @@ import type { CardLayoutLayer, CardSetSlide } from "@workspace/db";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
 import { loadActiveSponsors } from "../lib/active-sponsors";
-import { getHallsHeadBrand } from "../lib/halls-head-brand";
+import { getTenantBrand } from "../lib/tenant-brand";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -767,7 +768,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       template: t.template,
     })),
     activeSponsors: await loadActiveSponsors(req.log),
-    brand: await getHallsHeadBrand(),
+    brand: await getTenantBrand(getTenantId(req)),
   });
 });
 
