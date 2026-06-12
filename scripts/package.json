@@ -23,6 +23,7 @@
     "load-juniors-db": "tsx ./src/load-juniors-db.ts",
     "load-matches": "tsx ./src/load-matches.ts",
     "backfill-innings-order": "tsx ./src/backfill-innings-order.ts",
+    "compare-central-leaderboard": "tsx ./src/compare-central-leaderboard.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
