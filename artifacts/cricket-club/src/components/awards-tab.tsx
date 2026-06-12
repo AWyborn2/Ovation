@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import {
   useListAwards,
   useListPublicTallies,
@@ -214,6 +215,7 @@ const AwardBoardCard = ({
 };
 
 export function AwardsTab() {
+  const brand = useBrand();
   const { data: awards, isLoading } = useListAwards();
   const { data: tallies } = useListPublicTallies();
   const { data: boards } = useListPublicPointsLeaderboards();
@@ -236,7 +238,7 @@ export function AwardsTab() {
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Halls Head Cricket Club's honour rolls — recognising the players and
+          {brand.name}'s honour rolls — recognising the players and
           members awarded each season.
         </p>
       </div>

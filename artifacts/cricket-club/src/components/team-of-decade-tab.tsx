@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import {
   useListTeamOfDecadeBoards,
   type TeamOfDecadeBoard,
@@ -104,6 +105,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
 };
 
 export function TeamOfDecadeTab() {
+  const brand = useBrand();
   const { data: boards, isLoading } = useListTeamOfDecadeBoards();
 
   const sorted = [...(boards ?? [])].sort(
@@ -118,7 +120,7 @@ export function TeamOfDecadeTab() {
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          The greatest XIs in Halls Head Cricket Club history — selected to
+          The greatest XIs in {brand.name} history — selected to
           honour the finest players of each era.
         </p>
       </div>

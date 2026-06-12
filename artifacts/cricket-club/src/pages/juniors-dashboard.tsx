@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import {
   useGetJuniorsOverview,
   useGetJuniorSeasonTopPerformers,
@@ -55,6 +56,7 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
 type SeasonChoice = "latest" | "all" | string;
 
 export default function JuniorsDashboard() {
+  const brand = useBrand();
   const { data, isLoading, isError, refetch } = useGetJuniorsOverview();
   const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
   const { data: filters } = useGetJuniorsFilters();
@@ -106,7 +108,7 @@ export default function JuniorsDashboard() {
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Junior Cricket</h1>
         <p className="text-muted-foreground mt-1">
-          Match results, scorecards, premierships and player stats for Halls Head's junior grades.
+          Match results, scorecards, premierships and player stats for {brand.name}'s junior grades.
         </p>
       </div>
 

@@ -12,8 +12,8 @@ interface DigitalScorecardProps {
 /**
  * Branded two-innings digital scorecard. Maps the match-detail DTO into the
  * shared view-model and renders, per innings, a batting card (batting team
- * colours) followed by a bowling card (bowling team colours). Tapping a Halls
- * Head player opens their career-stats popup; opposition and fill-in players
+ * colours) followed by a bowling card (bowling team colours). Tapping a tenant
+ * club player opens their career-stats popup; opposition and fill-in players
  * render as plain names.
  */
 export function DigitalScorecard({ match, hatTrickIds }: DigitalScorecardProps) {
@@ -45,7 +45,8 @@ export function DigitalScorecard({ match, hatTrickIds }: DigitalScorecardProps) 
         ))}
         {!scorecard.orderKnown && (
           <p className="text-center" style={{ color: "#6b7280", fontSize: 11 }}>
-            Batting order not confirmed for this match — innings shown Halls Head first.
+            Batting order not confirmed for this match — innings shown{" "}
+            {match.hallsHead?.name ?? "home side"} first.
           </p>
         )}
       </div>

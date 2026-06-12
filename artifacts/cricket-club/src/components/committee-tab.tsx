@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useMemo } from "react";
+import { useBrand } from "@/lib/brand-context";
 import { useListClubRoles, type ClubRole } from "@workspace/api-client-react";
 
 function formatSeason(year: number): string {
@@ -43,6 +44,7 @@ const RoleName = ({ role }: { role: ClubRole }) => {
 type SeasonGroup = { season: number; roles: ClubRole[] };
 
 export function CommitteeTab() {
+  const brand = useBrand();
   const { data: roles, isLoading } = useListClubRoles();
 
   const seasons = useMemo<SeasonGroup[]>(() => {
@@ -74,8 +76,8 @@ export function CommitteeTab() {
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Season-by-season record of the people who have led Halls Head Cricket
-          Club since 1991. Grade captains are listed on each grade's page.
+          Season-by-season record of the people who have led {brand.name}.
+          Grade captains are listed on each grade's page.
         </p>
       </div>
 

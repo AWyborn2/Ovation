@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import { useListLifeMembers, type LifeMember, type LifeMemberStats } from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
 
@@ -133,6 +134,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
 };
 
 export function LifeMembersTab() {
+  const brand = useBrand();
   const { data: members, isLoading } = useListLifeMembers();
 
   return (
@@ -143,7 +145,7 @@ export function LifeMembersTab() {
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Halls Head Cricket Club's highest individual honour — recognising
+          {brand.name}'s highest individual honour — recognising
           members whose contribution to the club has been exceptional and
           enduring. {members?.length ?? 0} Life Members inducted since the award
           was first given.

@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -30,6 +31,7 @@ const fmtDate = (d: string | null | undefined) => {
 };
 
 export default function MatchDetail() {
+  const brand = useBrand();
   const { id } = useParams<{ id: string }>();
   const matchId = parseInt(id, 10);
   const { data: match, isLoading, isError, refetch } = useGetMatch(matchId, {
@@ -118,7 +120,7 @@ export default function MatchDetail() {
   if (!match) return <EmptyState title="Match not found" message="This match could not be found." />;
 
   const hatTrickIds = new Set(match.hatTrickPlayerIds ?? []);
-  // Admins manage hat-tricks on Halls Head bowlers (real players only).
+  // Admins manage hat-tricks on tenant-club bowlers (real players only).
   const hhBowlers = match.lines.filter((l) => l.bowled && l.playerId < 90000);
 
   return (
@@ -133,7 +135,7 @@ export default function MatchDetail() {
           <GradeBadge grade={match.grade} size="lg" />
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-serif font-bold text-primary flex items-center gap-2.5 flex-wrap">
-              <span>Halls Head vs {match.opponent ?? "Unknown"}</span>
+              <span>{brand.name} vs {match.opponent ?? "Unknown"}</span>
               <OpponentCrest club={match.opponentClub} size={32} />
             </h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
@@ -254,7 +256,7 @@ export default function MatchDetail() {
             <div className="flex items-center gap-4 ml-auto font-mono text-sm">
               {match.hhccScore && (
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Halls Head</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{brand.name}</div>
                   <div className="font-bold text-primary text-lg">{match.hhccScore}</div>
                 </div>
               )}
@@ -279,7 +281,7 @@ export default function MatchDetail() {
             <Flame className="h-4 w-4" /> Hat-tricks
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-            Mark any Halls Head bowler who took a hat-trick in this match.
+            Mark any {brand.name} bowler who took a hat-trick in this match.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {hhBowlers.map((l) => {

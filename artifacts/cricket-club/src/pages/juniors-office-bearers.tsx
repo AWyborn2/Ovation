@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useMemo } from "react";
+import { useBrand } from "@/lib/brand-context";
 import {
   useListJuniorOfficeBearers,
   type JuniorOfficeBearer,
@@ -46,6 +47,7 @@ const BearerName = ({ bearer }: { bearer: JuniorOfficeBearer }) =>
 type SeasonGroup = { season: number; bearers: JuniorOfficeBearer[] };
 
 export default function JuniorsOfficeBearers() {
+  const brand = useBrand();
   const { data: bearers, isLoading, isError, refetch } = useListJuniorOfficeBearers();
 
   const seasons = useMemo<SeasonGroup[]>(() => {
@@ -77,8 +79,7 @@ export default function JuniorsOfficeBearers() {
           <Users className="h-7 w-7 text-[#bc8c6b]" /> Junior Office Bearers
         </h1>
         <p className="text-muted-foreground mt-1">
-          Season-by-season record of the people who run Halls Head Junior Cricket
-          Club.
+          Season-by-season record of the people who run {brand.name} juniors.
         </p>
       </div>
 

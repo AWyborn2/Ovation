@@ -227,7 +227,7 @@ const ADMIN_STEP_DEFS: StepConfig[] = [
 // Default welcome dialog copy (the editable title + body shown first visit).
 export const DEFAULT_WELCOME_TITLE = "Welcome to the club portal";
 export const DEFAULT_WELCOME_BODY =
-  "Your home for Halls Head's players, matches, records and honours — seniors and juniors alike.";
+  "Your home for the club's players, matches, records and honours — seniors and juniors alike.";
 
 // Expose the default step lists so the admin editor can render an editable row
 // per step (structure stays in code; only the copy is editable).

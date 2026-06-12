@@ -37,6 +37,7 @@ import {
   statToAggregated,
 } from "@/lib/honour-boards";
 import { useBrandLogo } from "@/lib/use-brand";
+import { useBrand } from "@/lib/brand-context";
 import { CapRegisterTab } from "@/components/cap-register-tab";
 import { LifeMembersTab } from "@/components/life-members-tab";
 import { AwardsTab } from "@/components/awards-tab";
@@ -71,6 +72,7 @@ import type { PremiershipCount } from "@/components/honour-boards/types";
 
 export default function HonourBoards() {
   const logoUrl = useBrandLogo();
+  const brand = useBrand();
   const [activeTab, setActiveTab] = useState<ActiveTab>("milestones");
   const [scope, setScope] = useState<Scope>("career");
 
@@ -251,10 +253,10 @@ export default function HonourBoards() {
     <div className="space-y-6">
       {/* Hero header */}
       <div className="bg-card border border-border rounded-md p-6 md:p-8 flex items-center gap-4 md:gap-6 shadow-lg">
-        <img src={logoUrl} alt="HHCC" className="h-16 md:h-20 w-auto drop-shadow-lg" />
+        <img src={logoUrl} alt={brand.name} className="h-16 md:h-20 w-auto drop-shadow-lg" />
         <div>
           <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary m-0 leading-tight">
-            Halls Head Cricket Club — Honour Boards
+            {brand.name} — Honour Boards
           </h1>
           <div className="text-xs md:text-sm uppercase tracking-widest text-muted-foreground mt-2">
             Established 1991 • Career milestones across all grades
@@ -600,7 +602,7 @@ export default function HonourBoards() {
         <span className="text-primary font-bold">
           {new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
         </span>{" "}
-        • Halls Head Cricket Club
+        • {brand.name}
       </div>
     </div>
   );

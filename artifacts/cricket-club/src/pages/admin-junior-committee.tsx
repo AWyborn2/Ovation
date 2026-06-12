@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useBrand } from "@/lib/brand-context";
 import {
   useListAllJuniorOfficeBearers,
   useCreateJuniorOfficeBearer,
@@ -48,6 +49,7 @@ type FormValues = {
 };
 
 export default function AdminJuniorCommittee() {
+  const brand = useBrand();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { data: bearers, isLoading, isError, refetch } =
@@ -110,7 +112,7 @@ export default function AdminJuniorCommittee() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-muted-foreground mt-1">
-            Record Halls Head Junior Cricket Club office bearers for each season.
+            Record {brand.name} junior office bearers for each season.
             Published seasons appear on the public Juniors → Office Bearers page.
             This data is kept completely separate from the senior committee.
           </p>

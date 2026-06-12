@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useListPremierships } from "@workspace/api-client-react";
 import type { Premiership, PremiershipPlayer } from "@workspace/api-client-react";
 import { useBrandLogo } from "@/lib/use-brand";
+import { useBrand } from "@/lib/brand-context";
 import { PlaqueLightbox } from "@/components/plaque-lightbox";
 import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
@@ -137,6 +138,7 @@ const Plaque = ({ prem }: { prem: Premiership }) => {
 
 export default function Premierships() {
   const logoUrl = useBrandLogo();
+  const brand = useBrand();
   const { data: premierships, isLoading, isError, refetch } = useListPremierships();
   const [selectedGrade, setSelectedGrade] = useState<string>("All");
   const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
@@ -169,7 +171,7 @@ export default function Premierships() {
     >
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
-          <img src={logoUrl} alt="HHCC" className="h-14 md:h-20 w-auto drop-shadow" />
+          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
           <div className="text-center text-white">
             <h1
               className="m-0 font-bold tracking-[0.08em] leading-tight text-xl md:text-3xl lg:text-4xl"
@@ -184,7 +186,7 @@ export default function Premierships() {
               PREMIERSHIPS
             </div>
           </div>
-          <img src={logoUrl} alt="HHCC" className="h-14 md:h-20 w-auto drop-shadow" />
+          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">

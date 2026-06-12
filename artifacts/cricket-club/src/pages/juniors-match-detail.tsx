@@ -1,4 +1,5 @@
 import { Link, useParams } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import { useGetJuniorMatch, getGetJuniorMatchQueryKey } from "@workspace/api-client-react";
 import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import { JuniorScorecard } from "@/components/scorecard/junior-scorecard";
@@ -6,6 +7,7 @@ import { fmtJuniorDate } from "@/lib/juniors";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 export default function JuniorsMatchDetail() {
+  const brand = useBrand();
   const params = useParams();
   const id = Number(params.id);
   const { data: match, isLoading, isError, refetch } = useGetJuniorMatch(id, {
@@ -42,7 +44,7 @@ export default function JuniorsMatchDetail() {
               )}
             </div>
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary">
-              Halls Head <span className="text-muted-foreground font-normal">vs</span> {match.opponentName ?? "Unknown"}
+              {brand.name} <span className="text-muted-foreground font-normal">vs</span> {match.opponentName ?? "Unknown"}
             </h1>
             <div className="text-sm text-muted-foreground uppercase tracking-wider">
               {match.season ?? ""}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import { Trophy, Users, ClipboardList, Award, Baby, GitCompare } from "lucide-react";
 import {
   Dialog,
@@ -31,6 +32,7 @@ const CAN_DO: { icon: typeof Users; text: string }[] = [
 // limits) and offers to start the fan walkthrough. Shows once per browser, but
 // the tour can always be relaunched from the header Help control.
 export function WelcomeGuide() {
+  const brand = useBrand();
   const [open, setOpen] = useState(false);
   const [location, navigate] = useLocation();
   const tourContentQ = useGetTourContent();
@@ -61,7 +63,7 @@ export function WelcomeGuide() {
           <div className="flex items-center gap-2 text-primary mb-1">
             <Trophy className="h-5 w-5" />
             <span className="text-xs font-bold uppercase tracking-[0.2em]">
-              Halls Head Cricket Club
+              {brand.name}
             </span>
           </div>
           <DialogTitle className="text-2xl">{resolveWelcomeTitle(content)}</DialogTitle>

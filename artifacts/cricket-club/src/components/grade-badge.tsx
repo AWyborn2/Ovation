@@ -47,7 +47,8 @@ interface GradeBadgeProps {
 }
 
 /**
- * HHCC gold outline crest badge.
+ * Gold outline crest badge. (Decorative crest asset; a per-tenant badge graphic
+ * is a future enhancement.)
  *
  * Uses the transparent gold-outline icon PNG as the visual frame and overlays:
  *  - the grade abbreviation centred inside the diamond

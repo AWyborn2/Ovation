@@ -5,6 +5,7 @@ import {
   type JuniorPremiership,
 } from "@workspace/api-client-react";
 import { useBrandLogo } from "@/lib/use-brand";
+import { useBrand } from "@/lib/brand-context";
 import { PlaqueLightbox } from "@/components/plaque-lightbox";
 import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
@@ -68,11 +69,12 @@ const PlayerLine = ({ p }: { p: JuniorPremiership["players"][number] }) => {
 };
 
 const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
+  const brand = useBrand();
   const title = [prem.ageGroup ?? "Junior", prem.season].filter(Boolean).join(" · ");
   const result =
     prem.resultText ||
     (prem.opponent
-      ? `Halls Head def ${prem.opponent}`
+      ? `${brand.name} def ${prem.opponent}`
       : prem.hhScore || prem.oppScore
         ? `${prem.hhScore ?? "—"} def ${prem.oppScore ?? "—"}`
         : "");
@@ -155,6 +157,7 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
 
 export default function JuniorsPremierships() {
   const logoUrl = useBrandLogo();
+  const brand = useBrand();
   const { data, isLoading, isError, refetch } = useListJuniorPremierships();
   const [ageGroup, setAgeGroup] = useState("All");
   const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
@@ -186,7 +189,7 @@ export default function JuniorsPremierships() {
     >
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
-          <img src={logoUrl} alt="HHCC" className="h-14 md:h-20 w-auto drop-shadow" />
+          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
           <div className="text-center text-white">
             <div className="text-xs font-bold uppercase tracking-[0.3em] text-[#e7c9b1] mb-1">
               Juniors
@@ -204,7 +207,7 @@ export default function JuniorsPremierships() {
               JUNIOR PREMIERSHIPS
             </div>
           </div>
-          <img src={logoUrl} alt="HHCC" className="h-14 md:h-20 w-auto drop-shadow" />
+          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">

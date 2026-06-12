@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import {
   useGetSeniorOverview,
   useGetSeniorSeasonTopPerformers,
@@ -159,6 +160,7 @@ function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[]
 type SeasonChoice = "latest" | "all" | number;
 
 export default function Home() {
+  const brand = useBrand();
   const { data, isLoading, isError, refetch } = useGetSeniorOverview();
   const quickLinks = useNavSurface("senior_menu", SENIOR_QUICK_LINKS_FALLBACK);
   const [gradeFilter, setGradeFilter] = useState<string>("");
@@ -208,7 +210,7 @@ export default function Home() {
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Senior Cricket</h1>
         <p className="text-muted-foreground mt-1">
-          Results, scorecards, records and player stats for Halls Head's senior grades.
+          Results, scorecards, records and player stats for {brand.name}'s senior grades.
         </p>
       </div>
 

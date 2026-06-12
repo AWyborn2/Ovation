@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useParams, Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import {
   useGetPerson,
   getGetPersonQueryKey,
@@ -13,6 +14,7 @@ function formatSeason(year: number): string {
 }
 
 export default function PersonDetail() {
+  const brand = useBrand();
   const params = useParams();
   const id = Number(params.id);
   const { data: person, isLoading, isError, refetch } = useGetPerson(id, {
@@ -73,7 +75,7 @@ export default function PersonDetail() {
               {person.name}
             </h1>
             <p className="text-muted-foreground italic mt-1 mb-0">
-              Club official · Halls Head Cricket Club
+              Club official · {brand.name}
             </p>
           </div>
         </div>

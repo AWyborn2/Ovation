@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useBrand } from "@/lib/brand-context";
 import { useListCaps } from "@workspace/api-client-react";
 import type { CapCategory } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ const CATEGORY_LABEL: Record<CapCategory, string> = {
 };
 
 export function CapRegisterTab() {
+  const brand = useBrand();
   const { data: caps, isLoading } = useListCaps();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CapCategory>("male");
@@ -58,8 +60,8 @@ export function CapRegisterTab() {
         </div>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Every player to wear the {categoryLabel} cap for Halls Head Cricket
-          Club, in chronological order of debut. {inCategory.length}{" "}
+          Every player to wear the {categoryLabel} cap for {brand.name}, in
+          chronological order of debut. {inCategory.length}{" "}
           caps issued, {deceased} since deceased.
         </p>
       </div>
@@ -71,7 +73,7 @@ export function CapRegisterTab() {
         <div className="w-12 h-[2px] bg-primary mt-2 mb-3" />
         <p className="text-sm text-foreground/90 leading-relaxed m-0">
           Cap numbers are assigned in chronological order of A Grade debut for
-          Halls Head Cricket Club. Prior to the adoption of the digital scoring
+          {" "}{brand.name}. Prior to the adoption of the digital scoring
           platforms <strong>MyCricket</strong> and <strong>PlayHQ</strong>, the
           club only retained statistics for players who had played 10 or more
           games. As a result, many of the players in this register —
