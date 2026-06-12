@@ -150,6 +150,7 @@ router.get("/sponsors", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(sponsorsTable)
+    .where(eq(sponsorsTable.tenantId, getTenantId(req)))
     .orderBy(asc(sponsorsTable.displayOrder), asc(sponsorsTable.id));
   res.json(await migrateSponsorLogos(rows, req.log));
 });
@@ -163,6 +164,7 @@ router.post("/sponsors", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .insert(sponsorsTable)
     .values({
+      tenantId: getTenantId(req),
       name: parsed.data.name,
       logoUrl: parsed.data.logoUrl,
       link: parsed.data.link ?? "",

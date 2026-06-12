@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, lifeMembersTable, playerGradeStatsTable } from "@workspace/db";
 import {
   CreateLifeMemberBody,
@@ -8,6 +8,7 @@ import {
   DeleteLifeMemberParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -57,10 +58,11 @@ const parseBestBowling = (
   return { wkts: parseInt(m[1], 10), runs: parseInt(m[2], 10) };
 };
 
-router.get("/life-members", async (_req, res): Promise<void> => {
+router.get("/life-members", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(lifeMembersTable)
+    .where(eq(lifeMembersTable.tenantId, getTenantId(req)))
     .orderBy(asc(lifeMembersTable.inductionYear), asc(lifeMembersTable.name));
 
   const playerIds = rows
@@ -152,6 +154,7 @@ router.post("/life-members", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .insert(lifeMembersTable)
     .values({
+      tenantId: getTenantId(req),
       name: parsed.data.name,
       inductionYear: parsed.data.inductionYear,
       isPlayingMember: parsed.data.isPlayingMember ?? true,
@@ -177,7 +180,12 @@ router.patch("/life-members/:id", requireAdmin, async (req, res): Promise<void> 
   const [row] = await db
     .update(lifeMembersTable)
     .set(body.data)
-    .where(eq(lifeMembersTable.id, params.data.id))
+    .where(
+      and(
+        eq(lifeMembersTable.id, params.data.id),
+        eq(lifeMembersTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Life member not found" });
@@ -194,7 +202,12 @@ router.delete("/life-members/:id", requireAdmin, async (req, res): Promise<void>
   }
   const [row] = await db
     .delete(lifeMembersTable)
-    .where(eq(lifeMembersTable.id, params.data.id))
+    .where(
+      and(
+        eq(lifeMembersTable.id, params.data.id),
+        eq(lifeMembersTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Life member not found" });

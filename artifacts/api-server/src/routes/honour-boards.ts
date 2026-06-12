@@ -16,14 +16,20 @@ import {
   DeleteHonourBoardOverrideParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
-router.get("/honour-boards", async (_req, res): Promise<void> => {
+router.get("/honour-boards", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(honourBoardsTable)
-    .where(isNull(honourBoardsTable.deletedAt))
+    .where(
+      and(
+        eq(honourBoardsTable.tenantId, getTenantId(req)),
+        isNull(honourBoardsTable.deletedAt),
+      ),
+    )
     .orderBy(asc(honourBoardsTable.displayOrder), asc(honourBoardsTable.id));
   res.json(rows);
 });
@@ -37,6 +43,7 @@ router.post("/honour-boards", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .insert(honourBoardsTable)
     .values({
+      tenantId: getTenantId(req),
       key: parsed.data.key,
       label: parsed.data.label,
       title: parsed.data.title,

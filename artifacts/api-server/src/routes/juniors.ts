@@ -38,6 +38,7 @@ import {
   UpdateJuniorPremiershipBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -550,7 +551,10 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   }
   const { search, season, ageGroup } = query.data;
 
-  const conds = [eq(juniorParticipantsTable.isPrivate, false)];
+  const conds = [
+    eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+    eq(juniorParticipantsTable.isPrivate, false),
+  ];
   if (search) conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
 
   // Season / age-group filters restrict to participants who actually appeared in
