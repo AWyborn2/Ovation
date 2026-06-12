@@ -256,6 +256,17 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
   const grade = decodeURIComponent(rawGrade);
 
+  // Feature flag (CENTRAL_READS=1, default off): serve this read from the central
+  // PCA database instead of the tenant tables. Off → the unchanged tenant query
+  // below (byte-identical responses). The central module requires
+  // CENTRAL_DATABASE_URL, so it is lazily imported only when the flag is on and
+  // never loaded in the default path.
+  if (process.env.CENTRAL_READS === "1") {
+    const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
+    res.json(await centralGradeLeaderboard(grade));
+    return;
+  }
+
   const stats = await db
     .select()
     .from(playerGradeStatsTable)

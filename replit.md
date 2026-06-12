@@ -10,7 +10,8 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string (tenant app DB)
+- `CENTRAL_DATABASE_URL` — read-only Postgres connection string for the central PCA database (schema `central`); used by `lib/db/src/central.ts`. Separate from `DATABASE_URL`; never written to by the app.
 
 ## Stack
 
