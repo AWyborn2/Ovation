@@ -2,6 +2,7 @@ import React from "react";
 import { ScrollView, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { BRAND } from "@/constants/brand";
 import {
   useGetJuniorMatch,
   getGetJuniorMatchQueryKey,
@@ -63,7 +64,7 @@ export default function JuniorMatchDetailScreen() {
         </View>
 
         <Heading size="lg" style={{ marginTop: 12 }}>
-          Halls Head vs {match.opponentName ?? "Unknown"}
+          {BRAND.shortName} vs {match.opponentName ?? "Unknown"}
         </Heading>
         <Body
           muted

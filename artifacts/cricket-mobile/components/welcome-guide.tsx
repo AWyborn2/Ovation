@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { Body, Heading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import { BRAND } from "@/constants/brand";
 
 const CAN_DO: { icon: keyof typeof Feather.glyphMap; text: string }[] = [
   { icon: "users", text: "Browse every player and their career stats" },
@@ -73,14 +74,14 @@ export function WelcomeGuide({
                   textTransform: "uppercase",
                 }}
               >
-                Halls Head Cricket Club
+                {BRAND.name}
               </Body>
             </View>
 
             <Heading size="lg">Welcome to the club app</Heading>
             <Body muted size={14} style={{ marginTop: 8, lineHeight: 21 }}>
-              Your home for Halls Head's players, matches, records and honours —
-              seniors and juniors alike.
+              Your home for {BRAND.possessive} players, matches, records and
+              honours — seniors and juniors alike.
             </Body>
 
             <Body

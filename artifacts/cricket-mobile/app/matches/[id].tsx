@@ -2,6 +2,7 @@ import React from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { BRAND } from "@/constants/brand";
 import {
   useGetMatch,
   getGetMatchQueryKey,
@@ -50,7 +51,7 @@ export default function MatchDetailScreen() {
     <>
       <Stack.Screen options={{ title: (data.opponent ?? "MATCH").toUpperCase() }} />
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Heading size="lg">Halls Head vs {data.opponent ?? "Unknown"}</Heading>
+        <Heading size="lg">{BRAND.shortName} vs {data.opponent ?? "Unknown"}</Heading>
         <Body muted size={12} style={{ marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
           {data.grade} · {fmtSeason(data.season)}
           {label ? ` · ${label}` : ""}
@@ -90,7 +91,7 @@ export default function MatchDetailScreen() {
             <View style={{ flexDirection: "row", gap: 24, marginTop: data.result ? 10 : 0 }}>
               {data.hhccScore ? (
                 <View>
-                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>Halls Head</Body>
+                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>{BRAND.shortName}</Body>
                   <Heading size="md">{data.hhccScore}</Heading>
                 </View>
               ) : null}

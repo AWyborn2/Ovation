@@ -21,6 +21,7 @@ import {
   styles,
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import { BRAND } from "@/constants/brand";
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
@@ -202,7 +203,7 @@ export default function DashboardScreen() {
     >
       <View>
         <Body muted size={11} style={{ letterSpacing: 2, textTransform: "uppercase" }}>
-          Halls Head Cricket Club · Est. 1991
+          {BRAND.name} · Est. {BRAND.foundedYear}
         </Body>
         <Heading size="xl" style={{ marginTop: 4 }}>Club Totals</Heading>
       </View>

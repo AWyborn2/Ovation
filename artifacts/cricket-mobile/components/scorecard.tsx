@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
+import { BRAND } from "@/constants/brand";
 import {
   buildScorecard,
   type MatchDetail,
@@ -532,7 +533,7 @@ export function DigitalScorecard({
       ))}
       {!scorecard.orderKnown ? (
         <Body size={11} style={{ color: "#6b7280", textAlign: "center" }}>
-          Batting order not confirmed — innings shown Halls Head first.
+          Batting order not confirmed — innings shown {BRAND.shortName} first.
         </Body>
       ) : null}
 

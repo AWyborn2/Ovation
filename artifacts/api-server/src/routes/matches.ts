@@ -21,7 +21,8 @@ import {
   UpdateMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
-import { getHallsHeadBrand } from "../lib/tenant-brand";
+import { getTenantBrand } from "../lib/tenant-brand";
+import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -175,7 +176,9 @@ async function loadMatchDetail(matchId: number) {
     .from(matchHatTricksTable)
     .where(eq(matchHatTricksTable.matchId, matchId));
 
-  const hallsHead = await getHallsHeadBrand();
+  // req-less builder → default tenant. The DTO field stays `hallsHead` for now
+  // (renaming it ripples through the OpenAPI spec + generated types).
+  const hallsHead = await getTenantBrand(DEFAULT_TENANT_ID);
 
   return {
     id: match.id,

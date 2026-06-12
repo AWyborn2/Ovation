@@ -26,7 +26,8 @@ import {
 } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
-import { getHallsHeadBrand } from "../lib/tenant-brand";
+import { getTenantBrand } from "../lib/tenant-brand";
+import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
 import { computeLeaderboard } from "../lib/points";
@@ -1488,7 +1489,8 @@ async function buildGridCatalog(): Promise<GridCatalogEntryOut[]> {
 }
 
 async function buildBrand() {
-  const b = await getHallsHeadBrand();
+  // req-less builder → default tenant brand.
+  const b = await getTenantBrand(DEFAULT_TENANT_ID);
   return {
     name: b.name,
     shortName: b.shortName ?? b.name,

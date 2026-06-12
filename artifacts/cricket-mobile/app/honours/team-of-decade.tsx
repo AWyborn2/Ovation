@@ -2,6 +2,7 @@ import React from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { BRAND } from "@/constants/brand";
 import {
   useListTeamOfDecadeBoards,
   type TeamOfDecadeBoard,
@@ -163,8 +164,8 @@ export default function TeamOfDecadeScreen() {
       >
         <Heading size="lg">Teams of the Decade</Heading>
         <Body muted size={12} style={{ marginTop: 4, marginBottom: 16 }}>
-          The greatest XIs in Halls Head Cricket Club history — selected to honour
-          the finest players of each era.
+          The greatest XIs in {BRAND.name} history — selected to honour the
+          finest players of each era.
         </Body>
 
         {isLoading ? (
