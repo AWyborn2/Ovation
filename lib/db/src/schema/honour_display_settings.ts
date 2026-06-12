@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 // A board / page background source. kind "none" clears any inherited image;
 // "url" is an arbitrary image URL (or uploaded object path); "texture" is one
@@ -81,6 +81,13 @@ export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
   kioskScrollSpeed: integer("kiosk_scroll_speed").notNull().default(36),
   // Hold (ms) at the bottom of a scrolled board / on short boards before advancing.
   kioskEndHoldMs: integer("kiosk_end_hold_ms").notNull().default(3000),
+  // Sponsor advertising on the kiosk (reuses the club sponsor library). The
+  // strip embeds a "proudly supported by" logo bar on every board screen;
+  // slides rotate a full-screen sponsor board in after every N boards. Both
+  // independently toggleable and only render when there are active sponsors.
+  kioskSponsorStrip: boolean("kiosk_sponsor_strip").notNull().default(false),
+  kioskSponsorSlides: boolean("kiosk_sponsor_slides").notNull().default(false),
+  kioskSponsorSlideEvery: integer("kiosk_sponsor_slide_every").notNull().default(3),
   // Long-lived read-only access token that lets a fixed clubroom TV / Raspberry
   // Pi load the kiosk rotation without an admin login. NULL = no link issued
   // (kiosk token access disabled). Rotating/clearing this revokes old links.

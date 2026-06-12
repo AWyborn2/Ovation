@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import {
   db,
   sponsorsTable,
@@ -46,6 +46,7 @@ import {
 import type { CardLayoutLayer, CardSetSlide } from "@workspace/db";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
+import { loadActiveSponsors } from "../lib/active-sponsors";
 import { getHallsHeadBrand } from "../lib/halls-head-brand";
 
 const router: IRouter = Router();
@@ -758,17 +759,6 @@ router.delete("/card-sets/:id", requireAdmin, async (req, res): Promise<void> =>
 router.get("/social-settings", async (req, res): Promise<void> => {
   const settings = await ensureSettings();
   const captionTemplates = await db.select().from(captionTemplatesTable);
-  const today = new Date().toISOString().slice(0, 10);
-  const activeSponsors = await db
-    .select()
-    .from(sponsorsTable)
-    .where(
-      and(
-        or(isNull(sponsorsTable.activeFrom), sql`${sponsorsTable.activeFrom} <= ${today}`),
-        or(isNull(sponsorsTable.activeTo), sql`${sponsorsTable.activeTo} >= ${today}`),
-      ),
-    )
-    .orderBy(asc(sponsorsTable.displayOrder), asc(sponsorsTable.id));
   res.json({
     settings,
     captionTemplates: captionTemplates.map((t) => ({
@@ -776,7 +766,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       platform: t.platform,
       template: t.template,
     })),
-    activeSponsors: await migrateSponsorLogos(activeSponsors, req.log),
+    activeSponsors: await loadActiveSponsors(req.log),
     brand: await getHallsHeadBrand(),
   });
 });

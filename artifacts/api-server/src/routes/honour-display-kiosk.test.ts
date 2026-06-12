@@ -26,7 +26,11 @@ type Bundle = {
   settings: {
     boardConfigs: Record<string, unknown>;
     composites: unknown[];
+    kioskSponsorStrip: boolean;
+    kioskSponsorSlides: boolean;
+    kioskSponsorSlideEvery: number;
   };
+  activeSponsors: Array<{ id: number; name: string; logoUrl: string }>;
 };
 
 describe("honour display: Most Games board, display stamps, composites (integration)", () => {
@@ -95,6 +99,17 @@ describe("honour display: Most Games board, display stamps, composites (integrat
       expect(typeof b.display!.columns).toBe("number");
       expect(["scroll", "slide"]).toContain(b.display!.transition);
       expect(typeof b.display!.fit).toBe("boolean");
+    }
+
+    // The bundle exposes the kiosk sponsor settings + an active-sponsor list
+    // (possibly empty) that drives the kiosk strip / slides.
+    expect(typeof bundle.settings.kioskSponsorStrip).toBe("boolean");
+    expect(typeof bundle.settings.kioskSponsorSlides).toBe("boolean");
+    expect(bundle.settings.kioskSponsorSlideEvery).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(bundle.activeSponsors)).toBe(true);
+    for (const s of bundle.activeSponsors) {
+      expect(s.name.length).toBeGreaterThan(0);
+      expect(s.logoUrl.length).toBeGreaterThan(0);
     }
   });
 

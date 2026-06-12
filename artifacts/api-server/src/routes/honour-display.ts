@@ -27,6 +27,7 @@ import {
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getHallsHeadBrand } from "../lib/halls-head-brand";
+import { loadActiveSponsors } from "../lib/active-sponsors";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
 import { computeLeaderboard } from "../lib/points";
 import { buildMilestones } from "./milestones";
@@ -81,6 +82,9 @@ function serializeSettings(
     kioskDwellMs: row.kioskDwellMs,
     kioskScrollSpeed: row.kioskScrollSpeed,
     kioskEndHoldMs: row.kioskEndHoldMs,
+    kioskSponsorStrip: row.kioskSponsorStrip,
+    kioskSponsorSlides: row.kioskSponsorSlides,
+    kioskSponsorSlideEvery: row.kioskSponsorSlideEvery,
     boardConfigs: row.boardConfigs ?? {},
     composites: row.composites ?? [],
     skins: row.skins ?? [],
@@ -1500,17 +1504,19 @@ async function buildBrand() {
 // Routes (admin-only: the display + kiosk are clubroom/admin tools)
 // ---------------------------------------------------------------------------
 
-router.get("/honour-display", requireAdmin, async (_req, res): Promise<void> => {
+router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
   const settingsRow = await ensureHonourDisplaySettings();
-  const [boards, brand, gridCatalog] = await Promise.all([
+  const [boards, brand, gridCatalog, activeSponsors] = await Promise.all([
     assembleBoards(settingsRow),
     buildBrand(),
     buildGridCatalog(),
+    loadActiveSponsors(req.log),
   ]);
   res.json({
     boards,
     brand,
     settings: serializeSettings(settingsRow, { includeToken: true }),
+    activeSponsors,
     gridCatalog,
   });
 });
@@ -1524,11 +1530,12 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
     res.status(403).json({ error: "Invalid or revoked kiosk token" });
     return;
   }
-  const [boards, brand] = await Promise.all([
+  const [boards, brand, activeSponsors] = await Promise.all([
     assembleBoards(settingsRow),
     buildBrand(),
+    loadActiveSponsors(req.log),
   ]);
-  res.json({ boards, brand, settings: serializeSettings(settingsRow) });
+  res.json({ boards, brand, settings: serializeSettings(settingsRow), activeSponsors });
 });
 
 // Generate (or rotate) the kiosk token. Replaces any existing one, so the

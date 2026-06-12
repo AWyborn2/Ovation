@@ -4832,6 +4832,7 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
  */
 export const getHonourDisplayResponseBoardsItemDisplayColumnsMax = 3;
 
+
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
 
@@ -4924,6 +4925,9 @@ export const GetHonourDisplayResponse = zod.object({
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
   "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
+  "kioskSponsorStrip": zod.boolean().describe('Embed a persistent \"proudly supported by\" sponsor-logo strip on every board screen. Only renders when there are active sponsors.'),
+  "kioskSponsorSlides": zod.boolean().describe('Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors.'),
+  "kioskSponsorSlideEvery": zod.number().min(1).describe('Insert a sponsor slide after this many boards (when slides on).'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
@@ -4975,6 +4979,16 @@ export const GetHonourDisplayResponse = zod.object({
 }).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
   "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
 }),
+  "activeSponsors": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "link": zod.string(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "displayOrder": zod.number()
+})).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
   "title": zod.string(),
@@ -4995,6 +5009,7 @@ export const GetKioskDisplayQueryParams = zod.object({
 })
 
 export const getKioskDisplayResponseBoardsItemDisplayColumnsMax = 3;
+
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -5088,6 +5103,9 @@ export const GetKioskDisplayResponse = zod.object({
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
   "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
+  "kioskSponsorStrip": zod.boolean().describe('Embed a persistent \"proudly supported by\" sponsor-logo strip on every board screen. Only renders when there are active sponsors.'),
+  "kioskSponsorSlides": zod.boolean().describe('Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors.'),
+  "kioskSponsorSlideEvery": zod.number().min(1).describe('Insert a sponsor slide after this many boards (when slides on).'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
@@ -5139,6 +5157,16 @@ export const GetKioskDisplayResponse = zod.object({
 }).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
   "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
 }),
+  "activeSponsors": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "link": zod.string(),
+  "activeFrom": zod.string().nullish(),
+  "activeTo": zod.string().nullish(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "displayOrder": zod.number()
+})).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
   "title": zod.string(),
@@ -5171,6 +5199,7 @@ export const RevokeKioskTokenResponse = zod.object({
 /**
  * @summary Update the Honour Boards Display + kiosk settings (admin)
  */
+
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
 
@@ -5181,6 +5210,9 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "kioskDwellMs": zod.number().optional(),
   "kioskScrollSpeed": zod.number().optional(),
   "kioskEndHoldMs": zod.number().optional(),
+  "kioskSponsorStrip": zod.boolean().optional(),
+  "kioskSponsorSlides": zod.boolean().optional(),
+  "kioskSponsorSlideEvery": zod.number().min(1).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide']).optional(),
@@ -5232,6 +5264,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "defaultFont": zod.string().nullish()
 })
 
+
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
 
@@ -5242,6 +5275,9 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "kioskDwellMs": zod.number().describe('Hold (ms) on each board before any credit-scroll begins.'),
   "kioskScrollSpeed": zod.number().describe('Credit-scroll speed (px\/sec) for tall boards.'),
   "kioskEndHoldMs": zod.number().describe('Hold (ms) at the bottom of a board before advancing.'),
+  "kioskSponsorStrip": zod.boolean().describe('Embed a persistent \"proudly supported by\" sponsor-logo strip on every board screen. Only renders when there are active sponsors.'),
+  "kioskSponsorSlides": zod.boolean().describe('Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors.'),
+  "kioskSponsorSlideEvery": zod.number().min(1).describe('Insert a sponsor slide after this many boards (when slides on).'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),

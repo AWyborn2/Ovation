@@ -3203,6 +3203,15 @@ export interface HonourDisplaySettings {
   kioskScrollSpeed: number;
   /** Hold (ms) at the bottom of a board before advancing. */
   kioskEndHoldMs: number;
+  /** Embed a persistent "proudly supported by" sponsor-logo strip on every board screen. Only renders when there are active sponsors. */
+  kioskSponsorStrip: boolean;
+  /** Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors. */
+  kioskSponsorSlides: boolean;
+  /**
+     * Insert a sponsor slide after this many boards (when slides on).
+     * @minimum 1
+     */
+  kioskSponsorSlideEvery: number;
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
   /** Per-board display overrides keyed by board id. */
@@ -3229,6 +3238,10 @@ export interface HonourDisplaySettingsUpdate {
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;
   kioskEndHoldMs?: number;
+  kioskSponsorStrip?: boolean;
+  kioskSponsorSlides?: boolean;
+  /** @minimum 1 */
+  kioskSponsorSlideEvery?: number;
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
   skins?: HonourSkin[];
@@ -3240,6 +3253,8 @@ export interface HonourDisplayBundle {
   boards: DisplayBoard[];
   brand: HonourBrand;
   settings: HonourDisplaySettings;
+  /** Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering). */
+  activeSponsors: Sponsor[];
   /** Grid-capable boards and their selectable columns, for the admin season-grid column pickers. */
   gridCatalog?: GridCatalogEntry[];
 }

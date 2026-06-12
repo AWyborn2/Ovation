@@ -4,6 +4,7 @@ import {
   useUpdateHonourDisplaySettings,
   useGenerateKioskToken,
   useRevokeKioskToken,
+  useListSponsors,
   getGetHonourDisplayQueryKey,
   type HonourDisplayBundle,
   type HonourDisplaySettingsUpdate,
@@ -17,10 +18,12 @@ import {
   type GridCatalogEntry,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Save,
   Loader2,
@@ -40,6 +43,7 @@ import {
   Upload,
   Pencil,
   Grid3x3,
+  Megaphone,
 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
@@ -146,6 +150,11 @@ function SettingsForm({
   const [dwell, setDwell] = useState(String(settings.kioskDwellMs));
   const [speed, setSpeed] = useState(String(settings.kioskScrollSpeed));
   const [endHold, setEndHold] = useState(String(settings.kioskEndHoldMs));
+  const [sponsorStrip, setSponsorStrip] = useState(settings.kioskSponsorStrip);
+  const [sponsorSlides, setSponsorSlides] = useState(settings.kioskSponsorSlides);
+  const [sponsorSlideEvery, setSponsorSlideEvery] = useState(
+    String(settings.kioskSponsorSlideEvery),
+  );
   const [boardConfigs, setBoardConfigs] = useState<
     Record<string, BoardDisplayConfig>
   >(settings.boardConfigs ?? {});
@@ -167,6 +176,9 @@ function SettingsForm({
     setDwell(String(settings.kioskDwellMs));
     setSpeed(String(settings.kioskScrollSpeed));
     setEndHold(String(settings.kioskEndHoldMs));
+    setSponsorStrip(settings.kioskSponsorStrip);
+    setSponsorSlides(settings.kioskSponsorSlides);
+    setSponsorSlideEvery(String(settings.kioskSponsorSlideEvery));
     setBoardConfigs(settings.boardConfigs ?? {});
     setComposites(settings.composites ?? []);
     setSkins(settings.skins ?? []);
@@ -183,6 +195,22 @@ function SettingsForm({
       onError: (e) => setError(handleAdminMutationError(e)),
     },
   });
+
+  // Read-only preview of the club sponsor library (same list the kiosk shows).
+  // Sponsors are managed under Social → Sponsors; here we only toggle their use.
+  const sponsorsQ = useListSponsors();
+  const sponsors = sponsorsQ.data ?? [];
+  // Mirror the kiosk's server-side active-window filter (active-sponsors.ts) so
+  // the preview shows exactly what the TV will: a null bound is open-ended, and
+  // dates compare lexically as YYYY-MM-DD. Ordered by displayOrder like the feed.
+  const today = new Date().toISOString().slice(0, 10);
+  const activeSponsors = sponsors
+    .filter(
+      (s) =>
+        (!s.activeFrom || s.activeFrom <= today) &&
+        (!s.activeTo || s.activeTo >= today),
+    )
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
   const moveSeq = (idx: number, dir: -1 | 1) => {
     setSequence((prev) => {
@@ -208,6 +236,14 @@ function SettingsForm({
       return setError("Kiosk timings must be non-negative numbers.");
     }
     if (s < 1) return setError("Scroll speed must be at least 1 px/sec.");
+    const every = parseInt(sponsorSlideEvery, 10);
+    if (sponsorSlides && (isNaN(every) || every < 1)) {
+      return setError("Sponsor slide frequency must be at least 1 board.");
+    }
+    // Slides off → a stale/invalid value in the (hidden) input must not block
+    // saving unrelated settings; fall back to the persisted value.
+    const safeEvery =
+      !isNaN(every) && every >= 1 ? every : settings.kioskSponsorSlideEvery;
     for (const c of composites) {
       if (!c.title.trim()) {
         return setError("Every composite board needs a title.");
@@ -241,6 +277,9 @@ function SettingsForm({
       kioskDwellMs: d,
       kioskScrollSpeed: s,
       kioskEndHoldMs: e,
+      kioskSponsorStrip: sponsorStrip,
+      kioskSponsorSlides: sponsorSlides,
+      kioskSponsorSlideEvery: safeEvery,
       boardConfigs,
       composites,
       skins,
@@ -598,6 +637,113 @@ function SettingsForm({
                 data-testid="input-endhold"
               />
             </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sponsor advertising */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="h-5 w-5" />
+            Sponsor advertising
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-xs text-muted-foreground max-w-2xl">
+            Show your club sponsors as in-built advertising on the clubroom TV.
+            Logos come from the club sponsor library — manage them under{" "}
+            <Link
+              href="/admin/social/cards"
+              className="font-medium text-primary underline underline-offset-2"
+            >
+              Social Media Studio → Cards
+            </Link>
+            .
+          </p>
+
+          <div className="space-y-4 max-w-2xl">
+            <label className="flex items-start gap-3">
+              <Switch
+                checked={sponsorStrip}
+                onCheckedChange={setSponsorStrip}
+                data-testid="switch-sponsor-strip"
+              />
+              <span>
+                <span className="text-sm font-medium">Sponsor strip</span>
+                <span className="block text-xs text-muted-foreground">
+                  A permanent “Proudly supported by” logo bar pinned to the
+                  bottom of every board screen.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3">
+              <Switch
+                checked={sponsorSlides}
+                onCheckedChange={setSponsorSlides}
+                data-testid="switch-sponsor-slides"
+              />
+              <span>
+                <span className="text-sm font-medium">Sponsor slides</span>
+                <span className="block text-xs text-muted-foreground">
+                  Full-screen sponsor slides rotated in between honour boards.
+                </span>
+              </span>
+            </label>
+
+            {sponsorSlides && (
+              <label className="flex items-center gap-2 pl-12">
+                <span className="text-xs text-muted-foreground">
+                  Show a sponsor slide after every
+                </span>
+                <Input
+                  type="number"
+                  min={1}
+                  className="w-20"
+                  value={sponsorSlideEvery}
+                  onChange={(e) => setSponsorSlideEvery(e.target.value)}
+                  data-testid="input-sponsor-every"
+                />
+                <span className="text-xs text-muted-foreground">board(s)</span>
+              </label>
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+              Active sponsors{" "}
+              {activeSponsors.length > 0 && (
+                <span className="text-muted-foreground/70">
+                  ({activeSponsors.length})
+                </span>
+              )}
+            </h3>
+            {sponsorsQ.isLoading ? (
+              <p className="text-xs text-muted-foreground">Loading sponsors…</p>
+            ) : activeSponsors.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">
+                {sponsors.length === 0
+                  ? "No sponsors yet — add logos in the sponsor library and they'll appear here and on the kiosk."
+                  : "No sponsors are currently within their active date window, so none will show on the kiosk."}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {activeSponsors.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-center bg-white rounded border p-2 h-14 w-28"
+                    title={s.name}
+                  >
+                    <img
+                      src={s.logoUrl}
+                      alt={s.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

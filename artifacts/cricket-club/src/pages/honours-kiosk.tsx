@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   useGetHonourDisplay,
@@ -7,6 +7,7 @@ import {
   getGetKioskDisplayQueryKey,
 } from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
+import { SponsorStrip, SponsorSlide } from "@/components/honours-display/SponsorAds";
 import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import type { DisplayBoard } from "@/components/honours-display/types";
@@ -29,18 +30,31 @@ function stagger(root: HTMLElement) {
     });
 }
 
-/** A single kiosk frame: one board (possibly a paginated slice of a larger one). */
-interface Frame {
-  board: DisplayBoard;
-  transition: "scroll" | "slide";
-  fit: boolean;
-  key: string;
-}
+/**
+ * A single kiosk frame. Either one board (possibly a paginated slice of a larger
+ * one) or a full-screen sponsor slide rotated in between boards.
+ */
+type Frame =
+  | {
+      kind: "board";
+      board: DisplayBoard;
+      transition: "scroll" | "slide";
+      fit: boolean;
+      key: string;
+    }
+  | { kind: "sponsor"; key: string };
+
+/**
+ * Estimated height (px) reserved at the bottom of the screen for the persistent
+ * sponsor strip. Shared between the CSS var (`--kiosk-strip-h`) and the
+ * rows-per-page math so paginated boards never slide under the strip.
+ */
+const KIOSK_STRIP_PX = 96;
 
 /** Approximate how many list rows fit one screen (recomputed on resize). */
-function computeRowsPerPage(): number {
+function computeRowsPerPage(stripPx = 0): number {
   const h = typeof window !== "undefined" ? window.innerHeight : 900;
-  return Math.max(6, Math.floor((h - 220) / 46));
+  return Math.max(6, Math.floor((h - 220 - stripPx) / 46));
 }
 
 /**
@@ -125,14 +139,7 @@ export default function HonoursKiosk() {
   const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(computeRowsPerPage);
-
-  // Recompute how many rows fit a screen when the viewport resizes.
-  useEffect(() => {
-    const onResize = () => setRowsPerPage(computeRowsPerPage());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const [rowsPerPage, setRowsPerPage] = useState(() => computeRowsPerPage());
 
   const boards = useMemo(() => {
     const base = data?.boards ?? [];
@@ -141,6 +148,22 @@ export default function HonoursKiosk() {
   }, [data?.boards, data?.settings, approachingBoard]);
   const settings = data?.settings;
   const brand = data?.brand;
+
+  // Sponsor advertising (admin-toggleable, independent of share-card sponsors).
+  // Both modes need at least one active sponsor to render anything.
+  const activeSponsors = data?.activeSponsors ?? [];
+  const sponsorStripOn = !!settings?.kioskSponsorStrip && activeSponsors.length > 0;
+  const sponsorSlidesOn = !!settings?.kioskSponsorSlides && activeSponsors.length > 0;
+  const stripPx = sponsorStripOn ? KIOSK_STRIP_PX : 0;
+
+  // Recompute how many list rows fit a screen on resize and whenever the sponsor
+  // strip toggles (the strip steals vertical space from paginated boards).
+  useEffect(() => {
+    const onResize = () => setRowsPerPage(computeRowsPerPage(stripPx));
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [stripPx]);
 
   const DWELL = settings?.kioskDwellMs ?? 3500;
   const ENDHOLD = settings?.kioskEndHoldMs ?? 3000;
@@ -158,22 +181,43 @@ export default function HonoursKiosk() {
 
   // Flatten the sequence into individual frames: a "scroll" board is one frame
   // (credit-scrolled); a "slide" board is paginated into screen-sized frames.
-  const frames = useMemo<Frame[]>(
-    () =>
-      sequence.flatMap((b): Frame[] => {
-        const fit = b.display.fit;
-        if (b.display.transition === "slide") {
-          return paginate(b, rowsPerPage).map((pb, i) => ({
+  // When sponsor slides are on, a full-screen sponsor frame is interleaved after
+  // every N *boards* (counted at the sequence level, so a paginated board counts
+  // once) — and at least once if the sequence is shorter than N.
+  const frames = useMemo<Frame[]>(() => {
+    const out: Frame[] = [];
+    const every = Math.max(1, settings?.kioskSponsorSlideEvery ?? 3);
+    let sponsorCount = 0;
+    sequence.forEach((b, i) => {
+      const fit = b.display.fit;
+      if (b.display.transition === "slide") {
+        paginate(b, rowsPerPage).forEach((pb, j) =>
+          out.push({
+            kind: "board",
             board: pb,
-            transition: "slide" as const,
+            transition: "slide",
             fit,
-            key: `${b.id}:slide:${i}`,
-          }));
-        }
-        return [{ board: b, transition: "scroll" as const, fit, key: `${b.id}:scroll` }];
-      }),
-    [sequence, rowsPerPage],
-  );
+            key: `${b.id}:slide:${j}`,
+          }),
+        );
+      } else {
+        out.push({
+          kind: "board",
+          board: b,
+          transition: "scroll",
+          fit,
+          key: `${b.id}:scroll`,
+        });
+      }
+      if (sponsorSlidesOn && (i + 1) % every === 0) {
+        out.push({ kind: "sponsor", key: `sponsor:${sponsorCount++}` });
+      }
+    });
+    if (sponsorSlidesOn && sponsorCount === 0 && out.length > 0) {
+      out.push({ kind: "sponsor", key: "sponsor:0" });
+    }
+    return out;
+  }, [sequence, rowsPerPage, sponsorSlidesOn, settings?.kioskSponsorSlideEvery]);
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -206,7 +250,10 @@ export default function HonoursKiosk() {
     const myCycle = cycleRef.current;
     const alive = () => cycleRef.current === myCycle;
 
-    const isSlide = frames[index % frames.length]?.transition === "slide";
+    // Sponsor frames hold like slides (no credit-scroll); board frames keep
+    // their own transition. (A sponsor frame has no `.hb-board` anyway.)
+    const cur = frames[index % frames.length];
+    const isSlide = !cur || cur.kind === "sponsor" || cur.transition === "slide";
     const fr = frameRef.current?.querySelector<HTMLElement>(".hb-board");
     if (frameRef.current) stagger(frameRef.current);
     if (fr) fr.scrollTop = 0;
@@ -259,22 +306,36 @@ export default function HonoursKiosk() {
 
   const skin = settings.defaultTemplate;
   const current = frames[index % frames.length]!;
+  const isSponsorFrame = current.kind === "sponsor";
+  const fit = isSponsorFrame ? true : current.fit;
+  // The persistent strip is redundant on a full-screen sponsor slide, so hide it
+  // (and don't reserve its space) while a sponsor slide is showing.
+  const showStrip = sponsorStripOn && !isSponsorFrame;
 
   return (
-    <div className="hb-kiosk">
+    <div
+      className="hb-kiosk"
+      style={
+        showStrip
+          ? ({ "--kiosk-strip-h": `${KIOSK_STRIP_PX}px` } as CSSProperties)
+          : undefined
+      }
+    >
       <div className={`hb ${skinClass(skin)}`} style={rootStyle(brand, settings)}>
-        <div
-          className={`preset active${current.fit ? " fit" : ""}`}
-          ref={frameRef}
-        >
-          <BoardRenderer
-            board={current.board}
-            brand={brand}
-            kiosk
-            cfg={settings.boardConfigs?.[current.board.id.split("#")[0]!]}
-          />
+        <div className={`preset active${fit ? " fit" : ""}`} ref={frameRef}>
+          {isSponsorFrame ? (
+            <SponsorSlide sponsors={activeSponsors} brand={brand} />
+          ) : (
+            <BoardRenderer
+              board={current.board}
+              brand={brand}
+              kiosk
+              cfg={settings.boardConfigs?.[current.board.id.split("#")[0]!]}
+            />
+          )}
         </div>
       </div>
+      {showStrip && <SponsorStrip sponsors={activeSponsors} />}
       <button className="hb-kexit" onClick={exit}>
         ✕ Exit kiosk (Esc)
       </button>

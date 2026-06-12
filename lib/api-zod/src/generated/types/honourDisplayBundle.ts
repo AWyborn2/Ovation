@@ -9,11 +9,14 @@ import type { DisplayBoard } from './displayBoard';
 import type { GridCatalogEntry } from './gridCatalogEntry';
 import type { HonourBrand } from './honourBrand';
 import type { HonourDisplaySettings } from './honourDisplaySettings';
+import type { Sponsor } from './sponsor';
 
 export interface HonourDisplayBundle {
   boards: DisplayBoard[];
   brand: HonourBrand;
   settings: HonourDisplaySettings;
+  /** Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering). */
+  activeSponsors: Sponsor[];
   /** Grid-capable boards and their selectable columns, for the admin season-grid column pickers. */
   gridCatalog?: GridCatalogEntry[];
 }

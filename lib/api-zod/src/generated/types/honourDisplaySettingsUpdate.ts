@@ -16,6 +16,10 @@ export interface HonourDisplaySettingsUpdate {
   kioskDwellMs?: number;
   kioskScrollSpeed?: number;
   kioskEndHoldMs?: number;
+  kioskSponsorStrip?: boolean;
+  kioskSponsorSlides?: boolean;
+  /** @minimum 1 */
+  kioskSponsorSlideEvery?: number;
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
   skins?: HonourSkin[];

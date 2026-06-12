@@ -8730,6 +8730,9 @@ components:
         - kioskDwellMs
         - kioskScrollSpeed
         - kioskEndHoldMs
+        - kioskSponsorStrip
+        - kioskSponsorSlides
+        - kioskSponsorSlideEvery
         - boardConfigs
         - composites
       properties:
@@ -8752,6 +8755,20 @@ components:
         kioskEndHoldMs:
           type: integer
           description: Hold (ms) at the bottom of a board before advancing.
+        kioskSponsorStrip:
+          type: boolean
+          description: >-
+            Embed a persistent "proudly supported by" sponsor-logo strip on every
+            board screen. Only renders when there are active sponsors.
+        kioskSponsorSlides:
+          type: boolean
+          description: >-
+            Rotate a full-screen sponsor slide in after every N boards. Only
+            renders when there are active sponsors.
+        kioskSponsorSlideEvery:
+          type: integer
+          minimum: 1
+          description: Insert a sponsor slide after this many boards (when slides on).
         kioskToken:
           type: string
           nullable: true
@@ -8805,6 +8822,13 @@ components:
           type: integer
         kioskEndHoldMs:
           type: integer
+        kioskSponsorStrip:
+          type: boolean
+        kioskSponsorSlides:
+          type: boolean
+        kioskSponsorSlideEvery:
+          type: integer
+          minimum: 1
         boardConfigs:
           type: object
           additionalProperties:
@@ -8829,6 +8853,7 @@ components:
         - boards
         - brand
         - settings
+        - activeSponsors
       properties:
         boards:
           type: array
@@ -8838,6 +8863,13 @@ components:
           $ref: "#/components/schemas/HonourBrand"
         settings:
           $ref: "#/components/schemas/HonourDisplaySettings"
+        activeSponsors:
+          type: array
+          description: >-
+            Sponsors whose active window covers today, ordered by displayOrder.
+            Drives the kiosk sponsor strip + slides (no card-kind filtering).
+          items:
+            $ref: "#/components/schemas/Sponsor"
         gridCatalog:
           type: array
           description: >-

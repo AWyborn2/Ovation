@@ -707,9 +707,10 @@
   margin: 0;
   padding: clamp(12px, 2vh, 28px) clamp(16px, 3vw, 48px);
 }
-/* The scrollable board frame the kiosk auto-scrolls. */
+/* The scrollable board frame the kiosk auto-scrolls. Reserves room for the
+   sponsor strip when it's showing (--kiosk-strip-h defaults to 0). */
 .hb-kiosk .hb-board {
-  max-height: calc(100vh - clamp(32px, 6vh, 80px));
+  max-height: calc(100vh - clamp(32px, 6vh, 80px) - var(--kiosk-strip-h, 0px));
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -718,7 +719,7 @@
 }
 .hb-kexit {
   position: fixed;
-  bottom: 16px;
+  bottom: calc(16px + var(--kiosk-strip-h, 0px));
   right: 16px;
   z-index: 61;
   padding: 8px 14px;
@@ -753,4 +754,114 @@
   .hb-kiosk .preset.active {
     transition: none;
   }
+}
+
+/* ── Sponsor advertising ───────────────────────────────────────────────────
+   In-built advertising for the kiosk: a persistent "proudly supported by" strip
+   pinned to the bottom of every board screen, plus full-screen sponsor slides
+   rotated in between boards. */
+
+/* Persistent bottom strip (fixed overlay; board frames reserve its height via
+   the --kiosk-strip-h var set on .hb-kiosk). */
+.hb-sponsor-strip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  height: var(--kiosk-strip-h, 96px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vw, 48px);
+  padding: 0 clamp(16px, 4vw, 64px);
+  background: rgba(0, 0, 0, 0.78);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+}
+.hb-sponsor-strip-label {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: clamp(11px, 1.4vh, 15px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.hb-sponsor-strip-logos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: clamp(16px, 3vw, 48px);
+  overflow: hidden;
+}
+.hb-sponsor-strip-logo {
+  height: clamp(40px, calc(var(--kiosk-strip-h, 96px) - 36px), 64px);
+  width: auto;
+  max-width: clamp(120px, 16vw, 220px);
+  object-fit: contain;
+  /* Sponsor logos are mixed colours — float them on white so they read on the
+     dark strip without per-logo treatment. */
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+/* Full-screen sponsor slide. */
+.hb-sponsor-slide {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 5vh, 56px);
+  padding: clamp(24px, 5vh, 72px) clamp(24px, 5vw, 96px);
+  color: #fff;
+  text-align: center;
+}
+.hb-sponsor-slide-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.5vh, 18px);
+}
+.hb-sponsor-slide-crest {
+  height: clamp(64px, 12vh, 130px);
+  width: auto;
+  object-fit: contain;
+}
+.hb-sponsor-slide-title {
+  font-size: clamp(28px, 5vh, 64px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.hb-sponsor-slide-sub {
+  font-size: clamp(14px, 2.2vh, 26px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+}
+.hb-sponsor-slide-grid {
+  width: min(1400px, 92vw);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 40vw), 1fr));
+  gap: clamp(16px, 2.5vw, 36px);
+  align-items: stretch;
+  justify-items: stretch;
+}
+.hb-sponsor-slide-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 14px;
+  padding: clamp(14px, 2vh, 28px);
+  min-height: clamp(90px, 16vh, 150px);
+}
+.hb-sponsor-slide-cell img {
+  max-width: 100%;
+  max-height: clamp(80px, 14vh, 130px);
+  object-fit: contain;
 }
