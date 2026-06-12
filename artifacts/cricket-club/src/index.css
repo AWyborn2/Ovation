@@ -97,6 +97,10 @@
   --app-font-serif: 'Oswald', sans-serif;
   --app-font-mono: 'Space Mono', monospace;
   --radius: 0.375rem;
+
+  /* Juniors section banner accent. Default = club brown; BrandProvider overrides
+     it at runtime from the tenant brand's tertiary colour. */
+  --juniors-accent: #42342B;
 }
 
 .dark {

@@ -3,6 +3,7 @@ import { Menu, X, Trophy, Baby, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { useBrandLogo } from "@/lib/use-brand";
+import { useBrand } from "@/lib/brand-context";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { useGetTourContent } from "@workspace/api-client-react";
 import { launchFanTour, launchAdminTour } from "@/lib/tour";
@@ -102,6 +103,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const me = useCurrentAdmin();
   const logoUrl = useBrandLogo();
+  const brand = useBrand();
 
   const isJuniors = location === "/juniors" || location.startsWith("/juniors/");
 
@@ -146,7 +148,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link href={isJuniors ? "/juniors" : "/"}>
-                <img src={logoUrl} alt="Halls Head Cricket Club" className="h-20 w-auto" />
+                <img src={logoUrl} alt={brand.name} className="h-20 w-auto" />
               </Link>
             </div>
 
@@ -195,9 +197,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div
           className={`w-full border-t ${
             isJuniors
-              ? "bg-[#42342b] text-primary border-[#42342b]"
+              ? "text-primary"
               : "bg-primary text-primary-foreground border-primary"
           }`}
+          style={
+            isJuniors
+              ? {
+                  backgroundColor: "var(--juniors-accent)",
+                  borderColor: "var(--juniors-accent)",
+                }
+              : undefined
+          }
         >
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-1.5 flex items-center gap-2">
             {isJuniors ? <Baby className="h-4 w-4" /> : <Trophy className="h-4 w-4" />}
@@ -255,11 +265,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center md:items-start">
-              <img src={logoUrl} alt="Halls Head Cricket Club" className="h-24 w-auto mb-4 grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+              <img src={logoUrl} alt={brand.name} className="h-24 w-auto mb-4 grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+              {/* TODO(tenant): a per-tenant address/location field would replace the
+                  static club address that used to live here. */}
               <p className="text-muted-foreground text-sm text-center md:text-left">
-                Halls Head Cricket Club<br />
-                Peelwood Reserve<br />
-                Halls Head WA
+                {brand.name}
+                {brand.shortName ? (
+                  <>
+                    <br />
+                    {brand.shortName}
+                  </>
+                ) : null}
               </p>
             </div>
 
@@ -290,7 +306,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Halls Head Cricket Club. All rights reserved.
+            &copy; {new Date().getFullYear()} {brand.name}. All rights reserved.
           </div>
         </div>
       </footer>

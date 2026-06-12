@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
+import { BrandProvider } from "@/lib/brand-context";
 import { AdminShell } from "@/components/admin-shell";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import Home from "@/pages/home";
@@ -229,14 +230,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ConfirmProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </ConfirmProvider>
-      </TooltipProvider>
+      <BrandProvider>
+        <TooltipProvider>
+          <ConfirmProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </ConfirmProvider>
+        </TooltipProvider>
+      </BrandProvider>
     </QueryClientProvider>
   );
 }
