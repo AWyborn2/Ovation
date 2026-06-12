@@ -6175,3 +6175,17 @@ export const DownloadCardVideoJobParams = zod.object({
 })
 
 
+/**
+ * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
+ */
+export const GetTenantBrandResponse = zod.object({
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
+
+

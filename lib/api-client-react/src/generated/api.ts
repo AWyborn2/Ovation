@@ -183,6 +183,7 @@ import type {
   TeamOfDecadeMember,
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
+  TenantBrand,
   TourContent,
   TourContentUpdate,
   TrackedLink,
@@ -15345,6 +15346,83 @@ export function useDownloadCardVideoJob<TData = Awaited<ReturnType<typeof downlo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getDownloadCardVideoJobQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTenantBrandUrl = () => {
+
+
+
+
+  return `/api/tenant-brand`
+}
+
+/**
+ * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
+ */
+export const getTenantBrand = async ( options?: RequestInit): Promise<TenantBrand> => {
+
+  return customFetch<TenantBrand>(getGetTenantBrandUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTenantBrandQueryKey = () => {
+    return [
+    `/api/tenant-brand`
+    ] as const;
+    }
+
+
+export const getGetTenantBrandQueryOptions = <TData = Awaited<ReturnType<typeof getTenantBrand>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantBrand>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTenantBrandQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTenantBrand>>> = ({ signal }) => getTenantBrand({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTenantBrand>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTenantBrandQueryResult = NonNullable<Awaited<ReturnType<typeof getTenantBrand>>>
+export type GetTenantBrandQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
+ */
+
+export function useGetTenantBrand<TData = Awaited<ReturnType<typeof getTenantBrand>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantBrand>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTenantBrandQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

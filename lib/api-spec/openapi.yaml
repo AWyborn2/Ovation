@@ -4217,6 +4217,21 @@ paths:
         "404":
           description: Unknown job or not yet finished
 
+  /tenant-brand:
+    get:
+      operationId: getTenantBrand
+      tags: [tenant]
+      summary: >-
+        Resolve the current tenant's brand (name, short name, logo, colours).
+        Tenant is resolved per-request by the tenant-context middleware.
+      responses:
+        "200":
+          description: The tenant's brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBrand"
+
 components:
   schemas:
     CardVideoJobInput:
@@ -5611,6 +5626,29 @@ components:
         (id 2) — the single source of truth for the club's official logo and
         colours. Null when the record could not be loaded; renderers fall back
         to their built-in official defaults.
+      required: [name]
+      properties:
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        logoUrl128:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        secondaryColour:
+          type: ["string", "null"]
+        tertiaryColour:
+          type: ["string", "null"]
+
+    TenantBrand:
+      type: object
+      description: >-
+        A tenant's brand (logo + colours), resolved per-request from the tenants
+        register (joined to its clubs record where set), falling back to the
+        platform default brand. Drives the web/mobile theme and document title.
       required: [name]
       properties:
         name:

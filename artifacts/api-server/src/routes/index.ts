@@ -31,6 +31,7 @@ import storageRouter from "./storage";
 import tradingCardSettingsRouter from "./trading-card-settings";
 import tourContentRouter from "./tour-content";
 import honourDisplayRouter from "./honour-display";
+import tenantRouter from "./tenant";
 
 const router: IRouter = Router();
 
@@ -66,5 +67,6 @@ router.use(storageRouter);
 router.use(tradingCardSettingsRouter);
 router.use(tourContentRouter);
 router.use(honourDisplayRouter);
+router.use(tenantRouter);
 
 export default router;

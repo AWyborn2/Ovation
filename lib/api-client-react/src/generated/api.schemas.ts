@@ -1142,6 +1142,25 @@ export interface HallsHeadBrand {
   tertiaryColour?: string | null;
 }
 
+/**
+ * A tenant's brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web/mobile theme and document title.
+ */
+export interface TenantBrand {
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  logoUrl128?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+  /** @nullable */
+  tertiaryColour?: string | null;
+}
+
 export interface MatchScorecardLine {
   id: number;
   playerId: number;

@@ -313,6 +313,7 @@ export * from './teamOfDecadeBoardUpdate';
 export * from './teamOfDecadeMember';
 export * from './teamOfDecadeMemberInput';
 export * from './teamOfDecadeMemberUpdate';
+export * from './tenantBrand';
 export * from './tourContent';
 export * from './tourContentUpdate';
 export * from './tourStepContent';
