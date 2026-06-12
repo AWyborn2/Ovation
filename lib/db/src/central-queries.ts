@@ -175,16 +175,32 @@ export function centralSeasonMatchesStartYear(
   );
 }
 
-/** A not-out innings counts as an innings but not as a dismissal. */
+/**
+ * Classify a central batting line into an innings outcome.
+ *
+ * `dismissal_type = 'other'` lumps "did not bat" together with retirements, so
+ * the dismissal TEXT is authoritative for those — don't key on the type:
+ *   - dismissal "did not bat"                      → NOT an innings (excluded).
+ *   - dismissal "retired hurt" / "retired not out" → an innings, counts not out.
+ *   - dismissal_type "not out"                     → an innings, not out.
+ *   - everything else with a real dismissal_type   → an innings, out.
+ */
 function classifyInnings(
   dismissalType: string | null,
   dismissal: string | null,
 ): "out" | "notout" | "dnb" {
-  const d = (dismissalType ?? dismissal ?? "").trim().toLowerCase();
-  if (d === "did not bat" || d === "dnb") return "dnb";
-  if (d === "" || d === "not out" || d === "no" || d.startsWith("retired")) {
-    return "notout";
-  }
+  const text = (dismissal ?? "").trim().toLowerCase();
+  if (text === "did not bat") return "dnb";
+  if (text === "retired hurt" || text === "retired not out") return "notout";
+
+  const type = (dismissalType ?? "").trim().toLowerCase();
+  if (type === "not out") return "notout";
+  // No dismissal info at all: treat as not out rather than inventing a wicket
+  // (doesn't affect the innings count — only "did not bat" is excluded).
+  if (type === "") return "notout";
+
+  // A genuine dismissal (caught, bowled, lbw, run out, stumped, or an 'other'
+  // edge case that isn't DNB/retired) → the batter was out.
   return "out";
 }
 
