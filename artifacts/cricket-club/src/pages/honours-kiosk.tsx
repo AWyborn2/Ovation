@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import {
   useGetHonourDisplay,
   useGetKioskDisplay,
@@ -98,11 +98,16 @@ function paginate(board: DisplayBoard, rowsPerPage: number): DisplayBoard[] {
 }
 
 export default function HonoursKiosk() {
-  // A `?token=` (issued by an admin) drives the public, login-free kiosk feed
-  // for a fixed clubroom TV. Without one we're the in-app admin preview.
+  // A kiosk token (issued by an admin) drives the public, login-free kiosk feed
+  // for a fixed clubroom TV. It arrives via the short `/tv/:token` path, or the
+  // legacy `?token=` query for older saved links. Without one we're the in-app
+  // admin preview.
+  const routeParams = useParams<{ token?: string }>();
   const kioskToken = useMemo(
-    () => new URLSearchParams(window.location.search).get("token"),
-    [],
+    () =>
+      routeParams.token ??
+      new URLSearchParams(window.location.search).get("token"),
+    [routeParams.token],
   );
   const adminQ = useGetHonourDisplay({
     query: { enabled: !kioskToken, queryKey: getGetHonourDisplayQueryKey() },

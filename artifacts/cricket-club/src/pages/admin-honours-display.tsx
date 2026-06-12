@@ -90,9 +90,10 @@ export default function AdminHonoursDisplay() {
         <p className="text-muted-foreground mt-1">
           Pick the single skin every honour board renders in, and configure the
           auto-rotating clubroom TV kiosk. These pages are admin-only: the display lives
-          at <code>/honours-display</code> and the TV mode at{" "}
-          <code>/honours-display/kiosk</code>. Each board keeps its natural layout — the
-          skin only changes the look.
+          at <code>/honours-display</code> and the TV mode opens from a short{" "}
+          <code>/tv/&lt;code&gt;</code> link you generate below — easy to type into
+          a wall-mounted TV. Each board keeps its natural layout — the skin only
+          changes the look.
         </p>
       </div>
 
@@ -1408,7 +1409,7 @@ function KioskLinkCard({
       /\/+$/,
       "/",
     );
-    return `${base}honours-display/kiosk?token=${encodeURIComponent(token)}`;
+    return `${base}tv/${encodeURIComponent(token)}`;
   }, [token]);
 
   const generate = useGenerateKioskToken({
@@ -1453,10 +1454,12 @@ function KioskLinkCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Generate a private link that loads <em>only</em> the rotating kiosk —
-          no admin sign-in needed. Open it on a wall-mounted TV or Raspberry Pi
-          browser (it auto-runs the rotation). The link doesn't expose any other
-          admin page. Revoke it any time to stop a lost or shared link working.
+          Generate a private <strong>short link</strong> that loads <em>only</em>{" "}
+          the rotating kiosk — no admin sign-in needed. It's a brief{" "}
+          <code>/tv/&lt;code&gt;</code> address that's easy to type straight into a
+          wall-mounted TV or Raspberry Pi browser (it auto-runs the rotation). The
+          link doesn't expose any other admin page. Revoke it any time to stop a
+          lost or shared link working.
         </p>
 
         {token && kioskUrl ? (

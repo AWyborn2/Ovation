@@ -92,13 +92,36 @@ function serializeSettings(
   };
 }
 
-/** Constant-time match of a presented kiosk token against the stored one. */
+// Kiosk codes are short and unambiguous so they're easy to type straight into a
+// TV / Raspberry Pi browser: 8 chars from a Crockford-style alphabet (no
+// 0/O/1/I/L). The data is read-only honour boards and the code is revocable on
+// demand, so ~8.5e11 combinations is ample.
+const KIOSK_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const KIOSK_CODE_RE = /^[A-Z2-9]{8}$/;
+
+function generateKioskToken(): string {
+  const bytes = randomBytes(8);
+  let code = "";
+  for (const byte of bytes) {
+    code += KIOSK_CODE_ALPHABET.charAt(byte % KIOSK_CODE_ALPHABET.length);
+  }
+  return code;
+}
+
+/**
+ * Constant-time match of a presented kiosk token against the stored one. Short
+ * codes (the current format) are matched case-insensitively so they're forgiving
+ * to hand-type; legacy long base64url tokens stay exact-match.
+ */
 function kioskTokenMatches(stored: string | null, presented: unknown): boolean {
   if (!stored || typeof presented !== "string" || presented.length === 0) {
     return false;
   }
+  const candidate = KIOSK_CODE_RE.test(stored)
+    ? presented.trim().toUpperCase()
+    : presented;
   const a = Buffer.from(stored);
-  const b = Buffer.from(presented);
+  const b = Buffer.from(candidate);
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }
@@ -1515,7 +1538,7 @@ router.post(
   requireAdmin,
   async (_req, res): Promise<void> => {
     await ensureHonourDisplaySettings();
-    const token = randomBytes(24).toString("base64url");
+    const token = generateKioskToken();
     await db
       .update(honourDisplaySettingsTable)
       .set({ kioskToken: token, updatedAt: new Date() })

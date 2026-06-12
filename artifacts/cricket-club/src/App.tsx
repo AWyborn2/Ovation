@@ -202,6 +202,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/__card-render" component={CardRenderHarness} />
+      {/* Short, easy-to-type clubroom-TV link. The token in the path gates it
+          (the feed is validated server-side); kept alongside the legacy
+          `/honours-display/kiosk?token=` form so older saved links still work. */}
+      <Route path="/tv/:token">
+        <HonoursKiosk />
+      </Route>
       <Route path="/honours-display/kiosk">
         <KioskGate />
       </Route>
