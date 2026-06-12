@@ -47,34 +47,114 @@ import type { PlayerGradeStat } from "./schema";
 export const HALLS_HEAD_CENTRAL_CLUB_ID = 1;
 
 /**
- * Map a central `matches.grade` label to the app's grade name (the values the
- * leaderboard endpoint is keyed on: "A Grade".."F Grade", "Female A Grade",
- * "Female B Grade", "PPL", "Colts"). Returns null when the central grade doesn't
- * roll up to one of those (e.g. one-off comps), which excludes it from the read.
+ * Resolve a central `matches.grade` label to the app's grade name plus an
+ * optional attributable `note` (sub-competition folding, divisions, sponsor
+ * labels, deliberate exclusions). The note is for the comparison script's
+ * output so mismatches are explainable.
  *
- * Tolerant by design — central labels carry competition suffixes
- * ("A Grade: Wyllie Cup", "B Grade McIntosh Cup") and naming variants
- * ("U21 Colts", "PPL T20"). Confirm against the live distinct-grade list (the
- * comparison script prints it) and extend the rules if a label slips through.
+ * Built from the dump's ground-truth distinct labels. App grades:
+ * "A Grade".."F Grade", "Female A Grade", "Female B Grade", "PPL", "Colts".
+ * `appGrade: null` means deliberately unmapped (charity one-offs, Female C the
+ * app doesn't have, the Ladies-T20 Female-B predecessor we don't auto-merge).
+ */
+export interface CentralGradeMapping {
+  appGrade: string | null;
+  note?: string;
+}
+
+export function classifyCentralGrade(
+  centralGrade: string | null,
+): CentralGradeMapping {
+  if (!centralGrade) return { appGrade: null };
+  const raw = centralGrade.trim();
+  if (!raw) return { appGrade: null };
+  const lower = raw.toLowerCase();
+
+  // Format caveats — these comps were ingested into the base grade's season in
+  // the HH app (per-match workbooks), so they belong to the base grade but are
+  // worth flagging when numbers diverge.
+  const thorny = /thorny devil/.test(lower);
+  const midYear = /mid-?year/.test(lower);
+  const t20 = /\bt20\b/.test(lower) || /\b20 match\b/.test(lower);
+  const formatNote = thorny
+    ? "Thorny Devil Mid-Year T20 — ingested into the base grade's season in the app"
+    : midYear
+      ? "Mid-Year T20 — ingested into the base grade's season in the app"
+      : t20
+        ? "T20 sub-competition — folded into the base grade in the app"
+        : undefined;
+
+  // Deliberate exclusion: charity one-offs.
+  if (/charity/.test(lower) || /glen dehring/.test(lower)) {
+    return { appGrade: null, note: "excluded: charity one-off" };
+  }
+
+  // PPL / Premier League, including the RetraVision/Retravision sponsor labels.
+  if (
+    /\bppl\b/.test(lower) ||
+    /retravision/.test(lower) ||
+    /peel premier/.test(lower) ||
+    (/premier/.test(lower) && /league/.test(lower))
+  ) {
+    return {
+      appGrade: "PPL",
+      note: "PPL — the app recorded PPL as A Grade before 2019/20 (replit.md)",
+    };
+  }
+
+  // Colts (incl. sponsor-prefixed "ID Athletic PCA Colts Competition").
+  if (/\bcolts?\b/.test(lower)) return { appGrade: "Colts" };
+
+  // Female grades — MUST precede the generic "<letter> Grade" matcher, since
+  // "Female A Grade" contains "A Grade".
+  if (/\bfemale\s*a\b/.test(lower)) {
+    return { appGrade: "Female A Grade", note: formatNote };
+  }
+  if (/\bladies\s*t20\b/.test(lower)) {
+    return {
+      appGrade: null,
+      note: "Female B predecessor (Ladies T20) — review, not auto-merged",
+    };
+  }
+  if (/\bfemale\s*b\b/.test(lower)) {
+    return { appGrade: "Female B Grade", note: formatNote };
+  }
+  if (/\bfemale\s*c\b/.test(lower)) {
+    return { appGrade: null, note: "app has no Female C Grade (unmapped)" };
+  }
+
+  // C1 / C2 divisions — the generic matcher won't catch "C1 Grade" / "C2 Grade".
+  if (/\bc1\s*grade\b/.test(lower)) {
+    return { appGrade: "C Grade", note: "C1 division → C Grade" };
+  }
+  if (/\bc2\s*grade\b/.test(lower)) {
+    return {
+      appGrade: "C Grade",
+      note: "C2 division → C Grade — verify the app didn't treat it separately",
+    };
+  }
+
+  // Generic "<letter> Grade", with or without a cup suffix or sponsor prefix
+  // ("A Grade", "A Grade: Wyllie Cup", "D Grade Ritchie Cup", "T20: B Grade").
+  const labelled = /\b([a-f])\s*grade\b/.exec(lower);
+  if (labelled) {
+    return { appGrade: `${labelled[1].toUpperCase()} Grade`, note: formatNote };
+  }
+  // Bare single-letter grade code ("A", "B", …) with no "Grade" word.
+  if (/^[a-f]$/.test(lower)) {
+    return { appGrade: `${lower.toUpperCase()} Grade`, note: formatNote };
+  }
+
+  return { appGrade: null };
+}
+
+/**
+ * The app grade a central `matches.grade` label rolls up to, or null when it
+ * doesn't map (which excludes it from the central read). Thin wrapper over
+ * {@link classifyCentralGrade} used for the leaderboard's grade filter.
  */
 export function appGradeFromCentral(centralGrade: string | null): string | null {
-  if (!centralGrade) return null;
-  const g = centralGrade.trim();
-  if (!g) return null;
-  const lower = g.toLowerCase();
-
-  // Order matters: the specific buckets win over the generic "<letter> Grade".
-  if (/female\s*a/.test(lower)) return "Female A Grade";
-  if (/female\s*b/.test(lower)) return "Female B Grade";
-  if (lower.includes("ppl")) return "PPL";
-  if (lower.includes("colt")) return "Colts";
-
-  const labelled = /\b([a-f])\s*grade\b/i.exec(g);
-  if (labelled) return `${labelled[1].toUpperCase()} Grade`;
-  // Bare single-letter grade code ("A", "B", …) with no "Grade" word.
-  if (/^[a-f]$/i.test(g)) return `${g.toUpperCase()} Grade`;
-
-  return null;
+  return classifyCentralGrade(centralGrade).appGrade;
 }
 
 /**
@@ -311,11 +391,12 @@ export async function centralGradeLeaderboard(
 
 /**
  * Distinct central `matches.grade` labels for a club, with the app grade each
- * maps to. Used by the comparison script to make grade-mapping gaps visible.
+ * maps to and any attributable note. Used by the comparison script to make
+ * grade-mapping decisions (folded sub-comps, divisions, exclusions) visible.
  */
 export async function listCentralGradesForClub(
   clubId: number = HALLS_HEAD_CENTRAL_CLUB_ID,
-): Promise<{ centralGrade: string; appGrade: string | null }[]> {
+): Promise<{ centralGrade: string; appGrade: string | null; note?: string }[]> {
   const rows = await centralDb
     .selectDistinct({ grade: centralMatchesTable.grade })
     .from(centralMatchesTable)
@@ -329,8 +410,8 @@ export async function listCentralGradesForClub(
     .map((r) => r.grade)
     .filter((g): g is string => Boolean(g))
     .sort()
-    .map((centralGrade) => ({
-      centralGrade,
-      appGrade: appGradeFromCentral(centralGrade),
-    }));
+    .map((centralGrade) => {
+      const { appGrade, note } = classifyCentralGrade(centralGrade);
+      return { centralGrade, appGrade, note };
+    });
 }

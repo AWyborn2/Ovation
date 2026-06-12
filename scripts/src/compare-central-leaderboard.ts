@@ -142,18 +142,28 @@ async function main(): Promise<void> {
   console.log("═".repeat(78));
 
   // Show the central grade labels for this club and how they map — makes any
-  // grade-mapping gap visible (a central label that should map here but doesn't).
+  // grade-mapping gap visible (a central label that should map here but doesn't)
+  // and surfaces attributable caveats (folded sub-comps, divisions, exclusions).
   const grades = await listCentralGradesForClub(clubId);
   console.log("\nCentral grade labels for this club → app grade:");
   for (const g of grades) {
     const mark = g.appGrade === grade ? "  «included" : "";
-    console.log(`  ${g.centralGrade.padEnd(40)} → ${g.appGrade ?? "(unmapped)"}${mark}`);
+    const note = g.note ? `   ⚑ ${g.note}` : "";
+    console.log(
+      `  ${g.centralGrade.padEnd(40)} → ${(g.appGrade ?? "(unmapped)").padEnd(16)}${mark}${note}`,
+    );
   }
   const included = grades.filter((g) => g.appGrade === grade);
+  const flaggedIncluded = included.filter((g) => g.note);
   if (included.length === 0) {
     console.log(
       `\n⚠️  No central grade label maps to "${grade}". Either the grade name is ` +
-        "wrong or appGradeFromCentral() needs a rule for one of the labels above.",
+        "wrong or classifyCentralGrade() needs a rule for one of the labels above.",
+    );
+  } else if (flaggedIncluded.length > 0) {
+    console.log(
+      `\n⚑ ${flaggedIncluded.length} central label(s) feeding "${grade}" carry a caveat ` +
+        "(see ⚑ above) — expect attributable differences from those comps.",
     );
   }
 
