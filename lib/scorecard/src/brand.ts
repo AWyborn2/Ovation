@@ -1,12 +1,11 @@
 import type { TeamColors } from "./types";
 
 /**
- * Halls Head Cricket Club brand, as carried on the clubs register record (id 2)
- * and surfaced by the API (match detail `hallsHead`, social-settings `brand`).
- * This is the single shape every renderer reads so none carry their own copy of
- * the club's colours or logo.
+ * A club's brand (logo + colours), the single shape every renderer reads so none
+ * carry their own copy of a club's colours or logo. Surfaced by the API
+ * (match detail brand field, social-settings `brand`, `GET /tenant-brand`).
  */
-export interface HallsHeadBrand {
+export interface ClubBrand {
   name: string;
   shortName?: string | null;
   logoUrl?: string | null;
@@ -16,12 +15,15 @@ export interface HallsHeadBrand {
   tertiaryColour?: string | null;
 }
 
+/** @deprecated Use {@link ClubBrand}. Kept so downstream imports compile. */
+export type HallsHeadBrand = ClubBrand;
+
 /**
- * Canonical Halls Head brand. Values mirror the clubs register record (id 2),
- * the brand source of truth. Used only as the last-resort fallback when the
- * DB-sourced brand is unavailable, so the official logo + colours still show.
+ * Default brand — the tenant #1 (Halls Head) values. Used only as the last-resort
+ * fallback when a DB-sourced tenant brand is unavailable, so a club's logo +
+ * colours still render. Per-tenant brands come from `getTenantBrand()`.
  */
-export const HALLS_HEAD_BRAND: HallsHeadBrand = {
+export const DEFAULT_BRAND: ClubBrand = {
   name: "Halls Head Cricket Club",
   shortName: "HHCC",
   logoUrl:
@@ -33,10 +35,13 @@ export const HALLS_HEAD_BRAND: HallsHeadBrand = {
   tertiaryColour: "#42342B",
 };
 
-/** Official navy/charcoal — used when a brand record omits the primary colour. */
-const FALLBACK_PRIMARY = HALLS_HEAD_BRAND.primaryColour as string;
-/** Official gold — used when a brand record omits the secondary colour. */
-const FALLBACK_SECONDARY = HALLS_HEAD_BRAND.secondaryColour as string;
+/** @deprecated Use {@link DEFAULT_BRAND}. Kept so downstream imports compile. */
+export const HALLS_HEAD_BRAND: ClubBrand = DEFAULT_BRAND;
+
+/** Default primary — used when a brand record omits the primary colour. */
+const FALLBACK_PRIMARY = DEFAULT_BRAND.primaryColour as string;
+/** Default secondary — used when a brand record omits the secondary colour. */
+const FALLBACK_SECONDARY = DEFAULT_BRAND.secondaryColour as string;
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
@@ -75,11 +80,11 @@ function mix(
 }
 
 /**
- * Build the Halls Head scorecard colour scheme from the brand's primary/secondary
- * colours (navy + gold by default). Gold text on navy is the club's signature
- * look; missing colours degrade to the official fallbacks.
+ * Build a club's scorecard colour scheme from its primary/secondary colours
+ * (secondary text on primary is the signature look); missing colours degrade to
+ * the default fallbacks.
  */
-export function deriveHallsHeadColors(
+export function deriveClubColors(
   primaryColour?: string | null,
   secondaryColour?: string | null,
 ): TeamColors {
@@ -103,3 +108,6 @@ export function deriveHallsHeadColors(
     borderColor: `rgba(${secondary.r},${secondary.g},${secondary.b},0.16)`,
   };
 }
+
+/** @deprecated Use {@link deriveClubColors}. */
+export const deriveHallsHeadColors = deriveClubColors;

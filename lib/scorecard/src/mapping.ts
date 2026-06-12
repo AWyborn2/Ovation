@@ -13,11 +13,7 @@ import type {
   ScorecardTeam,
 } from "./types";
 import { deriveOppositionColors } from "./colors";
-import {
-  HALLS_HEAD_BRAND,
-  deriveHallsHeadColors,
-  type HallsHeadBrand,
-} from "./brand";
+import { DEFAULT_BRAND, deriveClubColors, type ClubBrand } from "./brand";
 import { formatDismissal } from "./dismissal";
 import { economy, sumOvers } from "./overs";
 
@@ -129,13 +125,17 @@ function buildExtras(
   return { total, wides, noBalls, other };
 }
 
-function hallsHeadTeam(brand: HallsHeadBrand | null | undefined): ScorecardTeam {
-  const b = brand ?? HALLS_HEAD_BRAND;
+// The tenant club's side of the scorecard, branded from the match's brand field
+// (falls back to the default brand). `isHallsHead` is the view-model flag for
+// "this is the tenant's side"; the field name is kept for now to avoid rippling
+// through the generated API types and every scorecard consumer.
+function tenantTeam(brand: ClubBrand | null | undefined): ScorecardTeam {
+  const b = brand ?? DEFAULT_BRAND;
   return {
-    name: "Halls Head",
-    shortName: "HHCC",
+    name: b.name,
+    shortName: b.shortName ?? null,
     logoUrl: b.logoUrl128 ?? b.logoUrl ?? null,
-    colors: deriveHallsHeadColors(b.primaryColour, b.secondaryColour),
+    colors: deriveClubColors(b.primaryColour, b.secondaryColour),
     isHallsHead: true,
   };
 }
@@ -155,12 +155,12 @@ function oppositionTeam(
 
 /**
  * Map a match-detail DTO into the ordered two-innings scorecard view-model.
- * Innings are ordered by hhccBattedFirst (true/null -> Halls Head bat first,
+ * Innings are ordered by hhccBattedFirst (true/null -> tenant club bat first,
  * false -> opposition bat first). Abandoned matches with no lines still return
  * empty innings so the caller can render a clean "abandoned" state.
  */
 export function buildScorecard(match: MatchDetail): Scorecard {
-  const hh = hallsHeadTeam(match.hallsHead);
+  const hh = tenantTeam(match.hallsHead);
   const opp = oppositionTeam(match.opponent ?? null, match.opponentClub ?? null);
 
   const hhScore = parseScore(match.hhccScore);
@@ -169,7 +169,7 @@ export function buildScorecard(match: MatchDetail): Scorecard {
   const hhLines = match.lines ?? [];
   const oppLines = match.oppositionLines ?? [];
 
-  // Halls Head batting innings: HH bat, opposition bowl.
+  // Tenant club batting innings: tenant bat, opposition bowl.
   const hhBatsmen = hhLines
     .filter((l) => l.batted)
     .map((l) => buildBatsman(hhLinkId(l), hhName(l), l));

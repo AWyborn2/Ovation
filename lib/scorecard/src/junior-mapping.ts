@@ -13,7 +13,7 @@ import type {
   ScorecardInnings,
   ScorecardTeam,
 } from "./types";
-import { HALLS_HEAD_BRAND, deriveHallsHeadColors } from "./brand";
+import { DEFAULT_BRAND, deriveClubColors, type ClubBrand } from "./brand";
 import { deriveOppositionColors } from "./colors";
 import { formatDismissal } from "./dismissal";
 import { sumOvers } from "./overs";
@@ -65,13 +65,15 @@ function parseJuniorScore(raw: string | null | undefined): {
   return { runs, wickets: small <= 10 ? small : null };
 }
 
-function hallsHeadTeam(): ScorecardTeam {
-  const b = HALLS_HEAD_BRAND;
+// The tenant club's junior side, branded from the passed brand (falls back to
+// the default brand). `isHallsHead` is kept as the "tenant side" view-model flag.
+function tenantTeam(brand?: ClubBrand | null): ScorecardTeam {
+  const b = brand ?? DEFAULT_BRAND;
   return {
-    name: "Halls Head",
-    shortName: "HHCC",
+    name: b.name,
+    shortName: b.shortName ?? null,
     logoUrl: b.logoUrl128 ?? b.logoUrl ?? null,
-    colors: deriveHallsHeadColors(b.primaryColour, b.secondaryColour),
+    colors: deriveClubColors(b.primaryColour, b.secondaryColour),
     isHallsHead: true,
   };
 }
@@ -173,8 +175,11 @@ function buildInnings(
  * shows that club's crest + colours, otherwise it falls back to the neutral
  * scheme.
  */
-export function buildJuniorScorecard(match: JuniorMatchDetail): Scorecard {
-  const hh = hallsHeadTeam();
+export function buildJuniorScorecard(
+  match: JuniorMatchDetail,
+  brand?: ClubBrand | null,
+): Scorecard {
+  const hh = tenantTeam(brand);
   const opp = oppositionTeam(match.opponentName, match.opponentClub ?? null);
   const hhScore = parseJuniorScore(match.hhScore);
   const oppScore = parseJuniorScore(match.opponentScore);
