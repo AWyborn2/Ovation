@@ -1,8 +1,9 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import {
   centralDb,
   centralMatchesTable,
   centralMatchBattingTable,
+  centralMatchBowlingTable,
   centralMatchRostersTable,
   centralPlayersTable,
 } from "./central";
@@ -430,4 +431,88 @@ export async function listCentralGradesForClub(
       const { appGrade, note } = classifyCentralGrade(centralGrade);
       return { centralGrade, appGrade, note };
     });
+}
+
+/**
+ * Club-wide career totals for a tenant club, read from the central PCA database.
+ * Identity-free (pure counts/sums, no GUID→int mapping needed), so it works for
+ * any tenant club. Mirrors the app's home-overview `totals` block:
+ *   - players: distinct participants who appeared for the club (from rosters)
+ *   - games:   total appearances (one roster line per player per match)
+ *   - runs:    sum of the club's batting runs
+ *   - wickets: sum of the club's bowling wickets
+ *   - grades:  distinct app-grades the club's matches map to
+ *
+ * Scorecard-era only (2002/03+), so for Halls Head (club 1) these differ from the
+ * tenant totals that fold in pre-2002 history — the same expected divergence the
+ * comparison script documents.
+ */
+export async function centralClubTotals(
+  clubId: number = HALLS_HEAD_CENTRAL_CLUB_ID,
+): Promise<{
+  players: number;
+  games: number;
+  runs: number;
+  wickets: number;
+  grades: number;
+}> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) {
+    return { players: 0, games: 0, runs: 0, wickets: 0, grades: 0 };
+  }
+  const grades = new Set(
+    matchRows
+      .map((m) => appGradeFromCentral(m.grade))
+      .filter((g): g is string => Boolean(g)),
+  ).size;
+
+  const rosters = await centralDb
+    .select({ participantId: centralMatchRostersTable.participantId })
+    .from(centralMatchRostersTable)
+    .where(
+      and(
+        eq(centralMatchRostersTable.clubId, clubId),
+        inArray(centralMatchRostersTable.matchId, matchIds),
+      ),
+    );
+  const players = new Set(
+    rosters.map((r) => r.participantId).filter((p): p is string => Boolean(p)),
+  ).size;
+  const games = rosters.length;
+
+  const [bat] = await centralDb
+    .select({ runs: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)` })
+    .from(centralMatchBattingTable)
+    .where(
+      and(
+        eq(centralMatchBattingTable.clubId, clubId),
+        inArray(centralMatchBattingTable.matchId, matchIds),
+      ),
+    );
+  const [bowl] = await centralDb
+    .select({ wickets: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)` })
+    .from(centralMatchBowlingTable)
+    .where(
+      and(
+        eq(centralMatchBowlingTable.clubId, clubId),
+        inArray(centralMatchBowlingTable.matchId, matchIds),
+      ),
+    );
+
+  return {
+    players,
+    games,
+    runs: Number(bat?.runs ?? 0),
+    wickets: Number(bowl?.wickets ?? 0),
+    grades,
+  };
 }

@@ -341,7 +341,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
 
 // Seniors home overview: club totals, latest season's most recent match per
 // grade, and that season's club-wide top run scorers / wicket takers.
-router.get("/overview", async (_req, res): Promise<void> => {
+router.get("/overview", async (req, res): Promise<void> => {
   // Club totals (mirrors /dashboard's all-time figures).
   const [playerCount] = await db.select({ count: count() }).from(playersTable);
   const [totals] = await db
@@ -415,17 +415,28 @@ router.get("/overview", async (_req, res): Promise<void> => {
     ]);
   }
 
+  // Feature flag (CENTRAL_READS=1): club-wide totals come from the central PCA DB
+  // filtered to the current tenant's club (so a second club shows ITS numbers).
+  // Identity-free aggregate. recentMatches/topPerformers still read the tenant
+  // tables for now — those need further central reads + the player-id crosswalk.
+  const tenantTotals = {
+    players: Number(playerCount?.count ?? 0),
+    games: Number(totals?.totalGames ?? 0),
+    runs: Number(totals?.totalRuns ?? 0),
+    wickets: Number(totals?.totalWickets ?? 0),
+    grades: gradesCount,
+  };
+  let resolvedTotals = tenantTotals;
+  if (process.env.CENTRAL_READS === "1") {
+    const { centralClubTotals } = await import("@workspace/db/central-queries");
+    resolvedTotals = await centralClubTotals(await getRequestCentralClubId(req));
+  }
+
   res.json({
     latestSeason,
     latestSeasonLabel: latestSeason === null ? null : seasonLabel(latestSeason),
     availableSeasons: await seasonOptions(),
-    totals: {
-      players: Number(playerCount?.count ?? 0),
-      games: Number(totals?.totalGames ?? 0),
-      runs: Number(totals?.totalRuns ?? 0),
-      wickets: Number(totals?.totalWickets ?? 0),
-      grades: gradesCount,
-    },
+    totals: resolvedTotals,
     recentMatches,
     topRunScorers,
     topWicketTakers,
