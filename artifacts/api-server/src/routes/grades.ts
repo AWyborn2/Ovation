@@ -17,6 +17,7 @@ import {
   GetSeniorSeasonTopPerformersQueryParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getRequestCentralClubId } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -257,13 +258,14 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   const grade = decodeURIComponent(rawGrade);
 
   // Feature flag (CENTRAL_READS=1, default off): serve this read from the central
-  // PCA database instead of the tenant tables. Off → the unchanged tenant query
-  // below (byte-identical responses). The central module requires
-  // CENTRAL_DATABASE_URL, so it is lazily imported only when the flag is on and
-  // never loaded in the default path.
+  // PCA database instead of the tenant tables, filtered to the CURRENT TENANT's
+  // central club id (multi-club). Off → the unchanged tenant query below
+  // (byte-identical responses). The central module requires CENTRAL_DATABASE_URL,
+  // so it is lazily imported only when the flag is on.
   if (process.env.CENTRAL_READS === "1") {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
-    res.json(await centralGradeLeaderboard(grade));
+    const clubId = await getRequestCentralClubId(req);
+    res.json(await centralGradeLeaderboard(grade, { clubId }));
     return;
   }
 
