@@ -596,3 +596,143 @@ export async function centralClubParticipants(
     };
   });
 }
+
+/** Per-player career aggregate for a club, read from central (identity = GUID). */
+export interface CentralPlayerCareer {
+  participantId: string;
+  displayName: string | null;
+  isPrivate: boolean;
+  games: number;
+  runs: number;
+  wickets: number;
+  grades: string[];
+}
+
+/**
+ * Career aggregates for every player a club fielded, read from the central PCA
+ * database and keyed by PlayHQ `participant_id`. The API route translates the
+ * GUID to the tenant's int id via player_id_map and shapes the player-directory
+ * rows. Games = distinct matches the player appeared in (roster ∪ batting ∪
+ * bowling); runs from batting; wickets from bowling; grades = the app grades of
+ * those matches. Scorecard-era only.
+ */
+export async function centralPlayerCareers(
+  clubId: number = HALLS_HEAD_CENTRAL_CLUB_ID,
+): Promise<CentralPlayerCareer[]> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+  const matchGrade = new Map(
+    matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]),
+  );
+
+  const [batting, bowling, rosters] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inArray(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inArray(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
+  ]);
+
+  interface Agg {
+    runs: number;
+    wickets: number;
+    matchIds: Set<number>;
+    grades: Set<string>;
+  }
+  const agg = new Map<string, Agg>();
+  const get = (pid: string): Agg => {
+    let a = agg.get(pid);
+    if (!a) {
+      a = { runs: 0, wickets: 0, matchIds: new Set(), grades: new Set() };
+      agg.set(pid, a);
+    }
+    return a;
+  };
+  const touch = (pid: string | null, matchId: number | null): Agg | null => {
+    if (!pid) return null;
+    const a = get(pid);
+    if (matchId !== null) {
+      a.matchIds.add(matchId);
+      const g = matchGrade.get(matchId);
+      if (g) a.grades.add(g);
+    }
+    return a;
+  };
+  for (const b of batting) {
+    const a = touch(b.participantId, b.matchId);
+    if (a) a.runs += b.runs ?? 0;
+  }
+  for (const b of bowling) {
+    const a = touch(b.participantId, b.matchId);
+    if (a) a.wickets += b.wickets ?? 0;
+  }
+  for (const r of rosters) touch(r.participantId, r.matchId);
+
+  const ids = [...agg.keys()];
+  if (ids.length === 0) return [];
+  const players = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inArray(centralPlayersTable.participantId, ids));
+  const byId = new Map(players.map((p) => [p.participantId, p]));
+
+  return ids.map((participantId) => {
+    const a = agg.get(participantId)!;
+    const p = byId.get(participantId);
+    return {
+      participantId,
+      displayName: p?.displayName ?? null,
+      isPrivate: (p?.isPrivate ?? 0) === 1,
+      games: a.matchIds.size,
+      runs: a.runs,
+      wickets: a.wickets,
+      grades: [...a.grades].sort(),
+    };
+  });
+}

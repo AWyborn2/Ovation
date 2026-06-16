@@ -30,10 +30,21 @@ import {
   DeletePlayerImageParams,
   SetDefaultPlayerImageParams,
 } from "@workspace/api-zod";
+import { playerIdMapTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
+import { getRequestCentralClubId } from "../lib/tenant";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
+
+/** Split a central display name into given/surname (surname = last token). */
+function splitCentralName(displayName: string): { givenName: string; surname: string } {
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { givenName: "", surname: "" };
+  if (parts.length === 1) return { givenName: parts[0], surname: "" };
+  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+}
 
 router.get("/players", async (req, res): Promise<void> => {
   const query = ListPlayersQueryParams.safeParse(req.query);
@@ -53,6 +64,79 @@ router.get("/players", async (req, res): Promise<void> => {
 
   const offset = (Number(page) - 1) * Number(limit);
   const lim = Number(limit);
+
+  // Feature flag (CENTRAL_READS=1): serve the directory from the central PCA DB,
+  // filtered to the current tenant's club, with central GUIDs translated to this
+  // tenant's int ids via player_id_map (so /players/:id links stay int-based).
+  // Off → the unchanged tenant query below.
+  if (process.env.CENTRAL_READS === "1") {
+    const { centralPlayerCareers } = await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const [careers, mapRows] = await Promise.all([
+      centralPlayerCareers(await getRequestCentralClubId(req)),
+      db
+        .select({
+          participantId: playerIdMapTable.participantId,
+          playerId: playerIdMapTable.playerId,
+        })
+        .from(playerIdMapTable)
+        .where(eq(playerIdMapTable.tenantId, tenantId)),
+    ]);
+    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+
+    let rows = careers
+      // Privacy: private players are excluded from the directory. Unmapped GUIDs
+      // (no minted int) are skipped so every row has a working /players/:id link.
+      .filter((c) => !c.isPrivate && intByGuid.has(c.participantId))
+      .map((c) => {
+        const name = splitCentralName(c.displayName ?? c.participantId);
+        return {
+          id: intByGuid.get(c.participantId)!,
+          surname: name.surname,
+          givenName: name.givenName,
+          gradesPlayed: c.grades.join(","),
+          totalGames: c.games,
+          totalRuns: c.runs,
+          totalWickets: c.wickets,
+          deceased: false,
+          imageUrl: null as string | null,
+          cardRole: null as string | null,
+          cardRating: null as number | null,
+          isFillIn: false,
+          isCapOnly: false,
+        };
+      });
+
+    if (grade) rows = rows.filter((r) => r.gradesPlayed.split(",").includes(grade));
+    if (search) {
+      const s = search.toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          r.surname.toLowerCase().includes(s) ||
+          r.givenName.toLowerCase().includes(s),
+      );
+    }
+    const dir = sortOrder === "desc" ? -1 : 1;
+    rows.sort((a, b) => {
+      const cmp =
+        sortBy === "games"
+          ? a.totalGames - b.totalGames
+          : sortBy === "runs"
+            ? a.totalRuns - b.totalRuns
+            : sortBy === "wickets"
+              ? a.totalWickets - b.totalWickets
+              : a.surname.localeCompare(b.surname);
+      return cmp * dir;
+    });
+
+    res.json({
+      players: rows.slice(offset, offset + lim),
+      total: rows.length,
+      page: Number(page),
+      limit: lim,
+    });
+    return;
+  }
 
   const conditions: ReturnType<typeof ilike>[] = [];
   if (search) {
