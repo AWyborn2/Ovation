@@ -17,7 +17,7 @@ import {
   GetSeniorSeasonTopPerformersQueryParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
-import { getRequestCentralClubId } from "../lib/tenant";
+import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -257,12 +257,11 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
   const grade = decodeURIComponent(rawGrade);
 
-  // Feature flag (CENTRAL_READS=1, default off): serve this read from the central
-  // PCA database instead of the tenant tables, filtered to the CURRENT TENANT's
-  // central club id (multi-club). Off → the unchanged tenant query below
-  // (byte-identical responses). The central module requires CENTRAL_DATABASE_URL,
-  // so it is lazily imported only when the flag is on.
-  if (process.env.CENTRAL_READS === "1") {
+  // Per-tenant data source: tenants flagged reads_from_central are served from
+  // the central PCA database, filtered to their central club id (multi-club).
+  // Native tenants (e.g. Halls Head) fall through to the unchanged tenant query.
+  // The central module requires CENTRAL_DATABASE_URL, so it is imported lazily.
+  if (await shouldReadCentral(req)) {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const clubId = await getRequestCentralClubId(req);
     res.json(await centralGradeLeaderboard(grade, { clubId }));
@@ -415,10 +414,10 @@ router.get("/overview", async (req, res): Promise<void> => {
     ]);
   }
 
-  // Feature flag (CENTRAL_READS=1): club-wide totals come from the central PCA DB
-  // filtered to the current tenant's club (so a second club shows ITS numbers).
-  // Identity-free aggregate. recentMatches/topPerformers still read the tenant
-  // tables for now — those need further central reads + the player-id crosswalk.
+  // Per-tenant data source: central tenants get club-wide totals from the central
+  // PCA DB filtered to their club; native tenants use their own tables.
+  // recentMatches/topPerformers still read tenant tables (further central reads
+  // + crosswalk pending), so for a central tenant those stay empty for now.
   const tenantTotals = {
     players: Number(playerCount?.count ?? 0),
     games: Number(totals?.totalGames ?? 0),
@@ -427,7 +426,7 @@ router.get("/overview", async (req, res): Promise<void> => {
     grades: gradesCount,
   };
   let resolvedTotals = tenantTotals;
-  if (process.env.CENTRAL_READS === "1") {
+  if (await shouldReadCentral(req)) {
     const { centralClubTotals } = await import("@workspace/db/central-queries");
     resolvedTotals = await centralClubTotals(await getRequestCentralClubId(req));
   }

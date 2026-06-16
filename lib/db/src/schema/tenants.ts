@@ -1,4 +1,11 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  boolean,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 /**
  * Tenant register for the white-label platform. One row per club that runs
@@ -9,6 +16,11 @@ import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
  * - `appClubId` → the tenant app's own `clubs` register row that the brand
  *   resolver reads today for the canonical logo/colours (Halls Head = 2).
  *   Nullable: future tenants may brand purely from the columns below.
+ * - `readsFromCentral` → the stats DATA SOURCE for this tenant. False (default) =
+ *   read the tenant's own native tables (Halls Head: full curated history). True =
+ *   read the central PCA DB filtered by `centralClubId` (clubs with no native
+ *   data, e.g. Mandurah). Per-tenant by design so enabling central for one club
+ *   never blanks another that relies on its native tables.
  * - The brand columns (name … tertiaryColour) are the per-tenant theme; the
  *   brand resolver prefers the `appClubId` clubs-register row where set, then
  *   these, then the built-in fallback.
@@ -18,6 +30,7 @@ export const tenantsTable = pgTable("tenants", {
   slug: text("slug").notNull().unique(),
   centralClubId: integer("central_club_id").notNull(),
   appClubId: integer("app_club_id"),
+  readsFromCentral: boolean("reads_from_central").notNull().default(false),
   name: text("name").notNull(),
   shortName: text("short_name"),
   logoUrl: text("logo_url"),

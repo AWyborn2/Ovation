@@ -67,6 +67,8 @@ async function main(): Promise<void> {
     slug,
     centralClubId: club.clubId,
     appClubId: null, // Mandurah has no app clubs-register row; brand from below.
+    readsFromCentral: true, // no native data — serve stats from the central PCA DB
+
     name: club.name ?? name,
     shortName: club.shortName ?? null,
     logoUrl,

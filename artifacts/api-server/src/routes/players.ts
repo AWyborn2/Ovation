@@ -33,7 +33,7 @@ import {
 import { playerIdMapTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
-import { getRequestCentralClubId } from "../lib/tenant";
+import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -65,11 +65,11 @@ router.get("/players", async (req, res): Promise<void> => {
   const offset = (Number(page) - 1) * Number(limit);
   const lim = Number(limit);
 
-  // Feature flag (CENTRAL_READS=1): serve the directory from the central PCA DB,
-  // filtered to the current tenant's club, with central GUIDs translated to this
-  // tenant's int ids via player_id_map (so /players/:id links stay int-based).
-  // Off → the unchanged tenant query below.
-  if (process.env.CENTRAL_READS === "1") {
+  // Per-tenant data source: central tenants get the directory from the central
+  // PCA DB filtered to their club, with central GUIDs translated to this tenant's
+  // int ids via player_id_map (so /players/:id links stay int-based). Native
+  // tenants fall through to the unchanged tenant query below.
+  if (await shouldReadCentral(req)) {
     const { centralPlayerCareers } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [careers, mapRows] = await Promise.all([
@@ -118,15 +118,17 @@ router.get("/players", async (req, res): Promise<void> => {
     }
     const dir = sortOrder === "desc" ? -1 : 1;
     rows.sort((a, b) => {
-      const cmp =
-        sortBy === "games"
-          ? a.totalGames - b.totalGames
-          : sortBy === "runs"
-            ? a.totalRuns - b.totalRuns
-            : sortBy === "wickets"
-              ? a.totalWickets - b.totalWickets
-              : a.surname.localeCompare(b.surname);
-      return cmp * dir;
+      // Central data has some participants with no resolved name; keep those
+      // "Unknown" rows at the bottom regardless of sort field/direction so the
+      // directory doesn't open on a wall of blanks.
+      const aBlank = a.surname.trim() === "" && a.givenName.trim() === "" ? 1 : 0;
+      const bBlank = b.surname.trim() === "" && b.givenName.trim() === "" ? 1 : 0;
+      if (aBlank !== bBlank) return aBlank - bBlank;
+
+      if (sortBy === "games") return (a.totalGames - b.totalGames) * dir;
+      if (sortBy === "runs") return (a.totalRuns - b.totalRuns) * dir;
+      if (sortBy === "wickets") return (a.totalWickets - b.totalWickets) * dir;
+      return a.surname.localeCompare(b.surname) * dir;
     });
 
     res.json({
