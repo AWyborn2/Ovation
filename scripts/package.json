@@ -25,6 +25,7 @@
     "backfill-innings-order": "tsx ./src/backfill-innings-order.ts",
     "compare-central-leaderboard": "tsx ./src/compare-central-leaderboard.ts",
     "seed-tenants": "tsx ./src/seed-tenants.ts",
+    "seed-mandurah-tenant": "tsx ./src/seed-mandurah-tenant.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

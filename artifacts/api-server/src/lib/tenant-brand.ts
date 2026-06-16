@@ -47,9 +47,9 @@ export function buildTenantBrand(
     name: club?.name ?? tenant?.name ?? HALLS_HEAD_BRAND.name,
     shortName: club?.shortName ?? tenant?.shortName ?? HALLS_HEAD_BRAND.shortName,
     logoUrl: club?.logoUrl ?? tenant?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl,
-    // The tenants row carries no 128px logo; take it from the clubs register or
-    // the built-in fallback.
-    logoUrl128: club?.logoUrl128 ?? HALLS_HEAD_BRAND.logoUrl128,
+    // The tenants row carries no 128px logo: prefer the clubs register's 128px,
+    // else the tenant's own logo (better than the default club's), else fallback.
+    logoUrl128: club?.logoUrl128 ?? tenant?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl128,
     primaryColour:
       club?.primaryColour ?? tenant?.primaryColour ?? HALLS_HEAD_BRAND.primaryColour,
     secondaryColour:
