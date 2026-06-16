@@ -736,3 +736,218 @@ export async function centralPlayerCareers(
     };
   });
 }
+
+/** One central player's club career: name + totals + per-grade PlayerGradeStat[]. */
+export interface CentralPlayerDetail {
+  participantId: string;
+  displayName: string | null;
+  isPrivate: boolean;
+  games: number;
+  runs: number;
+  wickets: number;
+  grades: string[];
+  stats: PlayerGradeStat[];
+}
+
+/**
+ * One player's career for a club, read from central and shaped as the player
+ * detail page's per-grade `stats[]` (batting + bowling) plus career totals.
+ * Keyed by participant GUID; the route translates the tenant int id → GUID via
+ * player_id_map first. Returns null when the participant has no lines for the
+ * club. Fielding/curated bits (premierships/awards) are not central — the route
+ * returns them empty for central tenants. Scorecard-era only.
+ */
+export async function centralPlayerDetail(
+  clubId: number,
+  participantId: string,
+): Promise<CentralPlayerDetail | null> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return null;
+  const matchGrade = new Map(
+    matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]),
+  );
+
+  const [batting, bowling, rosters, players] = await Promise.all([
+    centralDb
+      .select({
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+        dismissal: centralMatchBattingTable.dismissal,
+        dismissalType: centralMatchBattingTable.dismissalType,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          eq(centralMatchBattingTable.participantId, participantId),
+          inArray(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+        runs: centralMatchBowlingTable.runs,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          eq(centralMatchBowlingTable.participantId, participantId),
+          inArray(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({ matchId: centralMatchRostersTable.matchId })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          eq(centralMatchRostersTable.participantId, participantId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        displayName: centralPlayersTable.displayName,
+        isPrivate: centralPlayersTable.isPrivate,
+      })
+      .from(centralPlayersTable)
+      .where(eq(centralPlayersTable.participantId, participantId)),
+  ]);
+
+  interface G {
+    games: Set<number>;
+    innings: number;
+    notOuts: number;
+    runs: number;
+    fifties: number;
+    hundreds: number;
+    hs: number;
+    hsNotOut: boolean;
+    wickets: number;
+    runsConceded: number;
+    bestW: number;
+    bestR: number;
+    fiveW: number;
+  }
+  const byGrade = new Map<string, G>();
+  const grp = (grade: string): G => {
+    let a = byGrade.get(grade);
+    if (!a) {
+      a = {
+        games: new Set(),
+        innings: 0,
+        notOuts: 0,
+        runs: 0,
+        fifties: 0,
+        hundreds: 0,
+        hs: 0,
+        hsNotOut: false,
+        wickets: 0,
+        runsConceded: 0,
+        bestW: 0,
+        bestR: 0,
+        fiveW: 0,
+      };
+      byGrade.set(grade, a);
+    }
+    return a;
+  };
+
+  for (const r of rosters) {
+    if (r.matchId === null) continue;
+    const grade = matchGrade.get(r.matchId);
+    if (grade) grp(grade).games.add(r.matchId);
+  }
+  for (const b of batting) {
+    if (b.matchId === null) continue;
+    const grade = matchGrade.get(b.matchId);
+    if (!grade) continue;
+    const a = grp(grade);
+    a.games.add(b.matchId);
+    const kind = classifyInnings(b.dismissalType, b.dismissal);
+    if (kind !== "dnb") {
+      const runs = b.runs ?? 0;
+      a.innings += 1;
+      a.runs += runs;
+      if (kind === "notout") a.notOuts += 1;
+      if (runs >= 100) a.hundreds += 1;
+      else if (runs >= 50) a.fifties += 1;
+      if (runs > a.hs) {
+        a.hs = runs;
+        a.hsNotOut = kind === "notout";
+      } else if (runs === a.hs && kind === "notout") {
+        a.hsNotOut = true;
+      }
+    }
+  }
+  for (const bw of bowling) {
+    if (bw.matchId === null) continue;
+    const grade = matchGrade.get(bw.matchId);
+    if (!grade) continue;
+    const a = grp(grade);
+    a.games.add(bw.matchId);
+    const w = bw.wickets ?? 0;
+    const r = bw.runs ?? 0;
+    a.wickets += w;
+    a.runsConceded += r;
+    if (w >= 5) a.fiveW += 1;
+    if (w > a.bestW || (w === a.bestW && w > 0 && r < a.bestR)) {
+      a.bestW = w;
+      a.bestR = r;
+    }
+  }
+
+  const stats: PlayerGradeStat[] = [...byGrade.entries()]
+    .map(([grade, a]) => {
+      const dismissals = a.innings - a.notOuts;
+      return {
+        id: 0,
+        playerId: 0,
+        surname: "",
+        givenName: "",
+        grade,
+        season: null,
+        games: a.games.size,
+        innings: a.innings,
+        notOuts: a.notOuts,
+        runs: a.runs,
+        batAvg: dismissals > 0 ? round2(a.runs / dismissals) : null,
+        highScore: a.innings === 0 ? null : `${a.hs}${a.hsNotOut ? "*" : ""}`,
+        fifties: a.fifties,
+        hundreds: a.hundreds,
+        wickets: a.wickets,
+        runsConceded: a.runsConceded,
+        bowlAvg: a.wickets > 0 ? round2(a.runsConceded / a.wickets) : null,
+        bestBowling: a.bestW > 0 ? `${a.bestW}/${a.bestR}` : null,
+        fiveWickets: a.fiveW,
+        catches: null,
+        stumpings: null,
+        runOuts: null,
+      };
+    })
+    .sort((x, y) => x.grade.localeCompare(y.grade));
+
+  if (stats.length === 0) return null;
+
+  return {
+    participantId,
+    displayName: players[0]?.displayName ?? null,
+    isPrivate: (players[0]?.isPrivate ?? 0) === 1,
+    games: stats.reduce((s, r) => s + (r.games ?? 0), 0),
+    runs: stats.reduce((s, r) => s + (r.runs ?? 0), 0),
+    wickets: stats.reduce((s, r) => s + (r.wickets ?? 0), 0),
+    grades: stats.map((s) => s.grade),
+    stats,
+  };
+}

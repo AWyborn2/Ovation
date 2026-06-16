@@ -89,7 +89,12 @@ router.get("/players", async (req, res): Promise<void> => {
       // (no minted int) are skipped so every row has a working /players/:id link.
       .filter((c) => !c.isPrivate && intByGuid.has(c.participantId))
       .map((c) => {
-        const name = splitCentralName(c.displayName ?? c.participantId);
+        // A missing central display name → a truly blank name (NOT the GUID), so
+        // the directory shows "Unknown" and the blank-name sink can sink it.
+        const name =
+          c.displayName && c.displayName.trim()
+            ? splitCentralName(c.displayName)
+            : { givenName: "", surname: "" };
         return {
           id: intByGuid.get(c.participantId)!,
           surname: name.surname,
@@ -120,9 +125,10 @@ router.get("/players", async (req, res): Promise<void> => {
     rows.sort((a, b) => {
       // Central data has some participants with no resolved name; keep those
       // "Unknown" rows at the bottom regardless of sort field/direction so the
-      // directory doesn't open on a wall of blanks.
-      const aBlank = a.surname.trim() === "" && a.givenName.trim() === "" ? 1 : 0;
-      const bBlank = b.surname.trim() === "" && b.givenName.trim() === "" ? 1 : 0;
+      // directory doesn't open on a wall of blanks. The directory is surname-
+      // sorted, so "unnamed" = blank surname.
+      const aBlank = a.surname.trim() === "" ? 1 : 0;
+      const bBlank = b.surname.trim() === "" ? 1 : 0;
       if (aBlank !== bBlank) return aBlank - bBlank;
 
       if (sortBy === "games") return (a.totalGames - b.totalGames) * dir;
@@ -249,6 +255,67 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  // Per-tenant data source: central tenants resolve the int id → GUID via
+  // player_id_map, then read that player's central per-grade career. Curated bits
+  // (premierships/awards) aren't central, so they come back empty.
+  if (await shouldReadCentral(req)) {
+    const { centralPlayerDetail } = await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const [mapRow] = await db
+      .select({ participantId: playerIdMapTable.participantId })
+      .from(playerIdMapTable)
+      .where(
+        and(
+          eq(playerIdMapTable.tenantId, tenantId),
+          eq(playerIdMapTable.playerId, params.data.id),
+        ),
+      );
+    if (!mapRow) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    const detail = await centralPlayerDetail(
+      await getRequestCentralClubId(req),
+      mapRow.participantId,
+    );
+    if (!detail || detail.isPrivate) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    const name =
+      detail.displayName && detail.displayName.trim()
+        ? splitCentralName(detail.displayName)
+        : { givenName: "", surname: "" };
+    res.json({
+      id: params.data.id,
+      surname: name.surname,
+      givenName: name.givenName,
+      gradesPlayed: detail.grades.join(","),
+      totalGames: detail.games,
+      totalRuns: detail.runs,
+      totalWickets: detail.wickets,
+      deceased: false,
+      imageUrl: null,
+      cardRole: null,
+      cardRating: null,
+      isFillIn: false,
+      isCapOnly: false,
+      premiershipsWon: 0,
+      premiershipsCaptained: 0,
+      debutSeason: null,
+      seasonsPlayed: null,
+      stats: detail.stats.map((s) => ({
+        ...s,
+        playerId: params.data.id,
+        surname: name.surname,
+        givenName: name.givenName,
+      })),
+      premierships: [],
+      awards: [],
+    });
     return;
   }
 
