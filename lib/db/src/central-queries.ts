@@ -516,3 +516,83 @@ export async function centralClubTotals(
     grades,
   };
 }
+
+/**
+ * Distinct central participants (PlayHQ GUIDs) who appeared for a club, with
+ * display name + privacy flag. The source list for minting a tenant's
+ * player_id_map. Unions roster, batting and bowling lines so a player who only
+ * batted/bowled (no roster row) is still included.
+ */
+export async function centralClubParticipants(
+  clubId: number = HALLS_HEAD_CENTRAL_CLUB_ID,
+): Promise<{ participantId: string; displayName: string | null; isPrivate: boolean }[]> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+
+  const [rosters, batting, bowling] = await Promise.all([
+    centralDb
+      .selectDistinct({ participantId: centralMatchRostersTable.participantId })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .selectDistinct({ participantId: centralMatchBattingTable.participantId })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inArray(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .selectDistinct({ participantId: centralMatchBowlingTable.participantId })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inArray(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
+  ]);
+
+  const ids = [
+    ...new Set(
+      [...rosters, ...batting, ...bowling]
+        .map((r) => r.participantId)
+        .filter((p): p is string => Boolean(p)),
+    ),
+  ];
+  if (ids.length === 0) return [];
+
+  const players = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inArray(centralPlayersTable.participantId, ids));
+  const byId = new Map(players.map((p) => [p.participantId, p]));
+
+  return ids.map((participantId) => {
+    const p = byId.get(participantId);
+    return {
+      participantId,
+      displayName: p?.displayName ?? null,
+      isPrivate: (p?.isPrivate ?? 0) === 1,
+    };
+  });
+}

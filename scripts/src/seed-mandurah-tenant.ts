@@ -13,8 +13,9 @@
  * with header `x-tenant-id: <printed id>` to see Mandurah's central data.
  */
 import { eq, ilike } from "drizzle-orm";
-import { db, tenantsTable } from "@workspace/db";
+import { db, tenantsTable, playerIdMapTable } from "@workspace/db";
 import { centralDb, centralClubsTable } from "@workspace/db/central";
+import { centralClubParticipants } from "@workspace/db/central-queries";
 
 const arg = (n: string): string | undefined =>
   process.argv.slice(2).find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
@@ -88,6 +89,35 @@ async function main(): Promise<void> {
   console.log(
     `seed-mandurah-tenant: tenant #${row.id} slug=${row.slug} ` +
       `central_club_id=${row.centralClubId} — ${row.name}`,
+  );
+
+  // Mint the player identity crosswalk: one stable per-tenant int id per central
+  // participant the club fielded, so central player reads can present int ids
+  // against the existing /players/:id contract. Idempotent — only new GUIDs get
+  // a fresh int; the per-tenant sequence continues from the current max.
+  const participants = await centralClubParticipants(row.centralClubId);
+  const existing = await db
+    .select({
+      participantId: playerIdMapTable.participantId,
+      playerId: playerIdMapTable.playerId,
+    })
+    .from(playerIdMapTable)
+    .where(eq(playerIdMapTable.tenantId, row.id));
+  const mappedGuids = new Set(existing.map((e) => e.participantId));
+  let nextId = existing.reduce((m, e) => Math.max(m, e.playerId), 0) + 1;
+  const toInsert = participants
+    .filter((p) => !mappedGuids.has(p.participantId))
+    .map((p) => ({
+      tenantId: row.id,
+      participantId: p.participantId,
+      playerId: nextId++,
+    }));
+  if (toInsert.length > 0) {
+    await db.insert(playerIdMapTable).values(toInsert);
+  }
+  console.log(
+    `player_id_map: minted ${toInsert.length} new mapping(s) ` +
+      `(${participants.length} central participants total) for tenant #${row.id}.`,
   );
   console.log(
     `Validate: set CENTRAL_READS=1, then\n` +
