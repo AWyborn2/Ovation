@@ -13,6 +13,7 @@ import {
   DeleteAwardWinnerParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -39,11 +40,11 @@ async function loadWinners(awardIds: number[], publishedOnly: boolean) {
 }
 
 // Public: only published awards, with only their published winners.
-router.get("/awards", async (_req, res): Promise<void> => {
+router.get("/awards", async (req, res): Promise<void> => {
   const awards = await db
     .select()
     .from(awardsTable)
-    .where(eq(awardsTable.published, true))
+    .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.published, true)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
   const byAward = await loadWinners(awards.map((a) => a.id), true);

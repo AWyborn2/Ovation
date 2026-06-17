@@ -13,6 +13,7 @@ import {
   DeletePremiershipParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -193,10 +194,11 @@ async function loadWithPlayers(id: number) {
   return { ...prem, players };
 }
 
-router.get("/premierships", async (_req, res): Promise<void> => {
+router.get("/premierships", async (req, res): Promise<void> => {
   const prems = await db
     .select()
     .from(premiershipsTable)
+    .where(eq(premiershipsTable.tenantId, getTenantId(req)))
     .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade));
 
   if (prems.length === 0) {

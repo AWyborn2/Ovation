@@ -9,14 +9,16 @@ import {
   DeletePersonParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
 // Public: list non-player officials, ordered by name.
-router.get("/people", async (_req, res): Promise<void> => {
+router.get("/people", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(nonPlayerPeopleTable)
+    .where(eq(nonPlayerPeopleTable.tenantId, getTenantId(req)))
     .orderBy(asc(nonPlayerPeopleTable.name), asc(nonPlayerPeopleTable.id));
   res.json(rows);
 });

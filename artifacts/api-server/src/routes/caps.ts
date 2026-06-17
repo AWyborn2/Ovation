@@ -14,14 +14,16 @@ import {
   DeleteCapParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 import { CAP_CATEGORY_TO_GRADE, recomputeCapsFromStats } from "../lib/cap-sync";
 
 const router: IRouter = Router();
 
-router.get("/caps", async (_req, res): Promise<void> => {
+router.get("/caps", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(capRegisterTable)
+    .where(eq(capRegisterTable.tenantId, getTenantId(req)))
     .orderBy(asc(capRegisterTable.capNumber));
   res.json(rows);
 });

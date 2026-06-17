@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   db,
   teamOfDecadeBoardsTable,
@@ -17,6 +17,7 @@ import {
   DeleteTeamOfDecadeMemberParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -47,11 +48,11 @@ function withMembers(boards: BoardRow[], byBoard: Map<number, MemberRow[]>) {
 }
 
 // Public: published boards only.
-router.get("/team-of-decade-boards", async (_req, res): Promise<void> => {
+router.get("/team-of-decade-boards", async (req, res): Promise<void> => {
   const boards = await db
     .select()
     .from(teamOfDecadeBoardsTable)
-    .where(eq(teamOfDecadeBoardsTable.published, true))
+    .where(and(eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)), eq(teamOfDecadeBoardsTable.published, true)))
     .orderBy(
       asc(teamOfDecadeBoardsTable.displayOrder),
       asc(teamOfDecadeBoardsTable.id),

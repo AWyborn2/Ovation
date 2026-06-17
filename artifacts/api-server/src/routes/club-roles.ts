@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db, clubRolesTable } from "@workspace/db";
 import {
   CreateClubRoleBody,
@@ -8,6 +8,7 @@ import {
   DeleteClubRoleParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -22,8 +23,10 @@ const orderedSelect = () =>
     );
 
 // Public: published role records only.
-router.get("/club-roles", async (_req, res): Promise<void> => {
-  const rows = await orderedSelect().where(eq(clubRolesTable.published, true));
+router.get("/club-roles", async (req, res): Promise<void> => {
+  const rows = await orderedSelect().where(
+    and(eq(clubRolesTable.tenantId, getTenantId(req)), eq(clubRolesTable.published, true)),
+  );
   res.json(rows);
 });
 
