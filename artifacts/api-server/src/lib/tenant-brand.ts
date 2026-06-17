@@ -43,6 +43,14 @@ export function buildTenantBrand(
   tenant: TenantBrandRow | null,
   club: ClubBrandRow | null,
 ): TenantBrand {
+  const primaryColour =
+    club?.primaryColour ?? tenant?.primaryColour ?? HALLS_HEAD_BRAND.primaryColour;
+  // When a tenant supplies a primary colour but no secondary/tertiary (e.g. a
+  // central-sourced club that only has a primary), derive the missing accents
+  // from its OWN primary rather than leaking the default club's (Halls Head's
+  // gold/brown). The all-null case still resolves to the full default brand.
+  const tenantSuppliedPrimary =
+    (club?.primaryColour ?? tenant?.primaryColour) != null;
   return {
     name: club?.name ?? tenant?.name ?? HALLS_HEAD_BRAND.name,
     shortName: club?.shortName ?? tenant?.shortName ?? HALLS_HEAD_BRAND.shortName,
@@ -50,16 +58,15 @@ export function buildTenantBrand(
     // The tenants row carries no 128px logo: prefer the clubs register's 128px,
     // else the tenant's own logo (better than the default club's), else fallback.
     logoUrl128: club?.logoUrl128 ?? tenant?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl128,
-    primaryColour:
-      club?.primaryColour ?? tenant?.primaryColour ?? HALLS_HEAD_BRAND.primaryColour,
+    primaryColour,
     secondaryColour:
       club?.secondaryColour ??
       tenant?.secondaryColour ??
-      HALLS_HEAD_BRAND.secondaryColour,
+      (tenantSuppliedPrimary ? primaryColour : HALLS_HEAD_BRAND.secondaryColour),
     tertiaryColour:
       club?.tertiaryColour ??
       tenant?.tertiaryColour ??
-      HALLS_HEAD_BRAND.tertiaryColour,
+      (tenantSuppliedPrimary ? primaryColour : HALLS_HEAD_BRAND.tertiaryColour),
   };
 }
 

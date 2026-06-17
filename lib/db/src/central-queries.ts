@@ -1331,7 +1331,10 @@ export async function centralMatchScorecard(
     const p = l.participantId ? playerById.get(l.participantId) : undefined;
     return {
       participantId: l.participantId,
-      displayName: p?.displayName ?? l.playerName,
+      // First non-empty: central display_name, then the scorecard line's own
+      // player_name (?? alone would keep an empty-string display_name).
+      displayName:
+        p?.displayName && p.displayName.trim() ? p.displayName : l.playerName,
       isPrivate: (p?.isPrivate ?? 0) === 1,
       batted: l.batted,
       battingPos: l.battingPos,
