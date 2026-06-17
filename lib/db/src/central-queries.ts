@@ -1,4 +1,4 @@
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import {
   centralDb,
   centralClubsTable,
@@ -959,7 +959,7 @@ export interface CentralMatchSummary {
   grade: string;
   season: number;
   round: number | null;
-  stage: null;
+  stage: string | null;
   competition: string | null;
   matchDate: string | null;
   venue: string | null;
@@ -993,6 +993,18 @@ function parseRound(round: string | null): number | null {
   if (/final|semi|grand|qualif|elimin|prelim/i.test(round)) return null;
   const m = /(\d+)/.exec(round);
   return m ? Number(m[1]) : null;
+}
+
+/** Map a central round/comp text to the app's MatchStage, or null for non-finals. */
+function parseStage(text: string | null): string | null {
+  if (!text) return null;
+  if (/grand\s*final/i.test(text)) return "Grand Final";
+  if (/qualif/i.test(text)) return "Qualifying Final";
+  if (/elimin/i.test(text)) return "Elimination Final";
+  if (/prelim/i.test(text)) return "Preliminary Final";
+  if (/semi/i.test(text)) return "Semi Final";
+  if (/\bfinal\b/i.test(text)) return "Grand Final";
+  return null;
 }
 
 /**
@@ -1081,7 +1093,7 @@ export async function centralClubMatches(
       grade,
       season,
       round: parseRound(m.round),
-      stage: null,
+      stage: parseStage(m.round),
       competition: m.grade,
       matchDate: m.matchDate,
       venue: m.venue,
@@ -1370,7 +1382,7 @@ export async function centralMatchScorecard(
     grade: grade ?? (m.grade ?? ""),
     season: season ?? 0,
     round: parseRound(m.round),
-    stage: null,
+    stage: parseStage(m.round),
     competition: m.grade,
     matchDate: m.matchDate,
     venue: m.venue,
@@ -1394,4 +1406,104 @@ export async function centralMatchScorecard(
   };
 
   return { summary, battedFirst, lines: clubLines, oppositionLines };
+}
+
+/** Distinct season start-years a club played, newest-first (for the season picker). */
+export async function centralClubSeasons(clubId: number): Promise<number[]> {
+  const rows = await centralDb
+    .select({ season: centralMatchesTable.season })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const set = new Set<number>();
+  for (const r of rows) {
+    const y = parseSeasonStartYear(r.season);
+    if (y !== null) set.add(y);
+  }
+  return [...set].sort((a, b) => b - a);
+}
+
+/** A season's top run-scorers / wicket-takers for a club, from central (top 5,
+ *  private players excluded). Keyed by participant GUID; route maps to int id. */
+export async function centralSeasonLeaders(
+  clubId: number,
+  season: number,
+  metric: "runs" | "wickets",
+): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, season: centralMatchesTable.season })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const matchIds = matchRows
+    .filter((m) => parseSeasonStartYear(m.season) === season)
+    .map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+
+  const agg =
+    metric === "runs"
+      ? await centralDb
+          .select({
+            participantId: centralMatchBattingTable.participantId,
+            value: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)`,
+          })
+          .from(centralMatchBattingTable)
+          .where(
+            and(
+              eq(centralMatchBattingTable.clubId, clubId),
+              inArray(centralMatchBattingTable.matchId, matchIds),
+            ),
+          )
+          .groupBy(centralMatchBattingTable.participantId)
+          .orderBy(desc(sql`coalesce(sum(${centralMatchBattingTable.runs}), 0)`))
+          .limit(25)
+      : await centralDb
+          .select({
+            participantId: centralMatchBowlingTable.participantId,
+            value: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`,
+          })
+          .from(centralMatchBowlingTable)
+          .where(
+            and(
+              eq(centralMatchBowlingTable.clubId, clubId),
+              inArray(centralMatchBowlingTable.matchId, matchIds),
+            ),
+          )
+          .groupBy(centralMatchBowlingTable.participantId)
+          .orderBy(desc(sql`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`))
+          .limit(25);
+
+  const ids = agg
+    .map((a) => a.participantId)
+    .filter((p): p is string => Boolean(p));
+  if (ids.length === 0) return [];
+  const players = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inArray(centralPlayersTable.participantId, ids));
+  const byId = new Map(players.map((p) => [p.participantId, p]));
+
+  const out: { participantId: string; displayName: string | null; value: number }[] = [];
+  for (const a of agg) {
+    if (!a.participantId) continue;
+    const p = byId.get(a.participantId);
+    if ((p?.isPrivate ?? 0) === 1) continue; // private excluded from leaderboards
+    const value = Number(a.value ?? 0);
+    if (value <= 0) continue;
+    out.push({ participantId: a.participantId, displayName: p?.displayName ?? null, value });
+    if (out.length >= 5) break;
+  }
+  return out;
 }

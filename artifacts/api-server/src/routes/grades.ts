@@ -11,6 +11,7 @@ import {
   clubsTable,
   capRegisterTable,
   recordsDisplaySettingsTable,
+  playerIdMapTable,
 } from "@workspace/db";
 import {
   UpdateRecordsDisplaySettingsBody,
@@ -18,6 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -341,6 +343,70 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
 // Seniors home overview: club totals, latest season's most recent match per
 // grade, and that season's club-wide top run scorers / wicket takers.
 router.get("/overview", async (req, res): Promise<void> => {
+  // Per-tenant data source: central tenants get the whole overview (totals,
+  // latest-season recent-per-grade matches, top run/wicket leaders) from central,
+  // filtered to their club, with leader ids mapped via player_id_map.
+  if (await shouldReadCentral(req)) {
+    const central = await import("@workspace/db/central-queries");
+    const clubId = await getRequestCentralClubId(req);
+    const tenantId = getTenantId(req);
+    const [totals, seasons, mapRows] = await Promise.all([
+      central.centralClubTotals(clubId),
+      central.centralClubSeasons(clubId),
+      db
+        .select({
+          participantId: playerIdMapTable.participantId,
+          playerId: playerIdMapTable.playerId,
+        })
+        .from(playerIdMapTable)
+        .where(eq(playerIdMapTable.tenantId, tenantId)),
+    ]);
+    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const latestSeason = seasons[0] ?? null;
+
+    let recentMatches: Awaited<ReturnType<typeof central.centralClubMatches>> = [];
+    let topRunScorers: { playerId: number; givenName: string; surname: string; value: number }[] = [];
+    let topWicketTakers: typeof topRunScorers = [];
+
+    if (latestSeason !== null) {
+      const seasonMatches = await central.centralClubMatches(clubId, { season: latestSeason });
+      const seen = new Set<string>();
+      recentMatches = seasonMatches.filter((m) => {
+        if (seen.has(m.grade)) return false;
+        seen.add(m.grade);
+        return true;
+      });
+      const splitName = (dn: string | null) => {
+        const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return { givenName: "", surname: "" };
+        if (parts.length === 1) return { givenName: parts[0], surname: "" };
+        return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+      };
+      const toLeader = (l: { participantId: string; displayName: string | null; value: number }) => ({
+        playerId: intByGuid.get(l.participantId) ?? 0,
+        ...splitName(l.displayName),
+        value: l.value,
+      });
+      const [runs, wkts] = await Promise.all([
+        central.centralSeasonLeaders(clubId, latestSeason, "runs"),
+        central.centralSeasonLeaders(clubId, latestSeason, "wickets"),
+      ]);
+      topRunScorers = runs.map(toLeader);
+      topWicketTakers = wkts.map(toLeader);
+    }
+
+    res.json({
+      latestSeason,
+      latestSeasonLabel: latestSeason === null ? null : seasonLabel(latestSeason),
+      availableSeasons: seasons.map((s) => ({ season: s, label: seasonLabel(s) })),
+      totals,
+      recentMatches,
+      topRunScorers,
+      topWicketTakers,
+    });
+    return;
+  }
+
   // Club totals (mirrors /dashboard's all-time figures).
   const [playerCount] = await db.select({ count: count() }).from(playersTable);
   const [totals] = await db
@@ -414,28 +480,18 @@ router.get("/overview", async (req, res): Promise<void> => {
     ]);
   }
 
-  // Per-tenant data source: central tenants get club-wide totals from the central
-  // PCA DB filtered to their club; native tenants use their own tables.
-  // recentMatches/topPerformers still read tenant tables (further central reads
-  // + crosswalk pending), so for a central tenant those stay empty for now.
-  const tenantTotals = {
-    players: Number(playerCount?.count ?? 0),
-    games: Number(totals?.totalGames ?? 0),
-    runs: Number(totals?.totalRuns ?? 0),
-    wickets: Number(totals?.totalWickets ?? 0),
-    grades: gradesCount,
-  };
-  let resolvedTotals = tenantTotals;
-  if (await shouldReadCentral(req)) {
-    const { centralClubTotals } = await import("@workspace/db/central-queries");
-    resolvedTotals = await centralClubTotals(await getRequestCentralClubId(req));
-  }
-
+  // Native path (central tenants returned above).
   res.json({
     latestSeason,
     latestSeasonLabel: latestSeason === null ? null : seasonLabel(latestSeason),
     availableSeasons: await seasonOptions(),
-    totals: resolvedTotals,
+    totals: {
+      players: Number(playerCount?.count ?? 0),
+      games: Number(totals?.totalGames ?? 0),
+      runs: Number(totals?.totalRuns ?? 0),
+      wickets: Number(totals?.totalWickets ?? 0),
+      grades: gradesCount,
+    },
     recentMatches,
     topRunScorers,
     topWicketTakers,
