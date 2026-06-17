@@ -1,6 +1,7 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import {
   centralDb,
+  centralClubsTable,
   centralMatchesTable,
   centralMatchBattingTable,
   centralMatchBowlingTable,
@@ -950,4 +951,165 @@ export async function centralPlayerDetail(
     grades: stats.map((s) => s.grade),
     stats,
   };
+}
+
+/** A club's game, shaped as the app's MatchSummary (the club's perspective). */
+export interface CentralMatchSummary {
+  id: number;
+  grade: string;
+  season: number;
+  round: number | null;
+  stage: null;
+  competition: string | null;
+  matchDate: string | null;
+  venue: string | null;
+  result: string | null;
+  opponent: string | null;
+  hhccScore: string | null;
+  opponentScore: string | null;
+  abandoned: boolean;
+  playerCount: number;
+  opponentClub: {
+    id: number;
+    name: string;
+    shortName: string | null;
+    logoUrl: string | null;
+    logoUrl128: string | null;
+    primaryColour: string | null;
+    secondaryColour: string | null;
+  } | null;
+}
+
+/** Parse a central season text ("Summer 2002/03") to the app's int start year. */
+function parseSeasonStartYear(season: string | null): number | null {
+  if (!season) return null;
+  const m = /(\d{4})/.exec(season);
+  return m ? Number(m[1]) : null;
+}
+
+/** Parse a central round text to an int round, or null for finals/unparseable. */
+function parseRound(round: string | null): number | null {
+  if (!round) return null;
+  if (/final|semi|grand|qualif|elimin|prelim/i.test(round)) return null;
+  const m = /(\d+)/.exec(round);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * A club's game-by-game match list from central, shaped as MatchSummary from the
+ * club's perspective (opponent = the other side). Match ids are central's own
+ * ints, so no crosswalk is needed. Optional grade (app grade) / season (start
+ * year) filters. Matches whose grade doesn't map or whose season can't be parsed
+ * are excluded. Sorted newest-first (season, then round, then id).
+ */
+export async function centralClubMatches(
+  clubId: number,
+  opts: { grade?: string; season?: number } = {},
+): Promise<CentralMatchSummary[]> {
+  const matches = await centralDb
+    .select()
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  if (matches.length === 0) return [];
+
+  // Roster counts per match for the club (the "playerCount" display figure).
+  const matchIds = matches.map((m) => m.matchId);
+  const rosterCounts = await centralDb
+    .select({
+      matchId: centralMatchRostersTable.matchId,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(centralMatchRostersTable)
+    .where(
+      and(
+        eq(centralMatchRostersTable.clubId, clubId),
+        inArray(centralMatchRostersTable.matchId, matchIds),
+      ),
+    )
+    .groupBy(centralMatchRostersTable.matchId);
+  const countByMatch = new Map(rosterCounts.map((r) => [r.matchId, Number(r.n)]));
+
+  // Opponent club brands (central.clubs has no logo; degrade to initials chip).
+  const oppIds = [
+    ...new Set(
+      matches
+        .map((m) => (m.homeClubId === clubId ? m.awayClubId : m.homeClubId))
+        .filter((id): id is number => id != null),
+    ),
+  ];
+  const oppClubs =
+    oppIds.length > 0
+      ? await centralDb
+          .select({
+            clubId: centralClubsTable.clubId,
+            name: centralClubsTable.name,
+            shortName: centralClubsTable.shortName,
+            primaryColour: centralClubsTable.primaryColour,
+          })
+          .from(centralClubsTable)
+          .where(inArray(centralClubsTable.clubId, oppIds))
+      : [];
+  const oppById = new Map(oppClubs.map((c) => [c.clubId, c]));
+
+  const rows: CentralMatchSummary[] = [];
+  for (const m of matches) {
+    const grade = appGradeFromCentral(m.grade);
+    if (!grade) continue;
+    if (opts.grade && grade !== opts.grade) continue;
+    const season = parseSeasonStartYear(m.season);
+    if (season === null) continue;
+    if (opts.season !== undefined && season !== opts.season) continue;
+
+    const isHome = m.homeClubId === clubId;
+    const oppClubId = isHome ? m.awayClubId : m.homeClubId;
+    const opp = oppClubId != null ? oppById.get(oppClubId) : undefined;
+    const result =
+      m.resultText ??
+      (m.winnerClubId == null
+        ? null
+        : m.winnerClubId === clubId
+          ? "Won"
+          : "Lost");
+
+    rows.push({
+      id: m.matchId,
+      grade,
+      season,
+      round: parseRound(m.round),
+      stage: null,
+      competition: m.grade,
+      matchDate: m.matchDate,
+      venue: m.venue,
+      result,
+      opponent: isHome ? m.awayTeam : m.homeTeam,
+      hhccScore: isHome ? m.homeScore : m.awayScore,
+      opponentScore: isHome ? m.awayScore : m.homeScore,
+      abandoned: /abandon/i.test(m.status ?? ""),
+      playerCount: countByMatch.get(m.matchId) ?? 0,
+      opponentClub: opp
+        ? {
+            id: opp.clubId,
+            name: opp.name ?? (isHome ? m.awayTeam : m.homeTeam) ?? "Opposition",
+            shortName: opp.shortName,
+            logoUrl: null,
+            logoUrl128: null,
+            primaryColour: opp.primaryColour,
+            secondaryColour: null,
+          }
+        : null,
+    });
+  }
+
+  rows.sort(
+    (a, b) =>
+      b.season - a.season ||
+      (b.round ?? -1) - (a.round ?? -1) ||
+      b.id - a.id,
+  );
+  return rows;
 }

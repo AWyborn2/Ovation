@@ -23,6 +23,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantBrand } from "../lib/tenant-brand";
 import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
+import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -226,6 +227,19 @@ router.get("/matches", async (req, res): Promise<void> => {
   }
 
   const { grade, season } = query.data;
+
+  // Per-tenant data source: central tenants get their game-by-game list from
+  // central.matches (symmetric home/away), shaped from the club's perspective.
+  if (await shouldReadCentral(req)) {
+    const { centralClubMatches } = await import("@workspace/db/central-queries");
+    const rows = await centralClubMatches(await getRequestCentralClubId(req), {
+      grade: grade || undefined,
+      season,
+    });
+    res.json(rows);
+    return;
+  }
+
   const conditions: SQL[] = [];
   if (grade) conditions.push(eq(matchesTable.grade, grade));
   if (season !== undefined) conditions.push(eq(matchesTable.season, season));
