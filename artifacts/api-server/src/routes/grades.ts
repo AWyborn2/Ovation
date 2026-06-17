@@ -563,7 +563,61 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/records", async (_req, res): Promise<void> => {
+router.get("/records", async (req, res): Promise<void> => {
+  // Per-tenant data source: central tenants get all-time records from central,
+  // record-holder ids mapped via player_id_map.
+  if (await shouldReadCentral(req)) {
+    const { centralClubRecords } = await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const [records, mapRows] = await Promise.all([
+      centralClubRecords(await getRequestCentralClubId(req)),
+      db
+        .select({
+          participantId: playerIdMapTable.participantId,
+          playerId: playerIdMapTable.playerId,
+        })
+        .from(playerIdMapTable)
+        .where(eq(playerIdMapTable.tenantId, tenantId)),
+    ]);
+    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const split = (dn: string | null) => {
+      const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return { givenName: "", surname: "" };
+      if (parts.length === 1) return { givenName: parts[0], surname: "" };
+      return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+    };
+    const holder = (h: { participantId: string; displayName: string | null; value: number; grades: string[] } | null) =>
+      h ? { playerId: intByGuid.get(h.participantId) ?? 0, ...split(h.displayName), value: h.value, grades: h.grades } : null;
+    const innings = (
+      h: { participantId: string; displayName: string | null; grade: string | null; value: string } | null,
+      field: "highScore" | "bestBowling",
+    ) =>
+      h
+        ? {
+            id: 0,
+            playerId: intByGuid.get(h.participantId) ?? 0,
+            ...split(h.displayName),
+            grade: h.grade,
+            games: null, innings: null, notOuts: null, runs: null, batAvg: null,
+            highScore: field === "highScore" ? h.value : null,
+            fifties: null, hundreds: null, wickets: null, runsConceded: null, bowlAvg: null,
+            bestBowling: field === "bestBowling" ? h.value : null,
+            fiveWickets: null, catches: null, stumpings: null, runOuts: null,
+          }
+        : null;
+    res.json({
+      mostGames: holder(records.mostGames),
+      mostRuns: holder(records.mostRuns),
+      mostWickets: holder(records.mostWickets),
+      highestScore: innings(records.highestScore, "highScore"),
+      bestBowling: innings(records.bestBowling, "bestBowling"),
+      mostCatches: holder(records.mostCatches),
+      mostFifties: holder(records.mostFifties),
+      mostHundreds: holder(records.mostHundreds),
+    });
+    return;
+  }
+
   async function topAggregate(
     col:
       | typeof playerGradeStatsTable.games
