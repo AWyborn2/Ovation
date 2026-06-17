@@ -26,6 +26,7 @@
     "compare-central-leaderboard": "tsx ./src/compare-central-leaderboard.ts",
     "seed-tenants": "tsx ./src/seed-tenants.ts",
     "seed-mandurah-tenant": "tsx ./src/seed-mandurah-tenant.ts",
+    "seed-mandurah-premierships": "tsx ./src/seed-mandurah-premierships.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
