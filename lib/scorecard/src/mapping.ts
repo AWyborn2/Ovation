@@ -155,15 +155,15 @@ function oppositionTeam(
 
 /**
  * Map a match-detail DTO into the ordered two-innings scorecard view-model.
- * Innings are ordered by hhccBattedFirst (true/null -> tenant club bat first,
+ * Innings are ordered by clubBattedFirst (true/null -> tenant club bat first,
  * false -> opposition bat first). Abandoned matches with no lines still return
  * empty innings so the caller can render a clean "abandoned" state.
  */
 export function buildScorecard(match: MatchDetail): Scorecard {
-  const hh = tenantTeam(match.hallsHead);
+  const hh = tenantTeam(match.club);
   const opp = oppositionTeam(match.opponent ?? null, match.opponentClub ?? null);
 
-  const hhScore = parseScore(match.hhccScore);
+  const hhScore = parseScore(match.clubScore);
   const oppScore = parseScore(match.opponentScore);
 
   const hhLines = match.lines ?? [];
@@ -211,7 +211,7 @@ export function buildScorecard(match: MatchDetail): Scorecard {
     oversTotal: sumOvers(hhBowlers.map((b) => b.overs)),
   };
 
-  const hhFirst = match.hhccBattedFirst !== false; // true or null -> HH first
+  const hhFirst = match.clubBattedFirst !== false; // true or null -> HH first
   const ordered = hhFirst
     ? [hhBattingInnings, oppBattingInnings]
     : [oppBattingInnings, hhBattingInnings];
@@ -221,5 +221,5 @@ export function buildScorecard(match: MatchDetail): Scorecard {
     inningsLabel: INNINGS_LABELS[i] ?? `${i + 1} INNINGS`,
   }));
 
-  return { innings, orderKnown: match.hhccBattedFirst != null };
+  return { innings, orderKnown: match.clubBattedFirst != null };
 }

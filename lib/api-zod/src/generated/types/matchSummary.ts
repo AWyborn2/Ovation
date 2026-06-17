@@ -27,7 +27,7 @@ export interface MatchSummary {
   /** @nullable */
   opponent?: string | null;
   /** @nullable */
-  hhccScore?: string | null;
+  clubScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
   abandoned: boolean;

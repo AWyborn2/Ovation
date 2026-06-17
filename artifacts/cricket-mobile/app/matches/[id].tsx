@@ -87,12 +87,12 @@ export default function MatchDetailScreen() {
 
         <Card style={{ marginTop: 12 }}>
           {data.result ? <Body bold size={13}>{data.result}</Body> : null}
-          {(data.hhccScore || data.opponentScore) ? (
+          {(data.clubScore || data.opponentScore) ? (
             <View style={{ flexDirection: "row", gap: 24, marginTop: data.result ? 10 : 0 }}>
-              {data.hhccScore ? (
+              {data.clubScore ? (
                 <View>
                   <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>{BRAND.shortName}</Body>
-                  <Heading size="md">{data.hhccScore}</Heading>
+                  <Heading size="md">{data.clubScore}</Heading>
                 </View>
               ) : null}
               {data.opponentScore ? (

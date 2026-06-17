@@ -329,7 +329,7 @@ export const ListMatchesResponseItem = zod.object({
   "venue": zod.string().nullish(),
   "result": zod.string().nullish(),
   "opponent": zod.string().nullish(),
-  "hhccScore": zod.string().nullish(),
+  "clubScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "abandoned": zod.boolean(),
   "playerCount": zod.number(),
@@ -364,7 +364,7 @@ export const GetMatchResponse = zod.object({
   "venue": zod.string().nullish(),
   "result": zod.string().nullish(),
   "opponent": zod.string().nullish(),
-  "hhccScore": zod.string().nullish(),
+  "clubScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "abandoned": zod.boolean(),
   "opponentClub": zod.union([zod.object({
@@ -376,7 +376,7 @@ export const GetMatchResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
-  "hallsHead": zod.union([zod.object({
+  "club": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
@@ -384,8 +384,8 @@ export const GetMatchResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
-}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults.'),
-  "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
+  "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -466,7 +466,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "venue": zod.string().nullish(),
   "result": zod.string().nullish(),
   "opponent": zod.string().nullish(),
-  "hhccScore": zod.string().nullish(),
+  "clubScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "abandoned": zod.boolean(),
   "opponentClub": zod.union([zod.object({
@@ -478,7 +478,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
-  "hallsHead": zod.union([zod.object({
+  "club": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
@@ -486,8 +486,8 @@ export const UpdateMatchRoundResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
-}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults.'),
-  "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
+  "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -564,7 +564,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "venue": zod.string().nullish(),
   "result": zod.string().nullish(),
   "opponent": zod.string().nullish(),
-  "hhccScore": zod.string().nullish(),
+  "clubScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "abandoned": zod.boolean(),
   "opponentClub": zod.union([zod.object({
@@ -576,7 +576,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
-  "hallsHead": zod.union([zod.object({
+  "club": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
@@ -584,8 +584,8 @@ export const SetMatchHatTrickResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
-}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults.'),
-  "hhccBattedFirst": zod.boolean().nullish().describe('True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
+  "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -988,7 +988,7 @@ export const GetSeniorOverviewResponse = zod.object({
   "venue": zod.string().nullish(),
   "result": zod.string().nullish(),
   "opponent": zod.string().nullish(),
-  "hhccScore": zod.string().nullish(),
+  "clubScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
   "abandoned": zod.boolean(),
   "playerCount": zod.number(),

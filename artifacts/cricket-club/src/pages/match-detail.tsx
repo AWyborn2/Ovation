@@ -248,16 +248,16 @@ export default function MatchDetail() {
             </button>
           </div>
         </div>
-        {(match.result || match.hhccScore || match.opponentScore) && (
+        {(match.result || match.clubScore || match.opponentScore) && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-4">
             {match.result && (
               <div className="font-semibold text-foreground/90">{match.result}</div>
             )}
             <div className="flex items-center gap-4 ml-auto font-mono text-sm">
-              {match.hhccScore && (
+              {match.clubScore && (
                 <div className="text-right">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{brand.name}</div>
-                  <div className="font-bold text-primary text-lg">{match.hhccScore}</div>
+                  <div className="font-bold text-primary text-lg">{match.clubScore}</div>
                 </div>
               )}
               {match.opponentScore && (

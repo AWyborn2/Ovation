@@ -5,11 +5,11 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
-import type { HallsHeadBrand } from './hallsHeadBrand';
 import type { MatchOppositionLine } from './matchOppositionLine';
 import type { MatchScorecardLine } from './matchScorecardLine';
 import type { MatchStage } from './matchStage';
 import type { OpponentClub } from './opponentClub';
+import type { TenantBrand } from './tenantBrand';
 
 export interface MatchDetail {
   id: number;
@@ -30,19 +30,19 @@ export interface MatchDetail {
   /** @nullable */
   opponent?: string | null;
   /** @nullable */
-  hhccScore?: string | null;
+  clubScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
   abandoned: boolean;
   /** Opposition club branding, or null when unmatched. */
   opponentClub?: OpponentClub | null;
-  /** Halls Head's official branding (logo + colours) from the clubs register, or null when unavailable; the scorecard falls back to its built-in official defaults. */
-  hallsHead?: HallsHeadBrand | null;
+  /** The tenant club's own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults. */
+  club?: TenantBrand | null;
   /**
-     * True when Halls Head batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.
+     * True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.
      * @nullable
      */
-  hhccBattedFirst?: boolean | null;
+  clubBattedFirst?: boolean | null;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
   /** Player IDs flagged by an admin as taking a hat-trick in this match. */

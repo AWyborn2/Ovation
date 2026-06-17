@@ -966,7 +966,7 @@ export interface CentralMatchSummary {
   venue: string | null;
   result: string | null;
   opponent: string | null;
-  hhccScore: string | null;
+  clubScore: string | null;
   opponentScore: string | null;
   abandoned: boolean;
   playerCount: number;
@@ -1100,7 +1100,7 @@ export async function centralClubMatches(
       venue: m.venue,
       result,
       opponent: isHome ? m.awayTeam : m.homeTeam,
-      hhccScore: isHome ? m.homeScore : m.awayScore,
+      clubScore: isHome ? m.homeScore : m.awayScore,
       opponentScore: isHome ? m.awayScore : m.homeScore,
       abandoned: /abandon/i.test(m.status ?? ""),
       playerCount: countByMatch.get(m.matchId) ?? 0,
@@ -1389,7 +1389,7 @@ export async function centralMatchScorecard(
     venue: m.venue,
     result,
     opponent: isHome ? m.awayTeam : m.homeTeam,
-    hhccScore: isHome ? m.homeScore : m.awayScore,
+    clubScore: isHome ? m.homeScore : m.awayScore,
     opponentScore: isHome ? m.awayScore : m.homeScore,
     abandoned: /abandon/i.test(m.status ?? ""),
     playerCount: clubLines.length,

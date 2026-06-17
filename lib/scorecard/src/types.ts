@@ -84,6 +84,6 @@ export interface ScorecardInnings {
 /** The whole match as ordered innings (true batting order). */
 export interface Scorecard {
   innings: ScorecardInnings[];
-  /** True when batting order came from real data (hhccBattedFirst not null). */
+  /** True when batting order came from real data (clubBattedFirst not null). */
   orderKnown: boolean;
 }

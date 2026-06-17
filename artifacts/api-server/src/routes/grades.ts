@@ -89,7 +89,7 @@ function toRecentMatch(row: {
   venue: string | null;
   result: string | null;
   opponent: string | null;
-  hhccScore: string | null;
+  clubScore: string | null;
   opponentScore: string | null;
   abandoned: boolean | null;
   playerCount: number;
@@ -112,7 +112,7 @@ function toRecentMatch(row: {
     venue: row.venue,
     result: row.result,
     opponent: row.opponent,
-    hhccScore: row.hhccScore,
+    clubScore: row.clubScore,
     opponentScore: row.opponentScore,
     abandoned: row.abandoned ?? false,
     playerCount: row.playerCount,
@@ -446,7 +446,7 @@ router.get("/overview", async (req, res): Promise<void> => {
         venue: matchesTable.venue,
         result: matchesTable.result,
         opponent: matchesTable.opponent,
-        hhccScore: matchesTable.hhccScore,
+        clubScore: matchesTable.hhccScore,
         opponentScore: matchesTable.opponentScore,
         abandoned: matchesTable.abandoned,
         playerCount: count(matchPlayerLinesTable.id),

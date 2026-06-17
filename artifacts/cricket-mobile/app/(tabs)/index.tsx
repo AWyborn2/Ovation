@@ -81,9 +81,9 @@ function RecentMatchRow({ match }: { match: MatchSummary }) {
                 {match.grade}
               </Body>
               <Heading size="sm" style={{ marginTop: 2 }}>vs {match.opponent ?? "Unknown"}</Heading>
-              {match.hhccScore || match.opponentScore ? (
+              {match.clubScore || match.opponentScore ? (
                 <Body size={12} style={{ marginTop: 4 }}>
-                  {match.hhccScore ?? "—"} vs {match.opponentScore ?? "—"}
+                  {match.clubScore ?? "—"} vs {match.opponentScore ?? "—"}
                 </Body>
               ) : null}
               {match.result ? (

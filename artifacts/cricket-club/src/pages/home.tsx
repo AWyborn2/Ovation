@@ -105,9 +105,9 @@ function RecentMatchCard({ m }: { m: MatchSummary }) {
             </span>
           )}
         </div>
-        {(m.hhccScore || m.opponentScore) && (
+        {(m.clubScore || m.opponentScore) && (
           <div className="text-sm font-mono text-foreground/90">
-            {m.hhccScore ?? "—"} <span className="text-muted-foreground">vs</span> {m.opponentScore ?? "—"}
+            {m.clubScore ?? "—"} <span className="text-muted-foreground">vs</span> {m.opponentScore ?? "—"}
           </div>
         )}
         {m.result && (

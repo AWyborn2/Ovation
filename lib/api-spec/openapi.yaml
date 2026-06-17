@@ -5705,7 +5705,7 @@ components:
           type: ["string", "null"]
         opponent:
           type: ["string", "null"]
-        hhccScore:
+        clubScore:
           type: ["string", "null"]
         opponentScore:
           type: ["string", "null"]
@@ -5796,7 +5796,7 @@ components:
           type: ["string", "null"]
         opponent:
           type: ["string", "null"]
-        hhccScore:
+        clubScore:
           type: ["string", "null"]
         opponentScore:
           type: ["string", "null"]
@@ -5807,20 +5807,19 @@ components:
             - $ref: "#/components/schemas/OpponentClub"
             - type: "null"
           description: Opposition club branding, or null when unmatched.
-        hallsHead:
+        club:
           oneOf:
-            - $ref: "#/components/schemas/HallsHeadBrand"
+            - $ref: "#/components/schemas/TenantBrand"
             - type: "null"
           description: >-
-            Halls Head's official branding (logo + colours) from the clubs
-            register, or null when unavailable; the scorecard falls back to its
-            built-in official defaults.
-        hhccBattedFirst:
+            The tenant club's own branding (logo + colours), or null when
+            unavailable; the scorecard falls back to its built-in defaults.
+        clubBattedFirst:
           type: ["boolean", "null"]
           description: >-
-            True when Halls Head batted first, false when they batted second,
-            null when unknown. Drives the true batting order of the two innings
-            on the scorecard.
+            True when the tenant club batted first, false when they batted
+            second, null when unknown. Drives the true batting order of the two
+            innings on the scorecard.
         lines:
           type: array
           items:

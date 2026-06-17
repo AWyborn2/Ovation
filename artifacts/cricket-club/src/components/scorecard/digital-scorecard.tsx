@@ -46,7 +46,7 @@ export function DigitalScorecard({ match, hatTrickIds }: DigitalScorecardProps) 
         {!scorecard.orderKnown && (
           <p className="text-center" style={{ color: "#6b7280", fontSize: 11 }}>
             Batting order not confirmed for this match — innings shown{" "}
-            {match.hallsHead?.name ?? "home side"} first.
+            {match.club?.name ?? "home side"} first.
           </p>
         )}
       </div>

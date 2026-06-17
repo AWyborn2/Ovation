@@ -112,9 +112,9 @@ async function loadMatchDetail(matchId: number) {
       venue: matchesTable.venue,
       result: matchesTable.result,
       opponent: matchesTable.opponent,
-      hhccScore: matchesTable.hhccScore,
+      clubScore: matchesTable.hhccScore,
       opponentScore: matchesTable.opponentScore,
-      hhccBattedFirst: matchesTable.hhccBattedFirst,
+      clubBattedFirst: matchesTable.hhccBattedFirst,
       abandoned: matchesTable.abandoned,
       ...opponentClubColumns,
     })
@@ -201,12 +201,12 @@ async function loadMatchDetail(matchId: number) {
     venue: match.venue,
     result: match.result,
     opponent: match.opponent,
-    hhccScore: match.hhccScore,
+    clubScore: match.clubScore,
     opponentScore: match.opponentScore,
-    hhccBattedFirst: match.hhccBattedFirst,
+    clubBattedFirst: match.clubBattedFirst,
     abandoned: match.abandoned,
     opponentClub: toOpponentClub(match),
-    hallsHead,
+    club: hallsHead,
     lines,
     oppositionLines,
     hatTrickPlayerIds: hatTricks.map((h) => h.playerId),
@@ -289,7 +289,7 @@ router.get("/matches", async (req, res): Promise<void> => {
       venue: matchesTable.venue,
       result: matchesTable.result,
       opponent: matchesTable.opponent,
-      hhccScore: matchesTable.hhccScore,
+      clubScore: matchesTable.hhccScore,
       opponentScore: matchesTable.opponentScore,
       abandoned: matchesTable.abandoned,
       playerCount: count(matchPlayerLinesTable.id),
@@ -369,8 +369,8 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
     void playerCount;
     res.json({
       ...summary,
-      hhccBattedFirst: card.battedFirst,
-      hallsHead: await getTenantBrand(tenantId),
+      clubBattedFirst: card.battedFirst,
+      club: await getTenantBrand(tenantId),
       lines: card.lines.map((l, i) => {
         const name = l.isPrivate
           ? { givenName: "Private", surname: "Player" }
