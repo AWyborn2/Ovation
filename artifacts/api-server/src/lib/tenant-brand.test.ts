@@ -68,7 +68,13 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   });
 
   it("falls back to the tenant row's own brand columns when no clubs row", () => {
-    expect(buildTenantBrand(hhTenantRow, null)).toEqual(HALLS_HEAD_BRAND);
+    // With no clubs-register row, the 128px logo falls back to the tenant's own
+    // logoUrl (better than the default club's 128px) — the tenants table has no
+    // 128px column. Everything else comes from the tenant row.
+    expect(buildTenantBrand(hhTenantRow, null)).toEqual({
+      ...HALLS_HEAD_BRAND,
+      logoUrl128: hhTenantRow.logoUrl,
+    });
   });
 
   it("falls back to the built-in brand when nothing is set", () => {
