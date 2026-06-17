@@ -10,6 +10,7 @@ import {
   playersTable,
   importsTable,
   clubsTable,
+  playerIdMapTable,
 } from "@workspace/db";
 import {
   ListMatchesQueryParams,
@@ -22,8 +23,16 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantBrand } from "../lib/tenant-brand";
-import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
+import { DEFAULT_TENANT_ID, getTenantId } from "../middlewares/tenant-context";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+
+/** Split a central display name into given/surname (surname = last token). */
+function splitCentralName(displayName: string | null): { givenName: string; surname: string } {
+  const parts = (displayName ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { givenName: "", surname: "" };
+  if (parts.length === 1) return { givenName: parts[0], surname: "" };
+  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+}
 
 const router: IRouter = Router();
 
@@ -318,6 +327,96 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
   const params = GetMatchParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  // Per-tenant data source: central tenants get the two-innings scorecard from
+  // the central scorecard tables — own side mapped to int ids via player_id_map
+  // (private players masked), opposition side plain text — and the OWN-club brand
+  // resolved from THIS tenant (not hardcoded Halls Head).
+  if (await shouldReadCentral(req)) {
+    const { centralMatchScorecard } = await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const card = await centralMatchScorecard(
+      await getRequestCentralClubId(req),
+      params.data.id,
+    );
+    if (!card) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+    const mapRows = await db
+      .select({
+        participantId: playerIdMapTable.participantId,
+        playerId: playerIdMapTable.playerId,
+      })
+      .from(playerIdMapTable)
+      .where(eq(playerIdMapTable.tenantId, tenantId));
+    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+
+    const { playerCount, ...summary } = card.summary;
+    void playerCount;
+    res.json({
+      ...summary,
+      hhccBattedFirst: card.battedFirst,
+      hallsHead: await getTenantBrand(tenantId),
+      lines: card.lines.map((l, i) => {
+        const name = l.isPrivate
+          ? { givenName: "Private", surname: "Player" }
+          : splitCentralName(l.displayName);
+        return {
+          id: i,
+          // Private players are masked (no link); otherwise the mapped int id.
+          playerId:
+            l.isPrivate || !l.participantId
+              ? 0
+              : intByGuid.get(l.participantId) ?? 0,
+          surname: name.surname,
+          givenName: name.givenName,
+          batted: l.batted,
+          battingPos: l.battingPos,
+          runs: l.runs,
+          balls: l.balls,
+          fours: l.fours,
+          sixes: l.sixes,
+          notOut: l.notOut,
+          dismissal: l.dismissal,
+          bowled: l.bowled,
+          overs: l.overs,
+          maidens: l.maidens,
+          runsConceded: l.runsConceded,
+          wickets: l.wickets,
+          wides: l.wides,
+          noBalls: l.noBalls,
+          catches: null,
+          stumpings: null,
+          runOuts: null,
+        };
+      }),
+      oppositionLines: card.oppositionLines.map((l, i) => ({
+        id: i,
+        name: l.name,
+        batted: l.batted,
+        battingPos: l.battingPos,
+        runs: l.runs,
+        balls: l.balls,
+        fours: l.fours,
+        sixes: l.sixes,
+        notOut: l.notOut,
+        dismissal: l.dismissal,
+        bowled: l.bowled,
+        overs: l.overs,
+        maidens: l.maidens,
+        runsConceded: l.runsConceded,
+        wickets: l.wickets,
+        wides: l.wides,
+        noBalls: l.noBalls,
+        catches: null,
+        stumpings: null,
+        runOuts: null,
+      })),
+      hatTrickPlayerIds: [],
+    });
     return;
   }
 

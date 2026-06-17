@@ -1113,3 +1113,285 @@ export async function centralClubMatches(
   );
   return rows;
 }
+
+/** Club-side scorecard line (keyed by participant GUID; route maps to int id). */
+export interface CentralScorecardLine {
+  participantId: string | null;
+  displayName: string | null;
+  isPrivate: boolean;
+  batted: boolean;
+  battingPos: number | null;
+  runs: number | null;
+  balls: number | null;
+  fours: number | null;
+  sixes: number | null;
+  notOut: boolean;
+  dismissal: string | null;
+  bowled: boolean;
+  overs: string | null;
+  maidens: number | null;
+  runsConceded: number | null;
+  wickets: number | null;
+  wides: number | null;
+  noBalls: number | null;
+}
+
+/** Opposition scorecard line — plain text, never linked. */
+export interface CentralOppositionLine {
+  name: string;
+  batted: boolean;
+  battingPos: number | null;
+  runs: number | null;
+  balls: number | null;
+  fours: number | null;
+  sixes: number | null;
+  notOut: boolean;
+  dismissal: string | null;
+  bowled: boolean;
+  overs: string | null;
+  maidens: number | null;
+  runsConceded: number | null;
+  wickets: number | null;
+  wides: number | null;
+  noBalls: number | null;
+}
+
+export interface CentralMatchScorecard {
+  summary: CentralMatchSummary;
+  battedFirst: boolean;
+  lines: CentralScorecardLine[];
+  oppositionLines: CentralOppositionLine[];
+}
+
+const oversToText = (o: number | null): string | null => (o == null ? null : String(o));
+
+/**
+ * One match's branded two-innings scorecard for a club, from central. The club
+ * side (`lines`) is keyed by participant GUID — the route maps those to the
+ * tenant's int ids via player_id_map and masks private players; the opposition
+ * side (`oppositionLines`) is plain text. `battedFirst` is taken from the central
+ * innings order (innings 1 = batted first). Returns null if the match doesn't
+ * exist or doesn't involve the club. Central has no fill-ins to exclude.
+ */
+export async function centralMatchScorecard(
+  clubId: number,
+  matchId: number,
+): Promise<CentralMatchScorecard | null> {
+  const [m] = await centralDb
+    .select()
+    .from(centralMatchesTable)
+    .where(eq(centralMatchesTable.matchId, matchId));
+  if (!m) return null;
+  if (m.homeClubId !== clubId && m.awayClubId !== clubId) return null;
+
+  const grade = appGradeFromCentral(m.grade);
+  const season = parseSeasonStartYear(m.season);
+
+  const isHome = m.homeClubId === clubId;
+  const oppClubId = isHome ? m.awayClubId : m.homeClubId;
+
+  const [batting, bowling, opp] = await Promise.all([
+    centralDb
+      .select()
+      .from(centralMatchBattingTable)
+      .where(eq(centralMatchBattingTable.matchId, matchId)),
+    centralDb
+      .select()
+      .from(centralMatchBowlingTable)
+      .where(eq(centralMatchBowlingTable.matchId, matchId)),
+    oppClubId != null
+      ? centralDb
+          .select({
+            clubId: centralClubsTable.clubId,
+            name: centralClubsTable.name,
+            shortName: centralClubsTable.shortName,
+            primaryColour: centralClubsTable.primaryColour,
+          })
+          .from(centralClubsTable)
+          .where(eq(centralClubsTable.clubId, oppClubId))
+      : Promise.resolve([]),
+  ]);
+
+  // innings 1 = batted first; whose club id sits at innings 1?
+  const innings1 = batting.find((b) => b.innings === 1);
+  const battedFirst = innings1 ? innings1.clubId === clubId : true;
+
+  // Club-side names + privacy.
+  const clubGuids = [
+    ...new Set(
+      [...batting, ...bowling]
+        .filter((l) => l.clubId === clubId && l.participantId)
+        .map((l) => l.participantId as string),
+    ),
+  ];
+  const players =
+    clubGuids.length > 0
+      ? await centralDb
+          .select({
+            participantId: centralPlayersTable.participantId,
+            displayName: centralPlayersTable.displayName,
+            isPrivate: centralPlayersTable.isPrivate,
+          })
+          .from(centralPlayersTable)
+          .where(inArray(centralPlayersTable.participantId, clubGuids))
+      : [];
+  const playerById = new Map(players.map((p) => [p.participantId, p]));
+
+  // Merge batting + bowling into one line per participant, per side.
+  interface Line {
+    participantId: string | null;
+    playerName: string | null;
+    batted: boolean;
+    battingPos: number | null;
+    runs: number | null;
+    balls: number | null;
+    fours: number | null;
+    sixes: number | null;
+    notOut: boolean;
+    dismissal: string | null;
+    bowled: boolean;
+    overs: number | null;
+    maidens: number | null;
+    runsConceded: number | null;
+    wickets: number | null;
+    wides: number | null;
+    noBalls: number | null;
+  }
+  const blank = (participantId: string | null, playerName: string | null): Line => ({
+    participantId,
+    playerName,
+    batted: false,
+    battingPos: null,
+    runs: null,
+    balls: null,
+    fours: null,
+    sixes: null,
+    notOut: false,
+    dismissal: null,
+    bowled: false,
+    overs: null,
+    maidens: null,
+    runsConceded: null,
+    wickets: null,
+    wides: null,
+    noBalls: null,
+  });
+
+  const build = (side: number): Line[] => {
+    const byKey = new Map<string, Line>();
+    const keyOf = (pid: string | null, name: string | null) =>
+      pid ?? `name:${name ?? ""}`;
+    for (const b of batting) {
+      if (b.clubId !== side) continue;
+      const key = keyOf(b.participantId, b.playerName);
+      const line = byKey.get(key) ?? blank(b.participantId, b.playerName);
+      const kind = classifyInnings(b.dismissalType, b.dismissal);
+      line.batted = kind !== "dnb";
+      line.battingPos = b.batOrder ?? line.battingPos;
+      line.runs = b.runs;
+      line.balls = b.balls;
+      line.fours = b.fours;
+      line.sixes = b.sixes;
+      line.notOut = kind === "notout";
+      line.dismissal = b.dismissal;
+      byKey.set(key, line);
+    }
+    for (const bw of bowling) {
+      if (bw.clubId !== side) continue;
+      const key = keyOf(bw.participantId, bw.playerName);
+      const line = byKey.get(key) ?? blank(bw.participantId, bw.playerName);
+      line.bowled = true;
+      line.overs = bw.overs;
+      line.maidens = bw.maidens;
+      line.runsConceded = bw.runs;
+      line.wickets = bw.wickets;
+      line.wides = bw.wides;
+      line.noBalls = bw.noBalls;
+      byKey.set(key, line);
+    }
+    return [...byKey.values()].sort(
+      (a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99),
+    );
+  };
+
+  const clubLines = build(clubId).map((l): CentralScorecardLine => {
+    const p = l.participantId ? playerById.get(l.participantId) : undefined;
+    return {
+      participantId: l.participantId,
+      displayName: p?.displayName ?? l.playerName,
+      isPrivate: (p?.isPrivate ?? 0) === 1,
+      batted: l.batted,
+      battingPos: l.battingPos,
+      runs: l.runs,
+      balls: l.balls,
+      fours: l.fours,
+      sixes: l.sixes,
+      notOut: l.notOut,
+      dismissal: l.dismissal,
+      bowled: l.bowled,
+      overs: oversToText(l.overs),
+      maidens: l.maidens,
+      runsConceded: l.runsConceded,
+      wickets: l.wickets,
+      wides: l.wides,
+      noBalls: l.noBalls,
+    };
+  });
+
+  const oppositionLines: CentralOppositionLine[] =
+    oppClubId == null
+      ? []
+      : build(oppClubId).map((l) => ({
+          name: l.playerName ?? "—",
+          batted: l.batted,
+          battingPos: l.battingPos,
+          runs: l.runs,
+          balls: l.balls,
+          fours: l.fours,
+          sixes: l.sixes,
+          notOut: l.notOut,
+          dismissal: l.dismissal,
+          bowled: l.bowled,
+          overs: oversToText(l.overs),
+          maidens: l.maidens,
+          runsConceded: l.runsConceded,
+          wickets: l.wickets,
+          wides: l.wides,
+          noBalls: l.noBalls,
+        }));
+
+  const oppClub = opp[0];
+  const result =
+    m.resultText ??
+    (m.winnerClubId == null ? null : m.winnerClubId === clubId ? "Won" : "Lost");
+
+  const summary: CentralMatchSummary = {
+    id: m.matchId,
+    grade: grade ?? (m.grade ?? ""),
+    season: season ?? 0,
+    round: parseRound(m.round),
+    stage: null,
+    competition: m.grade,
+    matchDate: m.matchDate,
+    venue: m.venue,
+    result,
+    opponent: isHome ? m.awayTeam : m.homeTeam,
+    hhccScore: isHome ? m.homeScore : m.awayScore,
+    opponentScore: isHome ? m.awayScore : m.homeScore,
+    abandoned: /abandon/i.test(m.status ?? ""),
+    playerCount: clubLines.length,
+    opponentClub: oppClub
+      ? {
+          id: oppClub.clubId,
+          name: oppClub.name ?? (isHome ? m.awayTeam : m.homeTeam) ?? "Opposition",
+          shortName: oppClub.shortName,
+          logoUrl: null,
+          logoUrl128: null,
+          primaryColour: oppClub.primaryColour,
+          secondaryColour: null,
+        }
+      : null,
+  };
+
+  return { summary, battedFirst, lines: clubLines, oppositionLines };
+}
