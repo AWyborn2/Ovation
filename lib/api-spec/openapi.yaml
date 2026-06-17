@@ -353,6 +353,18 @@ paths:
           schema:
             type: integer
           description: Filter by season starting year
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Max rows to return (optional; unbounded when omitted)
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Rows to skip before applying limit (optional)
       responses:
         "200":
           description: List of matches

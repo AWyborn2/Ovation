@@ -15,4 +15,14 @@ grade?: string;
  * Filter by season starting year
  */
 season?: number;
+/**
+ * Max rows to return (optional; unbounded when omitted)
+ * @minimum 1
+ */
+limit?: number;
+/**
+ * Rows to skip before applying limit (optional)
+ * @minimum 0
+ */
+offset?: number;
 };

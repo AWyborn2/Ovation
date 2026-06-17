@@ -306,9 +306,16 @@ export const SetDefaultPlayerImageResponse = zod.object({
  * Returns matches ordered most-recent first (by season, then round).
  * @summary List matches, filterable by grade and season
  */
+
+export const listMatchesQueryOffsetMin = 0;
+
+
+
 export const ListMatchesQueryParams = zod.object({
   "grade": zod.coerce.string().optional().describe('Filter by grade'),
-  "season": zod.coerce.number().optional().describe('Filter by season starting year')
+  "season": zod.coerce.number().optional().describe('Filter by season starting year'),
+  "limit": zod.coerce.number().min(1).optional().describe('Max rows to return (optional; unbounded when omitted)'),
+  "offset": zod.coerce.number().min(listMatchesQueryOffsetMin).optional().describe('Rows to skip before applying limit (optional)')
 })
 
 export const ListMatchesResponseItem = zod.object({

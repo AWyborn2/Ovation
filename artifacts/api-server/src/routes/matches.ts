@@ -235,7 +235,8 @@ router.get("/matches", async (req, res): Promise<void> => {
     return;
   }
 
-  const { grade, season } = query.data;
+  const { grade, season, limit, offset } = query.data;
+  const off = offset ?? 0;
 
   // Per-tenant data source: central tenants get their game-by-game list from
   // central.matches (symmetric home/away), shaped from the club's perspective.
@@ -245,7 +246,9 @@ router.get("/matches", async (req, res): Promise<void> => {
       grade: grade || undefined,
       season,
     });
-    res.json(rows);
+    res.json(
+      limit !== undefined ? rows.slice(off, off + limit) : off ? rows.slice(off) : rows,
+    );
     return;
   }
 
@@ -274,7 +277,7 @@ router.get("/matches", async (req, res): Promise<void> => {
       ? sql`${matchDateExpr} asc nulls last`
       : sql`${matchDateExpr} desc nulls last`;
 
-  const rows = await db
+  const baseQuery = db
     .select({
       id: matchesTable.id,
       grade: matchesTable.grade,
@@ -305,7 +308,15 @@ router.get("/matches", async (req, res): Promise<void> => {
       roundDir(matchesTable.round),
       dateOrder,
       idDir(matchesTable.id),
-    );
+    )
+    .$dynamic();
+
+  // limit/offset are optional — omitted = the historical all-rows behaviour.
+  const rows = await (limit !== undefined
+    ? baseQuery.limit(limit).offset(off)
+    : off
+      ? baseQuery.offset(off)
+      : baseQuery);
 
   res.json(
     rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubPrimaryColour, opponentClubSecondaryColour, ...rest }) => ({
