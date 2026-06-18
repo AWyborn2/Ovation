@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { getTenantBrand } from "../lib/tenant-brand";
+import { getRequestEntitlements } from "../lib/tenant";
 import { getTenantId, isPlatformRequest } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -18,6 +19,12 @@ router.get("/tenant-brand", async (req, res): Promise<void> => {
   }
   const brand = await getTenantBrand(getTenantId(req));
   res.json(brand);
+});
+
+// The tenant's plan + resolved feature entitlements (dormant ⇒ everything on).
+// The web reads this to hide/lock paid UI without locking anything during the pilot.
+router.get("/tenant-plan", async (req, res): Promise<void> => {
+  res.json(await getRequestEntitlements(req));
 });
 
 export default router;

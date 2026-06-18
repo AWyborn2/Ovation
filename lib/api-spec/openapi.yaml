@@ -4249,6 +4249,22 @@ paths:
                   A tenant's brand on a club host, or the platform marker on the
                   apex/marketing host (no tenant — the SPA mounts the landing page).
 
+  /tenant-plan:
+    get:
+      operationId: getTenantPlan
+      tags: [tenant]
+      summary: >-
+        The current tenant's plan and resolved feature entitlements. While billing
+        is dormant (BILLING_ENABLED unset) every feature resolves to true, so the
+        web can adopt the gating now without locking anything during the pilot.
+      responses:
+        "200":
+          description: The tenant's plan and entitlements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantPlan"
+
   /platform/available-clubs:
     get:
       operationId: getAvailableClubs
@@ -5760,6 +5776,32 @@ components:
         platform:
           type: boolean
           enum: [true]
+
+    Entitlements:
+      type: object
+      description: Per-feature flags resolved from the tenant's plan.
+      required: [customDomain, mobileApp, socialStudio, clubroomTv, curation]
+      properties:
+        customDomain:
+          type: boolean
+        mobileApp:
+          type: boolean
+        socialStudio:
+          type: boolean
+        clubroomTv:
+          type: boolean
+        curation:
+          type: boolean
+
+    TenantPlan:
+      type: object
+      required: [plan, entitlements]
+      properties:
+        plan:
+          type: string
+          enum: [free, club, pro]
+        entitlements:
+          $ref: "#/components/schemas/Entitlements"
 
     AvailableClub:
       type: object

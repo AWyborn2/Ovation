@@ -190,6 +190,7 @@ import type {
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
   TenantBrand,
+  TenantPlan,
   TourContent,
   TourContentUpdate,
   TrackedLink,
@@ -15429,6 +15430,83 @@ export function useGetTenantBrand<TData = Awaited<ReturnType<typeof getTenantBra
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTenantBrandQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTenantPlanUrl = () => {
+
+
+
+
+  return `/api/tenant-plan`
+}
+
+/**
+ * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
+ */
+export const getTenantPlan = async ( options?: RequestInit): Promise<TenantPlan> => {
+
+  return customFetch<TenantPlan>(getGetTenantPlanUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTenantPlanQueryKey = () => {
+    return [
+    `/api/tenant-plan`
+    ] as const;
+    }
+
+
+export const getGetTenantPlanQueryOptions = <TData = Awaited<ReturnType<typeof getTenantPlan>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTenantPlanQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTenantPlan>>> = ({ signal }) => getTenantPlan({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTenantPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getTenantPlan>>>
+export type GetTenantPlanQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
+ */
+
+export function useGetTenantPlan<TData = Awaited<ReturnType<typeof getTenantPlan>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTenantPlanQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

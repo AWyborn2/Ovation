@@ -1169,6 +1169,31 @@ export interface PlatformBrand {
 }
 
 /**
+ * Per-feature flags resolved from the tenant's plan.
+ */
+export interface Entitlements {
+  customDomain: boolean;
+  mobileApp: boolean;
+  socialStudio: boolean;
+  clubroomTv: boolean;
+  curation: boolean;
+}
+
+export type TenantPlanPlan = typeof TenantPlanPlan[keyof typeof TenantPlanPlan];
+
+
+export const TenantPlanPlan = {
+  free: 'free',
+  club: 'club',
+  pro: 'pro',
+} as const;
+
+export interface TenantPlan {
+  plan: TenantPlanPlan;
+  entitlements: Entitlements;
+}
+
+/**
  * A central PCA club a visitor can claim during signup.
  */
 export interface AvailableClub {

@@ -6199,6 +6199,21 @@ export const GetTenantBrandResponse = zod.union([zod.object({
 
 
 /**
+ * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
+ */
+export const GetTenantPlanResponse = zod.object({
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "entitlements": zod.object({
+  "customDomain": zod.boolean(),
+  "mobileApp": zod.boolean(),
+  "socialStudio": zod.boolean(),
+  "clubroomTv": zod.boolean(),
+  "curation": zod.boolean()
+}).describe('Per-feature flags resolved from the tenant\'s plan.')
+})
+
+
+/**
  * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
  */
 export const GetAvailableClubsResponseItem = zod.object({
