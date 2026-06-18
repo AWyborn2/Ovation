@@ -130,6 +130,12 @@ router.post("/platform/signup", loginRateLimiter, async (req, res): Promise<void
     res.status(400).json({ error: "A valid email is required." });
     return;
   }
+  // Slug uniqueness is a 409 regardless of the central club — check it up front so
+  // a taken slug can't fall through to provisionTenant's club resolution (400).
+  if (await slugTaken(slug)) {
+    res.status(409).json({ error: "That address is already taken." });
+    return;
+  }
 
   const { provisionTenant, ProvisionError } = await import("@workspace/db/provision");
   try {
