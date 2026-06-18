@@ -4249,6 +4249,72 @@ paths:
                   A tenant's brand on a club host, or the platform marker on the
                   apex/marketing host (no tenant — the SPA mounts the landing page).
 
+  /platform/available-clubs:
+    get:
+      operationId: getAvailableClubs
+      tags: [platform]
+      summary: >-
+        Central PCA clubs available to claim via self-serve signup (those not yet
+        onboarded as a tenant). Empty / 403 when signup is disabled.
+      responses:
+        "200":
+          description: Clubs available to claim
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableClub"
+        "403":
+          description: Signup is disabled (SIGNUP_MODE=off).
+
+  /platform/slug-available:
+    get:
+      operationId: checkSlugAvailable
+      tags: [platform]
+      summary: Whether a subdomain slug is valid and free to claim.
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability of the requested slug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlugAvailability"
+
+  /platform/signup:
+    post:
+      operationId: platformSignup
+      tags: [platform]
+      summary: >-
+        Self-serve onboarding: claim a central club + subdomain and create the
+        first club admin. Provisions the tenant (central reads + player crosswalk)
+        and opens an admin session. Gated by SIGNUP_MODE.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupBody"
+      responses:
+        "201":
+          description: Tenant provisioned and first admin created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignupResult"
+        "400":
+          description: Invalid slug, email, or password.
+        "403":
+          description: Signup is disabled, or the club isn't eligible.
+        "409":
+          description: The slug or club is already taken.
+
 components:
   schemas:
     CardVideoJobInput:
@@ -5694,6 +5760,61 @@ components:
         platform:
           type: boolean
           enum: [true]
+
+    AvailableClub:
+      type: object
+      description: A central PCA club a visitor can claim during signup.
+      required: [centralClubId, name, suggestedSlug]
+      properties:
+        centralClubId:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        suggestedSlug:
+          type: string
+          description: A pre-validated slug derived from the club name.
+
+    SlugAvailability:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: ["string", "null"]
+          description: Why the slug is unavailable (taken, reserved, malformed), if any.
+
+    SignupBody:
+      type: object
+      required: [centralClubId, slug, adminEmail, password]
+      properties:
+        centralClubId:
+          type: integer
+        slug:
+          type: string
+        adminEmail:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    SignupResult:
+      type: object
+      required: [tenantId, slug, name, redirectUrl]
+      properties:
+        tenantId:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        redirectUrl:
+          type: string
+          description: The new tenant's admin URL to redirect the browser to.
 
     MatchSummary:
       type: object

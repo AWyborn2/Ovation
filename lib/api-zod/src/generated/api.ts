@@ -6198,3 +6198,44 @@ export const GetTenantBrandResponse = zod.union([zod.object({
 }).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.')]).describe('A tenant\'s brand on a club host, or the platform marker on the apex\/marketing host (no tenant — the SPA mounts the landing page).')
 
 
+/**
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ */
+export const GetAvailableClubsResponseItem = zod.object({
+  "centralClubId": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "suggestedSlug": zod.string().describe('A pre-validated slug derived from the club name.')
+}).describe('A central PCA club a visitor can claim during signup.')
+export const GetAvailableClubsResponse = zod.array(GetAvailableClubsResponseItem)
+
+
+/**
+ * @summary Whether a subdomain slug is valid and free to claim.
+ */
+export const CheckSlugAvailableQueryParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const CheckSlugAvailableResponse = zod.object({
+  "available": zod.boolean(),
+  "reason": zod.string().nullish().describe('Why the slug is unavailable (taken, reserved, malformed), if any.')
+})
+
+
+/**
+ * @summary Self-serve onboarding: claim a central club + subdomain and create the first club admin. Provisions the tenant (central reads + player crosswalk) and opens an admin session. Gated by SIGNUP_MODE.
+ */
+export const platformSignupBodyPasswordMin = 8;
+
+
+
+export const PlatformSignupBody = zod.object({
+  "centralClubId": zod.number(),
+  "slug": zod.string(),
+  "adminEmail": zod.string(),
+  "password": zod.string().min(platformSignupBodyPasswordMin)
+})
+
+

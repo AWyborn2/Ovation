@@ -1168,6 +1168,45 @@ export interface PlatformBrand {
   platform: true;
 }
 
+/**
+ * A central PCA club a visitor can claim during signup.
+ */
+export interface AvailableClub {
+  centralClubId: number;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** A pre-validated slug derived from the club name. */
+  suggestedSlug: string;
+}
+
+export interface SlugAvailability {
+  available: boolean;
+  /**
+     * Why the slug is unavailable (taken, reserved, malformed), if any.
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export interface SignupBody {
+  centralClubId: number;
+  slug: string;
+  adminEmail: string;
+  /** @minLength 8 */
+  password: string;
+}
+
+export interface SignupResult {
+  tenantId: number;
+  slug: string;
+  name: string;
+  /** The new tenant's admin URL to redirect the browser to. */
+  redirectUrl: string;
+}
+
 export interface MatchScorecardLine {
   id: number;
   playerId: number;
@@ -4254,5 +4293,9 @@ season?: string;
  * Filter to a single age group (e.g. "U14")
  */
 ageGroup?: string;
+};
+
+export type CheckSlugAvailableParams = {
+slug: string;
 };
 

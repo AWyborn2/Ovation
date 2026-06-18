@@ -7,7 +7,7 @@ import router from "./routes";
 import { tenantContext } from "./middlewares/tenant-context";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
-import { ensureSeedAdmin } from "./lib/auth";
+import { ensureSeedAdmin, ensureSeedPlatformAdmin } from "./lib/auth";
 
 const app: Express = express();
 
@@ -82,9 +82,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", tenantContext, router);
 app.use(goRedirectRouter);
 
-// Seed first admin from ADMIN_PASSWORD if no admins exist.
+// Seed the demo tenant's first admin from ADMIN_PASSWORD if it has none, and the
+// platform super-admin from PLATFORM_ADMIN_EMAIL/PASSWORD (both no-ops if unset).
 ensureSeedAdmin().catch((err) => {
   logger.error({ err }, "ensureSeedAdmin failed");
+});
+ensureSeedPlatformAdmin().catch((err) => {
+  logger.error({ err }, "ensureSeedPlatformAdmin failed");
 });
 
 export default app;

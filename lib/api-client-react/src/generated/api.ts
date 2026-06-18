@@ -23,6 +23,7 @@ import type {
   Admin,
   AdminInput,
   AdminUpdate,
+  AvailableClub,
   Award,
   AwardInput,
   AwardPointsConfig,
@@ -70,6 +71,7 @@ import type {
   CardVideoJob,
   CardVideoJobInput,
   Century,
+  CheckSlugAvailableParams,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -167,6 +169,9 @@ import type {
   RoundUpInput,
   SeasonTopPerformers,
   SeniorOverview,
+  SignupBody,
+  SignupResult,
+  SlugAvailability,
   SocialDraft,
   SocialSettings,
   SocialSettingsBundle,
@@ -15435,4 +15440,236 @@ export function useGetTenantBrand<TData = Awaited<ReturnType<typeof getTenantBra
 
 
 
+
+export const getGetAvailableClubsUrl = () => {
+
+
+
+
+  return `/api/platform/available-clubs`
+}
+
+/**
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ */
+export const getAvailableClubs = async ( options?: RequestInit): Promise<AvailableClub[]> => {
+
+  return customFetch<AvailableClub[]>(getGetAvailableClubsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvailableClubsQueryKey = () => {
+    return [
+    `/api/platform/available-clubs`
+    ] as const;
+    }
+
+
+export const getGetAvailableClubsQueryOptions = <TData = Awaited<ReturnType<typeof getAvailableClubs>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailableClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvailableClubsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvailableClubs>>> = ({ signal }) => getAvailableClubs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvailableClubs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvailableClubsQueryResult = NonNullable<Awaited<ReturnType<typeof getAvailableClubs>>>
+export type GetAvailableClubsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ */
+
+export function useGetAvailableClubs<TData = Awaited<ReturnType<typeof getAvailableClubs>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailableClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvailableClubsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCheckSlugAvailableUrl = (params: CheckSlugAvailableParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/slug-available?${stringifiedParams}` : `/api/platform/slug-available`
+}
+
+/**
+ * @summary Whether a subdomain slug is valid and free to claim.
+ */
+export const checkSlugAvailable = async (params: CheckSlugAvailableParams, options?: RequestInit): Promise<SlugAvailability> => {
+
+  return customFetch<SlugAvailability>(getCheckSlugAvailableUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckSlugAvailableQueryKey = (params?: CheckSlugAvailableParams,) => {
+    return [
+    `/api/platform/slug-available`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCheckSlugAvailableQueryOptions = <TData = Awaited<ReturnType<typeof checkSlugAvailable>>, TError = ErrorType<unknown>>(params: CheckSlugAvailableParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailable>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckSlugAvailableQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkSlugAvailable>>> = ({ signal }) => checkSlugAvailable(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailable>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CheckSlugAvailableQueryResult = NonNullable<Awaited<ReturnType<typeof checkSlugAvailable>>>
+export type CheckSlugAvailableQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether a subdomain slug is valid and free to claim.
+ */
+
+export function useCheckSlugAvailable<TData = Awaited<ReturnType<typeof checkSlugAvailable>>, TError = ErrorType<unknown>>(
+ params: CheckSlugAvailableParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailable>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCheckSlugAvailableQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPlatformSignupUrl = () => {
+
+
+
+
+  return `/api/platform/signup`
+}
+
+/**
+ * @summary Self-serve onboarding: claim a central club + subdomain and create the first club admin. Provisions the tenant (central reads + player crosswalk) and opens an admin session. Gated by SIGNUP_MODE.
+ */
+export const platformSignup = async (signupBody: SignupBody, options?: RequestInit): Promise<SignupResult> => {
+
+  return customFetch<SignupResult>(getPlatformSignupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      signupBody,)
+  }
+);}
+
+
+
+
+export const getPlatformSignupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformSignup>>, TError,{data: BodyType<SignupBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformSignup>>, TError,{data: BodyType<SignupBody>}, TContext> => {
+
+const mutationKey = ['platformSignup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformSignup>>, {data: BodyType<SignupBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformSignup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformSignupMutationResult = NonNullable<Awaited<ReturnType<typeof platformSignup>>>
+    export type PlatformSignupMutationBody = BodyType<SignupBody>
+    export type PlatformSignupMutationError = ErrorType<void>
+
+    /**
+ * @summary Self-serve onboarding: claim a central club + subdomain and create the first club admin. Provisions the tenant (central reads + player crosswalk) and opens an admin session. Gated by SIGNUP_MODE.
+ */
+export const usePlatformSignup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformSignup>>, TError,{data: BodyType<SignupBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof platformSignup>>,
+        TError,
+        {data: BodyType<SignupBody>},
+        TContext
+      > => {
+      return useMutation(getPlatformSignupMutationOptions(options));
+    }
 

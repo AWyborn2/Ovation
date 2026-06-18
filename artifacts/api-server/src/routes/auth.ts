@@ -4,10 +4,11 @@ import {
   SESSION_COOKIE,
   SESSION_COOKIE_OPTS,
   encodeSession,
-  getAdminByUsername,
+  getAdminByUsernameForTenant,
   verifyPassword,
 } from "../lib/auth";
 import { resolveAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 
 const router: IRouter = Router();
@@ -27,7 +28,9 @@ router.post("/auth/login", loginRateLimiter, async (req, res): Promise<void> => 
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const admin = await getAdminByUsername(parsed.data.username);
+  // Authenticate against the admins of the request's tenant (resolved from the
+  // host); a Mandurah login on Mandurah's host can't match a Halls Head admin.
+  const admin = await getAdminByUsernameForTenant(getTenantId(req), parsed.data.username);
   if (!admin || !(await verifyPassword(parsed.data.password, admin.passwordHash))) {
     res.status(401).json({ error: "Invalid username or password" });
     return;
