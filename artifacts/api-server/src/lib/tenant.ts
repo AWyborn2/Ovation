@@ -2,6 +2,12 @@ import type { Request } from "express";
 import { eq } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import { getTenantId } from "../middlewares/tenant-context";
+import {
+  planFromString,
+  entitlementsFor,
+  type Plan,
+  type Entitlements,
+} from "./entitlements";
 
 /**
  * Per-tenant config resolution for the stats reads.
@@ -24,6 +30,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 interface TenantConfig {
   centralClubId: number;
   readsFromCentral: boolean;
+  plan: Plan;
 }
 
 const cache = new Map<number, { cfg: TenantConfig; at: number }>();
@@ -36,6 +43,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
     .select({
       centralClubId: tenantsTable.centralClubId,
       readsFromCentral: tenantsTable.readsFromCentral,
+      plan: tenantsTable.plan,
     })
     .from(tenantsTable)
     .where(eq(tenantsTable.id, tenantId));
@@ -43,9 +51,23 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
   const cfg: TenantConfig = {
     centralClubId: row?.centralClubId ?? HALLS_HEAD_CENTRAL_CLUB_ID,
     readsFromCentral: row?.readsFromCentral ?? false,
+    plan: planFromString(row?.plan),
   };
   cache.set(tenantId, { cfg, at: Date.now() });
   return cfg;
+}
+
+/** The current request's tenant plan. */
+export async function getTenantPlan(tenantId: number): Promise<Plan> {
+  return (await getTenantConfig(tenantId)).plan;
+}
+
+/** The current request's tenant plan + resolved entitlements (dormant ⇒ all on). */
+export async function getRequestEntitlements(
+  req: Request,
+): Promise<{ plan: Plan; entitlements: Entitlements }> {
+  const plan = (await getTenantConfig(getTenantId(req))).plan;
+  return { plan, entitlements: entitlementsFor(plan) };
 }
 
 export async function getTenantCentralClubId(tenantId: number): Promise<number> {

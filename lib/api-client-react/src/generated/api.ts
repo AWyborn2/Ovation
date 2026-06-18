@@ -22,7 +22,10 @@ import type {
 import type {
   Admin,
   AdminInput,
+  AdminTenant,
+  AdminTenantDetail,
   AdminUpdate,
+  AvailableClub,
   Award,
   AwardInput,
   AwardPointsConfig,
@@ -70,6 +73,7 @@ import type {
   CardVideoJob,
   CardVideoJobInput,
   Century,
+  CheckSlugAvailableParams,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -144,6 +148,9 @@ import type {
   NonPlayerPersonUpdate,
   Partnerships,
   PendingDraftCount,
+  PlatformAdmin,
+  PlatformBrand,
+  PlatformLoginBody,
   Player,
   PlayerDetail,
   PlayerImage,
@@ -160,12 +167,16 @@ import type {
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
+  ProvisionTenantBody,
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
   RoundUpInput,
   SeasonTopPerformers,
   SeniorOverview,
+  SignupBody,
+  SignupResult,
+  SlugAvailability,
   SocialDraft,
   SocialSettings,
   SocialSettingsBundle,
@@ -184,6 +195,7 @@ import type {
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
   TenantBrand,
+  TenantPlan,
   TourContent,
   TourContentUpdate,
   TrackedLink,
@@ -191,6 +203,7 @@ import type {
   TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
+  UpdateTenantBody,
   UploadMatchBatchBody,
   UploadMatchScorecardBody,
   UploadPlaycricketCsvBody,
@@ -15369,9 +15382,9 @@ export const getGetTenantBrandUrl = () => {
 /**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
-export const getTenantBrand = async ( options?: RequestInit): Promise<TenantBrand> => {
+export const getTenantBrand = async ( options?: RequestInit): Promise<TenantBrand | PlatformBrand> => {
 
-  return customFetch<TenantBrand>(getGetTenantBrandUrl(),
+  return customFetch<TenantBrand | PlatformBrand>(getGetTenantBrandUrl(),
   {
     ...options,
     method: 'GET'
@@ -15434,4 +15447,828 @@ export function useGetTenantBrand<TData = Awaited<ReturnType<typeof getTenantBra
 
 
 
+
+export const getGetTenantPlanUrl = () => {
+
+
+
+
+  return `/api/tenant-plan`
+}
+
+/**
+ * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
+ */
+export const getTenantPlan = async ( options?: RequestInit): Promise<TenantPlan> => {
+
+  return customFetch<TenantPlan>(getGetTenantPlanUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTenantPlanQueryKey = () => {
+    return [
+    `/api/tenant-plan`
+    ] as const;
+    }
+
+
+export const getGetTenantPlanQueryOptions = <TData = Awaited<ReturnType<typeof getTenantPlan>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTenantPlanQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTenantPlan>>> = ({ signal }) => getTenantPlan({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTenantPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getTenantPlan>>>
+export type GetTenantPlanQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
+ */
+
+export function useGetTenantPlan<TData = Awaited<ReturnType<typeof getTenantPlan>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTenantPlanQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAvailableClubsUrl = () => {
+
+
+
+
+  return `/api/platform/available-clubs`
+}
+
+/**
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ */
+export const getAvailableClubs = async ( options?: RequestInit): Promise<AvailableClub[]> => {
+
+  return customFetch<AvailableClub[]>(getGetAvailableClubsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvailableClubsQueryKey = () => {
+    return [
+    `/api/platform/available-clubs`
+    ] as const;
+    }
+
+
+export const getGetAvailableClubsQueryOptions = <TData = Awaited<ReturnType<typeof getAvailableClubs>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailableClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvailableClubsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvailableClubs>>> = ({ signal }) => getAvailableClubs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvailableClubs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvailableClubsQueryResult = NonNullable<Awaited<ReturnType<typeof getAvailableClubs>>>
+export type GetAvailableClubsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ */
+
+export function useGetAvailableClubs<TData = Awaited<ReturnType<typeof getAvailableClubs>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailableClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvailableClubsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCheckSlugAvailableUrl = (params: CheckSlugAvailableParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/slug-available?${stringifiedParams}` : `/api/platform/slug-available`
+}
+
+/**
+ * @summary Whether a subdomain slug is valid and free to claim.
+ */
+export const checkSlugAvailable = async (params: CheckSlugAvailableParams, options?: RequestInit): Promise<SlugAvailability> => {
+
+  return customFetch<SlugAvailability>(getCheckSlugAvailableUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckSlugAvailableQueryKey = (params?: CheckSlugAvailableParams,) => {
+    return [
+    `/api/platform/slug-available`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCheckSlugAvailableQueryOptions = <TData = Awaited<ReturnType<typeof checkSlugAvailable>>, TError = ErrorType<unknown>>(params: CheckSlugAvailableParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailable>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckSlugAvailableQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkSlugAvailable>>> = ({ signal }) => checkSlugAvailable(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailable>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CheckSlugAvailableQueryResult = NonNullable<Awaited<ReturnType<typeof checkSlugAvailable>>>
+export type CheckSlugAvailableQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether a subdomain slug is valid and free to claim.
+ */
+
+export function useCheckSlugAvailable<TData = Awaited<ReturnType<typeof checkSlugAvailable>>, TError = ErrorType<unknown>>(
+ params: CheckSlugAvailableParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailable>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCheckSlugAvailableQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPlatformSignupUrl = () => {
+
+
+
+
+  return `/api/platform/signup`
+}
+
+/**
+ * @summary Self-serve onboarding: claim a central club + subdomain and create the first club admin. Provisions the tenant (central reads + player crosswalk) and opens an admin session. Gated by SIGNUP_MODE.
+ */
+export const platformSignup = async (signupBody: SignupBody, options?: RequestInit): Promise<SignupResult> => {
+
+  return customFetch<SignupResult>(getPlatformSignupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      signupBody,)
+  }
+);}
+
+
+
+
+export const getPlatformSignupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformSignup>>, TError,{data: BodyType<SignupBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformSignup>>, TError,{data: BodyType<SignupBody>}, TContext> => {
+
+const mutationKey = ['platformSignup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformSignup>>, {data: BodyType<SignupBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformSignup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformSignupMutationResult = NonNullable<Awaited<ReturnType<typeof platformSignup>>>
+    export type PlatformSignupMutationBody = BodyType<SignupBody>
+    export type PlatformSignupMutationError = ErrorType<void>
+
+    /**
+ * @summary Self-serve onboarding: claim a central club + subdomain and create the first club admin. Provisions the tenant (central reads + player crosswalk) and opens an admin session. Gated by SIGNUP_MODE.
+ */
+export const usePlatformSignup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformSignup>>, TError,{data: BodyType<SignupBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof platformSignup>>,
+        TError,
+        {data: BodyType<SignupBody>},
+        TContext
+      > => {
+      return useMutation(getPlatformSignupMutationOptions(options));
+    }
+
+export const getPlatformAdminLoginUrl = () => {
+
+
+
+
+  return `/api/platform/auth/login`
+}
+
+/**
+ * @summary Authenticate a platform (super) admin and open a platform session.
+ */
+export const platformAdminLogin = async (platformLoginBody: PlatformLoginBody, options?: RequestInit): Promise<PlatformAdmin> => {
+
+  return customFetch<PlatformAdmin>(getPlatformAdminLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      platformLoginBody,)
+  }
+);}
+
+
+
+
+export const getPlatformAdminLoginMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAdminLogin>>, TError,{data: BodyType<PlatformLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformAdminLogin>>, TError,{data: BodyType<PlatformLoginBody>}, TContext> => {
+
+const mutationKey = ['platformAdminLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAdminLogin>>, {data: BodyType<PlatformLoginBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformAdminLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformAdminLoginMutationResult = NonNullable<Awaited<ReturnType<typeof platformAdminLogin>>>
+    export type PlatformAdminLoginMutationBody = BodyType<PlatformLoginBody>
+    export type PlatformAdminLoginMutationError = ErrorType<void>
+
+    /**
+ * @summary Authenticate a platform (super) admin and open a platform session.
+ */
+export const usePlatformAdminLogin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAdminLogin>>, TError,{data: BodyType<PlatformLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof platformAdminLogin>>,
+        TError,
+        {data: BodyType<PlatformLoginBody>},
+        TContext
+      > => {
+      return useMutation(getPlatformAdminLoginMutationOptions(options));
+    }
+
+export const getPlatformAdminLogoutUrl = () => {
+
+
+
+
+  return `/api/platform/auth/logout`
+}
+
+/**
+ * @summary Clear the current platform session.
+ */
+export const platformAdminLogout = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getPlatformAdminLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPlatformAdminLogoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAdminLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformAdminLogout>>, TError,void, TContext> => {
+
+const mutationKey = ['platformAdminLogout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAdminLogout>>, void> = () => {
+
+
+          return  platformAdminLogout(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformAdminLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof platformAdminLogout>>>
+
+    export type PlatformAdminLogoutMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Clear the current platform session.
+ */
+export const usePlatformAdminLogout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAdminLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof platformAdminLogout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPlatformAdminLogoutMutationOptions(options));
+    }
+
+export const getGetPlatformAdminMeUrl = () => {
+
+
+
+
+  return `/api/platform/auth/me`
+}
+
+/**
+ * @summary The currently signed-in platform admin.
+ */
+export const getPlatformAdminMe = async ( options?: RequestInit): Promise<PlatformAdmin> => {
+
+  return customFetch<PlatformAdmin>(getGetPlatformAdminMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformAdminMeQueryKey = () => {
+    return [
+    `/api/platform/auth/me`
+    ] as const;
+    }
+
+
+export const getGetPlatformAdminMeQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformAdminMe>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformAdminMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformAdminMeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformAdminMe>>> = ({ signal }) => getPlatformAdminMe({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformAdminMe>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformAdminMeQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformAdminMe>>>
+export type GetPlatformAdminMeQueryError = ErrorType<void>
+
+
+/**
+ * @summary The currently signed-in platform admin.
+ */
+
+export function useGetPlatformAdminMe<TData = Awaited<ReturnType<typeof getPlatformAdminMe>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformAdminMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformAdminMeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAllTenantsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/tenants`
+}
+
+/**
+ * @summary Every tenant on the platform, with plan and admin count.
+ */
+export const listAllTenants = async ( options?: RequestInit): Promise<AdminTenant[]> => {
+
+  return customFetch<AdminTenant[]>(getListAllTenantsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAllTenantsQueryKey = () => {
+    return [
+    `/api/platform/admin/tenants`
+    ] as const;
+    }
+
+
+export const getListAllTenantsQueryOptions = <TData = Awaited<ReturnType<typeof listAllTenants>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllTenants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAllTenantsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAllTenants>>> = ({ signal }) => listAllTenants({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAllTenants>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAllTenantsQueryResult = NonNullable<Awaited<ReturnType<typeof listAllTenants>>>
+export type ListAllTenantsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every tenant on the platform, with plan and admin count.
+ */
+
+export function useListAllTenants<TData = Awaited<ReturnType<typeof listAllTenants>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllTenants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAllTenantsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getProvisionTenantAsAdminUrl = () => {
+
+
+
+
+  return `/api/platform/admin/tenants`
+}
+
+/**
+ * @summary Concierge-provision a tenant from a central club (and optionally create its first club admin). Mirrors self-serve signup but run by a platform admin.
+ */
+export const provisionTenantAsAdmin = async (provisionTenantBody: ProvisionTenantBody, options?: RequestInit): Promise<AdminTenant> => {
+
+  return customFetch<AdminTenant>(getProvisionTenantAsAdminUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      provisionTenantBody,)
+  }
+);}
+
+
+
+
+export const getProvisionTenantAsAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof provisionTenantAsAdmin>>, TError,{data: BodyType<ProvisionTenantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof provisionTenantAsAdmin>>, TError,{data: BodyType<ProvisionTenantBody>}, TContext> => {
+
+const mutationKey = ['provisionTenantAsAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof provisionTenantAsAdmin>>, {data: BodyType<ProvisionTenantBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  provisionTenantAsAdmin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ProvisionTenantAsAdminMutationResult = NonNullable<Awaited<ReturnType<typeof provisionTenantAsAdmin>>>
+    export type ProvisionTenantAsAdminMutationBody = BodyType<ProvisionTenantBody>
+    export type ProvisionTenantAsAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Concierge-provision a tenant from a central club (and optionally create its first club admin). Mirrors self-serve signup but run by a platform admin.
+ */
+export const useProvisionTenantAsAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof provisionTenantAsAdmin>>, TError,{data: BodyType<ProvisionTenantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof provisionTenantAsAdmin>>,
+        TError,
+        {data: BodyType<ProvisionTenantBody>},
+        TContext
+      > => {
+      return useMutation(getProvisionTenantAsAdminMutationOptions(options));
+    }
+
+export const getGetAdminTenantUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}`
+}
+
+/**
+ * @summary One tenant's detail, including its club admins.
+ */
+export const getAdminTenant = async (id: number, options?: RequestInit): Promise<AdminTenantDetail> => {
+
+  return customFetch<AdminTenantDetail>(getGetAdminTenantUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminTenantQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/tenants/${id}`
+    ] as const;
+    }
+
+
+export const getGetAdminTenantQueryOptions = <TData = Awaited<ReturnType<typeof getAdminTenant>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminTenant>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminTenantQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminTenant>>> = ({ signal }) => getAdminTenant(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminTenant>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminTenantQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminTenant>>>
+export type GetAdminTenantQueryError = ErrorType<void>
+
+
+/**
+ * @summary One tenant's detail, including its club admins.
+ */
+
+export function useGetAdminTenant<TData = Awaited<ReturnType<typeof getAdminTenant>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminTenant>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminTenantQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateAdminTenantUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}`
+}
+
+/**
+ * @summary Update a tenant's plan and/or custom domain.
+ */
+export const updateAdminTenant = async (id: number,
+    updateTenantBody: UpdateTenantBody, options?: RequestInit): Promise<AdminTenant> => {
+
+  return customFetch<AdminTenant>(getUpdateAdminTenantUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateTenantBody,)
+  }
+);}
+
+
+
+
+export const getUpdateAdminTenantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminTenant>>, TError,{id: number;data: BodyType<UpdateTenantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminTenant>>, TError,{id: number;data: BodyType<UpdateTenantBody>}, TContext> => {
+
+const mutationKey = ['updateAdminTenant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminTenant>>, {id: number;data: BodyType<UpdateTenantBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminTenant(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminTenantMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminTenant>>>
+    export type UpdateAdminTenantMutationBody = BodyType<UpdateTenantBody>
+    export type UpdateAdminTenantMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a tenant's plan and/or custom domain.
+ */
+export const useUpdateAdminTenant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminTenant>>, TError,{id: number;data: BodyType<UpdateTenantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminTenant>>,
+        TError,
+        {id: number;data: BodyType<UpdateTenantBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminTenantMutationOptions(options));
+    }
 

@@ -6185,7 +6185,7 @@ export const DownloadCardVideoJobParams = zod.object({
 /**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
-export const GetTenantBrandResponse = zod.object({
+export const GetTenantBrandResponse = zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
@@ -6193,6 +6193,178 @@ export const GetTenantBrandResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
-}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
+  "platform": zod.literal(true)
+}).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.')]).describe('A tenant\'s brand on a club host, or the platform marker on the apex\/marketing host (no tenant — the SPA mounts the landing page).')
+
+
+/**
+ * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
+ */
+export const GetTenantPlanResponse = zod.object({
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "entitlements": zod.object({
+  "customDomain": zod.boolean(),
+  "mobileApp": zod.boolean(),
+  "socialStudio": zod.boolean(),
+  "clubroomTv": zod.boolean(),
+  "curation": zod.boolean()
+}).describe('Per-feature flags resolved from the tenant\'s plan.')
+})
+
+
+/**
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ */
+export const GetAvailableClubsResponseItem = zod.object({
+  "centralClubId": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "suggestedSlug": zod.string().describe('A pre-validated slug derived from the club name.')
+}).describe('A central PCA club a visitor can claim during signup.')
+export const GetAvailableClubsResponse = zod.array(GetAvailableClubsResponseItem)
+
+
+/**
+ * @summary Whether a subdomain slug is valid and free to claim.
+ */
+export const CheckSlugAvailableQueryParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const CheckSlugAvailableResponse = zod.object({
+  "available": zod.boolean(),
+  "reason": zod.string().nullish().describe('Why the slug is unavailable (taken, reserved, malformed), if any.')
+})
+
+
+/**
+ * @summary Self-serve onboarding: claim a central club + subdomain and create the first club admin. Provisions the tenant (central reads + player crosswalk) and opens an admin session. Gated by SIGNUP_MODE.
+ */
+export const platformSignupBodyPasswordMin = 8;
+
+
+
+export const PlatformSignupBody = zod.object({
+  "centralClubId": zod.number(),
+  "slug": zod.string(),
+  "adminEmail": zod.string(),
+  "password": zod.string().min(platformSignupBodyPasswordMin)
+})
+
+
+/**
+ * @summary Authenticate a platform (super) admin and open a platform session.
+ */
+export const PlatformAdminLoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const PlatformAdminLoginResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "displayName": zod.string()
+}).describe('A platform (super) admin — the apex\/concierge console operator.')
+
+
+/**
+ * @summary The currently signed-in platform admin.
+ */
+export const GetPlatformAdminMeResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "displayName": zod.string()
+}).describe('A platform (super) admin — the apex\/concierge console operator.')
+
+
+/**
+ * @summary Every tenant on the platform, with plan and admin count.
+ */
+export const ListAllTenantsResponseItem = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.')
+export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
+
+
+/**
+ * @summary Concierge-provision a tenant from a central club (and optionally create its first club admin). Mirrors self-serve signup but run by a platform admin.
+ */
+export const provisionTenantAsAdminBodyPasswordMin = 8;
+
+
+
+export const ProvisionTenantAsAdminBody = zod.object({
+  "centralClubId": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string().optional(),
+  "plan": zod.enum(['free', 'club', 'pro']).optional(),
+  "adminEmail": zod.string().optional(),
+  "password": zod.string().min(provisionTenantAsAdminBodyPasswordMin).optional()
+})
+
+
+/**
+ * @summary One tenant's detail, including its club admins.
+ */
+export const GetAdminTenantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAdminTenantResponse = zod.object({
+  "tenant": zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.'),
+  "admins": zod.array(zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update a tenant's plan and/or custom domain.
+ */
+export const UpdateAdminTenantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminTenantBody = zod.object({
+  "plan": zod.enum(['free', 'club', 'pro']).optional(),
+  "customDomain": zod.string().nullish()
+}).describe('Partial update of a tenant\'s plan and\/or custom domain.')
+
+export const UpdateAdminTenantResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.')
 
 
