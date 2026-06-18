@@ -6,8 +6,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
-import { BrandProvider } from "@/lib/brand-context";
+import { BrandProvider, usePlatform } from "@/lib/brand-context";
 import { AdminShell } from "@/components/admin-shell";
+import { LandingRoutes } from "@/pages/landing";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import Home from "@/pages/home";
 import HonourBoards from "@/pages/honour-boards";
@@ -200,6 +201,12 @@ function KioskGate() {
 }
 
 function Router() {
+  // On the apex/marketing host the brand request returns the platform marker; mount
+  // the landing tree instead of any club app. Render nothing until the mode is known
+  // so the club chrome never flashes on the apex.
+  const platform = usePlatform();
+  if (platform.isLoading) return null;
+  if (platform.isPlatform) return <LandingRoutes />;
   return (
     <Switch>
       <Route path="/__card-render" component={CardRenderHarness} />

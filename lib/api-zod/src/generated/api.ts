@@ -6185,7 +6185,7 @@ export const DownloadCardVideoJobParams = zod.object({
 /**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
-export const GetTenantBrandResponse = zod.object({
+export const GetTenantBrandResponse = zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
@@ -6193,6 +6193,8 @@ export const GetTenantBrandResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
-}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
+  "platform": zod.literal(true)
+}).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.')]).describe('A tenant\'s brand on a club host, or the platform marker on the apex\/marketing host (no tenant — the SPA mounts the landing page).')
 
 

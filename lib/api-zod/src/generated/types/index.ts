@@ -255,6 +255,7 @@ export * from './opponentClub';
 export * from './partnershipRecord';
 export * from './partnerships';
 export * from './pendingDraftCount';
+export * from './platformBrand';
 export * from './player';
 export * from './playerAward';
 export * from './playerDetail';

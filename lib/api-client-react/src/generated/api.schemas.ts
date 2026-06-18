@@ -1161,6 +1161,13 @@ export interface TenantBrand {
   tertiaryColour?: string | null;
 }
 
+/**
+ * Returned by GET /tenant-brand on the apex/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.
+ */
+export interface PlatformBrand {
+  platform: true;
+}
+
 export interface MatchScorecardLine {
   id: number;
   playerId: number;

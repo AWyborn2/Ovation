@@ -6,7 +6,10 @@ import {
   shouldReadCentral,
   getTenantCentralClubId,
 } from "../lib/tenant";
-import { resolveTenantBySubdomain } from "../middlewares/tenant-context";
+import {
+  resolveTenantBySubdomain,
+  resolveHostMode,
+} from "../middlewares/tenant-context";
 
 /**
  * Per-tenant routing layer (Phase 1). Hardens the decisions every multi-club
@@ -65,6 +68,7 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
 
   afterEach(() => {
     delete process.env.CENTRAL_READS;
+    delete process.env.PLATFORM_HOSTS;
   });
 
   afterAll(async () => {
@@ -102,5 +106,29 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
     expect(
       await resolveTenantBySubdomain(fakeReq({ host: `no-such-${STAMP}.ovation.app` })),
     ).toBeNull();
+  });
+
+  it("classifies a tenant host as tenant mode (wins over platform)", async () => {
+    process.env.PLATFORM_HOSTS = "ovation.app,www.ovation.app";
+    expect(
+      await resolveHostMode(fakeReq({ host: `${centralSlug}.ovation.app` })),
+    ).toEqual({ mode: "tenant", tenantId: centralTenantId });
+  });
+
+  it("classifies an apex/marketing host as platform mode", async () => {
+    process.env.PLATFORM_HOSTS = "ovation.app,www.ovation.app";
+    expect(await resolveHostMode(fakeReq({ host: "ovation.app" }))).toEqual({
+      mode: "platform",
+    });
+    expect(await resolveHostMode(fakeReq({ host: "www.ovation.app" }))).toEqual({
+      mode: "platform",
+    });
+  });
+
+  it("classifies an unknown host (localhost/preview) as fallback, not platform", async () => {
+    process.env.PLATFORM_HOSTS = "ovation.app,www.ovation.app";
+    expect(await resolveHostMode(fakeReq({ host: "localhost" }))).toEqual({
+      mode: "fallback",
+    });
   });
 });

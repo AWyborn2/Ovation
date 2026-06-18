@@ -4242,7 +4242,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantBrand"
+                oneOf:
+                  - $ref: "#/components/schemas/TenantBrand"
+                  - $ref: "#/components/schemas/PlatformBrand"
+                description: >-
+                  A tenant's brand on a club host, or the platform marker on the
+                  apex/marketing host (no tenant — the SPA mounts the landing page).
 
 components:
   schemas:
@@ -5677,6 +5682,18 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+
+    PlatformBrand:
+      type: object
+      description: >-
+        Returned by GET /tenant-brand on the apex/marketing host, where no tenant
+        resolves. The web client treats this as the signal to render the platform
+        landing page (and signup) instead of a club app.
+      required: [platform]
+      properties:
+        platform:
+          type: boolean
+          enum: [true]
 
     MatchSummary:
       type: object

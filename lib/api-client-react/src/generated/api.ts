@@ -144,6 +144,7 @@ import type {
   NonPlayerPersonUpdate,
   Partnerships,
   PendingDraftCount,
+  PlatformBrand,
   Player,
   PlayerDetail,
   PlayerImage,
@@ -15369,9 +15370,9 @@ export const getGetTenantBrandUrl = () => {
 /**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
-export const getTenantBrand = async ( options?: RequestInit): Promise<TenantBrand> => {
+export const getTenantBrand = async ( options?: RequestInit): Promise<TenantBrand | PlatformBrand> => {
 
-  return customFetch<TenantBrand>(getGetTenantBrandUrl(),
+  return customFetch<TenantBrand | PlatformBrand>(getGetTenantBrandUrl(),
   {
     ...options,
     method: 'GET'
