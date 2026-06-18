@@ -1232,6 +1232,96 @@ export interface SignupResult {
   redirectUrl: string;
 }
 
+export interface PlatformLoginBody {
+  email: string;
+  password: string;
+}
+
+/**
+ * A platform (super) admin — the apex/concierge console operator.
+ */
+export interface PlatformAdmin {
+  id: number;
+  email: string;
+  displayName: string;
+}
+
+export type AdminTenantPlan = typeof AdminTenantPlan[keyof typeof AdminTenantPlan];
+
+
+export const AdminTenantPlan = {
+  free: 'free',
+  club: 'club',
+  pro: 'pro',
+} as const;
+
+/**
+ * A tenant as listed in the platform-admin console.
+ */
+export interface AdminTenant {
+  id: number;
+  slug: string;
+  name: string;
+  plan: AdminTenantPlan;
+  centralClubId: number;
+  /** @nullable */
+  centralClubName?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
+  readsFromCentral: boolean;
+  /** @nullable */
+  createdAt?: string | null;
+  adminCount: number;
+}
+
+export interface AdminTenantAdmin {
+  id: number;
+  username: string;
+  displayName: string;
+}
+
+export interface AdminTenantDetail {
+  tenant: AdminTenant;
+  admins: AdminTenantAdmin[];
+}
+
+export type UpdateTenantBodyPlan = typeof UpdateTenantBodyPlan[keyof typeof UpdateTenantBodyPlan];
+
+
+export const UpdateTenantBodyPlan = {
+  free: 'free',
+  club: 'club',
+  pro: 'pro',
+} as const;
+
+/**
+ * Partial update of a tenant's plan and/or custom domain.
+ */
+export interface UpdateTenantBody {
+  plan?: UpdateTenantBodyPlan;
+  /** @nullable */
+  customDomain?: string | null;
+}
+
+export type ProvisionTenantBodyPlan = typeof ProvisionTenantBodyPlan[keyof typeof ProvisionTenantBodyPlan];
+
+
+export const ProvisionTenantBodyPlan = {
+  free: 'free',
+  club: 'club',
+  pro: 'pro',
+} as const;
+
+export interface ProvisionTenantBody {
+  centralClubId: number;
+  slug: string;
+  name?: string;
+  plan?: ProvisionTenantBodyPlan;
+  adminEmail?: string;
+  /** @minLength 8 */
+  password?: string;
+}
+
 export interface MatchScorecardLine {
   id: number;
   playerId: number;

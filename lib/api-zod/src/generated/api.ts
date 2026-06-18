@@ -6254,3 +6254,117 @@ export const PlatformSignupBody = zod.object({
 })
 
 
+/**
+ * @summary Authenticate a platform (super) admin and open a platform session.
+ */
+export const PlatformAdminLoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const PlatformAdminLoginResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "displayName": zod.string()
+}).describe('A platform (super) admin — the apex\/concierge console operator.')
+
+
+/**
+ * @summary The currently signed-in platform admin.
+ */
+export const GetPlatformAdminMeResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "displayName": zod.string()
+}).describe('A platform (super) admin — the apex\/concierge console operator.')
+
+
+/**
+ * @summary Every tenant on the platform, with plan and admin count.
+ */
+export const ListAllTenantsResponseItem = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.')
+export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
+
+
+/**
+ * @summary Concierge-provision a tenant from a central club (and optionally create its first club admin). Mirrors self-serve signup but run by a platform admin.
+ */
+export const provisionTenantAsAdminBodyPasswordMin = 8;
+
+
+
+export const ProvisionTenantAsAdminBody = zod.object({
+  "centralClubId": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string().optional(),
+  "plan": zod.enum(['free', 'club', 'pro']).optional(),
+  "adminEmail": zod.string().optional(),
+  "password": zod.string().min(provisionTenantAsAdminBodyPasswordMin).optional()
+})
+
+
+/**
+ * @summary One tenant's detail, including its club admins.
+ */
+export const GetAdminTenantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAdminTenantResponse = zod.object({
+  "tenant": zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.'),
+  "admins": zod.array(zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update a tenant's plan and/or custom domain.
+ */
+export const UpdateAdminTenantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminTenantBody = zod.object({
+  "plan": zod.enum(['free', 'club', 'pro']).optional(),
+  "customDomain": zod.string().nullish()
+}).describe('Partial update of a tenant\'s plan and\/or custom domain.')
+
+export const UpdateAdminTenantResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.')
+
+

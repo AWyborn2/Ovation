@@ -4331,6 +4331,149 @@ paths:
         "409":
           description: The slug or club is already taken.
 
+  /platform/auth/login:
+    post:
+      operationId: platformAdminLogin
+      tags: [platformAdmin]
+      summary: Authenticate a platform (super) admin and open a platform session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformLoginBody"
+      responses:
+        "200":
+          description: Authenticated; platform session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformAdmin"
+        "400":
+          description: Missing or malformed credentials.
+        "401":
+          description: Invalid email or password.
+
+  /platform/auth/logout:
+    post:
+      operationId: platformAdminLogout
+      tags: [platformAdmin]
+      summary: Clear the current platform session.
+      responses:
+        "204":
+          description: Session cleared.
+
+  /platform/auth/me:
+    get:
+      operationId: getPlatformAdminMe
+      tags: [platformAdmin]
+      summary: The currently signed-in platform admin.
+      responses:
+        "200":
+          description: The signed-in platform admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformAdmin"
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/tenants:
+    get:
+      operationId: listAllTenants
+      tags: [platformAdmin]
+      summary: Every tenant on the platform, with plan and admin count.
+      responses:
+        "200":
+          description: All tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTenant"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: provisionTenantAsAdmin
+      tags: [platformAdmin]
+      summary: >-
+        Concierge-provision a tenant from a central club (and optionally create its
+        first club admin). Mirrors self-serve signup but run by a platform admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProvisionTenantBody"
+      responses:
+        "201":
+          description: Tenant provisioned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenant"
+        "400":
+          description: Invalid slug, club, email, or password.
+        "401":
+          description: Not authenticated.
+        "409":
+          description: The slug or club is already taken.
+
+  /platform/admin/tenants/{id}:
+    get:
+      operationId: getAdminTenant
+      tags: [platformAdmin]
+      summary: One tenant's detail, including its club admins.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tenant detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenantDetail"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+    patch:
+      operationId: updateAdminTenant
+      tags: [platformAdmin]
+      summary: Update a tenant's plan and/or custom domain.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTenantBody"
+      responses:
+        "200":
+          description: Updated tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenant"
+        "400":
+          description: Invalid plan or custom domain.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "409":
+          description: That custom domain is already in use.
+
 components:
   schemas:
     CardVideoJobInput:
@@ -5857,6 +6000,105 @@ components:
         redirectUrl:
           type: string
           description: The new tenant's admin URL to redirect the browser to.
+
+    PlatformLoginBody:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    PlatformAdmin:
+      type: object
+      description: A platform (super) admin — the apex/concierge console operator.
+      required: [id, email, displayName]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        displayName:
+          type: string
+
+    AdminTenant:
+      type: object
+      description: A tenant as listed in the platform-admin console.
+      required: [id, slug, name, plan, centralClubId, readsFromCentral, adminCount]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        plan:
+          type: string
+          enum: [free, club, pro]
+        centralClubId:
+          type: integer
+        centralClubName:
+          type: ["string", "null"]
+        customDomain:
+          type: ["string", "null"]
+        readsFromCentral:
+          type: boolean
+        createdAt:
+          type: ["string", "null"]
+        adminCount:
+          type: integer
+
+    AdminTenantAdmin:
+      type: object
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+
+    AdminTenantDetail:
+      type: object
+      required: [tenant, admins]
+      properties:
+        tenant:
+          $ref: "#/components/schemas/AdminTenant"
+        admins:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTenantAdmin"
+
+    UpdateTenantBody:
+      type: object
+      description: Partial update of a tenant's plan and/or custom domain.
+      properties:
+        plan:
+          type: string
+          enum: [free, club, pro]
+        customDomain:
+          type: ["string", "null"]
+
+    ProvisionTenantBody:
+      type: object
+      required: [centralClubId, slug]
+      properties:
+        centralClubId:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        plan:
+          type: string
+          enum: [free, club, pro]
+        adminEmail:
+          type: string
+        password:
+          type: string
+          minLength: 8
 
     MatchSummary:
       type: object
