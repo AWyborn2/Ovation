@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { tenantContext } from "./middlewares/tenant-context";
+import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin, ensureSeedPlatformAdmin } from "./lib/auth";
@@ -74,6 +75,15 @@ app.use(
   }),
 );
 app.use(cookieParser());
+
+// The billing webhook needs the RAW body for signature verification, so it must
+// be mounted before the JSON body parser. Inert while billing is disabled.
+app.post(
+  "/billing/webhook",
+  express.raw({ type: "application/json" }),
+  billingWebhookHandler,
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
