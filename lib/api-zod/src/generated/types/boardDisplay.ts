@@ -17,8 +17,14 @@ export interface BoardDisplay {
      * @maximum 3
      */
   columns: number;
-  /** Kiosk transition — continuous credit-scroll or paged slide. */
+  /** Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen). */
   transition: BoardDisplayTransition;
   /** Fill the full screen width on the kiosk (drop the narrow cap). */
   fit: boolean;
+  /**
+     * For the "wrap" fill mode on grid boards: how many side-by-side year-blocks to split the rows into (2..4).
+     * @minimum 2
+     * @maximum 4
+     */
+  wrapBlocks?: number;
 }

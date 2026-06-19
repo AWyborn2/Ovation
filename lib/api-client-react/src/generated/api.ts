@@ -116,6 +116,7 @@ import type {
   JuniorPremiershipUpdate,
   JuniorSeasonTopPerformers,
   JuniorSocialMilestone,
+  KioskTokenInput,
   KioskTokenResponse,
   LifeMember,
   LifeMemberInput,
@@ -12516,17 +12517,18 @@ export const getGenerateKioskTokenUrl = () => {
 }
 
 /**
- * Issues a fresh long-lived kiosk token, replacing any existing one (which immediately stops working). Returns the new token.
- * @summary Generate (or rotate) the clubroom TV kiosk access token (admin)
+ * Issues a kiosk token, replacing any existing one (which immediately stops working). With a body `{ token }` the admin sets a custom code; otherwise a random one is generated. Returns the active token.
+ * @summary Generate, set, or rotate the clubroom TV kiosk access token (admin)
  */
-export const generateKioskToken = async ( options?: RequestInit): Promise<KioskTokenResponse> => {
+export const generateKioskToken = async (kioskTokenInput?: KioskTokenInput, options?: RequestInit): Promise<KioskTokenResponse> => {
 
   return customFetch<KioskTokenResponse>(getGenerateKioskTokenUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kioskTokenInput,)
   }
 );}
 
@@ -12534,8 +12536,8 @@ export const generateKioskToken = async ( options?: RequestInit): Promise<KioskT
 
 
 export const getGenerateKioskTokenMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,{data?: BodyType<KioskTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,{data?: BodyType<KioskTokenInput>}, TContext> => {
 
 const mutationKey = ['generateKioskToken'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -12547,10 +12549,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateKioskToken>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateKioskToken>>, {data?: BodyType<KioskTokenInput>}> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  generateKioskToken(requestOptions)
+          return  generateKioskToken(data,requestOptions)
         }
 
 
@@ -12561,18 +12563,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateKioskTokenMutationResult = NonNullable<Awaited<ReturnType<typeof generateKioskToken>>>
-
+    export type GenerateKioskTokenMutationBody = BodyType<KioskTokenInput> | undefined
     export type GenerateKioskTokenMutationError = ErrorType<unknown>
 
     /**
- * @summary Generate (or rotate) the clubroom TV kiosk access token (admin)
+ * @summary Generate, set, or rotate the clubroom TV kiosk access token (admin)
  */
 export const useGenerateKioskToken = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateKioskToken>>, TError,{data?: BodyType<KioskTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateKioskToken>>,
         TError,
-        void,
+        {data?: BodyType<KioskTokenInput>},
         TContext
       > => {
       return useMutation(getGenerateKioskTokenMutationOptions(options));

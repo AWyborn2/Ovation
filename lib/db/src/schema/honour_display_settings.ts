@@ -12,9 +12,15 @@ export interface HonourBackgroundJson {
 // natural default). Stored keyed by board id in board_configs.
 export interface BoardDisplayConfigJson {
   columns?: number;
-  transition?: "scroll" | "slide";
+  transition?: "scroll" | "slide" | "wrap";
   fit?: boolean;
+  // Side-by-side block count for the "wrap" fill mode (grid boards), 2..4.
+  wrapBlocks?: number;
   // Per-board content/style overrides (all optional).
+  // Per-board skin override (built-in p1..p9 or "custom:<uuid>"); unset = club-wide.
+  skin?: string | null;
+  // Free-text footnote rendered under the board.
+  footnote?: string | null;
   heading?: string | null;
   subtitle?: string | null;
   textSize?: "sm" | "md" | "lg";
@@ -25,6 +31,40 @@ export interface BoardDisplayConfigJson {
   // Ordered column keys for grid-capable boards (offices, award keys, grades).
   // Non-empty switches a grid-capable board into its season-grid layout.
   gridColumns?: string[];
+}
+
+// One column of an admin-built custom grid board. `source` picks where the
+// column's cells come from; "manual" columns are typed by the admin.
+export interface CustomGridColumnJson {
+  key: string;
+  label: string;
+  source: "office" | "award" | "grade" | "premiership" | "manual";
+  sourceKey?: string | null;
+  // For manual columns: season label ("2024/25") → cell text.
+  manualValues?: Record<string, string> | null;
+}
+
+// An admin-built season-grid board: season rows × freely chosen columns drawn
+// from any data source (or typed manually). Carries its own look + fill mode.
+export interface CustomGridDefJson {
+  id: string; // "grid:<uuid>"
+  title: string;
+  subtitle?: string | null;
+  footnote?: string | null;
+  skin?: string | null;
+  seasonFrom?: number | null;
+  seasonTo?: number | null;
+  fillMode?: "scroll" | "slide" | "wrap" | null;
+  wrapBlocks?: number | null;
+  columns: CustomGridColumnJson[];
+}
+
+// A full-screen advertising creative placed between boards in the kiosk
+// rotation (distinct from the club sponsor library).
+export interface KioskAdJson {
+  id: string; // "ad:<uuid>"
+  name: string;
+  imageUrl: string;
 }
 
 // An admin-authored skin/theme. Built-in skins (p1..p8) are CSS-only and not
@@ -88,6 +128,18 @@ export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
   kioskSponsorStrip: boolean("kiosk_sponsor_strip").notNull().default(false),
   kioskSponsorSlides: boolean("kiosk_sponsor_slides").notNull().default(false),
   kioskSponsorSlideEvery: integer("kiosk_sponsor_slide_every").notNull().default(3),
+  // Sponsor slide style: one grid of all sponsors, or one large sponsor per slide.
+  kioskSponsorSlideStyle: text("kiosk_sponsor_slide_style").notNull().default("grid"),
+  // Which sponsors appear on the kiosk (subset of active); empty = all active.
+  kioskSponsorIds: jsonb("kiosk_sponsor_ids")
+    .$type<number[]>()
+    .notNull()
+    .default([]),
+  // Admin-uploaded full-screen ad creatives placed between boards.
+  kioskAds: jsonb("kiosk_ads")
+    .$type<KioskAdJson[]>()
+    .notNull()
+    .default([]),
   // Long-lived read-only access token that lets a fixed clubroom TV / Raspberry
   // Pi load the kiosk rotation without an admin login. NULL = no link issued
   // (kiosk token access disabled). Rotating/clearing this revokes old links.
@@ -100,6 +152,11 @@ export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
   // Admin-defined composite "columns" boards.
   composites: jsonb("composites")
     .$type<CompositeDefJson[]>()
+    .notNull()
+    .default([]),
+  // Admin-built custom season-grid boards.
+  customGrids: jsonb("custom_grids")
+    .$type<CustomGridDefJson[]>()
     .notNull()
     .default([]),
   // Admin-authored skins/themes (built-in p1..p8 are CSS-only, not stored here).

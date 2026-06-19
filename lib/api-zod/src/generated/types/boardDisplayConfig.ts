@@ -21,6 +21,16 @@ export interface BoardDisplayConfig {
   columns?: number;
   transition?: BoardDisplayConfigTransition;
   fit?: boolean;
+  /**
+     * Side-by-side block count for the "wrap" fill mode (grid boards).
+     * @minimum 2
+     * @maximum 4
+     */
+  wrapBlocks?: number;
+  /** Per-board skin override (built-in id p1..p9 or "custom:<uuid>"). Unset = use the club-wide skin. */
+  skin?: string | null;
+  /** Free-text footnote rendered under the board. */
+  footnote?: string | null;
   /** Override the board's heading/title. */
   heading?: string | null;
   /** Override the board's subtitle. */

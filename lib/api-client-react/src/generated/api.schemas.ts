@@ -3107,7 +3107,7 @@ export interface BoardEntry {
 }
 
 /**
- * Kiosk transition — continuous credit-scroll or paged slide.
+ * Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen).
  */
 export type BoardDisplayTransition = typeof BoardDisplayTransition[keyof typeof BoardDisplayTransition];
 
@@ -3115,6 +3115,7 @@ export type BoardDisplayTransition = typeof BoardDisplayTransition[keyof typeof 
 export const BoardDisplayTransition = {
   scroll: 'scroll',
   slide: 'slide',
+  wrap: 'wrap',
 } as const;
 
 /**
@@ -3127,10 +3128,16 @@ export interface BoardDisplay {
      * @maximum 3
      */
   columns: number;
-  /** Kiosk transition — continuous credit-scroll or paged slide. */
+  /** Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen). */
   transition: BoardDisplayTransition;
   /** Fill the full screen width on the kiosk (drop the narrow cap). */
   fit: boolean;
+  /**
+     * For the "wrap" fill mode on grid boards: how many side-by-side year-blocks to split the rows into (2..4).
+     * @minimum 2
+     * @maximum 4
+     */
+  wrapBlocks?: number;
 }
 
 export type HonourBackgroundKind = typeof HonourBackgroundKind[keyof typeof HonourBackgroundKind];
@@ -3156,6 +3163,7 @@ export type BoardDisplayConfigTransition = typeof BoardDisplayConfigTransition[k
 export const BoardDisplayConfigTransition = {
   scroll: 'scroll',
   slide: 'slide',
+  wrap: 'wrap',
 } as const;
 
 /**
@@ -3192,6 +3200,16 @@ export interface BoardDisplayConfig {
   columns?: number;
   transition?: BoardDisplayConfigTransition;
   fit?: boolean;
+  /**
+     * Side-by-side block count for the "wrap" fill mode (grid boards).
+     * @minimum 2
+     * @maximum 4
+     */
+  wrapBlocks?: number;
+  /** Per-board skin override (built-in id p1..p9 or "custom:<uuid>"). Unset = use the club-wide skin. */
+  skin?: string | null;
+  /** Free-text footnote rendered under the board. */
+  footnote?: string | null;
   /** Override the board's heading/title. */
   heading?: string | null;
   /** Override the board's subtitle. */
@@ -3271,6 +3289,8 @@ export const DisplayBoardLayout = {
 export interface BoardGridEntry {
   text: string;
   playerId?: number | null;
+  /** Small marker/caption shown with the name (e.g. "Premiers", "*"). */
+  note?: string | null;
 }
 
 /**
@@ -3313,6 +3333,10 @@ export interface DisplayBoard {
   columns?: BoardColumn[] | null;
   /** Season-grid matrix for the 'grid' layout (else null). */
   grid?: BoardGrid | null;
+  /** Effective per-board skin (resolved server-side from the board config or custom-grid definition); null = use the club-wide skin. */
+  skin?: string | null;
+  /** Free-text footnote rendered under the board. */
+  footnote?: string | null;
   display: BoardDisplay;
 }
 
@@ -3332,6 +3356,85 @@ export interface GridCatalogEntry {
   id: string;
   title: string;
   options: GridColumnOption[];
+}
+
+/**
+ * Data source: an office (committee role), an award, a grade's captains, premierships by grade, or free manual entry.
+ */
+export type CustomGridColumnSource = typeof CustomGridColumnSource[keyof typeof CustomGridColumnSource];
+
+
+export const CustomGridColumnSource = {
+  office: 'office',
+  award: 'award',
+  grade: 'grade',
+  premiership: 'premiership',
+  manual: 'manual',
+} as const;
+
+/**
+ * For manual columns: season label ("2024/25") → cell text. Other sources ignore this.
+ */
+export type CustomGridColumnManualValues = {[key: string]: string} | null;
+
+/**
+ * One column of an admin-built custom grid board. `source` selects where the column's cells come from; `manual` columns are typed by the admin.
+ */
+export interface CustomGridColumn {
+  /** Stable per-column id (unique within the board). */
+  key: string;
+  /** Column heading text. */
+  label: string;
+  /** Data source: an office (committee role), an award, a grade's captains, premierships by grade, or free manual entry. */
+  source: CustomGridColumnSource;
+  /** The specific office role / award key / grade for the chosen source (ignored for manual columns). */
+  sourceKey?: string | null;
+  /** For manual columns: season label ("2024/25") → cell text. Other sources ignore this. */
+  manualValues?: CustomGridColumnManualValues;
+}
+
+export type CustomGridDefFillMode = typeof CustomGridDefFillMode[keyof typeof CustomGridDefFillMode] | null;
+
+
+export const CustomGridDefFillMode = {
+  scroll: 'scroll',
+  slide: 'slide',
+  wrap: 'wrap',
+} as const;
+
+/**
+ * An admin-built season-grid board: season rows × freely chosen columns drawn from any data source (or typed manually). Carries its own look (skin), fill mode and footnote.
+ */
+export interface CustomGridDef {
+  /** Stable id, "grid:<uuid>" (validated server-side; never reused). */
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  footnote?: string | null;
+  /** Per-board skin (p1..p9 or "custom:<uuid>"); null = club-wide. */
+  skin?: string | null;
+  /** First season start-year to show (rows run newest→oldest). */
+  seasonFrom?: number | null;
+  /** Last season start-year to show; rows beyond the data are left blank so the board has room to grow (pre-listed future seasons). */
+  seasonTo?: number | null;
+  fillMode?: CustomGridDefFillMode;
+  /**
+     * @minimum 2
+     * @maximum 4
+     */
+  wrapBlocks?: number | null;
+  columns: CustomGridColumn[];
+}
+
+/**
+ * A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).
+ */
+export interface KioskAd {
+  /** Stable id, "ad:<uuid>". */
+  id: string;
+  name: string;
+  /** Full-screen ad image URL (or uploaded object path). */
+  imageUrl: string;
 }
 
 /**
@@ -3368,6 +3471,17 @@ export interface HonourColourOverrides {
 }
 
 /**
+ * Sponsor slide style — one grid of every sponsor, or one large sponsor per slide rotating through them.
+ */
+export type HonourDisplaySettingsKioskSponsorSlideStyle = typeof HonourDisplaySettingsKioskSponsorSlideStyle[keyof typeof HonourDisplaySettingsKioskSponsorSlideStyle];
+
+
+export const HonourDisplaySettingsKioskSponsorSlideStyle = {
+  grid: 'grid',
+  single: 'single',
+} as const;
+
+/**
  * Per-board display overrides keyed by board id.
  */
 export type HonourDisplaySettingsBoardConfigs = {[key: string]: BoardDisplayConfig};
@@ -3392,13 +3506,21 @@ export interface HonourDisplaySettings {
      * @minimum 1
      */
   kioskSponsorSlideEvery: number;
+  /** Sponsor slide style — one grid of every sponsor, or one large sponsor per slide rotating through them. */
+  kioskSponsorSlideStyle?: HonourDisplaySettingsKioskSponsorSlideStyle;
+  /** Which sponsors appear on the kiosk (subset of the active sponsors). Empty = all active sponsors. */
+  kioskSponsorIds?: number[];
+  /** Admin-uploaded full-screen ad creatives for the kiosk. */
+  kioskAds?: KioskAd[];
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
   /** Per-board display overrides keyed by board id. */
   boardConfigs: HonourDisplaySettingsBoardConfigs;
   /** Admin-defined composite 'columns' boards. */
   composites: CompositeDef[];
-  /** Admin-authored skins/themes (built-in p1..p8 not listed). */
+  /** Admin-built custom season-grid boards. */
+  customGrids?: CustomGridDef[];
+  /** Admin-authored skins/themes (built-in p1..p9 not listed). */
   skins?: HonourSkin[];
   colourOverrides?: HonourColourOverrides;
   /** Club-wide default title font stack (null = the skin's font). */
@@ -3409,6 +3531,22 @@ export interface KioskTokenResponse {
   /** The active kiosk token, or null when revoked / not issued. */
   token: string | null;
 }
+
+/**
+ * Optional body for generating a kiosk token. Provide `token` to set a custom code (3–40 chars, letters/numbers/hyphens); omit it for a random one.
+ */
+export interface KioskTokenInput {
+  /** Custom kiosk code, or null/omitted to auto-generate. */
+  token?: string | null;
+}
+
+export type HonourDisplaySettingsUpdateKioskSponsorSlideStyle = typeof HonourDisplaySettingsUpdateKioskSponsorSlideStyle[keyof typeof HonourDisplaySettingsUpdateKioskSponsorSlideStyle];
+
+
+export const HonourDisplaySettingsUpdateKioskSponsorSlideStyle = {
+  grid: 'grid',
+  single: 'single',
+} as const;
 
 export type HonourDisplaySettingsUpdateBoardConfigs = {[key: string]: BoardDisplayConfig};
 
@@ -3422,8 +3560,12 @@ export interface HonourDisplaySettingsUpdate {
   kioskSponsorSlides?: boolean;
   /** @minimum 1 */
   kioskSponsorSlideEvery?: number;
+  kioskSponsorSlideStyle?: HonourDisplaySettingsUpdateKioskSponsorSlideStyle;
+  kioskSponsorIds?: number[];
+  kioskAds?: KioskAd[];
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
+  customGrids?: CustomGridDef[];
   skins?: HonourSkin[];
   colourOverrides?: HonourColourOverrides;
   defaultFont?: string | null;
