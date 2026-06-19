@@ -16,6 +16,7 @@ import {
   DeleteHonourBoardOverrideParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -34,7 +35,7 @@ router.get("/honour-boards", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/honour-boards", requireAdmin, async (req, res): Promise<void> => {
+router.post("/honour-boards", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = CreateHonourBoardBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -56,7 +57,7 @@ router.post("/honour-boards", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.patch("/honour-boards/:key", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/honour-boards/:key", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = UpdateHonourBoardParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -79,7 +80,7 @@ router.patch("/honour-boards/:key", requireAdmin, async (req, res): Promise<void
   res.json(row);
 });
 
-router.delete("/honour-boards/:key", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/honour-boards/:key", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = DeleteHonourBoardParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -113,6 +114,7 @@ router.get("/honour-boards/:key/overrides", async (req, res): Promise<void> => {
 router.post(
   "/honour-boards/:key/overrides",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = UpsertHonourBoardOverrideParams.safeParse(req.params);
     if (!params.success) {
@@ -153,6 +155,7 @@ router.post(
 router.delete(
   "/honour-boards/:key/overrides/:playerId",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = DeleteHonourBoardOverrideParams.safeParse(req.params);
     if (!params.success) {

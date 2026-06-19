@@ -8,6 +8,7 @@ import {
   DeleteLifeMemberParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -145,7 +146,7 @@ router.get("/life-members", async (req, res): Promise<void> => {
   );
 });
 
-router.post("/life-members", requireAdmin, async (req, res): Promise<void> => {
+router.post("/life-members", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = CreateLifeMemberBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -166,7 +167,7 @@ router.post("/life-members", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.patch("/life-members/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/life-members/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = UpdateLifeMemberParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -194,7 +195,7 @@ router.patch("/life-members/:id", requireAdmin, async (req, res): Promise<void> 
   res.json(row);
 });
 
-router.delete("/life-members/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/life-members/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = DeleteLifeMemberParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
