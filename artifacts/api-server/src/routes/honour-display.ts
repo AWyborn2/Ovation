@@ -123,7 +123,7 @@ function generateKioskToken(): string {
 }
 
 /** Normalise + validate an admin-supplied custom kiosk code, or null if invalid. */
-function normalizeCustomKioskToken(input: unknown): string | null {
+export function normalizeCustomKioskToken(input: unknown): string | null {
   if (typeof input !== "string") return null;
   const trimmed = input.trim();
   return KIOSK_CUSTOM_RE.test(trimmed) ? trimmed : null;
@@ -135,7 +135,7 @@ function normalizeCustomKioskToken(input: unknown): string | null {
  * case-insensitively so they're forgiving to hand-type; legacy long base64url
  * tokens stay exact-match.
  */
-function kioskTokenMatches(stored: string | null, presented: unknown): boolean {
+export function kioskTokenMatches(stored: string | null, presented: unknown): boolean {
   if (!stored || typeof presented !== "string" || presented.length === 0) {
     return false;
   }
@@ -1351,7 +1351,7 @@ function buildComposites(
  * (a) carries per-cell notes and (b) can span an explicit season range so the
  * board pre-lists blank future seasons (rows always run newest → oldest).
  */
-function composeCustomGrid(
+export function composeCustomGrid(
   columns: GridColumnOptionOut[],
   records: {
     seasonLabel: string;
