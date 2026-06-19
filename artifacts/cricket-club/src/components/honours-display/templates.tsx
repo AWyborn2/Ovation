@@ -305,49 +305,81 @@ export function ColumnsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
 
 export function GridBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   const grid = board.grid;
+
+  const renderTable = (rows: NonNullable<typeof grid>["rows"]) => (
+    <table className="hb-grid-table">
+      <thead>
+        <tr>
+          <th className="hb-grid-rowhead">{grid!.rowHeading}</th>
+          {grid!.columnHeadings.map((h, ci) => (
+            <th key={ci}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, ri) => (
+          <tr className="row" key={ri}>
+            <td className="hb-grid-rowhead">
+              <span className="hb-season">{row.heading}</span>
+            </td>
+            {row.cells.map((cell, ci) => (
+              <td key={ci}>
+                {cell.entries.length ? (
+                  cell.entries.map((en, ei) => (
+                    <span className="hb-grid-name" key={ei}>
+                      <NameLink playerId={en.playerId} kiosk={kiosk}>
+                        {en.text}
+                      </NameLink>
+                      {en.note ? (
+                        <span className="hb-grid-note">{en.note}</span>
+                      ) : null}
+                    </span>
+                  ))
+                ) : (
+                  <span className="hb-grid-empty">—</span>
+                )}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  // "wrap" fill mode: split the rows into N side-by-side year-blocks so a tall
+  // grid fills one screen (like a printed two-half honour board) instead of
+  // scrolling. Each block repeats the header row.
+  const wrap = board.display?.transition === "wrap";
+  const blocks = Math.min(4, Math.max(2, board.display?.wrapBlocks ?? 2));
+
+  let body: ReactNode;
+  if (!grid || grid.rows.length === 0) {
+    body = <p className="hb-sub">No data for the selected columns.</p>;
+  } else if (wrap && grid.rows.length > blocks) {
+    const per = Math.ceil(grid.rows.length / blocks);
+    const chunks: NonNullable<typeof grid>["rows"][] = [];
+    for (let i = 0; i < grid.rows.length; i += per)
+      chunks.push(grid.rows.slice(i, i + per));
+    body = (
+      <div
+        className="hb-grid-wrap"
+        style={{ gridTemplateColumns: `repeat(${chunks.length}, minmax(0, 1fr))` }}
+      >
+        {chunks.map((ch, i) => (
+          <div className="hb-grid-wrap-block" key={i}>
+            {renderTable(ch)}
+          </div>
+        ))}
+      </div>
+    );
+  } else {
+    body = <div className="hb-grid-scroll">{renderTable(grid.rows)}</div>;
+  }
+
   return (
     <div className="hb-board hb-grid">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      {grid && grid.rows.length ? (
-        <div className="hb-grid-scroll">
-          <table className="hb-grid-table">
-            <thead>
-              <tr>
-                <th className="hb-grid-rowhead">{grid.rowHeading}</th>
-                {grid.columnHeadings.map((h, ci) => (
-                  <th key={ci}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {grid.rows.map((row, ri) => (
-                <tr className="row" key={ri}>
-                  <td className="hb-grid-rowhead">
-                    <span className="hb-season">{row.heading}</span>
-                  </td>
-                  {row.cells.map((cell, ci) => (
-                    <td key={ci}>
-                      {cell.entries.length ? (
-                        cell.entries.map((en, ei) => (
-                          <span className="hb-grid-name" key={ei}>
-                            <NameLink playerId={en.playerId} kiosk={kiosk}>
-                              {en.text}
-                            </NameLink>
-                          </span>
-                        ))
-                      ) : (
-                        <span className="hb-grid-empty">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="hb-sub">No data for the selected columns.</p>
-      )}
+      {body}
     </div>
   );
 }

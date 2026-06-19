@@ -5,7 +5,7 @@
      1. Base layout — markup-driven classes shared by every board+skin.
         Cosmetics are read from CSS variables so a single skin class on the
         `.hb` root re-themes every board without touching the layout.
-     2. Seven skins — `.hb.skin-pX` only re-defines the cosmetic vars (plus a
+     2. Seven skins — `.skin-pX` only re-defines the cosmetic vars (plus a
         few structural flourishes); each board keeps its natural layout.
      3. Kiosk — fullscreen rotator chrome + row-reveal animation.
 
@@ -473,7 +473,7 @@
    =========================================================================== */
 
 /* P1 · Heritage Timber — carved dark wood + gold lettering */
-.hb.skin-p1 {
+.skin-p1 {
   --hb-bg: transparent;
   --hb-board-bg: linear-gradient(135deg, #3a2a1c 0%, #4a3526 50%, #2e2015 100%);
   --hb-board-border: #6b4f33;
@@ -492,13 +492,13 @@
   --hb-chip-ink: #2e2015;
   --hb-title-font: "Georgia", "Times New Roman", serif;
 }
-.hb.skin-p1 .hb-squad-name {
+.skin-p1 .hb-squad-name {
   background: rgba(0, 0, 0, 0.25);
   border-color: rgba(217, 187, 107, 0.3);
 }
 
 /* P2 · Club Colours — painted plaque in club primary/secondary */
-.hb.skin-p2 {
+.skin-p2 {
   --hb-bg: transparent;
   --hb-board-bg: var(--club-primary, #1b2a4a);
   --hb-board-border: rgba(255, 255, 255, 0.15);
@@ -516,13 +516,13 @@
   --hb-chip-bg: var(--club-accent, #c8a951);
   --hb-chip-ink: #1a1a1a;
 }
-.hb.skin-p2 .hb-squad-name {
+.skin-p2 .hb-squad-name {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* P3 · Glass / Etched — frosted translucent panel */
-.hb.skin-p3 {
+.skin-p3 {
   --hb-bg: linear-gradient(135deg, #e2e8f0, #cbd5e1);
   --hb-board-bg: rgba(255, 255, 255, 0.55);
   --hb-board-border: rgba(255, 255, 255, 0.7);
@@ -541,13 +541,13 @@
   --hb-chip-ink: #ffffff;
   --hb-title-font: "Helvetica Neue", Arial, sans-serif;
 }
-.hb.skin-p3 .hb-board {
+.skin-p3 .hb-board {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 /* P4 · Modern Minimal — clean light card */
-.hb.skin-p4 {
+.skin-p4 {
   --hb-bg: transparent;
   --hb-board-bg: #ffffff;
   --hb-board-border: #e2e8f0;
@@ -568,7 +568,7 @@
 }
 
 /* P5 · Broadcast — hero styling on black */
-.hb.skin-p5 {
+.skin-p5 {
   --hb-bg: #000000;
   --hb-board-bg: linear-gradient(180deg, #0a0a0a, #161616);
   --hb-board-border: rgba(255, 255, 255, 0.1);
@@ -587,13 +587,13 @@
   --hb-chip-ink: #000000;
   --hb-title-font: "Helvetica Neue", Arial, sans-serif;
 }
-.hb.skin-p5 .hb-title {
+.skin-p5 .hb-title {
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 /* P6 · Soft Cards — soft rounded on light backdrop */
-.hb.skin-p6 {
+.skin-p6 {
   --hb-bg: #f1f5f9;
   --hb-board-bg: #ffffff;
   --hb-board-border: transparent;
@@ -612,12 +612,12 @@
   --hb-chip-ink: var(--club-primary, #6366f1);
   --hb-title-font: "Helvetica Neue", Arial, sans-serif;
 }
-.hb.skin-p6 .hb-flag {
+.skin-p6 .hb-flag {
   border-radius: 16px;
 }
 
 /* P7 · App Style — bright accents, flag cards */
-.hb.skin-p7 {
+.skin-p7 {
   --hb-bg: transparent;
   --hb-board-bg: #ffffff;
   --hb-board-border: #e5e7eb;
@@ -636,12 +636,12 @@
   --hb-chip-ink: #ffffff;
   --hb-title-font: "Helvetica Neue", Arial, sans-serif;
 }
-.hb.skin-p7 .hb-flag {
+.skin-p7 .hb-flag {
   background: linear-gradient(135deg, var(--hb-faint), #ffffff);
 }
 
 /* P8 · App Dark — modern dark mobile-app surfaces with club accent */
-.hb.skin-p8 {
+.skin-p8 {
   --hb-bg: #0b0f17;
   --hb-board-bg: #131a26;
   --hb-board-border: rgba(255, 255, 255, 0.08);
@@ -660,13 +660,93 @@
   --hb-chip-ink: var(--club-primary, #38bdf8);
   --hb-title-font: "Helvetica Neue", Arial, sans-serif;
 }
-.hb.skin-p8 .hb-flag {
+.skin-p8 .hb-flag {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 16px;
 }
-.hb.skin-p8 .hb-squad-name {
+.skin-p8 .hb-squad-name {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* P9 · Printed Board — clean white acrylic plaque with a filled colour header
+   row (reads like a sign-written club honour board). Tuned for grid boards. */
+.skin-p9 {
+  --hb-bg: #e9eced;
+  --hb-board-bg: #ffffff;
+  --hb-board-border: #c9ced3;
+  --hb-shadow: 0 8px 26px rgba(15, 23, 42, 0.12);
+  --hb-radius: 6px;
+  --hb-ink: #13181d;
+  --hb-muted: #4a525a;
+  --hb-faint: #f3f5f6;
+  --hb-row-stripe: #f5f7f8;
+  --hb-accent: var(--club-primary, #c1121f);
+  --hb-accent-ink: #ffffff;
+  --hb-head-border: var(--club-primary, #c1121f);
+  --hb-crest-bg: var(--club-primary, #c1121f);
+  --hb-crest-ink: #ffffff;
+  --hb-chip-bg: var(--club-primary, #c1121f);
+  --hb-chip-ink: #ffffff;
+  --hb-title-font: "Helvetica Neue", Arial, sans-serif;
+}
+/* Filled colour header row + leading season column, like a printed board. */
+.skin-p9 .hb-grid-table th {
+  background: var(--club-primary, #c1121f);
+  color: #fff;
+  border: 1px solid var(--club-primary, #c1121f);
+}
+.skin-p9 .hb-grid-table td {
+  border: 1px solid #d7dadd;
+}
+.skin-p9 .hb-grid-table td.hb-grid-rowhead {
+  background: var(--club-primary, #c1121f);
+}
+.skin-p9 .hb-grid-table td.hb-grid-rowhead .hb-season {
+  color: #fff;
+}
+.skin-p9 .hb-grid-table .row:nth-child(odd) td {
+  background: #ffffff;
+}
+.skin-p9 .hb-grid-table .row:nth-child(odd) td.hb-grid-rowhead {
+  background: var(--club-primary, #c1121f);
+}
+
+/* ---- Per-board skin wrapper -------------------------------------------------
+   A board can carry its own skin (overriding the club-wide one). The wrapper
+   applies the skin's --hb-* vars to just that board's subtree. */
+.hb-board-skin {
+  display: block;
+}
+
+/* ---- Grid "wrap" fill — split tall grids into side-by-side year-blocks ----- */
+.hb-grid-wrap {
+  display: grid;
+  gap: 0 clamp(16px, 3vw, 48px);
+  align-items: start;
+}
+.hb-grid-wrap-block {
+  min-width: 0;
+}
+
+/* Cell marker/caption (e.g. "Premiers", "*") shown beside a grid name. */
+.hb-grid-note {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hb-accent);
+  vertical-align: middle;
+}
+
+/* Board footnote line (admin free text under a board). */
+.hb-board-footnote {
+  margin: 10px 2px 0;
+  font-size: clamp(12px, 1.3vw, 15px);
+  font-style: italic;
+  color: var(--hb-muted);
 }
 
 /* ===========================================================================
@@ -863,5 +943,41 @@
 .hb-sponsor-slide-cell img {
   max-width: 100%;
   max-height: clamp(80px, 14vh, 130px);
+  object-fit: contain;
+}
+
+/* Single-sponsor "hero" slide. */
+.hb-sponsor-solo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 3vh, 36px);
+}
+.hb-sponsor-solo-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 20px;
+  padding: clamp(28px, 5vh, 64px) clamp(36px, 6vw, 96px);
+}
+.hb-sponsor-solo-cell img {
+  max-width: min(72vw, 900px);
+  max-height: 46vh;
+  object-fit: contain;
+}
+
+/* Full-screen ad creative slide. */
+.hb-ad-slide {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+.hb-ad-slide img {
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
