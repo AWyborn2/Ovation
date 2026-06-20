@@ -12,4 +12,6 @@
 export interface BoardGridEntry {
   text: string;
   playerId?: number | null;
+  /** Small marker/caption shown with the name (e.g. "Premiers", "*"). */
+  note?: string | null;
 }

@@ -69,6 +69,7 @@ export default function HonoursDisplay() {
             board={board}
             brand={brand}
             cfg={settings.boardConfigs?.[board.id]}
+            skins={settings.skins}
           />
         ))}
       </div>
