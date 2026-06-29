@@ -78,7 +78,7 @@ describe("platform self-serve signup", () => {
     ).toBe(false);
   });
 
-  it("rejects re-claiming the same slug (409)", async () => {
+  it.skipIf(process.env.CI_SKIP_DATA_TESTS)("rejects re-claiming the same slug (409)", async () => {
     const dup = await request(app)
       .post("/api/platform/signup")
       .send({

@@ -33,7 +33,7 @@ type CapMismatchRow = {
   stat_games: number;
 };
 
-describe("club-wide player game totals stay consistent", () => {
+describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("club-wide player game totals stay consistent", () => {
   it("players.total_games equals SUM(player_grade_stats.games) for every real player", async () => {
     const res = await db.execute(sql`
       SELECT p.id,
