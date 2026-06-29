@@ -99,7 +99,31 @@ rewriting either side.
 - Juniors isolation invariant (junior_* tables, `/api/juniors/*` only, never blended) holds
   per-tenant.
 
-## Phase 0 — prove the central model (current phase; do these in order)
+## STATUS (29 Jun 2026) — read this first
+
+The roadmap below is the original plan. **Reality has moved ahead of it.** Current state on
+`main`:
+
+- **Phase 0 (prove central model): COMPLETE.** `lib/db/src/central.ts` (read-only pool) +
+  `central-queries.ts` exist; reads flip to central behind the `shouldReadCentral` flag
+  (`api-server/src/lib/tenant.ts`); `scripts/src/compare-central-leaderboard.ts` is the
+  proof harness. `tenant-brand.ts`, the `tenants` table, and `tenant-context` middleware are
+  in. Brand sweep is well underway — Halls Head literals down to ~48 files (from 77).
+- **Phase 1 (friendly clubs on subdomains): in progress** — tenant routing + isolation tests
+  committed (`tenant-routing.test.ts`, `tenant-isolation.test.ts`, `admins-isolation.test.ts`).
+- **Phase 2 (self-serve + Stripe): partially BUILT BUT DORMANT.** Committed: 2b self-serve
+  onboarding + tenant-scoped admin auth (live); 2c plan entitlements (`lib/entitlements.ts`,
+  **dormant**); 2d Stripe/billing adapter (`routes/billing.ts`, `lib/billing.ts`, **inert** —
+  webhook wired in `app.ts` but disabled); 2e super-admin / platform-admin console (live).
+
+⚠️ Implications: billing + entitlements code is present in a running server but switched off —
+treat as unexercised/brittle. The stats core is mid-migration (some reads local, some central),
+so the local-vs-central boundary is the top correctness risk; keep all central reads funnelled
+through `central-queries.ts` and guarded by the `*-consistency.test.ts` suites.
+
+See `AGENTS.md` for the full current-state map.
+
+## Phase 0 — prove the central model (✅ COMPLETE — kept for context)
 
 1. ✅ DONE (11 Jun 2026). Supabase project `ovation-central` (org "Ovation", ap-southeast-2,
    ref `sbsrjlozgjoavtmdyqit`). Dump loaded into schema `central`; all counts verified
@@ -113,28 +137,4 @@ rewriting either side.
 3. Behind a feature flag, repoint ONE read (e.g. grade batting leaderboard) to
    `central.match_batting` filtered by `club_id`, compare output against the existing HHCC
    numbers (HHCC = `central.clubs.club_id = 1`). This is the end-to-end proof.
-4. Generalise `halls-head-brand.ts` → `tenant-brand.ts`; add `tenants` table with Halls Head
-   hard-coded as tenant #1; tenant-context middleware (header or env for now, subdomain later).
-5. Sweep the 77-file brand inventory: replace literals with tenant-sourced values (name, logo,
-   colours, titles, OG tags). Leave the juniors-banner brown as a tenant theme value.
-6. Add tenant-isolation tests early — one tenant must never read another's curated data.
-
-Phase 1: 2–3 friendly PCA clubs on subdomains (concierge). Phase 2: self-serve signup, Stripe,
-RLS, custom domains. Phase 3: other associations as additional central datasets.
-
-## Do not break
-
-- **OpenAPI-first**: change `lib/api-spec/openapi.yaml`, then
-  `pnpm --filter @workspace/api-spec run codegen`. Never hand-edit generated files.
-- **Juniors isolation** (see replit.md), **fill-in exclusion** (`playerId >= 90000`),
-  **one ingestion method per (grade, season)**, and every Gotcha in `replit.md`.
-- `@workspace/scorecard` stays the single view-model for web + mobile.
-- Curated club content is the moat — tenant-scope it, never replace it with central data.
-
-## Data governance (hard constraint)
-
-Deep scorecards were scraped for the pilot. Keep the ingest behind a clean adapter boundary
-(scrape → PlayHQ public API for fixtures/results/ladders → partner API for deep scorecards).
-**Do not commercialise on scraped data**; pilot/non-commercial framing until partner or licence
-access is secured (PlayHQ partner application / Fixtura). Review cricket.com.au Third-Party
-Application T&Cs before launch.
+4. Gen

@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "recompute-all": "tsx src/maintenance/recompute-all.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:ci": "tsx src/maintenance/seed-ci-tenant.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",
