@@ -101,6 +101,8 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
       # Deterministic secret so session-cookie signing is stable across the run.
       SESSION_SECRET: ci-session-secret-not-for-production
+      # Read-only central PCA database (Supabase). Stored as a GitHub Actions secret.
+      # Several tenant/platform suites import a module that connects on load.
       CENTRAL_DATABASE_URL: ${{ secrets.CENTRAL_DATABASE_URL }}
 
     steps:
