@@ -76,7 +76,7 @@ async function gradeRows(playerId: number) {
     .where(eq(playerGradeStatsTable.playerId, playerId));
 }
 
-describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("senior career Games / Runs / Wickets are consistent across every surface", () => {
+describe("senior career Games / Runs / Wickets are consistent across every surface", () => {
   it("totalRuns / totalWickets / totalGames match across Directory, Detail and the per-grade Leaderboard", async () => {
     for (const p of KNOWN) {
       const career = await careerTotals(p.id);
