@@ -101,6 +101,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
       # Deterministic secret so session-cookie signing is stable across the run.
       SESSION_SECRET: ci-session-secret-not-for-production
+      CENTRAL_DATABASE_URL: ${{ secrets.CENTRAL_DATABASE_URL }}
 
     steps:
       - uses: actions/checkout@v4
