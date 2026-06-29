@@ -25,5 +25,9 @@ export interface DisplayBoard {
   columns?: BoardColumn[] | null;
   /** Season-grid matrix for the 'grid' layout (else null). */
   grid?: BoardGrid | null;
+  /** Effective per-board skin (resolved server-side from the board config or custom-grid definition); null = use the club-wide skin. */
+  skin?: string | null;
+  /** Free-text footnote rendered under the board. */
+  footnote?: string | null;
   display: BoardDisplay;
 }

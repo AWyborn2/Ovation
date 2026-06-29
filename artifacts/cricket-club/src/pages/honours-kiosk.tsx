@@ -7,10 +7,16 @@ import {
   getGetKioskDisplayQueryKey,
 } from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
-import { SponsorStrip, SponsorSlide } from "@/components/honours-display/SponsorAds";
+import {
+  SponsorStrip,
+  SponsorSlide,
+  SponsorSlideSingle,
+  AdSlide,
+} from "@/components/honours-display/SponsorAds";
 import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import type { DisplayBoard } from "@/components/honours-display/types";
+import type { Sponsor, KioskAd } from "@workspace/api-client-react";
 import {
   useApproachingBoard,
   applyBoardConfig,
@@ -38,11 +44,13 @@ type Frame =
   | {
       kind: "board";
       board: DisplayBoard;
-      transition: "scroll" | "slide";
+      mode: "scroll" | "slide" | "wrap";
       fit: boolean;
       key: string;
     }
-  | { kind: "sponsor"; key: string };
+  // A sponsor frame: `sponsor` set → one large sponsor; null → grid of all.
+  | { kind: "sponsor"; key: string; sponsor: Sponsor | null }
+  | { kind: "ad"; key: string; ad: KioskAd };
 
 /**
  * Estimated height (px) reserved at the bottom of the screen for the persistent
@@ -150,8 +158,16 @@ export default function HonoursKiosk() {
   const brand = data?.brand;
 
   // Sponsor advertising (admin-toggleable, independent of share-card sponsors).
-  // Both modes need at least one active sponsor to render anything.
-  const activeSponsors = data?.activeSponsors ?? [];
+  // The admin may show only a subset of active sponsors (empty = all).
+  const allSponsors = data?.activeSponsors ?? [];
+  const chosenIds = settings?.kioskSponsorIds ?? [];
+  const activeSponsors =
+    chosenIds.length > 0
+      ? allSponsors.filter((s) => chosenIds.includes(s.id))
+      : allSponsors;
+  const ads = settings?.kioskAds ?? [];
+  const slideStyle = settings?.kioskSponsorSlideStyle ?? "grid";
+  // Both modes need at least one (chosen) active sponsor to render anything.
   const sponsorStripOn = !!settings?.kioskSponsorStrip && activeSponsors.length > 0;
   const sponsorSlidesOn = !!settings?.kioskSponsorSlides && activeSponsors.length > 0;
   const stripPx = sponsorStripOn ? KIOSK_STRIP_PX : 0;
@@ -169,55 +185,82 @@ export default function HonoursKiosk() {
   const ENDHOLD = settings?.kioskEndHoldMs ?? 3000;
   const SPEED = settings?.kioskScrollSpeed ?? 36;
 
-  // Resolve the kiosk sequence into the ordered list of boards to show.
-  const sequence = useMemo(() => {
-    if (!boards.length || !settings) return [] as DisplayBoard[];
-    const byId = new Map(boards.map((b) => [b.id, b]));
-    const seq = (settings.kioskSequence ?? [])
-      .map((id) => byId.get(id))
-      .filter((b): b is DisplayBoard => b != null);
-    return seq.length ? seq : boards;
+  // Boards by id, and the ordered sequence of items to show. The sequence can
+  // hold board ids AND placement tokens ("sponsor", "ad:<id>") so admins can
+  // drop sponsor slides / ad creatives at chosen positions. Empty = all boards.
+  const byId = useMemo(() => new Map(boards.map((b) => [b.id, b])), [boards]);
+  const items = useMemo<string[]>(() => {
+    if (!boards.length || !settings) return [];
+    const seq = settings.kioskSequence ?? [];
+    return seq.length ? seq : boards.map((b) => b.id);
   }, [boards, settings]);
 
-  // Flatten the sequence into individual frames: a "scroll" board is one frame
-  // (credit-scrolled); a "slide" board is paginated into screen-sized frames.
-  // When sponsor slides are on, a full-screen sponsor frame is interleaved after
-  // every N *boards* (counted at the sequence level, so a paginated board counts
-  // once) — and at least once if the sequence is shorter than N.
+  // Flatten the sequence into individual frames. A "scroll" board is one frame
+  // (credit-scrolled); a "slide" board is paginated into screen-sized frames; a
+  // "wrap" grid board is one frame (fills the screen via side-by-side blocks).
+  // Sponsor slides appear at explicit "sponsor" tokens AND, when enabled, are
+  // auto-interleaved after every N boards. Sponsor slides honour the chosen
+  // style (one grid of all sponsors, or one large sponsor per slide rotating).
   const frames = useMemo<Frame[]>(() => {
     const out: Frame[] = [];
     const every = Math.max(1, settings?.kioskSponsorSlideEvery ?? 3);
-    let sponsorCount = 0;
-    sequence.forEach((b, i) => {
-      const fit = b.display.fit;
-      if (b.display.transition === "slide") {
-        paginate(b, rowsPerPage).forEach((pb, j) =>
-          out.push({
-            kind: "board",
-            board: pb,
-            transition: "slide",
-            fit,
-            key: `${b.id}:slide:${j}`,
-          }),
+    let boardCount = 0;
+    let autoCount = 0;
+
+    const pushSponsor = (keyBase: string) => {
+      if (activeSponsors.length === 0) return;
+      if (slideStyle === "single") {
+        activeSponsors.forEach((s, k) =>
+          out.push({ kind: "sponsor", key: `${keyBase}:${s.id}:${k}`, sponsor: s }),
         );
       } else {
-        out.push({
-          kind: "board",
-          board: b,
-          transition: "scroll",
-          fit,
-          key: `${b.id}:scroll`,
-        });
+        out.push({ kind: "sponsor", key: keyBase, sponsor: null });
       }
-      if (sponsorSlidesOn && (i + 1) % every === 0) {
-        out.push({ kind: "sponsor", key: `sponsor:${sponsorCount++}` });
+    };
+
+    items.forEach((id, i) => {
+      if (id === "sponsor") {
+        pushSponsor(`seq-sponsor:${i}`);
+        return;
+      }
+      if (id.startsWith("ad:")) {
+        const ad = ads.find((a) => a.id === id);
+        if (ad) out.push({ kind: "ad", key: `seq-ad:${i}`, ad });
+        return;
+      }
+      const b = byId.get(id);
+      if (!b) return;
+      const fit = b.display.fit;
+      const t = b.display.transition;
+      if (t === "slide") {
+        paginate(b, rowsPerPage).forEach((pb, j) =>
+          out.push({ kind: "board", board: pb, mode: "slide", fit, key: `${b.id}:slide:${j}` }),
+        );
+      } else if (t === "wrap") {
+        out.push({ kind: "board", board: b, mode: "wrap", fit, key: `${b.id}:wrap` });
+      } else {
+        out.push({ kind: "board", board: b, mode: "scroll", fit, key: `${b.id}:scroll` });
+      }
+      boardCount++;
+      if (sponsorSlidesOn && boardCount % every === 0) {
+        pushSponsor(`auto-sponsor:${autoCount++}`);
       }
     });
-    if (sponsorSlidesOn && sponsorCount === 0 && out.length > 0) {
-      out.push({ kind: "sponsor", key: "sponsor:0" });
+
+    if (sponsorSlidesOn && autoCount === 0 && out.some((f) => f.kind === "board")) {
+      pushSponsor("auto-sponsor:0");
     }
     return out;
-  }, [sequence, rowsPerPage, sponsorSlidesOn, settings?.kioskSponsorSlideEvery]);
+  }, [
+    items,
+    byId,
+    rowsPerPage,
+    sponsorSlidesOn,
+    slideStyle,
+    activeSponsors,
+    ads,
+    settings?.kioskSponsorSlideEvery,
+  ]);
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -250,10 +293,10 @@ export default function HonoursKiosk() {
     const myCycle = cycleRef.current;
     const alive = () => cycleRef.current === myCycle;
 
-    // Sponsor frames hold like slides (no credit-scroll); board frames keep
-    // their own transition. (A sponsor frame has no `.hb-board` anyway.)
+    // Only "scroll" boards credit-scroll; slide/wrap boards and sponsor/ad
+    // frames just hold. (Sponsor/ad frames have no `.hb-board` anyway.)
     const cur = frames[index % frames.length];
-    const isSlide = !cur || cur.kind === "sponsor" || cur.transition === "slide";
+    const isSlide = !cur || cur.kind !== "board" || cur.mode !== "scroll";
     const fr = frameRef.current?.querySelector<HTMLElement>(".hb-board");
     if (frameRef.current) stagger(frameRef.current);
     if (fr) fr.scrollTop = 0;
@@ -306,11 +349,11 @@ export default function HonoursKiosk() {
 
   const skin = settings.defaultTemplate;
   const current = frames[index % frames.length]!;
-  const isSponsorFrame = current.kind === "sponsor";
-  const fit = isSponsorFrame ? true : current.fit;
-  // The persistent strip is redundant on a full-screen sponsor slide, so hide it
-  // (and don't reserve its space) while a sponsor slide is showing.
-  const showStrip = sponsorStripOn && !isSponsorFrame;
+  const isOverlayFrame = current.kind !== "board";
+  const fit = isOverlayFrame ? true : current.fit;
+  // The persistent strip is redundant on a full-screen sponsor/ad slide, so
+  // hide it (and don't reserve its space) while one is showing.
+  const showStrip = sponsorStripOn && !isOverlayFrame;
 
   return (
     <div
@@ -323,14 +366,21 @@ export default function HonoursKiosk() {
     >
       <div className={`hb ${skinClass(skin)}`} style={rootStyle(brand, settings)}>
         <div className={`preset active${fit ? " fit" : ""}`} ref={frameRef}>
-          {isSponsorFrame ? (
-            <SponsorSlide sponsors={activeSponsors} brand={brand} />
+          {current.kind === "sponsor" ? (
+            current.sponsor ? (
+              <SponsorSlideSingle sponsor={current.sponsor} brand={brand} />
+            ) : (
+              <SponsorSlide sponsors={activeSponsors} brand={brand} />
+            )
+          ) : current.kind === "ad" ? (
+            <AdSlide ad={current.ad} />
           ) : (
             <BoardRenderer
               board={current.board}
               brand={brand}
               kiosk
               cfg={settings.boardConfigs?.[current.board.id.split("#")[0]!]}
+              skins={settings.skins}
             />
           )}
         </div>

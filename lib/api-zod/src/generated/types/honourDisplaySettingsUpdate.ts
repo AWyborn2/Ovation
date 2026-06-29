@@ -6,9 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompositeDef } from './compositeDef';
+import type { CustomGridDef } from './customGridDef';
 import type { HonourColourOverrides } from './honourColourOverrides';
 import type { HonourDisplaySettingsUpdateBoardConfigs } from './honourDisplaySettingsUpdateBoardConfigs';
+import type { HonourDisplaySettingsUpdateKioskSponsorSlideStyle } from './honourDisplaySettingsUpdateKioskSponsorSlideStyle';
 import type { HonourSkin } from './honourSkin';
+import type { KioskAd } from './kioskAd';
 
 export interface HonourDisplaySettingsUpdate {
   defaultTemplate?: string;
@@ -20,8 +23,12 @@ export interface HonourDisplaySettingsUpdate {
   kioskSponsorSlides?: boolean;
   /** @minimum 1 */
   kioskSponsorSlideEvery?: number;
+  kioskSponsorSlideStyle?: HonourDisplaySettingsUpdateKioskSponsorSlideStyle;
+  kioskSponsorIds?: number[];
+  kioskAds?: KioskAd[];
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
+  customGrids?: CustomGridDef[];
   skins?: HonourSkin[];
   colourOverrides?: HonourColourOverrides;
   defaultFont?: string | null;

@@ -140,6 +140,26 @@ export function brandStyle(brand: HonourBrand): CSSProperties {
 }
 
 /**
+ * Inline CSS-variable style for a PER-BOARD skin override. Built-in skins
+ * (p1..p9) are applied via their CSS class (see skinClass) and return undefined
+ * here; an admin "custom:" skin expands to its full --hb-* var map so a single
+ * board can override the club-wide skin. Returns undefined when there's no
+ * override or the referenced custom skin is missing.
+ */
+export function boardSkinStyle(
+  skinId: string | null | undefined,
+  skins: HonourSkin[] | null | undefined,
+): CSSProperties | undefined {
+  if (!skinId || isBuiltinSkin(skinId)) return undefined;
+  const skin = (skins ?? []).find((s) => s.id === skinId);
+  if (!skin) return undefined;
+  const vars = skinVars(skin);
+  const bgImage = backgroundCss(skin.backgroundImage);
+  if (bgImage) vars["--hb-bg"] = bgImage;
+  return vars as CSSProperties;
+}
+
+/**
  * Per-board inline style derived from its admin config: a font override and a
  * background image (board background wins over the page background). Returns
  * undefined when nothing is overridden so un-configured boards stay untouched.

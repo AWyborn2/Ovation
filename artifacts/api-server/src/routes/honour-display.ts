@@ -23,6 +23,7 @@ import {
   type HonourDisplaySettingsRow,
   type BoardDisplayConfigJson,
   type CompositeDefJson,
+  type CustomGridDefJson,
 } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -87,8 +88,12 @@ function serializeSettings(
     kioskSponsorStrip: row.kioskSponsorStrip,
     kioskSponsorSlides: row.kioskSponsorSlides,
     kioskSponsorSlideEvery: row.kioskSponsorSlideEvery,
+    kioskSponsorSlideStyle: (row.kioskSponsorSlideStyle as "grid" | "single") ?? "grid",
+    kioskSponsorIds: row.kioskSponsorIds ?? [],
+    kioskAds: row.kioskAds ?? [],
     boardConfigs: row.boardConfigs ?? {},
     composites: row.composites ?? [],
+    customGrids: row.customGrids ?? [],
     skins: row.skins ?? [],
     colourOverrides: row.colourOverrides ?? {},
     defaultFont: row.defaultFont ?? null,
@@ -103,7 +108,11 @@ function serializeSettings(
 // 0/O/1/I/L). The data is read-only honour boards and the code is revocable on
 // demand, so ~8.5e11 combinations is ample.
 const KIOSK_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+// Random auto-generated codes; legacy long base64url tokens stay exact-match.
 const KIOSK_CODE_RE = /^[A-Z2-9]{8}$/;
+// Admin-chosen custom codes: 3–40 chars, letters/numbers/hyphens (no leading
+// hyphen). Matched case-insensitively so they're forgiving to hand-type.
+const KIOSK_CUSTOM_RE = /^[A-Za-z0-9][A-Za-z0-9-]{2,39}$/;
 
 function generateKioskToken(): string {
   const bytes = randomBytes(8);
@@ -114,20 +123,28 @@ function generateKioskToken(): string {
   return code;
 }
 
+/** Normalise + validate an admin-supplied custom kiosk code, or null if invalid. */
+export function normalizeCustomKioskToken(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  return KIOSK_CUSTOM_RE.test(trimmed) ? trimmed : null;
+}
+
 /**
- * Constant-time match of a presented kiosk token against the stored one. Short
- * codes (the current format) are matched case-insensitively so they're forgiving
- * to hand-type; legacy long base64url tokens stay exact-match.
+ * Constant-time match of a presented kiosk token against the stored one. Codes
+ * made only of letters/numbers/hyphens (auto codes + custom codes) are matched
+ * case-insensitively so they're forgiving to hand-type; legacy long base64url
+ * tokens stay exact-match.
  */
-function kioskTokenMatches(stored: string | null, presented: unknown): boolean {
+export function kioskTokenMatches(stored: string | null, presented: unknown): boolean {
   if (!stored || typeof presented !== "string" || presented.length === 0) {
     return false;
   }
-  const candidate = KIOSK_CODE_RE.test(stored)
-    ? presented.trim().toUpperCase()
-    : presented;
-  const a = Buffer.from(stored);
-  const b = Buffer.from(candidate);
+  const caseInsensitive = KIOSK_CODE_RE.test(stored) || KIOSK_CUSTOM_RE.test(stored);
+  const a = Buffer.from(caseInsensitive ? stored.toUpperCase() : stored);
+  const b = Buffer.from(
+    caseInsensitive ? presented.trim().toUpperCase() : presented,
+  );
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }
@@ -173,12 +190,13 @@ type BoardLayout =
   | "columns"
   | "grid";
 
-type BoardTransition = "scroll" | "slide";
+type BoardTransition = "scroll" | "slide" | "wrap";
 
 // --- Season-grid matrix (opt-in layout) ---
 interface GridCellEntryOut {
   text: string;
   playerId?: number | null;
+  note?: string | null;
 }
 interface GridCellOut {
   entries: GridCellEntryOut[];
@@ -208,6 +226,7 @@ interface BoardDisplayOut {
   columns: number; // multi-column list flow count (1..3); 1 for non-list layouts
   transition: BoardTransition;
   fit: boolean; // drop the height cap and fill the viewport
+  wrapBlocks: number; // side-by-side block count for the "wrap" fill mode (2..4)
 }
 
 // One column of a composite "columns" board.
@@ -227,6 +246,10 @@ interface HonourBoardOut {
   columns?: BoardColumnOut[] | null;
   // Only set for the "grid" layout (season-grid matrix).
   grid?: BoardGridOut | null;
+  // Effective per-board skin (null = club-wide) + footnote, resolved from the
+  // board config / composite / custom-grid definition by assembleBoards.
+  skin?: string | null;
+  footnote?: string | null;
   // Stamped onto every board by assembleBoards before serialization.
   display?: BoardDisplayOut;
 }
@@ -279,7 +302,12 @@ const DEFAULT_DISPLAY: BoardDisplayOut = {
   columns: 1,
   transition: "scroll",
   fit: false,
+  wrapBlocks: 2,
 };
+
+function clampWrapBlocks(n: number | null | undefined): number {
+  return Math.min(4, Math.max(2, Math.round(n ?? 2)));
+}
 
 /** Resolve a board's display config: defaults merged with the admin override. */
 function resolveDisplay(
@@ -291,10 +319,14 @@ function resolveDisplay(
     layout === "list"
       ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1)))
       : 1;
+  // "wrap" only applies to grid boards; other layouts fall back to a slideshow.
+  let transition = override?.transition ?? DEFAULT_DISPLAY.transition;
+  if (transition === "wrap" && layout !== "grid") transition = "slide";
   return {
     columns: cols,
-    transition: override?.transition ?? DEFAULT_DISPLAY.transition,
+    transition,
     fit: override?.fit ?? DEFAULT_DISPLAY.fit,
+    wrapBlocks: clampWrapBlocks(override?.wrapBlocks),
   };
 }
 
@@ -1315,6 +1347,203 @@ function buildComposites(
   return out;
 }
 
+/**
+ * Season-grid composer for admin-built custom grids. Like composeSeasonGrid but
+ * (a) carries per-cell notes and (b) can span an explicit season range so the
+ * board pre-lists blank future seasons (rows always run newest → oldest).
+ */
+export function composeCustomGrid(
+  columns: GridColumnOptionOut[],
+  records: {
+    seasonLabel: string;
+    startYear: number;
+    colKey: string;
+    text: string;
+    note?: string | null;
+    playerId?: number | null;
+  }[],
+  range: { from?: number | null; to?: number | null },
+): BoardGridOut {
+  const bySeasonCol = new Map<string, Map<string, GridCellEntryOut[]>>();
+  const yearByLabel = new Map<string, number>();
+  for (const r of records) {
+    if (!r.text) continue;
+    yearByLabel.set(r.seasonLabel, r.startYear);
+    let m = bySeasonCol.get(r.seasonLabel);
+    if (!m) {
+      m = new Map();
+      bySeasonCol.set(r.seasonLabel, m);
+    }
+    let arr = m.get(r.colKey);
+    if (!arr) {
+      arr = [];
+      m.set(r.colKey, arr);
+    }
+    arr.push({ text: r.text, playerId: r.playerId ?? null, note: r.note ?? null });
+  }
+
+  const dataYears = [...yearByLabel.values()];
+  const from = range.from ?? (dataYears.length ? Math.min(...dataYears) : null);
+  const to = range.to ?? (dataYears.length ? Math.max(...dataYears) : null);
+  let startYears: number[];
+  if (from != null && to != null && to >= from && to - from < 300) {
+    startYears = [];
+    for (let y = to; y >= from; y--) startYears.push(y);
+  } else {
+    startYears = [...new Set(dataYears)].sort((a, b) => b - a);
+  }
+
+  const rows: GridRowOut[] = startYears.map((y) => {
+    const label = seasonLabel(y);
+    const m = bySeasonCol.get(label) ?? new Map<string, GridCellEntryOut[]>();
+    return { heading: label, cells: columns.map((c) => ({ entries: m.get(c.key) ?? [] })) };
+  });
+  return { rowHeading: "Season", columnHeadings: columns.map((c) => c.label), rows };
+}
+
+/**
+ * Build admin-defined custom grid boards from settings.customGrids. Each column
+ * draws from any data source (office / award / grade captains / premierships /
+ * manual entry) and the board spans an optional season range (pre-listing blank
+ * future seasons). Carries its own skin / fill mode / footnote.
+ */
+async function buildCustomGrids(
+  defs: CustomGridDefJson[],
+): Promise<HonourBoardOut[]> {
+  const valid = (defs ?? []).filter(
+    (d) =>
+      typeof d?.id === "string" &&
+      d.id.startsWith("grid:") &&
+      Array.isArray(d.columns) &&
+      d.columns.length > 0,
+  );
+  if (valid.length === 0) return [];
+
+  // Preload every potential source once (custom grids share these tables).
+  const [roleRows, awards, premiers] = await Promise.all([
+    db
+      .select({
+        role: clubRolesTable.role,
+        grade: clubRolesTable.grade,
+        season: clubRolesTable.season,
+        name: clubRolesTable.name,
+        playerId: clubRolesTable.playerId,
+      })
+      .from(clubRolesTable)
+      .where(eq(clubRolesTable.published, true)),
+    db
+      .select()
+      .from(awardsTable)
+      .where(eq(awardsTable.published, true)),
+    db.select().from(premiershipsTable),
+  ]);
+  const awardByKey = new Map(awards.map((a) => [a.key, a]));
+  const awardIds = awards.map((a) => a.id);
+  const winners = awardIds.length
+    ? await db
+        .select()
+        .from(awardWinnersTable)
+        .where(
+          and(
+            inArray(awardWinnersTable.awardId, awardIds),
+            eq(awardWinnersTable.published, true),
+          ),
+        )
+    : [];
+  const winnersByAward = new Map<number, typeof winners>();
+  for (const w of winners) {
+    if (!winnersByAward.has(w.awardId)) winnersByAward.set(w.awardId, []);
+    winnersByAward.get(w.awardId)!.push(w);
+  }
+
+  type Rec = {
+    seasonLabel: string;
+    startYear: number;
+    colKey: string;
+    text: string;
+    note?: string | null;
+    playerId?: number | null;
+  };
+
+  const out: HonourBoardOut[] = [];
+  for (const def of valid) {
+    const columns: GridColumnOptionOut[] = def.columns.map((c) => ({
+      key: c.key,
+      label: c.label || c.sourceKey || c.key,
+    }));
+    const records: Rec[] = [];
+    for (const col of def.columns) {
+      const key = col.key;
+      if (col.source === "office") {
+        for (const r of roleRows)
+          if (r.grade == null && r.role === col.sourceKey)
+            records.push({
+              seasonLabel: seasonLabel(r.season),
+              startYear: r.season,
+              colKey: key,
+              text: r.name,
+              playerId: r.playerId ?? null,
+            });
+      } else if (col.source === "grade") {
+        for (const r of roleRows)
+          if (r.role === "Grade Captain" && r.grade === col.sourceKey)
+            records.push({
+              seasonLabel: seasonLabel(r.season),
+              startYear: r.season,
+              colKey: key,
+              text: r.name,
+              playerId: r.playerId ?? null,
+            });
+      } else if (col.source === "award") {
+        const a = col.sourceKey ? awardByKey.get(col.sourceKey) : undefined;
+        if (a)
+          for (const w of winnersByAward.get(a.id) ?? [])
+            records.push({
+              seasonLabel: seasonLabel(w.season),
+              startYear: w.season,
+              colKey: key,
+              text: w.name,
+              playerId: w.playerId ?? null,
+            });
+      } else if (col.source === "premiership") {
+        for (const p of premiers)
+          if (p.grade === col.sourceKey) {
+            const sy = premiershipSeasons(p.year, p.matchDate)[0]!;
+            records.push({
+              seasonLabel: seasonLabel(sy),
+              startYear: sy,
+              colKey: key,
+              text: p.result || tidyCompetition(p.competition) || "Premiers",
+              note: "Premiers",
+            });
+          }
+      } else if (col.source === "manual") {
+        for (const [label, text] of Object.entries(col.manualValues ?? {})) {
+          const sy = seasonStartYearFromLabel(label);
+          if (sy < 0 || !text) continue;
+          records.push({ seasonLabel: label, startYear: sy, colKey: key, text });
+        }
+      }
+    }
+    const grid = composeCustomGrid(columns, records, {
+      from: def.seasonFrom ?? null,
+      to: def.seasonTo ?? null,
+    });
+    out.push({
+      id: def.id,
+      category: "custom_grid",
+      layout: "grid",
+      title: def.title || "Honour Board",
+      subtitle: def.subtitle ?? null,
+      entries: [],
+      grid,
+      skin: def.skin ?? null,
+      footnote: def.footnote ?? null,
+    });
+  }
+  return out;
+}
+
 async function assembleBoards(
   settings: HonourDisplaySettingsRow,
 ): Promise<HonourBoardOut[]> {
@@ -1385,19 +1614,40 @@ async function assembleBoards(
   // last (after Most Games) and append.
   boards.push(...buildComposites(settings.composites ?? [], boards));
 
-  // Stamp the resolved display config onto every board.
+  // Admin-built custom grid boards (independent of the base boards).
+  boards.push(...(await buildCustomGrids(settings.customGrids ?? [])));
+
+  // Stamp the resolved display config + per-board skin/footnote onto every board.
   const boardConfigs = settings.boardConfigs ?? {};
+  const customDefById = new Map(
+    (settings.customGrids ?? []).map((d) => [d.id, d]),
+  );
   for (const b of boards) {
+    const cfg = boardConfigs[b.id];
     if (b.layout === "columns") {
       const def = (settings.composites ?? []).find((d) => d.id === b.id);
       b.display = {
         columns: 1,
         transition: def?.transition ?? "scroll",
         fit: def?.fit ?? true,
+        wrapBlocks: 2,
+      };
+    } else if (customDefById.has(b.id)) {
+      const def = customDefById.get(b.id)!;
+      const transition = def.fillMode ?? "scroll";
+      b.display = {
+        columns: 1,
+        transition,
+        fit: true,
+        wrapBlocks: clampWrapBlocks(def.wrapBlocks),
       };
     } else {
-      b.display = resolveDisplay(b.layout, boardConfigs[b.id]);
+      b.display = resolveDisplay(b.layout, cfg);
     }
+    // Per-board skin/footnote fall back to the board config when not already
+    // set by a custom-grid definition.
+    if (b.skin == null) b.skin = cfg?.skin ?? null;
+    if (b.footnote == null) b.footnote = cfg?.footnote ?? null;
   }
   return boards;
 }
@@ -1546,10 +1796,26 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
 router.post(
   "/honour-display/kiosk-token",
   requireAdmin,
-  requireEntitlement("clubroomTv"),
-  async (_req, res): Promise<void> => {
+  async (req, res): Promise<void> => {
     await ensureHonourDisplaySettings();
-    const token = generateKioskToken();
+    // A non-empty `token` in the body sets a custom code; otherwise generate a
+    // random one. An invalid custom code is rejected rather than silently
+    // falling back, so the admin knows their chosen code wasn't accepted.
+    const raw = (req.body ?? {}).token;
+    let token: string;
+    if (typeof raw === "string" && raw.trim() !== "") {
+      const custom = normalizeCustomKioskToken(raw);
+      if (!custom) {
+        res.status(400).json({
+          error:
+            "Custom kiosk code must be 3–40 characters: letters, numbers and hyphens only.",
+        });
+        return;
+      }
+      token = custom;
+    } else {
+      token = generateKioskToken();
+    }
     await db
       .update(honourDisplaySettingsTable)
       .set({ kioskToken: token, updatedAt: new Date() })

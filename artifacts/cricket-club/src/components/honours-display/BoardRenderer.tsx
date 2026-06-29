@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import type { DisplayBoard, HonourBrand, BoardDisplayConfig } from "./types";
-import { LIST_PAGE_SIZE } from "./types";
-import { boardStyle, boardClasses } from "./theme";
+import type { CSSProperties, ReactNode } from "react";
+import type {
+  DisplayBoard,
+  HonourBrand,
+  BoardDisplayConfig,
+  HonourSkin,
+} from "./types";
+import { LIST_PAGE_SIZE, skinClass } from "./types";
+import { boardStyle, boardClasses, boardSkinStyle } from "./theme";
 import {
   PremiershipBoard,
   TeamOfDecadeBoard,
@@ -18,6 +23,8 @@ interface BoardRendererProps {
   kiosk?: boolean;
   /** Per-board admin config (styling, logo, heading/subtitle overrides). */
   cfg?: BoardDisplayConfig | null;
+  /** Admin custom skins, used to resolve a per-board "custom:" skin override. */
+  skins?: HonourSkin[] | null;
 }
 
 /**
@@ -28,23 +35,46 @@ interface BoardRendererProps {
  * via classes). Boards with no admin config render exactly as before (no
  * wrapper), so built-in skins stay pixel-identical.
  */
-export function BoardRenderer({ board, brand, kiosk, cfg }: BoardRendererProps) {
+export function BoardRenderer({
+  board,
+  brand,
+  kiosk,
+  cfg,
+  skins,
+}: BoardRendererProps) {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
     setPage(0);
   }, [board.id]);
 
-  const style = boardStyle(cfg);
-  const cls = boardClasses(cfg);
-  const wrap = (node: ReactNode): ReactNode =>
-    style || cls ? (
-      <div className={cls || undefined} style={style}>
+  // Compose the per-board wrapper: admin config (font/background/text/density)
+  // plus an optional per-board skin (built-in class or custom inline vars), and
+  // an optional footnote rendered beneath the board.
+  const cfgStyle = boardStyle(cfg);
+  const skinStyle = boardSkinStyle(board.skin, skins);
+  const skinCls = skinClass(board.skin);
+  const cls = [skinCls, boardClasses(cfg)].filter(Boolean).join(" ");
+  const style: CSSProperties | undefined =
+    skinStyle || cfgStyle ? { ...(skinStyle ?? {}), ...(cfgStyle ?? {}) } : undefined;
+  const footnote = board.footnote?.trim() || null;
+  const wrap = (node: ReactNode): ReactNode => {
+    const inner = footnote ? (
+      <>
         {node}
+        <p className="hb-board-footnote">{footnote}</p>
+      </>
+    ) : (
+      node
+    );
+    return cls || style ? (
+      <div className={cls || undefined} style={style}>
+        {inner}
       </div>
     ) : (
-      <>{node}</>
+      <>{inner}</>
     );
+  };
 
   if (board.layout === "premiership") {
     return wrap(
