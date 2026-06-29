@@ -8,6 +8,7 @@ import {
   DeleteClubRoleParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -36,7 +37,7 @@ router.get("/club-roles/all", requireAdmin, async (_req, res): Promise<void> => 
   res.json(rows);
 });
 
-router.post("/club-roles", requireAdmin, async (req, res): Promise<void> => {
+router.post("/club-roles", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = CreateClubRoleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -58,7 +59,7 @@ router.post("/club-roles", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.patch("/club-roles/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/club-roles/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = UpdateClubRoleParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -81,7 +82,7 @@ router.patch("/club-roles/:id", requireAdmin, async (req, res): Promise<void> =>
   res.json(row);
 });
 
-router.delete("/club-roles/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/club-roles/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = DeleteClubRoleParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

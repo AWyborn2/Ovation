@@ -27,6 +27,7 @@ import {
 } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantBrand } from "../lib/tenant-brand";
 import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
 import { loadActiveSponsors } from "../lib/active-sponsors";
@@ -1827,6 +1828,7 @@ router.post(
 router.delete(
   "/honour-display/kiosk-token",
   requireAdmin,
+  requireEntitlement("clubroomTv"),
   async (_req, res): Promise<void> => {
     await ensureHonourDisplaySettings();
     await db
@@ -1840,6 +1842,7 @@ router.delete(
 router.patch(
   "/honour-display-settings",
   requireAdmin,
+  requireEntitlement("clubroomTv"),
   async (req, res): Promise<void> => {
     const parsed = UpdateHonourDisplaySettingsBody.safeParse(req.body);
     if (!parsed.success) {
