@@ -127,9 +127,18 @@ export async function resolveTenantBySubdomain(req: Request): Promise<number | n
  * anything else (localhost, previews, unknown) is `fallback` — handled by the
  * header → env → default chain so dev still lands on the demo tenant.
  */
+function isPreviewHost(host: string): boolean {
+  return host.endsWith(".replit.dev");
+}
+
 export async function resolveHostMode(req: Request): Promise<HostMode> {
   const bySubdomain = await resolveTenantBySubdomain(req);
   if (bySubdomain !== null) return { mode: "tenant", tenantId: bySubdomain };
+  const headerTenant = parseTenantId(req.header("x-tenant-id"));
+  if (headerTenant !== undefined && isPreviewHost(hostOf(req))) {
+    return { mode: "tenant", tenantId: headerTenant };
+  }
+
   if (platformHosts().has(hostOf(req))) return { mode: "platform" };
   return { mode: "fallback" };
 }

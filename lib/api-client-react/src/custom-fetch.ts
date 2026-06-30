@@ -44,6 +44,32 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
 
+const DEV_TENANT_STORAGE_KEY = "ovation_dev_tenant";
+
+function isDevHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".replit.dev") ||
+    host.endsWith(".repl.co") ||
+    host.endsWith(".replit.app")
+  );
+}
+
+function getDevTenantOverride(): string | null {
+  if (!isDevHost()) return null;
+  try {
+    const raw = window.localStorage.getItem(DEV_TENANT_STORAGE_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isInteger(n) && n > 0 ? String(n) : null;
+  } catch {
+    return null;
+  }
+}
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
@@ -355,6 +381,13 @@ export async function customFetch<T = unknown>(
     const token = await _authTokenGetter();
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
+    }
+  }
+
+  if (!headers.has("x-tenant-id")) {
+    const devTenant = getDevTenantOverride();
+    if (devTenant) {
+      headers.set("x-tenant-id", devTenant);
     }
   }
 
