@@ -23,11 +23,8 @@ import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
-// Fill-in players are stored on match lines for scorecard history but have no
-// real player record; they must never surface in any derived stat/leaderboard.
 const FILL_IN_FLOOR = 90000;
 
-// Branding columns for a match's opposition club (mirrors matches.ts).
 const opponentClubColumns = {
   opponentClubId: clubsTable.id,
   opponentClubName: clubsTable.name,
@@ -59,7 +56,6 @@ function toOpponentClub(row: {
   };
 }
 
-// Hide empty placeholder / "bye" fixture shells (mirrors matches.ts).
 const notEmptyFixture: SQL = sql`NOT (
   (${matchesTable.opponent} IS NULL OR btrim(${matchesTable.opponent}) = '')
   AND COALESCE(${matchesTable.abandoned}, false) = false
@@ -70,14 +66,12 @@ const notEmptyFixture: SQL = sql`NOT (
   AND NOT EXISTS (SELECT 1 FROM match_opposition_lines mol WHERE mol.match_id = ${matchesTable.id})
 )`;
 
-// Parse the free-text match_date ("12:20 PM, Saturday, 14 Mar 2026") for ordering.
 const matchDateExpr = sql`CASE WHEN ${matchesTable.matchDate} ~ '^[0-9]{1,2}:[0-9]{2} (AM|PM), [A-Za-z]+, [0-9]{1,2} [A-Za-z]{3} [0-9]{4}$' THEN to_timestamp(${matchesTable.matchDate}, 'HH12:MI AM, Day, DD Mon YYYY') END`;
 
 function seasonLabel(season: number): string {
   return `${season}/${String((season + 1) % 100).padStart(2, "0")}`;
 }
 
-// Collapse a joined match row into a MatchSummary (mirrors matches.ts list shape).
 function toRecentMatch(row: {
   id: number;
   grade: string;
@@ -120,9 +114,6 @@ function toRecentMatch(row: {
   };
 }
 
-// Latest-season top run scorers / wicket takers, aggregated across every grade a
-// player turned out in that season. Fill-ins are excluded; an optional grade
-// scopes the list to a single grade. Players with a zero tally are dropped.
 async function seasonLeaders(
   season: number,
   metric: "runs" | "wickets",
@@ -161,9 +152,6 @@ async function seasonLeaders(
   }));
 }
 
-// All-time top run scorers / wicket takers, summed from the per-grade career
-// aggregate (player_grade_stats already equals career per grade, so summing
-// across grades = career). An optional grade scopes the list to one grade.
 async function allTimeLeaders(
   metric: "runs" | "wickets",
   grade?: string,
@@ -196,8 +184,6 @@ async function allTimeLeaders(
   }));
 }
 
-// Distinct seasons (newest-first) that have per-season stat rows — the seasons
-// the home season picker can offer top performers for.
 async function seasonOptions(): Promise<{ season: number; label: string }[]> {
   const rows = await db
     .selectDistinct({ season: playerGradeSeasonStatsTable.season })
@@ -214,9 +200,6 @@ async function seasonOptions(): Promise<{ season: number; label: string }[]> {
     .map((r) => ({ season: r.season, label: seasonLabel(r.season) }));
 }
 
-// Grades with real records in a season (games > 0); when season is null the
-// list is every grade ever played (drives the all-time grade chips). Fill-ins
-// excluded. Returned unsorted; the client orders by seniority.
 async function gradesForSeason(season: number | null): Promise<string[]> {
   const conds: SQL[] = [
     lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
@@ -230,20 +213,25 @@ async function gradesForSeason(season: number | null): Promise<string[]> {
   return rows.map((r) => r.grade).filter((g): g is string => Boolean(g));
 }
 
-router.get("/grades", async (_req, res): Promise<void> => {
+router.get("/grades", async (req, res): Promise<void> => {
+  // Central tenants get their grade summary cards derived from the central PCA
+  // database (per-grade aggregates), filtered to their club. Native tenants
+  // (Halls Head) keep the curated grade_summaries table below.
+  if (await shouldReadCentral(req)) {
+    const { centralGradeSummaries } = await import("@workspace/db/central-queries");
+    const summaries = await centralGradeSummaries(await getRequestCentralClubId(req));
+    res.json(summaries.map((s, i) => ({ id: i + 1, ...s })));
+    return;
+  }
+
   const grades = await db
     .select()
     .from(gradeSummariesTable)
     .orderBy(gradeSummariesTable.grade);
-  // The A Grade "Players" figure should mirror the official A Grade Cap list
-  // (male cap_register), not the distinct-appearance count, so the card matches
-  // the capped-players honour list and tracks cap add/remove live.
   const [aGradeCapCount] = await db
     .select({ value: count() })
     .from(capRegisterTable)
     .where(eq(capRegisterTable.category, "male"));
-  // CLUB TOTAL is an aggregate row stored alongside real grades; it isn't a
-  // grade users can pick, so filter it out of the API response.
   res.json(
     grades
       .filter((g) => g.grade !== "CLUB TOTAL")
@@ -259,10 +247,6 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
   const grade = decodeURIComponent(rawGrade);
 
-  // Per-tenant data source: tenants flagged reads_from_central are served from
-  // the central PCA database, filtered to their central club id (multi-club).
-  // Native tenants (e.g. Halls Head) fall through to the unchanged tenant query.
-  // The central module requires CENTRAL_DATABASE_URL, so it is imported lazily.
   if (await shouldReadCentral(req)) {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const clubId = await getRequestCentralClubId(req);
@@ -279,7 +263,47 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   res.json(stats);
 });
 
-router.get("/dashboard", async (_req, res): Promise<void> => {
+router.get("/dashboard", async (req, res): Promise<void> => {
+  // Central tenants: totals, top performers and grade summaries all derived from
+  // the central PCA database, filtered to their club. Top-performer GUIDs are
+  // mapped to the tenant's int player ids via player_id_map.
+  if (await shouldReadCentral(req)) {
+    const { centralDashboard } = await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const [dash, mapRows] = await Promise.all([
+      centralDashboard(await getRequestCentralClubId(req)),
+      db
+        .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+        .from(playerIdMapTable)
+        .where(eq(playerIdMapTable.tenantId, tenantId)),
+    ]);
+    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const splitName = (dn: string | null) => {
+      const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return { givenName: "", surname: "" };
+      if (parts.length === 1) return { givenName: parts[0], surname: "" };
+      return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+    };
+    const toPerformer = (
+      p: { participantId: string; displayName: string | null; value: number } | null,
+    ) =>
+      p
+        ? { id: intByGuid.get(p.participantId) ?? 0, ...splitName(p.displayName), value: p.value }
+        : null;
+    res.json({
+      totalPlayers: dash.totalPlayers,
+      totalGames: dash.totalGames,
+      totalRuns: dash.totalRuns,
+      totalWickets: dash.totalWickets,
+      gradesCount: dash.gradesCount,
+      topRunScorer: toPerformer(dash.topRunScorer),
+      topWicketTaker: toPerformer(dash.topWicketTaker),
+      topFielder: toPerformer(dash.topFielder),
+      gradeSummaries: dash.gradeSummaries.map((s, i) => ({ id: i + 1, ...s })),
+    });
+    return;
+  }
+
   const [playerCount] = await db.select({ count: count() }).from(playersTable);
   const [totals] = await db
     .select({
@@ -290,11 +314,9 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     .from(playersTable);
 
   const allGradeSummaries = await db.select().from(gradeSummariesTable);
-  // CLUB TOTAL is an aggregate row, not a real grade — exclude from counts and lists.
   const gradeSummaries = allGradeSummaries.filter((g) => g.grade !== "CLUB TOTAL");
   const gradesCount = gradeSummaries.length;
 
-  // Top performers from club totals
   const [topRunScorer] = await db
     .select()
     .from(playersTable)
@@ -307,7 +329,6 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     .orderBy(desc(playersTable.totalWickets))
     .limit(1);
 
-  // Top fielder by total catches across grades
   const catchLeaders = await db
     .select({
       playerId: playerGradeStatsTable.playerId,
@@ -340,12 +361,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
   });
 });
 
-// Seniors home overview: club totals, latest season's most recent match per
-// grade, and that season's club-wide top run scorers / wicket takers.
 router.get("/overview", async (req, res): Promise<void> => {
-  // Per-tenant data source: central tenants get the whole overview (totals,
-  // latest-season recent-per-grade matches, top run/wicket leaders) from central,
-  // filtered to their club, with leader ids mapped via player_id_map.
   if (await shouldReadCentral(req)) {
     const central = await import("@workspace/db/central-queries");
     const clubId = await getRequestCentralClubId(req);
@@ -407,7 +423,6 @@ router.get("/overview", async (req, res): Promise<void> => {
     return;
   }
 
-  // Club totals (mirrors /dashboard's all-time figures).
   const [playerCount] = await db.select({ count: count() }).from(playersTable);
   const [totals] = await db
     .select({
@@ -419,7 +434,6 @@ router.get("/overview", async (req, res): Promise<void> => {
   const allGradeSummaries = await db.select().from(gradeSummariesTable);
   const gradesCount = allGradeSummaries.filter((g) => g.grade !== "CLUB TOTAL").length;
 
-  // Latest season = newest season with a real (non-empty) fixture.
   const [latest] = await db
     .select({ season: matchesTable.season })
     .from(matchesTable)
@@ -433,7 +447,6 @@ router.get("/overview", async (req, res): Promise<void> => {
   let topWicketTakers: Awaited<ReturnType<typeof seasonLeaders>> = [];
 
   if (latestSeason !== null) {
-    // All real fixtures in the latest season, newest-first within each grade.
     const rows = await db
       .select({
         id: matchesTable.id,
@@ -464,7 +477,6 @@ router.get("/overview", async (req, res): Promise<void> => {
         desc(matchesTable.id),
       );
 
-    // Keep only the most recent match per grade (first row per grade above).
     const seen = new Set<string>();
     recentMatches = rows
       .filter((r) => {
@@ -480,7 +492,6 @@ router.get("/overview", async (req, res): Promise<void> => {
     ]);
   }
 
-  // Native path (central tenants returned above).
   res.json({
     latestSeason,
     latestSeasonLabel: latestSeason === null ? null : seasonLabel(latestSeason),
@@ -498,7 +509,6 @@ router.get("/overview", async (req, res): Promise<void> => {
   });
 });
 
-// Latest-season top performers, optionally scoped to a single grade.
 router.get("/overview/top-performers", async (req, res): Promise<void> => {
   const parsed = GetSeniorSeasonTopPerformersQueryParams.safeParse(req.query);
   if (!parsed.success) {
@@ -509,7 +519,6 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
   const allTime = parsed.data.allTime === true;
   const requestedSeason = parsed.data.season ?? null;
 
-  // All-time: aggregate career totals across every season.
   if (allTime) {
     const [topRunScorers, topWicketTakers, availableGrades] = await Promise.all([
       allTimeLeaders("runs", grade),
@@ -526,7 +535,6 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
     return;
   }
 
-  // Resolve the season: explicit request, else the latest season with results.
   let season = requestedSeason;
   if (season === null) {
     const [latest] = await db
@@ -564,8 +572,6 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
 });
 
 router.get("/records", async (req, res): Promise<void> => {
-  // Per-tenant data source: central tenants get all-time records from central,
-  // record-holder ids mapped via player_id_map.
   if (await shouldReadCentral(req)) {
     const { centralClubRecords } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
@@ -646,13 +652,9 @@ router.get("/records", async (req, res): Promise<void> => {
         playerGradeStatsTable.givenName,
         playerGradeStatsTable.surname,
       )
-      // NULLS LAST: Postgres sorts NULL first on DESC, so a player whose every
-      // row for this stat is NULL would otherwise float to the top and report 0.
       .orderBy(sql`${sum(col)} desc nulls last`)
       .limit(1);
     if (!row) return null;
-    // Every grade this leader actually appeared in (games > 0), so the
-    // club-wide aggregate cards can show their grade badges.
     const gradeRows = await db
       .selectDistinct({ grade: playerGradeStatsTable.grade })
       .from(playerGradeStatsTable)
@@ -678,8 +680,6 @@ router.get("/records", async (req, res): Promise<void> => {
   const mostFifties = await topAggregate(playerGradeStatsTable.fifties);
   const mostHundreds = await topAggregate(playerGradeStatsTable.hundreds);
 
-  // Highest score and best bowling need custom logic (strings like "200", "162*", "8/12")
-  // We parse numeric values from strings for comparison
   const allStats = await db
     .select({
       id: playerGradeStatsTable.id,
@@ -737,10 +737,6 @@ router.get("/records", async (req, res): Promise<void> => {
   });
 });
 
-// Singleton app-config controlling how the public Records page behaves by
-// default: which tab opens first, the default grade for the By Grade tab, the
-// default grade filter for Partnerships, and the default sort for the Centuries
-// and 5-Wicket Hauls tables. Visitors can still change everything after load.
 const RECORDS_SETTINGS_ID = 1;
 
 async function ensureRecordsDisplaySettings() {
