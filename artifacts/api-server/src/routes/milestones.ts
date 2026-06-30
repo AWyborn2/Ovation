@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
@@ -9,8 +9,11 @@ import {
   playersTable,
   playerGradeSeasonStatsTable,
   capRegisterTable,
+  playerIdMapTable,
 } from "@workspace/db";
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
+import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -20,10 +23,6 @@ const DEFAULT_GAMES_TIERS = [100, 150, 200, 250, 300];
 const DEFAULT_RUNS_TIERS = [1000, 2000, 3000, 5000, 7500, 10000];
 const DEFAULT_WICKETS_TIERS = [100, 150, 200, 300];
 
-// Significance bands. Bigger ranks higher. Career crossings start at the
-// baseline tier (lowest of all) and climb with the tier index; per-match
-// achievements sit in the middle so a big career milestone outranks them while
-// the baseline career tier stays the lowest.
 const SIG_HAT_TRICK = 900;
 const SIG_CENTURY = 400;
 const SIG_FIVE_FOR = 400;
@@ -59,9 +58,6 @@ const MONTHS: Record<string, string> = {
   jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
 };
 
-// match_date is stored as free text (e.g. "12:30 PM, Saturday, 07 Feb 2026")
-// for bulk-loaded / scorecard-imported matches, and occasionally as ISO. Parse
-// both into a comparable ISO YYYY-MM-DD string; anything unparseable is undated.
 function parseMatchDate(d: string | null): string | null {
   if (!d) return null;
   const s = d.replace(/"/g, "").trim();
@@ -87,13 +83,7 @@ export type MilestonesResult = {
   items: MilestoneItem[];
 };
 
-/**
- * Build the ordered milestones feed (recently-achieved + significant). Shared by
- * the public GET /milestones route and the honour-display board assembler so both
- * surfaces use one source of truth.
- */
 export async function buildMilestones(): Promise<MilestonesResult> {
-  // --- Settings (recency window + significance tiers).
   const [settings] = await db
     .select()
     .from(milestoneBoardSettingsTable)
@@ -109,7 +99,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     .slice()
     .sort((a, b) => a - b);
 
-  // --- Matches (the dated backbone).
   const matches = await db
     .select({
       id: matchesTable.id,
@@ -122,7 +111,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     .from(matchesTable);
   const matchById = new Map(matches.map((m) => [m.id, m]));
 
-  // Window anchor = latest parseable match date. windowStart = anchor - weeks.
   let latestDate: string | null = null;
   for (const m of matches) {
     const iso = parseMatchDate(m.matchDate);
@@ -134,9 +122,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     return iso != null && windowStart != null && iso >= windowStart;
   };
 
-  // --- Per-player match lines (drive centuries, five-fors, career crossings).
-  //     Exclude fill-ins (playerId >= 90000): they have no real player record
-  //     and must never surface as a club milestone.
   const lines = await db
     .select({
       matchId: matchPlayerLinesTable.matchId,
@@ -147,7 +132,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     .from(matchPlayerLinesTable)
     .where(sql`${matchPlayerLinesTable.playerId} < 90000`);
 
-  // --- Player names + current career totals.
   const players = await db
     .select({
       id: playersTable.id,
@@ -175,7 +159,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
 
   const items: MilestoneItem[] = [];
 
-  // --- Centuries (>=100) and five-wicket hauls (>=5), per innings/spell.
   for (const l of lines) {
     const m = matchById.get(l.matchId);
     if (!m) continue;
@@ -227,7 +210,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     }
   }
 
-  // --- Admin-recorded hat-tricks.
   const hatTricks = await db
     .select({
       matchId: matchHatTricksTable.matchId,
@@ -260,13 +242,8 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     });
   }
 
-  // --- A Grade / Female A Grade debuts (dated from the first capped match).
   await appendDebuts(items, { matchById, nameFor, inWindow });
 
-  // --- Career-tier crossings across the whole dated match era. We compute over
-  // all match history (not just the recency window) so the board can always
-  // surface the most recently achieved crossings; the recency window only marks
-  // an item as `recent` for the highlight badge.
   if (latestDate != null) {
     appendCareerCrossings(items, {
       lines,
@@ -280,11 +257,6 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     });
   }
 
-  // --- Ordering. When matches are dated, always surface the most recently
-  // achieved milestones (across all types), newest first, so the board never goes
-  // blank just because nothing falls inside the recency window. Fall back to the
-  // all-time significance ranking only when no match is dated at all (windowStart
-  // null), so an undated database still shows something rather than nothing.
   const byDateDesc = (a: MilestoneItem, b: MilestoneItem): number => {
     const ad = parseMatchDate(a.matchDate) ?? "";
     const bd = parseMatchDate(b.matchDate) ?? "";
@@ -318,16 +290,60 @@ export async function buildMilestones(): Promise<MilestonesResult> {
   };
 }
 
-router.get("/milestones", async (_req, res): Promise<void> => {
+async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
+  const { centralMilestones } = await import("@workspace/db/central-queries");
+  const tenantId = getTenantId(req);
+  const [raw, mapRows] = await Promise.all([
+    centralMilestones(await getRequestCentralClubId(req)),
+    db
+      .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+      .from(playerIdMapTable)
+      .where(eq(playerIdMapTable.tenantId, tenantId)),
+  ]);
+  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+
+  const items: MilestoneItem[] = raw.map((m) => {
+    const isCentury = m.kind === "century";
+    return {
+      id: `${m.kind}|${m.participantId}|${m.matchId}`,
+      kind: m.kind,
+      playerId: intByGuid.get(m.participantId) ?? 0,
+      playerName: m.displayName ?? "Unknown",
+      grade: m.grade,
+      matchId: m.matchId,
+      matchDate: m.matchDate,
+      season: m.season,
+      round: null,
+      opponent: m.opponent,
+      boardKey: null,
+      tierIndex: null,
+      label: isCentury ? `${m.value} runs` : `${m.value} wickets`,
+      detail: isCentury
+        ? `Century in ${m.grade}${m.opponent ? ` vs ${m.opponent}` : ""}`
+        : `Five-wicket haul in ${m.grade}${m.opponent ? ` vs ${m.opponent}` : ""}`,
+      value: m.value,
+      threshold: isCentury ? 100 : 5,
+      significance: isCentury ? SIG_CENTURY : SIG_FIVE_FOR,
+      recent: false,
+    };
+  });
+
+  return {
+    recencyWeeks: 4,
+    windowStart: null,
+    featured: false,
+    items: items.slice(0, MAX_ITEMS),
+  };
+}
+
+router.get("/milestones", async (req, res): Promise<void> => {
+  if (await shouldReadCentral(req)) {
+    res.json(await buildCentralMilestones(req));
+    return;
+  }
   res.json(await buildMilestones());
 });
 
-/**
- * Append dated A Grade / Female A Grade debuts. A capped player's debut is dated
- * only when their earliest match in the cap grade is a TRUE debut — i.e. they
- * had zero prior games in that grade (NULL-season baseline rows count as prior).
- * Mirrors the logic in routes/caps.ts (/caps/debutants).
- */
 async function appendDebuts(
   items: MilestoneItem[],
   ctx: {
@@ -370,7 +386,6 @@ async function appendDebuts(
     .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
     .where(inArray(matchesTable.grade, grades));
 
-  // Earliest (season, round) per (player, grade) + the match it came from.
   const earliest = new Map<
     string,
     { season: number; round: number; matchId: number }
@@ -445,13 +460,6 @@ async function appendDebuts(
   }
 }
 
-/**
- * Detect dated career-tier crossings (games / runs / wickets) across the whole
- * match era. The player's current career total minus their match-era
- * contributions gives the pre-match-era total; we then walk their dated matches
- * in date order and emit an item when a cumulative total first reaches a tier.
- * Each item is flagged `recent` when its match falls inside the recency window.
- */
 function appendCareerCrossings(
   items: MilestoneItem[],
   ctx: {
@@ -491,7 +499,6 @@ function appendCareerCrossings(
     wicketsTiers,
   } = ctx;
 
-  // Per-player, dated match lines across the whole match era, oldest first.
   type WindowLine = {
     matchId: number;
     matchDate: string;

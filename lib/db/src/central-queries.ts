@@ -1674,3 +1674,440 @@ export async function centralClubRecords(clubId: number): Promise<CentralClubRec
         : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Central reads for the endpoints that were missed in the first migration pass
+// (dashboard, grades, centuries, five-wicket hauls, milestones). All seniors-
+// only and scorecard-era (2002/03+), keyed by central club id; routes map the
+// participant GUIDs to tenant int ids via player_id_map where they need them.
+// ---------------------------------------------------------------------------
+
+/** One grade's club-wide aggregate, matching the app's grade_summaries shape. */
+export interface CentralGradeSummary {
+  grade: string;
+  players: number;
+  games: number;
+  innings: number;
+  runs: number;
+  wickets: number;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
+export async function centralGradeSummaries(
+  clubId: number,
+): Promise<CentralGradeSummary[]> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+  const gradeOf = new Map(matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]));
+
+  const [batting, bowling, rosters, fielding] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+        dismissal: centralMatchBattingTable.dismissal,
+        dismissalType: centralMatchBattingTable.dismissalType,
+      })
+      .from(centralMatchBattingTable)
+      .where(and(eq(centralMatchBattingTable.clubId, clubId), inArray(centralMatchBattingTable.matchId, matchIds))),
+    centralDb
+      .select({
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+      })
+      .from(centralMatchBowlingTable)
+      .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds))),
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(and(eq(centralMatchRostersTable.clubId, clubId), inArray(centralMatchRostersTable.matchId, matchIds))),
+    centralDb
+      .select({
+        matchId: centralFieldingTable.matchId,
+        kind: centralFieldingTable.kind,
+      })
+      .from(centralFieldingTable)
+      .where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds))),
+  ]);
+
+  interface G {
+    players: Set<string>;
+    games: Set<number>;
+    innings: number;
+    runs: number;
+    wickets: number;
+    catches: number;
+    stumpings: number;
+    runOuts: number;
+  }
+  const byGrade = new Map<string, G>();
+  const grp = (grade: string): G => {
+    let a = byGrade.get(grade);
+    if (!a) {
+      a = { players: new Set(), games: new Set(), innings: 0, runs: 0, wickets: 0, catches: 0, stumpings: 0, runOuts: 0 };
+      byGrade.set(grade, a);
+    }
+    return a;
+  };
+
+  for (const r of rosters) {
+    if (r.matchId === null) continue;
+    const grade = gradeOf.get(r.matchId);
+    if (!grade) continue;
+    const a = grp(grade);
+    a.games.add(r.matchId);
+    if (r.participantId) a.players.add(r.participantId);
+  }
+  for (const b of batting) {
+    if (b.matchId === null) continue;
+    const grade = gradeOf.get(b.matchId);
+    if (!grade) continue;
+    const a = grp(grade);
+    a.games.add(b.matchId);
+    if (b.participantId) a.players.add(b.participantId);
+    if (classifyInnings(b.dismissalType, b.dismissal) !== "dnb") {
+      a.innings += 1;
+      a.runs += b.runs ?? 0;
+    }
+  }
+  for (const b of bowling) {
+    if (b.matchId === null) continue;
+    const grade = gradeOf.get(b.matchId);
+    if (!grade) continue;
+    grp(grade).wickets += b.wickets ?? 0;
+  }
+  for (const f of fielding) {
+    if (f.matchId === null) continue;
+    const grade = gradeOf.get(f.matchId);
+    if (!grade) continue;
+    const a = grp(grade);
+    const kind = (f.kind ?? "").toLowerCase();
+    if (/stump/.test(kind)) a.stumpings += 1;
+    else if (/run\s*out/.test(kind)) a.runOuts += 1;
+    else if (/catch|caught|^c$/.test(kind)) a.catches += 1;
+  }
+
+  return [...byGrade.entries()]
+    .map(([grade, a]) => ({
+      grade,
+      players: a.players.size,
+      games: a.games.size,
+      innings: a.innings,
+      runs: a.runs,
+      wickets: a.wickets,
+      catches: a.catches,
+      stumpings: a.stumpings,
+      runOuts: a.runOuts,
+    }))
+    .sort((x, y) => x.grade.localeCompare(y.grade));
+}
+
+export interface CentralDashboard {
+  totalPlayers: number;
+  totalGames: number;
+  totalRuns: number;
+  totalWickets: number;
+  gradesCount: number;
+  topRunScorer: { participantId: string; displayName: string | null; value: number } | null;
+  topWicketTaker: { participantId: string; displayName: string | null; value: number } | null;
+  topFielder: { participantId: string; displayName: string | null; value: number } | null;
+  gradeSummaries: CentralGradeSummary[];
+}
+
+export async function centralDashboard(clubId: number): Promise<CentralDashboard> {
+  const [totals, gradeSummaries, careers] = await Promise.all([
+    centralClubTotals(clubId),
+    centralGradeSummaries(clubId),
+    centralPlayerCareers(clubId),
+  ]);
+
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId })
+    .from(centralMatchesTable)
+    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+  const matchIds = matchRows.map((m) => m.matchId);
+  const fielding = matchIds.length
+    ? await centralDb
+        .select({ participantId: centralFieldingTable.participantId, kind: centralFieldingTable.kind })
+        .from(centralFieldingTable)
+        .where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds)))
+    : [];
+  const catchesByPid = new Map<string, number>();
+  for (const f of fielding) {
+    if (!f.participantId) continue;
+    const kind = (f.kind ?? "").toLowerCase();
+    if (/catch|caught|^c$/.test(kind) && !/run\s*out|stump/.test(kind)) {
+      catchesByPid.set(f.participantId, (catchesByPid.get(f.participantId) ?? 0) + 1);
+    }
+  }
+
+  const ids = careers.map((c) => c.participantId);
+  const privateById = new Map(careers.map((c) => [c.participantId, c.isPrivate]));
+  const nameById = new Map(careers.map((c) => [c.participantId, c.displayName]));
+
+  const pickTop = (
+    score: (pid: string) => number,
+  ): { participantId: string; displayName: string | null; value: number } | null => {
+    let best: { participantId: string; value: number } | null = null;
+    for (const pid of ids) {
+      if (privateById.get(pid)) continue;
+      const v = score(pid);
+      if (v <= 0) continue;
+      if (!best || v > best.value) best = { participantId: pid, value: v };
+    }
+    return best ? { participantId: best.participantId, displayName: nameById.get(best.participantId) ?? null, value: best.value } : null;
+  };
+
+  const runsByPid = new Map(careers.map((c) => [c.participantId, c.runs]));
+  const wktsByPid = new Map(careers.map((c) => [c.participantId, c.wickets]));
+
+  return {
+    totalPlayers: totals.players,
+    totalGames: totals.games,
+    totalRuns: totals.runs,
+    totalWickets: totals.wickets,
+    gradesCount: gradeSummaries.length,
+    topRunScorer: pickTop((pid) => runsByPid.get(pid) ?? 0),
+    topWicketTaker: pickTop((pid) => wktsByPid.get(pid) ?? 0),
+    topFielder: pickTop((pid) => catchesByPid.get(pid) ?? 0),
+    gradeSummaries,
+  };
+}
+
+export interface CentralCentury {
+  participantId: string;
+  displayName: string | null;
+  grade: string;
+  score: string;
+  season: string;
+}
+
+export interface CentralFiveWicketHaul {
+  participantId: string;
+  displayName: string | null;
+  grade: string;
+  figures: string;
+  season: string;
+}
+
+async function centralPlayerNames(
+  ids: string[],
+): Promise<Map<string, { displayName: string | null; isPrivate: boolean }>> {
+  if (ids.length === 0) return new Map();
+  const players = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inArray(centralPlayersTable.participantId, ids));
+  return new Map(players.map((p) => [p.participantId, { displayName: p.displayName, isPrivate: (p.isPrivate ?? 0) === 1 }]));
+}
+
+function seasonLabelFromStartYear(startYear: number): string {
+  return `${startYear}/${String((startYear + 1) % 100).padStart(2, "0")}`;
+}
+
+export async function centralCenturies(clubId: number): Promise<CentralCentury[]> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade, season: centralMatchesTable.season })
+    .from(centralMatchesTable)
+    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+  const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
+
+  const batting = await centralDb
+    .select({
+      participantId: centralMatchBattingTable.participantId,
+      matchId: centralMatchBattingTable.matchId,
+      runs: centralMatchBattingTable.runs,
+      dismissal: centralMatchBattingTable.dismissal,
+      dismissalType: centralMatchBattingTable.dismissalType,
+    })
+    .from(centralMatchBattingTable)
+    .where(and(eq(centralMatchBattingTable.clubId, clubId), inArray(centralMatchBattingTable.matchId, matchIds)));
+
+  const hundreds = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId);
+  const names = await centralPlayerNames([...new Set(hundreds.map((b) => b.participantId as string))]);
+
+  const rows: CentralCentury[] = [];
+  for (const b of hundreds) {
+    if (b.matchId === null) continue;
+    const meta = metaOf.get(b.matchId);
+    if (!meta?.grade || meta.season === null) continue;
+    const p = names.get(b.participantId as string);
+    if (p?.isPrivate) continue;
+    const notOut = classifyInnings(b.dismissalType, b.dismissal) === "notout";
+    rows.push({
+      participantId: b.participantId as string,
+      displayName: p?.displayName ?? null,
+      grade: meta.grade,
+      score: `${b.runs ?? 0}${notOut ? "*" : ""}`,
+      season: seasonLabelFromStartYear(meta.season),
+    });
+  }
+  rows.sort((a, b) => a.grade.localeCompare(b.grade) || (b.season).localeCompare(a.season));
+  return rows;
+}
+
+export interface CentralMilestone {
+  kind: "century" | "fiveFor";
+  participantId: string;
+  displayName: string | null;
+  grade: string;
+  season: number;
+  matchId: number;
+  matchDate: string | null;
+  opponent: string | null;
+  value: number;
+}
+
+export async function centralMilestones(clubId: number): Promise<CentralMilestone[]> {
+  const matchRows = await centralDb
+    .select({
+      matchId: centralMatchesTable.matchId,
+      grade: centralMatchesTable.grade,
+      season: centralMatchesTable.season,
+      matchDate: centralMatchesTable.matchDate,
+      homeClubId: centralMatchesTable.homeClubId,
+      awayClubId: centralMatchesTable.awayClubId,
+      homeTeam: centralMatchesTable.homeTeam,
+      awayTeam: centralMatchesTable.awayTeam,
+    })
+    .from(centralMatchesTable)
+    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+  const metaOf = new Map(
+    matchRows.map((m) => [
+      m.matchId,
+      {
+        grade: appGradeFromCentral(m.grade),
+        season: parseSeasonStartYear(m.season),
+        matchDate: m.matchDate,
+        opponent: m.homeClubId === clubId ? m.awayTeam : m.homeTeam,
+      },
+    ]),
+  );
+
+  const [batting, bowling] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+      })
+      .from(centralMatchBattingTable)
+      .where(and(eq(centralMatchBattingTable.clubId, clubId), inArray(centralMatchBattingTable.matchId, matchIds))),
+    centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+      })
+      .from(centralMatchBowlingTable)
+      .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds))),
+  ]);
+
+  const centuries = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null);
+  const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null);
+  const names = await centralPlayerNames([
+    ...new Set([...centuries, ...fivers].map((b) => b.participantId as string)),
+  ]);
+
+  const out: CentralMilestone[] = [];
+  for (const b of centuries) {
+    const meta = metaOf.get(b.matchId as number);
+    if (!meta?.grade || meta.season === null) continue;
+    const p = names.get(b.participantId as string);
+    if (p?.isPrivate) continue;
+    out.push({
+      kind: "century",
+      participantId: b.participantId as string,
+      displayName: p?.displayName ?? null,
+      grade: meta.grade,
+      season: meta.season,
+      matchId: b.matchId as number,
+      matchDate: meta.matchDate,
+      opponent: meta.opponent,
+      value: b.runs ?? 0,
+    });
+  }
+  for (const b of fivers) {
+    const meta = metaOf.get(b.matchId as number);
+    if (!meta?.grade || meta.season === null) continue;
+    const p = names.get(b.participantId as string);
+    if (p?.isPrivate) continue;
+    out.push({
+      kind: "fiveFor",
+      participantId: b.participantId as string,
+      displayName: p?.displayName ?? null,
+      grade: meta.grade,
+      season: meta.season,
+      matchId: b.matchId as number,
+      matchDate: meta.matchDate,
+      opponent: meta.opponent,
+      value: b.wickets ?? 0,
+    });
+  }
+  out.sort((a, b) => b.season - a.season || b.matchId - a.matchId);
+  return out;
+}
+
+export async function centralFiveWicketHauls(clubId: number): Promise<CentralFiveWicketHaul[]> {
+  const matchRows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade, season: centralMatchesTable.season })
+    .from(centralMatchesTable)
+    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+  const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
+
+  const bowling = await centralDb
+    .select({
+      participantId: centralMatchBowlingTable.participantId,
+      matchId: centralMatchBowlingTable.matchId,
+      wickets: centralMatchBowlingTable.wickets,
+      runs: centralMatchBowlingTable.runs,
+    })
+    .from(centralMatchBowlingTable)
+    .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds)));
+
+  const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId);
+  const names = await centralPlayerNames([...new Set(fivers.map((b) => b.participantId as string))]);
+
+  const rows: CentralFiveWicketHaul[] = [];
+  for (const b of fivers) {
+    if (b.matchId === null) continue;
+    const meta = metaOf.get(b.matchId);
+    if (!meta?.grade || meta.season === null) continue;
+    const p = names.get(b.participantId as string);
+    if (p?.isPrivate) continue;
+    rows.push({
+      participantId: b.participantId as string,
+      displayName: p?.displayName ?? null,
+      grade: meta.grade,
+      figures: `${b.wickets ?? 0}/${b.runs ?? 0}`,
+      season: seasonLabelFromStartYear(meta.season),
+    });
+  }
+  rows.sort((a, b) => a.grade.localeCompare(b.grade) || (b.season).localeCompare(a.season));
+  return rows;
+}
