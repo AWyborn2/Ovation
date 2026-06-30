@@ -8,6 +8,7 @@ import {
   useGetTenantBrand,
   getGetTenantBrandQueryKey,
   type TenantBrand,
+  type PlatformBrand,
 } from "@workspace/api-client-react";
 import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 
@@ -16,14 +17,43 @@ import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
  * used for: the layout header/footer/copyright, document.title, and the runtime
  * CSS theme tokens (so a tenant reskins without a code change). Falls back to the
  * built-in default brand until the request resolves.
+ *
+ * On the apex/marketing host the same endpoint returns `{ platform: true }`
+ * instead of a brand; {@link usePlatform} exposes that so the app can mount the
+ * landing page tree rather than a club app.
  */
 
 const BrandContext = createContext<ClubBrand>(DEFAULT_BRAND);
 
+/** True when the response is the platform marker rather than a tenant brand. */
+function isPlatformResponse(
+  data: TenantBrand | PlatformBrand | undefined,
+): data is PlatformBrand {
+  return !!data && "platform" in data && data.platform === true;
+}
+
+export interface PlatformState {
+  /** The request resolved to the apex/marketing host (no tenant). */
+  isPlatform: boolean;
+  /** The brand request is still in flight (mode not yet known). */
+  isLoading: boolean;
+}
+
+const PlatformContext = createContext<PlatformState>({
+  isPlatform: false,
+  isLoading: true,
+});
+
 /** The current tenant's brand (default brand until the request resolves). */
 export function useTenantBrand(): ClubBrand {
   const q = useGetTenantBrand({ query: { queryKey: getGetTenantBrandQueryKey() } });
+  if (isPlatformResponse(q.data)) return DEFAULT_BRAND;
   return (q.data as TenantBrand | undefined) ?? DEFAULT_BRAND;
+}
+
+/** Whether this host is the platform/marketing surface, and if still loading. */
+export function usePlatform(): PlatformState {
+  return useContext(PlatformContext);
 }
 
 /** Read the brand from context (set once by {@link BrandProvider}). */
@@ -107,9 +137,16 @@ function applyBrandTheme(brand: ClubBrand): void {
 }
 
 export function BrandProvider({ children }: { children: ReactNode }) {
-  const brand = useTenantBrand();
+  const q = useGetTenantBrand({ query: { queryKey: getGetTenantBrandQueryKey() } });
+  const isPlatform = isPlatformResponse(q.data);
+  const brand = isPlatform ? DEFAULT_BRAND : (q.data as TenantBrand | undefined) ?? DEFAULT_BRAND;
   useEffect(() => {
-    applyBrandTheme(brand);
-  }, [brand]);
-  return <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>;
+    // Don't paint a tenant theme onto the platform/marketing surface.
+    if (!isPlatform) applyBrandTheme(brand);
+  }, [brand, isPlatform]);
+  return (
+    <PlatformContext.Provider value={{ isPlatform, isLoading: q.isLoading }}>
+      <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>
+    </PlatformContext.Provider>
+  );
 }

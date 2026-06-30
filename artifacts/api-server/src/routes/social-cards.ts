@@ -45,6 +45,7 @@ import {
 } from "@workspace/api-zod";
 import type { CardLayoutLayer, CardSetSlide } from "@workspace/db";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { getTenantBrand } from "../lib/tenant-brand";
@@ -155,7 +156,7 @@ router.get("/sponsors", async (req, res): Promise<void> => {
   res.json(await migrateSponsorLogos(rows, req.log));
 });
 
-router.post("/sponsors", requireAdmin, async (req, res): Promise<void> => {
+router.post("/sponsors", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = CreateSponsorBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -177,7 +178,7 @@ router.post("/sponsors", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.patch("/sponsors/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpdateSponsorParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -204,7 +205,7 @@ router.patch("/sponsors/:id", requireAdmin, async (req, res): Promise<void> => {
   res.json(row);
 });
 
-router.delete("/sponsors/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteSponsorParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -244,7 +245,7 @@ router.get("/card-themes", async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-themes", requireAdmin, async (req, res): Promise<void> => {
+router.post("/card-themes", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = CreateCardThemeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -273,7 +274,7 @@ router.post("/card-themes", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.patch("/card-themes/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/card-themes/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpdateCardThemeParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -325,7 +326,7 @@ router.patch("/card-themes/:id", requireAdmin, async (req, res): Promise<void> =
   res.json(row);
 });
 
-router.delete("/card-themes/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/card-themes/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteCardThemeParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -369,7 +370,7 @@ router.get("/card-audio-tracks", async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-audio-tracks", requireAdmin, async (req, res): Promise<void> => {
+router.post("/card-audio-tracks", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = CreateCardAudioTrackBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -388,7 +389,7 @@ router.post("/card-audio-tracks", requireAdmin, async (req, res): Promise<void> 
   res.status(201).json(created);
 });
 
-router.patch("/card-audio-tracks/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/card-audio-tracks/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpdateCardAudioTrackParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -411,7 +412,7 @@ router.patch("/card-audio-tracks/:id", requireAdmin, async (req, res): Promise<v
   res.json(updated);
 });
 
-router.delete("/card-audio-tracks/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/card-audio-tracks/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteCardAudioTrackParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -464,7 +465,7 @@ router.get("/card-templates", async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-templates", requireAdmin, async (req, res): Promise<void> => {
+router.post("/card-templates", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = CreateCardTemplateBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -504,7 +505,7 @@ router.post("/card-templates", requireAdmin, async (req, res): Promise<void> => 
   res.status(201).json(row);
 });
 
-router.patch("/card-templates/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/card-templates/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpdateCardTemplateParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -538,7 +539,7 @@ router.patch("/card-templates/:id", requireAdmin, async (req, res): Promise<void
   res.json(row);
 });
 
-router.delete("/card-templates/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/card-templates/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteCardTemplateParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -566,7 +567,7 @@ router.get("/card-layouts", async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.put("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise<void> => {
+router.put("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpsertCardLayoutParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -589,7 +590,7 @@ router.put("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise<vo
   res.json(row);
 });
 
-router.delete("/card-layouts/:cardKind", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteCardLayoutParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -617,7 +618,7 @@ router.get("/card-effect-presets", async (_req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-effect-presets", requireAdmin, async (req, res): Promise<void> => {
+router.post("/card-effect-presets", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = CreateCardEffectPresetBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -634,7 +635,7 @@ router.post("/card-effect-presets", requireAdmin, async (req, res): Promise<void
   res.status(201).json(row);
 });
 
-router.delete("/card-effect-presets/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/card-effect-presets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteCardEffectPresetParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -672,7 +673,7 @@ router.get("/card-sets", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-sets", requireAdmin, async (req, res): Promise<void> => {
+router.post("/card-sets", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const body = CreateCardSetBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -702,7 +703,7 @@ router.post("/card-sets", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(row);
 });
 
-router.put("/card-sets/:id", requireAdmin, async (req, res): Promise<void> => {
+router.put("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpdateCardSetParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -742,7 +743,7 @@ router.put("/card-sets/:id", requireAdmin, async (req, res): Promise<void> => {
   res.json(row);
 });
 
-router.delete("/card-sets/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = DeleteCardSetParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -774,7 +775,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
   });
 });
 
-router.patch("/social-settings", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/social-settings", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = UpdateSocialSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -816,7 +817,7 @@ router.get("/milestone-board-settings", async (_req, res): Promise<void> => {
   });
 });
 
-router.patch("/milestone-board-settings", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/milestone-board-settings", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = UpdateMilestoneBoardSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -840,7 +841,7 @@ router.patch("/milestone-board-settings", requireAdmin, async (req, res): Promis
   });
 });
 
-router.put("/caption-templates", requireAdmin, async (req, res): Promise<void> => {
+router.put("/caption-templates", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const parsed = UpsertCaptionTemplateBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

@@ -12,4 +12,5 @@ export type BoardDisplayConfigTransition = typeof BoardDisplayConfigTransition[k
 export const BoardDisplayConfigTransition = {
   scroll: 'scroll',
   slide: 'slide',
+  wrap: 'wrap',
 } as const;

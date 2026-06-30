@@ -3437,10 +3437,17 @@ paths:
     post:
       operationId: generateKioskToken
       tags: [honours]
-      summary: Generate (or rotate) the clubroom TV kiosk access token (admin)
+      summary: Generate, set, or rotate the clubroom TV kiosk access token (admin)
       description: >-
-        Issues a fresh long-lived kiosk token, replacing any existing one
-        (which immediately stops working). Returns the new token.
+        Issues a kiosk token, replacing any existing one (which immediately
+        stops working). With a body `{ token }` the admin sets a custom code;
+        otherwise a random one is generated. Returns the active token.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KioskTokenInput"
       responses:
         "200":
           description: The newly issued kiosk token
@@ -4242,7 +4249,237 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantBrand"
+                oneOf:
+                  - $ref: "#/components/schemas/TenantBrand"
+                  - $ref: "#/components/schemas/PlatformBrand"
+                description: >-
+                  A tenant's brand on a club host, or the platform marker on the
+                  apex/marketing host (no tenant — the SPA mounts the landing page).
+
+  /tenant-plan:
+    get:
+      operationId: getTenantPlan
+      tags: [tenant]
+      summary: >-
+        The current tenant's plan and resolved feature entitlements. While billing
+        is dormant (BILLING_ENABLED unset) every feature resolves to true, so the
+        web can adopt the gating now without locking anything during the pilot.
+      responses:
+        "200":
+          description: The tenant's plan and entitlements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantPlan"
+
+  /platform/available-clubs:
+    get:
+      operationId: getAvailableClubs
+      tags: [platform]
+      summary: >-
+        Central PCA clubs available to claim via self-serve signup (those not yet
+        onboarded as a tenant). Empty / 403 when signup is disabled.
+      responses:
+        "200":
+          description: Clubs available to claim
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableClub"
+        "403":
+          description: Signup is disabled (SIGNUP_MODE=off).
+
+  /platform/slug-available:
+    get:
+      operationId: checkSlugAvailable
+      tags: [platform]
+      summary: Whether a subdomain slug is valid and free to claim.
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability of the requested slug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlugAvailability"
+
+  /platform/signup:
+    post:
+      operationId: platformSignup
+      tags: [platform]
+      summary: >-
+        Self-serve onboarding: claim a central club + subdomain and create the
+        first club admin. Provisions the tenant (central reads + player crosswalk)
+        and opens an admin session. Gated by SIGNUP_MODE.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupBody"
+      responses:
+        "201":
+          description: Tenant provisioned and first admin created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignupResult"
+        "400":
+          description: Invalid slug, email, or password.
+        "403":
+          description: Signup is disabled, or the club isn't eligible.
+        "409":
+          description: The slug or club is already taken.
+
+  /platform/auth/login:
+    post:
+      operationId: platformAdminLogin
+      tags: [platformAdmin]
+      summary: Authenticate a platform (super) admin and open a platform session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformLoginBody"
+      responses:
+        "200":
+          description: Authenticated; platform session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformAdmin"
+        "400":
+          description: Missing or malformed credentials.
+        "401":
+          description: Invalid email or password.
+
+  /platform/auth/logout:
+    post:
+      operationId: platformAdminLogout
+      tags: [platformAdmin]
+      summary: Clear the current platform session.
+      responses:
+        "204":
+          description: Session cleared.
+
+  /platform/auth/me:
+    get:
+      operationId: getPlatformAdminMe
+      tags: [platformAdmin]
+      summary: The currently signed-in platform admin.
+      responses:
+        "200":
+          description: The signed-in platform admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformAdmin"
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/tenants:
+    get:
+      operationId: listAllTenants
+      tags: [platformAdmin]
+      summary: Every tenant on the platform, with plan and admin count.
+      responses:
+        "200":
+          description: All tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTenant"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: provisionTenantAsAdmin
+      tags: [platformAdmin]
+      summary: >-
+        Concierge-provision a tenant from a central club (and optionally create its
+        first club admin). Mirrors self-serve signup but run by a platform admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProvisionTenantBody"
+      responses:
+        "201":
+          description: Tenant provisioned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenant"
+        "400":
+          description: Invalid slug, club, email, or password.
+        "401":
+          description: Not authenticated.
+        "409":
+          description: The slug or club is already taken.
+
+  /platform/admin/tenants/{id}:
+    get:
+      operationId: getAdminTenant
+      tags: [platformAdmin]
+      summary: One tenant's detail, including its club admins.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tenant detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenantDetail"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+    patch:
+      operationId: updateAdminTenant
+      tags: [platformAdmin]
+      summary: Update a tenant's plan and/or custom domain.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTenantBody"
+      responses:
+        "200":
+          description: Updated tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenant"
+        "400":
+          description: Invalid plan or custom domain.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "409":
+          description: That custom domain is already in use.
 
 components:
   schemas:
@@ -5677,6 +5914,198 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+
+    PlatformBrand:
+      type: object
+      description: >-
+        Returned by GET /tenant-brand on the apex/marketing host, where no tenant
+        resolves. The web client treats this as the signal to render the platform
+        landing page (and signup) instead of a club app.
+      required: [platform]
+      properties:
+        platform:
+          type: boolean
+          enum: [true]
+
+    Entitlements:
+      type: object
+      description: Per-feature flags resolved from the tenant's plan.
+      required: [customDomain, mobileApp, socialStudio, clubroomTv, curation]
+      properties:
+        customDomain:
+          type: boolean
+        mobileApp:
+          type: boolean
+        socialStudio:
+          type: boolean
+        clubroomTv:
+          type: boolean
+        curation:
+          type: boolean
+
+    TenantPlan:
+      type: object
+      required: [plan, entitlements]
+      properties:
+        plan:
+          type: string
+          enum: [free, club, pro]
+        entitlements:
+          $ref: "#/components/schemas/Entitlements"
+
+    AvailableClub:
+      type: object
+      description: A central PCA club a visitor can claim during signup.
+      required: [centralClubId, name, suggestedSlug]
+      properties:
+        centralClubId:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        suggestedSlug:
+          type: string
+          description: A pre-validated slug derived from the club name.
+
+    SlugAvailability:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: ["string", "null"]
+          description: Why the slug is unavailable (taken, reserved, malformed), if any.
+
+    SignupBody:
+      type: object
+      required: [centralClubId, slug, adminEmail, password]
+      properties:
+        centralClubId:
+          type: integer
+        slug:
+          type: string
+        adminEmail:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    SignupResult:
+      type: object
+      required: [tenantId, slug, name, redirectUrl]
+      properties:
+        tenantId:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        redirectUrl:
+          type: string
+          description: The new tenant's admin URL to redirect the browser to.
+
+    PlatformLoginBody:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    PlatformAdmin:
+      type: object
+      description: A platform (super) admin — the apex/concierge console operator.
+      required: [id, email, displayName]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        displayName:
+          type: string
+
+    AdminTenant:
+      type: object
+      description: A tenant as listed in the platform-admin console.
+      required: [id, slug, name, plan, centralClubId, readsFromCentral, adminCount]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        plan:
+          type: string
+          enum: [free, club, pro]
+        centralClubId:
+          type: integer
+        centralClubName:
+          type: ["string", "null"]
+        customDomain:
+          type: ["string", "null"]
+        readsFromCentral:
+          type: boolean
+        createdAt:
+          type: ["string", "null"]
+        adminCount:
+          type: integer
+
+    AdminTenantAdmin:
+      type: object
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+
+    AdminTenantDetail:
+      type: object
+      required: [tenant, admins]
+      properties:
+        tenant:
+          $ref: "#/components/schemas/AdminTenant"
+        admins:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTenantAdmin"
+
+    UpdateTenantBody:
+      type: object
+      description: Partial update of a tenant's plan and/or custom domain.
+      properties:
+        plan:
+          type: string
+          enum: [free, club, pro]
+        customDomain:
+          type: ["string", "null"]
+
+    ProvisionTenantBody:
+      type: object
+      required: [centralClubId, slug]
+      properties:
+        centralClubId:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        plan:
+          type: string
+          enum: [free, club, pro]
+        adminEmail:
+          type: string
+        password:
+          type: string
+          minLength: 8
 
     MatchSummary:
       type: object
@@ -8419,10 +8848,20 @@ components:
           enum:
             - scroll
             - slide
-          description: Kiosk transition — continuous credit-scroll or paged slide.
+            - wrap
+          description: >-
+            Kiosk fill mode — continuous credit-scroll, paged slideshow, or
+            wrap (grid boards split into side-by-side blocks to fit one screen).
         fit:
           type: boolean
           description: Fill the full screen width on the kiosk (drop the narrow cap).
+        wrapBlocks:
+          type: integer
+          minimum: 2
+          maximum: 4
+          description: >-
+            For the "wrap" fill mode on grid boards: how many side-by-side
+            year-blocks to split the rows into (2..4).
 
     HonourBackground:
       type: object
@@ -8458,8 +8897,24 @@ components:
           enum:
             - scroll
             - slide
+            - wrap
         fit:
           type: boolean
+        wrapBlocks:
+          type: integer
+          minimum: 2
+          maximum: 4
+          description: Side-by-side block count for the "wrap" fill mode (grid boards).
+        skin:
+          type: string
+          nullable: true
+          description: >-
+            Per-board skin override (built-in id p1..p9 or "custom:<uuid>").
+            Unset = use the club-wide skin.
+        footnote:
+          type: string
+          nullable: true
+          description: Free-text footnote rendered under the board.
         heading:
           type: string
           nullable: true
@@ -8614,6 +9069,16 @@ components:
             - $ref: "#/components/schemas/BoardGrid"
           nullable: true
           description: Season-grid matrix for the 'grid' layout (else null).
+        skin:
+          type: string
+          nullable: true
+          description: >-
+            Effective per-board skin (resolved server-side from the board config
+            or custom-grid definition); null = use the club-wide skin.
+        footnote:
+          type: string
+          nullable: true
+          description: Free-text footnote rendered under the board.
         display:
           $ref: "#/components/schemas/BoardDisplay"
 
@@ -8628,6 +9093,10 @@ components:
         playerId:
           type: integer
           nullable: true
+        note:
+          type: string
+          nullable: true
+          description: Small marker/caption shown with the name (e.g. "Premiers", "*").
 
     BoardGridCell:
       type: object
@@ -8709,6 +9178,120 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GridColumnOption"
+
+    CustomGridColumn:
+      type: object
+      description: >-
+        One column of an admin-built custom grid board. `source` selects where
+        the column's cells come from; `manual` columns are typed by the admin.
+      required:
+        - key
+        - label
+        - source
+      properties:
+        key:
+          type: string
+          description: Stable per-column id (unique within the board).
+        label:
+          type: string
+          description: Column heading text.
+        source:
+          type: string
+          enum:
+            - office
+            - award
+            - grade
+            - premiership
+            - manual
+          description: >-
+            Data source: an office (committee role), an award, a grade's
+            captains, premierships by grade, or free manual entry.
+        sourceKey:
+          type: string
+          nullable: true
+          description: >-
+            The specific office role / award key / grade for the chosen source
+            (ignored for manual columns).
+        manualValues:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: >-
+            For manual columns: season label ("2024/25") → cell text. Other
+            sources ignore this.
+
+    CustomGridDef:
+      type: object
+      description: >-
+        An admin-built season-grid board: season rows × freely chosen columns
+        drawn from any data source (or typed manually). Carries its own look
+        (skin), fill mode and footnote.
+      required:
+        - id
+        - title
+        - columns
+      properties:
+        id:
+          type: string
+          description: Stable id, "grid:<uuid>" (validated server-side; never reused).
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        footnote:
+          type: string
+          nullable: true
+        skin:
+          type: string
+          nullable: true
+          description: Per-board skin (p1..p9 or "custom:<uuid>"); null = club-wide.
+        seasonFrom:
+          type: integer
+          nullable: true
+          description: First season start-year to show (rows run newest→oldest).
+        seasonTo:
+          type: integer
+          nullable: true
+          description: >-
+            Last season start-year to show; rows beyond the data are left blank
+            so the board has room to grow (pre-listed future seasons).
+        fillMode:
+          type: string
+          enum:
+            - scroll
+            - slide
+            - wrap
+          nullable: true
+        wrapBlocks:
+          type: integer
+          minimum: 2
+          maximum: 4
+          nullable: true
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomGridColumn"
+
+    KioskAd:
+      type: object
+      description: >-
+        A full-screen advertising creative the admin can place between boards in
+        the kiosk rotation (distinct from the club sponsor library).
+      required:
+        - id
+        - name
+        - imageUrl
+      properties:
+        id:
+          type: string
+          description: Stable id, "ad:<uuid>".
+        name:
+          type: string
+        imageUrl:
+          type: string
+          description: Full-screen ad image URL (or uploaded object path).
 
     HonourSkin:
       type: object
@@ -8818,6 +9401,26 @@ components:
           type: integer
           minimum: 1
           description: Insert a sponsor slide after this many boards (when slides on).
+        kioskSponsorSlideStyle:
+          type: string
+          enum:
+            - grid
+            - single
+          description: >-
+            Sponsor slide style — one grid of every sponsor, or one large
+            sponsor per slide rotating through them.
+        kioskSponsorIds:
+          type: array
+          items:
+            type: integer
+          description: >-
+            Which sponsors appear on the kiosk (subset of the active sponsors).
+            Empty = all active sponsors.
+        kioskAds:
+          type: array
+          description: Admin-uploaded full-screen ad creatives for the kiosk.
+          items:
+            $ref: "#/components/schemas/KioskAd"
         kioskToken:
           type: string
           nullable: true
@@ -8834,9 +9437,14 @@ components:
           description: Admin-defined composite 'columns' boards.
           items:
             $ref: "#/components/schemas/CompositeDef"
+        customGrids:
+          type: array
+          description: Admin-built custom season-grid boards.
+          items:
+            $ref: "#/components/schemas/CustomGridDef"
         skins:
           type: array
-          description: Admin-authored skins/themes (built-in p1..p8 not listed).
+          description: Admin-authored skins/themes (built-in p1..p9 not listed).
           items:
             $ref: "#/components/schemas/HonourSkin"
         colourOverrides:
@@ -8855,6 +9463,18 @@ components:
           type: string
           nullable: true
           description: The active kiosk token, or null when revoked / not issued.
+
+    KioskTokenInput:
+      type: object
+      description: >-
+        Optional body for generating a kiosk token. Provide `token` to set a
+        custom code (3–40 chars, letters/numbers/hyphens); omit it for a random
+        one.
+      properties:
+        token:
+          type: string
+          nullable: true
+          description: Custom kiosk code, or null/omitted to auto-generate.
 
     HonourDisplaySettingsUpdate:
       type: object
@@ -8878,6 +9498,19 @@ components:
         kioskSponsorSlideEvery:
           type: integer
           minimum: 1
+        kioskSponsorSlideStyle:
+          type: string
+          enum:
+            - grid
+            - single
+        kioskSponsorIds:
+          type: array
+          items:
+            type: integer
+        kioskAds:
+          type: array
+          items:
+            $ref: "#/components/schemas/KioskAd"
         boardConfigs:
           type: object
           additionalProperties:
@@ -8886,6 +9519,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CompositeDef"
+        customGrids:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomGridDef"
         skins:
           type: array
           items:

@@ -39,7 +39,9 @@ export const tenantsTable = pgTable("tenants", {
   secondaryColour: text("secondary_colour"),
   tertiaryColour: text("tertiary_colour"),
   customDomain: text("custom_domain"),
-  plan: text("plan").notNull().default("pilot"),
+  // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
+  // entitlements; enforcement is dormant until BILLING_ENABLED=true.
+  plan: text("plan").notNull().default("free"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -13,6 +13,7 @@ import {
   DeleteAwardWinnerParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -62,7 +63,7 @@ router.get("/admin/awards", requireAdmin, async (_req, res): Promise<void> => {
   res.json(awards.map((a) => ({ ...a, winners: byAward.get(a.id) ?? [] })));
 });
 
-router.post("/awards", requireAdmin, async (req, res): Promise<void> => {
+router.post("/awards", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = CreateAwardBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -84,7 +85,7 @@ router.post("/awards", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json({ ...row, winners: [] });
 });
 
-router.patch("/awards/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/awards/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = UpdateAwardParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -108,7 +109,7 @@ router.patch("/awards/:id", requireAdmin, async (req, res): Promise<void> => {
   res.json({ ...row, winners: byAward.get(row.id) ?? [] });
 });
 
-router.delete("/awards/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/awards/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = DeleteAwardParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -128,6 +129,7 @@ router.delete("/awards/:id", requireAdmin, async (req, res): Promise<void> => {
 router.post(
   "/awards/:id/winners",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = CreateAwardWinnerParams.safeParse(req.params);
     if (!params.success) {
@@ -165,6 +167,7 @@ router.post(
 router.patch(
   "/award-winners/:id",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = UpdateAwardWinnerParams.safeParse(req.params);
     if (!params.success) {
@@ -192,6 +195,7 @@ router.patch(
 router.delete(
   "/award-winners/:id",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = DeleteAwardWinnerParams.safeParse(req.params);
     if (!params.success) {

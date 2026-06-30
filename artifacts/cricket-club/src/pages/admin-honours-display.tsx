@@ -16,6 +16,9 @@ import {
   type HonourColourOverrides,
   type HonourBackground,
   type GridCatalogEntry,
+  type KioskAd,
+  type CustomGridDef,
+  type CustomGridColumn,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -128,6 +131,7 @@ const TEMPLATE_BLURB: Record<TemplateId, string> = {
   p6: "Soft, rounded cards on a light backdrop.",
   p7: "App-style flags with bright accents (light).",
   p8: "App-style flags with bright accents (dark).",
+  p9: "Printed acrylic board with a filled colour header row.",
 };
 
 function SettingsForm({
@@ -155,11 +159,21 @@ function SettingsForm({
   const [sponsorSlideEvery, setSponsorSlideEvery] = useState(
     String(settings.kioskSponsorSlideEvery),
   );
+  const [sponsorSlideStyle, setSponsorSlideStyle] = useState<"grid" | "single">(
+    settings.kioskSponsorSlideStyle ?? "grid",
+  );
+  const [sponsorIds, setSponsorIds] = useState<number[]>(
+    settings.kioskSponsorIds ?? [],
+  );
+  const [kioskAds, setKioskAds] = useState<KioskAd[]>(settings.kioskAds ?? []);
   const [boardConfigs, setBoardConfigs] = useState<
     Record<string, BoardDisplayConfig>
   >(settings.boardConfigs ?? {});
   const [composites, setComposites] = useState<CompositeDef[]>(
     settings.composites ?? [],
+  );
+  const [customGrids, setCustomGrids] = useState<CustomGridDef[]>(
+    settings.customGrids ?? [],
   );
   const [skins, setSkins] = useState<HonourSkin[]>(settings.skins ?? []);
   const [colourOverrides, setColourOverrides] = useState<HonourColourOverrides>(
@@ -179,8 +193,12 @@ function SettingsForm({
     setSponsorStrip(settings.kioskSponsorStrip);
     setSponsorSlides(settings.kioskSponsorSlides);
     setSponsorSlideEvery(String(settings.kioskSponsorSlideEvery));
+    setSponsorSlideStyle(settings.kioskSponsorSlideStyle ?? "grid");
+    setSponsorIds(settings.kioskSponsorIds ?? []);
+    setKioskAds(settings.kioskAds ?? []);
     setBoardConfigs(settings.boardConfigs ?? {});
     setComposites(settings.composites ?? []);
+    setCustomGrids(settings.customGrids ?? []);
     setSkins(settings.skins ?? []);
     setColourOverrides(settings.colourOverrides ?? {});
     setDefaultFont(settings.defaultFont ?? "");
@@ -262,6 +280,26 @@ function SettingsForm({
     for (const sk of skins) {
       if (!sk.name.trim()) return setError("Every theme needs a name.");
     }
+    for (const g of customGrids) {
+      if (!g.title.trim()) return setError("Every custom grid board needs a title.");
+      if (g.columns.length < 1) {
+        return setError(
+          `Custom grid "${g.title || "Untitled"}" needs at least one column.`,
+        );
+      }
+      if (g.columns.some((c) => !c.label.trim())) {
+        return setError(`Custom grid "${g.title}" has a column missing a heading.`);
+      }
+      if (
+        g.columns.some(
+          (c) => c.source !== "manual" && !(c.sourceKey ?? "").trim(),
+        )
+      ) {
+        return setError(
+          `Custom grid "${g.title}" has a column missing its data source selection.`,
+        );
+      }
+    }
     // Guard against saving a default that points at a deleted custom skin.
     if (
       !isBuiltinSkin(defaultTemplate) &&
@@ -280,8 +318,12 @@ function SettingsForm({
       kioskSponsorStrip: sponsorStrip,
       kioskSponsorSlides: sponsorSlides,
       kioskSponsorSlideEvery: safeEvery,
+      kioskSponsorSlideStyle: sponsorSlideStyle,
+      kioskSponsorIds: sponsorIds,
+      kioskAds,
       boardConfigs,
       composites,
+      customGrids,
       skins,
       colourOverrides: {
         background: colourOverrides.background || null,
@@ -299,10 +341,30 @@ function SettingsForm({
   // which carry their own transition/fit on the composite definition. The
   // approaching board is client-only, so append it as a synthetic row unless the
   // bundle somehow already carries one.
-  const realTunable = boards.filter((b) => !b.id.startsWith("composite:"));
+  // Custom grids are configured in their own builder (skin/fill/footnote live on
+  // the definition), so exclude them from the generic per-board tuner too.
+  const realTunable = boards.filter(
+    (b) => !b.id.startsWith("composite:") && !b.id.startsWith("grid:"),
+  );
   const tunableBoards = realTunable.some((b) => b.id === "approaching")
     ? realTunable
     : [...realTunable, APPROACHING_TUNABLE_BOARD];
+
+  // Skin choices for the per-board / per-grid skin selects (built-ins + custom).
+  const skinOptions: { value: string; label: string }[] = [
+    ...TEMPLATES.map((t) => ({ value: t.id, label: t.label })),
+    ...skins.map((s) => ({ value: s.id, label: s.name })),
+  ];
+
+  // Resolve a sequence item to a display label (boards + sponsor/ad tokens).
+  const seqLabel = (id: string): string => {
+    if (id === "sponsor") return "✦ Sponsor slide";
+    if (id.startsWith("ad:")) {
+      const ad = kioskAds.find((a) => a.id === id);
+      return ad ? `▣ Ad — ${ad.name || "Untitled"}` : `${id} (missing ad)`;
+    }
+    return boardTitle.get(id) ?? `${id} (missing)`;
+  };
   // List-layout boards eligible to be a composite column source (no composites,
   // no approaching — the server refuses both as column refs).
   const sourceBoards = boards.filter(
@@ -334,6 +396,46 @@ function SettingsForm({
     );
   const removeComposite = (id: string) =>
     setComposites((prev) => prev.filter((c) => c.id !== id));
+
+  // ---- Custom grid boards ------------------------------------------------
+  const addCustomGrid = () =>
+    setCustomGrids((prev) => [
+      ...prev,
+      {
+        id: `grid:${crypto.randomUUID()}`,
+        title: "",
+        subtitle: "",
+        footnote: "",
+        skin: null,
+        seasonFrom: null,
+        seasonTo: null,
+        fillMode: "wrap",
+        wrapBlocks: 2,
+        columns: [],
+      },
+    ]);
+  const patchCustomGrid = (id: string, patch: Partial<CustomGridDef>) =>
+    setCustomGrids((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+    );
+  const removeCustomGrid = (id: string) => {
+    setCustomGrids((prev) => prev.filter((g) => g.id !== id));
+    setSequence((prev) => prev.filter((s) => s !== id));
+  };
+
+  // ---- Kiosk ad creatives ------------------------------------------------
+  const addAd = (ad: KioskAd) => setKioskAds((prev) => [...prev, ad]);
+  const patchAd = (id: string, patch: Partial<KioskAd>) =>
+    setKioskAds((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+  const removeAd = (id: string) => {
+    setKioskAds((prev) => prev.filter((a) => a.id !== id));
+    setSequence((prev) => prev.filter((s) => s !== id));
+  };
+
+  const toggleSponsorId = (id: number) =>
+    setSponsorIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
 
   // ---- Admin skins -------------------------------------------------------
   const addSkin = () => {
@@ -541,7 +643,7 @@ function SettingsForm({
                 >
                   <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
                   <span className="flex-1 text-sm font-medium">
-                    {boardTitle.get(id) ?? `${id} (missing)`}
+                    {seqLabel(id)}
                   </span>
                   <Button
                     type="button"
@@ -580,8 +682,8 @@ function SettingsForm({
                 </li>
               )}
             </ul>
-            {unusedBoards.length > 0 && (
-              <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {unusedBoards.length > 0 && (
                 <select
                   className="px-2 py-1.5 rounded border bg-card text-sm min-w-[14rem]"
                   defaultValue=""
@@ -598,9 +700,39 @@ function SettingsForm({
                     </option>
                   ))}
                 </select>
-                <Plus className="h-4 w-4 text-muted-foreground" />
-              </div>
-            )}
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => addToSeq("sponsor")}
+                data-testid="add-sponsor-to-seq"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Sponsor slide
+              </Button>
+              {kioskAds.length > 0 && (
+                <select
+                  className="px-2 py-1.5 rounded border bg-card text-sm"
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) addToSeq(e.target.value);
+                    e.target.value = "";
+                  }}
+                  data-testid="add-ad-to-seq"
+                >
+                  <option value="">Place an ad…</option>
+                  {kioskAds.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name || "Untitled ad"}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              You can drop a sponsor slide or an ad creative anywhere in the
+              order. The same sponsor slide / ad can appear more than once.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
@@ -693,32 +825,52 @@ function SettingsForm({
             </label>
 
             {sponsorSlides && (
-              <label className="flex items-center gap-2 pl-12">
-                <span className="text-xs text-muted-foreground">
-                  Show a sponsor slide after every
-                </span>
-                <Input
-                  type="number"
-                  min={1}
-                  className="w-20"
-                  value={sponsorSlideEvery}
-                  onChange={(e) => setSponsorSlideEvery(e.target.value)}
-                  data-testid="input-sponsor-every"
-                />
-                <span className="text-xs text-muted-foreground">board(s)</span>
-              </label>
+              <div className="pl-12 space-y-2">
+                <label className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Show a sponsor slide after every
+                  </span>
+                  <Input
+                    type="number"
+                    min={1}
+                    className="w-20"
+                    value={sponsorSlideEvery}
+                    onChange={(e) => setSponsorSlideEvery(e.target.value)}
+                    data-testid="input-sponsor-every"
+                  />
+                  <span className="text-xs text-muted-foreground">board(s)</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Slide style</span>
+                  <select
+                    className="px-2 py-1 rounded border bg-background text-sm"
+                    value={sponsorSlideStyle}
+                    onChange={(e) =>
+                      setSponsorSlideStyle(e.target.value as "grid" | "single")
+                    }
+                    data-testid="select-sponsor-slide-style"
+                  >
+                    <option value="grid">One grid of all sponsors</option>
+                    <option value="single">One sponsor per slide (rotating)</option>
+                  </select>
+                </label>
+              </div>
             )}
           </div>
 
           <div>
             <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-              Active sponsors{" "}
+              Sponsors shown on the kiosk{" "}
               {activeSponsors.length > 0 && (
                 <span className="text-muted-foreground/70">
-                  ({activeSponsors.length})
+                  ({activeSponsors.length} active)
                 </span>
               )}
             </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Click a sponsor to include/exclude it from the kiosk. None selected
+              = show all active sponsors.
+            </p>
             {sponsorsQ.isLoading ? (
               <p className="text-xs text-muted-foreground">Loading sponsors…</p>
             ) : activeSponsors.length === 0 ? (
@@ -729,21 +881,66 @@ function SettingsForm({
               </p>
             ) : (
               <div className="flex flex-wrap gap-3">
-                {activeSponsors.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-center bg-white rounded border p-2 h-14 w-28"
-                    title={s.name}
-                  >
-                    <img
-                      src={s.logoUrl}
-                      alt={s.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                ))}
+                {activeSponsors.map((s) => {
+                  const on = sponsorIds.length === 0 || sponsorIds.includes(s.id);
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => toggleSponsorId(s.id)}
+                      className={`flex items-center justify-center bg-white rounded border p-2 h-14 w-28 transition ${
+                        on ? "ring-2 ring-primary" : "opacity-40 hover:opacity-70"
+                      }`}
+                      title={`${s.name}${on ? " (showing)" : " (hidden)"}`}
+                      data-testid={`kiosk-sponsor-${s.id}`}
+                    >
+                      <img
+                        src={s.logoUrl}
+                        alt={s.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </button>
+                  );
+                })}
               </div>
             )}
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+              Ad creatives
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Upload your own full-screen ad images (designed promos, not just
+              logos). Add them to the rotation in the kiosk sequence above.
+            </p>
+            <div className="space-y-3 max-w-2xl">
+              {kioskAds.map((ad) => (
+                <AdEditor
+                  key={ad.id}
+                  ad={ad}
+                  onPatch={(patch) => patchAd(ad.id, patch)}
+                  onRemove={() => removeAd(ad.id)}
+                />
+              ))}
+              {kioskAds.length === 0 && (
+                <p className="text-xs text-muted-foreground italic">
+                  No ad creatives yet.
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() =>
+                addAd({ id: `ad:${crypto.randomUUID()}`, name: "", imageUrl: "" })
+              }
+              data-testid="button-add-ad"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add ad creative
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -771,6 +968,7 @@ function SettingsForm({
                 board={b}
                 cfg={boardConfigs[b.id]}
                 grid={gridById.get(b.id) ?? null}
+                skinOptions={skinOptions}
                 onPatch={(patch) => setConfig(b.id, patch)}
               />
             ))}
@@ -812,6 +1010,44 @@ function SettingsForm({
           </div>
           <Button type="button" variant="outline" onClick={addComposite}>
             <Plus className="h-4 w-4 mr-2" /> Add composite board
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Custom grid boards (season × freely chosen columns) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Grid3x3 className="h-5 w-5" /> Custom grid boards
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Build a season-grid board like a real honour board: the season runs
+            down the left and each column is a title/award you choose. Columns can
+            pull from committee offices, awards, grade captains or premierships —
+            or be typed in by hand. Set a season range to pre-list blank future
+            seasons, add a footnote, pick a skin, and choose how it fills the TV.
+          </p>
+          <div className="space-y-4">
+            {customGrids.map((g) => (
+              <CustomGridEditor
+                key={g.id}
+                gridDef={g}
+                catalog={gridCatalog}
+                skinOptions={skinOptions}
+                onPatch={(patch) => patchCustomGrid(g.id, patch)}
+                onRemove={() => removeCustomGrid(g.id)}
+              />
+            ))}
+            {customGrids.length === 0 && (
+              <p className="text-xs text-muted-foreground italic">
+                No custom grid boards yet.
+              </p>
+            )}
+          </div>
+          <Button type="button" variant="outline" onClick={addCustomGrid}>
+            <Plus className="h-4 w-4 mr-2" /> Add custom grid board
           </Button>
         </CardContent>
       </Card>
@@ -1318,11 +1554,13 @@ function BoardConfigEditor({
   board,
   cfg,
   grid,
+  skinOptions,
   onPatch,
 }: {
   board: DisplayBoard;
   cfg?: BoardDisplayConfig;
   grid: GridCatalogEntry | null;
+  skinOptions: { value: string; label: string }[];
   onPatch: (patch: Partial<BoardDisplayConfig>) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -1330,8 +1568,10 @@ function BoardConfigEditor({
   const transition = cfg?.transition ?? board.display.transition;
   const fit = cfg?.fit ?? board.display.fit;
   const isList = board.layout === "list";
+  const isGrid = board.layout === "grid";
   const logo = cfg?.logo ?? true;
   const gridColumns = cfg?.gridColumns ?? [];
+  const wrapBlocks = cfg?.wrapBlocks ?? board.display.wrapBlocks ?? 2;
 
   const toggleGridCol = (key: string) => {
     const next = gridColumns.includes(key)
@@ -1384,14 +1624,32 @@ function BoardConfigEditor({
             className="px-2 py-1 rounded border bg-background text-sm"
             value={transition}
             onChange={(e) =>
-              onPatch({ transition: e.target.value as "scroll" | "slide" })
+              onPatch({
+                transition: e.target.value as "scroll" | "slide" | "wrap",
+              })
             }
             data-testid={`board-transition-${board.id}`}
           >
             <option value="scroll">Scroll</option>
             <option value="slide">Slide</option>
+            {isGrid && <option value="wrap">Wrap (side-by-side)</option>}
           </select>
         </label>
+        {isGrid && transition === "wrap" && (
+          <label className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground">Blocks</span>
+            <select
+              className="px-2 py-1 rounded border bg-background text-sm"
+              value={wrapBlocks}
+              onChange={(e) => onPatch({ wrapBlocks: Number(e.target.value) })}
+              data-testid={`board-wrapblocks-${board.id}`}
+            >
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+            </select>
+          </label>
+        )}
         <label className="flex items-center gap-1.5 text-xs">
           <input
             type="checkbox"
@@ -1430,6 +1688,35 @@ function BoardConfigEditor({
                   onPatch({ subtitle: e.target.value || null })
                 }
                 data-testid={`board-subtitle-${board.id}`}
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                Skin override
+              </span>
+              <select
+                className="w-full px-2 py-1.5 rounded border bg-card text-sm"
+                value={cfg?.skin ?? ""}
+                onChange={(e) => onPatch({ skin: e.target.value || null })}
+                data-testid={`board-skin-${board.id}`}
+              >
+                <option value="">Club-wide skin</option>
+                {skinOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                Footnote
+              </span>
+              <Input
+                value={cfg?.footnote ?? ""}
+                placeholder="e.g. Premiers 2018/19, 2024/25"
+                onChange={(e) => onPatch({ footnote: e.target.value || null })}
+                data-testid={`board-footnote-${board.id}`}
               />
             </label>
           </div>
@@ -1539,6 +1826,404 @@ function BoardConfigEditor({
   );
 }
 
+/** Editor row for a single uploaded kiosk ad creative (name + full-screen image). */
+function AdEditor({
+  ad,
+  onPatch,
+  onRemove,
+}: {
+  ad: KioskAd;
+  onPatch: (patch: Partial<KioskAd>) => void;
+  onRemove: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const upload = useUpload({ onError: (e) => setError(e.message) });
+  const handleFile = async (file: File) => {
+    setError(null);
+    const r = await upload.uploadFile(file);
+    if (r) onPatch({ imageUrl: `/api/storage${r.objectPath}` });
+  };
+  return (
+    <div
+      className="border rounded-lg p-3 flex flex-wrap items-center gap-3 bg-muted/30"
+      data-testid={`ad-${ad.id}`}
+    >
+      <Input
+        className="flex-1 min-w-[10rem]"
+        value={ad.name}
+        placeholder="Ad name"
+        onChange={(e) => onPatch({ name: e.target.value })}
+        data-testid={`ad-name-${ad.id}`}
+      />
+      <Input
+        className="flex-1 min-w-[12rem] font-mono text-xs"
+        value={ad.imageUrl}
+        placeholder="https://… or upload →"
+        onChange={(e) => onPatch({ imageUrl: e.target.value })}
+        data-testid={`ad-url-${ad.id}`}
+      />
+      <label className="text-xs inline-flex items-center gap-1.5 cursor-pointer text-primary">
+        <Upload className="h-3.5 w-3.5" />
+        {upload.isUploading ? "Uploading…" : "Upload"}
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          disabled={upload.isUploading}
+          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          data-testid={`ad-file-${ad.id}`}
+        />
+      </label>
+      {ad.imageUrl && (
+        <img
+          src={ad.imageUrl}
+          alt={ad.name}
+          className="h-9 w-16 object-cover rounded border bg-white"
+        />
+      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={onRemove}
+        data-testid={`ad-remove-${ad.id}`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+      {error && <p className="w-full text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+// Maps a custom-grid column source to the catalog entry that supplies its keys.
+const SOURCE_CATALOG_ID: Record<string, string> = {
+  office: "committee",
+  award: "award_winners",
+  grade: "captains_grid",
+  premiership: "premierships_grid",
+};
+const SOURCE_LABELS: { value: CustomGridColumn["source"]; label: string }[] = [
+  { value: "office", label: "Committee office" },
+  { value: "award", label: "Award" },
+  { value: "grade", label: "Grade captain" },
+  { value: "premiership", label: "Premiership (grade)" },
+  { value: "manual", label: "Manual entry" },
+];
+
+/** Builder for a single admin-defined custom grid board. */
+function CustomGridEditor({
+  gridDef,
+  catalog,
+  skinOptions,
+  onPatch,
+  onRemove,
+}: {
+  gridDef: CustomGridDef;
+  catalog: GridCatalogEntry[];
+  skinOptions: { value: string; label: string }[];
+  onPatch: (patch: Partial<CustomGridDef>) => void;
+  onRemove: () => void;
+}) {
+  const catalogById = useMemo(
+    () => new Map(catalog.map((c) => [c.id, c])),
+    [catalog],
+  );
+  const optionsFor = (source: CustomGridColumn["source"]) =>
+    source === "manual"
+      ? []
+      : catalogById.get(SOURCE_CATALOG_ID[source] ?? "")?.options ?? [];
+
+  const fillMode = gridDef.fillMode ?? "wrap";
+  const setCol = (i: number, patch: Partial<CustomGridColumn>) =>
+    onPatch({
+      columns: gridDef.columns.map((c, idx) =>
+        idx === i ? { ...c, ...patch } : c,
+      ),
+    });
+  const addCol = () =>
+    onPatch({
+      columns: [
+        ...gridDef.columns,
+        { key: crypto.randomUUID().slice(0, 8), label: "", source: "office", sourceKey: null },
+      ],
+    });
+  const removeCol = (i: number) =>
+    onPatch({ columns: gridDef.columns.filter((_, idx) => idx !== i) });
+  const moveCol = (i: number, dir: -1 | 1) => {
+    const next = gridDef.columns.slice();
+    const t = i + dir;
+    if (t < 0 || t >= next.length) return;
+    [next[i], next[t]] = [next[t]!, next[i]!];
+    onPatch({ columns: next });
+  };
+
+  // Manual values <-> "season = value" lines for a simple textarea editor.
+  const manualText = (c: CustomGridColumn) =>
+    Object.entries(c.manualValues ?? {})
+      .map(([k, v]) => `${k} = ${v}`)
+      .join("\n");
+  const parseManual = (text: string): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (const line of text.split("\n")) {
+      const m = line.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/);
+      if (m) out[m[1]!] = m[2]!;
+    }
+    return out;
+  };
+
+  return (
+    <div
+      className="border rounded-lg p-4 space-y-3 bg-muted/30"
+      data-testid={`customgrid-${gridDef.id}`}
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="space-y-1 flex-1 min-w-[12rem]">
+          <span className="text-xs font-medium text-muted-foreground">Title</span>
+          <Input
+            value={gridDef.title}
+            placeholder="e.g. Office Bearers & Best & Fairest"
+            onChange={(e) => onPatch({ title: e.target.value })}
+            data-testid={`customgrid-title-${gridDef.id}`}
+          />
+        </label>
+        <label className="space-y-1 flex-1 min-w-[12rem]">
+          <span className="text-xs font-medium text-muted-foreground">
+            Subtitle (optional)
+          </span>
+          <Input
+            value={gridDef.subtitle ?? ""}
+            onChange={(e) => onPatch({ subtitle: e.target.value })}
+            data-testid={`customgrid-subtitle-${gridDef.id}`}
+          />
+        </label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          onClick={onRemove}
+          data-testid={`customgrid-remove-${gridDef.id}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            First season (year)
+          </span>
+          <Input
+            type="number"
+            className="w-28"
+            value={gridDef.seasonFrom ?? ""}
+            placeholder="auto"
+            onChange={(e) =>
+              onPatch({
+                seasonFrom: e.target.value ? Number(e.target.value) : null,
+              })
+            }
+            data-testid={`customgrid-from-${gridDef.id}`}
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            Last season (year)
+          </span>
+          <Input
+            type="number"
+            className="w-28"
+            value={gridDef.seasonTo ?? ""}
+            placeholder="auto"
+            onChange={(e) =>
+              onPatch({
+                seasonTo: e.target.value ? Number(e.target.value) : null,
+              })
+            }
+            data-testid={`customgrid-to-${gridDef.id}`}
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">Skin</span>
+          <select
+            className="px-2 py-1.5 rounded border bg-card text-sm"
+            value={gridDef.skin ?? ""}
+            onChange={(e) => onPatch({ skin: e.target.value || null })}
+            data-testid={`customgrid-skin-${gridDef.id}`}
+          >
+            <option value="">Club-wide skin</option>
+            {skinOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            Fill mode
+          </span>
+          <select
+            className="px-2 py-1.5 rounded border bg-card text-sm"
+            value={fillMode}
+            onChange={(e) =>
+              onPatch({
+                fillMode: e.target.value as "scroll" | "slide" | "wrap",
+              })
+            }
+            data-testid={`customgrid-fill-${gridDef.id}`}
+          >
+            <option value="wrap">Wrap (side-by-side blocks)</option>
+            <option value="scroll">Scroll</option>
+            <option value="slide">Slide</option>
+          </select>
+        </label>
+        {fillMode === "wrap" && (
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">
+              Blocks
+            </span>
+            <select
+              className="px-2 py-1.5 rounded border bg-card text-sm"
+              value={gridDef.wrapBlocks ?? 2}
+              onChange={(e) => onPatch({ wrapBlocks: Number(e.target.value) })}
+              data-testid={`customgrid-blocks-${gridDef.id}`}
+            >
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+            </select>
+          </label>
+        )}
+      </div>
+
+      <label className="space-y-1 block">
+        <span className="text-xs font-medium text-muted-foreground">
+          Footnote (optional)
+        </span>
+        <Input
+          value={gridDef.footnote ?? ""}
+          placeholder="e.g. Premiers 2007, 2009 · *2020/21 cancelled"
+          onChange={(e) => onPatch({ footnote: e.target.value })}
+          data-testid={`customgrid-footnote-${gridDef.id}`}
+        />
+      </label>
+
+      <div className="space-y-2 border-t pt-3">
+        <span className="text-xs font-medium text-muted-foreground">Columns</span>
+        {gridDef.columns.map((col, i) => {
+          const opts = optionsFor(col.source);
+          return (
+            <div key={col.key} className="space-y-1.5 border rounded p-2 bg-background">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-mono text-muted-foreground w-5">
+                  {i + 1}
+                </span>
+                <Input
+                  className="flex-1 min-w-[9rem]"
+                  value={col.label}
+                  placeholder="Column heading"
+                  onChange={(e) => setCol(i, { label: e.target.value })}
+                  data-testid={`customgrid-col-label-${gridDef.id}-${i}`}
+                />
+                <select
+                  className="px-2 py-1.5 rounded border bg-background text-sm"
+                  value={col.source}
+                  onChange={(e) =>
+                    setCol(i, {
+                      source: e.target.value as CustomGridColumn["source"],
+                      sourceKey: null,
+                    })
+                  }
+                  data-testid={`customgrid-col-source-${gridDef.id}-${i}`}
+                >
+                  {SOURCE_LABELS.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                {col.source !== "manual" && (
+                  <select
+                    className="px-2 py-1.5 rounded border bg-background text-sm min-w-[10rem]"
+                    value={col.sourceKey ?? ""}
+                    onChange={(e) => {
+                      const opt = opts.find((o) => o.key === e.target.value);
+                      setCol(i, {
+                        sourceKey: e.target.value || null,
+                        label: col.label || opt?.label || "",
+                      });
+                    }}
+                    data-testid={`customgrid-col-key-${gridDef.id}-${i}`}
+                  >
+                    <option value="">Select…</option>
+                    {opts.map((o) => (
+                      <option key={o.key} value={o.key}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={i === 0}
+                  onClick={() => moveCol(i, -1)}
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={i === gridDef.columns.length - 1}
+                  onClick={() => moveCol(i, 1)}
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => removeCol(i)}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {col.source === "manual" && (
+                <textarea
+                  className="w-full px-2 py-1.5 rounded border bg-background text-xs font-mono"
+                  rows={3}
+                  value={manualText(col)}
+                  placeholder={"2024/25 = J. Smith\n2023/24 = A. Brown"}
+                  onChange={(e) =>
+                    setCol(i, { manualValues: parseManual(e.target.value) })
+                  }
+                  data-testid={`customgrid-col-manual-${gridDef.id}-${i}`}
+                />
+              )}
+            </div>
+          );
+        })}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addCol}
+          data-testid={`customgrid-add-col-${gridDef.id}`}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> Add column
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function KioskLinkCard({
   token,
   onChanged,
@@ -1548,6 +2233,7 @@ function KioskLinkCard({
 }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customCode, setCustomCode] = useState("");
 
   const kioskUrl = useMemo(() => {
     if (!token) return null;
@@ -1563,11 +2249,19 @@ function KioskLinkCard({
       onSuccess: () => {
         setError(null);
         setCopied(false);
+        setCustomCode("");
         onChanged();
       },
       onError: (e) => setError(handleAdminMutationError(e)),
     },
   });
+  // Random code (no body) vs admin-chosen custom code.
+  const generateRandom = () => generate.mutate({ data: {} });
+  const setCustom = () => {
+    const code = customCode.trim();
+    if (!code) return;
+    generate.mutate({ data: { token: code } });
+  };
   const revoke = useRevokeKioskToken({
     mutation: {
       onSuccess: () => {
@@ -1637,7 +2331,7 @@ function KioskLinkCard({
                 type="button"
                 variant="outline"
                 disabled={busy}
-                onClick={() => generate.mutate()}
+                onClick={generateRandom}
                 data-testid="button-regenerate-kiosk-token"
               >
                 {generate.isPending ? (
@@ -1662,25 +2356,70 @@ function KioskLinkCard({
                 Revoke link
               </Button>
             </div>
+            <div className="flex flex-wrap items-end gap-2 border-t pt-3">
+              <label className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Set a custom code
+                </span>
+                <Input
+                  value={customCode}
+                  placeholder="e.g. clubroom-tv"
+                  className="font-mono text-xs w-56"
+                  onChange={(e) => setCustomCode(e.target.value)}
+                  data-testid="input-custom-kiosk-token"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy || !customCode.trim()}
+                onClick={setCustom}
+                data-testid="button-set-kiosk-token"
+              >
+                <Check className="h-4 w-4 mr-2" /> Use this code
+              </Button>
+              <span className="text-[11px] text-muted-foreground">
+                3–40 letters, numbers or hyphens.
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Regenerating or revoking immediately stops the current link from
-              working — re-open the kiosk on the TV with the new link afterwards.
+              Regenerating, setting a new code, or revoking immediately stops the
+              current link from working — re-open the kiosk on the TV afterwards.
             </p>
           </div>
         ) : (
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() => generate.mutate()}
-            data-testid="button-generate-kiosk-token"
-          >
-            {generate.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Link2 className="h-4 w-4 mr-2" />
-            )}
-            Generate kiosk link
-          </Button>
+          <div className="flex flex-wrap items-end gap-2">
+            <Button
+              type="button"
+              disabled={busy}
+              onClick={generateRandom}
+              data-testid="button-generate-kiosk-token"
+            >
+              {generate.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Link2 className="h-4 w-4 mr-2" />
+              )}
+              Generate kiosk link
+            </Button>
+            <span className="text-xs text-muted-foreground">or</span>
+            <Input
+              value={customCode}
+              placeholder="custom code e.g. clubroom-tv"
+              className="font-mono text-xs w-56"
+              onChange={(e) => setCustomCode(e.target.value)}
+              data-testid="input-custom-kiosk-token"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy || !customCode.trim()}
+              onClick={setCustom}
+              data-testid="button-set-kiosk-token"
+            >
+              <Check className="h-4 w-4 mr-2" /> Use code
+            </Button>
+          </div>
         )}
 
         {error && <div className="text-sm text-destructive">{error}</div>}

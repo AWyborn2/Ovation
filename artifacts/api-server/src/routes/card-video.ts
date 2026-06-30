@@ -3,14 +3,18 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { CreateCardVideoJobBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { createJob, getJob, publicJob } from "../lib/card-video-jobs";
 
 const router: IRouter = Router();
 
-// Start a server-side MP4 render of the EXACT card the browser previews.
+// Start a server-side MP4 render of the EXACT card the browser previews. The
+// social/video studio is a paid feature (gated; pass-through while billing is
+// dormant).
 router.post(
   "/card-video/jobs",
   requireAdmin,
+  requireEntitlement("socialStudio"),
   async (req, res): Promise<void> => {
     const parsed = CreateCardVideoJobBody.safeParse(req.body);
     if (!parsed.success) {

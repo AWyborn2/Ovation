@@ -1,4 +1,4 @@
-import type { Sponsor } from "@workspace/api-client-react";
+import type { Sponsor, KioskAd } from "@workspace/api-client-react";
 import type { HonourBrand } from "./types";
 
 /**
@@ -55,6 +55,47 @@ export function SponsorSlide({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Full-screen slide featuring a SINGLE sponsor large (used when the admin picks
+ * the "one sponsor per slide" rotation style instead of the all-sponsors grid).
+ */
+export function SponsorSlideSingle({
+  sponsor,
+  brand,
+}: {
+  sponsor: Sponsor;
+  brand: HonourBrand;
+}) {
+  return (
+    <div className="hb-sponsor-slide">
+      <div className="hb-sponsor-slide-head">
+        {brand.logoUrl ? (
+          <img className="hb-sponsor-slide-crest" src={brand.logoUrl} alt="" />
+        ) : null}
+        <div className="hb-sponsor-slide-title">Proudly Supported By</div>
+      </div>
+      <div className="hb-sponsor-solo">
+        <div className="hb-sponsor-solo-cell">
+          <img src={sponsor.logoUrl} alt={sponsor.name} />
+        </div>
+        <div className="hb-sponsor-slide-sub">{sponsor.name}</div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Full-screen admin-uploaded ad creative, placed between boards in the kiosk
+ * rotation (distinct from the club sponsor library).
+ */
+export function AdSlide({ ad }: { ad: KioskAd }) {
+  return (
+    <div className="hb-ad-slide">
+      <img src={ad.imageUrl} alt={ad.name} />
     </div>
   );
 }

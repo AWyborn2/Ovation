@@ -6,9 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompositeDef } from './compositeDef';
+import type { CustomGridDef } from './customGridDef';
 import type { HonourColourOverrides } from './honourColourOverrides';
 import type { HonourDisplaySettingsBoardConfigs } from './honourDisplaySettingsBoardConfigs';
+import type { HonourDisplaySettingsKioskSponsorSlideStyle } from './honourDisplaySettingsKioskSponsorSlideStyle';
 import type { HonourSkin } from './honourSkin';
+import type { KioskAd } from './kioskAd';
 
 export interface HonourDisplaySettings {
   /** The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id ("custom:<uuid>"). */
@@ -30,13 +33,21 @@ export interface HonourDisplaySettings {
      * @minimum 1
      */
   kioskSponsorSlideEvery: number;
+  /** Sponsor slide style — one grid of every sponsor, or one large sponsor per slide rotating through them. */
+  kioskSponsorSlideStyle?: HonourDisplaySettingsKioskSponsorSlideStyle;
+  /** Which sponsors appear on the kiosk (subset of the active sponsors). Empty = all active sponsors. */
+  kioskSponsorIds?: number[];
+  /** Admin-uploaded full-screen ad creatives for the kiosk. */
+  kioskAds?: KioskAd[];
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
   /** Per-board display overrides keyed by board id. */
   boardConfigs: HonourDisplaySettingsBoardConfigs;
   /** Admin-defined composite 'columns' boards. */
   composites: CompositeDef[];
-  /** Admin-authored skins/themes (built-in p1..p8 not listed). */
+  /** Admin-built custom season-grid boards. */
+  customGrids?: CustomGridDef[];
+  /** Admin-authored skins/themes (built-in p1..p9 not listed). */
   skins?: HonourSkin[];
   colourOverrides?: HonourColourOverrides;
   /** Club-wide default title font stack (null = the skin's font). */

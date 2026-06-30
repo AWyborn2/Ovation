@@ -7,7 +7,7 @@
  */
 
 /**
- * Kiosk transition — continuous credit-scroll or paged slide.
+ * Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen).
  */
 export type BoardDisplayTransition = typeof BoardDisplayTransition[keyof typeof BoardDisplayTransition];
 
@@ -15,4 +15,5 @@ export type BoardDisplayTransition = typeof BoardDisplayTransition[keyof typeof 
 export const BoardDisplayTransition = {
   scroll: 'scroll',
   slide: 'slide',
+  wrap: 'wrap',
 } as const;

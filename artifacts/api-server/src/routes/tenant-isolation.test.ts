@@ -80,6 +80,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     const [admin] = await db
       .insert(adminsTable)
       .values({
+        tenantId: tenant2Id,
         username: `iso_admin_${STAMP}`,
         displayName: "Iso Admin",
         passwordHash: "x",

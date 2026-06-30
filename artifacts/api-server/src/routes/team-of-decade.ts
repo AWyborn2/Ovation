@@ -17,6 +17,7 @@ import {
   DeleteTeamOfDecadeMemberParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -81,6 +82,7 @@ router.get(
 router.post(
   "/team-of-decade-boards",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const parsed = CreateTeamOfDecadeBoardBody.safeParse(req.body);
     if (!parsed.success) {
@@ -106,6 +108,7 @@ router.post(
 router.patch(
   "/team-of-decade-boards/:id",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = UpdateTeamOfDecadeBoardParams.safeParse(req.params);
     if (!params.success) {
@@ -134,6 +137,7 @@ router.patch(
 router.delete(
   "/team-of-decade-boards/:id",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = DeleteTeamOfDecadeBoardParams.safeParse(req.params);
     if (!params.success) {
@@ -155,6 +159,7 @@ router.delete(
 router.post(
   "/team-of-decade-boards/:id/members",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = CreateTeamOfDecadeMemberParams.safeParse(req.params);
     if (!params.success) {
@@ -195,6 +200,7 @@ router.post(
 router.patch(
   "/team-of-decade-members/:id",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = UpdateTeamOfDecadeMemberParams.safeParse(req.params);
     if (!params.success) {
@@ -222,6 +228,7 @@ router.patch(
 router.delete(
   "/team-of-decade-members/:id",
   requireAdmin,
+  requireEntitlement("curation"),
   async (req, res): Promise<void> => {
     const params = DeleteTeamOfDecadeMemberParams.safeParse(req.params);
     if (!params.success) {

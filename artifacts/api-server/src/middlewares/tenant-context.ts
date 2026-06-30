@@ -18,7 +18,32 @@ import { db, tenantsTable } from "@workspace/db";
 /** The platform's default tenant when nothing else resolves: Halls Head (#1). */
 export const DEFAULT_TENANT_ID = 1;
 
-export type RequestWithTenant = Request & { tenantId?: number };
+export type RequestWithTenant = Request & {
+  tenantId?: number;
+  /** True when the request hit the marketing/platform surface (apex/www), not a tenant. */
+  platform?: boolean;
+};
+
+/**
+ * The apex/marketing hosts that serve the platform landing page rather than any
+ * tenant's club app. Configured via `PLATFORM_HOSTS` (comma-separated, e.g.
+ * `ovation.app,www.ovation.app`). When a request host matches one of these AND no
+ * tenant host matches, the request is "platform mode" — distinct from the
+ * Halls-Head fallback used for localhost/previews.
+ */
+function platformHosts(): Set<string> {
+  return new Set(
+    (process.env.PLATFORM_HOSTS ?? "")
+      .split(",")
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+export type HostMode =
+  | { mode: "tenant"; tenantId: number }
+  | { mode: "platform" }
+  | { mode: "fallback" };
 
 /** Parse a positive-integer tenant id, or undefined if absent/invalid. */
 function parseTenantId(raw: string | undefined): number | undefined {
@@ -66,9 +91,17 @@ async function tenantDirectory() {
   return directoryCache;
 }
 
-/** The request host without port, lowercased. */
-function hostOf(req: Request): string {
-  const raw = req.headers.host ?? "";
+/**
+ * The request host without port, lowercased. Prefers the left-most
+ * `X-Forwarded-Host` (the original public host) over `Host`: behind a reverse
+ * proxy like Replit Autoscale / Cloud Run the inbound `Host` is an internal
+ * value and the real apex/tenant host arrives in `X-Forwarded-Host`. `trust
+ * proxy` is enabled and Replit's edge sets this header, so it's safe to trust.
+ */
+export function hostOf(req: Request): string {
+  const xfh = req.headers["x-forwarded-host"];
+  const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
+  const raw = forwarded || req.headers.host || "";
   return raw.split(":")[0]?.toLowerCase().trim() ?? "";
 }
 
@@ -89,26 +122,52 @@ export async function resolveTenantBySubdomain(req: Request): Promise<number | n
 }
 
 /**
- * Express middleware: attach the resolved tenant id to the request. Subdomain /
- * custom-domain wins; otherwise header → env → default. A DB lookup failure
- * degrades gracefully to the non-host resolution rather than failing the request.
+ * Classify a request host: a matching tenant host (subdomain / custom domain)
+ * wins; otherwise an apex/marketing host in `PLATFORM_HOSTS` is `platform`;
+ * anything else (localhost, previews, unknown) is `fallback` — handled by the
+ * header → env → default chain so dev still lands on the demo tenant.
+ */
+export async function resolveHostMode(req: Request): Promise<HostMode> {
+  const bySubdomain = await resolveTenantBySubdomain(req);
+  if (bySubdomain !== null) return { mode: "tenant", tenantId: bySubdomain };
+  if (platformHosts().has(hostOf(req))) return { mode: "platform" };
+  return { mode: "fallback" };
+}
+
+/**
+ * Express middleware: attach the resolved tenant id (and platform flag) to the
+ * request. A matching tenant host wins; an apex/marketing host is flagged
+ * `platform` (and still gets the default tenant id so tenant-scoped reads never
+ * see undefined); otherwise header → env → default. A DB lookup failure degrades
+ * gracefully to the non-host resolution rather than failing the request.
  */
 export const tenantContext: RequestHandler = (
   req: Request,
   _res: Response,
   next: NextFunction,
 ): void => {
-  resolveTenantBySubdomain(req)
-    .then((bySubdomain) => {
-      (req as RequestWithTenant).tenantId = bySubdomain ?? resolveTenantId(req);
+  resolveHostMode(req)
+    .then((hm) => {
+      const r = req as RequestWithTenant;
+      if (hm.mode === "tenant") {
+        r.tenantId = hm.tenantId;
+      } else {
+        r.platform = hm.mode === "platform";
+        r.tenantId = resolveTenantId(req);
+      }
       next();
     })
     .catch((err) => {
-      req.log?.warn?.({ err }, "tenant subdomain resolution failed; using fallback");
+      req.log?.warn?.({ err }, "tenant host resolution failed; using fallback");
       (req as RequestWithTenant).tenantId = resolveTenantId(req);
       next();
     });
 };
+
+/** Whether the current request hit the platform/marketing surface (apex/www). */
+export function isPlatformRequest(req: Request): boolean {
+  return (req as RequestWithTenant).platform === true;
+}
 
 /**
  * Read the tenant id for the current request. Returns the value attached by

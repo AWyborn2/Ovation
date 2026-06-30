@@ -13,6 +13,7 @@ import {
   DeletePremiershipParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -257,7 +258,7 @@ router.get("/premierships", async (req, res): Promise<void> => {
   );
 });
 
-router.post("/premierships", requireAdmin, async (req, res): Promise<void> => {
+router.post("/premierships", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = CreatePremiershipBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -295,7 +296,7 @@ router.post("/premierships", requireAdmin, async (req, res): Promise<void> => {
   res.status(201).json(full);
 });
 
-router.patch("/premierships/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/premierships/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = UpdatePremiershipParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -356,7 +357,7 @@ router.patch("/premierships/:id", requireAdmin, async (req, res): Promise<void> 
   res.json(full);
 });
 
-router.delete("/premierships/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/premierships/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = DeletePremiershipParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
