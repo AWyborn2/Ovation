@@ -6,6 +6,12 @@ verifies Phase 1 of the central stats-correctness work that was built but not ye
 run. You don't need to understand the commands — the agent does the work and
 tells you the results.
 
+> **This needs a Replit terminal/shell, not just the browser preview.** Steps
+> 1–3 and 6 (checkout, typecheck, db push, tests) run in a shell. A browser-only
+> session can do the SQL diagnostic (Step 5) and the manual checks (Step 7) but
+> cannot verify the actual branch code — so run this where the agent has shell
+> access to the workspace on branch `claude/adoring-archimedes-hcqjtg`.
+
 ---
 
 ## Context for the verifying agent
@@ -71,11 +77,19 @@ mint; the real run mints them and prints counts. **Run it a second time** — it
 should mint **0** (idempotent). Report the per-tenant counts.
 
 ### Step 5 — Run the identity diagnostic (share this output back)
+
+> ⚠️ **`--club-id` is the CENTRAL database `club_id`, NOT the app tenant id.**
+> These differ. The app tenant ids (used by `x-tenant-id`) are White Knights =
+> 68, Mandurah = 3 — but their **central club_ids** are White Knights = **12**,
+> Mandurah = **5**. Passing a tenant id here silently returns all-zeros against a
+> non-existent/unrelated club rather than erroring. To find a tenant's central
+> club id yourself: `SELECT central_club_id FROM tenants WHERE slug = '...';`.
+
 ```bash
-pnpm --filter @workspace/scripts run diagnose-central-identity -- --club-id=68
-pnpm --filter @workspace/scripts run diagnose-central-identity -- --club-id=3
+pnpm --filter @workspace/scripts run diagnose-central-identity -- --club-id=12
+pnpm --filter @workspace/scripts run diagnose-central-identity -- --club-id=5
 ```
-(68 = White Knights Baldivis, 3 = Mandurah.) **Expect:** a report ending in a
+(12 = White Knights Baldivis, 5 = Mandurah.) **Expect:** a report ending in a
 "Sizing summary" with three counts: split candidates (cause A), merge/rename
 candidates (cause B), and name-only lines (cause C). **Copy the full Sizing
 summary for both clubs back to the human** — it decides how much split-curation
