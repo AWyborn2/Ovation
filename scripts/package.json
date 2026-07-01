@@ -8,6 +8,8 @@
     "seed": "tsx ./src/seed.ts",
     "backfill-season-snapshots": "tsx ./src/backfill-season-snapshots.ts",
     "backfill-player-images": "tsx ./src/backfill-player-images.ts",
+    "backfill-player-id-map": "tsx ./src/backfill-player-id-map.ts",
+    "diagnose-central-identity": "tsx ./src/diagnose-central-identity.ts",
     "ensure-constraints": "tsx ./src/ensure-constraints.ts",
     "reconcile-caps": "tsx ./src/reconcile-caps.ts",
     "remove-a-grade-2025-26": "tsx ./src/remove-a-grade-2025-26.ts",
