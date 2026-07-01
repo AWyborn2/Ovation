@@ -33,8 +33,11 @@ lib/                  ← shared toolkits
   scorecard/          ← shared match→scorecard view-model, used by web AND mobile
   object-storage-web/ ← image/file upload helpers
 scripts/              ← maintenance / data scripts (incl. central-DB compare & seed)
-docs/                 ← playcricket-ingestion.md (data ingest notes)
+docs/                 ← playcricket-ingestion.md; solutions/ = documented learnings
+                        (bugs, patterns, conventions; frontmatter: module, tags, problem_type)
 .agents/memory/       ← 60+ assistant-facing knowledge notes (rich but not human-facing)
+CONCEPTS.md           ← shared domain vocabulary (entities, processes, status concepts) —
+                        relevant when orienting to the codebase or discussing domain terms
 ```
 
 Architecture in one line: **contract-first design — one OpenAPI spec generates the
