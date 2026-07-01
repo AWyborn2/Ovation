@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, clubsTable, tenantsTable } from "@workspace/db";
-import { HALLS_HEAD_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
+import { DEFAULT_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
 
 /**
  * Per-tenant brand (logo + colours), the single shape every renderer reads.
@@ -36,15 +36,16 @@ const cache = new Map<number, { value: TenantBrand; at: number }>();
  * Merge the brand sources into the final brand, pure (no IO) so the fallback
  * chain is unit-testable. Precedence per field: the `clubs` register row (the
  * brand source of truth today, where `appClubId` is set) → the tenant row's own
- * brand columns → the built-in {@link HALLS_HEAD_BRAND} fallback. This preserves
- * the exact values the old `getHallsHeadBrand()` returned for tenant #1.
+ * brand columns → the neutral {@link DEFAULT_BRAND} fallback. Halls Head's own
+ * brand comes from its clubs/tenant record (seeded), so the neutral fallback
+ * only applies to tenants that have set no brand — it never leaks Halls Head.
  */
 export function buildTenantBrand(
   tenant: TenantBrandRow | null,
   club: ClubBrandRow | null,
 ): TenantBrand {
   const primaryColour =
-    club?.primaryColour ?? tenant?.primaryColour ?? HALLS_HEAD_BRAND.primaryColour;
+    club?.primaryColour ?? tenant?.primaryColour ?? DEFAULT_BRAND.primaryColour;
   // When a tenant supplies a primary colour but no secondary/tertiary (e.g. a
   // central-sourced club that only has a primary), derive the missing accents
   // from its OWN primary rather than leaking the default club's (Halls Head's
@@ -52,21 +53,21 @@ export function buildTenantBrand(
   const tenantSuppliedPrimary =
     (club?.primaryColour ?? tenant?.primaryColour) != null;
   return {
-    name: club?.name ?? tenant?.name ?? HALLS_HEAD_BRAND.name,
-    shortName: club?.shortName ?? tenant?.shortName ?? HALLS_HEAD_BRAND.shortName,
-    logoUrl: club?.logoUrl ?? tenant?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl,
+    name: club?.name ?? tenant?.name ?? DEFAULT_BRAND.name,
+    shortName: club?.shortName ?? tenant?.shortName ?? DEFAULT_BRAND.shortName,
+    logoUrl: club?.logoUrl ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl,
     // The tenants row carries no 128px logo: prefer the clubs register's 128px,
     // else the tenant's own logo (better than the default club's), else fallback.
-    logoUrl128: club?.logoUrl128 ?? tenant?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl128,
+    logoUrl128: club?.logoUrl128 ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl128,
     primaryColour,
     secondaryColour:
       club?.secondaryColour ??
       tenant?.secondaryColour ??
-      (tenantSuppliedPrimary ? primaryColour : HALLS_HEAD_BRAND.secondaryColour),
+      (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.secondaryColour),
     tertiaryColour:
       club?.tertiaryColour ??
       tenant?.tertiaryColour ??
-      (tenantSuppliedPrimary ? primaryColour : HALLS_HEAD_BRAND.tertiaryColour),
+      (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.tertiaryColour),
   };
 }
 

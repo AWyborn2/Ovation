@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import type { Request } from "express";
-import { HALLS_HEAD_BRAND } from "@workspace/scorecard/brand";
+import { HALLS_HEAD_BRAND, DEFAULT_BRAND } from "@workspace/scorecard/brand";
 import { buildTenantBrand } from "./tenant-brand";
 import { resolveTenantId, DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
 
@@ -77,7 +77,30 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     });
   });
 
-  it("falls back to the built-in brand when nothing is set", () => {
-    expect(buildTenantBrand(null, null)).toEqual(HALLS_HEAD_BRAND);
+  it("falls back to the NEUTRAL default, never Halls Head, when nothing is set", () => {
+    const brand = buildTenantBrand(null, null);
+    expect(brand).toEqual(DEFAULT_BRAND);
+    // The Phase 2 R5 regression guard: no Halls Head asset leaks through.
+    expect(brand.logoUrl).not.toBe(HALLS_HEAD_BRAND.logoUrl);
+    expect(brand.primaryColour).not.toBe(HALLS_HEAD_BRAND.primaryColour);
+    expect(brand.name).not.toBe(HALLS_HEAD_BRAND.name);
+  });
+
+  it("derives missing accents from the tenant's OWN primary, not the default", () => {
+    const brand = buildTenantBrand(
+      {
+        name: "Some Club",
+        shortName: null,
+        logoUrl: "https://example.com/some-club.png",
+        primaryColour: "#123456",
+        secondaryColour: null,
+        tertiaryColour: null,
+      },
+      null,
+    );
+    expect(brand.secondaryColour).toBe("#123456");
+    expect(brand.tertiaryColour).toBe("#123456");
+    expect(brand.secondaryColour).not.toBe(HALLS_HEAD_BRAND.secondaryColour);
+    expect(brand.secondaryColour).not.toBe(DEFAULT_BRAND.secondaryColour);
   });
 });

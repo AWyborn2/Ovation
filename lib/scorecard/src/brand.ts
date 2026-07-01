@@ -19,11 +19,31 @@ export interface ClubBrand {
 export type HallsHeadBrand = ClubBrand;
 
 /**
- * Default brand — the tenant #1 (Halls Head) values. Used only as the last-resort
- * fallback when a DB-sourced tenant brand is unavailable, so a club's logo +
- * colours still render. Per-tenant brands come from `getTenantBrand()`.
+ * Neutral default brand — the last-resort fallback when a DB-sourced tenant
+ * brand is unavailable, so a brand-less club renders as a generic Ovation site
+ * (a neutral placeholder logo + slate colours) rather than inheriting Halls
+ * Head's. Per-tenant brands come from `getTenantBrand()`; Halls Head's own brand
+ * lives in its tenant record (seeded from the clubs register — see
+ * `scripts/seed-tenants`), so this fallback only affects tenants with no brand.
  */
 export const DEFAULT_BRAND: ClubBrand = {
+  name: "Cricket Club",
+  shortName: null,
+  logoUrl: "/placeholder-club-logo.svg",
+  logoUrl128: "/placeholder-club-logo.svg",
+  primaryColour: "#334155",
+  secondaryColour: "#94A3B8",
+  tertiaryColour: "#475569",
+};
+
+/**
+ * Halls Head's real brand values. Used ONLY to seed tenant #1's record
+ * (`scripts/seed-tenants`); the runtime fallback is the neutral
+ * {@link DEFAULT_BRAND} above. Deliberately NOT an alias of DEFAULT_BRAND —
+ * keeping the two distinct is exactly what stops Halls Head's brand leaking onto
+ * other clubs.
+ */
+export const HALLS_HEAD_BRAND: ClubBrand = {
   name: "Halls Head Cricket Club",
   shortName: "HHCC",
   logoUrl:
@@ -34,9 +54,6 @@ export const DEFAULT_BRAND: ClubBrand = {
   secondaryColour: "#FBAC27",
   tertiaryColour: "#42342B",
 };
-
-/** @deprecated Use {@link DEFAULT_BRAND}. Kept so downstream imports compile. */
-export const HALLS_HEAD_BRAND: ClubBrand = DEFAULT_BRAND;
 
 /** Default primary — used when a brand record omits the primary colour. */
 const FALLBACK_PRIMARY = DEFAULT_BRAND.primaryColour as string;
