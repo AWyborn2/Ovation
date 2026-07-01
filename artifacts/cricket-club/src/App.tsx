@@ -35,6 +35,7 @@ import JuniorsOfficeBearers from "@/pages/juniors-office-bearers";
 import AdminHub from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminImport from "@/pages/admin-import";
+import AdminReset from "@/pages/admin-reset";
 import {
   AdminSocialGroup,
   AdminSettingsGroup,
@@ -70,7 +71,10 @@ function PublicRoutes() {
         <Route path="/juniors/premierships" component={JuniorsPremierships} />
         <Route path="/juniors/players" component={JuniorsPlayers} />
         <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />
-        <Route path="/juniors/office-bearers" component={JuniorsOfficeBearers} />
+        <Route
+          path="/juniors/office-bearers"
+          component={JuniorsOfficeBearers}
+        />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -226,6 +230,10 @@ function Router() {
           </AdminOnly>
         </Layout>
       </Route>
+      {/* Public reset/bootstrap landing — must precede the admin gate so an
+          unauthenticated club admin can set their password from the emailed/handed
+          link without hitting the sign-in wall. */}
+      <Route path="/admin/reset" component={AdminReset} />
       <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
       <Route path="/captain" component={CaptainRoutes} />

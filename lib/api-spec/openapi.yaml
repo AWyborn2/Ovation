@@ -1335,6 +1335,55 @@ paths:
         "401":
           description: Not signed in
 
+  /auth/password-reset/{token}:
+    get:
+      operationId: getPasswordReset
+      tags: [auth]
+      summary: >-
+        Inspect a club-admin password-reset token (unauthenticated). Returns the
+        target admin and tenant for display, or 410 when the token is
+        expired/used/foreign to this tenant host.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The token is valid; details for the reset form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordResetInfo"
+        "410":
+          description: The link is invalid, expired, or already used
+    post:
+      operationId: submitPasswordReset
+      tags: [auth]
+      summary: >-
+        Redeem a club-admin password-reset token (unauthenticated) by setting a new
+        password. Single-use: the token and any siblings for that admin are spent.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetSubmitBody"
+      responses:
+        "204":
+          description: Password set; sign in with the new password
+        "400":
+          description: The password did not meet requirements
+        "410":
+          description: The link is invalid, expired, or already used
+
   /admins:
     get:
       operationId: listAdmins
@@ -4481,6 +4530,41 @@ paths:
         "409":
           description: That custom domain is already in use.
 
+  /platform/admin/tenants/{id}/admin-resets:
+    post:
+      operationId: issueTenantAdminReset
+      tags: [platformAdmin]
+      summary: >-
+        Issue a single-use password-reset link for a club admin on this tenant,
+        bootstrapping (creating) the admin when one does not yet exist. The link
+        is returned for out-of-band delivery; the club admin sets their own
+        password via it, so platform staff never learn or set the password.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueAdminResetBody"
+      responses:
+        "201":
+          description: A reset link was minted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminResetIssued"
+        "400":
+          description: Invalid username or tenant id.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
 components:
   schemas:
     CardVideoJobInput:
@@ -6077,6 +6161,60 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdminTenantAdmin"
+
+    IssueAdminResetBody:
+      type: object
+      description: >-
+        Request a reset/bootstrap link for a club admin. `username` is the admin's
+        login (an email); if no such admin exists on the tenant one is created
+        (bootstrap) with the given (or derived) display name.
+      required: [username]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+
+    AdminResetIssued:
+      type: object
+      required: [resetUrl, expiresAt, username, displayName, tenantName, created]
+      properties:
+        resetUrl:
+          type: string
+          description: The single-use link to hand to the club admin out-of-band.
+        expiresAt:
+          type: string
+          description: ISO-8601 instant the link stops working.
+        username:
+          type: string
+        displayName:
+          type: string
+        tenantName:
+          type: string
+        created:
+          type: boolean
+          description: True when the admin was bootstrapped (did not previously exist).
+
+    PasswordResetInfo:
+      type: object
+      required: [username, displayName, tenantName, expiresAt]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        tenantName:
+          type: string
+        expiresAt:
+          type: string
+
+    PasswordResetSubmitBody:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 8
 
     UpdateTenantBody:
       type: object

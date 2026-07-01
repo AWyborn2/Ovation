@@ -1,4 +1,9 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 import bcrypt from "bcryptjs";
 import {
   db,
@@ -43,7 +48,9 @@ function b64urlDecode(s: string): Buffer {
 }
 
 function sign(payload: string): string {
-  return b64urlEncode(createHmac("sha256", getSessionSecret()).update(payload).digest());
+  return b64urlEncode(
+    createHmac("sha256", getSessionSecret()).update(payload).digest(),
+  );
 }
 
 export function encodeSession(p: SessionPayload): string {
@@ -51,7 +58,9 @@ export function encodeSession(p: SessionPayload): string {
   return `${body}.${sign(body)}`;
 }
 
-export function decodeSession(token: string | undefined | null): SessionPayload | null {
+export function decodeSession(
+  token: string | undefined | null,
+): SessionPayload | null {
   if (!token) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
@@ -84,12 +93,18 @@ export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 10);
 }
 
-export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+export async function verifyPassword(
+  plain: string,
+  hash: string,
+): Promise<boolean> {
   return bcrypt.compare(plain, hash);
 }
 
 export async function getAdminById(id: number): Promise<AdminRow | null> {
-  const [row] = await db.select().from(adminsTable).where(eq(adminsTable.id, id));
+  const [row] = await db
+    .select()
+    .from(adminsTable)
+    .where(eq(adminsTable.id, id));
   return row ?? null;
 }
 
@@ -214,6 +229,29 @@ export function generateRandomPassword(): string {
   return randomBytes(9).toString("base64").replace(/[+/=]/g, "").slice(0, 12);
 }
 
+// ---- Admin password-reset / bootstrap tokens --------------------------------
+
+/**
+ * How long a platform-issued admin reset token stays valid. Short enough to limit
+ * the window in which a leaked link is usable, long enough to hand off out-of-band.
+ */
+export const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Mint a fresh reset token. The raw token travels only in the reset URL; the DB
+ * stores just its hash (see {@link hashResetToken}), so a leaked table row can
+ * never be replayed as a link.
+ */
+export function generateResetToken(): { token: string; tokenHash: string } {
+  const token = b64urlEncode(randomBytes(32));
+  return { token, tokenHash: hashResetToken(token) };
+}
+
+/** SHA-256 (hex) of a raw reset token — the value we persist and look up by. */
+export function hashResetToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
 // ---- Captain sessions (a separate login role from admins) ----
 
 export interface CaptainSessionPayload {
@@ -238,7 +276,10 @@ export function decodeCaptainSession(
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   try {
     const obj = JSON.parse(b64urlDecode(body).toString("utf8"));
-    if (typeof obj?.captainId !== "number" || typeof obj?.issuedAt !== "number") {
+    if (
+      typeof obj?.captainId !== "number" ||
+      typeof obj?.issuedAt !== "number"
+    ) {
       return null;
     }
     if (Date.now() - obj.issuedAt > COOKIE_MAX_AGE_MS) return null;
@@ -251,11 +292,16 @@ export function decodeCaptainSession(
 export const CAPTAIN_SESSION_COOKIE = CAPTAIN_COOKIE_NAME;
 
 export async function getCaptainById(id: number): Promise<CaptainRow | null> {
-  const [row] = await db.select().from(captainsTable).where(eq(captainsTable.id, id));
+  const [row] = await db
+    .select()
+    .from(captainsTable)
+    .where(eq(captainsTable.id, id));
   return row ?? null;
 }
 
-export async function getCaptainByUsername(username: string): Promise<CaptainRow | null> {
+export async function getCaptainByUsername(
+  username: string,
+): Promise<CaptainRow | null> {
   const [row] = await db
     .select()
     .from(captainsTable)
