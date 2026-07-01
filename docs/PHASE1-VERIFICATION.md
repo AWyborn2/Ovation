@@ -1,4 +1,4 @@
-# Phase 1 Verification Runbook — hand this to your Replit/cowork Claude
+# Phase 1 + Phase 2 (U1) Verification Runbook — hand this to your Replit/cowork Claude
 
 **For the person running this:** you can paste this whole file to Claude in your
 Replit (or cowork) environment and say "work through this and report back." It
@@ -99,8 +99,9 @@ work Phase 1 still needs.
 ```bash
 pnpm --filter @workspace/api-server run test
 ```
-**Expect:** all pass, including `player-curation-isolation.test.ts`. **If any
-fail:** report which tests and the error messages verbatim.
+**Expect:** all pass, including `player-curation-isolation.test.ts` (Phase 1) and
+`tenant-brand.test.ts` (Phase 2 U1 — the brand-leak guard). **If any fail:**
+report which tests and the error messages verbatim.
 
 ### Step 7 — Eyeball a central club (manual checks)
 Start the app, then view a central tenant (White Knights or Mandurah — by
@@ -117,6 +118,26 @@ subdomain, or with header `x-tenant-id: 68` on the API). Check:
    club's leaderboard, and only that club's.
 5. **Halls Head unchanged** — tenant 1 (Halls Head) looks exactly as before.
 
+### Step 8 — Phase 2 (brand leaks), U1 only — neutral fallback checks
+
+Only **U1** of Phase 2 landed on this branch (the neutral brand fallback + its
+test); U2–U5 are not built yet, so don't expect background/card/favicon/OG
+changes. The typecheck (Step 2) and tests (Step 6) already cover U1 — confirm
+`tenant-brand.test.ts` is among the passing tests. Then check, in a browser:
+
+1. **A brand-less club shows the neutral placeholder, not Halls Head.** View a
+   central tenant that has NOT set its own logo (e.g. Mandurah / White Knights if
+   they have no `logoUrl`), or the platform/apex page. The logo should be the
+   neutral grey cricket-ball placeholder (`/placeholder-club-logo.svg`) and the
+   colours slate — **never the Halls Head gold/charcoal or Halls Head logo**.
+2. **No Halls Head "flash."** On a non-Halls-Head club, you should not briefly see
+   Halls Head branding while the page loads.
+3. **Halls Head still looks like Halls Head** — its own logo and gold/charcoal
+   colours, unchanged.
+
+(If a central tenant already has its own logo/colours set, it should show those —
+the neutral placeholder only appears when a club has set no brand at all.)
+
 ---
 
 ## What to report back to the human
@@ -125,7 +146,10 @@ A short summary they can paste back:
 1. Typecheck: clean, or the errors (and anything you fixed).
 2. Tests: all pass, or which failed + messages.
 3. Backfill: per-tenant mint counts; did a second run mint 0?
-4. **Diagnostic Sizing summaries for club 68 and club 3** (full text).
-5. Manual checks 1–5: what you observed (links work? merges gone? milestones
-   showing? rename worked? Halls Head unchanged?).
-6. Anything that errored, verbatim.
+4. **Diagnostic Sizing summaries for club 12 (White Knights) and club 5
+   (Mandurah)** (full text).
+5. Phase 1 manual checks 1–5: what you observed (links work? merges gone?
+   milestones showing? rename worked? Halls Head unchanged?).
+6. Phase 2 (U1) checks: does a brand-less club show the neutral placeholder (not
+   Halls Head)? Is Halls Head unchanged?
+7. Anything that errored, verbatim.
