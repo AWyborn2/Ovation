@@ -20,6 +20,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import { resolveCuration } from "../lib/central-curation";
 
 const router: IRouter = Router();
 
@@ -250,7 +251,7 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   if (await shouldReadCentral(req)) {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const [clubId, mapRows] = await Promise.all([
+    const [clubId, mapRows, curation] = await Promise.all([
       getRequestCentralClubId(req),
       db
         .select({
@@ -259,9 +260,16 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
         })
         .from(playerIdMapTable)
         .where(eq(playerIdMapTable.tenantId, tenantId)),
+      resolveCuration(tenantId),
     ]);
     const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
-    res.json(await centralGradeLeaderboard(grade, { clubId, intByGuid }));
+    res.json(
+      await centralGradeLeaderboard(grade, {
+        clubId,
+        intByGuid,
+        nameByGuid: curation.nameByGuid,
+      }),
+    );
     return;
   }
 

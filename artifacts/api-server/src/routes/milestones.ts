@@ -14,6 +14,7 @@ import {
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import { resolveCuration } from "../lib/central-curation";
 
 const router: IRouter = Router();
 
@@ -302,14 +303,17 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
     runs: settings?.runsTiers ?? DEFAULT_RUNS_TIERS,
     wickets: settings?.wicketsTiers ?? DEFAULT_WICKETS_TIERS,
   };
-  const [raw, mapRows] = await Promise.all([
+  const [raw, mapRows, curation] = await Promise.all([
     centralMilestones(await getRequestCentralClubId(req), tiers),
     db
       .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
       .from(playerIdMapTable)
       .where(eq(playerIdMapTable.tenantId, tenantId)),
+    resolveCuration(tenantId),
   ]);
   const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+  const nameFor = (participantId: string, displayName: string | null): string =>
+    curation.nameByGuid.get(participantId) ?? displayName ?? "Unknown";
 
   const items: MilestoneItem[] = raw.map((m) => {
     if (m.kind === "career") {
@@ -319,7 +323,7 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
         id: `career|${boardKey}|${threshold}|${m.participantId}`,
         kind: "career",
         playerId: intByGuid.get(m.participantId) ?? 0,
-        playerName: m.displayName ?? "Unknown",
+        playerName: nameFor(m.participantId, m.displayName),
         grade: m.grade,
         matchId: m.matchId,
         matchDate: m.matchDate,
@@ -341,7 +345,7 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
       id: `${m.kind}|${m.participantId}|${m.matchId}`,
       kind: m.kind,
       playerId: intByGuid.get(m.participantId) ?? 0,
-      playerName: m.displayName ?? "Unknown",
+      playerName: nameFor(m.participantId, m.displayName),
       grade: m.grade,
       matchId: m.matchId,
       matchDate: m.matchDate,

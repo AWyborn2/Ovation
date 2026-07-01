@@ -252,6 +252,11 @@ export async function centralGradeLeaderboard(
      * crosswalk lives in the tenant DB, not central). Absent -> `playerId` 0.
      */
     intByGuid?: Map<string, number>;
+    /**
+     * Tenant rename overrides (GUID -> display name). Applied over the central
+     * "Initial Surname" so a club's curated names show on its leaderboard.
+     */
+    nameByGuid?: Map<string, string>;
   } = {},
 ): Promise<PlayerGradeStat[]> {
   const clubId = opts.clubId ?? HALLS_HEAD_CENTRAL_CLUB_ID;
@@ -376,7 +381,9 @@ export async function centralGradeLeaderboard(
     const isPrivate = (p?.isPrivate ?? 0) === 1;
     const name = isPrivate
       ? { givenName: "Private", surname: "Player" }
-      : splitDisplayName(p?.displayName ?? participantId);
+      : splitDisplayName(
+          opts.nameByGuid?.get(participantId) ?? p?.displayName ?? participantId,
+        );
     const dismissals = a.innings - a.notOuts;
     const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
     return {
