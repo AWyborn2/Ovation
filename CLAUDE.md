@@ -137,4 +137,30 @@ See `AGENTS.md` for the full current-state map.
 3. Behind a feature flag, repoint ONE read (e.g. grade batting leaderboard) to
    `central.match_batting` filtered by `club_id`, compare output against the existing HHCC
    numbers (HHCC = `central.clubs.club_id = 1`). This is the end-to-end proof.
-4. Gen
+4. Generalise `halls-head-brand.ts` → `tenant-brand.ts`; add `tenants` table with Halls Head
+   hard-coded as tenant #1; tenant-context middleware (header or env for now, subdomain later).
+5. Sweep the 77-file brand inventory: replace literals with tenant-sourced values (name, logo,
+   colours, titles, OG tags). Leave the juniors-banner brown as a tenant theme value.
+6. Add tenant-isolation tests early — one tenant must never read another's curated data.
+
+Phase 1: 2–3 friendly PCA clubs on subdomains (concierge) — IN PROGRESS. Phase 2: self-serve
+signup, Stripe, RLS, custom domains — PARTIALLY BUILT (onboarding + admin auth live; entitlements
+dormant; billing inert; super-admin live; RLS + custom domains still TODO). Phase 3: other
+associations as additional central datasets — not started.
+
+## Do not break
+
+- **OpenAPI-first**: change `lib/api-spec/openapi.yaml`, then
+  `pnpm --filter @workspace/api-spec run codegen`. Never hand-edit generated files.
+- **Juniors isolation** (see replit.md), **fill-in exclusion** (`playerId >= 90000`),
+  **one ingestion method per (grade, season)**, and every Gotcha in `replit.md`.
+- `@workspace/scorecard` stays the single view-model for web + mobile.
+- Curated club content is the moat — tenant-scope it, never replace it with central data.
+
+## Data governance (hard constraint)
+
+Deep scorecards were scraped for the pilot. Keep the ingest behind a clean adapter boundary
+(scrape → PlayHQ public API for fixtures/results/ladders → partner API for deep scorecards).
+**Do not commercialise on scraped data**; pilot/non-commercial framing until partner or licence
+access is secured (PlayHQ partner application / Fixtura). Review cricket.com.au Third-Party
+Application T&Cs before launch.
