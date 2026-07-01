@@ -242,7 +242,17 @@ interface BattingAgg {
  */
 export async function centralGradeLeaderboard(
   appGrade: string,
-  opts: { clubId?: number; seasonStartYear?: number } = {},
+  opts: {
+    clubId?: number;
+    seasonStartYear?: number;
+    /**
+     * Tenant crosswalk (central participant GUID -> app player id). When
+     * supplied, each row's `playerId` is resolved so leaderboard players are
+     * clickable and correctly separated. Built and passed by the route (the
+     * crosswalk lives in the tenant DB, not central). Absent -> `playerId` 0.
+     */
+    intByGuid?: Map<string, number>;
+  } = {},
 ): Promise<PlayerGradeStat[]> {
   const clubId = opts.clubId ?? HALLS_HEAD_CENTRAL_CLUB_ID;
 
@@ -368,9 +378,13 @@ export async function centralGradeLeaderboard(
       ? { givenName: "Private", surname: "Player" }
       : splitDisplayName(p?.displayName ?? participantId);
     const dismissals = a.innings - a.notOuts;
+    const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
     return {
-      id: 0,
-      playerId: 0,
+      // Central has no per-grade-stat row id; use the resolved player id so the
+      // client's React key (stat.id) stays distinct per row and the player link
+      // (stat.playerId) resolves.
+      id: resolvedPlayerId,
+      playerId: resolvedPlayerId,
       surname: name.surname,
       givenName: name.givenName,
       grade: appGrade,
