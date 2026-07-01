@@ -293,8 +293,17 @@ export async function buildMilestones(): Promise<MilestonesResult> {
 async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const tenantId = getTenantId(req);
+  const [settings] = await db
+    .select()
+    .from(milestoneBoardSettingsTable)
+    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID));
+  const tiers = {
+    games: settings?.gamesTiers ?? DEFAULT_GAMES_TIERS,
+    runs: settings?.runsTiers ?? DEFAULT_RUNS_TIERS,
+    wickets: settings?.wicketsTiers ?? DEFAULT_WICKETS_TIERS,
+  };
   const [raw, mapRows] = await Promise.all([
-    centralMilestones(await getRequestCentralClubId(req)),
+    centralMilestones(await getRequestCentralClubId(req), tiers),
     db
       .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
       .from(playerIdMapTable)
@@ -303,6 +312,30 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
   const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
 
   const items: MilestoneItem[] = raw.map((m) => {
+    if (m.kind === "career") {
+      const boardKey = m.boardKey ?? "games";
+      const threshold = m.threshold ?? m.value;
+      return {
+        id: `career|${boardKey}|${threshold}|${m.participantId}`,
+        kind: "career",
+        playerId: intByGuid.get(m.participantId) ?? 0,
+        playerName: m.displayName ?? "Unknown",
+        grade: m.grade,
+        matchId: m.matchId,
+        matchDate: m.matchDate,
+        season: m.season,
+        round: null,
+        opponent: m.opponent,
+        boardKey,
+        tierIndex: m.tierIndex ?? null,
+        label: `${threshold} career ${boardKey}`,
+        detail: `Reached ${threshold} ${boardKey} (now ${m.value})`,
+        value: m.value,
+        threshold,
+        significance: SIG_CAREER_BASE + (m.tierIndex ?? 0) * SIG_CAREER_STEP,
+        recent: false,
+      };
+    }
     const isCentury = m.kind === "century";
     return {
       id: `${m.kind}|${m.participantId}|${m.matchId}`,
@@ -329,7 +362,7 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
   });
 
   return {
-    recencyWeeks: 4,
+    recencyWeeks: settings?.recencyWeeks ?? 4,
     windowStart: null,
     featured: false,
     items: items.slice(0, MAX_ITEMS),
