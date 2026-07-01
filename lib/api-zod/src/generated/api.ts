@@ -1937,6 +1937,37 @@ export const GetCurrentAdminResponse = zod.object({
 
 
 /**
+ * @summary Inspect a club-admin password-reset token (unauthenticated). Returns the target admin and tenant for display, or 410 when the token is expired/used/foreign to this tenant host.
+ */
+export const GetPasswordResetParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetPasswordResetResponse = zod.object({
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "tenantName": zod.string(),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Redeem a club-admin password-reset token (unauthenticated) by setting a new password. Single-use: the token and any siblings for that admin are spent.
+ */
+export const SubmitPasswordResetParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const submitPasswordResetBodyPasswordMin = 8;
+
+
+
+export const SubmitPasswordResetBody = zod.object({
+  "password": zod.string().min(submitPasswordResetBodyPasswordMin)
+})
+
+
+/**
  * @summary List all admin users
  */
 export const ListAdminsResponseItem = zod.object({
@@ -6520,5 +6551,18 @@ export const UpdateAdminTenantResponse = zod.object({
   "createdAt": zod.string().nullish(),
   "adminCount": zod.number()
 }).describe('A tenant as listed in the platform-admin console.')
+
+
+/**
+ * @summary Issue a single-use password-reset link for a club admin on this tenant, bootstrapping (creating) the admin when one does not yet exist. The link is returned for out-of-band delivery; the club admin sets their own password via it, so platform staff never learn or set the password.
+ */
+export const IssueTenantAdminResetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const IssueTenantAdminResetBody = zod.object({
+  "username": zod.string(),
+  "displayName": zod.string().optional()
+}).describe('Request a reset\/bootstrap link for a club admin. `username` is the admin\'s login (an email); if no such admin exists on the tenant one is created (bootstrap) with the given (or derived) display name.')
 
 

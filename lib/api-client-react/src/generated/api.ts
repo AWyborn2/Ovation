@@ -22,6 +22,7 @@ import type {
 import type {
   Admin,
   AdminInput,
+  AdminResetIssued,
   AdminTenant,
   AdminTenantDetail,
   AdminUpdate,
@@ -99,6 +100,7 @@ import type {
   HonourDisplaySettingsUpdate,
   ImportPreview,
   ImportRecord,
+  IssueAdminResetBody,
   JuniorFilters,
   JuniorLeaderboardRow,
   JuniorLeaderboards,
@@ -148,6 +150,8 @@ import type {
   NonPlayerPersonInput,
   NonPlayerPersonUpdate,
   Partnerships,
+  PasswordResetInfo,
+  PasswordResetSubmitBody,
   PendingDraftCount,
   PlatformAdmin,
   PlatformBrand,
@@ -4401,6 +4405,155 @@ export function useGetCurrentAdmin<TData = Awaited<ReturnType<typeof getCurrentA
 
 
 
+
+export const getGetPasswordResetUrl = (token: string,) => {
+
+
+
+
+  return `/api/auth/password-reset/${token}`
+}
+
+/**
+ * @summary Inspect a club-admin password-reset token (unauthenticated). Returns the target admin and tenant for display, or 410 when the token is expired/used/foreign to this tenant host.
+ */
+export const getPasswordReset = async (token: string, options?: RequestInit): Promise<PasswordResetInfo> => {
+
+  return customFetch<PasswordResetInfo>(getGetPasswordResetUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPasswordResetQueryKey = (token: string,) => {
+    return [
+    `/api/auth/password-reset/${token}`
+    ] as const;
+    }
+
+
+export const getGetPasswordResetQueryOptions = <TData = Awaited<ReturnType<typeof getPasswordReset>>, TError = ErrorType<void>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPasswordReset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPasswordResetQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPasswordReset>>> = ({ signal }) => getPasswordReset(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(token), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPasswordReset>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPasswordResetQueryResult = NonNullable<Awaited<ReturnType<typeof getPasswordReset>>>
+export type GetPasswordResetQueryError = ErrorType<void>
+
+
+/**
+ * @summary Inspect a club-admin password-reset token (unauthenticated). Returns the target admin and tenant for display, or 410 when the token is expired/used/foreign to this tenant host.
+ */
+
+export function useGetPasswordReset<TData = Awaited<ReturnType<typeof getPasswordReset>>, TError = ErrorType<void>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPasswordReset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPasswordResetQueryOptions(token,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSubmitPasswordResetUrl = (token: string,) => {
+
+
+
+
+  return `/api/auth/password-reset/${token}`
+}
+
+/**
+ * @summary Redeem a club-admin password-reset token (unauthenticated) by setting a new password. Single-use: the token and any siblings for that admin are spent.
+ */
+export const submitPasswordReset = async (token: string,
+    passwordResetSubmitBody: PasswordResetSubmitBody, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getSubmitPasswordResetUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passwordResetSubmitBody,)
+  }
+);}
+
+
+
+
+export const getSubmitPasswordResetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPasswordReset>>, TError,{token: string;data: BodyType<PasswordResetSubmitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitPasswordReset>>, TError,{token: string;data: BodyType<PasswordResetSubmitBody>}, TContext> => {
+
+const mutationKey = ['submitPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitPasswordReset>>, {token: string;data: BodyType<PasswordResetSubmitBody>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  submitPasswordReset(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof submitPasswordReset>>>
+    export type SubmitPasswordResetMutationBody = BodyType<PasswordResetSubmitBody>
+    export type SubmitPasswordResetMutationError = ErrorType<void>
+
+    /**
+ * @summary Redeem a club-admin password-reset token (unauthenticated) by setting a new password. Single-use: the token and any siblings for that admin are spent.
+ */
+export const useSubmitPasswordReset = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPasswordReset>>, TError,{token: string;data: BodyType<PasswordResetSubmitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitPasswordReset>>,
+        TError,
+        {token: string;data: BodyType<PasswordResetSubmitBody>},
+        TContext
+      > => {
+      return useMutation(getSubmitPasswordResetMutationOptions(options));
+    }
 
 export const getListAdminsUrl = () => {
 
@@ -16272,5 +16425,77 @@ export const useUpdateAdminTenant = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateAdminTenantMutationOptions(options));
+    }
+
+export const getIssueTenantAdminResetUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/admin-resets`
+}
+
+/**
+ * @summary Issue a single-use password-reset link for a club admin on this tenant, bootstrapping (creating) the admin when one does not yet exist. The link is returned for out-of-band delivery; the club admin sets their own password via it, so platform staff never learn or set the password.
+ */
+export const issueTenantAdminReset = async (id: number,
+    issueAdminResetBody: IssueAdminResetBody, options?: RequestInit): Promise<AdminResetIssued> => {
+
+  return customFetch<AdminResetIssued>(getIssueTenantAdminResetUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      issueAdminResetBody,)
+  }
+);}
+
+
+
+
+export const getIssueTenantAdminResetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueTenantAdminReset>>, TError,{id: number;data: BodyType<IssueAdminResetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issueTenantAdminReset>>, TError,{id: number;data: BodyType<IssueAdminResetBody>}, TContext> => {
+
+const mutationKey = ['issueTenantAdminReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueTenantAdminReset>>, {id: number;data: BodyType<IssueAdminResetBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  issueTenantAdminReset(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssueTenantAdminResetMutationResult = NonNullable<Awaited<ReturnType<typeof issueTenantAdminReset>>>
+    export type IssueTenantAdminResetMutationBody = BodyType<IssueAdminResetBody>
+    export type IssueTenantAdminResetMutationError = ErrorType<void>
+
+    /**
+ * @summary Issue a single-use password-reset link for a club admin on this tenant, bootstrapping (creating) the admin when one does not yet exist. The link is returned for out-of-band delivery; the club admin sets their own password via it, so platform staff never learn or set the password.
+ */
+export const useIssueTenantAdminReset = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueTenantAdminReset>>, TError,{id: number;data: BodyType<IssueAdminResetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof issueTenantAdminReset>>,
+        TError,
+        {id: number;data: BodyType<IssueAdminResetBody>},
+        TContext
+      > => {
+      return useMutation(getIssueTenantAdminResetMutationOptions(options));
     }
 

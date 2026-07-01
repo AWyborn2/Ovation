@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, tenantsTable, adminsTable } from "@workspace/db";
 import { PlatformSignupBody } from "@workspace/api-zod";
@@ -9,6 +9,7 @@ import {
   slugRejectionReason,
 } from "../lib/slug";
 import { hashPassword } from "../lib/auth";
+import { platformBaseDomain } from "../lib/tenant-url";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 
 const router: IRouter = Router();
@@ -33,22 +34,6 @@ function isEmail(s: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 }
 
-/** The platform's registrable apex domain, used to build tenant subdomain URLs. */
-function platformBaseDomain(req: Request): string {
-  const explicit = process.env.PLATFORM_BASE_DOMAIN?.trim().toLowerCase();
-  if (explicit) return explicit;
-  const fromHosts = (process.env.PLATFORM_HOSTS ?? "")
-    .split(",")
-    .map((h) => h.trim().toLowerCase())
-    .filter(Boolean)
-    .map((h) => h.replace(/^www\./, ""))[0];
-  if (fromHosts) return fromHosts;
-  // Last resort: drop the leading label of the request host.
-  const host = (req.headers.host ?? "").split(":")[0]?.toLowerCase() ?? "";
-  const parts = host.split(".");
-  return parts.length > 2 ? parts.slice(1).join(".") : host;
-}
-
 /** Whether a slug is free in the tenants register. */
 async function slugTaken(slug: string): Promise<boolean> {
   const [row] = await db
@@ -65,7 +50,8 @@ router.get("/platform/available-clubs", async (_req, res): Promise<void> => {
     res.status(403).json({ error: "Signup is disabled" });
     return;
   }
-  const { centralDb, centralClubsTable } = await import("@workspace/db/central");
+  const { centralDb, centralClubsTable } =
+    await import("@workspace/db/central");
 
   const claimed = await db
     .select({ centralClubId: tenantsTable.centralClubId })
@@ -105,74 +91,79 @@ router.get("/platform/slug-available", async (req, res): Promise<void> => {
 
 // --- Signup (provision a tenant + first admin) ------------------------------
 
-router.post("/platform/signup", loginRateLimiter, async (req, res): Promise<void> => {
-  if (signupMode() === "off") {
-    res.status(403).json({ error: "Signup is disabled" });
-    return;
-  }
-  const parsed = PlatformSignupBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const slug = parsed.data.slug.trim().toLowerCase();
-  const rejection = validateSlug(slug);
-  if (rejection) {
-    res.status(400).json({ error: slugRejectionReason(rejection) });
-    return;
-  }
-  if (isReservedSlug(slug)) {
-    res.status(400).json({ error: "That address is reserved." });
-    return;
-  }
-  const adminEmail = parsed.data.adminEmail.trim().toLowerCase();
-  if (!isEmail(adminEmail)) {
-    res.status(400).json({ error: "A valid email is required." });
-    return;
-  }
-  // Slug uniqueness is a 409 regardless of the central club — check it up front so
-  // a taken slug can't fall through to provisionTenant's club resolution (400).
-  if (await slugTaken(slug)) {
-    res.status(409).json({ error: "That address is already taken." });
-    return;
-  }
-
-  const { provisionTenant, ProvisionError } = await import("@workspace/db/provision");
-  try {
-    const result = await provisionTenant({
-      slug,
-      centralClubId: parsed.data.centralClubId,
-      plan: "free",
-      mode: "create",
-    });
-
-    // The first club admin (email + password, no verification in the pilot).
-    const passwordHash = await hashPassword(parsed.data.password);
-    await db.insert(adminsTable).values({
-      tenantId: result.tenant.id,
-      username: adminEmail,
-      displayName: adminEmail.split("@")[0] || "Owner",
-      passwordHash,
-    });
-
-    const apex = platformBaseDomain(req);
-    res.status(201).json({
-      tenantId: result.tenant.id,
-      slug: result.tenant.slug,
-      name: result.tenant.name,
-      redirectUrl: `https://${result.tenant.slug}.${apex}/admin`,
-    });
-  } catch (e) {
-    if (e instanceof ProvisionError) {
-      if (e.code === "slug_taken" || e.code === "club_claimed") {
-        res.status(409).json({ error: e.message });
-        return;
-      }
-      res.status(400).json({ error: e.message });
+router.post(
+  "/platform/signup",
+  loginRateLimiter,
+  async (req, res): Promise<void> => {
+    if (signupMode() === "off") {
+      res.status(403).json({ error: "Signup is disabled" });
       return;
     }
-    throw e;
-  }
-});
+    const parsed = PlatformSignupBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const slug = parsed.data.slug.trim().toLowerCase();
+    const rejection = validateSlug(slug);
+    if (rejection) {
+      res.status(400).json({ error: slugRejectionReason(rejection) });
+      return;
+    }
+    if (isReservedSlug(slug)) {
+      res.status(400).json({ error: "That address is reserved." });
+      return;
+    }
+    const adminEmail = parsed.data.adminEmail.trim().toLowerCase();
+    if (!isEmail(adminEmail)) {
+      res.status(400).json({ error: "A valid email is required." });
+      return;
+    }
+    // Slug uniqueness is a 409 regardless of the central club — check it up front so
+    // a taken slug can't fall through to provisionTenant's club resolution (400).
+    if (await slugTaken(slug)) {
+      res.status(409).json({ error: "That address is already taken." });
+      return;
+    }
+
+    const { provisionTenant, ProvisionError } =
+      await import("@workspace/db/provision");
+    try {
+      const result = await provisionTenant({
+        slug,
+        centralClubId: parsed.data.centralClubId,
+        plan: "free",
+        mode: "create",
+      });
+
+      // The first club admin (email + password, no verification in the pilot).
+      const passwordHash = await hashPassword(parsed.data.password);
+      await db.insert(adminsTable).values({
+        tenantId: result.tenant.id,
+        username: adminEmail,
+        displayName: adminEmail.split("@")[0] || "Owner",
+        passwordHash,
+      });
+
+      const apex = platformBaseDomain(req);
+      res.status(201).json({
+        tenantId: result.tenant.id,
+        slug: result.tenant.slug,
+        name: result.tenant.name,
+        redirectUrl: `https://${result.tenant.slug}.${apex}/admin`,
+      });
+    } catch (e) {
+      if (e instanceof ProvisionError) {
+        if (e.code === "slug_taken" || e.code === "club_claimed") {
+          res.status(409).json({ error: e.message });
+          return;
+        }
+        res.status(400).json({ error: e.message });
+        return;
+      }
+      throw e;
+    }
+  },
+);
 
 export default router;
