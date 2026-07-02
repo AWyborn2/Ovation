@@ -14,7 +14,7 @@ concurrency:
 env:
   # Pin the toolchain. Bump deliberately; keep in step with local dev.
   NODE_VERSION: "22"
-  PNPM_VERSION: "9"
+  PNPM_VERSION: "10"
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────
