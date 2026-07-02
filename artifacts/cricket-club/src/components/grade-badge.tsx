@@ -38,7 +38,9 @@ type Size = "sm" | "md" | "lg";
 
 const SIZE_PX: Record<Size, number> = { sm: 44, md: 68, lg: 112 };
 
-const GOLD = "#F2B544";
+// The brand accent colour (same runtime CSS token every button/link uses),
+// not a fixed gold literal — so the badge recolours per-tenant.
+const ACCENT = "hsl(var(--accent))";
 
 interface GradeBadgeProps {
   grade: string;
@@ -70,7 +72,7 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
   // Stack same-colour drop-shadows to visually thicken the PNG's gold outline
   // so it matches the heavier stroke weight of the club's other crest icons.
   const strokeBoost =
-    `drop-shadow(0 0 0.3px ${GOLD}) drop-shadow(0 0 0.3px ${GOLD})`;
+    `drop-shadow(0 0 0.3px ${ACCENT}) drop-shadow(0 0 0.3px ${ACCENT})`;
 
   return (
     <div
@@ -96,7 +98,7 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
           top: "40%",
           transform: "translate(-50%, -50%)",
           fontSize: diamondFontPx,
-          color: GOLD,
+          color: ACCENT,
           letterSpacing: "0.05em",
           whiteSpace: "nowrap",
         }}

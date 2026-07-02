@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
 import { BrandProvider, usePlatform } from "@/lib/brand-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import { AdminShell } from "@/components/admin-shell";
 import { LandingRoutes } from "@/pages/landing";
 import { useCurrentAdmin } from "@/lib/admin-auth";
@@ -245,16 +246,18 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrandProvider>
-        <TooltipProvider>
-          <ConfirmProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </ConfirmProvider>
-        </TooltipProvider>
-      </BrandProvider>
+      <ThemeProvider>
+        <BrandProvider>
+          <TooltipProvider>
+            <ConfirmProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </ConfirmProvider>
+          </TooltipProvider>
+        </BrandProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

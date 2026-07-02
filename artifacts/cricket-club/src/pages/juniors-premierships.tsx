@@ -198,7 +198,7 @@ export default function JuniorsPremierships() {
               className="m-0 font-bold tracking-[0.08em] leading-tight text-xl md:text-3xl lg:text-4xl"
               style={{ fontFamily: PLAQUE_FONT }}
             >
-              HALLS HEAD CRICKET CLUB
+              {brand.name.toUpperCase()}
             </h1>
             <div
               className="mt-1 font-semibold tracking-[0.25em] text-sm md:text-base lg:text-lg text-white/90"

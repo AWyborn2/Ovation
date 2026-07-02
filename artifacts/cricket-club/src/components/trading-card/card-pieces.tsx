@@ -242,7 +242,7 @@ export function NameBlock({ data }: { data: TradingCardData }) {
 }
 
 export function CardFooter({ flipHint }: { flipHint?: boolean }) {
-  const { GOLD } = useCardBrand();
+  const { GOLD, brand } = useCardBrand();
   return (
     <div
       style={{
@@ -262,7 +262,7 @@ export function CardFooter({ flipHint }: { flipHint?: boolean }) {
         borderTop: "1px solid rgba(255,255,255,0.08)",
       }}
     >
-      <span>Est. 1991</span>
+      <span>{clubShortLabel(brand)}</span>
       <span style={{ color: GOLD }}>{flipHint ? "Tap to flip" : "Official Trading Card"}</span>
     </div>
   );

@@ -234,9 +234,6 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
           <div style={{ textAlign: "center" }}>
             <Trophy size={44} style={{ color: GOLD, margin: "0 auto 10px" }} />
             <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.5 }}>{brand.name}</div>
-            <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: 2, textTransform: "uppercase" }}>
-              Est. 1991
-            </div>
           </div>
         )}
         {phase === "careerStats" && (
