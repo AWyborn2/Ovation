@@ -23,7 +23,8 @@ import {
   videoFormatLabel,
   type CardVideoFrame,
 } from "@/lib/trading-card-export";
-import { CARD_W, CARD_H, type Phase } from "@/components/trading-card/constants";
+import { slugify } from "@/lib/share-card";
+import { CARD_W, CARD_H, useCardBrand, type Phase } from "@/components/trading-card/constants";
 import { activePhases, phaseDurations } from "@/components/trading-card/stat-helpers";
 import { ScaledCard } from "@/components/trading-card/card-pieces";
 import { CardFront, CardBack, CardPhaseFrame } from "@/components/trading-card/card-faces";
@@ -95,6 +96,8 @@ export function TradingCardModal({
     }
   }, [open]);
 
+  const { brand } = useCardBrand();
+  const clubSlug = slugify(brand.shortName || brand.name || "") || "card";
   const fileBase = data ? data.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase() : "player";
   const videoOk = canExportVideo();
 
@@ -104,7 +107,7 @@ export function TradingCardModal({
     setPngBusy(side);
     setError(null);
     try {
-      await exportCardPng(node, `hhcc-card-${fileBase}-${side}.png`);
+      await exportCardPng(node, `${clubSlug}-card-${fileBase}-${side}.png`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not export the image.");
     } finally {
@@ -132,7 +135,7 @@ export function TradingCardModal({
         setProgress(Math.round(((i + 1) / phases.length) * 70));
       }
       setProgress(75);
-      await encodeCardVideo(frames, CARD_W * 2, CARD_H * 2, `hhcc-card-${fileBase}`);
+      await encodeCardVideo(frames, CARD_W * 2, CARD_H * 2, `${clubSlug}-card-${fileBase}`);
       setProgress(100);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not export the video.");

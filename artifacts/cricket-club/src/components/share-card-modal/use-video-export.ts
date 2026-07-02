@@ -17,6 +17,7 @@ import {
   type RenderOptions,
   type ShareCardInput,
 } from "@/lib/share-card";
+import type { ClubBrand } from "@workspace/scorecard";
 
 const POLL_INTERVAL_MS = 700;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -30,11 +31,13 @@ export function useVideoExport({
   input,
   buildOpts,
   photoTransform,
+  brand,
 }: {
   open: boolean;
   input: ShareCardInput | null;
   buildOpts: (size: CardSize, transform: PhotoTransform) => RenderOptions;
   photoTransform: PhotoTransform;
+  brand?: ClubBrand | null;
 }) {
   const [videoExporting, setVideoExporting] = useState(false);
   const [gifExporting, setGifExporting] = useState(false);
@@ -91,7 +94,7 @@ export function useVideoExport({
     if (!input || !videoPreview) return;
     downloadBlob(
       videoPreview.blob,
-      `${cardBaseFilename(input)}-${SIZES[videoPreview.size].code}.${videoPreview.ext}`,
+      `${cardBaseFilename(input, brand)}-${SIZES[videoPreview.size].code}.${videoPreview.ext}`,
     );
     setVideoPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev.url);
@@ -114,7 +117,7 @@ export function useVideoExport({
     setGifExporting(true);
     try {
       const { blob, ext } = await renderShareCardGif(input, buildOpts(size, photoTransform));
-      downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.${ext}`);
+      downloadBlob(blob, `${cardBaseFilename(input, brand)}-${SIZES[size].code}.${ext}`);
     } catch (e) {
       console.error("Card GIF export failed", e);
     } finally {

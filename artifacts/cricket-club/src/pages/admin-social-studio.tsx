@@ -53,11 +53,14 @@ function CardThumb({
   layout?: CardLayout["layers"] | null;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
   const layoutSig = JSON.stringify(layout ?? []);
 
   useEffect(() => {
     let cancelled = false;
     let objUrl: string | null = null;
+    setFailed(false);
     (async () => {
       try {
         const blob = await renderShareCard(input, {
@@ -68,8 +71,12 @@ function CardThumb({
         if (cancelled) return;
         objUrl = URL.createObjectURL(blob);
         setUrl(objUrl);
-      } catch {
-        /* leave spinner — a render failure shouldn't break the gallery */
+      } catch (e) {
+        if (cancelled) return;
+        // A render failure shouldn't break the whole gallery — show a
+        // retryable error state on this tile instead of a spinner forever.
+        console.error("Card thumbnail render failed", input.kind, e);
+        setFailed(true);
       }
     })();
     return () => {
@@ -77,7 +84,7 @@ function CardThumb({
       if (objUrl) URL.revokeObjectURL(objUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input.kind, layoutSig, baseOpts.brand]);
+  }, [input.kind, layoutSig, baseOpts.brand, retryToken]);
 
   return (
     <div
@@ -86,6 +93,15 @@ function CardThumb({
     >
       {url ? (
         <img src={url} alt="" className="h-full w-full object-contain" />
+      ) : failed ? (
+        <button
+          type="button"
+          className="flex flex-col items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => setRetryToken((t) => t + 1)}
+        >
+          <span>Preview failed</span>
+          <span className="underline">Retry</span>
+        </button>
       ) : (
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       )}

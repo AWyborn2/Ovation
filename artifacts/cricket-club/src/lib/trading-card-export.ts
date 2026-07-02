@@ -174,46 +174,58 @@ export async function encodeCardVideo(
   recorder.start();
   const startTime = performance.now();
 
-  await new Promise<void>((resolve) => {
-    const tick = () => {
-      const elapsed = performance.now() - startTime;
-      const t = Math.min(elapsed, total);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tick = () => {
+        try {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed, total);
 
-      let i = frames.length - 1;
-      for (let k = 0; k < frames.length; k++) {
-        if (t < starts[k] + frames[k].durationMs) {
-          i = k;
-          break;
+          let i = frames.length - 1;
+          for (let k = 0; k < frames.length; k++) {
+            if (t < starts[k] + frames[k].durationMs) {
+              i = k;
+              break;
+            }
+          }
+          const localT = (t - starts[i]) / frames[i].durationMs;
+
+          ctx.fillStyle = "#333F48";
+          ctx.fillRect(0, 0, width, height);
+
+          const zoom = 1 + 0.04 * easeInOut(Math.max(0, Math.min(1, localT)));
+          const localMs = t - starts[i];
+
+          if (localMs < TRANSITION && i > 0) {
+            const p = easeOut(localMs / TRANSITION);
+            drawFrame(ctx, frames[i - 1].bitmap, width, height, 1 - p, 1.04, 0);
+            drawFrame(ctx, frames[i].bitmap, width, height, p, 0.97 + 0.03 * p, (1 - p) * 30);
+          } else {
+            drawFrame(ctx, frames[i].bitmap, width, height, 1, zoom, 0);
+          }
+
+          if (elapsed >= total) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(tick);
+        } catch (err) {
+          // Without this, a throw inside an rAF callback is an uncaught error
+          // that never settles the promise — the caller's "Rendering…" state
+          // would stay stuck true forever.
+          reject(err instanceof Error ? err : new Error(String(err)));
         }
-      }
-      const localT = (t - starts[i]) / frames[i].durationMs;
-
-      ctx.fillStyle = "#333F48";
-      ctx.fillRect(0, 0, width, height);
-
-      const zoom = 1 + 0.04 * easeInOut(Math.max(0, Math.min(1, localT)));
-      const localMs = t - starts[i];
-
-      if (localMs < TRANSITION && i > 0) {
-        const p = easeOut(localMs / TRANSITION);
-        drawFrame(ctx, frames[i - 1].bitmap, width, height, 1 - p, 1.04, 0);
-        drawFrame(ctx, frames[i].bitmap, width, height, p, 0.97 + 0.03 * p, (1 - p) * 30);
-      } else {
-        drawFrame(ctx, frames[i].bitmap, width, height, 1, zoom, 0);
-      }
-
-      if (elapsed >= total) {
-        resolve();
-        return;
-      }
+      };
       requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  });
+    });
 
-  recorder.stop();
-  await done;
+    recorder.stop();
+    await done;
 
-  const blob = new Blob(chunks, { type: mime });
-  triggerDownload(blob, `${fileName}.${ext}`);
+    const blob = new Blob(chunks, { type: mime });
+    triggerDownload(blob, `${fileName}.${ext}`);
+  } finally {
+    if (recorder.state !== "inactive") recorder.stop();
+    for (const f of frames) f.bitmap.close();
+  }
 }

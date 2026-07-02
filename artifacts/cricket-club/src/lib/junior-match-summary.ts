@@ -119,17 +119,35 @@ export function juniorMatchToSummaryInput(
 
   const innings: MatchSummaryInnings[] = sc.innings
     .filter((inn) => inn.totalRuns != null || inn.batsmen.length > 0)
-    .map((inn, i) => ({
-      teamKey: inn.battingTeam.isHallsHead
-        ? ("club" as const)
-        : ("opposition" as const),
-      inningsNum: (i + 1) as 1 | 2,
-      totalRuns: String(inn.totalRuns ?? 0),
-      wickets: String(inn.wickets ?? 0),
-      overs: inn.oversTotal ?? "",
-      topBatters: topBatters(inn.batsmen),
-      topBowlers: topBowlers(inn.bowlers),
-    }));
+    .map((inn, i) => {
+      // The free-text match score can fail to parse (missing/garbled source
+      // data) even when real batting lines are recorded — defaulting straight
+      // to "0" would show a misleading "0/0" over genuine stats. Derive the
+      // total from the recorded batting when the parse comes back null;
+      // only fall back to "0" when there's truly no data of any kind.
+      const battingRecorded = inn.batsmen.length > 0;
+      const totalRuns =
+        inn.totalRuns ??
+        (battingRecorded
+          ? inn.batsmen.reduce((s, b) => s + (b.runs ?? 0), 0)
+          : 0);
+      const wickets =
+        inn.wickets ??
+        (battingRecorded
+          ? inn.batsmen.filter((b) => !b.notOut && b.dismissal).length
+          : 0);
+      return {
+        teamKey: inn.battingTeam.isHallsHead
+          ? ("club" as const)
+          : ("opposition" as const),
+        inningsNum: (i + 1) as 1 | 2,
+        totalRuns: String(totalRuns),
+        wickets: String(wickets),
+        overs: inn.oversTotal ?? "",
+        topBatters: topBatters(inn.batsmen),
+        topBowlers: topBowlers(inn.bowlers),
+      };
+    });
 
   const matchTitle =
     [match.ageGroup, match.round].filter(Boolean).join(" • ") ||

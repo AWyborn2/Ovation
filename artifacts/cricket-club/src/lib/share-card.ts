@@ -514,45 +514,6 @@ const drawBackground = (
   ctx.strokeRect(inset + 18, inset + 18, W - (inset + 18) * 2, H - (inset + 18) * 2);
 };
 
-const drawHeader = async (
-  ctx: CanvasRenderingContext2D,
-  W: number,
-  topY: number,
-  scale: number,
-  p: Palette,
-  logoSrc: string,
-  brand?: ClubBrand | null,
-) => {
-  const pad = Math.round(80 * scale);
-  const clubName = (brand?.name ?? DEFAULT_BRAND.name).toUpperCase();
-  try {
-    const logo = await loadImage(logoSrc);
-    const logoH = Math.round(110 * scale);
-    const logoW = (logo.width / logo.height) * logoH;
-    ctx.drawImage(logo, pad, topY, logoW, logoH);
-    ctx.fillStyle = p.textLight;
-    ctx.font = `700 ${Math.round(26 * scale)}px Georgia, 'Times New Roman', serif`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText(clubName, pad + logoW + Math.round(28 * scale), topY + Math.round(14 * scale));
-    ctx.fillStyle = p.textMuted;
-    ctx.font = `500 ${Math.round(17 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-    ctx.fillText(
-      "EST. 1991  •  HONOUR BOARD",
-      pad + logoW + Math.round(28 * scale),
-      topY + Math.round(54 * scale),
-    );
-    return topY + logoH + Math.round(40 * scale);
-  } catch {
-    ctx.fillStyle = p.textLight;
-    ctx.font = `700 ${Math.round(36 * scale)}px Georgia, serif`;
-    ctx.textBaseline = "top";
-    ctx.textAlign = "left";
-    ctx.fillText(clubName, pad, topY + Math.round(10 * scale));
-    return topY + Math.round(80 * scale);
-  }
-};
-
 const drawRibbon = (
   ctx: CanvasRenderingContext2D,
   W: number,
@@ -1990,7 +1951,7 @@ const drawHeaderWith = (
     ctx.fillStyle = p.textMuted;
     ctx.font = `500 ${Math.round(17 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
     ctx.fillText(
-      "EST. 1991  •  HONOUR BOARD",
+      "HONOUR BOARD",
       pad + logoW + Math.round(28 * scale),
       topY + Math.round(54 * scale),
     );
@@ -3146,7 +3107,12 @@ const drawLayerContent = async (ctx: CanvasRenderingContext2D, l: RenderLayer) =
   applyLayerTransform(ctx, l);
   try {
     await l.draw(ctx);
-  } catch {}
+  } catch (err) {
+    // A single layer failing to draw (bad saved coordinates, a NaN stat value,
+    // a font-fitting edge case) shouldn't blank the whole card — but silently
+    // dropping it with no trace makes a card missing an element undiagnosable.
+    console.error(`[share-card] layer "${l.id}" (${l.label}) failed to draw`, err);
+  }
   ctx.restore();
 };
 
@@ -3666,29 +3632,30 @@ export const downloadBlob = (blob: Blob, filename: string): void => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-export const cardBaseFilename = (input: ShareCardInput): string => {
+export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null): string => {
   const jr = isJuniorInput(input) ? "junior-" : "";
+  const clubSlug = slugify(brand?.shortName || brand?.name || "") || "card";
   switch (input.kind) {
     case "milestone":
-      return `hhcc-${jr}${slugify(input.playerName)}-${slugify(input.tierLabel)}`;
+      return `${clubSlug}-${jr}${slugify(input.playerName)}-${slugify(input.tierLabel)}`;
     case "player":
-      return `hhcc-${slugify(input.playerName)}`;
+      return `${clubSlug}-${slugify(input.playerName)}`;
     case "record":
-      return `hhcc-record-${slugify(input.title)}-${slugify(input.playerName)}`;
+      return `${clubSlug}-record-${slugify(input.title)}-${slugify(input.playerName)}`;
     case "gradeLeader":
-      return `hhcc-${slugify(input.grade)}-${slugify(input.category)}-${slugify(input.playerName)}`;
+      return `${clubSlug}-${slugify(input.grade)}-${slugify(input.category)}-${slugify(input.playerName)}`;
     case "premiership":
-      return `hhcc-premiership-${slugify(input.grade)}-${input.year}`;
+      return `${clubSlug}-premiership-${slugify(input.grade)}-${input.year}`;
     case "debut":
-      return `hhcc-debut-${slugify(input.grade)}-${slugify(input.playerName)}`;
+      return `${clubSlug}-debut-${slugify(input.grade)}-${slugify(input.playerName)}`;
     case "newCap":
-      return `hhcc-cap-${slugify(input.grade)}-${input.capNumber}-${slugify(input.playerName)}`;
+      return `${clubSlug}-cap-${slugify(input.grade)}-${input.capNumber}-${slugify(input.playerName)}`;
     case "century":
-      return `hhcc-century-${slugify(input.playerName)}-${input.runs}`;
+      return `${clubSlug}-century-${slugify(input.playerName)}-${input.runs}`;
     case "fiveFor":
-      return `hhcc-fivefor-${slugify(input.playerName)}-${input.wickets}`;
+      return `${clubSlug}-fivefor-${slugify(input.playerName)}-${input.wickets}`;
     case "matchSummary":
-      return `hhcc-${jr}match-${slugify(input.club.name)}-vs-${slugify(input.opposition.name)}`;
+      return `${clubSlug}-${jr}match-${slugify(input.club.name)}-vs-${slugify(input.opposition.name)}`;
   }
 };
 
@@ -3769,6 +3736,10 @@ export const prepareAnimation = async (
   if (opts.template) {
     const template = opts.template;
     const bgKind = template.backgroundKind ?? "image";
+    // Canvas text never triggers a font fetch on its own (see ensureCardFonts'
+    // own comment) — without this, an animated/exported template card can bake
+    // in a system-font fallback while the PNG export of the same card is correct.
+    await ensureCardFonts();
     const bg = await loadTemplateBg(template, true);
     const tctx: TemplateContext = {
       clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
@@ -4079,15 +4050,21 @@ export const renderShareCardVideo = async (
   // Start the music in lockstep with recording so the audio aligns with frame 0.
   if (clipAudio) clipAudio.start(0);
   const start = performance.now();
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
     const tick = (now: number) => {
-      const elapsed = now - start;
-      anim.draw(ctx, Math.min(1, elapsed / anim.durationMs));
-      if (elapsed >= anim.durationMs) {
-        resolve();
-        return;
+      try {
+        const elapsed = now - start;
+        anim.draw(ctx, Math.min(1, elapsed / anim.durationMs));
+        if (elapsed >= anim.durationMs) {
+          resolve();
+          return;
+        }
+        requestAnimationFrame(tick);
+      } catch (err) {
+        // A throw inside an rAF callback is otherwise an uncaught error that
+        // never settles this promise, leaving the caller's export state stuck.
+        reject(err instanceof Error ? err : new Error(String(err)));
       }
-      requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
@@ -4142,22 +4119,27 @@ export const renderShareCardGif = async (
   const delay = Math.round(1000 / fps);
   const gif = GIFEncoder();
 
-  for (let i = 0; i < frameCount; i++) {
-    const t = frameCount > 1 ? i / (frameCount - 1) : 1;
-    ctx.clearRect(0, 0, gw, gh);
-    // The animation draws at full size; scale the whole frame down to GIF size.
-    ctx.save();
-    ctx.scale(gw / anim.width, gh / anim.height);
-    anim.draw(ctx, t);
-    ctx.restore();
-    const { data } = ctx.getImageData(0, 0, gw, gh);
-    const palette = quantize(data, 256);
-    const indexed = applyPalette(data, palette);
-    gif.writeFrame(indexed, gw, gh, { palette, delay, repeat: 0 });
+  try {
+    for (let i = 0; i < frameCount; i++) {
+      const t = frameCount > 1 ? i / (frameCount - 1) : 1;
+      ctx.clearRect(0, 0, gw, gh);
+      // The animation draws at full size; scale the whole frame down to GIF size.
+      ctx.save();
+      ctx.scale(gw / anim.width, gh / anim.height);
+      anim.draw(ctx, t);
+      ctx.restore();
+      const { data } = ctx.getImageData(0, 0, gw, gh);
+      const palette = quantize(data, 256);
+      const indexed = applyPalette(data, palette);
+      gif.writeFrame(indexed, gw, gh, { palette, delay, repeat: 0 });
+    }
+    gif.finish();
+  } finally {
+    // Ensures every baked bitmap prepareAnimation created for this clip is
+    // released even if a mid-loop error (e.g. a tainted-canvas getImageData
+    // throw) skips the rest of the loop.
+    anim.cleanup();
   }
-
-  gif.finish();
-  anim.cleanup();
   const bytes = gif.bytes();
   const blob = new Blob([bytes as BlobPart], { type: "image/gif" });
   return { blob, ext: "gif" };
