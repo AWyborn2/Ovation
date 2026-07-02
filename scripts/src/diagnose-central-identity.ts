@@ -173,12 +173,18 @@ async function main(): Promise<void> {
   }
   if (implausible.length > top) console.log(`  ...and ${implausible.length - top} more`);
 
+  const causeAVerdict =
+    implausible.length === 0
+      ? "Cause A is 0 — split curation is not needed for this club; ship rename + merge."
+      : `Cause A is ${implausible.length} (not ~0) — split curation is a real, sized backlog ` +
+        `item for this club, not optional cleanup.`;
+
   console.log(
     `\n=== Sizing summary ===\n` +
       `  Split-curation candidates (cause A, >= ${minInnings} innings): ${implausible.length}\n` +
       `  Merge/rename candidates (cause B, shared names): ${sharedNames.length}\n` +
       `  Name-only lines (cause C): ${nullLines}\n` +
-      `If cause A count is ~0, split curation is not needed this pass; ship rename + merge.\n`,
+      `${causeAVerdict}\n`,
   );
 }
 
