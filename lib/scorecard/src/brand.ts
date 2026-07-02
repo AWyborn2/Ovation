@@ -13,6 +13,8 @@ export interface ClubBrand {
   primaryColour?: string | null;
   secondaryColour?: string | null;
   tertiaryColour?: string | null;
+  /** Optional site background image. Null/absent = neutral (no image). */
+  backgroundUrl?: string | null;
 }
 
 /** @deprecated Use {@link ClubBrand}. Kept so downstream imports compile. */
@@ -34,6 +36,7 @@ export const DEFAULT_BRAND: ClubBrand = {
   primaryColour: "#334155",
   secondaryColour: "#94A3B8",
   tertiaryColour: "#475569",
+  backgroundUrl: null,
 };
 
 /**
@@ -53,6 +56,7 @@ export const HALLS_HEAD_BRAND: ClubBrand = {
   primaryColour: "#333F48",
   secondaryColour: "#FBAC27",
   tertiaryColour: "#42342B",
+  backgroundUrl: "/hallshead-background.png",
 };
 
 /** Default primary — used when a brand record omits the primary colour. */

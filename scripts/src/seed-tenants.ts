@@ -40,6 +40,7 @@ async function main(): Promise<void> {
     shortName: club?.shortName ?? HALLS_HEAD_BRAND.shortName ?? null,
     logoUrl: club?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl ?? null,
     faviconUrl: null,
+    backgroundUrl: HALLS_HEAD_BRAND.backgroundUrl ?? null,
     primaryColour: club?.primaryColour ?? HALLS_HEAD_BRAND.primaryColour ?? null,
     secondaryColour:
       club?.secondaryColour ?? HALLS_HEAD_BRAND.secondaryColour ?? null,

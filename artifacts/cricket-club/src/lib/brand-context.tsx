@@ -130,8 +130,18 @@ function applyBrandTheme(brand: ClubBrand): void {
       root.style.setProperty(v, chrome);
     }
   }
-  // The juniors section banner accent (default club brown).
-  root.style.setProperty("--juniors-accent", brand.tertiaryColour ?? "#42342B");
+  // The juniors section banner accent (the brand's own tertiary colour; falls
+  // back to the neutral default, never a hardcoded Halls Head literal).
+  root.style.setProperty(
+    "--juniors-accent",
+    brand.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? "#475569",
+  );
+
+  // Per-tenant site background (index.css reads --app-bg-image, default none).
+  root.style.setProperty(
+    "--app-bg-image",
+    brand.backgroundUrl ? `url(${brand.backgroundUrl})` : "none",
+  );
 
   if (brand.name) document.title = brand.name;
 }

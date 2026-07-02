@@ -1153,6 +1153,11 @@ export interface TenantBrand {
   logoUrl?: string | null;
   /** @nullable */
   logoUrl128?: string | null;
+  /**
+     * Optional site background image URL. Null = neutral (no image).
+     * @nullable
+     */
+  backgroundUrl?: string | null;
   /** @nullable */
   primaryColour?: string | null;
   /** @nullable */

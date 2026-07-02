@@ -5992,6 +5992,10 @@ components:
           type: ["string", "null"]
         logoUrl128:
           type: ["string", "null"]
+        backgroundUrl:
+          type: ["string", "null"]
+          description: >-
+            Optional site background image URL. Null = neutral (no image).
         primaryColour:
           type: ["string", "null"]
         secondaryColour:
