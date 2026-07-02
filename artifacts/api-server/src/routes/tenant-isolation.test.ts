@@ -10,6 +10,7 @@ import {
   sponsorsTable,
   juniorParticipantsTable,
   adminsTable,
+  cardThemesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -33,11 +34,16 @@ const T2_LM_NAME = `Iso LifeMember T2 ${STAMP}`;
 const T2_SPONSOR_NAME = `Iso Sponsor T2 ${STAMP}`;
 const T2_PARTICIPANT_ID = `iso-participant-t2-${STAMP}`;
 const T2_PARTICIPANT_NAME = `Iso Junior T2 ${STAMP}`;
+const T2_THEME_NAME = `Iso Theme T2 ${STAMP}`;
 
 describe("tenant isolation: curated tables never leak across tenants", () => {
   let tenant2Id: number;
   let adminId: number;
   let adminCookie: string;
+  let adminT1Id: number;
+  let adminT1Cookie: string;
+  let sponsorId: number;
+  let themeId: number;
   const createdLifeMemberIds: number[] = [];
 
   beforeAll(async () => {
@@ -65,11 +71,20 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
       label: "Iso Board",
       title: "Iso Board",
     });
-    await db.insert(sponsorsTable).values({
-      tenantId: tenant2Id,
-      name: T2_SPONSOR_NAME,
-      logoUrl: "https://example.com/iso.png",
-    });
+    const [sponsor] = await db
+      .insert(sponsorsTable)
+      .values({
+        tenantId: tenant2Id,
+        name: T2_SPONSOR_NAME,
+        logoUrl: "https://example.com/iso.png",
+      })
+      .returning();
+    sponsorId = sponsor.id;
+    const [theme] = await db
+      .insert(cardThemesTable)
+      .values({ tenantId: tenant2Id, name: T2_THEME_NAME })
+      .returning();
+    themeId = theme.id;
     await db.insert(juniorParticipantsTable).values({
       participantId: T2_PARTICIPANT_ID,
       tenantId: tenant2Id,
@@ -88,6 +103,21 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
       .returning();
     adminId = admin.id;
     adminCookie = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
+
+    // A tenant-1-scoped admin, used to prove tenant 1 cannot touch tenant 2's
+    // resources even with a validly tenant-matched session (not just an
+    // unauthenticated/mismatched-tenant request).
+    const [adminT1] = await db
+      .insert(adminsTable)
+      .values({
+        tenantId: 1,
+        username: `iso_admin_t1_${STAMP}`,
+        displayName: "Iso Admin T1",
+        passwordHash: "x",
+      })
+      .returning();
+    adminT1Id = adminT1.id;
+    adminT1Cookie = `${SESSION_COOKIE}=${encodeSession({ adminId: adminT1Id, issuedAt: Date.now() })}`;
   });
 
   afterAll(async () => {
@@ -97,10 +127,12 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     await db.delete(lifeMembersTable).where(eq(lifeMembersTable.tenantId, tenant2Id));
     await db.delete(honourBoardsTable).where(eq(honourBoardsTable.tenantId, tenant2Id));
     await db.delete(sponsorsTable).where(eq(sponsorsTable.tenantId, tenant2Id));
+    await db.delete(cardThemesTable).where(eq(cardThemesTable.tenantId, tenant2Id));
     await db
       .delete(juniorParticipantsTable)
       .where(eq(juniorParticipantsTable.tenantId, tenant2Id));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
+    await db.delete(adminsTable).where(eq(adminsTable.id, adminT1Id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant2Id));
   });
 
@@ -146,6 +178,59 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
       .set("x-tenant-id", String(tenant2Id))
       .expect(200);
     expect(asT2.body.some((r: { name: string }) => r.name === T2_SPONSOR_NAME)).toBe(true);
+  });
+
+  // Phase 3 U2 regression: PATCH/DELETE on sponsors/card-themes previously had
+  // NO tenant filter at all (only GET/POST were scoped) — tenant 1's admin
+  // could edit or delete tenant 2's rows just by knowing/guessing an id.
+  it("sponsors: PATCH/DELETE cannot touch another tenant's sponsor", async () => {
+    await request(app)
+      .patch(`/api/sponsors/${sponsorId}`)
+      .set("Cookie", adminT1Cookie)
+      .set("x-tenant-id", "1")
+      .send({ name: "Hijacked" })
+      .expect(404);
+    await request(app)
+      .delete(`/api/sponsors/${sponsorId}`)
+      .set("Cookie", adminT1Cookie)
+      .set("x-tenant-id", "1")
+      .expect(404);
+
+    const [row] = await db.select().from(sponsorsTable).where(eq(sponsorsTable.id, sponsorId));
+    expect(row).toBeDefined();
+    expect(row.name).toBe(T2_SPONSOR_NAME);
+  });
+
+  it("card-themes: tenant 2's theme is hidden from tenant 1 and visible to tenant 2", async () => {
+    const asT1 = await request(app)
+      .get("/api/card-themes")
+      .set("x-tenant-id", "1")
+      .expect(200);
+    expect(asT1.body.some((r: { name: string }) => r.name === T2_THEME_NAME)).toBe(false);
+
+    const asT2 = await request(app)
+      .get("/api/card-themes")
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(asT2.body.some((r: { name: string }) => r.name === T2_THEME_NAME)).toBe(true);
+  });
+
+  it("card-themes: PATCH/DELETE cannot touch another tenant's theme", async () => {
+    await request(app)
+      .patch(`/api/card-themes/${themeId}`)
+      .set("Cookie", adminT1Cookie)
+      .set("x-tenant-id", "1")
+      .send({ name: "Hijacked" })
+      .expect(404);
+    await request(app)
+      .delete(`/api/card-themes/${themeId}`)
+      .set("Cookie", adminT1Cookie)
+      .set("x-tenant-id", "1")
+      .expect(404);
+
+    const [row] = await db.select().from(cardThemesTable).where(eq(cardThemesTable.id, themeId));
+    expect(row).toBeDefined();
+    expect(row.name).toBe(T2_THEME_NAME);
   });
 
   it("juniors players: tenant 2's participant is hidden from tenant 1 and visible to tenant 2", async () => {

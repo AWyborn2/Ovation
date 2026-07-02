@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   db,
   socialDraftsTable,
@@ -10,25 +10,32 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
 const randomSlug = (): string =>
   Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 
-router.get("/social-drafts", requireAdmin, async (_req, res): Promise<void> => {
+router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(socialDraftsTable)
+    .where(eq(socialDraftsTable.tenantId, getTenantId(req)))
     .orderBy(desc(socialDraftsTable.createdAt));
   res.json(rows);
 });
 
-router.get("/social-drafts/pending-count", requireAdmin, async (_req, res): Promise<void> => {
+router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(socialDraftsTable)
-    .where(eq(socialDraftsTable.status, "pending"));
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, getTenantId(req)),
+        eq(socialDraftsTable.status, "pending"),
+      ),
+    );
   res.json({ count: Number(row?.count ?? 0) });
 });
 
@@ -38,10 +45,11 @@ router.post("/social-drafts/:id/approve", requireAdmin, requireEntitlement("soci
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  const tenantId = getTenantId(req);
   const [draft] = await db
     .select()
     .from(socialDraftsTable)
-    .where(eq(socialDraftsTable.id, id));
+    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)));
   if (!draft) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -50,6 +58,7 @@ router.post("/social-drafts/:id/approve", requireAdmin, requireEntitlement("soci
   if (!slug && draft.appPath) {
     slug = randomSlug();
     await db.insert(trackedLinksTable).values({
+      tenantId,
       slug,
       targetUrl: draft.appPath,
       label: `${draft.engine} #${draft.id}`,
@@ -59,7 +68,7 @@ router.post("/social-drafts/:id/approve", requireAdmin, requireEntitlement("soci
   const [updated] = await db
     .update(socialDraftsTable)
     .set({ status: "approved", trackedSlug: slug, reviewedAt: new Date() })
-    .where(eq(socialDraftsTable.id, id))
+    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
     .returning();
   res.json(updated);
 });
@@ -70,10 +79,11 @@ router.post("/social-drafts/:id/posted", requireAdmin, requireEntitlement("socia
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  const tenantId = getTenantId(req);
   const [updated] = await db
     .update(socialDraftsTable)
     .set({ status: "posted", reviewedAt: new Date() })
-    .where(eq(socialDraftsTable.id, id))
+    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
     .returning();
   if (!updated) {
     res.status(404).json({ error: "Not found" });
@@ -85,7 +95,12 @@ router.post("/social-drafts/:id/posted", requireAdmin, requireEntitlement("socia
     await db
       .update(milestoneEventsTable)
       .set({ postedAt: new Date() })
-      .where(eq(milestoneEventsTable.id, updated.milestoneEventId));
+      .where(
+        and(
+          eq(milestoneEventsTable.id, updated.milestoneEventId),
+          eq(milestoneEventsTable.tenantId, tenantId),
+        ),
+      );
   }
   res.json(updated);
 });
@@ -96,16 +111,22 @@ router.post("/social-drafts/:id/dismiss", requireAdmin, requireEntitlement("soci
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  const tenantId = getTenantId(req);
   const [updated] = await db
     .update(socialDraftsTable)
     .set({ status: "dismissed", reviewedAt: new Date() })
-    .where(eq(socialDraftsTable.id, id))
+    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
     .returning();
   if (updated?.milestoneEventId) {
     await db
       .update(milestoneEventsTable)
       .set({ dismissedAt: new Date() })
-      .where(eq(milestoneEventsTable.id, updated.milestoneEventId));
+      .where(
+        and(
+          eq(milestoneEventsTable.id, updated.milestoneEventId),
+          eq(milestoneEventsTable.tenantId, tenantId),
+        ),
+      );
   }
   res.status(204).end();
 });
@@ -125,7 +146,7 @@ router.post("/social-roundups", requireAdmin, requireEntitlement("socialStudio")
     )
     .orderBy(desc(importsTable.importedAt))
     .limit(1);
-  const created = await generateRoundUpDrafts(grade, season, imp?.id ?? null);
+  const created = await generateRoundUpDrafts(getTenantId(req), grade, season, imp?.id ?? null);
   res.json(created);
 });
 
@@ -136,7 +157,7 @@ router.post("/social-recaps", requireAdmin, requireEntitlement("socialStudio"), 
     res.status(400).json({ error: "grade and season required" });
     return;
   }
-  const created = await generateRecapDrafts(grade, season);
+  const created = await generateRecapDrafts(getTenantId(req), grade, season);
   res.json(created);
 });
 
@@ -157,27 +178,29 @@ router.post("/tracked-links", async (req, res): Promise<void> => {
   const slug = randomSlug();
   const [row] = await db
     .insert(trackedLinksTable)
-    .values({ slug, targetUrl, label, engine, platform })
+    .values({ tenantId: getTenantId(req), slug, targetUrl, label, engine, platform })
     .returning();
   res.status(201).json(row);
 });
 
-router.get("/tracked-links", requireAdmin, async (_req, res): Promise<void> => {
+router.get("/tracked-links", requireAdmin, async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(trackedLinksTable)
+    .where(eq(trackedLinksTable.tenantId, getTenantId(req)))
     .orderBy(desc(trackedLinksTable.clickCount));
   res.json(rows);
 });
 
-// /go/:slug redirect with click logging. Mounted at the app root, not under /api.
+// /go/:slug redirect with click logging. Mounted at the app root (with
+// tenantContext applied in app.ts, since a slug is only unique per tenant).
 export const goRedirectRouter: IRouter = Router();
 goRedirectRouter.get("/go/:slug", async (req, res): Promise<void> => {
   const slug = String(req.params.slug);
   const [link] = await db
     .select()
     .from(trackedLinksTable)
-    .where(eq(trackedLinksTable.slug, slug));
+    .where(and(eq(trackedLinksTable.slug, slug), eq(trackedLinksTable.tenantId, getTenantId(req))));
   if (!link) {
     res.status(404).send("Not found");
     return;

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import {
   db,
   captainsTable,
@@ -13,6 +13,7 @@ import {
   DeleteCaptainParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 import { hashPassword } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -58,8 +59,12 @@ async function setGrades(captainId: number, grades: string[]): Promise<void> {
   }
 }
 
-router.get("/captains", requireAdmin, async (_req, res): Promise<void> => {
-  const rows = await db.select().from(captainsTable).orderBy(asc(captainsTable.username));
+router.get("/captains", requireAdmin, async (req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(captainsTable)
+    .where(eq(captainsTable.tenantId, getTenantId(req)))
+    .orderBy(asc(captainsTable.username));
   const grades = await gradesByCaptain(rows.map((r) => r.id));
   res.json(rows.map((r) => serialize(r, grades.get(r.id) ?? [])));
 });
@@ -70,6 +75,7 @@ router.post("/captains", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const username = parsed.data.username.trim().toLowerCase();
   if (!username) {
     res.status(400).json({ error: "Username required" });
@@ -78,7 +84,7 @@ router.post("/captains", requireAdmin, async (req, res): Promise<void> => {
   const existing = await db
     .select({ id: captainsTable.id })
     .from(captainsTable)
-    .where(eq(captainsTable.username, username));
+    .where(and(eq(captainsTable.tenantId, tenantId), eq(captainsTable.username, username)));
   if (existing.length > 0) {
     res.status(409).json({ error: "Username already taken" });
     return;
@@ -86,7 +92,7 @@ router.post("/captains", requireAdmin, async (req, res): Promise<void> => {
   const passwordHash = await hashPassword(parsed.data.password);
   const [row] = await db
     .insert(captainsTable)
-    .values({ username, displayName: parsed.data.displayName, passwordHash })
+    .values({ tenantId, username, displayName: parsed.data.displayName, passwordHash })
     .returning();
   await setGrades(row.id, parsed.data.grades);
   res.status(201).json(serialize(row, normaliseGrades(parsed.data.grades)));
@@ -103,6 +109,7 @@ router.patch("/captains/:id", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: body.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const patch: Partial<{ username: string; displayName: string; passwordHash: string }> = {};
   if (body.data.username !== undefined) patch.username = body.data.username.trim().toLowerCase();
   if (body.data.displayName !== undefined) patch.displayName = body.data.displayName;
@@ -114,7 +121,7 @@ router.patch("/captains/:id", requireAdmin, async (req, res): Promise<void> => {
     const conflict = await db
       .select({ id: captainsTable.id })
       .from(captainsTable)
-      .where(eq(captainsTable.username, patch.username));
+      .where(and(eq(captainsTable.tenantId, tenantId), eq(captainsTable.username, patch.username)));
     if (conflict.length > 0 && conflict[0].id !== params.data.id) {
       res.status(409).json({ error: "Username already taken" });
       return;
@@ -122,14 +129,11 @@ router.patch("/captains/:id", requireAdmin, async (req, res): Promise<void> => {
   }
 
   let row: CaptainRow | undefined;
+  const scoped = and(eq(captainsTable.id, params.data.id), eq(captainsTable.tenantId, tenantId));
   if (Object.keys(patch).length > 0) {
-    [row] = await db
-      .update(captainsTable)
-      .set(patch)
-      .where(eq(captainsTable.id, params.data.id))
-      .returning();
+    [row] = await db.update(captainsTable).set(patch).where(scoped).returning();
   } else {
-    [row] = await db.select().from(captainsTable).where(eq(captainsTable.id, params.data.id));
+    [row] = await db.select().from(captainsTable).where(scoped);
   }
   if (!row) {
     res.status(404).json({ error: "Captain not found" });
@@ -150,7 +154,12 @@ router.delete("/captains/:id", requireAdmin, async (req, res): Promise<void> => 
   }
   const [row] = await db
     .delete(captainsTable)
-    .where(eq(captainsTable.id, params.data.id))
+    .where(
+      and(
+        eq(captainsTable.id, params.data.id),
+        eq(captainsTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Captain not found" });

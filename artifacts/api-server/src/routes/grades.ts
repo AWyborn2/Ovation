@@ -21,6 +21,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { resolveCuration } from "../lib/central-curation";
+import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
 
@@ -756,21 +757,6 @@ router.get("/records", async (req, res): Promise<void> => {
   });
 });
 
-const RECORDS_SETTINGS_ID = 1;
-
-async function ensureRecordsDisplaySettings() {
-  const [existing] = await db
-    .select()
-    .from(recordsDisplaySettingsTable)
-    .where(eq(recordsDisplaySettingsTable.id, RECORDS_SETTINGS_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(recordsDisplaySettingsTable)
-    .values({ id: RECORDS_SETTINGS_ID })
-    .returning();
-  return created;
-}
-
 function serializeRecordsDisplaySettings(
   row: typeof recordsDisplaySettingsTable.$inferSelect,
 ) {
@@ -788,8 +774,8 @@ function serializeRecordsDisplaySettings(
   };
 }
 
-router.get("/records-display-settings", async (_req, res): Promise<void> => {
-  const settings = await ensureRecordsDisplaySettings();
+router.get("/records-display-settings", async (req, res): Promise<void> => {
+  const settings = await getOrCreateSettings(recordsDisplaySettingsTable, getTenantId(req));
   res.json(serializeRecordsDisplaySettings(settings));
 });
 
@@ -818,11 +804,12 @@ router.patch(
       res.status(400).json({ error: "Invalid fiveForSort value" });
       return;
     }
-    await ensureRecordsDisplaySettings();
+    const tenantId = getTenantId(req);
+    await getOrCreateSettings(recordsDisplaySettingsTable, tenantId);
     const [row] = await db
       .update(recordsDisplaySettingsTable)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(recordsDisplaySettingsTable.id, RECORDS_SETTINGS_ID))
+      .where(eq(recordsDisplaySettingsTable.tenantId, tenantId))
       .returning();
     res.json(serializeRecordsDisplaySettings(row));
   },

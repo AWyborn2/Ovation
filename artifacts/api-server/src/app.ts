@@ -90,7 +90,11 @@ app.use(express.urlencoded({ extended: true }));
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).
 app.use("/api", tenantContext, router);
-app.use(goRedirectRouter);
+// /go/:slug is mounted at the app root (a public short link may be shared
+// without the /api prefix), but tracked links are tenant-scoped, so it needs
+// the same host-based tenant resolution as /api — a slug is only unique
+// within its own tenant.
+app.use(tenantContext, goRedirectRouter);
 
 // Seed the demo tenant's first admin from ADMIN_PASSWORD if it has none, and the
 // platform super-admin from PLATFORM_ADMIN_EMAIL/PASSWORD (both no-ops if unset).

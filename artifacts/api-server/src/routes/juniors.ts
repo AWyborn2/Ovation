@@ -21,6 +21,7 @@ import {
   juniorOfficeBearersTable,
   juniorMatchDisplaySettingsTable,
   clubsTable,
+  type JuniorMatchDisplaySettingsRow,
 } from "@workspace/db";
 import {
   ListJuniorMatchesQueryParams,
@@ -40,10 +41,9 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { shouldReadCentral } from "../lib/tenant";
+import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
-
-const JUNIOR_DISPLAY_SETTINGS_ID = 1;
 
 // Columns selected from the shared clubs register to brand a junior match's
 // opposition. clubs is a neutral reference table (not a senior stat table), so
@@ -1233,30 +1233,11 @@ router.get("/juniors/social-milestones", async (_req, res): Promise<void> => {
 
 // ---------------------------------------------------------------------------
 // Juniors Matches page display settings (admin-controlled defaults).
-// Singleton row id=1; mirrors the senior match-display-settings pattern but
+// One row per tenant; mirrors the senior match-display-settings pattern but
 // keyed on age group (no roundOrder — junior rounds are free text).
 // ---------------------------------------------------------------------------
-async function ensureJuniorMatchDisplaySettings() {
-  const [existing] = await db
-    .select()
-    .from(juniorMatchDisplaySettingsTable)
-    .where(eq(juniorMatchDisplaySettingsTable.id, JUNIOR_DISPLAY_SETTINGS_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(juniorMatchDisplaySettingsTable)
-    .values({ id: JUNIOR_DISPLAY_SETTINGS_ID })
-    .onConflictDoNothing()
-    .returning();
-  if (created) return created;
-  const [row] = await db
-    .select()
-    .from(juniorMatchDisplaySettingsTable)
-    .where(eq(juniorMatchDisplaySettingsTable.id, JUNIOR_DISPLAY_SETTINGS_ID));
-  return row;
-}
-
 function serializeJuniorMatchDisplaySettings(
-  s: Awaited<ReturnType<typeof ensureJuniorMatchDisplaySettings>>,
+  s: JuniorMatchDisplaySettingsRow,
 ) {
   return {
     defaultAgeGroup: s.defaultAgeGroup ?? "",
@@ -1266,8 +1247,8 @@ function serializeJuniorMatchDisplaySettings(
   };
 }
 
-router.get("/juniors/match-display-settings", async (_req, res): Promise<void> => {
-  const settings = await ensureJuniorMatchDisplaySettings();
+router.get("/juniors/match-display-settings", async (req, res): Promise<void> => {
+  const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, getTenantId(req));
   res.json(serializeJuniorMatchDisplaySettings(settings));
 });
 
@@ -1280,7 +1261,8 @@ router.patch(
       res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
       return;
     }
-    await ensureJuniorMatchDisplaySettings();
+    const tenantId = getTenantId(req);
+    await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (parsed.data.defaultAgeGroup !== undefined)
       patch.defaultAgeGroup = parsed.data.defaultAgeGroup;
@@ -1293,7 +1275,7 @@ router.patch(
     const [updated] = await db
       .update(juniorMatchDisplaySettingsTable)
       .set(patch)
-      .where(eq(juniorMatchDisplaySettingsTable.id, JUNIOR_DISPLAY_SETTINGS_ID))
+      .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId))
       .returning();
     res.json(serializeJuniorMatchDisplaySettings(updated));
   },

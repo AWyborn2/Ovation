@@ -137,6 +137,7 @@ const gradeLeaderCard = (
 
 // Generic draft inserter — cardInput is an opaque ShareCardInput JSON blob.
 const insertCard = async (
+  tenantId: number,
   engine: "roundup" | "recap",
   cardInput: Record<string, unknown>,
   appPath: string,
@@ -144,7 +145,7 @@ const insertCard = async (
 ): Promise<SocialDraft> => {
   const [row] = await db
     .insert(socialDraftsTable)
-    .values({ engine, status: "pending", cardInput, appPath, sourceImportId })
+    .values({ tenantId, engine, status: "pending", cardInput, appPath, sourceImportId })
     .returning();
   return row;
 };
@@ -172,6 +173,7 @@ const bestBowlingPerformance = (rows: InningsRow[]) =>
 // season-scoped snapshot table (player_grade_season_stats), so we never blend
 // historic totals into a single round/season call-out.
 export async function generateRoundUpDrafts(
+  tenantId: number,
   grade: string,
   season: number,
   sourceImportId: number | null,
@@ -190,6 +192,7 @@ export async function generateRoundUpDrafts(
   if (topRuns && topRuns.runs > 0)
     created.push(
       await insertCard(
+        tenantId,
         "roundup",
         gradeLeaderCard(grade, "Runs", topRuns, topRuns.runs, headline),
         `/players/${topRuns.playerId}`,
@@ -199,6 +202,7 @@ export async function generateRoundUpDrafts(
   if (topWkts && topWkts.wickets > 0)
     created.push(
       await insertCard(
+        tenantId,
         "roundup",
         gradeLeaderCard(grade, "Wickets", topWkts, topWkts.wickets, headline),
         `/players/${topWkts.playerId}`,
@@ -208,6 +212,7 @@ export async function generateRoundUpDrafts(
   if (bestBowl)
     created.push(
       await insertCard(
+        tenantId,
         "roundup",
         gradeLeaderCard(
           grade,
@@ -223,6 +228,7 @@ export async function generateRoundUpDrafts(
   if (bestBat)
     created.push(
       await insertCard(
+        tenantId,
         "roundup",
         gradeLeaderCard(
           grade,
@@ -238,6 +244,7 @@ export async function generateRoundUpDrafts(
   if (topKeeper && topKeeper.dismissals > 0)
     created.push(
       await insertCard(
+        tenantId,
         "roundup",
         gradeLeaderCard(grade, "Dismissals", topKeeper, topKeeper.dismissals, headline),
         `/players/${topKeeper.playerId}`,
@@ -250,6 +257,7 @@ export async function generateRoundUpDrafts(
 // Milestones unlocked in a (grade, season): milestone_events don't carry a grade
 // directly, so we join through the import that produced them.
 async function generateMilestoneRecapCards(
+  tenantId: number,
   grade: string,
   season: number,
   headline: string,
@@ -266,7 +274,13 @@ async function generateMilestoneRecapCards(
     })
     .from(milestoneEventsTable)
     .innerJoin(importsTable, eq(milestoneEventsTable.sourceImportId, importsTable.id))
-    .where(and(eq(importsTable.grade, grade), eq(importsTable.season, season)));
+    .where(
+      and(
+        eq(milestoneEventsTable.tenantId, tenantId),
+        eq(importsTable.grade, grade),
+        eq(importsTable.season, season),
+      ),
+    );
 
   if (rows.length === 0) return [];
 
@@ -287,6 +301,7 @@ async function generateMilestoneRecapCards(
     const name = (r.payload as { name?: string } | null)?.name ?? nameById.get(r.playerId) ?? "Unknown";
     created.push(
       await insertCard(
+        tenantId,
         "recap",
         {
           kind: "milestone",
@@ -308,6 +323,7 @@ async function generateMilestoneRecapCards(
 
 // A premiership card, if the club won this grade in this season (year = start year).
 async function generatePremiershipRecapCards(
+  tenantId: number,
   grade: string,
   season: number,
   headline: string,
@@ -320,6 +336,7 @@ async function generatePremiershipRecapCards(
   for (const p of prems) {
     created.push(
       await insertCard(
+        tenantId,
         "recap",
         {
           kind: "premiership",
@@ -341,6 +358,7 @@ async function generatePremiershipRecapCards(
 // Season recap: a multi-card highlight of a (grade, season) — champion batsman &
 // bowler, milestones unlocked that season, and a premiership card if won.
 export async function generateRecapDrafts(
+  tenantId: number,
   grade: string,
   season: number,
 ): Promise<SocialDraft[]> {
@@ -355,6 +373,7 @@ export async function generateRecapDrafts(
   if (topRuns && topRuns.runs > 0)
     created.push(
       await insertCard(
+        tenantId,
         "recap",
         gradeLeaderCard(grade, "Champion Batsman", topRuns, topRuns.runs, headline),
         `/players/${topRuns.playerId}`,
@@ -364,6 +383,7 @@ export async function generateRecapDrafts(
   if (topWkts && topWkts.wickets > 0)
     created.push(
       await insertCard(
+        tenantId,
         "recap",
         gradeLeaderCard(grade, "Champion Bowler", topWkts, topWkts.wickets, headline),
         `/players/${topWkts.playerId}`,
@@ -373,6 +393,7 @@ export async function generateRecapDrafts(
   if (topKeeper && topKeeper.dismissals > 0)
     created.push(
       await insertCard(
+        tenantId,
         "recap",
         gradeLeaderCard(grade, "Most Dismissals", topKeeper, topKeeper.dismissals, headline),
         `/players/${topKeeper.playerId}`,
@@ -380,8 +401,8 @@ export async function generateRecapDrafts(
       ),
     );
 
-  created.push(...(await generateMilestoneRecapCards(grade, season, headline)));
-  created.push(...(await generatePremiershipRecapCards(grade, season, headline)));
+  created.push(...(await generateMilestoneRecapCards(tenantId, grade, season, headline)));
+  created.push(...(await generatePremiershipRecapCards(tenantId, grade, season, headline)));
 
   return created;
 }

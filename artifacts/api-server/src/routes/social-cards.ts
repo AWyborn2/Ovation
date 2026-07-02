@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import {
   db,
   sponsorsTable,
@@ -50,10 +50,9 @@ import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
+import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
-
-const SETTINGS_ID = 1;
 
 const DEFAULT_TEMPLATES: { engine: string; platform: string; template: string }[] = [
   {
@@ -125,26 +124,18 @@ const DEFAULT_TEMPLATES: { engine: string; platform: string; template: string }[
   },
 ];
 
-async function ensureSettings() {
-  const [existing] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.id, SETTINGS_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(socialSettingsTable)
-    .values({ id: SETTINGS_ID })
-    .returning();
-  // Seed default caption templates if missing.
+async function ensureSettings(tenantId: number) {
+  const settings = await getOrCreateSettings(socialSettingsTable, tenantId);
+  // Seed this tenant's default caption templates if missing.
   for (const t of DEFAULT_TEMPLATES) {
     await db
       .insert(captionTemplatesTable)
-      .values(t)
+      .values({ ...t, tenantId })
       .onConflictDoNothing({
-        target: [captionTemplatesTable.engine, captionTemplatesTable.platform],
+        target: [captionTemplatesTable.tenantId, captionTemplatesTable.engine, captionTemplatesTable.platform],
       });
   }
-  return created;
+  return settings;
 }
 
 router.get("/sponsors", async (req, res): Promise<void> => {
@@ -196,7 +187,7 @@ router.patch("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"), 
       activeFrom: body.data.activeFrom === undefined ? undefined : body.data.activeFrom,
       activeTo: body.data.activeTo === undefined ? undefined : body.data.activeTo,
     })
-    .where(eq(sponsorsTable.id, params.data.id))
+    .where(and(eq(sponsorsTable.id, params.data.id), eq(sponsorsTable.tenantId, getTenantId(req))))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Sponsor not found" });
@@ -213,7 +204,7 @@ router.delete("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"),
   }
   const result = await db
     .delete(sponsorsTable)
-    .where(eq(sponsorsTable.id, params.data.id))
+    .where(and(eq(sponsorsTable.id, params.data.id), eq(sponsorsTable.tenantId, getTenantId(req))))
     .returning({ id: sponsorsTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Sponsor not found" });
@@ -222,10 +213,15 @@ router.delete("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"),
   res.status(204).end();
 });
 
-async function ensureThemes() {
-  const [existing] = await db.select().from(cardThemesTable).limit(1);
+async function ensureThemes(tenantId: number) {
+  const [existing] = await db
+    .select()
+    .from(cardThemesTable)
+    .where(eq(cardThemesTable.tenantId, tenantId))
+    .limit(1);
   if (existing) return;
   await db.insert(cardThemesTable).values({
+    tenantId,
     name: "Club Classic",
     bgDark: "#322F3D",
     bgPanel: "#3F3C4C",
@@ -236,11 +232,13 @@ async function ensureThemes() {
   });
 }
 
-router.get("/card-themes", async (_req, res): Promise<void> => {
-  await ensureThemes();
+router.get("/card-themes", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  await ensureThemes(tenantId);
   const rows = await db
     .select()
     .from(cardThemesTable)
+    .where(eq(cardThemesTable.tenantId, tenantId))
     .orderBy(asc(cardThemesTable.displayOrder), asc(cardThemesTable.id));
   res.json(rows);
 });
@@ -251,13 +249,18 @@ router.post("/card-themes", requireAdmin, requireEntitlement("socialStudio"), as
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const row = await db.transaction(async (tx) => {
     if (parsed.data.isDefault) {
-      await tx.update(cardThemesTable).set({ isDefault: false });
+      await tx
+        .update(cardThemesTable)
+        .set({ isDefault: false })
+        .where(eq(cardThemesTable.tenantId, tenantId));
     }
     const [created] = await tx
       .insert(cardThemesTable)
       .values({
+        tenantId,
         name: parsed.data.name,
         bgDark: parsed.data.bgDark,
         bgPanel: parsed.data.bgPanel,
@@ -285,27 +288,29 @@ router.patch("/card-themes/:id", requireAdmin, requireEntitlement("socialStudio"
     res.status(400).json({ error: body.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
+  const scoped = and(eq(cardThemesTable.id, params.data.id), eq(cardThemesTable.tenantId, tenantId));
   const row = await db.transaction(async (tx) => {
     if (body.data.isDefault === true) {
-      await tx.update(cardThemesTable).set({ isDefault: false });
+      await tx
+        .update(cardThemesTable)
+        .set({ isDefault: false })
+        .where(eq(cardThemesTable.tenantId, tenantId));
     }
-    const [updated] = await tx
-      .update(cardThemesTable)
-      .set(body.data)
-      .where(eq(cardThemesTable.id, params.data.id))
-      .returning();
+    const [updated] = await tx.update(cardThemesTable).set(body.data).where(scoped).returning();
     if (!updated) return undefined;
     // Never leave zero defaults: if this update unset the last default, promote
-    // the first remaining theme.
+    // the first remaining theme (within the same tenant).
     if (body.data.isDefault === false) {
       const remaining = await tx
         .select({ id: cardThemesTable.id })
         .from(cardThemesTable)
-        .where(eq(cardThemesTable.isDefault, true));
+        .where(and(eq(cardThemesTable.tenantId, tenantId), eq(cardThemesTable.isDefault, true)));
       if (remaining.length === 0) {
         const [first] = await tx
           .select()
           .from(cardThemesTable)
+          .where(eq(cardThemesTable.tenantId, tenantId))
           .orderBy(asc(cardThemesTable.displayOrder), asc(cardThemesTable.id))
           .limit(1);
         if (first) {
@@ -332,19 +337,22 @@ router.delete("/card-themes/:id", requireAdmin, requireEntitlement("socialStudio
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const result = await db
     .delete(cardThemesTable)
-    .where(eq(cardThemesTable.id, params.data.id))
+    .where(and(eq(cardThemesTable.id, params.data.id), eq(cardThemesTable.tenantId, tenantId)))
     .returning({ id: cardThemesTable.id, isDefault: cardThemesTable.isDefault });
   if (result.length === 0) {
     res.status(404).json({ error: "Card theme not found" });
     return;
   }
-  // If we deleted the default, promote the first remaining theme to default.
+  // If we deleted the default, promote the first remaining theme (within the
+  // same tenant) to default.
   if (result[0]?.isDefault) {
     const [first] = await db
       .select()
       .from(cardThemesTable)
+      .where(eq(cardThemesTable.tenantId, tenantId))
       .orderBy(asc(cardThemesTable.displayOrder), asc(cardThemesTable.id))
       .limit(1);
     if (first) {
@@ -362,10 +370,20 @@ router.delete("/card-themes/:id", requireAdmin, requireEntitlement("socialStudio
 // "default" track — silence is the default — so this CRUD is a plain ordered
 // list with no default-promotion logic (unlike themes).
 
-router.get("/card-audio-tracks", async (_req, res): Promise<void> => {
+router.get("/card-audio-tracks", async (req, res): Promise<void> => {
+  // The curated built-in library (isCurated) is a shared, platform-wide asset
+  // (seeded once, not per-tenant) — every tenant sees it, plus their own
+  // uploads. Only a tenant's own uploads are ever editable/deletable by them
+  // (see PATCH/DELETE below).
   const rows = await db
     .select()
     .from(cardAudioTracksTable)
+    .where(
+      or(
+        eq(cardAudioTracksTable.tenantId, getTenantId(req)),
+        eq(cardAudioTracksTable.isCurated, true),
+      ),
+    )
     .orderBy(asc(cardAudioTracksTable.displayOrder), asc(cardAudioTracksTable.id));
   res.json(rows);
 });
@@ -379,6 +397,7 @@ router.post("/card-audio-tracks", requireAdmin, requireEntitlement("socialStudio
   const [created] = await db
     .insert(cardAudioTracksTable)
     .values({
+      tenantId: getTenantId(req),
       name: parsed.data.name,
       url: parsed.data.url,
       durationMs: parsed.data.durationMs ?? null,
@@ -403,7 +422,12 @@ router.patch("/card-audio-tracks/:id", requireAdmin, requireEntitlement("socialS
   const [updated] = await db
     .update(cardAudioTracksTable)
     .set(body.data)
-    .where(eq(cardAudioTracksTable.id, params.data.id))
+    .where(
+      and(
+        eq(cardAudioTracksTable.id, params.data.id),
+        eq(cardAudioTracksTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning();
   if (!updated) {
     res.status(404).json({ error: "Card audio track not found" });
@@ -420,7 +444,12 @@ router.delete("/card-audio-tracks/:id", requireAdmin, requireEntitlement("social
   }
   const result = await db
     .delete(cardAudioTracksTable)
-    .where(eq(cardAudioTracksTable.id, params.data.id))
+    .where(
+      and(
+        eq(cardAudioTracksTable.id, params.data.id),
+        eq(cardAudioTracksTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning({ id: cardAudioTracksTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card audio track not found" });
@@ -437,6 +466,7 @@ router.delete("/card-audio-tracks/:id", requireAdmin, requireEntitlement("social
 // written so it can keep kinds it already owns.
 const clearDefaultKinds = async (
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  tenantId: number,
   kinds: string[],
   exceptId?: number,
 ): Promise<void> => {
@@ -451,16 +481,18 @@ const clearDefaultKinds = async (
     })
     .where(
       and(
+        eq(cardTemplatesTable.tenantId, tenantId),
         sql`${cardTemplatesTable.defaultForKinds} && ${kinds}::text[]`,
         exceptId !== undefined ? sql`${cardTemplatesTable.id} <> ${exceptId}` : undefined,
       ),
     );
 };
 
-router.get("/card-templates", async (_req, res): Promise<void> => {
+router.get("/card-templates", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(cardTemplatesTable)
+    .where(eq(cardTemplatesTable.tenantId, getTenantId(req)))
     .orderBy(asc(cardTemplatesTable.displayOrder), asc(cardTemplatesTable.id));
   res.json(rows);
 });
@@ -471,17 +503,19 @@ router.post("/card-templates", requireAdmin, requireEntitlement("socialStudio"),
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const row = await db.transaction(async (tx) => {
     if (parsed.data.isDefault) {
-      await tx.update(cardTemplatesTable).set({ isDefault: false });
+      await tx.update(cardTemplatesTable).set({ isDefault: false }).where(eq(cardTemplatesTable.tenantId, tenantId));
     }
     const defaultForKinds = parsed.data.defaultForKinds ?? [];
     if (defaultForKinds.length > 0) {
-      await clearDefaultKinds(tx, defaultForKinds);
+      await clearDefaultKinds(tx, tenantId, defaultForKinds);
     }
     const [created] = await tx
       .insert(cardTemplatesTable)
       .values({
+        tenantId,
         name: parsed.data.name,
         cardKinds: parsed.data.cardKinds ?? [],
         source: parsed.data.source ?? "background",
@@ -516,19 +550,20 @@ router.patch("/card-templates/:id", requireAdmin, requireEntitlement("socialStud
     res.status(400).json({ error: body.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const row = await db.transaction(async (tx) => {
     if (body.data.isDefault === true) {
-      await tx.update(cardTemplatesTable).set({ isDefault: false });
+      await tx.update(cardTemplatesTable).set({ isDefault: false }).where(eq(cardTemplatesTable.tenantId, tenantId));
     }
     // Per-asset default: a kind may be the default for at most one template, so
     // claiming a kind here strips it from every OTHER template first.
     if (body.data.defaultForKinds && body.data.defaultForKinds.length > 0) {
-      await clearDefaultKinds(tx, body.data.defaultForKinds, params.data.id);
+      await clearDefaultKinds(tx, tenantId, body.data.defaultForKinds, params.data.id);
     }
     const [updated] = await tx
       .update(cardTemplatesTable)
       .set(body.data)
-      .where(eq(cardTemplatesTable.id, params.data.id))
+      .where(and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, tenantId)))
       .returning();
     return updated;
   });
@@ -547,7 +582,7 @@ router.delete("/card-templates/:id", requireAdmin, requireEntitlement("socialStu
   }
   const result = await db
     .delete(cardTemplatesTable)
-    .where(eq(cardTemplatesTable.id, params.data.id))
+    .where(and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, getTenantId(req))))
     .returning({ id: cardTemplatesTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card template not found" });
@@ -559,10 +594,11 @@ router.delete("/card-templates/:id", requireAdmin, requireEntitlement("socialStu
 // --- Layer-based card layouts ----------------------------------------------
 // Custom layouts for BUILT-IN card kinds. Reading is public (the public card
 // renderer needs the saved layout); saving / resetting is admin-only.
-router.get("/card-layouts", async (_req, res): Promise<void> => {
+router.get("/card-layouts", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(cardLayoutsTable)
+    .where(eq(cardLayoutsTable.tenantId, getTenantId(req)))
     .orderBy(asc(cardLayoutsTable.cardKind));
   res.json(rows);
 });
@@ -579,11 +615,12 @@ router.put("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socialSt
     return;
   }
   const layers = body.data.layers as CardLayoutLayer[];
+  const tenantId = getTenantId(req);
   const [row] = await db
     .insert(cardLayoutsTable)
-    .values({ cardKind: params.data.cardKind, layers, updatedAt: new Date() })
+    .values({ tenantId, cardKind: params.data.cardKind, layers, updatedAt: new Date() })
     .onConflictDoUpdate({
-      target: cardLayoutsTable.cardKind,
+      target: [cardLayoutsTable.tenantId, cardLayoutsTable.cardKind],
       set: { layers, updatedAt: new Date() },
     })
     .returning();
@@ -598,7 +635,12 @@ router.delete("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socia
   }
   const result = await db
     .delete(cardLayoutsTable)
-    .where(eq(cardLayoutsTable.cardKind, params.data.cardKind))
+    .where(
+      and(
+        eq(cardLayoutsTable.cardKind, params.data.cardKind),
+        eq(cardLayoutsTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning({ id: cardLayoutsTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card layout not found" });
@@ -610,10 +652,11 @@ router.delete("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socia
 // Reusable layer effect presets. Built-in presets ship in the client; these
 // rows are admin-saved additions. Reading is public (the editor merges them in);
 // saving / deleting is admin-only.
-router.get("/card-effect-presets", async (_req, res): Promise<void> => {
+router.get("/card-effect-presets", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(cardEffectPresetsTable)
+    .where(eq(cardEffectPresetsTable.tenantId, getTenantId(req)))
     .orderBy(asc(cardEffectPresetsTable.displayOrder), asc(cardEffectPresetsTable.id));
   res.json(rows);
 });
@@ -627,6 +670,7 @@ router.post("/card-effect-presets", requireAdmin, requireEntitlement("socialStud
   const [row] = await db
     .insert(cardEffectPresetsTable)
     .values({
+      tenantId: getTenantId(req),
       name: parsed.data.name,
       effects: parsed.data.effects as Record<string, unknown>,
       displayOrder: parsed.data.displayOrder ?? 0,
@@ -643,7 +687,12 @@ router.delete("/card-effect-presets/:id", requireAdmin, requireEntitlement("soci
   }
   const result = await db
     .delete(cardEffectPresetsTable)
-    .where(eq(cardEffectPresetsTable.id, params.data.id))
+    .where(
+      and(
+        eq(cardEffectPresetsTable.id, params.data.id),
+        eq(cardEffectPresetsTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning({ id: cardEffectPresetsTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card effect preset not found" });
@@ -664,11 +713,16 @@ const CARD_SET_MIN_SLIDES = 2;
 const CARD_SET_MAX_SLIDES = 10;
 
 router.get("/card-sets", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
   const admin = await resolveAdmin(req);
   const rows = await db
     .select()
     .from(cardSetsTable)
-    .where(admin ? undefined : eq(cardSetsTable.isPublished, true))
+    .where(
+      admin
+        ? eq(cardSetsTable.tenantId, tenantId)
+        : and(eq(cardSetsTable.tenantId, tenantId), eq(cardSetsTable.isPublished, true)),
+    )
     .orderBy(asc(cardSetsTable.name));
   res.json(rows);
 });
@@ -693,6 +747,7 @@ router.post("/card-sets", requireAdmin, requireEntitlement("socialStudio"), asyn
   const [row] = await db
     .insert(cardSetsTable)
     .values({
+      tenantId: getTenantId(req),
       name: body.data.name,
       platformSize: body.data.platformSize,
       slides: body.data.slides as unknown as CardSetSlide[],
@@ -734,7 +789,7 @@ router.put("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio"), a
       isPublished,
       updatedAt: new Date(),
     })
-    .where(eq(cardSetsTable.id, params.data.id))
+    .where(and(eq(cardSetsTable.id, params.data.id), eq(cardSetsTable.tenantId, getTenantId(req))))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Card set not found" });
@@ -751,7 +806,7 @@ router.delete("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio")
   }
   const result = await db
     .delete(cardSetsTable)
-    .where(eq(cardSetsTable.id, params.data.id))
+    .where(and(eq(cardSetsTable.id, params.data.id), eq(cardSetsTable.tenantId, getTenantId(req))))
     .returning({ id: cardSetsTable.id });
   if (result.length === 0) {
     res.status(404).json({ error: "Card set not found" });
@@ -761,8 +816,12 @@ router.delete("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio")
 });
 
 router.get("/social-settings", async (req, res): Promise<void> => {
-  const settings = await ensureSettings();
-  const captionTemplates = await db.select().from(captionTemplatesTable);
+  const tenantId = getTenantId(req);
+  const settings = await ensureSettings(tenantId);
+  const captionTemplates = await db
+    .select()
+    .from(captionTemplatesTable)
+    .where(eq(captionTemplatesTable.tenantId, tenantId));
   res.json({
     settings,
     captionTemplates: captionTemplates.map((t) => ({
@@ -771,7 +830,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       template: t.template,
     })),
     activeSponsors: await loadActiveSponsors(req.log),
-    brand: await getTenantBrand(getTenantId(req)),
+    brand: await getTenantBrand(tenantId),
   });
 });
 
@@ -781,30 +840,18 @@ router.patch("/social-settings", requireAdmin, requireEntitlement("socialStudio"
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  await ensureSettings();
+  const tenantId = getTenantId(req);
+  await ensureSettings(tenantId);
   const [row] = await db
     .update(socialSettingsTable)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(socialSettingsTable.id, SETTINGS_ID))
+    .where(eq(socialSettingsTable.tenantId, tenantId))
     .returning();
   res.json(row);
 });
 
-async function ensureMilestoneBoardSettings() {
-  const [existing] = await db
-    .select()
-    .from(milestoneBoardSettingsTable)
-    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(milestoneBoardSettingsTable)
-    .values({ id: SETTINGS_ID })
-    .returning();
-  return created;
-}
-
-router.get("/milestone-board-settings", async (_req, res): Promise<void> => {
-  const settings = await ensureMilestoneBoardSettings();
+router.get("/milestone-board-settings", async (req, res): Promise<void> => {
+  const settings = await getOrCreateSettings(milestoneBoardSettingsTable, getTenantId(req));
   res.json({
     displayMode: settings.displayMode,
     gamesThreshold: settings.gamesThreshold,
@@ -823,11 +870,12 @@ router.patch("/milestone-board-settings", requireAdmin, requireEntitlement("cura
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  await ensureMilestoneBoardSettings();
+  const tenantId = getTenantId(req);
+  await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const [row] = await db
     .update(milestoneBoardSettingsTable)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID))
+    .where(eq(milestoneBoardSettingsTable.tenantId, tenantId))
     .returning();
   res.json({
     displayMode: row.displayMode,
@@ -847,12 +895,13 @@ router.put("/caption-templates", requireAdmin, requireEntitlement("socialStudio"
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const { engine, platform, template } = parsed.data;
   await db
     .insert(captionTemplatesTable)
-    .values({ engine, platform, template })
+    .values({ tenantId, engine, platform, template })
     .onConflictDoUpdate({
-      target: [captionTemplatesTable.engine, captionTemplatesTable.platform],
+      target: [captionTemplatesTable.tenantId, captionTemplatesTable.engine, captionTemplatesTable.platform],
       set: { template, updatedAt: new Date() },
     });
   res.json({ engine, platform, template });

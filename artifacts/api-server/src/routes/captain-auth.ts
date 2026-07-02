@@ -10,6 +10,7 @@ import {
 } from "../lib/auth";
 import { resolveCaptain, getCaptainGrades } from "../middlewares/require-captain";
 import { loginRateLimiter } from "../middlewares/rate-limit";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ router.post("/captain-auth/login", loginRateLimiter, async (req, res): Promise<v
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const captain = await getCaptainByUsername(parsed.data.username);
+  const captain = await getCaptainByUsername(getTenantId(req), parsed.data.username);
   if (!captain || !(await verifyPassword(parsed.data.password, captain.passwordHash))) {
     res.status(401).json({ error: "Invalid username or password" });
     return;
