@@ -1005,8 +1005,10 @@ async function expandUploads(
  * when it parsed, maps to a grade+season, carries a round, and isn't a duplicate
  * of an earlier committable file in the same batch. A file whose grade+season+
  * round already exists in the DB is "duplicate" (committable — it replaces the
- * stored match). Ordering matters: the FIRST file for a given round wins; later
- * ones become `duplicateInBatch`.
+ * stored match), unless the scorecard itself is abandoned, in which case
+ * "abandoned" takes priority — `matchExists` is still reported on the file so
+ * callers know it will replace a stored match either way. Ordering matters:
+ * the FIRST file for a given round wins; later ones become `duplicateInBatch`.
  */
 async function classifyBatchFiles(
   candidates: BatchCandidate[],
@@ -1116,10 +1118,10 @@ async function classifyBatchFiles(
     }
     seenInBatch.add(key);
     const matchExists = existing.has(key);
-    const status: BatchFileStatus = matchExists
-      ? "duplicate"
-      : p.abandoned
-        ? "abandoned"
+    const status: BatchFileStatus = p.abandoned
+      ? "abandoned"
+      : matchExists
+        ? "duplicate"
         : "ready";
     out.push({
       candidate: c,
