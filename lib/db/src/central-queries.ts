@@ -242,7 +242,22 @@ interface BattingAgg {
  */
 export async function centralGradeLeaderboard(
   appGrade: string,
-  opts: { clubId?: number; seasonStartYear?: number } = {},
+  opts: {
+    clubId?: number;
+    seasonStartYear?: number;
+    /**
+     * Tenant crosswalk (central participant GUID -> app player id). When
+     * supplied, each row's `playerId` is resolved so leaderboard players are
+     * clickable and correctly separated. Built and passed by the route (the
+     * crosswalk lives in the tenant DB, not central). Absent -> `playerId` 0.
+     */
+    intByGuid?: Map<string, number>;
+    /**
+     * Tenant rename overrides (GUID -> display name). Applied over the central
+     * "Initial Surname" so a club's curated names show on its leaderboard.
+     */
+    nameByGuid?: Map<string, string>;
+  } = {},
 ): Promise<PlayerGradeStat[]> {
   const clubId = opts.clubId ?? HALLS_HEAD_CENTRAL_CLUB_ID;
 
@@ -366,11 +381,17 @@ export async function centralGradeLeaderboard(
     const isPrivate = (p?.isPrivate ?? 0) === 1;
     const name = isPrivate
       ? { givenName: "Private", surname: "Player" }
-      : splitDisplayName(p?.displayName ?? participantId);
+      : splitDisplayName(
+          opts.nameByGuid?.get(participantId) ?? p?.displayName ?? participantId,
+        );
     const dismissals = a.innings - a.notOuts;
+    const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
     return {
-      id: 0,
-      playerId: 0,
+      // Central has no per-grade-stat row id; use the resolved player id so the
+      // client's React key (stat.id) stays distinct per row and the player link
+      // (stat.playerId) resolves.
+      id: resolvedPlayerId,
+      playerId: resolvedPlayerId,
       surname: name.surname,
       givenName: name.givenName,
       grade: appGrade,
@@ -1968,7 +1989,7 @@ export async function centralCenturies(clubId: number): Promise<CentralCentury[]
 }
 
 export interface CentralMilestone {
-  kind: "century" | "fiveFor";
+  kind: "century" | "fiveFor" | "career";
   participantId: string;
   displayName: string | null;
   grade: string;
@@ -1977,9 +1998,23 @@ export interface CentralMilestone {
   matchDate: string | null;
   opponent: string | null;
   value: number;
+  /** Career crossings only: which running total crossed a tier. */
+  boardKey?: "games" | "runs" | "wickets";
+  tierIndex?: number;
+  threshold?: number;
 }
 
-export async function centralMilestones(clubId: number): Promise<CentralMilestone[]> {
+/** Default significance tiers, mirroring the native milestone board defaults. */
+const DEFAULT_CAREER_TIERS = {
+  games: [100, 150, 200, 250, 300],
+  runs: [1000, 2000, 3000, 5000, 7500, 10000],
+  wickets: [100, 150, 200, 300],
+};
+
+export async function centralMilestones(
+  clubId: number,
+  tiers: { games: number[]; runs: number[]; wickets: number[] } = DEFAULT_CAREER_TIERS,
+): Promise<CentralMilestone[]> {
   const matchRows = await centralDb
     .select({
       matchId: centralMatchesTable.matchId,
@@ -2028,9 +2063,58 @@ export async function centralMilestones(clubId: number): Promise<CentralMileston
 
   const centuries = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null);
   const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null);
-  const names = await centralPlayerNames([
-    ...new Set([...centuries, ...fivers].map((b) => b.participantId as string)),
-  ]);
+
+  // Rosters give the games count (a player counts as having played even in
+  // matches where they didn't bat or bowl) for career-games crossings.
+  const rosters = await centralDb
+    .select({
+      participantId: centralMatchRostersTable.participantId,
+      matchId: centralMatchRostersTable.matchId,
+    })
+    .from(centralMatchRostersTable)
+    .where(
+      and(
+        eq(centralMatchRostersTable.clubId, clubId),
+        inArray(centralMatchRostersTable.matchId, matchIds),
+      ),
+    );
+
+  // Per-participant running-total inputs: runs and wickets per match, and the
+  // set of matches played (rosters unioned with batted/bowled matches).
+  interface CareerAcc {
+    runsByMatch: Map<number, number>;
+    wktsByMatch: Map<number, number>;
+    matches: Set<number>;
+  }
+  const byPid = new Map<string, CareerAcc>();
+  const accFor = (pid: string): CareerAcc => {
+    let a = byPid.get(pid);
+    if (!a) {
+      a = { runsByMatch: new Map(), wktsByMatch: new Map(), matches: new Set() };
+      byPid.set(pid, a);
+    }
+    return a;
+  };
+  for (const b of batting) {
+    if (!b.participantId || b.matchId === null) continue;
+    const a = accFor(b.participantId);
+    a.runsByMatch.set(b.matchId, (a.runsByMatch.get(b.matchId) ?? 0) + (b.runs ?? 0));
+    a.matches.add(b.matchId);
+  }
+  for (const b of bowling) {
+    if (!b.participantId || b.matchId === null) continue;
+    const a = accFor(b.participantId);
+    a.wktsByMatch.set(b.matchId, (a.wktsByMatch.get(b.matchId) ?? 0) + (b.wickets ?? 0));
+    a.matches.add(b.matchId);
+  }
+  for (const r of rosters) {
+    if (!r.participantId || r.matchId === null) continue;
+    accFor(r.participantId).matches.add(r.matchId);
+  }
+
+  // Names for every participant that could cross a tier (superset of the
+  // century/five-for authors).
+  const names = await centralPlayerNames([...byPid.keys()]);
 
   const out: CentralMilestone[] = [];
   for (const b of centuries) {
@@ -2067,6 +2151,60 @@ export async function centralMilestones(clubId: number): Promise<CentralMileston
       value: b.wickets ?? 0,
     });
   }
+
+  // Career crossings: walk each participant's matches in chronological order
+  // (season, then match id), accumulate games/runs/wickets, and emit a
+  // milestone at the match where a running total first crosses each tier.
+  const chrono = (x: number, y: number): number => {
+    const mx = metaOf.get(x);
+    const my = metaOf.get(y);
+    return (mx?.season ?? 0) - (my?.season ?? 0) || x - y;
+  };
+  const tierSpecs = [
+    { key: "games" as const, tiers: tiers.games },
+    { key: "runs" as const, tiers: tiers.runs },
+    { key: "wickets" as const, tiers: tiers.wickets },
+  ];
+  for (const [pid, acc] of byPid) {
+    const p = names.get(pid);
+    if (p?.isPrivate) continue;
+    const ordered = [...acc.matches].sort(chrono);
+    const totals = { games: 0, runs: 0, wickets: 0 };
+    for (const mId of ordered) {
+      const meta = metaOf.get(mId);
+      const contrib = {
+        games: 1,
+        runs: acc.runsByMatch.get(mId) ?? 0,
+        wickets: acc.wktsByMatch.get(mId) ?? 0,
+      };
+      for (const spec of tierSpecs) {
+        const prev = totals[spec.key];
+        const now = prev + contrib[spec.key];
+        totals[spec.key] = now;
+        if (!meta?.grade || meta.season === null) continue;
+        for (let i = 0; i < spec.tiers.length; i++) {
+          const tier = spec.tiers[i];
+          if (prev < tier && now >= tier) {
+            out.push({
+              kind: "career",
+              participantId: pid,
+              displayName: p?.displayName ?? null,
+              grade: meta.grade,
+              season: meta.season,
+              matchId: mId,
+              matchDate: meta.matchDate,
+              opponent: meta.opponent,
+              value: now,
+              boardKey: spec.key,
+              tierIndex: i,
+              threshold: tier,
+            });
+          }
+        }
+      }
+    }
+  }
+
   out.sort((a, b) => b.season - a.season || b.matchId - a.matchId);
   return out;
 }

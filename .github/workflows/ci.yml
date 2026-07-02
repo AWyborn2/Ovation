@@ -14,7 +14,7 @@ concurrency:
 env:
   # Pin the toolchain. Bump deliberately; keep in step with local dev.
   NODE_VERSION: "22"
-  PNPM_VERSION: "9"
+  PNPM_VERSION: "10"
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────
@@ -101,6 +101,8 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
       # Deterministic secret so session-cookie signing is stable across the run.
       SESSION_SECRET: ci-session-secret-not-for-production
+      # Read-only central PCA database (Supabase). Stored as a GitHub Actions secret.
+      # Several tenant/platform suites import a module that connects on load.
       CENTRAL_DATABASE_URL: ${{ secrets.CENTRAL_DATABASE_URL }}
       # Skip data-dependent api tests that need the club's full stats data (not in a fresh CI DB).
       CI_SKIP_DATA_TESTS: "true"

@@ -123,9 +123,10 @@ export async function resolveTenantBySubdomain(req: Request): Promise<number | n
 
 /**
  * Classify a request host: a matching tenant host (subdomain / custom domain)
- * wins; otherwise an apex/marketing host in `PLATFORM_HOSTS` is `platform`;
- * anything else (localhost, previews, unknown) is `fallback` — handled by the
- * header → env → default chain so dev still lands on the demo tenant.
+ * wins; then a dev `x-tenant-id` override on a Replit preview host; otherwise an
+ * apex/marketing host in `PLATFORM_HOSTS` is `platform`; anything else
+ * (localhost, previews without an override, unknown) is `fallback` — handled by
+ * the header → env → default chain so dev still lands on the demo tenant.
  */
 function isPreviewHost(host: string): boolean {
   return host.endsWith(".replit.dev");
@@ -134,6 +135,11 @@ function isPreviewHost(host: string): boolean {
 export async function resolveHostMode(req: Request): Promise<HostMode> {
   const bySubdomain = await resolveTenantBySubdomain(req);
   if (bySubdomain !== null) return { mode: "tenant", tenantId: bySubdomain };
+
+  // Dev-only: on the shared Replit preview URL, an explicit tenant header pins
+  // which tenant to render (the dev tenant switcher). Preview hosts are also
+  // platform hosts, so this must come before the platform check. Inert in
+  // production: real hosts never end with `.replit.dev`.
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
   if (headerTenant !== undefined && isPreviewHost(hostOf(req))) {
     return { mode: "tenant", tenantId: headerTenant };
