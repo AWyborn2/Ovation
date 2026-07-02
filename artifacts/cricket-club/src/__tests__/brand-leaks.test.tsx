@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { installApiMock } from "../test/mock-api";
 import { BrandProvider } from "@/lib/brand-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import { CardFront, CardBack } from "@/components/trading-card/card-faces";
 import type { TradingCardData } from "@/lib/trading-card";
 
@@ -50,23 +51,27 @@ function renderWithBrand(ui: React.ReactElement) {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrandProvider>{ui}</BrandProvider>
+      <ThemeProvider>
+        <BrandProvider>{ui}</BrandProvider>
+      </ThemeProvider>
     </QueryClientProvider>,
   );
 }
 
-describe("trading card: brand-leak regression (Phase 2 R5/R7)", () => {
-  it("card front shows the resolved tenant's name, never Halls Head's", async () => {
+describe("trading card: brand-leak regression (Phase 2 R5/R7, Phase 4/5 footer text)", () => {
+  it("card front shows the resolved tenant's name, never Halls Head's or its founding-year trivia", async () => {
     renderWithBrand(<CardFront data={DATA} />);
-    await waitFor(() => expect(screen.getByText(/Demo/)).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText(/Demo/).length).toBeGreaterThan(0));
     expect(document.body.textContent).not.toContain("Halls Head");
     expect(document.body.textContent).not.toContain("HHCC");
+    expect(document.body.textContent).not.toContain("1991");
   });
 
-  it("card back shows the resolved tenant's name, never Halls Head's", async () => {
+  it("card back shows the resolved tenant's name, never Halls Head's or its founding-year trivia", async () => {
     renderWithBrand(<CardBack data={DATA} />);
-    await waitFor(() => expect(screen.getByText(/Demo/)).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText(/Demo/).length).toBeGreaterThan(0));
     expect(document.body.textContent).not.toContain("Halls Head");
     expect(document.body.textContent).not.toContain("HHCC");
+    expect(document.body.textContent).not.toContain("1991");
   });
 });

@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Trophy, Baby, HelpCircle } from "lucide-react";
+import { Menu, X, Trophy, Baby, HelpCircle, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { useBrandLogo } from "@/lib/use-brand";
 import { useBrand } from "@/lib/brand-context";
+import { useThemeMode } from "@/lib/theme-context";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { useGetTourContent } from "@workspace/api-client-react";
 import { launchFanTour, launchAdminTour } from "@/lib/tour";
@@ -98,6 +99,24 @@ function HelpButton({ className }: { className?: string }) {
   );
 }
 
+// Light/dark theme toggle, mirrors HelpButton's pill styling so it reads as a
+// native part of the header rather than bolted on.
+function ThemeToggleButton({ className }: { className?: string }) {
+  const { mode, toggle } = useThemeMode();
+  const isDark = mode === "dark";
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/60 px-3 py-1.5 text-primary text-sm font-serif uppercase tracking-wider transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className ?? ""}`}
+    >
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -174,12 +193,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 })}
               </nav>
               <SectionToggle isJuniors={isJuniors} />
+              <ThemeToggleButton />
               <HelpButton />
             </div>
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-3">
               <SectionToggle isJuniors={isJuniors} />
+              <ThemeToggleButton />
               <HelpButton />
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
