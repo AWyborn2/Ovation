@@ -381,6 +381,8 @@ export const GetMatchResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
+  "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
+  "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
@@ -483,6 +485,8 @@ export const UpdateMatchRoundResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
+  "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
+  "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
@@ -581,6 +585,8 @@ export const SetMatchHatTrickResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
+  "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
+  "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()
@@ -6375,6 +6381,8 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
+  "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
+  "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish()

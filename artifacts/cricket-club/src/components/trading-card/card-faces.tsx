@@ -1,6 +1,6 @@
 import { Trophy, Award } from "lucide-react";
 import type { TradingCardData } from "@/lib/trading-card";
-import { GOLD, CHARCOAL, PHASE_PHOTO_H, type Phase } from "./constants";
+import { useCardBrand, clubShortLabel, PHASE_PHOTO_H, type Phase } from "./constants";
 import { frontStats, perfBars, premiershipLabel, careerStatTiles } from "./stat-helpers";
 import {
   CardSurface,
@@ -18,6 +18,7 @@ import {
 } from "./card-pieces";
 
 export function CardFront({ data }: { data: TradingCardData }) {
+  const { GOLD } = useCardBrand();
   const premierships = data.achievements.premierships;
   return (
     <CardSurface>
@@ -81,6 +82,7 @@ export function CardFront({ data }: { data: TradingCardData }) {
 }
 
 export function CardBack({ data }: { data: TradingCardData }) {
+  const { GOLD, CHARCOAL } = useCardBrand();
   const s = data.stats;
   const a = data.additionalStats;
   const showBatting = data.role !== "Bowler";
@@ -202,6 +204,7 @@ export function CardBack({ data }: { data: TradingCardData }) {
 }
 
 export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: Phase }) {
+  const { GOLD, CHARCOAL, brand } = useCardBrand();
   const s = data.stats;
   const a = data.additionalStats;
   return (
@@ -222,7 +225,7 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
             )}
             {data.debutYear !== null && (
               <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: 1 }}>
-                Halls Head since {data.debutYear}
+                {clubShortLabel(brand)} since {data.debutYear}
               </div>
             )}
           </div>
@@ -230,7 +233,7 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
         {phase === "outro" && (
           <div style={{ textAlign: "center" }}>
             <Trophy size={44} style={{ color: GOLD, margin: "0 auto 10px" }} />
-            <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.5 }}>Halls Head Cricket Club</div>
+            <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.5 }}>{brand.name}</div>
             <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: 2, textTransform: "uppercase" }}>
               Est. 1991
             </div>

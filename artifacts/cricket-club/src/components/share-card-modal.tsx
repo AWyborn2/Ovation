@@ -274,8 +274,13 @@ export function ShareCardModal({
 
   const { sponsors, sponsorSig } = useSponsors({ bundle, includeSponsors, input });
 
-  const clubUrl = bundle?.settings.clubUrl ?? "hallsheadcricket.com.au";
-  const hashtag = bundle?.settings.clubHashtag ?? "#HHCC";
+  // A tenant with no configured hashtag gets one derived from its short name
+  // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
+  // a brand-less tenant gets no clubUrl/hashtag rather than Halls Head's.
+  const clubUrl = bundle?.settings.clubUrl ?? "";
+  const hashtag =
+    bundle?.settings.clubHashtag ??
+    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
 
   const {
     platform,

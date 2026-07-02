@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles, type LucideIcon } from "lucide-react";
 import type { CardTemplate, CardLayoutLayer } from "@workspace/api-client-react";
-import { HALLS_HEAD_BRAND, type HallsHeadBrand } from "@workspace/scorecard";
+import { DEFAULT_BRAND, type ClubBrand, type HallsHeadBrand } from "@workspace/scorecard";
 import {
   resolveTextField,
   resolvePhotoField,
@@ -252,46 +252,50 @@ const lighten = (hex: string, amount: number): string => {
   return `#${[c(r), c(g), c(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 };
 
-// The default card theme IS the official club brand (navy primary + gold
-// secondary from clubs id 2, surfaced via HALLS_HEAD_BRAND). Selectable card
-// themes still override these; this is the fallback so no divergent HHCC hexes
-// live in the renderer. textLight is a neutral cream for legibility on navy.
-const BRAND_PRIMARY = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
-const BRAND_SECONDARY = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
-const DEFAULT_THEME: CardTheme = {
-  bgDark: BRAND_PRIMARY,
-  bgPanel: lighten(BRAND_PRIMARY, 0.1),
-  accent: BRAND_SECONDARY,
-  textLight: "#F5F2E8",
+// The default card theme IS the current tenant's brand (primary/secondary from
+// the resolved `opts.brand`, neutral DEFAULT_BRAND when there's none).
+// Selectable card themes still override these. textLight is a neutral cream
+// for legibility on a dark background.
+const themeFromBrand = (brand?: ClubBrand | null): CardTheme => {
+  const primary = brand?.primaryColour || DEFAULT_BRAND.primaryColour || "#334155";
+  const secondary = brand?.secondaryColour || DEFAULT_BRAND.secondaryColour || "#94A3B8";
+  return {
+    bgDark: primary,
+    bgPanel: lighten(primary, 0.1),
+    accent: secondary,
+    textLight: "#F5F2E8",
+  };
 };
 
-// Junior cards are forced to this club-brown palette (brown #42342B background +
-// gold accent), regardless of any selected card theme, so junior social content
-// is instantly distinguishable from the navy senior cards. Per Task #200 this
-// brown branding intentionally overrides the (now-gold) junior web UI accents.
+// Junior cards are forced onto this brown background, regardless of any
+// selected card theme, so junior social content is instantly distinguishable
+// from the senior cards. Per Task #200 this brown branding intentionally
+// overrides the club's own primary colour; the accent still follows the
+// tenant's brand (or the neutral default) rather than a fixed hex.
 const JUNIOR_BROWN = "#42342B";
-export const JUNIOR_THEME: CardTheme = {
+const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
   bgDark: JUNIOR_BROWN,
   bgPanel: lighten(JUNIOR_BROWN, 0.12),
-  accent: BRAND_SECONDARY,
+  accent: brand?.secondaryColour || DEFAULT_BRAND.secondaryColour || "#94A3B8",
   textLight: "#F5EFE6",
-};
+});
 
 // True when an input is a junior-flagged card kind.
 const isJuniorInput = (input: ShareCardInput): boolean =>
   "junior" in input && input.junior === true;
 
-const resolvePalette = (theme?: CardTheme | null): Palette => {
-  const t = theme ?? DEFAULT_THEME;
+const resolvePalette = (theme?: CardTheme | null, brand?: ClubBrand | null): Palette => {
+  const fallback = themeFromBrand(brand);
+  const t = theme ?? fallback;
   return {
-    bgDark: t.bgDark || DEFAULT_THEME.bgDark,
-    bgPanel: t.bgPanel || DEFAULT_THEME.bgPanel,
-    accent: t.accent || DEFAULT_THEME.accent,
-    accentSoft: rgba(t.accent || DEFAULT_THEME.accent, 0.18),
-    accentBorder: rgba(t.accent || DEFAULT_THEME.accent, 0.4),
-    accentStrip: rgba(t.accent || DEFAULT_THEME.accent, 0.5),
-    textLight: t.textLight || DEFAULT_THEME.textLight,
-    textMuted: rgba(t.textLight || DEFAULT_THEME.textLight, 0.65),
+    bgDark: t.bgDark || fallback.bgDark,
+    bgPanel: t.bgPanel || fallback.bgPanel,
+    accent: t.accent || fallback.accent,
+    accentSoft: rgba(t.accent || fallback.accent, 0.18),
+    accentBorder: rgba(t.accent || fallback.accent, 0.4),
+    accentStrip: rgba(t.accent || fallback.accent, 0.5),
+    textLight: t.textLight || fallback.textLight,
+    textMuted: rgba(t.textLight || fallback.textLight, 0.65),
   };
 };
 
@@ -517,8 +521,10 @@ const drawHeader = async (
   scale: number,
   p: Palette,
   logoSrc: string,
+  brand?: ClubBrand | null,
 ) => {
   const pad = Math.round(80 * scale);
+  const clubName = (brand?.name ?? DEFAULT_BRAND.name).toUpperCase();
   try {
     const logo = await loadImage(logoSrc);
     const logoH = Math.round(110 * scale);
@@ -528,7 +534,7 @@ const drawHeader = async (
     ctx.font = `700 ${Math.round(26 * scale)}px Georgia, 'Times New Roman', serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("HALLS HEAD CRICKET CLUB", pad + logoW + Math.round(28 * scale), topY + Math.round(14 * scale));
+    ctx.fillText(clubName, pad + logoW + Math.round(28 * scale), topY + Math.round(14 * scale));
     ctx.fillStyle = p.textMuted;
     ctx.font = `500 ${Math.round(17 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
     ctx.fillText(
@@ -542,7 +548,7 @@ const drawHeader = async (
     ctx.font = `700 ${Math.round(36 * scale)}px Georgia, serif`;
     ctx.textBaseline = "top";
     ctx.textAlign = "left";
-    ctx.fillText("HALLS HEAD CRICKET CLUB", pad, topY + Math.round(10 * scale));
+    ctx.fillText(clubName, pad, topY + Math.round(10 * scale));
     return topY + Math.round(80 * scale);
   }
 };
@@ -610,6 +616,12 @@ const drawSponsors = async (
   return stripY - Math.round(20 * scale);
 };
 
+// A tenant with no configured hashtag gets one derived from its short name
+// (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
+// a brand-less tenant gets no hashtag rather than Halls Head's.
+const defaultHashtag = (brand?: ClubBrand | null): string =>
+  brand?.shortName ? `#${brand.shortName.replace(/\s+/g, "")}` : "";
+
 const drawFooter = (
   ctx: CanvasRenderingContext2D,
   W: number,
@@ -619,12 +631,16 @@ const drawFooter = (
   scale: number,
   p: Palette,
 ) => {
+  const text = [clubUrl.trim() ? clubUrl.toUpperCase() : null, hashtag.trim() || null]
+    .filter(Boolean)
+    .join("  •  ");
+  if (!text) return;
   ctx.fillStyle = p.textMuted;
   ctx.font = `600 ${Math.round(18 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
   ctx.fillText(
-    `${clubUrl.toUpperCase()}  •  ${hashtag}`,
+    text,
     W / 2,
     H - Math.round(30 * scale),
   );
@@ -1320,8 +1336,9 @@ const drawTemplateFrame = (
   speed: number = 1,
 ) => {
   const tctx: TemplateContext = {
-    clubUrl: opts.clubUrl,
-    hashtag: opts.hashtag,
+    clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
+    clubUrl: opts.clubUrl ?? "",
+    hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
     photoUrl: opts.photoUrl,
   };
 
@@ -1464,8 +1481,9 @@ const renderTemplateCard = async (
   p: Palette,
 ) => {
   const tctx: TemplateContext = {
-    clubUrl: opts.clubUrl,
-    hashtag: opts.hashtag,
+    clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
+    clubUrl: opts.clubUrl ?? "",
+    hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
     photoUrl: opts.photoUrl,
   };
   const bg = await loadTemplateBg(template, false);
@@ -1531,8 +1549,8 @@ const renderMatchSummaryCard = async (
     ctx,
     W,
     H,
-    opts.clubUrl ?? "hallsheadcricket.com.au",
-    opts.hashtag ?? "#HHCC",
+    opts.clubUrl ?? "",
+    opts.hashtag ?? defaultHashtag(opts.brand),
     scale,
     p,
   );
@@ -1943,7 +1961,7 @@ const loadCardAssets = async (
   const featureImg = placement === "feature" ? loadedPhoto : null;
   const photoImg = placement === "feature" ? null : loadedPhoto;
   const logoSrc =
-    opts.theme?.logoUrl || opts.brand?.logoUrl || HALLS_HEAD_BRAND.logoUrl || "";
+    opts.theme?.logoUrl || opts.brand?.logoUrl || DEFAULT_BRAND.logoUrl || "";
   const logoImg = logoSrc ? await loadImage(logoSrc).catch(() => null) : null;
   return { bgImg, featureImg, photoImg, logoImg, customBg };
 };
@@ -1955,9 +1973,11 @@ const drawHeaderWith = (
   logo: HTMLImageElement | null,
   scale: number,
   p: Palette,
+  brand?: ClubBrand | null,
 ) => {
   const pad = Math.round(80 * scale);
   const topY = Math.round(80 * scale);
+  const clubName = (brand?.name ?? DEFAULT_BRAND.name).toUpperCase();
   if (logo) {
     const logoH = Math.round(110 * scale);
     const logoW = (logo.width / logo.height) * logoH;
@@ -1966,7 +1986,7 @@ const drawHeaderWith = (
     ctx.font = `700 ${Math.round(26 * scale)}px Georgia, 'Times New Roman', serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("HALLS HEAD CRICKET CLUB", pad + logoW + Math.round(28 * scale), topY + Math.round(14 * scale));
+    ctx.fillText(clubName, pad + logoW + Math.round(28 * scale), topY + Math.round(14 * scale));
     ctx.fillStyle = p.textMuted;
     ctx.font = `500 ${Math.round(17 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
     ctx.fillText(
@@ -1979,7 +1999,7 @@ const drawHeaderWith = (
     ctx.font = `700 ${Math.round(36 * scale)}px Georgia, serif`;
     ctx.textBaseline = "top";
     ctx.textAlign = "left";
-    ctx.fillText("HALLS HEAD CRICKET CLUB", pad, topY + Math.round(10 * scale));
+    ctx.fillText(clubName, pad, topY + Math.round(10 * scale));
   }
 };
 
@@ -2100,7 +2120,7 @@ const buildLayers = (
     vAnchor: "top",
     selectable: true,
     resizable: false,
-    draw: (ctx) => drawHeaderWith(ctx, logoImg, scale, p),
+    draw: (ctx) => drawHeaderWith(ctx, logoImg, scale, p, opts.brand),
   });
 
   // --- Headline ribbon ------------------------------------------------------
@@ -2920,7 +2940,7 @@ const buildLayers = (
     selectable: true,
     resizable: false,
     draw: (ctx) =>
-      drawFooter(ctx, W, H, opts.clubUrl ?? "hallsheadcricket.com.au", opts.hashtag ?? "#HHCC", scale, p),
+      drawFooter(ctx, W, H, opts.clubUrl ?? "", opts.hashtag ?? defaultHashtag(opts.brand), scale, p),
   });
 
   return layers;
@@ -3490,7 +3510,9 @@ export const computeCardLayers = async (
   await ensureCardFonts();
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
-  const p = isJuniorInput(input) ? resolvePalette(JUNIOR_THEME) : resolvePalette(opts.theme);
+  const p = isJuniorInput(input)
+    ? resolvePalette(juniorThemeFromBrand(opts.brand), opts.brand)
+    : resolvePalette(opts.theme, opts.brand);
   const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const toNorm = (l: RenderLayer): EditorLayer => ({
     id: l.id,
@@ -3592,8 +3614,8 @@ export const renderShareCard = async (
   // Junior cards force the brown palette regardless of the selected theme so
   // junior content is always visually distinct from the navy senior cards.
   const p = isJuniorInput(input)
-    ? resolvePalette(JUNIOR_THEME)
-    : resolvePalette(opts.theme);
+    ? resolvePalette(juniorThemeFromBrand(opts.brand), opts.brand)
+    : resolvePalette(opts.theme, opts.brand);
 
   // Custom uploaded template path: render the bg + data-bound slots and bail
   // out before any built-in chrome. Sponsors are overlaid inside the helper.
@@ -3615,8 +3637,9 @@ export const renderShareCard = async (
   // when no layout is applied).
   const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const tplCtx: TemplateContext = {
-    clubUrl: opts.clubUrl,
-    hashtag: opts.hashtag,
+    clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
+    clubUrl: opts.clubUrl ?? "",
+    hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
     photoUrl: opts.photoUrl,
   };
   const layers = opts.layout?.length
@@ -3736,7 +3759,9 @@ export const prepareAnimation = async (
 ): Promise<AnimationHandle> => {
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
-  const p = isJuniorInput(input) ? resolvePalette(JUNIOR_THEME) : resolvePalette(opts.theme);
+  const p = isJuniorInput(input)
+    ? resolvePalette(juniorThemeFromBrand(opts.brand), opts.brand)
+    : resolvePalette(opts.theme, opts.brand);
   const motion = effectiveMotion(opts);
   const speed = effectiveSpeed(opts);
 
@@ -3746,8 +3771,9 @@ export const prepareAnimation = async (
     const bgKind = template.backgroundKind ?? "image";
     const bg = await loadTemplateBg(template, true);
     const tctx: TemplateContext = {
-      clubUrl: opts.clubUrl,
-      hashtag: opts.hashtag,
+      clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
+      clubUrl: opts.clubUrl ?? "",
+      hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
       photoUrl: opts.photoUrl,
     };
     const purl = resolvePhotoField(input, tctx);
@@ -3808,8 +3834,9 @@ export const prepareAnimation = async (
   await ensureCardFonts();
   const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
   const tplCtx: TemplateContext = {
-    clubUrl: opts.clubUrl,
-    hashtag: opts.hashtag,
+    clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
+    clubUrl: opts.clubUrl ?? "",
+    hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
     photoUrl: opts.photoUrl,
   };
   const laidOut =

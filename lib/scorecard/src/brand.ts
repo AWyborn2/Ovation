@@ -13,6 +13,10 @@ export interface ClubBrand {
   primaryColour?: string | null;
   secondaryColour?: string | null;
   tertiaryColour?: string | null;
+  /** Optional site background image. Null/absent = neutral (no image). */
+  backgroundUrl?: string | null;
+  /** Optional favicon. Null/absent = the platform's neutral default favicon. */
+  faviconUrl?: string | null;
 }
 
 /** @deprecated Use {@link ClubBrand}. Kept so downstream imports compile. */
@@ -34,6 +38,8 @@ export const DEFAULT_BRAND: ClubBrand = {
   primaryColour: "#334155",
   secondaryColour: "#94A3B8",
   tertiaryColour: "#475569",
+  backgroundUrl: null,
+  faviconUrl: null,
 };
 
 /**
@@ -53,6 +59,10 @@ export const HALLS_HEAD_BRAND: ClubBrand = {
   primaryColour: "#333F48",
   secondaryColour: "#FBAC27",
   tertiaryColour: "#42342B",
+  backgroundUrl: "/hallshead-background.png",
+  // No distinct Halls Head favicon exists — it uses the same neutral favicon
+  // (index.html's static default) as every other tenant.
+  faviconUrl: null,
 };
 
 /** Default primary — used when a brand record omits the primary colour. */

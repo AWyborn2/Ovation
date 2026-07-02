@@ -1153,6 +1153,16 @@ export interface TenantBrand {
   logoUrl?: string | null;
   /** @nullable */
   logoUrl128?: string | null;
+  /**
+     * Optional site background image URL. Null = neutral (no image).
+     * @nullable
+     */
+  backgroundUrl?: string | null;
+  /**
+     * Optional per-tenant favicon URL. Null = the platform's neutral default favicon.
+     * @nullable
+     */
+  faviconUrl?: string | null;
   /** @nullable */
   primaryColour?: string | null;
   /** @nullable */

@@ -1,10 +1,8 @@
 import { Star } from "lucide-react";
 import type { TradingCardData } from "@/lib/trading-card";
 import {
-  logoUrl,
-  CHARCOAL,
-  GOLD,
-  BROWN,
+  useCardBrand,
+  clubShortLabel,
   FONT,
   CARD_W,
   CARD_H,
@@ -13,6 +11,7 @@ import {
 } from "./constants";
 
 export function StarRow({ rating }: { rating: number }) {
+  const { GOLD } = useCardBrand();
   return (
     <div className="flex items-center justify-center gap-1">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -29,6 +28,7 @@ export function StarRow({ rating }: { rating: number }) {
 }
 
 export function CardSurface({ children }: { children: React.ReactNode }) {
+  const { CHARCOAL, BROWN } = useCardBrand();
   return (
     <div
       style={{
@@ -50,12 +50,13 @@ export function CardSurface({ children }: { children: React.ReactNode }) {
 }
 
 export function CardHeader({ data }: { data: TradingCardData }) {
+  const { logoUrl, GOLD, CHARCOAL, brand } = useCardBrand();
   return (
     <div style={{ position: "relative", padding: "16px 18px", display: "flex", alignItems: "center", gap: 10 }}>
-      <img src={logoUrl} alt="HHCC" crossOrigin="anonymous" style={{ width: 38, height: 38, objectFit: "contain" }} />
+      <img src={logoUrl} alt={brand.shortName ?? brand.name} crossOrigin="anonymous" style={{ width: 38, height: 38, objectFit: "contain" }} />
       <div style={{ lineHeight: 1.05 }}>
         <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase" }}>
-          Halls Head
+          {clubShortLabel(brand)}
         </div>
         <div style={{ fontSize: 10, fontWeight: 600, color: GOLD, letterSpacing: 1.5, textTransform: "uppercase" }}>
           Cricket Club
@@ -98,6 +99,7 @@ export function CardHeader({ data }: { data: TradingCardData }) {
 }
 
 export function PlayerPhoto({ data, height }: { data: TradingCardData; height: number }) {
+  const { BROWN, CHARCOAL, GOLD } = useCardBrand();
   return (
     <div
       style={{
@@ -166,6 +168,7 @@ export function PlayerPhoto({ data, height }: { data: TradingCardData; height: n
 }
 
 export function StatTile({ label, value, big }: { label: string; value: number | string; big?: boolean }) {
+  const { GOLD } = useCardBrand();
   return (
     <div
       style={{
@@ -196,6 +199,7 @@ export function StatTile({ label, value, big }: { label: string; value: number |
 }
 
 export function PerfBar({ label, value, max }: { label: string; value: number; max: number }) {
+  const { GOLD } = useCardBrand();
   const pct = Math.max(4, Math.min(100, max > 0 ? (value / max) * 100 : 0));
   return (
     <div>
@@ -213,6 +217,7 @@ export function PerfBar({ label, value, max }: { label: string; value: number; m
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
+  const { GOLD } = useCardBrand();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
       <div style={{ width: 4, height: 18, background: GOLD, borderRadius: 2 }} />
@@ -237,6 +242,7 @@ export function NameBlock({ data }: { data: TradingCardData }) {
 }
 
 export function CardFooter({ flipHint }: { flipHint?: boolean }) {
+  const { GOLD } = useCardBrand();
   return (
     <div
       style={{
@@ -263,6 +269,7 @@ export function CardFooter({ flipHint }: { flipHint?: boolean }) {
 }
 
 export function PhaseName({ data }: { data: TradingCardData }) {
+  const { GOLD } = useCardBrand();
   return (
     <div style={{ textAlign: "center", padding: "10px 16px 0" }}>
       <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.3, lineHeight: 1.1 }}>{data.name}</div>
@@ -291,6 +298,7 @@ export function PhaseContent({ children }: { children: React.ReactNode }) {
 }
 
 export function PhaseTitle({ children }: { children: React.ReactNode }) {
+  const { GOLD } = useCardBrand();
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
       <div style={{ width: 4, height: 18, background: GOLD, borderRadius: 2 }} />

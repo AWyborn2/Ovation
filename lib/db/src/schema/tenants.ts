@@ -35,6 +35,7 @@ export const tenantsTable = pgTable("tenants", {
   shortName: text("short_name"),
   logoUrl: text("logo_url"),
   faviconUrl: text("favicon_url"),
+  backgroundUrl: text("background_url"),
   primaryColour: text("primary_colour"),
   secondaryColour: text("secondary_colour"),
   tertiaryColour: text("tertiary_colour"),

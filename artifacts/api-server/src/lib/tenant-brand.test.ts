@@ -56,6 +56,8 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     name: HALLS_HEAD_BRAND.name,
     shortName: HALLS_HEAD_BRAND.shortName ?? null,
     logoUrl: HALLS_HEAD_BRAND.logoUrl ?? null,
+    backgroundUrl: HALLS_HEAD_BRAND.backgroundUrl ?? null,
+    faviconUrl: HALLS_HEAD_BRAND.faviconUrl ?? null,
     primaryColour: HALLS_HEAD_BRAND.primaryColour ?? null,
     secondaryColour: HALLS_HEAD_BRAND.secondaryColour ?? null,
     tertiaryColour: HALLS_HEAD_BRAND.tertiaryColour ?? null,
@@ -84,6 +86,43 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.logoUrl).not.toBe(HALLS_HEAD_BRAND.logoUrl);
     expect(brand.primaryColour).not.toBe(HALLS_HEAD_BRAND.primaryColour);
     expect(brand.name).not.toBe(HALLS_HEAD_BRAND.name);
+    expect(brand.backgroundUrl).not.toBe(HALLS_HEAD_BRAND.backgroundUrl);
+    expect(brand.backgroundUrl).toBeNull();
+    expect(brand.faviconUrl).toBeNull();
+  });
+
+  it("uses the tenant's own faviconUrl (Phase 2 R8: per-tenant, no cross-tenant leak)", () => {
+    const withFavicon = buildTenantBrand(
+      {
+        name: "Some Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: "https://example.com/some-club-favicon.png",
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+      },
+      null,
+    );
+    expect(withFavicon.faviconUrl).toBe("https://example.com/some-club-favicon.png");
+
+    const withoutFavicon = buildTenantBrand(
+      {
+        name: "Some Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+      },
+      null,
+    );
+    // No favicon set -> neutral default, never Halls Head's.
+    expect(withoutFavicon.faviconUrl).toBe(DEFAULT_BRAND.faviconUrl);
+    expect(withoutFavicon.faviconUrl).toBeNull();
   });
 
   it("derives missing accents from the tenant's OWN primary, not the default", () => {
@@ -92,6 +131,8 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         name: "Some Club",
         shortName: null,
         logoUrl: "https://example.com/some-club.png",
+        backgroundUrl: null,
+        faviconUrl: null,
         primaryColour: "#123456",
         secondaryColour: null,
         tertiaryColour: null,
@@ -102,5 +143,40 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.tertiaryColour).toBe("#123456");
     expect(brand.secondaryColour).not.toBe(HALLS_HEAD_BRAND.secondaryColour);
     expect(brand.secondaryColour).not.toBe(DEFAULT_BRAND.secondaryColour);
+  });
+
+  it("uses the tenant's own backgroundUrl (Phase 2 R6: per-tenant, no cross-tenant leak)", () => {
+    const withBackground = buildTenantBrand(
+      {
+        name: "Some Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: "https://example.com/some-club-bg.png",
+        faviconUrl: null,
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+      },
+      null,
+    );
+    expect(withBackground.backgroundUrl).toBe("https://example.com/some-club-bg.png");
+    expect(withBackground.backgroundUrl).not.toBe(HALLS_HEAD_BRAND.backgroundUrl);
+
+    const withoutBackground = buildTenantBrand(
+      {
+        name: "Some Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+      },
+      null,
+    );
+    // No background set -> neutral default (no image), never Halls Head's texture.
+    expect(withoutBackground.backgroundUrl).toBe(DEFAULT_BRAND.backgroundUrl);
+    expect(withoutBackground.backgroundUrl).toBeNull();
   });
 });

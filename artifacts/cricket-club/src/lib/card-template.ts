@@ -1,4 +1,5 @@
 import type { CardTemplate, CardTemplateSlot } from "@workspace/api-client-react";
+import { DEFAULT_BRAND } from "@workspace/scorecard";
 import type { CardKind, ShareCardInput } from "./share-card";
 
 export type { CardTemplate, CardTemplateSlot };
@@ -179,11 +180,11 @@ export const resolveTextField = (
 ): string => {
   switch (key) {
     case "clubName":
-      return ctx.clubName ?? "Halls Head Cricket Club";
+      return ctx.clubName ?? DEFAULT_BRAND.name;
     case "clubUrl":
-      return ctx.clubUrl ?? "hallsheadcricket.com.au";
+      return ctx.clubUrl ?? "";
     case "hashtag":
-      return ctx.hashtag ?? "#HHCC";
+      return ctx.hashtag ?? "";
     case "headline":
       return input.headline ?? "";
   }

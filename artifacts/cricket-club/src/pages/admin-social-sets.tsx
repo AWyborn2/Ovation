@@ -341,8 +341,13 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     return out.length ? out : ["square"];
   }, [bundle]);
 
-  const clubUrl = bundle?.settings.clubUrl ?? "hallsheadcricket.com.au";
-  const hashtag = bundle?.settings.clubHashtag ?? "#HHCC";
+  // A tenant with no configured hashtag gets one derived from its short name
+  // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
+  // a brand-less tenant gets no clubUrl/hashtag rather than Halls Head's.
+  const clubUrl = bundle?.settings.clubUrl ?? "";
+  const hashtag =
+    bundle?.settings.clubHashtag ??
+    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
 
   // Render options for one slide at a given size. Junior slides are locked to
   // the brown palette (no theme); sponsors are filtered per slide kind.
