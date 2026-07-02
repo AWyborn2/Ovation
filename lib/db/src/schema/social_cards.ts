@@ -55,6 +55,7 @@ export type CardThemeRow = typeof cardThemesTable.$inferSelect;
 // `durationMs`-long window starting at the admin-chosen trim offset.
 export const cardAudioTracksTable = pgTable("card_audio_tracks", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull(),
   url: text("url").notNull(),
   durationMs: integer("duration_ms"),
@@ -99,6 +100,7 @@ export type CardTemplateSlot = {
 // kind. Cards fall back to the built-in layout when no template applies.
 export const cardTemplatesTable = pgTable("card_templates", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull(),
   // Which ShareCardInput["kind"] values this template is ASSIGNED to (the asset
   // types it may be used for). Empty = applies to every card kind.
@@ -201,13 +203,14 @@ export const cardLayoutsTable = pgTable(
   "card_layouts",
   {
     id: serial("id").primaryKey(),
-    // ShareCardInput["kind"] this layout customises (one row per kind).
+    tenantId: tenantIdColumn(),
+    // ShareCardInput["kind"] this layout customises (one row per kind, per tenant).
     cardKind: text("card_kind").notNull(),
     layers: jsonb("layers").$type<CardLayoutLayer[]>().notNull().default([]),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    uniqCardKind: uniqueIndex("card_layouts_card_kind_unique").on(t.cardKind),
+    uniqCardKind: uniqueIndex("card_layouts_tenant_card_kind_unique").on(t.tenantId, t.cardKind),
   }),
 );
 
@@ -220,6 +223,7 @@ export type CardLayoutRow = typeof cardLayoutsTable.$inferSelect;
 // ship in the client; these rows are the admin-created additions.
 export const cardEffectPresetsTable = pgTable("card_effect_presets", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull(),
   // A LayerEffects object (CardLayerEffects in the OpenAPI spec). Opaque jsonb
   // here so new effect fields need no schema change.
@@ -249,6 +253,7 @@ export type CardSetSlide = {
 // exported as numbered images / video at a chosen platform size.
 export const cardSetsTable = pgTable("card_sets", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   name: text("name").notNull().default("Untitled set"),
   // Chosen export platform size: "square" | "portrait" | "story".
   platformSize: text("platform_size").notNull().default("square"),
@@ -262,21 +267,34 @@ export const cardSetsTable = pgTable("card_sets", {
 
 export type CardSetRow = typeof cardSetsTable.$inferSelect;
 
-export const socialSettingsTable = pgTable("social_settings", {
-  id: serial("id").primaryKey(),
-  engineOnDemand: boolean("engine_on_demand").notNull().default(true),
-  engineMilestone: boolean("engine_milestone").notNull().default(false),
-  engineRoundUp: boolean("engine_round_up").notNull().default(false),
-  engineRecap: boolean("engine_recap").notNull().default(false),
-  sizeSquare: boolean("size_square").notNull().default(true),
-  sizePortrait: boolean("size_portrait").notNull().default(true),
-  sizeStory: boolean("size_story").notNull().default(true),
-  sponsorsEnabled: boolean("sponsors_enabled").notNull().default(true),
-  captionsEnabled: boolean("captions_enabled").notNull().default(true),
-  clubHashtag: text("club_hashtag").notNull().default("#HHCC"),
-  clubUrl: text("club_url").notNull().default("hallsheadcricket.com.au"),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+// One row per tenant (unique on tenantId; PK stays a surrogate id). A tenant's
+// row is created on first access (see `ensureSettings` in social-cards.ts),
+// seeded with these schema defaults — never copied from another tenant's saved
+// values. clubHashtag/clubUrl default to neutral, tenant-agnostic values (no
+// hardcoded Halls Head hashtag/URL) so a fresh tenant's card footer doesn't
+// leak Halls Head's own.
+export const socialSettingsTable = pgTable(
+  "social_settings",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    engineOnDemand: boolean("engine_on_demand").notNull().default(true),
+    engineMilestone: boolean("engine_milestone").notNull().default(false),
+    engineRoundUp: boolean("engine_round_up").notNull().default(false),
+    engineRecap: boolean("engine_recap").notNull().default(false),
+    sizeSquare: boolean("size_square").notNull().default(true),
+    sizePortrait: boolean("size_portrait").notNull().default(true),
+    sizeStory: boolean("size_story").notNull().default(true),
+    sponsorsEnabled: boolean("sponsors_enabled").notNull().default(true),
+    captionsEnabled: boolean("captions_enabled").notNull().default(true),
+    clubHashtag: text("club_hashtag").notNull().default(""),
+    clubUrl: text("club_url").notNull().default(""),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqTenant: uniqueIndex("social_settings_tenant_unique").on(t.tenantId),
+  }),
+);
 
 export type SocialSettingsRow = typeof socialSettingsTable.$inferSelect;
 
@@ -284,25 +302,34 @@ export type SocialSettingsRow = typeof socialSettingsTable.$inferSelect;
 // Honour Boards page. Controls whether the board shows recent achievers,
 // players approaching a club, or both, plus the configurable thresholds that
 // define what counts as a "significant" club for games / runs / wickets.
-export const milestoneBoardSettingsTable = pgTable("milestone_board_settings", {
-  id: serial("id").primaryKey(),
-  displayMode: text("display_mode").notNull().default("recent"), // "recent" | "approaching" | "both"
-  gamesThreshold: integer("games_threshold").notNull().default(100),
-  runsThreshold: integer("runs_threshold").notNull().default(1000),
-  wicketsThreshold: integer("wickets_threshold").notNull().default(100),
-  // How many weeks back (measured by real match dates) counts as a "recent"
-  // achievement on the Milestones board. When ≥5 players achieved within this
-  // window the board features recent achievers first; otherwise it ranks by
-  // tier significance.
-  recencyWeeks: integer("recency_weeks").notNull().default(4),
-  // Club-editable significance tiers per stat. The first (lowest) entry is the
-  // baseline tier; bigger values rank higher. Defaults keep 100 games / 1000
-  // runs / 100 wickets as the baseline lowest tier.
-  gamesTiers: integer("games_tiers").array().notNull().default([100, 150, 200, 250, 300]),
-  runsTiers: integer("runs_tiers").array().notNull().default([1000, 2000, 3000, 5000, 7500, 10000]),
-  wicketsTiers: integer("wickets_tiers").array().notNull().default([100, 150, 200, 300]),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+// One row per tenant (unique on tenantId), same shape as socialSettingsTable
+// above: created on first access, seeded with these schema defaults.
+export const milestoneBoardSettingsTable = pgTable(
+  "milestone_board_settings",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    displayMode: text("display_mode").notNull().default("recent"), // "recent" | "approaching" | "both"
+    gamesThreshold: integer("games_threshold").notNull().default(100),
+    runsThreshold: integer("runs_threshold").notNull().default(1000),
+    wicketsThreshold: integer("wickets_threshold").notNull().default(100),
+    // How many weeks back (measured by real match dates) counts as a "recent"
+    // achievement on the Milestones board. When ≥5 players achieved within this
+    // window the board features recent achievers first; otherwise it ranks by
+    // tier significance.
+    recencyWeeks: integer("recency_weeks").notNull().default(4),
+    // Club-editable significance tiers per stat. The first (lowest) entry is the
+    // baseline tier; bigger values rank higher. Defaults keep 100 games / 1000
+    // runs / 100 wickets as the baseline lowest tier.
+    gamesTiers: integer("games_tiers").array().notNull().default([100, 150, 200, 250, 300]),
+    runsTiers: integer("runs_tiers").array().notNull().default([1000, 2000, 3000, 5000, 7500, 10000]),
+    wicketsTiers: integer("wickets_tiers").array().notNull().default([100, 150, 200, 300]),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqTenant: uniqueIndex("milestone_board_settings_tenant_unique").on(t.tenantId),
+  }),
+);
 
 export type MilestoneBoardSettingsRow = typeof milestoneBoardSettingsTable.$inferSelect;
 
@@ -311,13 +338,15 @@ export const captionTemplatesTable = pgTable(
   "caption_templates",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     engine: text("engine").notNull(), // "ondemand" | "milestone" | "roundup" | "recap"
     platform: text("platform").notNull(), // "instagram" | "facebook" | "twitter"
     template: text("template").notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    uniqEnginePlatform: uniqueIndex("caption_templates_engine_platform_unique").on(
+    uniqEnginePlatform: uniqueIndex("caption_templates_tenant_engine_platform_unique").on(
+      t.tenantId,
       t.engine,
       t.platform,
     ),
@@ -330,6 +359,7 @@ export type CaptionTemplateRow = typeof captionTemplatesTable.$inferSelect;
 // Other features (e.g. push notifications) will subscribe to this table.
 export const milestoneEventsTable = pgTable("milestone_events", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   playerId: integer("player_id").notNull(),
   boardKey: text("board_key").notNull(),
   tierIndex: integer("tier_index").notNull(),
@@ -350,6 +380,7 @@ export type MilestoneEventRow = typeof milestoneEventsTable.$inferSelect;
 // and reviewed by admins in /admin/social-queue.
 export const socialDraftsTable = pgTable("social_drafts", {
   id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
   engine: text("engine").notNull(), // "milestone" | "roundup" | "recap"
   status: text("status").notNull().default("pending"), // "pending" | "approved" | "dismissed"
   cardInput: jsonb("card_input").notNull(), // ShareCardInput JSON
@@ -368,6 +399,7 @@ export const trackedLinksTable = pgTable(
   "tracked_links",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     slug: text("slug").notNull(),
     targetUrl: text("target_url").notNull(),
     label: text("label").notNull().default(""),
@@ -378,7 +410,7 @@ export const trackedLinksTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    uniqSlug: uniqueIndex("tracked_links_slug_unique").on(t.slug),
+    uniqSlug: uniqueIndex("tracked_links_tenant_slug_unique").on(t.tenantId, t.slug),
   }),
 );
 

@@ -6,18 +6,27 @@ import {
   decodeCaptainSession,
   getCaptainById,
 } from "../lib/auth";
+import { getTenantId } from "./tenant-context";
 
 export type RequestWithCaptain = Request & {
   captain?: CaptainRow;
   captainGrades?: string[];
 };
 
+/**
+ * Resolve the signed-in captain for THIS request — and only if they belong to
+ * the request's tenant. A session minted on one tenant's host can't authorise
+ * actions on another's (mirrors `resolveAdmin`). Returns null on a
+ * missing/invalid session or a cross-tenant mismatch.
+ */
 export async function resolveCaptain(req: Request): Promise<CaptainRow | null> {
   const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
   const token = cookies?.[CAPTAIN_SESSION_COOKIE];
   const payload = decodeCaptainSession(token);
   if (!payload) return null;
-  return getCaptainById(payload.captainId);
+  const captain = await getCaptainById(payload.captainId);
+  if (!captain || captain.tenantId !== getTenantId(req)) return null;
+  return captain;
 }
 
 export async function getCaptainGrades(captainId: number): Promise<string[]> {

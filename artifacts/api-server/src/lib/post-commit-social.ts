@@ -18,6 +18,11 @@ import {
 } from "./match-milestone-detector";
 import { generateRoundUpDrafts } from "./roundup";
 
+// The import/match-commit pipeline (players/matches/imports) is single-tenant
+// (Halls Head) until the central-read refactor (see lib/db/src/schema/_tenant.ts)
+// — every row this module touches belongs to tenant #1 today.
+const DEFAULT_TENANT_ID = 1;
+
 export type CareerTotals = {
   games: number;
   runs: number;
@@ -158,7 +163,10 @@ export async function runPostCommitSocial(opts: {
 }): Promise<void> {
   const { importId, affectedGrades, season, beforeMap, logger, matchContext } =
     opts;
-  const [socialSettings] = await db.select().from(socialSettingsTable).limit(1);
+  const [socialSettings] = await db
+    .select()
+    .from(socialSettingsTable)
+    .where(eq(socialSettingsTable.tenantId, DEFAULT_TENANT_ID));
 
   if (socialSettings?.engineMilestone) {
     try {
@@ -179,7 +187,7 @@ export async function runPostCommitSocial(opts: {
   try {
     if (socialSettings?.engineRoundUp) {
       for (const grade of affectedGrades) {
-        await generateRoundUpDrafts(grade, season, importId);
+        await generateRoundUpDrafts(DEFAULT_TENANT_ID, grade, season, importId);
       }
     }
   } catch (err) {
@@ -207,7 +215,10 @@ export async function runBatchPostCommitSocial(opts: {
   logger: Logger;
 }): Promise<void> {
   const { sourceImportId, beforeMap, affected, matchContexts, logger } = opts;
-  const [socialSettings] = await db.select().from(socialSettingsTable).limit(1);
+  const [socialSettings] = await db
+    .select()
+    .from(socialSettingsTable)
+    .where(eq(socialSettingsTable.tenantId, DEFAULT_TENANT_ID));
 
   if (socialSettings?.engineMilestone) {
     try {
@@ -227,7 +238,7 @@ export async function runBatchPostCommitSocial(opts: {
   try {
     if (socialSettings?.engineRoundUp) {
       for (const { grade, season } of affected) {
-        await generateRoundUpDrafts(grade, season, sourceImportId);
+        await generateRoundUpDrafts(DEFAULT_TENANT_ID, grade, season, sourceImportId);
       }
     }
   } catch (err) {

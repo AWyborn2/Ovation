@@ -299,12 +299,19 @@ export async function getCaptainById(id: number): Promise<CaptainRow | null> {
   return row ?? null;
 }
 
+/** Look up a captain by username WITHIN a tenant (usernames are per-tenant). */
 export async function getCaptainByUsername(
+  tenantId: number,
   username: string,
 ): Promise<CaptainRow | null> {
   const [row] = await db
     .select()
     .from(captainsTable)
-    .where(eq(captainsTable.username, username.toLowerCase()));
+    .where(
+      and(
+        eq(captainsTable.tenantId, tenantId),
+        eq(captainsTable.username, username.toLowerCase()),
+      ),
+    );
   return row ?? null;
 }

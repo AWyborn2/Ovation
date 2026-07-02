@@ -7,6 +7,7 @@ import {
   real,
   index,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { clubsTable } from "./clubs";
 import { tenantIdColumn } from "./_tenant";
@@ -246,6 +247,7 @@ export const juniorMatchDisplaySettingsTable = pgTable(
   "junior_match_display_settings",
   {
     id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
     // Default age group pre-selected on first load. Empty string = "All age groups".
     defaultAgeGroup: text("default_age_group").notNull().default(""),
     // "latest" (newest available season), "specific" (defaultSeason), or "all".
@@ -260,6 +262,9 @@ export const juniorMatchDisplaySettingsTable = pgTable(
       .notNull()
       .defaultNow(),
   },
+  (t) => ({
+    uniqTenant: uniqueIndex("junior_match_display_settings_tenant_unique").on(t.tenantId),
+  }),
 );
 
 export type JuniorMatchDisplaySettingsRow =

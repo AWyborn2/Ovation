@@ -3,26 +3,10 @@ import { eq } from "drizzle-orm";
 import { db, tradingCardSettingsTable } from "@workspace/db";
 import { UpdateTradingCardSettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
+import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
-
-// Singleton, global app-config controlling what every player's trading card
-// shows: which career stats appear and which awards are eligible. Empty
-// statKeys = per-role defaults; empty awardKeys = all published awards eligible.
-const TRADING_CARD_SETTINGS_ID = 1;
-
-async function ensureTradingCardSettings() {
-  const [existing] = await db
-    .select()
-    .from(tradingCardSettingsTable)
-    .where(eq(tradingCardSettingsTable.id, TRADING_CARD_SETTINGS_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(tradingCardSettingsTable)
-    .values({ id: TRADING_CARD_SETTINGS_ID })
-    .returning();
-  return created;
-}
 
 function serializeTradingCardSettings(
   row: typeof tradingCardSettingsTable.$inferSelect,
@@ -34,8 +18,8 @@ function serializeTradingCardSettings(
   };
 }
 
-router.get("/trading-card-settings", async (_req, res): Promise<void> => {
-  const settings = await ensureTradingCardSettings();
+router.get("/trading-card-settings", async (req, res): Promise<void> => {
+  const settings = await getOrCreateSettings(tradingCardSettingsTable, getTenantId(req));
   res.json(serializeTradingCardSettings(settings));
 });
 
@@ -48,11 +32,12 @@ router.patch(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    await ensureTradingCardSettings();
+    const tenantId = getTenantId(req);
+    await getOrCreateSettings(tradingCardSettingsTable, tenantId);
     const [row] = await db
       .update(tradingCardSettingsTable)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(tradingCardSettingsTable.id, TRADING_CARD_SETTINGS_ID))
+      .where(eq(tradingCardSettingsTable.tenantId, tenantId))
       .returning();
     res.json(serializeTradingCardSettings(row));
   },

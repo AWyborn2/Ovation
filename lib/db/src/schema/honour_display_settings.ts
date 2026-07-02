@@ -1,4 +1,5 @@
-import { pgTable, serial, text, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { tenantIdColumn } from "./_tenant";
 
 // A board / page background source. kind "none" clears any inherited image;
 // "url" is an arbitrary image URL (or uploaded object path); "texture" is one
@@ -102,11 +103,15 @@ export interface CompositeDefJson {
   fit?: boolean | null;
 }
 
-// Singleton settings (id=1) for the Digital Honour Boards Display + TV kiosk
-// (admin-only clubroom tools). Holds the SINGLE club-wide skin and the kiosk
-// rotation config. App-config (never replaced by the master ETL).
-export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
-  id: serial("id").primaryKey(),
+// One row per tenant (unique on tenantId) for the Digital Honour Boards
+// Display + TV kiosk (admin-only clubroom tools). Holds the tenant's own
+// club-wide skin and kiosk rotation config. App-config (never replaced by the
+// master ETL).
+export const honourDisplaySettingsTable = pgTable(
+  "honour_display_settings",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
   // The one skin every board renders in: one of p1..p7. Each board keeps its
   // natural layout; the skin only changes the look.
   defaultTemplate: text("default_template").notNull().default("p1"),
@@ -171,10 +176,16 @@ export const honourDisplaySettingsTable = pgTable("honour_display_settings", {
     .default({}),
   // Club-wide default title font stack (null = the skin's own font).
   defaultFont: text("default_font"),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    uniqTenant: uniqueIndex("honour_display_settings_tenant_unique").on(t.tenantId),
+    // A kiosk token, when set, must resolve to exactly one tenant.
+    uniqKioskToken: uniqueIndex("honour_display_settings_kiosk_token_unique").on(t.kioskToken),
+  }),
+);
 
 export type HonourDisplaySettingsRow =
   typeof honourDisplaySettingsTable.$inferSelect;
