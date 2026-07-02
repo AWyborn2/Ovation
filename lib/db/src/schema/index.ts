@@ -12,6 +12,7 @@ export * from "./baseline_adjustments";
 export * from "./cap_register";
 export * from "./life_members";
 export * from "./admins";
+export * from "./admin_password_resets";
 export * from "./honour_boards";
 export * from "./awards";
 export * from "./captains";
