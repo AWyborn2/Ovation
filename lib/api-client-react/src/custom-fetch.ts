@@ -365,4 +365,55 @@ export async function customFetch<T = unknown>(
   input = applyBaseUrl(input);
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
-  co
+  const method = resolveMethod(input, init.method);
+
+  if (init.body != null && (method === "GET" || method === "HEAD")) {
+    throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
+  }
+
+  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+
+  if (
+    typeof init.body === "string" &&
+    !headers.has("content-type") &&
+    looksLikeJson(init.body)
+  ) {
+    headers.set("content-type", "application/json");
+  }
+
+  if (responseType === "json" && !headers.has("accept")) {
+    headers.set("accept", DEFAULT_JSON_ACCEPT);
+  }
+
+  // Attach bearer token when an auth getter is configured and no
+  // Authorization header has been explicitly provided.
+  if (_authTokenGetter && !headers.has("authorization")) {
+    const token = await _authTokenGetter();
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+  }
+
+  // Dev-only tenant pin (see comment above getDevTenantOverride): only ever
+  // attached on localhost/preview hosts, and only when not already set.
+  if (!headers.has("x-tenant-id")) {
+    const devTenant = getDevTenantOverride();
+    if (devTenant) {
+      headers.set("x-tenant-id", devTenant);
+    }
+  }
+
+  const requestInfo = { method, url: resolveUrl(input) };
+
+  // Always send cookies so session-based auth works without per-call config.
+  const credentials: RequestCredentials = init.credentials ?? "include";
+
+  const response = await fetch(input, { ...init, method, headers, credentials });
+
+  if (!response.ok) {
+    const errorData = await parseErrorBody(response, method);
+    throw new ApiError(response, errorData, requestInfo);
+  }
+
+  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+}
