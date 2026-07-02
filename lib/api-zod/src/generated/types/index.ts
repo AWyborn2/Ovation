@@ -8,6 +8,7 @@
 
 export * from './admin';
 export * from './adminInput';
+export * from './adminResetIssued';
 export * from './adminTenant';
 export * from './adminTenantAdmin';
 export * from './adminTenantDetail';
@@ -177,6 +178,7 @@ export * from './importPreviewGradeTotal';
 export * from './importPreviewPlayer';
 export * from './importPreviewPlayerStatus';
 export * from './importRecord';
+export * from './issueAdminResetBody';
 export * from './juniorBattingLeader';
 export * from './juniorBattingLine';
 export * from './juniorBattingTotals';
@@ -270,6 +272,8 @@ export * from './nonPlayerPersonUpdate';
 export * from './opponentClub';
 export * from './partnershipRecord';
 export * from './partnerships';
+export * from './passwordResetInfo';
+export * from './passwordResetSubmitBody';
 export * from './pendingDraftCount';
 export * from './platformAdmin';
 export * from './platformBrand';

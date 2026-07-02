@@ -1285,6 +1285,38 @@ export interface AdminTenantDetail {
   admins: AdminTenantAdmin[];
 }
 
+/**
+ * Request a reset/bootstrap link for a club admin. `username` is the admin's login (an email); if no such admin exists on the tenant one is created (bootstrap) with the given (or derived) display name.
+ */
+export interface IssueAdminResetBody {
+  username: string;
+  displayName?: string;
+}
+
+export interface AdminResetIssued {
+  /** The single-use link to hand to the club admin out-of-band. */
+  resetUrl: string;
+  /** ISO-8601 instant the link stops working. */
+  expiresAt: string;
+  username: string;
+  displayName: string;
+  tenantName: string;
+  /** True when the admin was bootstrapped (did not previously exist). */
+  created: boolean;
+}
+
+export interface PasswordResetInfo {
+  username: string;
+  displayName: string;
+  tenantName: string;
+  expiresAt: string;
+}
+
+export interface PasswordResetSubmitBody {
+  /** @minLength 8 */
+  password: string;
+}
+
 export type UpdateTenantBodyPlan = typeof UpdateTenantBodyPlan[keyof typeof UpdateTenantBodyPlan];
 
 
