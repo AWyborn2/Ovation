@@ -6,6 +6,7 @@ import {
   awardWinnersTable,
   clubRolesTable,
 } from "@workspace/db";
+import { shouldReadCentral } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -99,7 +100,15 @@ function buildLeaderboard(
 // Public: derived "Notable Honour Board Records". Role tenures come from
 // published office-bearer roles; award counts from published winners of
 // published awards. Nothing unpublished is ever counted.
-router.get("/records-leaderboards", async (_req, res): Promise<void> => {
+router.get("/records-leaderboards", async (req, res): Promise<void> => {
+  // These are derived from curated, tenant-side content (office-bearer roles and
+  // award winners) — there is no central source. A central tenant gets its own
+  // (empty) leaderboards rather than Halls Head's until it adds roles/awards.
+  if (await shouldReadCentral(req)) {
+    res.json({ roleRecords: [], awardRecords: [] });
+    return;
+  }
+
   // --- Role tenure leaderboards (office bearers only: grade is null) ---
   const roleRows = await db
     .select({
@@ -128,8 +137,6 @@ router.get("/records-leaderboards", async (_req, res): Promise<void> => {
     .map(([role, recs]) =>
       buildLeaderboard(role, `Most Seasons as ${role}`, "seasons", recs),
     )
-    // Only roles where someone has actually served multiple seasons are a
-    // "record"; single-season roles aren't notable.
     .filter((lb) => (lb.entries[0]?.count ?? 0) >= 2)
     .sort(
       (a, b) => roleRank(a.key) - roleRank(b.key) || a.key.localeCompare(b.key),
@@ -180,7 +187,6 @@ router.get("/records-leaderboards", async (_req, res): Promise<void> => {
         byAward.get(a.id) ?? [],
       ),
     )
-    // Only awards someone has won more than once form a genuine record.
     .filter((lb) => (lb.entries[0]?.count ?? 0) >= 2);
 
   res.json({ roleRecords, awardRecords });

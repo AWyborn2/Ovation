@@ -142,30 +142,56 @@ export async function provisionTenant(
           .onConflictDoUpdate({ target: tenantsTable.slug, set: values })
           .returning();
 
-  // Mint the player identity crosswalk (idempotent): one stable per-tenant int id
-  // per central participant the club fielded. Only new GUIDs get a fresh int; the
-  // per-tenant sequence continues from the current max.
-  const participants = await centralClubParticipants(tenant.centralClubId);
+  // Mint the player identity crosswalk (idempotent) via the shared helper so the
+  // provisioning path and the backfill script (scripts/backfill-player-id-map)
+  // mint identically.
+  const { minted, totalParticipants } = await mintPlayerIdMap(
+    tenant.id,
+    tenant.centralClubId,
+  );
+
+  return {
+    tenant,
+    centralClub: { clubId: club.clubId, name: club.name },
+    mintedMappings: minted,
+    totalParticipants,
+  };
+}
+
+export interface MintPlayerIdMapResult {
+  /** New crosswalk rows inserted this run (0 when already fully mapped). */
+  minted: number;
+  /** Central participants the club has fielded (the target crosswalk size). */
+  totalParticipants: number;
+}
+
+/**
+ * Mint the player identity crosswalk for one tenant: one stable per-tenant int id
+ * per central participant the club fielded. Idempotent — only GUIDs not already
+ * mapped get a fresh int, and the per-tenant sequence continues from the current
+ * max, so re-running (or running after new participants appear) never renumbers
+ * or duplicates. Shared by `provisionTenant` and the backfill script so both
+ * paths agree.
+ */
+export async function mintPlayerIdMap(
+  tenantId: number,
+  centralClubId: number,
+): Promise<MintPlayerIdMapResult> {
+  const participants = await centralClubParticipants(centralClubId);
   const existing = await db
     .select({
       participantId: playerIdMapTable.participantId,
       playerId: playerIdMapTable.playerId,
     })
     .from(playerIdMapTable)
-    .where(eq(playerIdMapTable.tenantId, tenant.id));
+    .where(eq(playerIdMapTable.tenantId, tenantId));
   const mappedGuids = new Set(existing.map((e) => e.participantId));
   let nextId = existing.reduce((m, e) => Math.max(m, e.playerId), 0) + 1;
   const toInsert = participants
     .filter((p) => !mappedGuids.has(p.participantId))
-    .map((p) => ({ tenantId: tenant.id, participantId: p.participantId, playerId: nextId++ }));
+    .map((p) => ({ tenantId, participantId: p.participantId, playerId: nextId++ }));
   if (toInsert.length > 0) {
     await db.insert(playerIdMapTable).values(toInsert);
   }
-
-  return {
-    tenant,
-    centralClub: { clubId: club.clubId, name: club.name },
-    mintedMappings: toInsert.length,
-    totalParticipants: participants.length,
-  };
+  return { minted: toInsert.length, totalParticipants: participants.length };
 }

@@ -99,7 +99,31 @@ rewriting either side.
 - Juniors isolation invariant (junior_* tables, `/api/juniors/*` only, never blended) holds
   per-tenant.
 
-## Phase 0 — prove the central model (current phase; do these in order)
+## STATUS (29 Jun 2026) — read this first
+
+The roadmap below is the original plan. **Reality has moved ahead of it.** Current state on
+`main`:
+
+- **Phase 0 (prove central model): COMPLETE.** `lib/db/src/central.ts` (read-only pool) +
+  `central-queries.ts` exist; reads flip to central behind the `shouldReadCentral` flag
+  (`api-server/src/lib/tenant.ts`); `scripts/src/compare-central-leaderboard.ts` is the
+  proof harness. `tenant-brand.ts`, the `tenants` table, and `tenant-context` middleware are
+  in. Brand sweep is well underway — Halls Head literals down to ~48 files (from 77).
+- **Phase 1 (friendly clubs on subdomains): in progress** — tenant routing + isolation tests
+  committed (`tenant-routing.test.ts`, `tenant-isolation.test.ts`, `admins-isolation.test.ts`).
+- **Phase 2 (self-serve + Stripe): partially BUILT BUT DORMANT.** Committed: 2b self-serve
+  onboarding + tenant-scoped admin auth (live); 2c plan entitlements (`lib/entitlements.ts`,
+  **dormant**); 2d Stripe/billing adapter (`routes/billing.ts`, `lib/billing.ts`, **inert** —
+  webhook wired in `app.ts` but disabled); 2e super-admin / platform-admin console (live).
+
+⚠️ Implications: billing + entitlements code is present in a running server but switched off —
+treat as unexercised/brittle. The stats core is mid-migration (some reads local, some central),
+so the local-vs-central boundary is the top correctness risk; keep all central reads funnelled
+through `central-queries.ts` and guarded by the `*-consistency.test.ts` suites.
+
+See `AGENTS.md` for the full current-state map.
+
+## Phase 0 — prove the central model (✅ COMPLETE — kept for context)
 
 1. ✅ DONE (11 Jun 2026). Supabase project `ovation-central` (org "Ovation", ap-southeast-2,
    ref `sbsrjlozgjoavtmdyqit`). Dump loaded into schema `central`; all counts verified
@@ -119,8 +143,10 @@ rewriting either side.
    colours, titles, OG tags). Leave the juniors-banner brown as a tenant theme value.
 6. Add tenant-isolation tests early — one tenant must never read another's curated data.
 
-Phase 1: 2–3 friendly PCA clubs on subdomains (concierge). Phase 2: self-serve signup, Stripe,
-RLS, custom domains. Phase 3: other associations as additional central datasets.
+Phase 1: 2–3 friendly PCA clubs on subdomains (concierge) — IN PROGRESS. Phase 2: self-serve
+signup, Stripe, RLS, custom domains — PARTIALLY BUILT (onboarding + admin auth live; entitlements
+dormant; billing inert; super-admin live; RLS + custom domains still TODO). Phase 3: other
+associations as additional central datasets — not started.
 
 ## Do not break
 

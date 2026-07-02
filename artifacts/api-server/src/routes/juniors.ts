@@ -39,6 +39,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
+import { shouldReadCentral } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -179,7 +180,21 @@ function isNotOut(dismissal: string | null): boolean {
 // ---------------------------------------------------------------------------
 // GET /juniors/overview
 // ---------------------------------------------------------------------------
-router.get("/juniors/overview", async (_req, res): Promise<void> => {
+router.get("/juniors/overview", async (req, res): Promise<void> => {
+  // Junior data is tenant-local and central is seniors-only, so a central tenant
+  // has no junior history of its own — return the empty overview rather than the
+  // demo tenant's (Halls Head) juniors.
+  if (await shouldReadCentral(req)) {
+    res.json({
+      totals: { matches: 0, players: 0, premierships: 0, seasons: 0, ageGroups: 0 },
+      latestSeason: null,
+      recentMatches: [],
+      topRunScorers: [],
+      topWicketTakers: [],
+    });
+    return;
+  }
+
   const [[matchCount], [playerCount], [premCount], [seasonCount], [ageCount]] =
     await Promise.all([
       db.select({ n: sql<number>`count(*)::int` }).from(juniorMatchesTable),
@@ -1287,7 +1302,12 @@ router.patch(
 // ---------------------------------------------------------------------------
 // GET /juniors/premierships
 // ---------------------------------------------------------------------------
-router.get("/juniors/premierships", async (_req, res): Promise<void> => {
+router.get("/juniors/premierships", async (req, res): Promise<void> => {
+  // Junior data is tenant-local / seniors-only in central — empty for central tenants.
+  if (await shouldReadCentral(req)) {
+    res.json([]);
+    return;
+  }
   const privateIds = await getPrivateIds();
   const prems = await db
     .select()

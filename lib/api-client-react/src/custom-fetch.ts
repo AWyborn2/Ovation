@@ -44,6 +44,42 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
 
+// ---------------------------------------------------------------------------
+// Dev-only tenant override
+// ---------------------------------------------------------------------------
+// On local/preview hosts (never a real tenant subdomain or the production
+// apex), a tester can pin which tenant the web app reads by storing a tenant id
+// in localStorage under `ovation_dev_tenant`. The id is sent as `x-tenant-id`,
+// which the API honours ONLY in fallback mode (localhost/preview) — on a real
+// tenant host the subdomain wins and this header is ignored. So this is inert
+// in production and cannot be used to impersonate a tenant on a live club site.
+const DEV_TENANT_STORAGE_KEY = "ovation_dev_tenant";
+
+function isDevHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".replit.dev") ||
+    host.endsWith(".repl.co") ||
+    host.endsWith(".replit.app")
+  );
+}
+
+/** The dev tenant override id, or null when unset / not on a dev host. */
+function getDevTenantOverride(): string | null {
+  if (!isDevHost()) return null;
+  try {
+    const raw = window.localStorage.getItem(DEV_TENANT_STORAGE_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isInteger(n) && n > 0 ? String(n) : null;
+  } catch {
+    return null;
+  }
+}
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
@@ -329,46 +365,4 @@ export async function customFetch<T = unknown>(
   input = applyBaseUrl(input);
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
-  const method = resolveMethod(input, init.method);
-
-  if (init.body != null && (method === "GET" || method === "HEAD")) {
-    throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
-  }
-
-  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
-
-  if (
-    typeof init.body === "string" &&
-    !headers.has("content-type") &&
-    looksLikeJson(init.body)
-  ) {
-    headers.set("content-type", "application/json");
-  }
-
-  if (responseType === "json" && !headers.has("accept")) {
-    headers.set("accept", DEFAULT_JSON_ACCEPT);
-  }
-
-  // Attach bearer token when an auth getter is configured and no
-  // Authorization header has been explicitly provided.
-  if (_authTokenGetter && !headers.has("authorization")) {
-    const token = await _authTokenGetter();
-    if (token) {
-      headers.set("authorization", `Bearer ${token}`);
-    }
-  }
-
-  const requestInfo = { method, url: resolveUrl(input) };
-
-  // Always send cookies so session-based auth works without per-call config.
-  const credentials: RequestCredentials = init.credentials ?? "include";
-
-  const response = await fetch(input, { ...init, method, headers, credentials });
-
-  if (!response.ok) {
-    const errorData = await parseErrorBody(response, method);
-    throw new ApiError(response, errorData, requestInfo);
-  }
-
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
-}
+  co

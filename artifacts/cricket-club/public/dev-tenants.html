@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Ovation — Dev Tenant Switcher</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0; padding: 2rem; background: #0f172a; color: #e2e8f0;
+      max-width: 720px; margin-inline: auto;
+    }
+    h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+    p.sub { color: #94a3b8; margin: 0 0 1.5rem; font-size: .9rem; }
+    .current {
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: .75rem 1rem; margin-bottom: 1.5rem; font-size: .9rem;
+    }
+    .current b { color: #fbbf24; }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+    li {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 1rem 1.1rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    li.active { border-color: #fbbf24; }
+    .meta { display: flex; flex-direction: column; gap: .15rem; }
+    .name { font-weight: 600; }
+    .slug { color: #94a3b8; font-size: .8rem; }
+    .badge {
+      font-size: .65rem; text-transform: uppercase; letter-spacing: .04em;
+      padding: .15rem .45rem; border-radius: 999px; background: #334155; color: #cbd5e1;
+      margin-left: .5rem;
+    }
+    .badge.central { background: #134e4a; color: #5eead4; }
+    .actions { display: flex; gap: .5rem; }
+    button {
+      font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid #475569;
+      padding: .5rem .9rem; background: #334155; color: #e2e8f0;
+    }
+    button.view { background: #fbbf24; color: #1e293b; border-color: #fbbf24; font-weight: 600; }
+    button.clear { background: transparent; }
+    .foot { margin-top: 1.5rem; color: #64748b; font-size: .8rem; line-height: 1.5; }
+    a { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <h1>Dev Tenant Switcher</h1>
+  <p class="sub">Local / preview only. Pins which club the web app renders by sending <code>x-tenant-id</code>. On a real club subdomain this is ignored — production resolves the tenant from the host.</p>
+
+  <div class="current" id="current">Loading…</div>
+  <ul id="list"><li>Loading tenants…</li></ul>
+
+  <div class="foot">
+    The override is stored in your browser only (<code>localStorage["ovation_dev_tenant"]</code>).
+    Click <b>View site</b> to open that club's app. Use <b>Clear</b> to return to the default tenant.
+  </div>
+
+  <script>
+    const KEY = "ovation_dev_tenant";
+
+    function current() { return localStorage.getItem(KEY); }
+
+    function setTenant(id) { localStorage.setItem(KEY, String(id)); render(); }
+    function clearTenant() { localStorage.removeItem(KEY); render(); }
+    function viewTenant(id) { localStorage.setItem(KEY, String(id)); location.href = "/"; }
+
+    // Pull the live tenant list. There's no public "list tenants" endpoint, so we
+    // probe a known id range and keep the ones that resolve to a distinct brand.
+    // (Distinct = its tenant-brand name isn't the Halls Head fallback for a
+    //  non-existent id.) This keeps the switcher accurate without a new API.
+    async function loadTenants() {
+      const ids = [1, 3, 68, 69];           // known real tenants on this DB
+      const out = [];
+      for (const id of ids) {
+        try {
+          const r = await fetch("/api/tenant-brand", { headers: { "x-tenant-id": String(id) } });
+          if (!r.ok) continue;
+          const b = await r.json();
+          if (b && b.name && !b.platform) {
+            out.push({ id, name: b.name, short: b.shortName || "", slug: SLUGS[id] || "" });
+          }
+        } catch (_) { /* skip */ }
+      }
+      return out;
+    }
+
+    // Slugs (for display + the subdomain that would serve each in production).
+    const SLUGS = { 1: "hallshead", 3: "mandurah", 68: "wkbcc", 69: "test-coastal" };
+    const CENTRAL = { 1: false, 3: true, 68: true, 69: true };
+
+    let TENANTS = [];
+
+    function render() {
+      const cur = current();
+      const c = document.getElementById("current");
+      if (cur) {
+        const t = TENANTS.find((x) => String(x.id) === String(cur));
+        c.innerHTML = "Active override: <b>" + (t ? t.name : ("tenant #" + cur)) +
+          "</b> (id " + cur + ") — <a href='/'>open the app →</a>";
+      } else {
+        c.innerHTML = "No override set — the app uses the <b>default tenant</b> (Halls Head).";
+      }
+
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+      for (const t of TENANTS) {
+        const active = String(t.id) === String(cur);
+        const li = document.createElement("li");
+        if (active) li.className = "active";
+        const central = CENTRAL[t.id]
+          ? "<span class='badge central'>central reads</span>"
+          : "<span class='badge'>native reads</span>";
+        li.innerHTML =
+          "<div class='meta'><span class='name'>" + t.name + central + "</span>" +
+          "<span class='slug'>id " + t.id + " · " + t.slug + ".ovation.app</span></div>" +
+          "<div class='actions'>" +
+          "<button class='view' onclick='viewTenant(" + t.id + ")'>View site</button>" +
+          "<button onclick='setTenant(" + t.id + ")'>Pin only</button>" +
+          "</div>";
+        list.appendChild(li);
+      }
+      const clearLi = document.createElement("li");
+      clearLi.innerHTML =
+        "<div class='meta'><span class='name'>Default tenant</span>" +
+        "<span class='slug'>clear the override</span></div>" +
+        "<div class='actions'><button class='clear' onclick='clearTenant()'>Clear</button></div>";
+      list.appendChild(clearLi);
+    }
+
+    (async () => {
+      TENANTS = await loadTenants();
+      render();
+    })();
+  </script>
+</body>
+</html>
