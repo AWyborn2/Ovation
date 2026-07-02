@@ -8,6 +8,7 @@ import {
   milestoneEventsTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
 
 const router: IRouter = Router();
@@ -31,7 +32,7 @@ router.get("/social-drafts/pending-count", requireAdmin, async (_req, res): Prom
   res.json({ count: Number(row?.count ?? 0) });
 });
 
-router.post("/social-drafts/:id/approve", requireAdmin, async (req, res): Promise<void> => {
+router.post("/social-drafts/:id/approve", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -63,7 +64,7 @@ router.post("/social-drafts/:id/approve", requireAdmin, async (req, res): Promis
   res.json(updated);
 });
 
-router.post("/social-drafts/:id/posted", requireAdmin, async (req, res): Promise<void> => {
+router.post("/social-drafts/:id/posted", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -89,7 +90,7 @@ router.post("/social-drafts/:id/posted", requireAdmin, async (req, res): Promise
   res.json(updated);
 });
 
-router.post("/social-drafts/:id/dismiss", requireAdmin, async (req, res): Promise<void> => {
+router.post("/social-drafts/:id/dismiss", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -109,7 +110,7 @@ router.post("/social-drafts/:id/dismiss", requireAdmin, async (req, res): Promis
   res.status(204).end();
 });
 
-router.post("/social-roundups", requireAdmin, async (req, res): Promise<void> => {
+router.post("/social-roundups", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const grade = String(req.body?.grade ?? "");
   const season = parseInt(String(req.body?.season ?? ""), 10);
   if (!grade || !Number.isInteger(season)) {
@@ -128,7 +129,7 @@ router.post("/social-roundups", requireAdmin, async (req, res): Promise<void> =>
   res.json(created);
 });
 
-router.post("/social-recaps", requireAdmin, async (req, res): Promise<void> => {
+router.post("/social-recaps", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const grade = String(req.body?.grade ?? "");
   const season = parseInt(String(req.body?.season ?? ""), 10);
   if (!grade || !Number.isInteger(season)) {

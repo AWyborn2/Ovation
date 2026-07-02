@@ -101,6 +101,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
       # Deterministic secret so session-cookie signing is stable across the run.
       SESSION_SECRET: ci-session-secret-not-for-production
+      CENTRAL_DATABASE_URL: ${{ secrets.CENTRAL_DATABASE_URL }}
+      # Skip data-dependent api tests that need the club's full stats data (not in a fresh CI DB).
+      CI_SKIP_DATA_TESTS: "true"
 
     steps:
       - uses: actions/checkout@v4

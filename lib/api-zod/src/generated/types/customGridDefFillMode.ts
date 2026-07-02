@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type BoardDisplayConfigTransition = typeof BoardDisplayConfigTransition[keyof typeof BoardDisplayConfigTransition];
+export type CustomGridDefFillMode = typeof CustomGridDefFillMode[keyof typeof CustomGridDefFillMode] | null;
 
 
-export const BoardDisplayConfigTransition = {
+export const CustomGridDefFillMode = {
   scroll: 'scroll',
   slide: 'slide',
   wrap: 'wrap',

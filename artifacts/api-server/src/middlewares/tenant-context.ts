@@ -91,9 +91,17 @@ async function tenantDirectory() {
   return directoryCache;
 }
 
-/** The request host without port, lowercased. */
-function hostOf(req: Request): string {
-  const raw = req.headers.host ?? "";
+/**
+ * The request host without port, lowercased. Prefers the left-most
+ * `X-Forwarded-Host` (the original public host) over `Host`: behind a reverse
+ * proxy like Replit Autoscale / Cloud Run the inbound `Host` is an internal
+ * value and the real apex/tenant host arrives in `X-Forwarded-Host`. `trust
+ * proxy` is enabled and Replit's edge sets this header, so it's safe to trust.
+ */
+export function hostOf(req: Request): string {
+  const xfh = req.headers["x-forwarded-host"];
+  const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
+  const raw = forwarded || req.headers.host || "";
   return raw.split(":")[0]?.toLowerCase().trim() ?? "";
 }
 

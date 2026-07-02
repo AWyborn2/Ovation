@@ -7,6 +7,7 @@ import {
   type Admin,
 } from "@workspace/api-client-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
+import { useEntitlements, type Feature } from "@/lib/entitlements";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid,
@@ -24,9 +25,12 @@ const NAV: {
   label: string;
   icon: LucideIcon;
   badge?: "social-queue";
+  // Hide a wholly-paid group when the tenant's plan lacks the feature. Mixed
+  // groups stay visible — their paid tabs gate individually inside the group.
+  feature?: Feature;
 }[] = [
   { href: "/admin", label: "Hub", icon: LayoutGrid },
-  { href: "/admin/social", label: "Social Media Studio", icon: Image, badge: "social-queue" },
+  { href: "/admin/social", label: "Social Media Studio", icon: Image, badge: "social-queue", feature: "socialStudio" },
   { href: "/admin/settings", label: "Display & Settings", icon: Settings },
   { href: "/admin/people", label: "People", icon: Users },
   { href: "/admin/honours", label: "Honours & Records", icon: Trophy },
@@ -47,6 +51,8 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
     },
   });
   const pendingCount = pendingQ.data?.count ?? 0;
+  const entitlements = useEntitlements();
+  const navItems = NAV.filter((item) => !item.feature || entitlements[item.feature]);
 
   return (
     <div className="grid md:grid-cols-[220px_1fr] gap-6 py-6">
@@ -57,7 +63,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
           <div className="text-xs text-muted-foreground">@{admin.username}</div>
         </div>
         <nav className="flex flex-col gap-1" data-tour="admin-nav">
-          {NAV.map((item) => {
+          {navItems.map((item) => {
             const active =
               location === item.href ||
               (item.href !== "/admin" && location.startsWith(`${item.href}/`));

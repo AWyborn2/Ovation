@@ -4839,8 +4839,17 @@ export const UpdateRecordsDisplaySettingsResponse = zod.object({
  */
 export const getHonourDisplayResponseBoardsItemDisplayColumnsMax = 3;
 
+export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
+export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
+
 
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
+
+export const getHonourDisplayResponseSettingsBoardConfigsWrapBlocksMin = 2;
+export const getHonourDisplayResponseSettingsBoardConfigsWrapBlocksMax = 4;
+
+export const getHonourDisplayResponseSettingsCustomGridsItemWrapBlocksMin = 2;
+export const getHonourDisplayResponseSettingsCustomGridsItemWrapBlocksMax = 4;
 
 
 
@@ -4906,15 +4915,19 @@ export const GetHonourDisplayResponse = zod.object({
   "cells": zod.array(zod.object({
   "entries": zod.array(zod.object({
   "text": zod.string(),
-  "playerId": zod.number().nullish()
+  "playerId": zod.number().nullish(),
+  "note": zod.string().nullish().describe('Small marker\/caption shown with the name (e.g. \"Premiers\", \"\*\").')
 }).describe('One name within a grid cell (a cell may hold several, e.g. joint holders).'))
 }).describe('A single cell of a season grid (zero or more names).'))
 }).describe('One row of a season grid — a leading heading plus a cell per column.'))
 }).describe('A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list\/columns layout when the board has no configured columns.').nullish().describe('Season-grid matrix for the \'grid\' layout (else null).'),
+  "skin": zod.string().nullish().describe('Effective per-board skin (resolved server-side from the board config or custom-grid definition); null = use the club-wide skin.'),
+  "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
   "display": zod.object({
   "columns": zod.number().min(1).max(getHonourDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
-  "transition": zod.enum(['scroll', 'slide']).describe('Kiosk transition — continuous credit-scroll or paged slide.'),
-  "fit": zod.boolean().describe('Fill the full screen width on the kiosk (drop the narrow cap).')
+  "transition": zod.enum(['scroll', 'slide', 'wrap']).describe('Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen).'),
+  "fit": zod.boolean().describe('Fill the full screen width on the kiosk (drop the narrow cap).'),
+  "wrapBlocks": zod.number().min(getHonourDisplayResponseBoardsItemDisplayWrapBlocksMin).max(getHonourDisplayResponseBoardsItemDisplayWrapBlocksMax).optional().describe('For the \"wrap\" fill mode on grid boards: how many side-by-side year-blocks to split the rows into (2..4).')
 }).describe('Resolved per-board display config the server stamps onto every board (defaults merged with the admin\'s per-board overrides). Drives the display + kiosk render.')
 })),
   "brand": zod.object({
@@ -4935,11 +4948,21 @@ export const GetHonourDisplayResponse = zod.object({
   "kioskSponsorStrip": zod.boolean().describe('Embed a persistent \"proudly supported by\" sponsor-logo strip on every board screen. Only renders when there are active sponsors.'),
   "kioskSponsorSlides": zod.boolean().describe('Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors.'),
   "kioskSponsorSlideEvery": zod.number().min(1).describe('Insert a sponsor slide after this many boards (when slides on).'),
+  "kioskSponsorSlideStyle": zod.enum(['grid', 'single']).optional().describe('Sponsor slide style — one grid of every sponsor, or one large sponsor per slide rotating through them.'),
+  "kioskSponsorIds": zod.array(zod.number()).optional().describe('Which sponsors appear on the kiosk (subset of the active sponsors). Empty = all active sponsors.'),
+  "kioskAds": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
+  "name": zod.string(),
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+}).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
-  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
+  "wrapBlocks": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsWrapBlocksMin).max(getHonourDisplayResponseSettingsBoardConfigsWrapBlocksMax).optional().describe('Side-by-side block count for the \"wrap\" fill mode (grid boards).'),
+  "skin": zod.string().nullish().describe('Per-board skin override (built-in id p1..p9 or \"custom:<uuid>\"). Unset = use the club-wide skin.'),
+  "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
   "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
   "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
   "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
@@ -4964,6 +4987,24 @@ export const GetHonourDisplayResponse = zod.object({
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
 }).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.'),
+  "customGrids": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"grid:<uuid>\" (validated server-side; never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "footnote": zod.string().nullish(),
+  "skin": zod.string().nullish().describe('Per-board skin (p1..p9 or \"custom:<uuid>\"); null = club-wide.'),
+  "seasonFrom": zod.number().nullish().describe('First season start-year to show (rows run newest→oldest).'),
+  "seasonTo": zod.number().nullish().describe('Last season start-year to show; rows beyond the data are left blank so the board has room to grow (pre-listed future seasons).'),
+  "fillMode": zod.enum(['scroll', 'slide', 'wrap']).nullish(),
+  "wrapBlocks": zod.number().min(getHonourDisplayResponseSettingsCustomGridsItemWrapBlocksMin).max(getHonourDisplayResponseSettingsCustomGridsItemWrapBlocksMax).nullish(),
+  "columns": zod.array(zod.object({
+  "key": zod.string().describe('Stable per-column id (unique within the board).'),
+  "label": zod.string().describe('Column heading text.'),
+  "source": zod.enum(['office', 'award', 'grade', 'premiership', 'manual']).describe('Data source: an office (committee role), an award, a grade\'s captains, premierships by grade, or free manual entry.'),
+  "sourceKey": zod.string().nullish().describe('The specific office role \/ award key \/ grade for the chosen source (ignored for manual columns).'),
+  "manualValues": zod.record(zod.string(), zod.string()).nullish().describe('For manual columns: season label (\"2024\/25\") → cell text. Other sources ignore this.')
+}).describe('One column of an admin-built custom grid board. `source` selects where the column\'s cells come from; `manual` columns are typed by the admin.'))
+}).describe('An admin-built season-grid board: season rows × freely chosen columns drawn from any data source (or typed manually). Carries its own look (skin), fill mode and footnote.')).optional().describe('Admin-built custom season-grid boards.'),
   "skins": zod.array(zod.object({
   "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
   "name": zod.string(),
@@ -4978,7 +5019,7 @@ export const GetHonourDisplayResponse = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
-}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p8 not listed).'),
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p9 not listed).'),
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),
@@ -5017,8 +5058,17 @@ export const GetKioskDisplayQueryParams = zod.object({
 
 export const getKioskDisplayResponseBoardsItemDisplayColumnsMax = 3;
 
+export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
+export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
+
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
+
+export const getKioskDisplayResponseSettingsBoardConfigsWrapBlocksMin = 2;
+export const getKioskDisplayResponseSettingsBoardConfigsWrapBlocksMax = 4;
+
+export const getKioskDisplayResponseSettingsCustomGridsItemWrapBlocksMin = 2;
+export const getKioskDisplayResponseSettingsCustomGridsItemWrapBlocksMax = 4;
 
 
 
@@ -5084,15 +5134,19 @@ export const GetKioskDisplayResponse = zod.object({
   "cells": zod.array(zod.object({
   "entries": zod.array(zod.object({
   "text": zod.string(),
-  "playerId": zod.number().nullish()
+  "playerId": zod.number().nullish(),
+  "note": zod.string().nullish().describe('Small marker\/caption shown with the name (e.g. \"Premiers\", \"\*\").')
 }).describe('One name within a grid cell (a cell may hold several, e.g. joint holders).'))
 }).describe('A single cell of a season grid (zero or more names).'))
 }).describe('One row of a season grid — a leading heading plus a cell per column.'))
 }).describe('A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list\/columns layout when the board has no configured columns.').nullish().describe('Season-grid matrix for the \'grid\' layout (else null).'),
+  "skin": zod.string().nullish().describe('Effective per-board skin (resolved server-side from the board config or custom-grid definition); null = use the club-wide skin.'),
+  "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
   "display": zod.object({
   "columns": zod.number().min(1).max(getKioskDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
-  "transition": zod.enum(['scroll', 'slide']).describe('Kiosk transition — continuous credit-scroll or paged slide.'),
-  "fit": zod.boolean().describe('Fill the full screen width on the kiosk (drop the narrow cap).')
+  "transition": zod.enum(['scroll', 'slide', 'wrap']).describe('Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen).'),
+  "fit": zod.boolean().describe('Fill the full screen width on the kiosk (drop the narrow cap).'),
+  "wrapBlocks": zod.number().min(getKioskDisplayResponseBoardsItemDisplayWrapBlocksMin).max(getKioskDisplayResponseBoardsItemDisplayWrapBlocksMax).optional().describe('For the \"wrap\" fill mode on grid boards: how many side-by-side year-blocks to split the rows into (2..4).')
 }).describe('Resolved per-board display config the server stamps onto every board (defaults merged with the admin\'s per-board overrides). Drives the display + kiosk render.')
 })),
   "brand": zod.object({
@@ -5113,11 +5167,21 @@ export const GetKioskDisplayResponse = zod.object({
   "kioskSponsorStrip": zod.boolean().describe('Embed a persistent \"proudly supported by\" sponsor-logo strip on every board screen. Only renders when there are active sponsors.'),
   "kioskSponsorSlides": zod.boolean().describe('Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors.'),
   "kioskSponsorSlideEvery": zod.number().min(1).describe('Insert a sponsor slide after this many boards (when slides on).'),
+  "kioskSponsorSlideStyle": zod.enum(['grid', 'single']).optional().describe('Sponsor slide style — one grid of every sponsor, or one large sponsor per slide rotating through them.'),
+  "kioskSponsorIds": zod.array(zod.number()).optional().describe('Which sponsors appear on the kiosk (subset of the active sponsors). Empty = all active sponsors.'),
+  "kioskAds": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
+  "name": zod.string(),
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+}).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
-  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
+  "wrapBlocks": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsWrapBlocksMin).max(getKioskDisplayResponseSettingsBoardConfigsWrapBlocksMax).optional().describe('Side-by-side block count for the \"wrap\" fill mode (grid boards).'),
+  "skin": zod.string().nullish().describe('Per-board skin override (built-in id p1..p9 or \"custom:<uuid>\"). Unset = use the club-wide skin.'),
+  "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
   "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
   "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
   "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
@@ -5142,6 +5206,24 @@ export const GetKioskDisplayResponse = zod.object({
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
 }).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.'),
+  "customGrids": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"grid:<uuid>\" (validated server-side; never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "footnote": zod.string().nullish(),
+  "skin": zod.string().nullish().describe('Per-board skin (p1..p9 or \"custom:<uuid>\"); null = club-wide.'),
+  "seasonFrom": zod.number().nullish().describe('First season start-year to show (rows run newest→oldest).'),
+  "seasonTo": zod.number().nullish().describe('Last season start-year to show; rows beyond the data are left blank so the board has room to grow (pre-listed future seasons).'),
+  "fillMode": zod.enum(['scroll', 'slide', 'wrap']).nullish(),
+  "wrapBlocks": zod.number().min(getKioskDisplayResponseSettingsCustomGridsItemWrapBlocksMin).max(getKioskDisplayResponseSettingsCustomGridsItemWrapBlocksMax).nullish(),
+  "columns": zod.array(zod.object({
+  "key": zod.string().describe('Stable per-column id (unique within the board).'),
+  "label": zod.string().describe('Column heading text.'),
+  "source": zod.enum(['office', 'award', 'grade', 'premiership', 'manual']).describe('Data source: an office (committee role), an award, a grade\'s captains, premierships by grade, or free manual entry.'),
+  "sourceKey": zod.string().nullish().describe('The specific office role \/ award key \/ grade for the chosen source (ignored for manual columns).'),
+  "manualValues": zod.record(zod.string(), zod.string()).nullish().describe('For manual columns: season label (\"2024\/25\") → cell text. Other sources ignore this.')
+}).describe('One column of an admin-built custom grid board. `source` selects where the column\'s cells come from; `manual` columns are typed by the admin.'))
+}).describe('An admin-built season-grid board: season rows × freely chosen columns drawn from any data source (or typed manually). Carries its own look (skin), fill mode and footnote.')).optional().describe('Admin-built custom season-grid boards.'),
   "skins": zod.array(zod.object({
   "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
   "name": zod.string(),
@@ -5156,7 +5238,7 @@ export const GetKioskDisplayResponse = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
-}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p8 not listed).'),
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p9 not listed).'),
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),
@@ -5186,9 +5268,13 @@ export const GetKioskDisplayResponse = zod.object({
 
 
 /**
- * Issues a fresh long-lived kiosk token, replacing any existing one (which immediately stops working). Returns the new token.
- * @summary Generate (or rotate) the clubroom TV kiosk access token (admin)
+ * Issues a kiosk token, replacing any existing one (which immediately stops working). With a body `{ token }` the admin sets a custom code; otherwise a random one is generated. Returns the active token.
+ * @summary Generate, set, or rotate the clubroom TV kiosk access token (admin)
  */
+export const GenerateKioskTokenBody = zod.object({
+  "token": zod.string().nullish().describe('Custom kiosk code, or null\/omitted to auto-generate.')
+}).describe('Optional body for generating a kiosk token. Provide `token` to set a custom code (3–40 chars, letters\/numbers\/hyphens); omit it for a random one.')
+
 export const GenerateKioskTokenResponse = zod.object({
   "token": zod.string().nullable().describe('The active kiosk token, or null when revoked \/ not issued.')
 })
@@ -5209,6 +5295,12 @@ export const RevokeKioskTokenResponse = zod.object({
 
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
+export const updateHonourDisplaySettingsBodyBoardConfigsWrapBlocksMin = 2;
+export const updateHonourDisplaySettingsBodyBoardConfigsWrapBlocksMax = 4;
+
+export const updateHonourDisplaySettingsBodyCustomGridsItemWrapBlocksMin = 2;
+export const updateHonourDisplaySettingsBodyCustomGridsItemWrapBlocksMax = 4;
+
 
 
 export const UpdateHonourDisplaySettingsBody = zod.object({
@@ -5220,10 +5312,20 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "kioskSponsorStrip": zod.boolean().optional(),
   "kioskSponsorSlides": zod.boolean().optional(),
   "kioskSponsorSlideEvery": zod.number().min(1).optional(),
+  "kioskSponsorSlideStyle": zod.enum(['grid', 'single']).optional(),
+  "kioskSponsorIds": zod.array(zod.number()).optional(),
+  "kioskAds": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
+  "name": zod.string(),
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+}).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
-  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
+  "wrapBlocks": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsWrapBlocksMin).max(updateHonourDisplaySettingsBodyBoardConfigsWrapBlocksMax).optional().describe('Side-by-side block count for the \"wrap\" fill mode (grid boards).'),
+  "skin": zod.string().nullish().describe('Per-board skin override (built-in id p1..p9 or \"custom:<uuid>\"). Unset = use the club-wide skin.'),
+  "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
   "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
   "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
   "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
@@ -5248,6 +5350,24 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
 }).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).optional(),
+  "customGrids": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"grid:<uuid>\" (validated server-side; never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "footnote": zod.string().nullish(),
+  "skin": zod.string().nullish().describe('Per-board skin (p1..p9 or \"custom:<uuid>\"); null = club-wide.'),
+  "seasonFrom": zod.number().nullish().describe('First season start-year to show (rows run newest→oldest).'),
+  "seasonTo": zod.number().nullish().describe('Last season start-year to show; rows beyond the data are left blank so the board has room to grow (pre-listed future seasons).'),
+  "fillMode": zod.enum(['scroll', 'slide', 'wrap']).nullish(),
+  "wrapBlocks": zod.number().min(updateHonourDisplaySettingsBodyCustomGridsItemWrapBlocksMin).max(updateHonourDisplaySettingsBodyCustomGridsItemWrapBlocksMax).nullish(),
+  "columns": zod.array(zod.object({
+  "key": zod.string().describe('Stable per-column id (unique within the board).'),
+  "label": zod.string().describe('Column heading text.'),
+  "source": zod.enum(['office', 'award', 'grade', 'premiership', 'manual']).describe('Data source: an office (committee role), an award, a grade\'s captains, premierships by grade, or free manual entry.'),
+  "sourceKey": zod.string().nullish().describe('The specific office role \/ award key \/ grade for the chosen source (ignored for manual columns).'),
+  "manualValues": zod.record(zod.string(), zod.string()).nullish().describe('For manual columns: season label (\"2024\/25\") → cell text. Other sources ignore this.')
+}).describe('One column of an admin-built custom grid board. `source` selects where the column\'s cells come from; `manual` columns are typed by the admin.'))
+}).describe('An admin-built season-grid board: season rows × freely chosen columns drawn from any data source (or typed manually). Carries its own look (skin), fill mode and footnote.')).optional(),
   "skins": zod.array(zod.object({
   "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
   "name": zod.string(),
@@ -5274,6 +5394,12 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
 
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
+export const updateHonourDisplaySettingsResponseBoardConfigsWrapBlocksMin = 2;
+export const updateHonourDisplaySettingsResponseBoardConfigsWrapBlocksMax = 4;
+
+export const updateHonourDisplaySettingsResponseCustomGridsItemWrapBlocksMin = 2;
+export const updateHonourDisplaySettingsResponseCustomGridsItemWrapBlocksMax = 4;
+
 
 
 export const UpdateHonourDisplaySettingsResponse = zod.object({
@@ -5285,11 +5411,21 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "kioskSponsorStrip": zod.boolean().describe('Embed a persistent \"proudly supported by\" sponsor-logo strip on every board screen. Only renders when there are active sponsors.'),
   "kioskSponsorSlides": zod.boolean().describe('Rotate a full-screen sponsor slide in after every N boards. Only renders when there are active sponsors.'),
   "kioskSponsorSlideEvery": zod.number().min(1).describe('Insert a sponsor slide after this many boards (when slides on).'),
+  "kioskSponsorSlideStyle": zod.enum(['grid', 'single']).optional().describe('Sponsor slide style — one grid of every sponsor, or one large sponsor per slide rotating through them.'),
+  "kioskSponsorIds": zod.array(zod.number()).optional().describe('Which sponsors appear on the kiosk (subset of the active sponsors). Empty = all active sponsors.'),
+  "kioskAds": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
+  "name": zod.string(),
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+}).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
-  "transition": zod.enum(['scroll', 'slide']).optional(),
+  "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
+  "wrapBlocks": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsWrapBlocksMin).max(updateHonourDisplaySettingsResponseBoardConfigsWrapBlocksMax).optional().describe('Side-by-side block count for the \"wrap\" fill mode (grid boards).'),
+  "skin": zod.string().nullish().describe('Per-board skin override (built-in id p1..p9 or \"custom:<uuid>\"). Unset = use the club-wide skin.'),
+  "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
   "heading": zod.string().nullish().describe('Override the board\'s heading\/title.'),
   "subtitle": zod.string().nullish().describe('Override the board\'s subtitle.'),
   "textSize": zod.enum(['sm', 'md', 'lg']).optional().describe('Per-board text scale.'),
@@ -5314,6 +5450,24 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "transition": zod.enum(['scroll', 'slide']).nullish(),
   "fit": zod.boolean().nullish()
 }).describe('Admin-defined composite board that places several existing list boards side-by-side as columns (like the club\'s physical honour board).')).describe('Admin-defined composite \'columns\' boards.'),
+  "customGrids": zod.array(zod.object({
+  "id": zod.string().describe('Stable id, \"grid:<uuid>\" (validated server-side; never reused).'),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "footnote": zod.string().nullish(),
+  "skin": zod.string().nullish().describe('Per-board skin (p1..p9 or \"custom:<uuid>\"); null = club-wide.'),
+  "seasonFrom": zod.number().nullish().describe('First season start-year to show (rows run newest→oldest).'),
+  "seasonTo": zod.number().nullish().describe('Last season start-year to show; rows beyond the data are left blank so the board has room to grow (pre-listed future seasons).'),
+  "fillMode": zod.enum(['scroll', 'slide', 'wrap']).nullish(),
+  "wrapBlocks": zod.number().min(updateHonourDisplaySettingsResponseCustomGridsItemWrapBlocksMin).max(updateHonourDisplaySettingsResponseCustomGridsItemWrapBlocksMax).nullish(),
+  "columns": zod.array(zod.object({
+  "key": zod.string().describe('Stable per-column id (unique within the board).'),
+  "label": zod.string().describe('Column heading text.'),
+  "source": zod.enum(['office', 'award', 'grade', 'premiership', 'manual']).describe('Data source: an office (committee role), an award, a grade\'s captains, premierships by grade, or free manual entry.'),
+  "sourceKey": zod.string().nullish().describe('The specific office role \/ award key \/ grade for the chosen source (ignored for manual columns).'),
+  "manualValues": zod.record(zod.string(), zod.string()).nullish().describe('For manual columns: season label (\"2024\/25\") → cell text. Other sources ignore this.')
+}).describe('One column of an admin-built custom grid board. `source` selects where the column\'s cells come from; `manual` columns are typed by the admin.'))
+}).describe('An admin-built season-grid board: season rows × freely chosen columns drawn from any data source (or typed manually). Carries its own look (skin), fill mode and footnote.')).optional().describe('Admin-built custom season-grid boards.'),
   "skins": zod.array(zod.object({
   "id": zod.string().describe('Stable skin id, e.g. \"custom:<uuid>\".'),
   "name": zod.string(),
@@ -5328,7 +5482,7 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish()
-}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p8 not listed).'),
+}).describe('An admin-authored skin\/theme applied via inline CSS variables.')).optional().describe('Admin-authored skins\/themes (built-in p1..p9 not listed).'),
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),

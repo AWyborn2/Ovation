@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useEntitlements, type Feature } from "@/lib/entitlements";
 import AdminSocial from "@/pages/admin-social";
 import AdminSocialStudio from "@/pages/admin-social-studio";
 import AdminSocialCreate from "@/pages/admin-social-create";
@@ -29,7 +30,15 @@ import AdminLifeMembers from "@/pages/admin-life-members";
 import AdminJuniorPremierships from "@/pages/admin-junior-premierships";
 import AdminHonoursDisplay from "@/pages/admin-honours-display";
 
-type AdminTab = { value: string; label: string; path: string; element: ReactNode };
+type AdminTab = {
+  value: string;
+  label: string;
+  path: string;
+  element: ReactNode;
+  // Paid feature this tab belongs to. Hidden when the tenant's plan lacks it
+  // (dormant ⇒ every feature resolves on, so nothing hides during the pilot).
+  feature?: Feature;
+};
 
 // Shared tabbed shell for a consolidated admin group. The active tab is driven
 // by the URL (the first tab lives at the group's base path; every other tab is
@@ -48,12 +57,16 @@ function AdminTabGroup({
   tabs: AdminTab[];
 }) {
   const [location, navigate] = useLocation();
+  const entitlements = useEntitlements();
+  // Drop tabs the tenant's plan doesn't include, then resolve the active tab from
+  // what's left so a deep-link to a locked tab falls back to the first visible one.
+  const visibleTabs = tabs.filter((t) => !t.feature || entitlements[t.feature]);
   const active =
-    tabs.find(
+    visibleTabs.find(
       (t) =>
         t.path !== basePath &&
         (location === t.path || location.startsWith(`${t.path}/`)),
-    )?.value ?? tabs[0].value;
+    )?.value ?? visibleTabs[0]?.value;
 
   return (
     <div className="space-y-6">
@@ -61,26 +74,32 @@ function AdminTabGroup({
         <h1 className="text-3xl font-serif font-bold">{title}</h1>
         {description && <p className="text-muted-foreground mt-1">{description}</p>}
       </div>
-      <Tabs
-        value={active}
-        onValueChange={(v) => {
-          const t = tabs.find((x) => x.value === v);
-          if (t) navigate(t.path);
-        }}
-      >
-        <TabsList className="flex flex-wrap h-auto justify-start">
-          {tabs.map((t) => (
-            <TabsTrigger key={t.value} value={t.value}>
-              {t.label}
-            </TabsTrigger>
+      {visibleTabs.length === 0 ? (
+        <p className="text-muted-foreground">
+          Upgrade your plan to unlock these tools.
+        </p>
+      ) : (
+        <Tabs
+          value={active}
+          onValueChange={(v) => {
+            const t = visibleTabs.find((x) => x.value === v);
+            if (t) navigate(t.path);
+          }}
+        >
+          <TabsList className="flex flex-wrap h-auto justify-start">
+            {visibleTabs.map((t) => (
+              <TabsTrigger key={t.value} value={t.value}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {visibleTabs.map((t) => (
+            <TabsContent key={t.value} value={t.value} className="mt-6">
+              {t.element}
+            </TabsContent>
           ))}
-        </TabsList>
-        {tabs.map((t) => (
-          <TabsContent key={t.value} value={t.value} className="mt-6">
-            {t.element}
-          </TabsContent>
-        ))}
-      </Tabs>
+        </Tabs>
+      )}
     </div>
   );
 }
@@ -92,13 +111,13 @@ export function AdminSocialGroup() {
       description="Branded share-card factory, card builders, junior cards and the review queue."
       basePath="/admin/social"
       tabs={[
-        { value: "studio", label: "Studio", path: "/admin/social", element: <AdminSocialStudio /> },
-        { value: "cards", label: "Cards", path: "/admin/social/cards", element: <AdminSocial /> },
-        { value: "create", label: "Create a card", path: "/admin/social/create", element: <AdminSocialCreate /> },
-        { value: "sets", label: "Carousel sets", path: "/admin/social/sets", element: <AdminSocialSets /> },
-        { value: "juniors", label: "Junior cards", path: "/admin/social/juniors", element: <AdminJuniorSocial /> },
-        { value: "trading-cards", label: "Trading cards", path: "/admin/social/trading-cards", element: <AdminTradingCards /> },
-        { value: "queue", label: "Queue", path: "/admin/social/queue", element: <AdminSocialQueue /> },
+        { value: "studio", label: "Studio", path: "/admin/social", element: <AdminSocialStudio />, feature: "socialStudio" },
+        { value: "cards", label: "Cards", path: "/admin/social/cards", element: <AdminSocial />, feature: "socialStudio" },
+        { value: "create", label: "Create a card", path: "/admin/social/create", element: <AdminSocialCreate />, feature: "socialStudio" },
+        { value: "sets", label: "Carousel sets", path: "/admin/social/sets", element: <AdminSocialSets />, feature: "socialStudio" },
+        { value: "juniors", label: "Junior cards", path: "/admin/social/juniors", element: <AdminJuniorSocial />, feature: "socialStudio" },
+        { value: "trading-cards", label: "Trading cards", path: "/admin/social/trading-cards", element: <AdminTradingCards />, feature: "socialStudio" },
+        { value: "queue", label: "Queue", path: "/admin/social/queue", element: <AdminSocialQueue />, feature: "socialStudio" },
       ]}
     />
   );
@@ -113,8 +132,8 @@ export function AdminSettingsGroup() {
       tabs={[
         { value: "matches", label: "Matches page", path: "/admin/settings", element: <AdminMatchDisplay /> },
         { value: "records", label: "Records page", path: "/admin/settings/records", element: <AdminRecordsDisplay /> },
-        { value: "honour-boards", label: "Honour boards", path: "/admin/settings/honour-boards", element: <AdminHonourBoards /> },
-        { value: "milestone-board", label: "Milestone board", path: "/admin/settings/milestone-board", element: <AdminMilestoneBoard /> },
+        { value: "honour-boards", label: "Honour boards", path: "/admin/settings/honour-boards", element: <AdminHonourBoards />, feature: "curation" },
+        { value: "milestone-board", label: "Milestone board", path: "/admin/settings/milestone-board", element: <AdminMilestoneBoard />, feature: "curation" },
         { value: "junior-matches", label: "Junior matches", path: "/admin/settings/junior-matches", element: <AdminJuniorMatchDisplay /> },
         { value: "tour", label: "Welcome & tour", path: "/admin/settings/tour", element: <AdminTourContent /> },
         { value: "nav", label: "Navigation & menus", path: "/admin/settings/nav", element: <AdminNav /> },
@@ -132,7 +151,7 @@ export function AdminPeopleGroup() {
       tabs={[
         { value: "players", label: "Players", path: "/admin/people", element: <AdminPlayers /> },
         { value: "stats", label: "Stats", path: "/admin/people/stats", element: <AdminStats /> },
-        { value: "committee", label: "Committee", path: "/admin/people/committee", element: <AdminCommittee /> },
+        { value: "committee", label: "Committee", path: "/admin/people/committee", element: <AdminCommittee />, feature: "curation" },
         { value: "captains", label: "Captains", path: "/admin/people/captains", element: <AdminCaptains /> },
         { value: "junior-office-bearers", label: "Junior office bearers", path: "/admin/people/junior-office-bearers", element: <AdminJuniorCommittee /> },
         { value: "non-players", label: "Non-player people", path: "/admin/people/non-players", element: <AdminPeople /> },
@@ -148,13 +167,13 @@ export function AdminHonoursGroup() {
       description="Premierships, awards, Team of the Decade, caps, life members and junior premierships."
       basePath="/admin/honours"
       tabs={[
-        { value: "premierships", label: "Premierships", path: "/admin/honours", element: <AdminPremierships /> },
-        { value: "awards", label: "Awards", path: "/admin/honours/awards", element: <AdminAwards /> },
-        { value: "team-of-decade", label: "Team of the Decade", path: "/admin/honours/team-of-decade", element: <AdminTeamOfDecade /> },
-        { value: "caps", label: "Cap register", path: "/admin/honours/caps", element: <AdminCaps /> },
-        { value: "life-members", label: "Life members", path: "/admin/honours/life-members", element: <AdminLifeMembers /> },
+        { value: "premierships", label: "Premierships", path: "/admin/honours", element: <AdminPremierships />, feature: "curation" },
+        { value: "awards", label: "Awards", path: "/admin/honours/awards", element: <AdminAwards />, feature: "curation" },
+        { value: "team-of-decade", label: "Team of the Decade", path: "/admin/honours/team-of-decade", element: <AdminTeamOfDecade />, feature: "curation" },
+        { value: "caps", label: "Cap register", path: "/admin/honours/caps", element: <AdminCaps />, feature: "curation" },
+        { value: "life-members", label: "Life members", path: "/admin/honours/life-members", element: <AdminLifeMembers />, feature: "curation" },
         { value: "junior-premierships", label: "Junior premierships", path: "/admin/honours/junior-premierships", element: <AdminJuniorPremierships /> },
-        { value: "display", label: "Display & kiosk", path: "/admin/honours/display", element: <AdminHonoursDisplay /> },
+        { value: "display", label: "Display & kiosk", path: "/admin/honours/display", element: <AdminHonoursDisplay />, feature: "clubroomTv" },
       ]}
     />
   );

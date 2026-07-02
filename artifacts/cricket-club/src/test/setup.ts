@@ -23,9 +23,7 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
-// @ts-expect-error jsdom lacks ResizeObserver
 window.ResizeObserver = window.ResizeObserver ?? ResizeObserverStub;
-// @ts-expect-error jsdom lacks IntersectionObserver
 window.IntersectionObserver =
   window.IntersectionObserver ??
   class {
@@ -38,7 +36,6 @@ window.IntersectionObserver =
   };
 
 if (!window.scrollTo) {
-  // @ts-expect-error jsdom no-op
   window.scrollTo = () => {};
 }
 

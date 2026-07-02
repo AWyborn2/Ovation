@@ -8,8 +8,9 @@ import { eq } from "drizzle-orm";
 
 type BoardDisplay = {
   columns: number;
-  transition: "scroll" | "slide";
+  transition: "scroll" | "slide" | "wrap";
   fit: boolean;
+  wrapBlocks?: number;
 };
 type Board = {
   id: string;
@@ -156,6 +157,7 @@ describe("honour display: Most Games board, display stamps, composites (integrat
       columns: 3,
       transition: "slide",
       fit: true,
+      wrapBlocks: 2,
     });
 
     // The composite board is assembled as a columns board, with the invalid
@@ -173,6 +175,7 @@ describe("honour display: Most Games board, display stamps, composites (integrat
       columns: 1,
       transition: "slide",
       fit: true,
+      wrapBlocks: 2,
     });
   });
 });

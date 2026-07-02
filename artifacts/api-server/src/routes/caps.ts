@@ -14,6 +14,7 @@ import {
   DeleteCapParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { CAP_CATEGORY_TO_GRADE, recomputeCapsFromStats } from "../lib/cap-sync";
 
@@ -145,7 +146,7 @@ router.get("/caps/debutants", async (_req, res): Promise<void> => {
   res.json(entries);
 });
 
-router.post("/caps", requireAdmin, async (req, res): Promise<void> => {
+router.post("/caps", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const parsed = CreateCapBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -195,7 +196,7 @@ router.post("/caps", requireAdmin, async (req, res): Promise<void> => {
   }
 });
 
-router.patch("/caps/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/caps/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = UpdateCapParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -259,13 +260,13 @@ router.patch("/caps/:id", requireAdmin, async (req, res): Promise<void> => {
  * stats, across both A Grade lists. Import-independent reconciliation so manual
  * cap additions/links can be refreshed in one click.
  */
-router.post("/caps/recompute", requireAdmin, async (_req, res): Promise<void> => {
+router.post("/caps/recompute", requireAdmin, requireEntitlement("curation"), async (_req, res): Promise<void> => {
   const categories = await db.transaction((tx) => recomputeCapsFromStats(tx));
   const updated = categories.reduce((sum, c) => sum + c.updated, 0);
   res.json({ updated, categories });
 });
 
-router.delete("/caps/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/caps/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
   const params = DeleteCapParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

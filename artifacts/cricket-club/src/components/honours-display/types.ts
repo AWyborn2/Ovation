@@ -67,7 +67,8 @@ export type TemplateId =
   | "p5"
   | "p6"
   | "p7"
-  | "p8";
+  | "p8"
+  | "p9";
 
 export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p1", label: "P1 · Heritage Timber" },
@@ -78,6 +79,7 @@ export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p6", label: "P6 · Soft Cards" },
   { id: "p7", label: "P7 · App Light" },
   { id: "p8", label: "P8 · App Dark" },
+  { id: "p9", label: "P9 · Printed Board" },
 ];
 
 const BUILTIN_IDS = new Set<string>(TEMPLATES.map((t) => t.id));
