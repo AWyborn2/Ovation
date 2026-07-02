@@ -14,6 +14,7 @@ interface TenantBrandRow {
   shortName: string | null;
   logoUrl: string | null;
   backgroundUrl: string | null;
+  faviconUrl: string | null;
   primaryColour: string | null;
   secondaryColour: string | null;
   tertiaryColour: string | null;
@@ -63,6 +64,9 @@ export function buildTenantBrand(
     // No clubs-register equivalent for backgroundUrl — tenant row only, else the
     // neutral default (no image).
     backgroundUrl: tenant?.backgroundUrl ?? DEFAULT_BRAND.backgroundUrl,
+    // No clubs-register equivalent for faviconUrl either — tenant row only,
+    // else the neutral default (the platform favicon).
+    faviconUrl: tenant?.faviconUrl ?? DEFAULT_BRAND.faviconUrl,
     primaryColour,
     secondaryColour:
       club?.secondaryColour ??
@@ -91,6 +95,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       shortName: tenantsTable.shortName,
       logoUrl: tenantsTable.logoUrl,
       backgroundUrl: tenantsTable.backgroundUrl,
+      faviconUrl: tenantsTable.faviconUrl,
       primaryColour: tenantsTable.primaryColour,
       secondaryColour: tenantsTable.secondaryColour,
       tertiaryColour: tenantsTable.tertiaryColour,

@@ -19,6 +19,7 @@ import {
   type MilestoneStatus,
 } from "@/lib/honour-boards";
 import { downloadMilestoneCard } from "@/lib/milestone-share";
+import { useBrand } from "@/lib/brand-context";
 import { ShareButton } from "@/components/share-card-modal";
 import type { ShareCardInput } from "@/lib/share-card";
 import { TradingCardModal } from "@/components/trading-card";
@@ -32,6 +33,7 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
   const hasNext = status.nextTierLabel !== null && status.gap !== null;
   const inAnyTier = status.currentTierIndex !== null;
   const [sharing, setSharing] = useState(false);
+  const brand = useBrand();
   const handleShare = async () => {
     if (sharing || !inAnyTier || !status.currentTierLabel) return;
     setSharing(true);
@@ -44,6 +46,7 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
         currentValue: status.currentValue,
         headline: "Honour Board Milestone",
         photoUrl,
+        brand,
       });
     } catch (err) {
       console.error("Failed to generate milestone card", err);

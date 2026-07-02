@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles, type LucideIcon } from "lucide-react";
-import { HALLS_HEAD_BRAND } from "@workspace/scorecard";
+import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 
 const TIER_ICONS: LucideIcon[] = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
 
@@ -14,10 +14,9 @@ export interface MilestoneShareInput {
   threshold?: number | null;
   headline?: string;
   photoUrl?: string | null;
+  /** The current tenant's brand; the neutral default when omitted. */
+  brand?: ClubBrand | null;
 }
-
-// Official club brand (clubs id 2), via the shared single source of truth.
-const logoUrl = HALLS_HEAD_BRAND.logoUrl ?? "";
 
 const hexToRgb = (hex: string): [number, number, number] => {
   let h = hex.trim().replace(/^#/, "");
@@ -36,10 +35,6 @@ const lighten = (hex: string, amount: number): string => {
   return `#${[c(r), c(g), c(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 };
 
-const BG_DARK = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
-const BG_PANEL = lighten(BG_DARK, 0.1);
-const GOLD = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
-const GOLD_SOFT = rgba(GOLD, 0.18);
 const TEXT_LIGHT = "#F5F2E8";
 const TEXT_MUTED = "rgba(245, 242, 232, 0.65)";
 
@@ -86,6 +81,18 @@ const wrapText = (
 };
 
 export const generateMilestoneCard = async (input: MilestoneShareInput): Promise<Blob> => {
+  const brand = input.brand ?? DEFAULT_BRAND;
+  const logoUrl = brand.logoUrl ?? DEFAULT_BRAND.logoUrl ?? "";
+  const clubName = (brand.name ?? DEFAULT_BRAND.name).toUpperCase();
+  const BG_DARK = brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155";
+  const BG_PANEL = lighten(BG_DARK, 0.1);
+  const GOLD = brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8";
+  const GOLD_SOFT = rgba(GOLD, 0.18);
+  // A tenant with no configured hashtag gets one derived from its short name
+  // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
+  // a brand-less tenant gets no hashtag rather than Halls Head's.
+  const footerText = brand.shortName ? `#${brand.shortName.replace(/\s+/g, "")}` : "";
+
   const W = 1080;
   const H = 1080;
   const canvas = document.createElement("canvas");
@@ -131,7 +138,7 @@ export const generateMilestoneCard = async (input: MilestoneShareInput): Promise
     ctx.fillStyle = TEXT_LIGHT;
     ctx.font = "700 28px Georgia, 'Times New Roman', serif";
     ctx.textBaseline = "top";
-    ctx.fillText("HALLS HEAD CRICKET CLUB", 80 + logoW + 28, 96);
+    ctx.fillText(clubName, 80 + logoW + 28, 96);
     ctx.fillStyle = TEXT_MUTED;
     ctx.font = "500 18px 'Helvetica Neue', Arial, sans-serif";
     ctx.fillText("EST. 1991  •  HONOUR BOARD", 80 + logoW + 28, 138);
@@ -140,7 +147,7 @@ export const generateMilestoneCard = async (input: MilestoneShareInput): Promise
     ctx.fillStyle = TEXT_LIGHT;
     ctx.font = "700 36px Georgia, serif";
     ctx.textBaseline = "top";
-    ctx.fillText("HALLS HEAD CRICKET CLUB", 80, 96);
+    ctx.fillText(clubName, 80, 96);
     ctx.fillStyle = TEXT_MUTED;
     ctx.font = "500 18px Arial, sans-serif";
     ctx.fillText("EST. 1991  •  HONOUR BOARD", 80, 142);
@@ -264,10 +271,12 @@ export const generateMilestoneCard = async (input: MilestoneShareInput): Promise
   }
 
   // Footer
-  ctx.fillStyle = TEXT_MUTED;
-  ctx.font = "600 18px 'Helvetica Neue', Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("HALLSHEADCRICKET.COM.AU  •  #HHCC", W / 2, H - 70);
+  if (footerText) {
+    ctx.fillStyle = TEXT_MUTED;
+    ctx.font = "600 18px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(footerText, W / 2, H - 70);
+  }
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {

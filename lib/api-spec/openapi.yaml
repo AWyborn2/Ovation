@@ -5996,6 +5996,11 @@ components:
           type: ["string", "null"]
           description: >-
             Optional site background image URL. Null = neutral (no image).
+        faviconUrl:
+          type: ["string", "null"]
+          description: >-
+            Optional per-tenant favicon URL. Null = the platform's neutral
+            default favicon.
         primaryColour:
           type: ["string", "null"]
         secondaryColour:

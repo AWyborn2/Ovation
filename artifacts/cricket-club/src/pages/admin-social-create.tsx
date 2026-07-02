@@ -15,6 +15,8 @@ import { Trash2, Plus, Loader2, Image as ImageIcon } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
+import { useBrand } from "@/lib/brand-context";
+import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 import type {
   ShareCardInput,
   MatchSummaryTeam,
@@ -209,14 +211,22 @@ function FromMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
 
 /* -------------------------------------------------------------- Manual build */
 
-const HHCC_TEAM: MatchSummaryTeam = {
-  name: "Halls Head",
-  shortName: "HHCC",
-  primaryColor: "#00305c",
-  secondaryColor: "#f5a623",
-  textColor: "#f5a623",
-  logoUrl: null,
-};
+/** A short club label without a trailing "Cricket Club" suffix. */
+const shortClubName = (name: string): string =>
+  name.replace(/\s+Cricket Club$/i, "").trim() || name;
+
+/** The current tenant's brand as a manual-builder team default. */
+function teamFromBrand(brand: ClubBrand): MatchSummaryTeam {
+  const accent = brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8";
+  return {
+    name: shortClubName(brand.name ?? DEFAULT_BRAND.name),
+    shortName: brand.shortName ?? null,
+    primaryColor: brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155",
+    secondaryColor: accent,
+    textColor: accent,
+    logoUrl: brand.logoUrl ?? null,
+  };
+}
 
 const OPP_TEAM: MatchSummaryTeam = {
   name: "Opposition",
@@ -240,13 +250,14 @@ function emptyInnings(teamKey: "club" | "opposition", num: 1 | 2): MatchSummaryI
 }
 
 function ManualBuilder({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
+  const brand = useBrand();
   const [matchTitle, setMatchTitle] = useState("A Grade • Round 1");
   const [matchType, setMatchType] = useState("");
   const [date, setDate] = useState("");
   const [venue, setVenue] = useState("");
   const [result, setResult] = useState("");
   const [resultWinner, setResultWinner] = useState<"club" | "opposition" | "draw">("club");
-  const [club, setClub] = useState<MatchSummaryTeam>({ ...HHCC_TEAM });
+  const [club, setClub] = useState<MatchSummaryTeam>(() => teamFromBrand(brand));
   const [opposition, setOpposition] = useState<MatchSummaryTeam>({ ...OPP_TEAM });
   const [innings, setInnings] = useState<MatchSummaryInnings[]>([
     emptyInnings("club", 1),
@@ -286,8 +297,8 @@ function ManualBuilder({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
           <Field label="Title" value={matchTitle} onChange={setMatchTitle} placeholder="A Grade • Round 5" />
           <Field label="Type / competition" value={matchType} onChange={setMatchType} placeholder="One Day" />
           <Field label="Date" value={date} onChange={setDate} placeholder="5 Apr 2025" />
-          <Field label="Venue" value={venue} onChange={setVenue} placeholder="Halls Head Oval" />
-          <Field label="Result text" value={result} onChange={setResult} placeholder="Halls Head won by 5 wickets" />
+          <Field label="Venue" value={venue} onChange={setVenue} placeholder={`${shortClubName(brand.name)} Oval`} />
+          <Field label="Result text" value={result} onChange={setResult} placeholder={`${shortClubName(brand.name)} won by 5 wickets`} />
           <div className="space-y-1">
             <Label>Winner</Label>
             <select
@@ -295,7 +306,7 @@ function ManualBuilder({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
               value={resultWinner}
               onChange={(e) => setResultWinner(e.target.value as typeof resultWinner)}
             >
-              <option value="club">Halls Head</option>
+              <option value="club">{shortClubName(brand.name)}</option>
               <option value="opposition">Opposition</option>
               <option value="draw">Draw / Tie</option>
             </select>
@@ -304,7 +315,7 @@ function ManualBuilder({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TeamCard title="Halls Head" team={club} onChange={setClub} />
+        <TeamCard title={shortClubName(brand.name)} team={club} onChange={setClub} />
         <TeamCard title="Opposition" team={opposition} onChange={setOpposition} />
       </div>
 
@@ -470,7 +481,7 @@ function InningsEditor({
             value={innings.teamKey}
             onChange={(e) => onChange({ teamKey: e.target.value as "club" | "opposition" })}
           >
-            <option value="club">{clubName || "Halls Head"}</option>
+            <option value="club">{clubName || "Club"}</option>
             <option value="opposition">{oppName || "Opposition"}</option>
           </select>
         </div>

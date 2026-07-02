@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Image as ImageIcon, Trophy } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
 import { juniorMatchToSummaryInput } from "@/lib/junior-match-summary";
+import { useBrand } from "@/lib/brand-context";
 import type { ShareCardInput } from "@/lib/share-card";
 import {
   LoadingState,
@@ -72,6 +73,7 @@ export default function AdminJuniorSocial() {
 /* --------------------------------------------------------- From junior match */
 
 function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
+  const brand = useBrand();
   const [season, setSeason] = useState<string>("");
   const [ageGroup, setAgeGroup] = useState<string>("");
   const [matchId, setMatchId] = useState<number | null>(null);
@@ -116,7 +118,7 @@ function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
   };
 
   const build = () => {
-    if (detailQ.data) onOpen(juniorMatchToSummaryInput(detailQ.data));
+    if (detailQ.data) onOpen(juniorMatchToSummaryInput(detailQ.data, brand));
   };
 
   return (

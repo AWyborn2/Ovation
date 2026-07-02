@@ -1,10 +1,32 @@
-import { HALLS_HEAD_BRAND } from "@workspace/scorecard";
+import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
+import { useBrand } from "@/lib/brand-context";
 
-// Official club brand (clubs id 2), via the shared single source of truth.
-export const logoUrl = HALLS_HEAD_BRAND.logoUrl ?? "";
-export const CHARCOAL = HALLS_HEAD_BRAND.primaryColour ?? "#333F48";
-export const GOLD = HALLS_HEAD_BRAND.secondaryColour ?? "#FBAC27";
-export const BROWN = HALLS_HEAD_BRAND.tertiaryColour ?? "#42342B";
+/**
+ * The current tenant's brand, resolved for card rendering (colours + logo),
+ * with the neutral default filling any gap. Replaces the old static
+ * Halls-Head-only `logoUrl`/`CHARCOAL`/`GOLD`/`BROWN` exports so cards render
+ * on-brand for every tenant instead of always showing Halls Head's.
+ */
+export function useCardBrand() {
+  const brand = useBrand();
+  return {
+    brand,
+    logoUrl: brand.logoUrl ?? DEFAULT_BRAND.logoUrl ?? "",
+    CHARCOAL: brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155",
+    GOLD: brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8",
+    BROWN: brand.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? "#475569",
+  };
+}
+
+/**
+ * A club's name without a trailing "Cricket Club" (Halls Head Cricket Club ->
+ * Halls Head), so the card header/copy can show a short label without also
+ * duplicating the static "Cricket Club" tagline printed beside it.
+ */
+export function clubShortLabel(brand: ClubBrand): string {
+  const trimmed = (brand.name ?? "").replace(/\s+Cricket Club$/i, "").trim();
+  return trimmed || brand.name;
+}
 
 export const CARD_W = 384;
 export const CARD_H = 800;

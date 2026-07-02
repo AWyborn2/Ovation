@@ -1,4 +1,4 @@
-import { buildJuniorScorecard } from "@workspace/scorecard";
+import { buildJuniorScorecard, DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 import type {
   Scorecard,
   ScorecardBatsman,
@@ -75,26 +75,33 @@ function deriveWinner(
  * (which masks private participants), forces the junior brown club chrome, sets
  * `junior: true` so the card renders in the brown palette with a "JUNIOR MATCH"
  * eyebrow, and excludes any masked private players from the featured lists.
+ *
+ * `brand` (the current tenant's brand) supplies the club team's name/shortName
+ * when a match has no recorded innings to derive them from; the neutral default
+ * when omitted, never Halls Head's.
  */
 export function juniorMatchToSummaryInput(
   match: JuniorMatchDetail,
+  brand?: ClubBrand | null,
 ): ShareCardInput {
   const sc: Scorecard = buildJuniorScorecard(match);
 
   const first = sc.innings[0];
-  // Halls Head always wears the junior brown chrome regardless of innings order.
+  const clubScTeam = first
+    ? first.battingTeam.isHallsHead
+      ? first.battingTeam
+      : first.bowlingTeam
+    : null;
+  // The tenant's own club always wears the junior brown chrome, regardless of
+  // innings order; its name/shortName/logo come from the resolved scorecard
+  // team, falling back to the tenant brand when there's no innings data yet.
   const clubTeam: MatchSummaryTeam = {
-    name: "Halls Head",
-    shortName: "HHCC",
+    name: clubScTeam?.name ?? brand?.name ?? DEFAULT_BRAND.name,
+    shortName: clubScTeam?.shortName ?? brand?.shortName ?? null,
     primaryColor: JUNIOR_BROWN,
     secondaryColor: JUNIOR_GOLD,
     textColor: JUNIOR_GOLD,
-    logoUrl: first
-      ? (first.battingTeam.isHallsHead
-          ? first.battingTeam
-          : first.bowlingTeam
-        ).logoUrl
-      : null,
+    logoUrl: clubScTeam?.logoUrl ?? brand?.logoUrl ?? null,
   };
   const oppScTeam = first
     ? first.battingTeam.isHallsHead

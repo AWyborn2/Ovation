@@ -22,6 +22,11 @@ export interface TenantBrand {
      * @nullable
      */
   backgroundUrl?: string | null;
+  /**
+     * Optional per-tenant favicon URL. Null = the platform's neutral default favicon.
+     * @nullable
+     */
+  faviconUrl?: string | null;
   /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
