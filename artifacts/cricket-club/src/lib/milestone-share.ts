@@ -293,9 +293,10 @@ export const downloadMilestoneCard = async (
   const blob = await generateMilestoneCard(input);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+  const clubSlug = slugify(input.brand?.shortName || input.brand?.name || "") || "card";
   const name =
     filename ??
-    `hhcc-${slugify(input.playerName)}-${slugify(input.tierLabel)}.png`;
+    `${clubSlug}-${slugify(input.playerName)}-${slugify(input.tierLabel)}.png`;
   a.href = url;
   a.download = name;
   document.body.appendChild(a);

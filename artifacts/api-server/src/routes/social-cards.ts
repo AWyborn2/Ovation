@@ -54,12 +54,12 @@ import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
 
-const DEFAULT_TEMPLATES: { engine: string; platform: string; template: string }[] = [
+export const DEFAULT_TEMPLATES: { engine: string; platform: string; template: string }[] = [
   {
     engine: "ondemand",
     platform: "instagram",
     template:
-      "{player.name} — {stat.label}: {stat.value} 🏏\n\nHonour board form for the Hammers. {app.link}\n\n{hashtag} #ClubCricket",
+      "{player.name} — {stat.label}: {stat.value} 🏏\n\nHonour board form. {app.link}\n\n{hashtag} #ClubCricket",
   },
   {
     engine: "ondemand",
@@ -110,7 +110,7 @@ const DEFAULT_TEMPLATES: { engine: string; platform: string; template: string }[
     engine: "recap",
     platform: "instagram",
     template:
-      "Season recap — {grade.name} 📋\n\nLeading the way for the Hammers this season. {app.link}\n\n{hashtag}",
+      "Season recap — {grade.name} 📋\n\nLeading the way this season. {app.link}\n\n{hashtag}",
   },
   {
     engine: "recap",

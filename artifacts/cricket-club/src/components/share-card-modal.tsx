@@ -265,6 +265,11 @@ export function ShareCardModal({
   const [includeSponsors, setIncludeSponsors] = useState(true);
   const [zipping, setZipping] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  // Surfaced near the export/approve buttons whenever one of those actions
+  // throws — without this, a failure just silently resets the busy state with
+  // no indication to the admin that anything went wrong.
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && enabledSizes.length > 0 && !enabledSizes.includes(activeSize)) {
@@ -337,7 +342,7 @@ export function ShareCardModal({
     serverProgress,
     serverError,
     handleServerRender,
-  } = useVideoExport({ open, input, buildOpts, photoTransform });
+  } = useVideoExport({ open, input, buildOpts, photoTransform, brand: bundle?.brand });
 
   // Stable key for the animated preview so it only re-prepares when something
   // that affects the animation actually changes.
@@ -346,6 +351,7 @@ export function ShareCardModal({
       [
         activeSize,
         layoutId ?? "builtin",
+        layoutSig,
         selectedThemeId ?? "none",
         motion,
         durationMs,
@@ -355,25 +361,43 @@ export function ShareCardModal({
         `${renderTransform.focalX},${renderTransform.focalY},${renderTransform.zoom}`,
         sponsorSig,
       ].join("|"),
-    [activeSize, layoutId, selectedThemeId, motion, durationMs, speed, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
+    [activeSize, layoutId, layoutSig, selectedThemeId, motion, durationMs, speed, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
   );
 
   const handleDownload = async (size: CardSize) => {
     if (!input) return;
-    const blob = await renderShareCard(input, buildOpts(size, photoTransform));
-    downloadBlob(blob, `${cardBaseFilename(input)}-${SIZES[size].code}.png`);
+    setExportError(null);
+    setDownloading(true);
+    try {
+      const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+      downloadBlob(blob, `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}.png`);
+    } catch (e) {
+      console.error("Card download failed", e);
+      setExportError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleDownloadAll = async () => {
     if (!input) return;
     setZipping(true);
+    setExportError(null);
+    const skipped: string[] = [];
     try {
       const zip = new JSZip();
-      const base = cardBaseFilename(input);
-      // Still posters render fast, so do them serially.
+      const base = cardBaseFilename(input, bundle?.brand);
+      // Still posters render fast, so do them serially. A single size's render
+      // failure shouldn't abort the whole zip (matches the video/GIF blocks
+      // below) — skip it and note it, rather than losing every other size too.
       for (const size of enabledSizes) {
-        const blob = await renderShareCard(input, buildOpts(size, photoTransform));
-        zip.file(`${base}-${SIZES[size].code}.png`, blob);
+        try {
+          const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+          zip.file(`${base}-${SIZES[size].code}.png`, blob);
+        } catch (e) {
+          console.error(`Card PNG export failed for size ${size}`, e);
+          skipped.push(`${SIZES[size].label} PNG`);
+        }
       }
       // Admins additionally get an animated video clip per size. Video export is
       // real-time (canvas.captureStream + MediaRecorder), so recording the sizes
@@ -389,6 +413,7 @@ export function ShareCardModal({
               .then((r) => ({ size, ...r }))
               .catch((e) => {
                 console.error("Card video export failed", e);
+                skipped.push(`${SIZES[size].label} video`);
                 return null;
               }),
           ),
@@ -405,6 +430,7 @@ export function ShareCardModal({
               .then((r) => ({ size, ...r }))
               .catch((e) => {
                 console.error("Card GIF export failed", e);
+                skipped.push(`${SIZES[size].label} GIF`);
                 return null;
               }),
           ),
@@ -420,7 +446,14 @@ export function ShareCardModal({
         }
       }
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      downloadBlob(zipBlob, `${cardBaseFilename(input)}-all.zip`);
+      downloadBlob(zipBlob, `${cardBaseFilename(input, bundle?.brand)}-all.zip`);
+      if (skipped.length > 0) {
+        setExportError(`Zip downloaded, but skipped: ${skipped.join(", ")}`);
+      }
+    } catch (e) {
+      console.error("Card zip export failed", e);
+      setExportError(e instanceof Error ? e.message : "Zip download failed");
+      throw e;
     } finally {
       setZipping(false);
     }
@@ -429,10 +462,16 @@ export function ShareCardModal({
   const handleApproveAndDownload = async () => {
     if (!input || !onApprove) return;
     setApproving(true);
+    setExportError(null);
     try {
       await handleDownloadAll();
       await onApprove();
       onOpenChange(false);
+    } catch (e) {
+      console.error("Approve & download failed", e);
+      setExportError(
+        e instanceof Error ? `Approve failed: ${e.message}` : "Approve failed",
+      );
     } finally {
       setApproving(false);
     }
@@ -795,14 +834,23 @@ export function ShareCardModal({
           </p>
         )}
 
+        {exportError && (
+          <p className="text-xs text-destructive">{exportError}</p>
+        )}
+
         <DialogFooter className="gap-2 sm:gap-2">
           <Button
             type="button"
             variant="secondary"
             onClick={() => handleDownload(activeSize)}
+            disabled={downloading || zipping || approving}
           >
-            <Download className="h-4 w-4 mr-2" />
-            Download {SIZES[activeSize].label}
+            {downloading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            {downloading ? "Downloading…" : `Download ${SIZES[activeSize].label}`}
           </Button>
           {isAdmin && animated && (
             <Button
@@ -855,7 +903,12 @@ export function ShareCardModal({
           <Button
             type="button"
             variant={onApprove ? "secondary" : "default"}
-            onClick={handleDownloadAll}
+            onClick={() => {
+              // Failures already set exportError inside handleDownloadAll;
+              // swallow the rejection here so it doesn't surface as an
+              // unhandled promise rejection when clicked directly.
+              handleDownloadAll().catch(() => {});
+            }}
             disabled={zipping || approving || videoExporting}
           >
             {zipping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}

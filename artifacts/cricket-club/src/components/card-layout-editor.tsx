@@ -1036,6 +1036,13 @@ function EditorCanvas({
         y: Math.max(0, ny),
       });
       setGuides({ vx, hy });
+    } else if (l.shape === "circle") {
+      // Circular layers (photo/badge) are always drawn as a perfect circle
+      // (ctx.arc) — an independent w/h resize would stretch them into an
+      // ellipse, so lock both axes to whichever delta is larger.
+      const delta = Math.abs(dx) >= Math.abs(dy) ? dx : dy;
+      const size = clamp(d.w + delta, 0.03, Math.min(W / 1080 - d.x, 2));
+      onChange(l.id, { w: size, h: size });
     } else {
       onChange(l.id, {
         w: clamp(d.w + dx, 0.03, W / 1080 - d.x),
