@@ -166,4 +166,28 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
       .send({ name: "Should not land on Halls Head" })
       .expect(401);
   });
+
+  it("invalidates the 5-minute tenant-brand cache so a GET right after a PATCH reflects the new value", async () => {
+    // Prime the cache with the pre-update value.
+    const before = await request(app)
+      .get("/api/tenant-brand")
+      .set("x-tenant-id", String(tenantAId))
+      .expect(200);
+    expect(before.body.name).not.toBe("Iso Brand Tenant A (cache-test)");
+
+    await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ name: "Iso Brand Tenant A (cache-test)" })
+      .expect(200);
+
+    // Without invalidateTenantBrandCache, this would still serve the
+    // pre-PATCH cached value for up to 5 minutes.
+    const after = await request(app)
+      .get("/api/tenant-brand")
+      .set("x-tenant-id", String(tenantAId))
+      .expect(200);
+    expect(after.body.name).toBe("Iso Brand Tenant A (cache-test)");
+  });
 });

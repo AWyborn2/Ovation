@@ -148,6 +148,34 @@ describe("platform-admin tenant management", () => {
     expect(res.body.customDomain).toBe(domain);
   });
 
+  it("downgrading a tenant's plan away from Pro clears its existing custom domain", async () => {
+    // Guards against the gate only firing when customDomain is being SET --
+    // a plan-only downgrade must not leave a stale customDomain the tenant is
+    // no longer entitled to keep serving on.
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ plan: "free" })
+      .expect(200);
+    expect(res.body.plan).toBe("free");
+    expect(res.body.customDomain).toBeNull();
+
+    const [row] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.customDomain).toBeNull();
+  });
+
+  it("returns 404 for a customDomain-only PATCH to a nonexistent tenant, not a 402", async () => {
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/999999999`)
+      .set("Cookie", platformCookie)
+      .send({ customDomain: `ghost-${STAMP}.example.com` })
+      .expect(404);
+    expect(res.status).toBe(404);
+  });
+
   it("does not widen enforcement of curation/socialStudio for Free tenants", async () => {
     // Regression guard for KTD4's scope: only customDomain is always-enforced;
     // everything else stays fully unlocked while BILLING_ENABLED is unset.
@@ -155,7 +183,7 @@ describe("platform-admin tenant management", () => {
       .select({ plan: tenantsTable.plan })
       .from(tenantsTable)
       .where(eq(tenantsTable.id, throwawayTenantId));
-    expect(row.plan).toBe("pro"); // sanity: previous test's write landed
+    expect(row.plan).toBe("free"); // sanity: previous test's downgrade landed
     const { entitlementsFor, planFromString } = await import("../lib/entitlements");
     const free = entitlementsFor(planFromString("free"));
     expect(free.curation).toBe(true);

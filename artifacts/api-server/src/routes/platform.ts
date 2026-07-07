@@ -155,6 +155,17 @@ router.post(
           passwordHash,
         })
         .returning();
+      if (!admin) {
+        // The tenant was provisioned but the admin row didn't come back --
+        // surface a clean 500 rather than throwing on admin.id below, which
+        // would leave the client with no tenantId to retry or recover with.
+        req.log?.error(
+          { event: "signup_admin_insert_failed", tenantId: result.tenant.id },
+          "signup: admin insert returned no row after tenant provisioning",
+        );
+        res.status(500).json({ error: "Signup failed. Please try again." });
+        return;
+      }
 
       // Mint the session for the admin just created, not for whatever tenant
       // `getTenantId(req)` would resolve on this request — signup is served from

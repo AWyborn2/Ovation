@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Trophy, History, Palette, Smartphone, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apexDomain } from "@/lib/apex-domain";
 
 /**
  * Ovation marketing / landing page. Rendered on the apex host (platform mode),
@@ -43,11 +44,7 @@ function PricingLine({ children }: { children: React.ReactNode }) {
 
 /** Halls Head's live site, on this same apex, for the social-proof link. */
 function hallsHeadUrl(): string {
-  const apex =
-    typeof window !== "undefined"
-      ? window.location.hostname.replace(/^www\./, "")
-      : "ovation.app";
-  return `https://hallshead.${apex}`;
+  return `https://hallshead.${apexDomain()}`;
 }
 
 export default function LandingPage() {

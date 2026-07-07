@@ -62,7 +62,20 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(tenantsTable).set(updates).where(eq(tenantsTable.id, tenantId));
+  const [row] = await db
+    .update(tenantsTable)
+    .set(updates)
+    .where(eq(tenantsTable.id, tenantId))
+    .returning();
+  if (!row) {
+    // The tenant vanished between requireAdmin's lookup and this write (no
+    // transaction spans them) -- without this check the update silently
+    // matches zero rows and the code below would still return a 200 with the
+    // fallback/default brand, looking like a successful update for a tenant
+    // that no longer exists.
+    res.status(404).json({ error: "No such tenant" });
+    return;
+  }
   invalidateTenantBrandCache(tenantId);
   const brand = await getTenantBrand(tenantId);
   res.json(brand);

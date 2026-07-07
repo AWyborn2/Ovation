@@ -107,6 +107,13 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setError(null);
     setColourNote(null);
 
+    // Remember the pre-upload colours so they can be restored if the upload
+    // itself fails -- the suggested palette below is provisional until the
+    // logo it was extracted from is actually saved; without this, a failed
+    // upload could leave the new colours paired with the old (unchanged)
+    // logoUrl, a mismatch a save right after the failure would persist.
+    const priorColours = { primaryColour, secondaryColour, tertiaryColour };
+
     // Suggest colours from the local file immediately (a blob: URL is
     // same-origin, so this doesn't need to wait for the upload round-trip).
     const localUrl = URL.createObjectURL(file);
@@ -127,7 +134,17 @@ function Editor({ brand }: { brand: TenantBrand }) {
     }
 
     const result = await uploadLogo(file);
-    if (result) setLogoUrl(`/api/storage${result.objectPath}`);
+    if (result) {
+      setLogoUrl(`/api/storage${result.objectPath}`);
+    } else {
+      // Upload failed -- the suggested colours belong to a logo that was
+      // never actually saved server-side; revert rather than leave them
+      // paired with the old (unchanged) logoUrl.
+      setPrimaryColour(priorColours.primaryColour);
+      setSecondaryColour(priorColours.secondaryColour);
+      setTertiaryColour(priorColours.tertiaryColour);
+      setColourNote(null);
+    }
   };
 
   const handleFaviconFile = async (e: React.ChangeEvent<HTMLInputElement>) => {

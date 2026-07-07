@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apexDomain } from "@/lib/apex-domain";
 
 /**
  * Self-serve onboarding wizard (platform/apex host). Pick a central PCA club →
@@ -87,12 +88,20 @@ function ClubPicker({ onPick }: { onPick: (c: AvailableClub) => void }) {
   );
 }
 
+/**
+ * Where "set up branding now" lands, derived from the signup response's
+ * redirectUrl (`https://{slug}.{apex}/admin`). Exported as a pure function so
+ * the URL-stripping regex is unit-testable without rendering the wizard.
+ */
+export function brandingNowUrl(redirectUrl: string): string {
+  return `${redirectUrl.replace(/\/admin\/?$/, "")}/admin/settings/branding`;
+}
+
 function ChoiceScreen({ redirectUrl }: { redirectUrl: string }) {
   // Both options land on the new tenant's own subdomain, already authenticated
   // (the signup response set the session cookie) -- "now" goes straight to the
   // branding tab, "later" goes to the dashboard, where the finish-setup banner
   // stays visible until branding is actually set.
-  const base = redirectUrl.replace(/\/admin\/?$/, "");
   return (
     <div className="space-y-6 text-center">
       <div>
@@ -104,7 +113,7 @@ function ChoiceScreen({ redirectUrl }: { redirectUrl: string }) {
       <div className="flex flex-col gap-3">
         <Button
           onClick={() => {
-            window.location.href = `${base}/admin/settings/branding`;
+            window.location.href = brandingNowUrl(redirectUrl);
           }}
           data-testid="button-branding-now"
         >
@@ -187,10 +196,7 @@ function DetailsForm({
     );
   }
 
-  const baseDomain =
-    typeof window !== "undefined"
-      ? window.location.hostname.replace(/^www\./, "")
-      : "ovation.app";
+  const baseDomain = apexDomain();
 
   return (
     <form onSubmit={submit} className="space-y-6">

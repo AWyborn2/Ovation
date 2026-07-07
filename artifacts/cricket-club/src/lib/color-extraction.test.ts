@@ -96,4 +96,21 @@ describe("extractBrandPalette", () => {
       tertiaryColour: null,
     });
   });
+
+  it("returns all-null instead of hanging when the underlying load never settles", async () => {
+    vi.useFakeTimers();
+    try {
+      getPaletteMock.mockReturnValue(new Promise(() => {})); // never resolves/rejects
+      const pending = extractBrandPalette("blob:fake");
+      await vi.advanceTimersByTimeAsync(8000);
+      const result = await pending;
+      expect(result).toEqual({
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
