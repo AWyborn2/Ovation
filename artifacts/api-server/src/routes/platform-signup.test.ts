@@ -58,6 +58,27 @@ describe("platform self-serve signup", () => {
     expect(signup.body.redirectUrl).toContain(`${SLUG}.`);
     createdTenantId = signup.body.tenantId;
 
+    // Signup mints a session immediately (U1) — no separate login call needed.
+    const setCookie = signup.headers["set-cookie"];
+    expect(setCookie).toBeDefined();
+    const sessionCookieHeader = (
+      Array.isArray(setCookie) ? setCookie : [setCookie]
+    ).find((c: string) => c.startsWith("hhcc_session="));
+    expect(sessionCookieHeader).toBeDefined();
+
+    // The cookie's domain is scoped to the shared apex, not just the request
+    // host that set it, since the redirectUrl above sends the browser to a
+    // different host (the new tenant's own subdomain).
+    expect(sessionCookieHeader!.toLowerCase()).toContain("domain=");
+
+    const sessionCookie = sessionCookieHeader!.split(";")[0];
+    const me = await request(app)
+      .get("/api/auth/me")
+      .set("Cookie", sessionCookie)
+      .set("x-tenant-id", String(createdTenantId));
+    expect(me.status).toBe(200);
+    expect(me.body.username).toBe(`owner+${STAMP}@example.com`);
+
     // The tenant exists, reads from central, and got its first admin.
     const [tenant] = await db
       .select()

@@ -4,6 +4,7 @@ import {
   randomBytes,
   timingSafeEqual,
 } from "node:crypto";
+import type { Request } from "express";
 import bcrypt from "bcryptjs";
 import {
   db,
@@ -15,6 +16,7 @@ import {
   type CaptainRow,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
+import { platformBaseDomain } from "./tenant-url";
 
 /** Halls Head is tenant #1 — the seed admin's tenant and the dev/default tenant. */
 const DEFAULT_TENANT_ID = 1;
@@ -88,6 +90,22 @@ export const SESSION_COOKIE_OPTS = {
   path: "/",
   maxAge: COOKIE_MAX_AGE_MS,
 };
+
+/**
+ * Session cookie options for signup specifically. Signup responds on the
+ * apex/platform host but redirects the browser straight to the new tenant's own
+ * subdomain (`{slug}.{apex}`) — a different host from the one that set the
+ * cookie. A host-scoped cookie (the default {@link SESSION_COOKIE_OPTS}, used by
+ * login where the same host sets and reads it) would not be sent on that
+ * redirect, so signup needs the cookie scoped to the shared apex domain instead.
+ * `resolveAdmin`'s existing tenant cross-check (`admin.tenantId !== getTenantId(req)`)
+ * already guards against this broader scope being read on the wrong tenant's host.
+ */
+export function signupSessionCookieOpts(req: Request): typeof SESSION_COOKIE_OPTS & {
+  domain: string;
+} {
+  return { ...SESSION_COOKIE_OPTS, domain: platformBaseDomain(req) };
+}
 
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 10);
