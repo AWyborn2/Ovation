@@ -40,6 +40,13 @@ describe("tenant-context: resolveTenantId (header > env > default)", () => {
   });
 });
 
+// The wire brand carries no accentToken — the field is client-side only
+// (renderers snap the accent-slot hex to the nearest design-system token via
+// resolveAccentToken), so the server-built brand is the shared constant minus
+// that key.
+const { accentToken: _hhAccent, ...HALLS_HEAD_WIRE_BRAND } = HALLS_HEAD_BRAND;
+const { accentToken: _defaultAccent, ...DEFAULT_WIRE_BRAND } = DEFAULT_BRAND;
+
 describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", () => {
   // The Halls Head clubs-register row (id 2) mirrors HALLS_HEAD_BRAND — this is
   // the shape getHallsHeadBrand() returned before the tenancy refactor.
@@ -66,7 +73,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   it("returns the Halls Head brand from the clubs-register row", () => {
     // getTenantBrand(1) resolves club row 2 then merges via buildTenantBrand —
     // this is the exact object getHallsHeadBrand() returned before.
-    expect(buildTenantBrand(hhTenantRow, hhClubRow)).toEqual(HALLS_HEAD_BRAND);
+    expect(buildTenantBrand(hhTenantRow, hhClubRow)).toEqual(HALLS_HEAD_WIRE_BRAND);
   });
 
   it("falls back to the tenant row's own brand columns when no clubs row", () => {
@@ -74,19 +81,20 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     // logoUrl (better than the default club's 128px) — the tenants table has no
     // 128px column. Everything else comes from the tenant row.
     expect(buildTenantBrand(hhTenantRow, null)).toEqual({
-      ...HALLS_HEAD_BRAND,
+      ...HALLS_HEAD_WIRE_BRAND,
       logoUrl128: hhTenantRow.logoUrl,
     });
   });
 
   it("falls back to the NEUTRAL default, never Halls Head, when nothing is set", () => {
     const brand = buildTenantBrand(null, null);
-    expect(brand).toEqual(DEFAULT_BRAND);
+    expect(brand).toEqual(DEFAULT_WIRE_BRAND);
     // The Phase 2 R5 regression guard: no Halls Head asset leaks through.
+    // (backgroundUrl needs no not-Halls-Head check any more — the design
+    // system dropped the texture, so Halls Head's own value is null too.)
     expect(brand.logoUrl).not.toBe(HALLS_HEAD_BRAND.logoUrl);
     expect(brand.primaryColour).not.toBe(HALLS_HEAD_BRAND.primaryColour);
     expect(brand.name).not.toBe(HALLS_HEAD_BRAND.name);
-    expect(brand.backgroundUrl).not.toBe(HALLS_HEAD_BRAND.backgroundUrl);
     expect(brand.backgroundUrl).toBeNull();
     expect(brand.faviconUrl).toBeNull();
   });
@@ -160,7 +168,6 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
       null,
     );
     expect(withBackground.backgroundUrl).toBe("https://example.com/some-club-bg.png");
-    expect(withBackground.backgroundUrl).not.toBe(HALLS_HEAD_BRAND.backgroundUrl);
 
     const withoutBackground = buildTenantBrand(
       {

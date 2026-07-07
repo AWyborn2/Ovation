@@ -12,6 +12,10 @@ export * from "./types";
 export {
   DEFAULT_BRAND,
   deriveClubColors,
+  ACCENT_HEX,
+  snapHexToAccentToken,
+  resolveAccentToken,
+  type AccentToken,
   type ClubBrand,
   // Deprecated aliases — kept so downstream imports compile during the sweep.
   HALLS_HEAD_BRAND,

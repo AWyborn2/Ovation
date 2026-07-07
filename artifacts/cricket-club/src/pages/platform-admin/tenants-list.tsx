@@ -4,23 +4,16 @@ import { Loader2, PlusCircle, Search } from "lucide-react";
 import { useListAllTenants } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { StatusPill, type StatusPillTone } from "@/components/ui/stat-badge";
 
-const PLAN_STYLES: Record<string, string> = {
-  free: "bg-muted text-muted-foreground",
-  club: "bg-blue-100 text-blue-800",
-  pro: "bg-amber-100 text-amber-800",
+const PLAN_TONES: Record<string, StatusPillTone> = {
+  free: "neutral",
+  club: "info",
+  pro: "pilot",
 };
 
 function PlanBadge({ plan }: { plan: string }) {
-  return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-        PLAN_STYLES[plan] ?? PLAN_STYLES.free
-      }`}
-    >
-      {plan}
-    </span>
-  );
+  return <StatusPill tone={PLAN_TONES[plan] ?? "neutral"}>{plan}</StatusPill>;
 }
 
 export default function TenantsList() {

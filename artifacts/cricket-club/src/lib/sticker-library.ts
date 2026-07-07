@@ -73,7 +73,7 @@ export type StickerAsset = {
   ) => void | Promise<void>;
 };
 
-const CARD_FONT = "'Montserrat', sans-serif";
+const CARD_FONT = "'IBM Plex Sans', sans-serif";
 const GOLD = "#FBAC27";
 const CREAM = "#F5F2E8";
 const INK = "#1A1A1A";

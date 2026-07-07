@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -58,46 +58,48 @@
    a single value here without regenerating from the function, or this static
    fallback silently diverges from what every tenant actually renders. */
 :root {
-  --background: 215 8% 97%;
-  --foreground: 215 15% 15%;
+  /* light — deriveThemeTokens(DEFAULT_BRAND, "light"): the design system's
+     companion light theme (paper surfaces, same navy hue family, amber accent) */
+  --background: 220 25% 97%;
+  --foreground: 222 30% 12%;
 
-  --border: 215 10% 85%;
-  --input: 215 10% 85%;
+  --border: 220 20% 88%;
+  --input: 220 20% 88%;
 
-  --ring: 215 20% 65%;
+  --ring: 37 100% 61%;
 
   --card: 0 0% 100%;
-  --card-foreground: 215 15% 15%;
-  --card-border: 215 20% 65%;
+  --card-foreground: 222 30% 12%;
+  --card-border: 220 20% 88%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 215 15% 15%;
-  --popover-border: 215 10% 85%;
+  --popover-foreground: 222 30% 12%;
+  --popover-border: 220 20% 88%;
 
-  --primary: 215 20% 65%;
-  --primary-foreground: 215 25% 20%;
-  --primary-border: 215 20% 58%;
+  --primary: 37 100% 61%;
+  --primary-foreground: 222 33% 8%;
+  --primary-border: 37 100% 61%;
 
-  --secondary: 215 19% 88%;
-  --secondary-foreground: 215 19% 20%;
-  --secondary-border: 215 19% 80%;
+  --secondary: 220 20% 94%;
+  --secondary-foreground: 218 12% 42%;
+  --secondary-border: 220 20% 88%;
 
-  --muted: 215 8% 94%;
-  --muted-foreground: 215 10% 40%;
-  --muted-border: 215 10% 85%;
+  --muted: 220 20% 94%;
+  --muted-foreground: 218 12% 42%;
+  --muted-border: 220 20% 88%;
 
-  --accent: 215 20% 65%;
-  --accent-foreground: 215 25% 20%;
-  --accent-border: 215 20% 58%;
+  --accent: 37 100% 61%;
+  --accent-foreground: 222 33% 8%;
+  --accent-border: 37 100% 61%;
 
-  --destructive: 0 72% 45%;
+  --destructive: 6 78% 46%;
   --destructive-foreground: 0 0% 100%;
-  --destructive-border: 0 72% 38%;
+  --destructive-border: 6 78% 40%;
 
-  --app-font-sans: 'Montserrat', sans-serif;
-  --app-font-serif: 'Oswald', sans-serif;
-  --app-font-mono: 'Space Mono', monospace;
-  --radius: 0.375rem;
+  --app-font-sans: 'IBM Plex Sans', sans-serif;
+  --app-font-serif: 'Bricolage Grotesque', sans-serif;
+  --app-font-mono: 'IBM Plex Mono', monospace;
+  --radius: 0.5rem;
 
   /* Juniors section banner accent. Default = neutral slate; BrandProvider
      overrides it at runtime from the tenant brand's tertiary colour. */
@@ -105,39 +107,41 @@
 }
 
 .dark {
-  --background: 215 25% 24%;
-  --foreground: 0 0% 100%;
-  --border: 215 25% 35%;
-  --input: 215 25% 35%;
-  --ring: 215 20% 65%;
+  /* dark — deriveThemeTokens(DEFAULT_BRAND, "dark"): the design system's
+     native navy scale (#0B0F1A page, #131826 card, #232B3D border) */
+  --background: 222 33% 8%;
+  --foreground: 220 20% 96%;
+  --border: 220 23% 21%;
+  --input: 220 23% 21%;
+  --ring: 37 100% 61%;
 
-  --card: 215 25% 27%;
-  --card-foreground: 0 0% 100%;
-  --card-border: 215 20% 65%;
+  --card: 220 30% 11%;
+  --card-foreground: 220 20% 96%;
+  --card-border: 220 23% 21%;
 
-  --popover: 215 25% 27%;
-  --popover-foreground: 0 0% 100%;
-  --popover-border: 215 25% 35%;
+  --popover: 220 30% 11%;
+  --popover-foreground: 220 20% 96%;
+  --popover-border: 220 23% 21%;
 
-  --primary: 215 20% 65%;
-  --primary-foreground: 215 25% 27%;
-  --primary-border: 215 20% 58%;
+  --primary: 37 100% 61%;
+  --primary-foreground: 222 33% 8%;
+  --primary-border: 37 100% 61%;
 
-  --secondary: 215 19% 30%;
-  --secondary-foreground: 215 20% 65%;
-  --secondary-border: 215 19% 24%;
+  --secondary: 222 28% 16%;
+  --secondary-foreground: 218 12% 60%;
+  --secondary-border: 220 23% 21%;
 
-  --muted: 215 25% 30%;
-  --muted-foreground: 215 10% 75%;
-  --muted-border: 215 25% 35%;
+  --muted: 222 28% 16%;
+  --muted-foreground: 218 12% 60%;
+  --muted-border: 220 23% 21%;
 
-  --accent: 215 20% 65%;
-  --accent-foreground: 215 25% 27%;
-  --accent-border: 215 20% 58%;
+  --accent: 37 100% 61%;
+  --accent-foreground: 222 33% 8%;
+  --accent-border: 37 100% 61%;
 
-  --destructive: 0 72% 51%;
+  --destructive: 9 85% 62%;
   --destructive-foreground: 0 0% 100%;
-  --destructive-border: 0 72% 45%;
+  --destructive-border: 9 85% 62%;
 }
 
 @layer base {
@@ -159,8 +163,11 @@
     content: "";
     @apply fixed inset-0 pointer-events-none bg-background/80 mix-blend-multiply z-[-1];
   }
+  /* Design-system headings: Bricolage Grotesque 700-800, sentence case, in
+     foreground ink — the accent is reserved for numbers, CTAs and live states,
+     and uppercase for small pills/labels only. */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-normal uppercase text-primary;
+    @apply font-serif font-bold tracking-tight text-foreground;
   }
 }
 
@@ -201,14 +208,15 @@
   color: hsl(var(--card-foreground));
   border: 1px solid hsl(var(--card-border));
   border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  /* Design-system depth is surface contrast + hairline border only — override
+     driver.js's own default popover shadow. */
+  box-shadow: none;
   max-width: 340px;
 }
 .driver-popover.hhcc-tour .driver-popover-title {
   font-family: var(--app-font-serif);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: hsl(var(--primary));
+  font-weight: 700;
+  color: hsl(var(--foreground));
 }
 .driver-popover.hhcc-tour .driver-popover-description {
   color: hsl(var(--card-foreground));
@@ -232,9 +240,8 @@
   border: 1px solid hsl(var(--primary-border));
   border-radius: var(--radius-sm);
   text-shadow: none;
-  font-family: var(--app-font-serif);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-family: var(--app-font-sans);
+  font-weight: 600;
   padding: 0.35rem 0.75rem;
 }
 .driver-popover.hhcc-tour .driver-popover-footer button:hover {
