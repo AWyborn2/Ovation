@@ -4,6 +4,7 @@ import {
   randomBytes,
   timingSafeEqual,
 } from "node:crypto";
+import type { Request } from "express";
 import bcrypt from "bcryptjs";
 import {
   db,
@@ -15,6 +16,7 @@ import {
   type CaptainRow,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
+import { platformBaseDomain } from "./tenant-url";
 
 /** Halls Head is tenant #1 — the seed admin's tenant and the dev/default tenant. */
 const DEFAULT_TENANT_ID = 1;
@@ -88,6 +90,39 @@ export const SESSION_COOKIE_OPTS = {
   path: "/",
   maxAge: COOKIE_MAX_AGE_MS,
 };
+
+/**
+ * How long the signup-minted, apex-scoped session cookie stays valid — far
+ * shorter than a normal 30-day login session. This cookie is sent to every
+ * subdomain under the apex (not just the new tenant's own), not merely the one
+ * host it's meant for; `resolveAdmin`'s tenant cross-check stops it from
+ * *authenticating* on the wrong tenant, but doesn't stop it from being
+ * *transmitted* there. Keeping it short-lived bounds that exposure to roughly
+ * one onboarding sitting rather than a month. A normal `/auth/login` afterward
+ * mints the usual host-scoped, full-length session.
+ */
+const SIGNUP_COOKIE_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes
+
+/**
+ * Session cookie options for signup specifically. Signup responds on the
+ * apex/platform host but redirects the browser straight to the new tenant's own
+ * subdomain (`{slug}.{apex}`) — a different host from the one that set the
+ * cookie. A host-scoped cookie (the default {@link SESSION_COOKIE_OPTS}, used by
+ * login where the same host sets and reads it) would not be sent on that
+ * redirect, so signup needs the cookie scoped to the shared apex domain instead.
+ * `resolveAdmin`'s existing tenant cross-check (`admin.tenantId !== getTenantId(req)`)
+ * already guards against this broader scope being read on the wrong tenant's host;
+ * the short {@link SIGNUP_COOKIE_MAX_AGE_MS} bounds how long that broader scope exists.
+ */
+export function signupSessionCookieOpts(req: Request): typeof SESSION_COOKIE_OPTS & {
+  domain: string;
+} {
+  return {
+    ...SESSION_COOKIE_OPTS,
+    domain: platformBaseDomain(req),
+    maxAge: SIGNUP_COOKIE_MAX_AGE_MS,
+  };
+}
 
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 10);

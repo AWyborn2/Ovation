@@ -31,6 +31,7 @@ import {
 import { tenantUrl } from "../lib/tenant-url";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
+import { hasEntitlement, planFromString } from "../lib/entitlements";
 
 const router: IRouter = Router();
 
@@ -231,11 +232,41 @@ router.patch(
       return;
     }
 
+    // Read the current row up front -- needed for the tenant-existence check
+    // (so an unknown id 404s before any entitlement check runs, rather than
+    // being misread as "no plan" and misreported as a 402), the effective-plan
+    // calc below, and the plan-downgrade/customDomain-clearing check.
+    const [currentRow] = await db
+      .select({ plan: tenantsTable.plan, customDomain: tenantsTable.customDomain })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, id));
+    if (!currentRow) {
+      res.status(404).json({ error: "No such tenant" });
+      return;
+    }
+
     const updates: Partial<Pick<TenantRow, "plan" | "customDomain">> = {};
     if (parsed.data.plan !== undefined) updates.plan = parsed.data.plan;
+
+    // Custom domain is plan-gated (always enforced, independent of the
+    // dormant BILLING_ENABLED flag — see entitlements.ts). Evaluate the
+    // EFFECTIVE plan for this request: the incoming `plan` when this same
+    // call sets it (a super-admin granting Pro and a domain together), else
+    // the tenant's current stored plan — not stale pre-update state.
+    const effectivePlan = parsed.data.plan ?? planFromString(currentRow.plan);
+    const effectiveHasCustomDomain = hasEntitlement(effectivePlan, "customDomain");
+
     if (parsed.data.customDomain !== undefined) {
       const cd = parsed.data.customDomain?.trim().toLowerCase() || null;
       if (cd) {
+        if (!effectiveHasCustomDomain) {
+          res.status(402).json({
+            error: "Upgrade required",
+            feature: "customDomain",
+            plan: effectivePlan,
+          });
+          return;
+        }
         const [clash] = await db
           .select({ id: tenantsTable.id })
           .from(tenantsTable)
@@ -250,7 +281,16 @@ router.patch(
         }
       }
       updates.customDomain = cd;
+    } else if (!effectiveHasCustomDomain && currentRow.customDomain) {
+      // The request didn't touch customDomain, but a plan change (or the
+      // stored plan alone) now leaves this tenant without the entitlement
+      // while a custom domain is still set on the row -- the gate above only
+      // guards the moment customDomain is written, so without this branch a
+      // plan downgrade alone would silently leave a Free tenant still serving
+      // on its old custom domain. Clear it rather than block the downgrade.
+      updates.customDomain = null;
     }
+
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "Nothing to update" });
       return;

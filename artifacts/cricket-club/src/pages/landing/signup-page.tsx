@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apexDomain } from "@/lib/apex-domain";
 
 /**
  * Self-serve onboarding wizard (platform/apex host). Pick a central PCA club →
@@ -87,12 +88,59 @@ function ClubPicker({ onPick }: { onPick: (c: AvailableClub) => void }) {
   );
 }
 
+/**
+ * Where "set up branding now" lands, derived from the signup response's
+ * redirectUrl (`https://{slug}.{apex}/admin`). Exported as a pure function so
+ * the URL-stripping regex is unit-testable without rendering the wizard.
+ */
+export function brandingNowUrl(redirectUrl: string): string {
+  return `${redirectUrl.replace(/\/admin\/?$/, "")}/admin/settings/branding`;
+}
+
+function ChoiceScreen({ redirectUrl }: { redirectUrl: string }) {
+  // Both options land on the new tenant's own subdomain, already authenticated
+  // (the signup response set the session cookie) -- "now" goes straight to the
+  // branding tab, "later" goes to the dashboard, where the finish-setup banner
+  // stays visible until branding is actually set.
+  return (
+    <div className="space-y-6 text-center">
+      <div>
+        <h2 className="text-xl font-semibold">Your club's site is live!</h2>
+        <p className="mt-2 text-muted-foreground">
+          Want to set up your logo and colours now, or finish that later?
+        </p>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Button
+          onClick={() => {
+            window.location.href = brandingNowUrl(redirectUrl);
+          }}
+          data-testid="button-branding-now"
+        >
+          Set up branding now
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            window.location.href = redirectUrl;
+          }}
+          data-testid="button-branding-later"
+        >
+          I'll finish this later
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function DetailsForm({
   club,
   onBack,
+  onSignedUp,
 }: {
   club: AvailableClub;
   onBack: () => void;
+  onSignedUp: (redirectUrl: string) => void;
 }) {
   const [slug, setSlug] = useState(club.suggestedSlug);
   const [email, setEmail] = useState("");
@@ -142,16 +190,13 @@ function DetailsForm({
       },
       {
         onSuccess: (res) => {
-          window.location.href = res.redirectUrl;
+          onSignedUp(res.redirectUrl);
         },
       },
     );
   }
 
-  const baseDomain =
-    typeof window !== "undefined"
-      ? window.location.hostname.replace(/^www\./, "")
-      : "ovation.app";
+  const baseDomain = apexDomain();
 
   return (
     <form onSubmit={submit} className="space-y-6">
@@ -231,6 +276,7 @@ function DetailsForm({
 
 export default function SignupPage() {
   const [club, setClub] = useState<AvailableClub | null>(null);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   return (
     <div className="mx-auto min-h-screen max-w-lg px-6 py-16">
@@ -238,8 +284,10 @@ export default function SignupPage() {
         Ovation
       </Link>
       <div className="mt-10">
-        {club ? (
-          <DetailsForm club={club} onBack={() => setClub(null)} />
+        {redirectUrl ? (
+          <ChoiceScreen redirectUrl={redirectUrl} />
+        ) : club ? (
+          <DetailsForm club={club} onBack={() => setClub(null)} onSignedUp={setRedirectUrl} />
         ) : (
           <>
             <h1 className="text-2xl font-semibold tracking-tight">Find your club</h1>

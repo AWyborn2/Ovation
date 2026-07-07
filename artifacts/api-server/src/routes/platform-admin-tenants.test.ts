@@ -118,6 +118,79 @@ describe("platform-admin tenant management", () => {
     expect(row.plan).toBe("club");
   });
 
+  it("rejects setting a custom domain on a non-Pro tenant, even with BILLING_ENABLED unset (402)", async () => {
+    // Tenant is "club" tier from the previous test — club doesn't include
+    // customDomain, and this gate stays enforced regardless of the dormant flag.
+    delete process.env.BILLING_ENABLED;
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ customDomain: `not-allowed-${STAMP}.example.com` })
+      .expect(402);
+    expect(res.body.feature).toBe("customDomain");
+    expect(res.body.plan).toBe("club");
+
+    const [row] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.customDomain).toBeNull();
+  });
+
+  it("allows a single PATCH to grant Pro and set a custom domain together (effective-plan evaluation)", async () => {
+    const domain = `allowed-${STAMP}.example.com`;
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ plan: "pro", customDomain: domain })
+      .expect(200);
+    expect(res.body.plan).toBe("pro");
+    expect(res.body.customDomain).toBe(domain);
+  });
+
+  it("downgrading a tenant's plan away from Pro clears its existing custom domain", async () => {
+    // Guards against the gate only firing when customDomain is being SET --
+    // a plan-only downgrade must not leave a stale customDomain the tenant is
+    // no longer entitled to keep serving on.
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ plan: "free" })
+      .expect(200);
+    expect(res.body.plan).toBe("free");
+    expect(res.body.customDomain).toBeNull();
+
+    const [row] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.customDomain).toBeNull();
+  });
+
+  it("returns 404 for a customDomain-only PATCH to a nonexistent tenant, not a 402", async () => {
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/999999999`)
+      .set("Cookie", platformCookie)
+      .send({ customDomain: `ghost-${STAMP}.example.com` })
+      .expect(404);
+    expect(res.status).toBe(404);
+  });
+
+  it("does not widen enforcement of curation/socialStudio for Free tenants", async () => {
+    // Regression guard for KTD4's scope: only customDomain is always-enforced;
+    // everything else stays fully unlocked while BILLING_ENABLED is unset.
+    const [row] = await db
+      .select({ plan: tenantsTable.plan })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.plan).toBe("free"); // sanity: previous test's downgrade landed
+    const { entitlementsFor, planFromString } = await import("../lib/entitlements");
+    const free = entitlementsFor(planFromString("free"));
+    expect(free.curation).toBe(true);
+    expect(free.socialStudio).toBe(true);
+    expect(free.customDomain).toBe(false);
+  });
+
   it("concierge-provisions a tenant from an available central club", async () => {
     const clubs = await request(app).get("/api/platform/available-clubs").expect(200);
     expect(clubs.body.length).toBeGreaterThan(0);

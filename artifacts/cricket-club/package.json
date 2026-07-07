@@ -83,12 +83,7 @@
     "vite": "catalog:",
     "vitest": "^4.1.7",
     "wouter": "^3.3.5",
-    "zod": "catalog:",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.1.0",
-    "jsdom": "^25.0.1",
-    "vitest": "^4.1.7"
+    "zod": "catalog:"
   },
   "dependencies": {
     "@uppy/aws-s3": "^5.1.0",
@@ -96,6 +91,7 @@
     "@uppy/dashboard": "^5.1.1",
     "@uppy/react": "^5.2.0",
     "@workspace/object-storage-web": "workspace:*",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "node-vibrant": "^4.0.4"
   }
 }

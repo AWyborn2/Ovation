@@ -12,12 +12,18 @@ describe("plan entitlements", () => {
     delete process.env.BILLING_ENABLED;
   });
 
-  it("is dormant by default: every plan gets every feature", () => {
+  it("is dormant by default: every plan gets every feature except the always-enforced customDomain gate", () => {
     expect(billingEnabled()).toBe(false);
     for (const plan of ["free", "club", "pro"] as const) {
       const e = entitlementsFor(plan);
-      expect(Object.values(e).every(Boolean)).toBe(true);
+      const { customDomain, ...rest } = e;
+      expect(Object.values(rest).every(Boolean)).toBe(true);
     }
+    // customDomain stays plan-gated even while dormant (KTD4) -- the one
+    // deliberate exception to "everything unlocked during the pilot".
+    expect(entitlementsFor("free").customDomain).toBe(false);
+    expect(entitlementsFor("club").customDomain).toBe(false);
+    expect(entitlementsFor("pro").customDomain).toBe(true);
   });
 
   it("enforces the tier split when BILLING_ENABLED=true", () => {

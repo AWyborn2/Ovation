@@ -8,9 +8,17 @@ import {
   slugify,
   slugRejectionReason,
 } from "../lib/slug";
-import { hashPassword } from "../lib/auth";
+import {
+  hashPassword,
+  encodeSession,
+  signupSessionCookieOpts,
+  SESSION_COOKIE,
+} from "../lib/auth";
 import { platformBaseDomain } from "../lib/tenant-url";
-import { loginRateLimiter } from "../middlewares/rate-limit";
+import {
+  signupRateLimiter,
+  signupDiscoveryRateLimiter,
+} from "../middlewares/rate-limit";
 
 const router: IRouter = Router();
 
@@ -45,7 +53,7 @@ async function slugTaken(slug: string): Promise<boolean> {
 
 // --- Available clubs (the signup picker) ------------------------------------
 
-router.get("/platform/available-clubs", async (_req, res): Promise<void> => {
+router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req, res): Promise<void> => {
   if (signupMode() === "off") {
     res.status(403).json({ error: "Signup is disabled" });
     return;
@@ -75,7 +83,7 @@ router.get("/platform/available-clubs", async (_req, res): Promise<void> => {
 
 // --- Slug availability (live check in the wizard) ---------------------------
 
-router.get("/platform/slug-available", async (req, res): Promise<void> => {
+router.get("/platform/slug-available", signupDiscoveryRateLimiter, async (req, res): Promise<void> => {
   const raw = typeof req.query.slug === "string" ? req.query.slug : "";
   const rejection = validateSlug(raw);
   if (rejection) {
@@ -93,7 +101,7 @@ router.get("/platform/slug-available", async (req, res): Promise<void> => {
 
 router.post(
   "/platform/signup",
-  loginRateLimiter,
+  signupRateLimiter,
   async (req, res): Promise<void> => {
     if (signupMode() === "off") {
       res.status(403).json({ error: "Signup is disabled" });
@@ -138,12 +146,35 @@ router.post(
 
       // The first club admin (email + password, no verification in the pilot).
       const passwordHash = await hashPassword(parsed.data.password);
-      await db.insert(adminsTable).values({
-        tenantId: result.tenant.id,
-        username: adminEmail,
-        displayName: adminEmail.split("@")[0] || "Owner",
-        passwordHash,
-      });
+      const [admin] = await db
+        .insert(adminsTable)
+        .values({
+          tenantId: result.tenant.id,
+          username: adminEmail,
+          displayName: adminEmail.split("@")[0] || "Owner",
+          passwordHash,
+        })
+        .returning();
+      if (!admin) {
+        // The tenant was provisioned but the admin row didn't come back --
+        // surface a clean 500 rather than throwing on admin.id below, which
+        // would leave the client with no tenantId to retry or recover with.
+        req.log?.error(
+          { event: "signup_admin_insert_failed", tenantId: result.tenant.id },
+          "signup: admin insert returned no row after tenant provisioning",
+        );
+        res.status(500).json({ error: "Signup failed. Please try again." });
+        return;
+      }
+
+      // Mint the session for the admin just created, not for whatever tenant
+      // `getTenantId(req)` would resolve on this request — signup is served from
+      // the apex/platform host, which resolves to platform/fallback mode, not the
+      // new tenant's own subdomain. The cookie is scoped to the shared apex domain
+      // (not just this host) because the redirect below sends the browser to the
+      // new tenant's own subdomain, a different host from the one setting it.
+      const token = encodeSession({ adminId: admin.id, issuedAt: Date.now() });
+      res.cookie(SESSION_COOKIE, token, signupSessionCookieOpts(req));
 
       const apex = platformBaseDomain(req);
       res.status(201).json({

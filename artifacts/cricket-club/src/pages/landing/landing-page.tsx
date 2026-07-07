@@ -1,6 +1,8 @@
 import { Link } from "wouter";
-import { Trophy, History, Palette, Smartphone, ArrowRight } from "lucide-react";
+import { Trophy, History, Palette, Smartphone, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apexDomain } from "@/lib/apex-domain";
 
 /**
  * Ovation marketing / landing page. Rendered on the apex host (platform mode),
@@ -30,6 +32,20 @@ const FEATURES = [
     body: "The same stats on the web, a mobile app, and a rotating clubroom-TV display for match days.",
   },
 ];
+
+function PricingLine({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+/** Halls Head's live site, on this same apex, for the social-proof link. */
+function hallsHeadUrl(): string {
+  return `https://hallshead.${apexDomain()}`;
+}
 
 export default function LandingPage() {
   return (
@@ -78,6 +94,74 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="border-t">
+          <div className="mx-auto max-w-5xl px-6 py-16">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold tracking-tight">Pricing</h2>
+              <p className="mt-2 text-muted-foreground">
+                Free during the pilot. Every plan gets your full history and branding.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-6 sm:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Free</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <PricingLine>Full club history, stats and records</PricingLine>
+                  <PricingLine>Your own logo, colours and favicon</PricingLine>
+                  <PricingLine>A club.ovation.app address</PricingLine>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/40">
+                <CardHeader>
+                  <CardTitle>Pro</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <PricingLine>Everything in Free</PricingLine>
+                  <PricingLine>Your own domain (e.g. yourclub.com.au)</PricingLine>
+                  <p className="pt-2 text-muted-foreground">
+                    <a href="mailto:hello@ovation.app" className="underline underline-offset-2">
+                      Contact us
+                    </a>{" "}
+                    to upgrade.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t bg-muted/30">
+          <div className="mx-auto max-w-5xl px-6 py-16 text-center">
+            <h2 className="text-2xl font-semibold tracking-tight">See it in action</h2>
+            <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
+              Halls Head Cricket Club runs its full site on Ovation — stats, honour
+              boards and history, kept current automatically.
+            </p>
+            <div className="mt-6">
+              <a href={hallsHeadUrl()} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="gap-2">
+                  Visit Halls Head's site <ArrowRight className="h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t">
+          <div className="mx-auto max-w-5xl px-6 py-16 text-center">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Why Ovation over a Facebook page or a spreadsheet?
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
+              Your history stays current automatically, drawn from the shared
+              association database — no one has to keep re-entering scores or
+              chasing down old spreadsheets.
+            </p>
           </div>
         </section>
 

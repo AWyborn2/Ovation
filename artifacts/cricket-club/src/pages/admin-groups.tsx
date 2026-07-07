@@ -15,6 +15,7 @@ import AdminHonourBoards from "@/pages/admin-honour-boards";
 import AdminMilestoneBoard from "@/pages/admin-milestone-board";
 import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
 import AdminTourContent from "@/pages/admin-tour-content";
+import AdminBranding from "@/pages/admin-branding";
 import AdminNav from "@/pages/admin-nav";
 import AdminPlayers from "@/pages/admin-players";
 import AdminStats from "@/pages/admin-stats";
@@ -137,6 +138,7 @@ export function AdminSettingsGroup() {
         { value: "junior-matches", label: "Junior matches", path: "/admin/settings/junior-matches", element: <AdminJuniorMatchDisplay /> },
         { value: "tour", label: "Welcome & tour", path: "/admin/settings/tour", element: <AdminTourContent /> },
         { value: "nav", label: "Navigation & menus", path: "/admin/settings/nav", element: <AdminNav /> },
+        { value: "branding", label: "Branding", path: "/admin/settings/branding", element: <AdminBranding /> },
       ]}
     />
   );

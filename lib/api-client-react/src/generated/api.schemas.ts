@@ -1172,6 +1172,25 @@ export interface TenantBrand {
 }
 
 /**
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these seven properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ */
+export interface UpdateTenantBrandBody {
+  name?: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  faviconUrl?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+  /** @nullable */
+  tertiaryColour?: string | null;
+}
+
+/**
  * Returned by GET /tenant-brand on the apex/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.
  */
 export interface PlatformBrand {

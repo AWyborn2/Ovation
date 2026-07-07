@@ -56,9 +56,22 @@ export function planFromString(s: string | null | undefined): Plan {
   return "free"; // free | pilot | unknown
 }
 
-/** The feature set for a plan. Dormant pilot ⇒ all features on regardless of plan. */
+/**
+ * Features that stay gated by plan even while `BILLING_ENABLED` is off — a
+ * narrow, explicit exception to the dormant kill-switch above, not a second
+ * gating mechanism. Everything else (curation, socialStudio, clubroomTv,
+ * mobileApp) stays fully unlocked for the pilot until billing goes live.
+ */
+const ALWAYS_ENFORCED: ReadonlySet<Feature> = new Set(["customDomain"]);
+
+/** The feature set for a plan. Dormant pilot ⇒ all features on, except `ALWAYS_ENFORCED`. */
 export function entitlementsFor(plan: Plan): Entitlements {
-  if (!billingEnabled()) return { ...ALL_ON };
+  if (!billingEnabled()) {
+    const tier = PLAN_FEATURES[plan];
+    const merged: Entitlements = { ...ALL_ON };
+    for (const feature of ALWAYS_ENFORCED) merged[feature] = tier[feature];
+    return merged;
+  }
   return { ...PLAN_FEATURES[plan] };
 }
 

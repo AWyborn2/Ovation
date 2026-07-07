@@ -356,6 +356,7 @@ export * from './undoSeasonInput';
 export * from './undoSeasonResult';
 export * from './updateTenantBody';
 export * from './updateTenantBodyPlan';
+export * from './updateTenantBrandBody';
 export * from './uploadMatchBatchBody';
 export * from './uploadMatchScorecardBody';
 export * from './uploadPlaycricketCsvBody';
