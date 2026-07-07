@@ -31,6 +31,7 @@ import {
 import { tenantUrl } from "../lib/tenant-url";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
+import { hasEntitlement, planFromString } from "../lib/entitlements";
 
 const router: IRouter = Router();
 
@@ -236,6 +237,29 @@ router.patch(
     if (parsed.data.customDomain !== undefined) {
       const cd = parsed.data.customDomain?.trim().toLowerCase() || null;
       if (cd) {
+        // Custom domain is plan-gated (always enforced, independent of the
+        // dormant BILLING_ENABLED flag — see entitlements.ts). Evaluate the
+        // EFFECTIVE plan for this request: the incoming `plan` when this same
+        // call sets it (a super-admin granting Pro and a domain together),
+        // else the tenant's current stored plan — not stale pre-update state.
+        const effectivePlan =
+          parsed.data.plan ??
+          planFromString(
+            (
+              await db
+                .select({ plan: tenantsTable.plan })
+                .from(tenantsTable)
+                .where(eq(tenantsTable.id, id))
+            )[0]?.plan,
+          );
+        if (!effectivePlan || !hasEntitlement(effectivePlan, "customDomain")) {
+          res.status(402).json({
+            error: "Upgrade required",
+            feature: "customDomain",
+            plan: effectivePlan ?? null,
+          });
+          return;
+        }
         const [clash] = await db
           .select({ id: tenantsTable.id })
           .from(tenantsTable)

@@ -118,6 +118,51 @@ describe("platform-admin tenant management", () => {
     expect(row.plan).toBe("club");
   });
 
+  it("rejects setting a custom domain on a non-Pro tenant, even with BILLING_ENABLED unset (402)", async () => {
+    // Tenant is "club" tier from the previous test — club doesn't include
+    // customDomain, and this gate stays enforced regardless of the dormant flag.
+    delete process.env.BILLING_ENABLED;
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ customDomain: `not-allowed-${STAMP}.example.com` })
+      .expect(402);
+    expect(res.body.feature).toBe("customDomain");
+    expect(res.body.plan).toBe("club");
+
+    const [row] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.customDomain).toBeNull();
+  });
+
+  it("allows a single PATCH to grant Pro and set a custom domain together (effective-plan evaluation)", async () => {
+    const domain = `allowed-${STAMP}.example.com`;
+    const res = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ plan: "pro", customDomain: domain })
+      .expect(200);
+    expect(res.body.plan).toBe("pro");
+    expect(res.body.customDomain).toBe(domain);
+  });
+
+  it("does not widen enforcement of curation/socialStudio for Free tenants", async () => {
+    // Regression guard for KTD4's scope: only customDomain is always-enforced;
+    // everything else stays fully unlocked while BILLING_ENABLED is unset.
+    const [row] = await db
+      .select({ plan: tenantsTable.plan })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.plan).toBe("pro"); // sanity: previous test's write landed
+    const { entitlementsFor, planFromString } = await import("../lib/entitlements");
+    const free = entitlementsFor(planFromString("free"));
+    expect(free.curation).toBe(true);
+    expect(free.socialStudio).toBe(true);
+    expect(free.customDomain).toBe(false);
+  });
+
   it("concierge-provisions a tenant from an available central club", async () => {
     const clubs = await request(app).get("/api/platform/available-clubs").expect(200);
     expect(clubs.body.length).toBeGreaterThan(0);
