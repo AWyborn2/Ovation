@@ -1,6 +1,22 @@
 import type { TeamColors } from "./types";
 
 /**
+ * The design system's fixed accent set. A tenant's brand colour is one of these
+ * five named hues — never an arbitrary hex — so every theme derives from the
+ * same navy surface scale plus a known-good accent (Ovation UI migration §2/§8).
+ */
+export type AccentToken = "amber" | "purple" | "green" | "blue" | "red";
+
+/** Canonical hex for each accent token (identical in light and dark modes). */
+export const ACCENT_HEX: Record<AccentToken, string> = {
+  amber: "#FFB238",
+  purple: "#7C6CF0",
+  green: "#3FC98B",
+  blue: "#4C8CF5",
+  red: "#F0654B",
+};
+
+/**
  * A club's brand (logo + colours), the single shape every renderer reads so none
  * carry their own copy of a club's colours or logo. Surfaced by the API
  * (match detail brand field, social-settings `brand`, `GET /tenant-brand`).
@@ -10,6 +26,12 @@ export interface ClubBrand {
   shortName?: string | null;
   logoUrl?: string | null;
   logoUrl128?: string | null;
+  /**
+   * The tenant's accent, one of the design system's five named hues. When
+   * absent (legacy brand rows), renderers snap `secondaryColour` (the accent
+   * slot) to the nearest token via {@link snapHexToAccentToken}.
+   */
+  accentToken?: AccentToken | null;
   primaryColour?: string | null;
   secondaryColour?: string | null;
   tertiaryColour?: string | null;
@@ -35,6 +57,7 @@ export const DEFAULT_BRAND: ClubBrand = {
   shortName: null,
   logoUrl: "/placeholder-club-logo.svg",
   logoUrl128: "/placeholder-club-logo.svg",
+  accentToken: "amber",
   primaryColour: "#334155",
   secondaryColour: "#94A3B8",
   tertiaryColour: "#475569",
@@ -56,10 +79,14 @@ export const HALLS_HEAD_BRAND: ClubBrand = {
     "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/5fe82f6b-ee78-4232-9910-f5343547c1c3/1687781014605/logo.png",
   logoUrl128:
     "https://res.cloudinary.com/playhq/image/upload/h_128,w_128/v1/production/ca/5fe82f6b-ee78-4232-9910-f5343547c1c3/1687781014605/logo.png",
+  // #FBAC27 snaps to the amber accent — Halls Head keeps its gold look.
+  accentToken: "amber",
   primaryColour: "#333F48",
   secondaryColour: "#FBAC27",
   tertiaryColour: "#42342B",
-  backgroundUrl: "/hallshead-background.png",
+  // The design system is flat solid navy — no photography/texture anywhere —
+  // so the old scoreboard texture is no longer seeded (UI migration §10).
+  backgroundUrl: null,
   // No distinct Halls Head favicon exists — it uses the same neutral favicon
   // (index.html's static default) as every other tenant.
   faviconUrl: null,
@@ -93,6 +120,67 @@ function toHex({ r, g, b }: { r: number; g: number; b: number }): string {
 }
 
 const BLACK = { r: 0, g: 0, b: 0 };
+
+/** Hue (0-360) of a hex colour, or null when unparseable/achromatic-ish. */
+function hexToHue(hex: string): number | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return null; // grey — no hue to snap on
+  let hue: number;
+  if (max === r) hue = ((g - b) / d) % 6;
+  else if (max === g) hue = (b - r) / d + 2;
+  else hue = (r - g) / d + 4;
+  hue *= 60;
+  return hue < 0 ? hue + 360 : hue;
+}
+
+/** Hue of each accent token, matching {@link ACCENT_HEX}. */
+const ACCENT_HUES: Record<AccentToken, number> = {
+  amber: 38,
+  purple: 246,
+  green: 154,
+  blue: 215,
+  red: 6,
+};
+
+/**
+ * Snap a legacy stored hex to the nearest design-system accent token by hue
+ * distance on the colour wheel (Halls Head's #FBAC27 → amber). Greys and
+ * unparseable values land on the platform default, amber.
+ */
+export function snapHexToAccentToken(hex?: string | null): AccentToken {
+  const hue = hex ? hexToHue(hex) : null;
+  if (hue == null) return "amber";
+  let best: AccentToken = "amber";
+  let bestDist = Infinity;
+  for (const [token, accentHue] of Object.entries(ACCENT_HUES) as Array<
+    [AccentToken, number]
+  >) {
+    const raw = Math.abs(hue - accentHue);
+    const dist = Math.min(raw, 360 - raw);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = token;
+    }
+  }
+  return best;
+}
+
+/**
+ * The accent token a brand resolves to: its explicit `accentToken` when set,
+ * else its stored accent-slot hex (`secondaryColour`, falling back to
+ * `primaryColour`) snapped to the nearest token, else amber.
+ */
+export function resolveAccentToken(brand: ClubBrand): AccentToken {
+  if (brand.accentToken && brand.accentToken in ACCENT_HEX) return brand.accentToken;
+  return snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour);
+}
 
 function mix(
   base: { r: number; g: number; b: number },

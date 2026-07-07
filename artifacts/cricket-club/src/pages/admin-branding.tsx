@@ -8,7 +8,11 @@ import {
   type PlatformBrand,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
-import { DEFAULT_BRAND } from "@workspace/scorecard";
+import {
+  ACCENT_HEX,
+  snapHexToAccentToken,
+  type AccentToken,
+} from "@workspace/scorecard";
 import { deriveThemeTokens } from "@/lib/theme-tokens";
 import { useThemeMode } from "@/lib/theme-context";
 import { extractBrandPalette } from "@/lib/color-extraction";
@@ -16,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Check } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
 
@@ -26,6 +30,16 @@ function isPlatformResponse(
 ): data is PlatformBrand {
   return !!data && "platform" in data && data.platform === true;
 }
+
+const ACCENT_LABELS: Record<AccentToken, string> = {
+  amber: "Amber",
+  purple: "Purple",
+  green: "Green",
+  blue: "Blue",
+  red: "Red",
+};
+
+const ACCENT_ORDER: AccentToken[] = ["amber", "purple", "green", "blue", "red"];
 
 export default function AdminBranding() {
   const brandQ = useGetTenantBrand({
@@ -37,7 +51,7 @@ export default function AdminBranding() {
       <div>
         <h1 className="text-3xl font-serif font-bold">Branding</h1>
         <p className="text-muted-foreground mt-1">
-          Your club's logo, favicon, and brand colours — these drive the look of your
+          Your club's logo, favicon, and accent colour — these drive the look of your
           public site.
         </p>
       </div>
@@ -62,14 +76,11 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [name, setName] = useState(brand.name);
   const [logoUrl, setLogoUrl] = useState(brand.logoUrl ?? "");
   const [faviconUrl, setFaviconUrl] = useState(brand.faviconUrl ?? "");
-  const [primaryColour, setPrimaryColour] = useState(
-    brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155",
-  );
-  const [secondaryColour, setSecondaryColour] = useState(
-    brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8",
-  );
-  const [tertiaryColour, setTertiaryColour] = useState(
-    brand.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? "#475569",
+  // The design system constrains the tenant colour to one of five named accent
+  // hues; a legacy stored hex snaps to its nearest token (Halls Head's gold →
+  // amber), and saving writes the token's canonical hex back to the accent slot.
+  const [accent, setAccent] = useState<AccentToken>(
+    snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour),
   );
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,9 +89,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setName(brand.name);
     setLogoUrl(brand.logoUrl ?? "");
     setFaviconUrl(brand.faviconUrl ?? "");
-    setPrimaryColour(brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155");
-    setSecondaryColour(brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8");
-    setTertiaryColour(brand.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? "#475569");
+    setAccent(snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour));
   }, [brand]);
 
   const update = useUpdateTenantBrand({
@@ -107,27 +116,27 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setError(null);
     setColourNote(null);
 
-    // Remember the pre-upload colours so they can be restored if the upload
-    // itself fails -- the suggested palette below is provisional until the
-    // logo it was extracted from is actually saved; without this, a failed
-    // upload could leave the new colours paired with the old (unchanged)
-    // logoUrl, a mismatch a save right after the failure would persist.
-    const priorColours = { primaryColour, secondaryColour, tertiaryColour };
+    // Remember the pre-upload accent so it can be restored if the upload
+    // itself fails -- the suggestion below is provisional until the logo it
+    // was extracted from is actually saved.
+    const priorAccent = accent;
 
-    // Suggest colours from the local file immediately (a blob: URL is
-    // same-origin, so this doesn't need to wait for the upload round-trip).
+    // Suggest an accent from the local file immediately (a blob: URL is
+    // same-origin, so this doesn't need to wait for the upload round-trip):
+    // the extracted palette snaps to the nearest of the five accent tokens.
     const localUrl = URL.createObjectURL(file);
     try {
       const palette = await extractBrandPalette(localUrl);
       if (palette.primaryColour) {
-        setPrimaryColour(palette.primaryColour);
-        setSecondaryColour(palette.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? secondaryColour);
-        setTertiaryColour(palette.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? tertiaryColour);
+        const suggested = snapHexToAccentToken(
+          palette.secondaryColour ?? palette.primaryColour,
+        );
+        setAccent(suggested);
+        setColourNote(
+          `Suggested the ${ACCENT_LABELS[suggested].toLowerCase()} accent from your logo — change it below if it doesn't feel right.`,
+        );
       } else {
-        setPrimaryColour(DEFAULT_BRAND.primaryColour ?? primaryColour);
-        setSecondaryColour(DEFAULT_BRAND.secondaryColour ?? secondaryColour);
-        setTertiaryColour(DEFAULT_BRAND.tertiaryColour ?? tertiaryColour);
-        setColourNote("Couldn't detect colours from this logo — pick your own below.");
+        setColourNote("Couldn't detect a colour from this logo — pick your accent below.");
       }
     } finally {
       URL.revokeObjectURL(localUrl);
@@ -137,12 +146,10 @@ function Editor({ brand }: { brand: TenantBrand }) {
     if (result) {
       setLogoUrl(`/api/storage${result.objectPath}`);
     } else {
-      // Upload failed -- the suggested colours belong to a logo that was
-      // never actually saved server-side; revert rather than leave them
+      // Upload failed -- the suggested accent belongs to a logo that was
+      // never actually saved server-side; revert rather than leave it
       // paired with the old (unchanged) logoUrl.
-      setPrimaryColour(priorColours.primaryColour);
-      setSecondaryColour(priorColours.secondaryColour);
-      setTertiaryColour(priorColours.tertiaryColour);
+      setAccent(priorAccent);
       setColourNote(null);
     }
   };
@@ -164,9 +171,12 @@ function Editor({ brand }: { brand: TenantBrand }) {
         shortName: brand.shortName,
         logoUrl: logoUrl || null,
         faviconUrl: faviconUrl || null,
-        primaryColour,
-        secondaryColour,
-        tertiaryColour,
+        // The accent slot carries the chosen token's canonical hex; the other
+        // colour slots pass through unchanged (they still feed scorecard
+        // rendering and the juniors banner, not the site theme).
+        primaryColour: brand.primaryColour,
+        secondaryColour: ACCENT_HEX[accent],
+        tertiaryColour: brand.tertiaryColour,
       },
     });
   };
@@ -175,9 +185,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     ...brand,
     name,
     logoUrl: logoUrl || null,
-    primaryColour,
-    secondaryColour,
-    tertiaryColour,
+    secondaryColour: ACCENT_HEX[accent],
   };
   // Scoped to this container's own subtree via inline style, not
   // document.documentElement -- editing here must not reskin the rest of the
@@ -228,7 +236,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                 </label>
               </div>
               <p className="text-xs text-muted-foreground">
-                Uploading a logo suggests brand colours below automatically.
+                Uploading a logo suggests an accent colour below automatically.
               </p>
             </div>
             <div className="space-y-1.5">
@@ -255,13 +263,39 @@ function Editor({ brand }: { brand: TenantBrand }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Brand colours</CardTitle>
+            <CardTitle>Accent colour</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Your club's accent — used for buttons, highlights, and every number
+              that matters. The rest of the theme is the same considered palette
+              for every club, in light and dark.
+            </p>
             {colourNote && <p className="text-sm text-muted-foreground">{colourNote}</p>}
-            <ColourField label="Primary" value={primaryColour} onChange={setPrimaryColour} />
-            <ColourField label="Secondary" value={secondaryColour} onChange={setSecondaryColour} />
-            <ColourField label="Tertiary" value={tertiaryColour} onChange={setTertiaryColour} />
+            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent colour">
+              {ACCENT_ORDER.map((token) => (
+                <button
+                  key={token}
+                  type="button"
+                  role="radio"
+                  aria-checked={accent === token}
+                  onClick={() => setAccent(token)}
+                  disabled={busy}
+                  data-testid={`swatch-accent-${token}`}
+                  className={`flex flex-col items-center gap-1.5 rounded-md border p-2 transition-colors ${
+                    accent === token ? "border-ring" : "border-border hover:border-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-full"
+                    style={{ backgroundColor: ACCENT_HEX[token] }}
+                  >
+                    {accent === token && <Check className="h-4 w-4 text-[#0B0F1A]" />}
+                  </span>
+                  <span className="text-xs font-medium">{ACCENT_LABELS[token]}</span>
+                </button>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
@@ -301,35 +335,6 @@ function Editor({ brand }: { brand: TenantBrand }) {
           This preview is scoped to this card only — it doesn't change the rest of the
           admin dashboard while you're editing.
         </p>
-      </div>
-    </div>
-  );
-}
-
-function ColourField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
-      <div className="flex items-center gap-1">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-10 rounded border bg-transparent p-0.5"
-        />
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="font-mono text-xs"
-        />
       </div>
     </div>
   );

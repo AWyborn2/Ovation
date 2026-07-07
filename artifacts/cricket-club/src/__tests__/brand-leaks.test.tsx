@@ -75,3 +75,22 @@ describe("trading card: brand-leak regression (Phase 2 R5/R7, Phase 4/5 footer t
     expect(document.body.textContent).not.toContain("1991");
   });
 });
+
+describe("accent constraint: every brand resolves inside the fixed 5-accent set (UI migration §8)", () => {
+  it("arbitrary legacy hexes never reach --primary — they snap to a named accent", async () => {
+    const { deriveThemeTokens, ACCENT_TOKENS } = await import("@/lib/theme-tokens");
+    const accentValues = new Set(Object.values(ACCENT_TOKENS));
+    const legacyBrands = [
+      { name: "Halls Head Cricket Club", primaryColour: "#333F48", secondaryColour: "#FBAC27" },
+      { name: "Some Purple Club", secondaryColour: "#6A0DAD" },
+      { name: "No Colours FC" },
+    ];
+    for (const brand of legacyBrands) {
+      for (const mode of ["light", "dark"] as const) {
+        const tokens = deriveThemeTokens(brand, mode);
+        expect(accentValues.has(tokens["--primary"]), `${brand.name} ${mode}`).toBe(true);
+        expect(accentValues.has(tokens["--accent"]), `${brand.name} ${mode}`).toBe(true);
+      }
+    }
+  });
+});

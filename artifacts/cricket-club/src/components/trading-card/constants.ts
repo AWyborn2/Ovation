@@ -31,7 +31,7 @@ export function clubShortLabel(brand: ClubBrand): string {
 export const CARD_W = 384;
 export const CARD_H = 800;
 
-export const FONT = "'Montserrat', sans-serif";
+export const FONT = "'IBM Plex Sans', sans-serif";
 
 export type Phase =
   | "intro"

@@ -31,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { StatusPill } from "@/components/ui/stat-badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Loader2,
@@ -228,20 +229,14 @@ function SetList({ onOpen }: { onOpen: (id: number) => void }) {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base">{s.name}</CardTitle>
-                  <span
-                    className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      s.isPublished
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
+                  <StatusPill tone={s.isPublished ? "live" : "neutral"} className="shrink-0">
                     {s.isPublished ? (
                       <Globe className="h-2.5 w-2.5" />
                     ) : (
                       <Lock className="h-2.5 w-2.5" />
                     )}
                     {s.isPublished ? "Published" : "Draft"}
-                  </span>
+                  </StatusPill>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -583,20 +578,14 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
           </select>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-              published
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
+          <StatusPill tone={published ? "live" : "neutral"}>
             {published ? (
               <Globe className="h-3 w-3" />
             ) : (
               <Lock className="h-3 w-3" />
             )}
             {published ? "Published" : "Draft"}
-          </span>
+          </StatusPill>
           <Button
             onClick={() => handleSave()}
             disabled={update.isPending}

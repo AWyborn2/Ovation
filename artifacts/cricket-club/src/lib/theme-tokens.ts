@@ -1,4 +1,9 @@
-import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
+import {
+  DEFAULT_BRAND,
+  resolveAccentToken,
+  type AccentToken,
+  type ClubBrand,
+} from "@workspace/scorecard";
 
 export type ThemeMode = "light" | "dark";
 
@@ -53,97 +58,122 @@ export function hexToHslTriplet(hex?: string | null): string | null {
   return hsl ? hslString(hsl) : null;
 }
 
-const clampL = (hsl: Hsl, min: number, max: number): Hsl => ({
-  ...hsl,
-  l: Math.min(max, Math.max(min, hsl.l)),
-});
+/**
+ * The design system's fixed surface scales (Ovation UI migration §2/§4).
+ * Dark mode is the system's native navy scale (#0B0F1A page → #131826 card →
+ * #1B2236 elevated → #232B3D border); light mode is the companion theme built
+ * from the same hue family at inverted lightness. No tenant hue ever reaches
+ * a structural surface — only the accent slots below vary per tenant.
+ */
+const NAVY_DARK = {
+  950: "222 33% 8%", // #0B0F1A page
+  900: "220 30% 11%", // #131826 card
+  800: "222 28% 16%", // #1B2236 elevated / muted
+  700: "220 23% 21%", // #232B3D border
+};
+const INK_DARK = { 0: "220 20% 96%", 2: "218 12% 60%" }; // #F5F7FA / #8D96A8
 
-const withL = (hsl: Hsl, l: number): Hsl => ({ ...hsl, l: Math.min(100, Math.max(0, l)) });
-
-const withS = (hsl: Hsl, s: number): Hsl => ({ ...hsl, s: Math.min(hsl.s, s) });
+const NAVY_LIGHT = {
+  bg: "220 25% 97%", // #F5F6FA
+  card: "0 0% 100%", // #FFFFFF
+  elevated: "220 20% 94%", // #EBEDF2
+  border: "220 20% 88%", // #D9DDE6
+};
+const INK_LIGHT = { 0: "222 30% 12%", 2: "218 12% 42%" }; // #14171F / #5D6472
 
 /**
- * Compute the full set of CSS custom properties (structural surfaces + brand
- * accents) for a tenant's brand at a given light/dark mode. Dark mode's
- * formula generalises Halls Head's own pre-existing hardcoded palette
- * (background = primary hue at L24%, card = L27%, etc — reverse-engineered
- * from `index.css`'s original literals) so `deriveThemeTokens(HALLS_HEAD_BRAND,
- * "dark")` reproduces today's look exactly. Light mode mirrors the same shape
- * at inverted lightness with capped saturation, so an arbitrary brand hue
- * reads as a subtle tint rather than a harsh coloured background.
+ * The five accent hues a tenant may pick as their brand colour — identical in
+ * both modes; only the surrounding surface inverts. Keys match the shared
+ * `AccentToken` union in `@workspace/scorecard` (which also carries the
+ * canonical hex values as `ACCENT_HEX`).
+ */
+export const ACCENT_TOKENS: Record<AccentToken, string> = {
+  // Exact hexToHsl() conversions of ACCENT_HEX — keep the two in lockstep.
+  amber: "37 100% 61%", // #FFB238 — the platform default
+  purple: "247 81% 68%", // #7C6CF0
+  green: "153 56% 52%", // #3FC98B
+  blue: "217 89% 63%", // #4C8CF5
+  red: "9 85% 62%", // #F0654B
+};
+export type { AccentToken };
+
+/** Navy-950 — the text colour on any accent fill, in both modes. */
+const TEXT_ON_ACCENT = NAVY_DARK[950];
+
+/**
+ * Compute the full set of CSS custom properties (structural surfaces + accent)
+ * for a tenant's brand at a given light/dark mode. Surfaces are the fixed navy
+ * (dark) / paper (light) scales above; the only brand-variable part is which of
+ * the five accent tokens fills the `--primary`/`--accent`/`--ring` slots
+ * (resolved via `resolveAccentToken`, which snaps legacy stored hexes to the
+ * nearest token). Depth comes from surface-level contrast + hairline borders —
+ * never box-shadow.
  */
 export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<string, string> {
-  const primary =
-    hexToHsl(brand.primaryColour) ?? hexToHsl(DEFAULT_BRAND.primaryColour)!;
-  const accent =
-    hexToHsl(brand.secondaryColour) ?? hexToHsl(DEFAULT_BRAND.secondaryColour)!;
-  const tertiary =
-    hexToHsl(brand.tertiaryColour) ?? hexToHsl(DEFAULT_BRAND.tertiaryColour)!;
+  const accent = ACCENT_TOKENS[resolveAccentToken(brand)] ?? ACCENT_TOKENS.amber;
 
   if (mode === "dark") {
-    const secondary = clampL(tertiary, 15, 30);
     return {
-      "--background": hslString(withL(primary, 24)),
-      "--foreground": "0 0% 100%",
-      "--border": hslString(withL(primary, 35)),
-      "--input": hslString(withL(primary, 35)),
-      "--ring": hslString(accent),
-      "--card": hslString(withL(primary, 27)),
-      "--card-foreground": "0 0% 100%",
-      "--card-border": hslString(accent),
-      "--popover": hslString(withL(primary, 27)),
-      "--popover-foreground": "0 0% 100%",
-      "--popover-border": hslString(withL(primary, 35)),
-      "--primary": hslString(accent),
-      "--primary-foreground": hslString(primary),
-      "--primary-border": hslString(withL(accent, accent.l - 7)),
-      "--secondary": hslString(secondary),
-      "--secondary-foreground": hslString(accent),
-      "--secondary-border": hslString(withL(secondary, secondary.l - 6)),
-      "--muted": hslString(withL(primary, 30)),
-      "--muted-foreground": hslString(withL(withS(primary, 10), 75)),
-      "--muted-border": hslString(withL(primary, 35)),
-      "--accent": hslString(accent),
-      "--accent-foreground": hslString(primary),
-      "--accent-border": hslString(withL(accent, accent.l - 7)),
-      "--destructive": "0 72% 51%",
+      "--background": NAVY_DARK[950],
+      "--foreground": INK_DARK[0],
+      "--border": NAVY_DARK[700],
+      "--input": NAVY_DARK[700],
+      "--ring": accent,
+      "--card": NAVY_DARK[900],
+      "--card-foreground": INK_DARK[0],
+      "--card-border": NAVY_DARK[700],
+      "--popover": NAVY_DARK[900],
+      "--popover-foreground": INK_DARK[0],
+      "--popover-border": NAVY_DARK[700],
+      "--primary": accent,
+      "--primary-foreground": TEXT_ON_ACCENT,
+      "--primary-border": accent,
+      "--secondary": NAVY_DARK[800],
+      "--secondary-foreground": INK_DARK[2],
+      "--secondary-border": NAVY_DARK[700],
+      "--muted": NAVY_DARK[800],
+      "--muted-foreground": INK_DARK[2],
+      "--muted-border": NAVY_DARK[700],
+      "--accent": accent,
+      "--accent-foreground": TEXT_ON_ACCENT,
+      "--accent-border": accent,
+      "--destructive": ACCENT_TOKENS.red,
       "--destructive-foreground": "0 0% 100%",
-      "--destructive-border": "0 72% 45%",
+      "--destructive-border": ACCENT_TOKENS.red,
     };
   }
 
-  // Light mode: same shape, inverted lightness, saturation capped low so a
-  // structural surface reads as a subtle brand tint rather than a fully
-  // saturated background.
-  const surface = withS(primary, 8);
-  const secondaryLight = clampL(tertiary, 88, 94);
-  const darkText = withL(primary, Math.min(primary.l, 20));
   return {
-    "--background": hslString(withL(surface, 97)),
-    "--foreground": hslString(withL(withS(primary, 15), 15)),
-    "--border": hslString(withL(withS(primary, 10), 85)),
-    "--input": hslString(withL(withS(primary, 10), 85)),
-    "--ring": hslString(accent),
-    "--card": "0 0% 100%",
-    "--card-foreground": hslString(withL(withS(primary, 15), 15)),
-    "--card-border": hslString(accent),
-    "--popover": "0 0% 100%",
-    "--popover-foreground": hslString(withL(withS(primary, 15), 15)),
-    "--popover-border": hslString(withL(withS(primary, 10), 85)),
-    "--primary": hslString(accent),
-    "--primary-foreground": hslString(darkText),
-    "--primary-border": hslString(withL(accent, accent.l - 7)),
-    "--secondary": hslString(secondaryLight),
-    "--secondary-foreground": hslString(withL(tertiary, 20)),
-    "--secondary-border": hslString(withL(secondaryLight, secondaryLight.l - 8)),
-    "--muted": hslString(withL(surface, 94)),
-    "--muted-foreground": hslString(withL(withS(primary, 10), 40)),
-    "--muted-border": hslString(withL(withS(primary, 10), 85)),
-    "--accent": hslString(accent),
-    "--accent-foreground": hslString(darkText),
-    "--accent-border": hslString(withL(accent, accent.l - 7)),
-    "--destructive": "0 72% 45%",
+    "--background": NAVY_LIGHT.bg,
+    "--foreground": INK_LIGHT[0],
+    "--border": NAVY_LIGHT.border,
+    "--input": NAVY_LIGHT.border,
+    "--ring": accent,
+    "--card": NAVY_LIGHT.card,
+    "--card-foreground": INK_LIGHT[0],
+    "--card-border": NAVY_LIGHT.border,
+    "--popover": NAVY_LIGHT.card,
+    "--popover-foreground": INK_LIGHT[0],
+    "--popover-border": NAVY_LIGHT.border,
+    "--primary": accent,
+    "--primary-foreground": TEXT_ON_ACCENT,
+    "--primary-border": accent,
+    "--secondary": NAVY_LIGHT.elevated,
+    "--secondary-foreground": INK_LIGHT[2],
+    "--secondary-border": NAVY_LIGHT.border,
+    "--muted": NAVY_LIGHT.elevated,
+    "--muted-foreground": INK_LIGHT[2],
+    "--muted-border": NAVY_LIGHT.border,
+    "--accent": accent,
+    "--accent-foreground": TEXT_ON_ACCENT,
+    "--accent-border": accent,
+    // Deepened from the red accent for AA text contrast on white surfaces;
+    // tinted fill chips keep using the accent-red at full lightness.
+    "--destructive": "6 78% 46%",
     "--destructive-foreground": "0 0% 100%",
-    "--destructive-border": "0 72% 38%",
+    "--destructive-border": "6 78% 40%",
   };
 }
+
+/** Re-export for callers that need the default brand's tokens statically. */
+export { DEFAULT_BRAND };

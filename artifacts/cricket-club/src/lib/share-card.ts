@@ -612,10 +612,10 @@ const drawFooter = (
 // / role chip) to the canvas cards: a translucent rounded stat tile with a gold
 // value over a muted uppercase label, a gold-barred section heading, and a gold
 // pill chip. They draw from the resolved palette, so the junior brown theme and
-// custom themes still apply. Type is Montserrat to match the app + trading card.
-const CARD_FONT = "'Montserrat', sans-serif";
+// custom themes still apply. Type is IBM Plex Sans to match the app + trading card.
+const CARD_FONT = "'IBM Plex Sans', sans-serif";
 
-// Selectable card fonts. "sans"/"serif" keep their original stacks (Montserrat /
+// Selectable card fonts. "sans"/"serif" keep their original stacks (IBM Plex Sans /
 // Georgia) so existing cards stay byte-identical; the rest are extra families the
 // app declares via @font-face (see index.html / index.css). Because these only
 // ever appear in canvas font stacks, the browser never fetches the less-common
@@ -640,7 +640,7 @@ const EXTRA_FONT_STACKS: Record<Exclude<CardFontKey, "sans" | "serif">, string> 
 };
 
 // The CSS stack for an extra font key, or null for the built-in sans/serif so
-// each call site keeps its own original default (Montserrat for custom text,
+// each call site keeps its own original default (IBM Plex Sans for custom text,
 // Helvetica for summary slots) and unchanged cards render identically.
 const extraFontStack = (k?: string | null): string | null =>
   k && k in EXTRA_FONT_STACKS
@@ -649,7 +649,7 @@ const extraFontStack = (k?: string | null): string | null =>
 
 // Font choices surfaced in the Social Studio editor's font dropdown.
 export const CARD_FONT_OPTIONS: { value: CardFontKey; label: string }[] = [
-  { value: "sans", label: "Sans (Montserrat)" },
+  { value: "sans", label: "Sans (IBM Plex Sans)" },
   { value: "serif", label: "Serif (Georgia)" },
   { value: "oswald", label: "Oswald" },
   { value: "cinzel", label: "Cinzel" },
@@ -659,11 +659,11 @@ export const CARD_FONT_OPTIONS: { value: CardFontKey; label: string }[] = [
 ];
 
 // The actual CSS family names behind every selectable card font (Georgia is a
-// system serif and needs no fetch, so it is omitted). Montserrat is the app's
+// system serif and needs no fetch, so it is omitted). IBM Plex Sans is the app's
 // default sans but we load it here too so a card export never beats the app's
 // own lazy fetch of it.
 const CARD_FONT_FAMILIES = [
-  "Montserrat",
+  "IBM Plex Sans",
   "Oswald",
   "Cinzel",
   "EB Garamond",
