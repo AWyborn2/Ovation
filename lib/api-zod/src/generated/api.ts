@@ -6392,6 +6392,32 @@ export const GetTenantBrandResponse = zod.union([zod.object({
 
 
 /**
+ * @summary Self-service update of the current tenant's own cosmetic branding (name, short name, logo, favicon, colours) by that tenant's own admin. Deliberately excludes plan and customDomain, which stay on the super-admin-only platform console; the request schema does not carry those properties at all, so they cannot be set through this endpoint.
+ */
+export const UpdateTenantBrandBody = zod.object({
+  "name": zod.string().optional(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these seven properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
+
+export const UpdateTenantBrandResponse = zod.object({
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "logoUrl128": zod.string().nullish(),
+  "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
+  "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
+}).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
+
+
+/**
  * @summary The current tenant's plan and resolved feature entitlements. While billing is dormant (BILLING_ENABLED unset) every feature resolves to true, so the web can adopt the gating now without locking anything during the pilot.
  */
 export const GetTenantPlanResponse = zod.object({

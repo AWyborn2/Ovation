@@ -209,6 +209,7 @@ import type {
   UndoSeasonInput,
   UndoSeasonResult,
   UpdateTenantBody,
+  UpdateTenantBrandBody,
   UploadMatchBatchBody,
   UploadMatchScorecardBody,
   UploadPlaycricketCsvBody,
@@ -15602,6 +15603,77 @@ export function useGetTenantBrand<TData = Awaited<ReturnType<typeof getTenantBra
 
 
 
+
+export const getUpdateTenantBrandUrl = () => {
+
+
+
+
+  return `/api/tenant-brand`
+}
+
+/**
+ * @summary Self-service update of the current tenant's own cosmetic branding (name, short name, logo, favicon, colours) by that tenant's own admin. Deliberately excludes plan and customDomain, which stay on the super-admin-only platform console; the request schema does not carry those properties at all, so they cannot be set through this endpoint.
+ */
+export const updateTenantBrand = async (updateTenantBrandBody: UpdateTenantBrandBody, options?: RequestInit): Promise<TenantBrand> => {
+
+  return customFetch<TenantBrand>(getUpdateTenantBrandUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateTenantBrandBody,)
+  }
+);}
+
+
+
+
+export const getUpdateTenantBrandMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTenantBrand>>, TError,{data: BodyType<UpdateTenantBrandBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTenantBrand>>, TError,{data: BodyType<UpdateTenantBrandBody>}, TContext> => {
+
+const mutationKey = ['updateTenantBrand'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTenantBrand>>, {data: BodyType<UpdateTenantBrandBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateTenantBrand(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTenantBrandMutationResult = NonNullable<Awaited<ReturnType<typeof updateTenantBrand>>>
+    export type UpdateTenantBrandMutationBody = BodyType<UpdateTenantBrandBody>
+    export type UpdateTenantBrandMutationError = ErrorType<void>
+
+    /**
+ * @summary Self-service update of the current tenant's own cosmetic branding (name, short name, logo, favicon, colours) by that tenant's own admin. Deliberately excludes plan and customDomain, which stay on the super-admin-only platform console; the request schema does not carry those properties at all, so they cannot be set through this endpoint.
+ */
+export const useUpdateTenantBrand = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTenantBrand>>, TError,{data: BodyType<UpdateTenantBrandBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTenantBrand>>,
+        TError,
+        {data: BodyType<UpdateTenantBrandBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateTenantBrandMutationOptions(options));
+    }
 
 export const getGetTenantPlanUrl = () => {
 

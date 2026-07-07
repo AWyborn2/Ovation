@@ -134,3 +134,13 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
 export async function getHallsHeadBrand(): Promise<TenantBrand> {
   return getTenantBrand(1);
 }
+
+/**
+ * Drop a tenant's cached brand so the next {@link getTenantBrand} read reflects
+ * a just-written change immediately, rather than serving the pre-update value
+ * for up to {@link CACHE_TTL_MS}. Call after any write to a tenant's own brand
+ * columns or its linked `clubs` register row.
+ */
+export function invalidateTenantBrandCache(tenantId: number): void {
+  cache.delete(tenantId);
+}

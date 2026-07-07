@@ -4304,6 +4304,32 @@ paths:
                 description: >-
                   A tenant's brand on a club host, or the platform marker on the
                   apex/marketing host (no tenant — the SPA mounts the landing page).
+    patch:
+      operationId: updateTenantBrand
+      tags: [tenant]
+      summary: >-
+        Self-service update of the current tenant's own cosmetic branding
+        (name, short name, logo, favicon, colours) by that tenant's own admin.
+        Deliberately excludes plan and customDomain, which stay on the
+        super-admin-only platform console; the request schema does not carry
+        those properties at all, so they cannot be set through this endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTenantBrandBody"
+      responses:
+        "200":
+          description: The tenant's updated brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBrand"
+        "400":
+          description: Invalid request body
+        "401":
+          description: Not authenticated as this tenant's admin
 
   /tenant-plan:
     get:
@@ -6001,6 +6027,30 @@ components:
           description: >-
             Optional per-tenant favicon URL. Null = the platform's neutral
             default favicon.
+        primaryColour:
+          type: ["string", "null"]
+        secondaryColour:
+          type: ["string", "null"]
+        tertiaryColour:
+          type: ["string", "null"]
+
+    UpdateTenantBrandBody:
+      type: object
+      description: >-
+        Partial self-service update of a tenant's own cosmetic branding fields.
+        Deliberately closed to exactly these seven properties — plan and
+        customDomain are not valid properties on this schema at all, so they
+        cannot be set through this endpoint regardless of handler changes.
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        faviconUrl:
+          type: ["string", "null"]
         primaryColour:
           type: ["string", "null"]
         secondaryColour:
