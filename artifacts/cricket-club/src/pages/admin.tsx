@@ -1,11 +1,57 @@
 import { Link } from "wouter";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Palette } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
-import { useGetTourContent } from "@workspace/api-client-react";
+import {
+  useGetTourContent,
+  useGetTenantBrand,
+  type TenantBrand,
+  type PlatformBrand,
+} from "@workspace/api-client-react";
+import { DEFAULT_BRAND } from "@workspace/scorecard";
 import { navIcon } from "@/lib/nav-icons";
 import { launchAdminTour } from "@/lib/tour";
+
+/**
+ * Whether the tenant's resolved brand is still the neutral default -- computed
+ * from the resolved brand (which already accounts for the clubs-register
+ * fallback), not raw tenant-row columns, so a club whose branding actually
+ * comes from its central club record never sees a false "finish setting up"
+ * prompt.
+ */
+export function isUnbranded(brand: TenantBrand | PlatformBrand | undefined): boolean {
+  if (!brand || "platform" in brand) return false;
+  return (
+    (brand.logoUrl ?? null) === (DEFAULT_BRAND.logoUrl ?? null) &&
+    (brand.primaryColour ?? null) === (DEFAULT_BRAND.primaryColour ?? null) &&
+    (brand.secondaryColour ?? null) === (DEFAULT_BRAND.secondaryColour ?? null) &&
+    (brand.tertiaryColour ?? null) === (DEFAULT_BRAND.tertiaryColour ?? null)
+  );
+}
+
+function FinishSetupBanner() {
+  const brandQ = useGetTenantBrand();
+  if (!isUnbranded(brandQ.data)) return null;
+  return (
+    <Card className="border-primary/40 bg-primary/5">
+      <CardContent className="flex items-center justify-between gap-4 flex-wrap py-4">
+        <div className="flex items-center gap-3">
+          <Palette className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="font-medium">Finish setting up your club</p>
+            <p className="text-sm text-muted-foreground">
+              Add your logo and brand colours so your site looks like your own club.
+            </p>
+          </div>
+        </div>
+        <Link href="/admin/settings/branding">
+          <Button size="sm" data-testid="button-finish-branding">Set up branding</Button>
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
 
 const TILES_FALLBACK: ResolvedNavItem[] = [
   { label: "Social Media Studio", target: "/admin/social", isExternal: false, iconKey: "image", description: "Share-card factory, card builders, trading cards, junior cards and the review queue." },
@@ -21,6 +67,7 @@ export default function AdminHub() {
   const tourContentQ = useGetTourContent();
   return (
     <div className="space-y-6">
+      <FinishSetupBanner />
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-serif font-bold">Admin</h1>
