@@ -1,4 +1,4 @@
-import { doublePrecision, integer, text } from "drizzle-orm/pg-core";
+import { doublePrecision, index, integer, text } from "drizzle-orm/pg-core";
 import { centralSchema } from "./_schema";
 
 /**
@@ -20,7 +20,11 @@ export const centralMatchBowlingTable = centralSchema.table("match_bowling", {
   economy: doublePrecision("economy"),
   wides: integer("wides"),
   noBalls: integer("no_balls"),
-});
+}, (t) => ({
+  // Live index on the central DB (migration central_perf_indexes_club_and_match,
+  // 2026-07-09). Documentation only — the app never runs DDL against central.
+  idxClubMatch: index("idx_central_match_bowling_club_match").on(t.clubId, t.matchId),
+}));
 
 export type CentralMatchBowlingRow =
   typeof centralMatchBowlingTable.$inferSelect;

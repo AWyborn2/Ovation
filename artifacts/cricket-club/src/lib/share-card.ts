@@ -9,6 +9,7 @@ import {
   type TemplateContext,
 } from "./card-template";
 import { getSticker } from "./sticker-library";
+import { ensureCardFontsLoaded } from "./card-fonts";
 
 const TIER_ICONS: LucideIcon[] = [Crown, Trophy, Medal, Award, Star, Shield, Sparkles];
 
@@ -616,12 +617,14 @@ const drawFooter = (
 const CARD_FONT = "'IBM Plex Sans', sans-serif";
 
 // Selectable card fonts. "sans"/"serif" keep their original stacks (IBM Plex Sans /
-// Georgia) so existing cards stay byte-identical; the rest are extra families the
-// app declares via @font-face (see index.html / index.css). Because these only
-// ever appear in canvas font stacks, the browser never fetches the less-common
+// Georgia) so existing cards stay byte-identical; the rest are extra families whose
+// Google-Fonts stylesheet is injected on demand (src/lib/card-fonts.ts — it is
+// deliberately NOT in index.html so public visitors never fetch it). Because these
+// only ever appear in canvas font stacks, the browser never fetches the less-common
 // ones on its own (canvas ctx.font does not trigger a load, and
 // document.fonts.ready resolves without them) — so ensureCardFonts() explicitly
-// loads every family before any canvas text is drawn in each render path.
+// injects the stylesheet and loads every family before any canvas text is drawn
+// in each render path.
 export type CardFontKey =
   | "sans"
   | "serif"
@@ -677,6 +680,9 @@ const CARD_FONT_FAMILIES = [
 // to a system font in both the live preview and the exported image. Best-effort:
 // failures (e.g. offline) just fall through to document.fonts.ready.
 const ensureCardFonts = async (): Promise<void> => {
+  // The decorative families live in an on-demand stylesheet (not index.html);
+  // make sure its @font-face rules exist before asking FontFaceSet to load them.
+  await ensureCardFontsLoaded();
   const fonts = (document as Document).fonts;
   if (!fonts) return;
   if (typeof fonts.load === "function") {

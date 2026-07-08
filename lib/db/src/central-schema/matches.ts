@@ -1,4 +1,4 @@
-import { integer, text } from "drizzle-orm/pg-core";
+import { index, integer, text } from "drizzle-orm/pg-core";
 import { centralSchema } from "./_schema";
 
 /**
@@ -28,6 +28,12 @@ export const centralMatchesTable = centralSchema.table("matches", {
   tossWinnerClubId: integer("toss_winner_club_id"),
   winnerClubId: integer("winner_club_id"),
   resultText: text("result_text"),
-});
+}, (t) => ({
+  // Live indexes on the central DB (migration central_perf_indexes_club_and_match,
+  // 2026-07-09). Declared here for documentation only — the app never runs DDL
+  // against the central DB; keep in sync with the Supabase project.
+  idxHomeClub: index("idx_central_matches_home_club").on(t.homeClubId),
+  idxAwayClub: index("idx_central_matches_away_club").on(t.awayClubId),
+}));
 
 export type CentralMatchRow = typeof centralMatchesTable.$inferSelect;

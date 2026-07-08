@@ -1,83 +1,116 @@
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
+import { LoadingState } from "@/components/data-states";
 import { BrandProvider, usePlatform } from "@/lib/brand-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import { createAppQueryClient } from "@/lib/query-client";
 import { AdminShell } from "@/components/admin-shell";
 import { LandingRoutes } from "@/pages/landing";
 import { useCurrentAdmin } from "@/lib/admin-auth";
+// Home (and the landing tree above) stay statically imported so first paint of
+// the most-visited page isn't gated on fetching a second chunk. Everything else
+// is route-split via React.lazy below.
 import Home from "@/pages/home";
-import HonourBoards from "@/pages/honour-boards";
-import Players from "@/pages/players";
-import PlayerDetail from "@/pages/player-detail";
-import PersonDetail from "@/pages/person-detail";
-import Matches from "@/pages/matches";
-import MatchDetail from "@/pages/match-detail";
-import Grades from "@/pages/grades";
-import GradeLeaderboard from "@/pages/grade-leaderboard";
-import Records from "@/pages/records";
-import Premierships from "@/pages/premierships";
-import HonoursDisplay from "@/pages/honours-display";
-import HonoursKiosk from "@/pages/honours-kiosk";
-import Compare from "@/pages/compare";
-import StatDetail from "@/pages/stat-detail";
-import JuniorsDashboard from "@/pages/juniors-dashboard";
-import JuniorsMatches from "@/pages/juniors-matches";
-import JuniorsMatchDetail from "@/pages/juniors-match-detail";
-import JuniorsPremierships from "@/pages/juniors-premierships";
-import JuniorsPlayers from "@/pages/juniors-players";
-import JuniorsPlayerDetail from "@/pages/juniors-player-detail";
-import JuniorsOfficeBearers from "@/pages/juniors-office-bearers";
-import AdminHub from "@/pages/admin";
-import AdminUsers from "@/pages/admin-users";
-import AdminImport from "@/pages/admin-import";
-import AdminReset from "@/pages/admin-reset";
-import {
-  AdminSocialGroup,
-  AdminSettingsGroup,
-  AdminPeopleGroup,
-  AdminHonoursGroup,
-} from "@/pages/admin-groups";
-import CaptainPage from "@/pages/captain";
-import CardRenderHarness from "@/pages/card-render-harness";
 import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient();
+// --- Public stats pages (lazy) ----------------------------------------------
+const HonourBoards = lazy(() => import("@/pages/honour-boards"));
+const Players = lazy(() => import("@/pages/players"));
+const PlayerDetail = lazy(() => import("@/pages/player-detail"));
+const PersonDetail = lazy(() => import("@/pages/person-detail"));
+const Matches = lazy(() => import("@/pages/matches"));
+const MatchDetail = lazy(() => import("@/pages/match-detail"));
+const Grades = lazy(() => import("@/pages/grades"));
+const GradeLeaderboard = lazy(() => import("@/pages/grade-leaderboard"));
+const Records = lazy(() => import("@/pages/records"));
+const Premierships = lazy(() => import("@/pages/premierships"));
+const Compare = lazy(() => import("@/pages/compare"));
+const StatDetail = lazy(() => import("@/pages/stat-detail"));
+const JuniorsDashboard = lazy(() => import("@/pages/juniors-dashboard"));
+const JuniorsMatches = lazy(() => import("@/pages/juniors-matches"));
+const JuniorsMatchDetail = lazy(() => import("@/pages/juniors-match-detail"));
+const JuniorsPremierships = lazy(() => import("@/pages/juniors-premierships"));
+const JuniorsPlayers = lazy(() => import("@/pages/juniors-players"));
+const JuniorsPlayerDetail = lazy(() => import("@/pages/juniors-player-detail"));
+const JuniorsOfficeBearers = lazy(
+  () => import("@/pages/juniors-office-bearers"),
+);
+
+// --- Admin / kiosk / special-purpose pages (lazy) ----------------------------
+// This is the heavy tree (Social Studio, card editors, import tooling, honour
+// board kiosk). Splitting it keeps all of that out of the public entry chunk.
+const AdminHub = lazy(() => import("@/pages/admin"));
+const AdminUsers = lazy(() => import("@/pages/admin-users"));
+const AdminImport = lazy(() => import("@/pages/admin-import"));
+const AdminReset = lazy(() => import("@/pages/admin-reset"));
+// admin-groups exposes NAMED exports, so map each to a default for lazy().
+const AdminSocialGroup = lazy(() =>
+  import("@/pages/admin-groups").then((m) => ({ default: m.AdminSocialGroup })),
+);
+const AdminSettingsGroup = lazy(() =>
+  import("@/pages/admin-groups").then((m) => ({
+    default: m.AdminSettingsGroup,
+  })),
+);
+const AdminPeopleGroup = lazy(() =>
+  import("@/pages/admin-groups").then((m) => ({ default: m.AdminPeopleGroup })),
+);
+const AdminHonoursGroup = lazy(() =>
+  import("@/pages/admin-groups").then((m) => ({
+    default: m.AdminHonoursGroup,
+  })),
+);
+const CaptainPage = lazy(() => import("@/pages/captain"));
+const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
+const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
+const HonoursKiosk = lazy(() => import("@/pages/honours-kiosk"));
+
+const queryClient = createAppQueryClient();
+
+/** Shared route-chunk fallback shown while a lazy page's chunk downloads. */
+function RouteFallback() {
+  return <LoadingState label="Loading page…" />;
+}
 
 function PublicRoutes() {
   return (
     <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/honour-boards" component={HonourBoards} />
-        <Route path="/players" component={Players} />
-        <Route path="/players/:id" component={PlayerDetail} />
-        <Route path="/people/:id" component={PersonDetail} />
-        <Route path="/matches" component={Matches} />
-        <Route path="/matches/:id" component={MatchDetail} />
-        <Route path="/grades" component={Grades} />
-        <Route path="/grades/:grade" component={GradeLeaderboard} />
-        <Route path="/records" component={Records} />
-        <Route path="/premierships" component={Premierships} />
-        <Route path="/compare" component={Compare} />
-        <Route path="/stats/:id" component={StatDetail} />
-        <Route path="/juniors" component={JuniorsDashboard} />
-        <Route path="/juniors/matches" component={JuniorsMatches} />
-        <Route path="/juniors/matches/:id" component={JuniorsMatchDetail} />
-        <Route path="/juniors/premierships" component={JuniorsPremierships} />
-        <Route path="/juniors/players" component={JuniorsPlayers} />
-        <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />
-        <Route
-          path="/juniors/office-bearers"
-          component={JuniorsOfficeBearers}
-        />
-        <Route component={NotFound} />
-      </Switch>
+      {/* Suspense sits inside Layout so the header/footer chrome stays put
+          while a lazy page chunk loads. */}
+      <Suspense fallback={<RouteFallback />}>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/honour-boards" component={HonourBoards} />
+          <Route path="/players" component={Players} />
+          <Route path="/players/:id" component={PlayerDetail} />
+          <Route path="/people/:id" component={PersonDetail} />
+          <Route path="/matches" component={Matches} />
+          <Route path="/matches/:id" component={MatchDetail} />
+          <Route path="/grades" component={Grades} />
+          <Route path="/grades/:grade" component={GradeLeaderboard} />
+          <Route path="/records" component={Records} />
+          <Route path="/premierships" component={Premierships} />
+          <Route path="/compare" component={Compare} />
+          <Route path="/stats/:id" component={StatDetail} />
+          <Route path="/juniors" component={JuniorsDashboard} />
+          <Route path="/juniors/matches" component={JuniorsMatches} />
+          <Route path="/juniors/matches/:id" component={JuniorsMatchDetail} />
+          <Route path="/juniors/premierships" component={JuniorsPremierships} />
+          <Route path="/juniors/players" component={JuniorsPlayers} />
+          <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />
+          <Route
+            path="/juniors/office-bearers"
+            component={JuniorsOfficeBearers}
+          />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </Layout>
   );
 }
@@ -86,82 +119,84 @@ function AdminRoutes() {
   return (
     <Layout>
       <AdminShell>
-        <Switch>
-          <Route path="/admin" component={AdminHub} />
-          <Route path="/admin/users" component={AdminUsers} />
-          <Route path="/admin/import" component={AdminImport} />
+        <Suspense fallback={<RouteFallback />}>
+          <Switch>
+            <Route path="/admin" component={AdminHub} />
+            <Route path="/admin/users" component={AdminUsers} />
+            <Route path="/admin/import" component={AdminImport} />
 
-          {/* Trading cards moved from Settings into Social Media Studio; keep
-              the old Settings URL working (must precede the settings group). */}
-          <Route path="/admin/settings/trading-cards">
-            <Redirect to="/admin/social/trading-cards" />
-          </Route>
+            {/* Trading cards moved from Settings into Social Media Studio; keep
+                the old Settings URL working (must precede the settings group). */}
+            <Route path="/admin/settings/trading-cards">
+              <Redirect to="/admin/social/trading-cards" />
+            </Route>
 
-          {/* Consolidated tabbed groups (each tab is a deep-linkable path). */}
-          <Route path="/admin/social/:tab?" component={AdminSocialGroup} />
-          <Route path="/admin/settings/:tab?" component={AdminSettingsGroup} />
-          <Route path="/admin/people/:tab?" component={AdminPeopleGroup} />
-          <Route path="/admin/honours/:tab?" component={AdminHonoursGroup} />
+            {/* Consolidated tabbed groups (each tab is a deep-linkable path). */}
+            <Route path="/admin/social/:tab?" component={AdminSocialGroup} />
+            <Route path="/admin/settings/:tab?" component={AdminSettingsGroup} />
+            <Route path="/admin/people/:tab?" component={AdminPeopleGroup} />
+            <Route path="/admin/honours/:tab?" component={AdminHonoursGroup} />
 
-          {/* Back-compat: old flat admin URLs redirect to their new group+tab
-              so existing bookmarks and in-app cross-links keep working. */}
-          <Route path="/admin/stats">
-            <Redirect to="/admin/people/stats" />
-          </Route>
-          <Route path="/admin/players">
-            <Redirect to="/admin/people/players" />
-          </Route>
-          <Route path="/admin/committee">
-            <Redirect to="/admin/people/committee" />
-          </Route>
-          <Route path="/admin/captains">
-            <Redirect to="/admin/people/captains" />
-          </Route>
-          <Route path="/admin/junior-committee">
-            <Redirect to="/admin/people/junior-office-bearers" />
-          </Route>
-          <Route path="/admin/premierships">
-            <Redirect to="/admin/honours/premierships" />
-          </Route>
-          <Route path="/admin/awards">
-            <Redirect to="/admin/honours/awards" />
-          </Route>
-          <Route path="/admin/team-of-decade">
-            <Redirect to="/admin/honours/team-of-decade" />
-          </Route>
-          <Route path="/admin/caps">
-            <Redirect to="/admin/honours/caps" />
-          </Route>
-          <Route path="/admin/life-members">
-            <Redirect to="/admin/honours/life-members" />
-          </Route>
-          <Route path="/admin/junior-premierships">
-            <Redirect to="/admin/honours/junior-premierships" />
-          </Route>
-          <Route path="/admin/honour-boards">
-            <Redirect to="/admin/settings/honour-boards" />
-          </Route>
-          <Route path="/admin/milestone-board">
-            <Redirect to="/admin/settings/milestone-board" />
-          </Route>
-          <Route path="/admin/match-display">
-            <Redirect to="/admin/settings/matches" />
-          </Route>
-          <Route path="/admin/records-display">
-            <Redirect to="/admin/settings/records" />
-          </Route>
-          <Route path="/admin/trading-cards">
-            <Redirect to="/admin/social/trading-cards" />
-          </Route>
-          <Route path="/admin/junior-match-display">
-            <Redirect to="/admin/settings/junior-matches" />
-          </Route>
-          <Route path="/admin/nav">
-            <Redirect to="/admin/settings/nav" />
-          </Route>
+            {/* Back-compat: old flat admin URLs redirect to their new group+tab
+                so existing bookmarks and in-app cross-links keep working. */}
+            <Route path="/admin/stats">
+              <Redirect to="/admin/people/stats" />
+            </Route>
+            <Route path="/admin/players">
+              <Redirect to="/admin/people/players" />
+            </Route>
+            <Route path="/admin/committee">
+              <Redirect to="/admin/people/committee" />
+            </Route>
+            <Route path="/admin/captains">
+              <Redirect to="/admin/people/captains" />
+            </Route>
+            <Route path="/admin/junior-committee">
+              <Redirect to="/admin/people/junior-office-bearers" />
+            </Route>
+            <Route path="/admin/premierships">
+              <Redirect to="/admin/honours/premierships" />
+            </Route>
+            <Route path="/admin/awards">
+              <Redirect to="/admin/honours/awards" />
+            </Route>
+            <Route path="/admin/team-of-decade">
+              <Redirect to="/admin/honours/team-of-decade" />
+            </Route>
+            <Route path="/admin/caps">
+              <Redirect to="/admin/honours/caps" />
+            </Route>
+            <Route path="/admin/life-members">
+              <Redirect to="/admin/honours/life-members" />
+            </Route>
+            <Route path="/admin/junior-premierships">
+              <Redirect to="/admin/honours/junior-premierships" />
+            </Route>
+            <Route path="/admin/honour-boards">
+              <Redirect to="/admin/settings/honour-boards" />
+            </Route>
+            <Route path="/admin/milestone-board">
+              <Redirect to="/admin/settings/milestone-board" />
+            </Route>
+            <Route path="/admin/match-display">
+              <Redirect to="/admin/settings/matches" />
+            </Route>
+            <Route path="/admin/records-display">
+              <Redirect to="/admin/settings/records" />
+            </Route>
+            <Route path="/admin/trading-cards">
+              <Redirect to="/admin/social/trading-cards" />
+            </Route>
+            <Route path="/admin/junior-match-display">
+              <Redirect to="/admin/settings/junior-matches" />
+            </Route>
+            <Route path="/admin/nav">
+              <Redirect to="/admin/settings/nav" />
+            </Route>
 
-          <Route component={NotFound} />
-        </Switch>
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
       </AdminShell>
     </Layout>
   );
@@ -170,7 +205,9 @@ function AdminRoutes() {
 function CaptainRoutes() {
   return (
     <Layout>
-      <CaptainPage />
+      <Suspense fallback={<RouteFallback />}>
+        <CaptainPage />
+      </Suspense>
     </Layout>
   );
 }
@@ -213,33 +250,38 @@ function Router() {
   if (platform.isLoading) return null;
   if (platform.isPlatform) return <LandingRoutes />;
   return (
-    <Switch>
-      <Route path="/__card-render" component={CardRenderHarness} />
-      {/* Short, easy-to-type clubroom-TV link. The token in the path gates it
-          (the feed is validated server-side); kept alongside the legacy
-          `/honours-display/kiosk?token=` form so older saved links still work. */}
-      <Route path="/tv/:token">
-        <HonoursKiosk />
-      </Route>
-      <Route path="/honours-display/kiosk">
-        <KioskGate />
-      </Route>
-      <Route path="/honours-display">
-        <Layout>
-          <AdminOnly>
-            <HonoursDisplay />
-          </AdminOnly>
-        </Layout>
-      </Route>
-      {/* Public reset/bootstrap landing — must precede the admin gate so an
-          unauthenticated club admin can set their password from the emailed/handed
-          link without hitting the sign-in wall. */}
-      <Route path="/admin/reset" component={AdminReset} />
-      <Route path="/admin/*" component={AdminRoutes} />
-      <Route path="/admin" component={AdminRoutes} />
-      <Route path="/captain" component={CaptainRoutes} />
-      <Route component={PublicRoutes} />
-    </Switch>
+    // Top-level boundary for the lazy full-screen/special routes (kiosk, honour
+    // display, captain, card harness, admin reset). PublicRoutes/AdminRoutes
+    // carry their own inner boundaries so the Layout chrome doesn't unmount.
+    <Suspense fallback={<RouteFallback />}>
+      <Switch>
+        <Route path="/__card-render" component={CardRenderHarness} />
+        {/* Short, easy-to-type clubroom-TV link. The token in the path gates it
+            (the feed is validated server-side); kept alongside the legacy
+            `/honours-display/kiosk?token=` form so older saved links still work. */}
+        <Route path="/tv/:token">
+          <HonoursKiosk />
+        </Route>
+        <Route path="/honours-display/kiosk">
+          <KioskGate />
+        </Route>
+        <Route path="/honours-display">
+          <Layout>
+            <AdminOnly>
+              <HonoursDisplay />
+            </AdminOnly>
+          </Layout>
+        </Route>
+        {/* Public reset/bootstrap landing — must precede the admin gate so an
+            unauthenticated club admin can set their password from the emailed/handed
+            link without hitting the sign-in wall. */}
+        <Route path="/admin/reset" component={AdminReset} />
+        <Route path="/admin/*" component={AdminRoutes} />
+        <Route path="/admin" component={AdminRoutes} />
+        <Route path="/captain" component={CaptainRoutes} />
+        <Route component={PublicRoutes} />
+      </Switch>
+    </Suspense>
   );
 }
 

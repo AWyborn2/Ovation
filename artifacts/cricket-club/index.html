@@ -39,10 +39,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Decorative families for the Social Studio's selectable card fonts only
-         (canvas exports) — the app UI itself uses the design-system families
-         above. See CARD_FONT_OPTIONS in src/lib/share-card.ts. -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- The decorative families for the Social Studio's selectable card fonts
+         (Cinzel, EB Garamond, Inter, Oswald, Space Mono) are NOT loaded here —
+         they'd block first paint for every public visitor but are only needed
+         by the admin card editors/exports. They're injected on demand by
+         ensureCardFontsLoaded() in src/lib/card-fonts.ts. -->
   </head>
   <body>
     <div id="root"></div>

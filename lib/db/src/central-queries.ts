@@ -224,6 +224,117 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+// ---------------------------------------------------------------------------
+// Short-TTL result cache for the exported central reads.
+//
+// The central DB is a REMOTE Supabase Postgres reached over the internet, so
+// every query is a full network round trip, and the underlying data changes at
+// most weekly (external ingest). A 5-minute in-process cache (mirroring the
+// tenant-config cache in api-server/src/lib/tenant.ts) is therefore safe by
+// design and removes repeated multi-second fan-outs on hot pages.
+//
+// Override with CENTRAL_CACHE_TTL_MS (0 disables caching entirely — useful for
+// tests and the comparison tooling); call clearCentralQueriesCache() to reset
+// between test cases.
+// ---------------------------------------------------------------------------
+
+const DEFAULT_CENTRAL_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function centralCacheTtlMs(): number {
+  const raw = process.env.CENTRAL_CACHE_TTL_MS;
+  if (raw !== undefined && raw !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return DEFAULT_CENTRAL_CACHE_TTL_MS;
+}
+
+const centralCache = new Map<string, { value: unknown; at: number }>();
+
+/** Drop every cached central read (tests; or after a central re-ingest). */
+export function clearCentralQueriesCache(): void {
+  centralCache.clear();
+}
+
+/**
+ * Stable, order-insensitive serialisation of a cache-key argument. Maps (the
+ * leaderboard's tenant crosswalk/rename overrides) are folded into the key by
+ * their sorted entries so two tenants sharing a central club id but carrying
+ * different crosswalks never share a cache entry.
+ */
+function stableCacheArg(value: unknown): unknown {
+  if (value instanceof Map) {
+    return {
+      __map: [...value.entries()]
+        .map(([k, v]) => [String(k), v] as const)
+        .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    };
+  }
+  if (Array.isArray(value)) return value.map(stableCacheArg);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([k, v]) => [k, stableCacheArg(v)]),
+    );
+  }
+  return value;
+}
+
+function cacheKey(fn: string, args: unknown[]): string {
+  return `${fn}:${JSON.stringify(args.map(stableCacheArg))}`;
+}
+
+/**
+ * Run `fn` through the short-TTL cache. Resolved values only (a failed read is
+ * never cached); TTL <= 0 bypasses the cache completely.
+ */
+export async function withCentralCache<T>(
+  key: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const ttl = centralCacheTtlMs();
+  if (ttl <= 0) return fn();
+  const hit = centralCache.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.value as T;
+  const value = await fn();
+  centralCache.set(key, { value, at: Date.now() });
+  return value;
+}
+
+// ---------------------------------------------------------------------------
+// Shared club-match-rows fetch. Almost every read here starts from "all central
+// matches involving this club" — previously each function issued that query
+// itself, so a composite read like centralDashboard paid for it four times.
+// Fetch it once and thread the rows through the aggregate functions via their
+// optional `preloadedMatchRows` parameter (absent → they fetch their own, so
+// route handlers calling them individually are unchanged).
+// ---------------------------------------------------------------------------
+
+/** One central match involving the club: id + the grade/season labels. */
+export interface CentralClubMatchRow {
+  matchId: number;
+  grade: string | null;
+  season: string | null;
+}
+
+/** All central matches where the club played (home or away), fetched once. */
+async function getClubMatchRows(clubId: number): Promise<CentralClubMatchRow[]> {
+  return centralDb
+    .select({
+      matchId: centralMatchesTable.matchId,
+      grade: centralMatchesTable.grade,
+      season: centralMatchesTable.season,
+    })
+    .from(centralMatchesTable)
+    .where(
+      or(
+        eq(centralMatchesTable.homeClubId, clubId),
+        eq(centralMatchesTable.awayClubId, clubId),
+      ),
+    );
+}
+
 interface BattingAgg {
   runs: number;
   innings: number;
@@ -260,23 +371,26 @@ export async function centralGradeLeaderboard(
   } = {},
 ): Promise<PlayerGradeStat[]> {
   const clubId = opts.clubId ?? HALLS_HEAD_CENTRAL_CLUB_ID;
+  return withCentralCache(
+    cacheKey("centralGradeLeaderboard", [appGrade, clubId, opts]),
+    () => centralGradeLeaderboardImpl(appGrade, clubId, opts),
+  );
+}
 
+async function centralGradeLeaderboardImpl(
+  appGrade: string,
+  clubId: number,
+  opts: {
+    clubId?: number;
+    seasonStartYear?: number;
+    intByGuid?: Map<string, number>;
+    nameByGuid?: Map<string, string>;
+  },
+): Promise<PlayerGradeStat[]> {
   // 1. Central matches involving this club, narrowed to the requested app grade
   //    (and optionally a single season). Grade mapping is per-label, so resolve
   //    it in JS rather than SQL.
-  const matchRows = await centralDb
-    .select({
-      matchId: centralMatchesTable.matchId,
-      grade: centralMatchesTable.grade,
-      season: centralMatchesTable.season,
-    })
-    .from(centralMatchesTable)
-    .where(
-      or(
-        eq(centralMatchesTable.homeClubId, clubId),
-        eq(centralMatchesTable.awayClubId, clubId),
-      ),
-    );
+  const matchRows = await getClubMatchRows(clubId);
 
   const matchIds = matchRows
     .filter((m) => appGradeFromCentral(m.grade) === appGrade)
@@ -289,22 +403,37 @@ export async function centralGradeLeaderboard(
 
   if (matchIds.length === 0) return [];
 
-  // 2. This club's batting lines in those matches, aggregated per participant.
-  const battingLines = await centralDb
-    .select({
-      participantId: centralMatchBattingTable.participantId,
-      matchId: centralMatchBattingTable.matchId,
-      runs: centralMatchBattingTable.runs,
-      dismissal: centralMatchBattingTable.dismissal,
-      dismissalType: centralMatchBattingTable.dismissalType,
-    })
-    .from(centralMatchBattingTable)
-    .where(
-      and(
-        eq(centralMatchBattingTable.clubId, clubId),
-        inArray(centralMatchBattingTable.matchId, matchIds),
+  // 2 + 3 fetched together: the club's batting lines and roster lines both
+  //    depend only on matchIds, so run the two round trips in parallel.
+  const [battingLines, rosterLines] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+        dismissal: centralMatchBattingTable.dismissal,
+        dismissalType: centralMatchBattingTable.dismissalType,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inArray(centralMatchBattingTable.matchId, matchIds),
+        ),
       ),
-    );
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
+  ]);
 
   const agg = new Map<string, BattingAgg>();
   for (const line of battingLines) {
@@ -344,19 +473,8 @@ export async function centralGradeLeaderboard(
 
   // 3. Games = distinct appearances from rosters (a player counts as having
   //    played even in matches where they didn't bat), unioned with batted
-  //    matches as a fallback for rows missing a roster entry.
-  const rosterLines = await centralDb
-    .select({
-      participantId: centralMatchRostersTable.participantId,
-      matchId: centralMatchRostersTable.matchId,
-    })
-    .from(centralMatchRostersTable)
-    .where(
-      and(
-        eq(centralMatchRostersTable.clubId, clubId),
-        inArray(centralMatchRostersTable.matchId, matchIds),
-      ),
-    );
+  //    matches as a fallback for rows missing a roster entry. (Fetched above,
+  //    in parallel with the batting lines.)
   for (const r of rosterLines) {
     if (!r.participantId || r.matchId === null) continue;
     agg.get(r.participantId)?.matchIds.add(r.matchId);
@@ -472,6 +590,7 @@ export async function listCentralGradesForClub(
  */
 export async function centralClubTotals(
   clubId: number = HALLS_HEAD_CENTRAL_CLUB_ID,
+  preloadedMatchRows?: CentralClubMatchRow[],
 ): Promise<{
   players: number;
   games: number;
@@ -479,15 +598,22 @@ export async function centralClubTotals(
   wickets: number;
   grades: number;
 }> {
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
-    .from(centralMatchesTable)
-    .where(
-      or(
-        eq(centralMatchesTable.homeClubId, clubId),
-        eq(centralMatchesTable.awayClubId, clubId),
-      ),
-    );
+  return withCentralCache(cacheKey("centralClubTotals", [clubId]), () =>
+    centralClubTotalsImpl(clubId, preloadedMatchRows),
+  );
+}
+
+async function centralClubTotalsImpl(
+  clubId: number,
+  preloadedMatchRows?: CentralClubMatchRow[],
+): Promise<{
+  players: number;
+  games: number;
+  runs: number;
+  wickets: number;
+  grades: number;
+}> {
+  const matchRows = preloadedMatchRows ?? (await getClubMatchRows(clubId));
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) {
     return { players: 0, games: 0, runs: 0, wickets: 0, grades: 0 };
@@ -498,38 +624,41 @@ export async function centralClubTotals(
       .filter((g): g is string => Boolean(g)),
   ).size;
 
-  const rosters = await centralDb
-    .select({ participantId: centralMatchRostersTable.participantId })
-    .from(centralMatchRostersTable)
-    .where(
-      and(
-        eq(centralMatchRostersTable.clubId, clubId),
-        inArray(centralMatchRostersTable.matchId, matchIds),
+  // Rosters, batting sum and bowling sum are independent given matchIds — run
+  // the three round trips in parallel.
+  const [rosters, [bat], [bowl]] = await Promise.all([
+    centralDb
+      .select({ participantId: centralMatchRostersTable.participantId })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
       ),
-    );
+    centralDb
+      .select({ runs: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)` })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inArray(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({ wickets: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)` })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inArray(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
+  ]);
   const players = new Set(
     rosters.map((r) => r.participantId).filter((p): p is string => Boolean(p)),
   ).size;
   const games = rosters.length;
-
-  const [bat] = await centralDb
-    .select({ runs: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)` })
-    .from(centralMatchBattingTable)
-    .where(
-      and(
-        eq(centralMatchBattingTable.clubId, clubId),
-        inArray(centralMatchBattingTable.matchId, matchIds),
-      ),
-    );
-  const [bowl] = await centralDb
-    .select({ wickets: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)` })
-    .from(centralMatchBowlingTable)
-    .where(
-      and(
-        eq(centralMatchBowlingTable.clubId, clubId),
-        inArray(centralMatchBowlingTable.matchId, matchIds),
-      ),
-    );
 
   return {
     players,
@@ -641,16 +770,18 @@ export interface CentralPlayerCareer {
  */
 export async function centralPlayerCareers(
   clubId: number = HALLS_HEAD_CENTRAL_CLUB_ID,
+  preloadedMatchRows?: CentralClubMatchRow[],
 ): Promise<CentralPlayerCareer[]> {
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
-    .from(centralMatchesTable)
-    .where(
-      or(
-        eq(centralMatchesTable.homeClubId, clubId),
-        eq(centralMatchesTable.awayClubId, clubId),
-      ),
-    );
+  return withCentralCache(cacheKey("centralPlayerCareers", [clubId]), () =>
+    centralPlayerCareersImpl(clubId, preloadedMatchRows),
+  );
+}
+
+async function centralPlayerCareersImpl(
+  clubId: number,
+  preloadedMatchRows?: CentralClubMatchRow[],
+): Promise<CentralPlayerCareer[]> {
+  const matchRows = preloadedMatchRows ?? (await getClubMatchRows(clubId));
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
   const matchGrade = new Map(
@@ -1040,6 +1171,15 @@ export async function centralClubMatches(
   clubId: number,
   opts: { grade?: string; season?: number } = {},
 ): Promise<CentralMatchSummary[]> {
+  return withCentralCache(cacheKey("centralClubMatches", [clubId, opts]), () =>
+    centralClubMatchesImpl(clubId, opts),
+  );
+}
+
+async function centralClubMatchesImpl(
+  clubId: number,
+  opts: { grade?: string; season?: number },
+): Promise<CentralMatchSummary[]> {
   const matches = await centralDb
     .select()
     .from(centralMatchesTable)
@@ -1051,24 +1191,7 @@ export async function centralClubMatches(
     );
   if (matches.length === 0) return [];
 
-  // Roster counts per match for the club (the "playerCount" display figure).
   const matchIds = matches.map((m) => m.matchId);
-  const rosterCounts = await centralDb
-    .select({
-      matchId: centralMatchRostersTable.matchId,
-      n: sql<number>`count(*)::int`,
-    })
-    .from(centralMatchRostersTable)
-    .where(
-      and(
-        eq(centralMatchRostersTable.clubId, clubId),
-        inArray(centralMatchRostersTable.matchId, matchIds),
-      ),
-    )
-    .groupBy(centralMatchRostersTable.matchId);
-  const countByMatch = new Map(rosterCounts.map((r) => [r.matchId, Number(r.n)]));
-
-  // Opponent club brands (central.clubs has no logo; degrade to initials chip).
   const oppIds = [
     ...new Set(
       matches
@@ -1076,9 +1199,26 @@ export async function centralClubMatches(
         .filter((id): id is number => id != null),
     ),
   ];
-  const oppClubs =
+
+  // Roster counts (the "playerCount" display figure) and opponent club brands
+  // (central.clubs has no logo; degrade to initials chip) are independent given
+  // the match list — run the two round trips in parallel.
+  const [rosterCounts, oppClubs] = await Promise.all([
+    centralDb
+      .select({
+        matchId: centralMatchRostersTable.matchId,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
+      )
+      .groupBy(centralMatchRostersTable.matchId),
     oppIds.length > 0
-      ? await centralDb
+      ? centralDb
           .select({
             clubId: centralClubsTable.clubId,
             name: centralClubsTable.name,
@@ -1087,7 +1227,9 @@ export async function centralClubMatches(
           })
           .from(centralClubsTable)
           .where(inArray(centralClubsTable.clubId, oppIds))
-      : [];
+      : Promise.resolve([]),
+  ]);
+  const countByMatch = new Map(rosterCounts.map((r) => [r.matchId, Number(r.n)]));
   const oppById = new Map(oppClubs.map((c) => [c.clubId, c]));
 
   const rows: CentralMatchSummary[] = [];
@@ -1566,15 +1708,13 @@ export interface CentralClubRecords {
  * via player_id_map. Scorecard-era only.
  */
 export async function centralClubRecords(clubId: number): Promise<CentralClubRecords> {
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
-    .from(centralMatchesTable)
-    .where(
-      or(
-        eq(centralMatchesTable.homeClubId, clubId),
-        eq(centralMatchesTable.awayClubId, clubId),
-      ),
-    );
+  return withCentralCache(cacheKey("centralClubRecords", [clubId]), () =>
+    centralClubRecordsImpl(clubId),
+  );
+}
+
+async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecords> {
+  const matchRows = await getClubMatchRows(clubId);
   const empty: CentralClubRecords = {
     mostGames: null, mostRuns: null, mostWickets: null, mostCatches: null,
     mostFifties: null, mostHundreds: null, highestScore: null, bestBowling: null,
@@ -1718,16 +1858,18 @@ export interface CentralGradeSummary {
 
 export async function centralGradeSummaries(
   clubId: number,
+  preloadedMatchRows?: CentralClubMatchRow[],
 ): Promise<CentralGradeSummary[]> {
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade })
-    .from(centralMatchesTable)
-    .where(
-      or(
-        eq(centralMatchesTable.homeClubId, clubId),
-        eq(centralMatchesTable.awayClubId, clubId),
-      ),
-    );
+  return withCentralCache(cacheKey("centralGradeSummaries", [clubId]), () =>
+    centralGradeSummariesImpl(clubId, preloadedMatchRows),
+  );
+}
+
+async function centralGradeSummariesImpl(
+  clubId: number,
+  preloadedMatchRows?: CentralClubMatchRow[],
+): Promise<CentralGradeSummary[]> {
+  const matchRows = preloadedMatchRows ?? (await getClubMatchRows(clubId));
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
   const gradeOf = new Map(matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]));
@@ -1851,23 +1993,30 @@ export interface CentralDashboard {
 }
 
 export async function centralDashboard(clubId: number): Promise<CentralDashboard> {
-  const [totals, gradeSummaries, careers] = await Promise.all([
-    centralClubTotals(clubId),
-    centralGradeSummaries(clubId),
-    centralPlayerCareers(clubId),
-  ]);
+  return withCentralCache(cacheKey("centralDashboard", [clubId]), () =>
+    centralDashboardImpl(clubId),
+  );
+}
 
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId })
-    .from(centralMatchesTable)
-    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
+  // Fetch the club's match rows ONCE and thread them into the three aggregate
+  // reads (each used to re-issue the identical matches query) and this
+  // function's own fielding fetch — 4 redundant round trips saved, and the
+  // fielding read runs in parallel with the aggregates.
+  const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
-  const fielding = matchIds.length
-    ? await centralDb
-        .select({ participantId: centralFieldingTable.participantId, kind: centralFieldingTable.kind })
-        .from(centralFieldingTable)
-        .where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds)))
-    : [];
+
+  const [totals, gradeSummaries, careers, fielding] = await Promise.all([
+    centralClubTotals(clubId, matchRows),
+    centralGradeSummaries(clubId, matchRows),
+    centralPlayerCareers(clubId, matchRows),
+    matchIds.length
+      ? centralDb
+          .select({ participantId: centralFieldingTable.participantId, kind: centralFieldingTable.kind })
+          .from(centralFieldingTable)
+          .where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds)))
+      : Promise.resolve([]),
+  ]);
   const catchesByPid = new Map<string, number>();
   for (const f of fielding) {
     if (!f.participantId) continue;
@@ -1946,10 +2095,13 @@ function seasonLabelFromStartYear(startYear: number): string {
 }
 
 export async function centralCenturies(clubId: number): Promise<CentralCentury[]> {
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade, season: centralMatchesTable.season })
-    .from(centralMatchesTable)
-    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+  return withCentralCache(cacheKey("centralCenturies", [clubId]), () =>
+    centralCenturiesImpl(clubId),
+  );
+}
+
+async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
+  const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
   const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
@@ -2015,6 +2167,15 @@ export async function centralMilestones(
   clubId: number,
   tiers: { games: number[]; runs: number[]; wickets: number[] } = DEFAULT_CAREER_TIERS,
 ): Promise<CentralMilestone[]> {
+  return withCentralCache(cacheKey("centralMilestones", [clubId, tiers]), () =>
+    centralMilestonesImpl(clubId, tiers),
+  );
+}
+
+async function centralMilestonesImpl(
+  clubId: number,
+  tiers: { games: number[]; runs: number[]; wickets: number[] },
+): Promise<CentralMilestone[]> {
   const matchRows = await centralDb
     .select({
       matchId: centralMatchesTable.matchId,
@@ -2042,7 +2203,10 @@ export async function centralMilestones(
     ]),
   );
 
-  const [batting, bowling] = await Promise.all([
+  // Batting, bowling and rosters (rosters give the games count — a player
+  // counts as having played even in matches where they didn't bat or bowl) are
+  // independent given matchIds — run all three round trips in parallel.
+  const [batting, bowling, rosters] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
@@ -2059,25 +2223,22 @@ export async function centralMilestones(
       })
       .from(centralMatchBowlingTable)
       .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds))),
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inArray(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
   ]);
 
   const centuries = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null);
   const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null);
-
-  // Rosters give the games count (a player counts as having played even in
-  // matches where they didn't bat or bowl) for career-games crossings.
-  const rosters = await centralDb
-    .select({
-      participantId: centralMatchRostersTable.participantId,
-      matchId: centralMatchRostersTable.matchId,
-    })
-    .from(centralMatchRostersTable)
-    .where(
-      and(
-        eq(centralMatchRostersTable.clubId, clubId),
-        inArray(centralMatchRostersTable.matchId, matchIds),
-      ),
-    );
 
   // Per-participant running-total inputs: runs and wickets per match, and the
   // set of matches played (rosters unioned with batted/bowled matches).
@@ -2210,10 +2371,13 @@ export async function centralMilestones(
 }
 
 export async function centralFiveWicketHauls(clubId: number): Promise<CentralFiveWicketHaul[]> {
-  const matchRows = await centralDb
-    .select({ matchId: centralMatchesTable.matchId, grade: centralMatchesTable.grade, season: centralMatchesTable.season })
-    .from(centralMatchesTable)
-    .where(or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)));
+  return withCentralCache(cacheKey("centralFiveWicketHauls", [clubId]), () =>
+    centralFiveWicketHaulsImpl(clubId),
+  );
+}
+
+async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWicketHaul[]> {
+  const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
   const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
