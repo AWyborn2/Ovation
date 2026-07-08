@@ -38,17 +38,44 @@ const router: IRouter = Router();
 
 const DISPLAY_SETTINGS_ID = 1;
 
+// Short-TTL cache for the single match-display-settings row (id=1). Mirrors the
+// tenant-config cache pattern in `lib/tenant.ts`: a single row that changes only
+// via its own admin PATCH route below, so a brief cache avoids a select (and
+// possible insert) on every /matches list request. The PATCH route refreshes
+// this cache immediately on write so an admin's change takes effect without
+// waiting out the TTL.
+const DISPLAY_SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
+let displaySettingsCache: {
+  value: typeof matchDisplaySettingsTable.$inferSelect;
+  at: number;
+} | null = null;
+
 async function ensureMatchDisplaySettings() {
+  if (
+    displaySettingsCache &&
+    Date.now() - displaySettingsCache.at < DISPLAY_SETTINGS_CACHE_TTL_MS
+  ) {
+    return displaySettingsCache.value;
+  }
   const [existing] = await db
     .select()
     .from(matchDisplaySettingsTable)
     .where(eq(matchDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
-  if (existing) return existing;
+  if (existing) {
+    displaySettingsCache = { value: existing, at: Date.now() };
+    return existing;
+  }
   const [created] = await db
     .insert(matchDisplaySettingsTable)
     .values({ id: DISPLAY_SETTINGS_ID })
     .returning();
+  displaySettingsCache = { value: created, at: Date.now() };
   return created;
+}
+
+/** Drop the cached match-display-settings row (tests; or after a direct DB write). */
+export function clearMatchDisplaySettingsCache(): void {
+  displaySettingsCache = null;
 }
 
 function serializeMatchDisplaySettings(
@@ -245,10 +272,10 @@ router.get("/matches", async (req, res): Promise<void> => {
     const rows = await centralClubMatches(await getRequestCentralClubId(req), {
       grade: grade || undefined,
       season,
+      limit,
+      offset: off,
     });
-    res.json(
-      limit !== undefined ? rows.slice(off, off + limit) : off ? rows.slice(off) : rows,
-    );
+    res.json(rows);
     return;
   }
 
@@ -618,6 +645,8 @@ router.patch(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(eq(matchDisplaySettingsTable.id, DISPLAY_SETTINGS_ID))
       .returning();
+    // Refresh (not just clear) so the very next read is already up to date.
+    displaySettingsCache = { value: row, at: Date.now() };
     res.json(serializeMatchDisplaySettings(row));
   },
 );
