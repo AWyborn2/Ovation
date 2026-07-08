@@ -33,11 +33,32 @@ if (!CENTRAL_DATABASE_URL) {
   );
 }
 
+/** Positive-integer env override with a fallback (bad/missing values → fallback). */
+function envInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
 /**
  * Dedicated pool for the central DB. Kept module-private so callers cannot reach
  * the raw (write-capable) connection — all access goes through `centralDb`.
+ *
+ * The central DB is a REMOTE Supabase session pooler reached over the internet,
+ * so the pool is explicitly bounded and time-limited rather than left on pg's
+ * defaults: a small `max` (the session pooler hands out real backend sessions),
+ * an idle timeout so quiet servers release remote sessions, a connection
+ * timeout so a network outage fails fast instead of hanging requests, and a
+ * server-side `statement_timeout` so no single read can stall a worker.
  */
-const centralPool = new Pool({ connectionString: CENTRAL_DATABASE_URL });
+const centralPool = new Pool({
+  connectionString: CENTRAL_DATABASE_URL,
+  max: envInt("CENTRAL_POOL_MAX", 5),
+  idleTimeoutMillis: envInt("CENTRAL_POOL_IDLE_TIMEOUT_MS", 30_000),
+  connectionTimeoutMillis: envInt("CENTRAL_POOL_CONNECTION_TIMEOUT_MS", 10_000),
+  statement_timeout: envInt("CENTRAL_STATEMENT_TIMEOUT_MS", 30_000),
+});
 
 type CentralSchema = typeof centralSchema;
 
