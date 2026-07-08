@@ -1,6 +1,7 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as centralSchema from "./central-schema";
+import { envInt } from "./env";
 
 const { Pool } = pg;
 
@@ -31,14 +32,6 @@ if (!CENTRAL_DATABASE_URL) {
       "central PCA database (Postgres schema `central`). It is separate from " +
       "DATABASE_URL (the tenant app DB).",
   );
-}
-
-/** Positive-integer env override with a fallback (bad/missing values → fallback). */
-function envInt(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (raw === undefined || raw === "") return fallback;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 }
 
 /**

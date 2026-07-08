@@ -2238,7 +2238,7 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
       ),
     );
 
-  const hundreds = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId);
+  const hundreds = batting.filter((b) => b.participantId);
   const names = await centralPlayerNames([...new Set(hundreds.map((b) => b.participantId as string))]);
 
   const rows: CentralCentury[] = [];
@@ -2528,7 +2528,7 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
       ),
     );
 
-  const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId);
+  const fivers = bowling.filter((b) => b.participantId);
   const names = await centralPlayerNames([...new Set(fivers.map((b) => b.participantId as string))]);
 
   const rows: CentralFiveWicketHaul[] = [];

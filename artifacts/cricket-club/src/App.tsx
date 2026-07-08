@@ -1,6 +1,6 @@
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -50,21 +50,29 @@ const AdminUsers = lazy(() => import("@/pages/admin-users"));
 const AdminImport = lazy(() => import("@/pages/admin-import"));
 const AdminReset = lazy(() => import("@/pages/admin-reset"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
-const AdminSocialGroup = lazy(() =>
-  import("@/pages/admin-groups").then((m) => ({ default: m.AdminSocialGroup })),
+function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
+  loader: () => Promise<M>,
+  key: K,
+) {
+  return lazy(() =>
+    loader().then((m) => ({ default: m[key] as ComponentType })),
+  );
+}
+const AdminSocialGroup = lazyNamed(
+  () => import("@/pages/admin-groups"),
+  "AdminSocialGroup",
 );
-const AdminSettingsGroup = lazy(() =>
-  import("@/pages/admin-groups").then((m) => ({
-    default: m.AdminSettingsGroup,
-  })),
+const AdminSettingsGroup = lazyNamed(
+  () => import("@/pages/admin-groups"),
+  "AdminSettingsGroup",
 );
-const AdminPeopleGroup = lazy(() =>
-  import("@/pages/admin-groups").then((m) => ({ default: m.AdminPeopleGroup })),
+const AdminPeopleGroup = lazyNamed(
+  () => import("@/pages/admin-groups"),
+  "AdminPeopleGroup",
 );
-const AdminHonoursGroup = lazy(() =>
-  import("@/pages/admin-groups").then((m) => ({
-    default: m.AdminHonoursGroup,
-  })),
+const AdminHonoursGroup = lazyNamed(
+  () => import("@/pages/admin-groups"),
+  "AdminHonoursGroup",
 );
 const CaptainPage = lazy(() => import("@/pages/captain"));
 const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
