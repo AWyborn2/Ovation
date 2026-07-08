@@ -59,6 +59,14 @@ type Frame =
  */
 const KIOSK_STRIP_PX = 96;
 
+/**
+ * Minimum age of the display feed before a carousel wrap-around re-fetches it.
+ * `refetch()` bypasses staleTime, so without this guard an unattended TV would
+ * hit the API on every rotation; with it the kiosk still picks up new results
+ * within ~10 minutes of them landing, without a reload.
+ */
+const KIOSK_REFRESH_MS = 10 * 60 * 1000;
+
 /** Approximate how many list rows fit one screen (recomputed on resize). */
 function computeRowsPerPage(stripPx = 0): number {
   const h = typeof window !== "undefined" ? window.innerHeight : 900;
@@ -143,7 +151,7 @@ export default function HonoursKiosk() {
       },
     },
   );
-  const { data, refetch } = kioskToken ? tokenQ : adminQ;
+  const { data, refetch, dataUpdatedAt } = kioskToken ? tokenQ : adminQ;
   const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
@@ -328,7 +336,15 @@ export default function HonoursKiosk() {
 
     function advance() {
       if (!alive()) return;
-      if (index + 1 >= frames.length) refetch();
+      // Refresh the feed on wrap-around, but only when the data is actually
+      // old — refetch() ignores staleTime, and a rotation can wrap every few
+      // minutes on a small board set.
+      if (
+        index + 1 >= frames.length &&
+        Date.now() - dataUpdatedAt >= KIOSK_REFRESH_MS
+      ) {
+        refetch();
+      }
       setIndex((i) => (i + 1) % frames.length);
     }
 

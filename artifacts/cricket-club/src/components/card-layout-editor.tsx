@@ -61,6 +61,7 @@ import {
   type ShareCardInput,
 } from "@/lib/share-card";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import { useConfirm } from "@/components/confirm-dialog";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -313,6 +314,12 @@ export function CardLayoutEditor({
   const controlled = !!onSaveLayout || isTemplate;
   const qc = useQueryClient();
   const confirm = useConfirm();
+
+  // Prefetch the decorative card fonts (no longer in index.html) as soon as the
+  // editor mounts, so the font dropdown previews/exports don't wait on Google.
+  useEffect(() => {
+    void ensureCardFontsLoaded();
+  }, []);
 
   const layoutsQ = useListCardLayouts();
   const savedLayers = useMemo<CardLayoutLayer[]>(() => {

@@ -61,8 +61,15 @@ export function useApproachingBoard(): DisplayBoard | null {
     [gradesList],
   );
 
+  // One leaderboard query per grade — a real fan-out on the kiosk/display, so
+  // treat the results as fresh for a long while. Career milestones only move
+  // when new results are ingested; the kiosk's own wrap-around refresh (and any
+  // explicit invalidation) still picks changes up.
   const leaderboardQueries = useQueries({
-    queries: grades.map((g) => ({ ...getGetGradeLeaderboardQueryOptions(g) })),
+    queries: grades.map((g) => ({
+      ...getGetGradeLeaderboardQueryOptions(g),
+      staleTime: 10 * 60 * 1000,
+    })),
   });
 
   const allStats = useMemo(

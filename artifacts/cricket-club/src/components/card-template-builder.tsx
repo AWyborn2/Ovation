@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { CARD_FONT_OPTIONS } from "@/lib/share-card";
+import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import type { CardFontKey, CardKind, MotionPreset } from "@/lib/share-card";
 import { fieldsForKinds, fieldLabel } from "@/lib/card-template";
 import { CardKindPicker } from "@/components/card-kind-picker";
@@ -91,6 +92,11 @@ const toDraft = (t: CardTemplate): DraftTemplate => ({
 export function TemplatesCard() {
   const qc = useQueryClient();
   const confirm = useConfirm();
+  // Prefetch the decorative card fonts (no longer in index.html) as soon as the
+  // editor mounts, so the font dropdown previews/exports don't wait on Google.
+  useEffect(() => {
+    void ensureCardFontsLoaded();
+  }, []);
   const templatesQ = useListCardTemplates();
   const templates = templatesQ.data ?? [];
   const invalidate = () =>
