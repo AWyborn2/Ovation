@@ -47,12 +47,14 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
 // ---------------------------------------------------------------------------
 // Dev-only tenant override
 // ---------------------------------------------------------------------------
-// On local/preview hosts (never a real tenant subdomain or the production
-// apex), a tester can pin which tenant the web app reads by storing a tenant id
-// in localStorage under `ovation_dev_tenant`. The id is sent as `x-tenant-id`,
-// which the API honours ONLY in fallback mode (localhost/preview) — on a real
-// tenant host the subdomain wins and this header is ignored. So this is inert
-// in production and cannot be used to impersonate a tenant on a live club site.
+// On dev/deployment hosts (never a real tenant subdomain or custom domain), a
+// tester can pin which tenant the web app reads by storing a tenant id in
+// localStorage under `ovation_dev_tenant`. The id is sent as `x-tenant-id`,
+// which the API honours only when no tenant host matches — localhost/fallback,
+// `.replit.dev` previews, and the published `*.replit.app` deployment host
+// (which otherwise serves the platform landing). On a real tenant host the
+// subdomain/custom-domain match wins server-side and this header is ignored,
+// so it cannot be used to impersonate a tenant on a live club site.
 const DEV_TENANT_STORAGE_KEY = "ovation_dev_tenant";
 
 function isDevHost(): boolean {

@@ -10,7 +10,8 @@ import { db, tenantsTable } from "@workspace/db";
  *      or a tenant's own custom domain). Wins over the header so a client on a
  *      real tenant host cannot impersonate another tenant via a header.
  *   2. `x-tenant-id` request header (dev/testing override; only effective when no
- *      tenant host matches — i.e. localhost/preview).
+ *      tenant host matches — localhost, `.replit.dev` previews, and the published
+ *      `*.replit.app` deployment host; never on a real tenant host).
  *   3. `DEFAULT_TENANT_ID` env var (per-deployment default).
  *   4. {@link DEFAULT_TENANT_ID} (1 — Halls Head, the demo tenant).
  */
@@ -116,6 +117,11 @@ export async function resolveTenantBySubdomain(req: Request): Promise<number | n
   const dir = await tenantDirectory();
   const domainHit = dir.byDomain.get(host);
   if (domainHit !== undefined) return domainHit;
+  // A slug is only meaningful as a subdomain label of the platform's own apex —
+  // never of Replit infrastructure hosts. Without this guard a self-serve
+  // signup registering the deployment host's first label as its slug (e.g.
+  // "ovationcc") would capture ovationcc.replit.app as that tenant's site.
+  if (isPublishedReplitHost(host) || isPreviewHost(host)) return null;
   const label = host.split(".")[0] ?? "";
   const slugHit = dir.bySlug.get(label);
   return slugHit !== undefined ? slugHit : null;
@@ -124,29 +130,57 @@ export async function resolveTenantBySubdomain(req: Request): Promise<number | n
 /**
  * Classify a request host: a matching tenant host (subdomain / custom domain)
  * wins; then a dev `x-tenant-id` override on a Replit preview host; otherwise an
- * apex/marketing host in `PLATFORM_HOSTS` is `platform`; anything else
- * (localhost, previews without an override, unknown) is `fallback` — handled by
- * the header → env → default chain so dev still lands on the demo tenant.
+ * apex/marketing host in `PLATFORM_HOSTS` — or any published `*.replit.app`
+ * deployment host — is `platform`; anything else (localhost, previews without
+ * an override, unknown) is `fallback` — handled by the header → env → default
+ * chain so dev still lands on the demo tenant.
  */
 function isPreviewHost(host: string): boolean {
   return host.endsWith(".replit.dev");
 }
 
-export async function resolveHostMode(req: Request): Promise<HostMode> {
-  const bySubdomain = await resolveTenantBySubdomain(req);
-  if (bySubdomain !== null) return { mode: "tenant", tenantId: bySubdomain };
+/**
+ * Published Replit deployment hosts (`*.replit.app`) default to the platform
+ * landing when no tenant matches: a public production host must never fall
+ * through to a real tenant's brand (the ovationcc.replit.app deployment served
+ * the Halls Head club app at its root this way). A tenant served on such a host
+ * still wins via the custom-domain match, which runs first. `.replit.dev`
+ * previews are distinct and keep the demo-tenant fallback for dev flows.
+ */
+function isPublishedReplitHost(host: string): boolean {
+  return host.endsWith(".replit.app");
+}
 
-  // Dev-only: on the shared Replit preview URL, an explicit tenant header pins
-  // which tenant to render (the dev tenant switcher). Preview hosts are also
-  // platform hosts, so this must come before the platform check. Inert in
-  // production: real hosts never end with `.replit.dev`.
+/**
+ * DB-free classification for a host that matched no tenant. Also the degraded
+ * path when the tenant directory is unavailable, so a platform host keeps its
+ * landing surface during a DB outage instead of re-serving the default
+ * tenant's brand.
+ */
+export function classifyNonTenantHost(req: Request): HostMode {
+  const host = hostOf(req);
+
+  // Dev/testing: on Replit hosts (`.replit.dev` previews and the published
+  // `.replit.app` deployment), an explicit tenant header pins which tenant to
+  // render (the dev tenant switcher; the client sends it from a wider dev-host
+  // list in custom-fetch.ts — localhost pinning is honoured via the fallback
+  // chain instead). These hosts are also platform hosts, so this must come
+  // before the platform check. Inert on real tenant hosts: the
+  // subdomain/custom-domain match wins first and the header is never consulted.
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
-  if (headerTenant !== undefined && isPreviewHost(hostOf(req))) {
+  if (headerTenant !== undefined && (isPreviewHost(host) || isPublishedReplitHost(host))) {
     return { mode: "tenant", tenantId: headerTenant };
   }
 
-  if (platformHosts().has(hostOf(req))) return { mode: "platform" };
+  if (platformHosts().has(host)) return { mode: "platform" };
+  if (isPublishedReplitHost(host)) return { mode: "platform" };
   return { mode: "fallback" };
+}
+
+export async function resolveHostMode(req: Request): Promise<HostMode> {
+  const bySubdomain = await resolveTenantBySubdomain(req);
+  if (bySubdomain !== null) return { mode: "tenant", tenantId: bySubdomain };
+  return classifyNonTenantHost(req);
 }
 
 /**
@@ -173,8 +207,18 @@ export const tenantContext: RequestHandler = (
       next();
     })
     .catch((err) => {
-      req.log?.warn?.({ err }, "tenant host resolution failed; using fallback");
-      (req as RequestWithTenant).tenantId = resolveTenantId(req);
+      // Only the tenant-directory read can reject; the platform checks are
+      // DB-free, so classify without it. A real tenant host degrades to the
+      // platform landing for the outage — never to another tenant's brand.
+      req.log?.warn?.({ err }, "tenant host resolution failed; using DB-free host classification");
+      const r = req as RequestWithTenant;
+      const hm = classifyNonTenantHost(req);
+      if (hm.mode === "tenant") {
+        r.tenantId = hm.tenantId;
+      } else {
+        r.platform = hm.mode === "platform";
+        r.tenantId = resolveTenantId(req);
+      }
       next();
     });
 };

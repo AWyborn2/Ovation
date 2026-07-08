@@ -9,6 +9,7 @@ import {
 import {
   resolveTenantBySubdomain,
   resolveHostMode,
+  classifyNonTenantHost,
 } from "../middlewares/tenant-context";
 
 /**
@@ -38,6 +39,9 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
   let nativeTenantId: number;
   const centralSlug = `iso-rt-central-${STAMP}`;
   const customDomain = `iso-rt-${STAMP}.example.com`;
+  // First label deliberately differs from any tenant slug so the test below can
+  // only pass via the custom-domain (byDomain) match, not the slug fallback.
+  const replitCustomDomain = `iso-rt-custom-${STAMP}.replit.app`;
 
   beforeAll(async () => {
     const [central] = await db
@@ -59,6 +63,7 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
         slug: `iso-rt-native-${STAMP}`,
         centralClubId: 4243,
         readsFromCentral: false,
+        customDomain: replitCustomDomain,
         name: "Iso Routing Native",
         plan: "pilot",
       })
@@ -128,6 +133,63 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
   it("classifies an unknown host (localhost/preview) as fallback, not platform", async () => {
     process.env.PLATFORM_HOSTS = "ovation.app,www.ovation.app";
     expect(await resolveHostMode(fakeReq({ host: "localhost" }))).toEqual({
+      mode: "fallback",
+    });
+  });
+
+  // Regression: the published ovationcc.replit.app deployment served the Halls
+  // Head club app at its root because the host matched no tenant, wasn't in
+  // PLATFORM_HOSTS, and so fell through to the demo-tenant fallback. A public
+  // production host must never silently impersonate a tenant.
+  it("classifies an unmatched published *.replit.app host as platform, even without PLATFORM_HOSTS", async () => {
+    expect(await resolveHostMode(fakeReq({ host: "ovationcc.replit.app" }))).toEqual({
+      mode: "platform",
+    });
+  });
+
+  it("a tenant custom domain on *.replit.app still resolves as tenant, not platform", async () => {
+    expect(await resolveHostMode(fakeReq({ host: replitCustomDomain }))).toEqual({
+      mode: "tenant",
+      tenantId: nativeTenantId,
+    });
+  });
+
+  it("an explicit x-tenant-id on a *.replit.app host pins that tenant (dev switcher)", async () => {
+    expect(
+      await resolveHostMode(
+        fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId }),
+      ),
+    ).toEqual({ mode: "tenant", tenantId: nativeTenantId });
+  });
+
+  it("an unmatched *.replit.dev preview host keeps the demo-tenant fallback", async () => {
+    expect(
+      await resolveHostMode(fakeReq({ host: `no-such-${STAMP}.replit.dev` })),
+    ).toEqual({ mode: "fallback" });
+  });
+
+  // Host-capture guard: a tenant whose slug equals a Replit host's first label
+  // must NOT capture that host — slugs only match as subdomains of the platform
+  // apex. (The native tenant's slug is the first label of this host.)
+  it("a tenant slug matching a *.replit.app first label cannot capture the host", async () => {
+    expect(
+      await resolveHostMode(fakeReq({ host: `iso-rt-native-${STAMP}.replit.app` })),
+    ).toEqual({ mode: "platform" });
+    expect(
+      await resolveTenantBySubdomain(
+        fakeReq({ host: `iso-rt-native-${STAMP}.replit.dev` }),
+      ),
+    ).toBeNull();
+  });
+
+  // The middleware's degraded path when the tenant-directory read fails: the
+  // DB-free classification must still mark a published *.replit.app host as
+  // platform, not fall through to the default tenant's brand.
+  it("DB-free degraded classification still marks *.replit.app as platform", () => {
+    expect(classifyNonTenantHost(fakeReq({ host: "ovationcc.replit.app" }))).toEqual({
+      mode: "platform",
+    });
+    expect(classifyNonTenantHost(fakeReq({ host: "localhost" }))).toEqual({
       mode: "fallback",
     });
   });
