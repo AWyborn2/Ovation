@@ -208,6 +208,7 @@ import type {
   TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
+  UpdateAdminTenantBrandBody,
   UpdateTenantBody,
   UpdateTenantBrandBody,
   UploadMatchBatchBody,
@@ -16497,6 +16498,78 @@ export const useUpdateAdminTenant = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateAdminTenantMutationOptions(options));
+    }
+
+export const getUpdateAdminTenantBrandUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/brand`
+}
+
+/**
+ * @summary Concierge update of any tenant's cosmetic branding fields (name, logo, favicon, colours). Same field set as the self-serve brand write; plan, customDomain, and backgroundUrl are structurally inadmissible.
+ */
+export const updateAdminTenantBrand = async (id: number,
+    updateAdminTenantBrandBody: UpdateAdminTenantBrandBody, options?: RequestInit): Promise<AdminTenantDetail> => {
+
+  return customFetch<AdminTenantDetail>(getUpdateAdminTenantBrandUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateAdminTenantBrandBody,)
+  }
+);}
+
+
+
+
+export const getUpdateAdminTenantBrandMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminTenantBrand>>, TError,{id: number;data: BodyType<UpdateAdminTenantBrandBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminTenantBrand>>, TError,{id: number;data: BodyType<UpdateAdminTenantBrandBody>}, TContext> => {
+
+const mutationKey = ['updateAdminTenantBrand'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminTenantBrand>>, {id: number;data: BodyType<UpdateAdminTenantBrandBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminTenantBrand(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminTenantBrandMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminTenantBrand>>>
+    export type UpdateAdminTenantBrandMutationBody = BodyType<UpdateAdminTenantBrandBody>
+    export type UpdateAdminTenantBrandMutationError = ErrorType<void>
+
+    /**
+ * @summary Concierge update of any tenant's cosmetic branding fields (name, logo, favicon, colours). Same field set as the self-serve brand write; plan, customDomain, and backgroundUrl are structurally inadmissible.
+ */
+export const useUpdateAdminTenantBrand = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminTenantBrand>>, TError,{id: number;data: BodyType<UpdateAdminTenantBrandBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminTenantBrand>>,
+        TError,
+        {id: number;data: BodyType<UpdateAdminTenantBrandBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminTenantBrandMutationOptions(options));
     }
 
 export const getIssueTenantAdminResetUrl = (id: number,) => {

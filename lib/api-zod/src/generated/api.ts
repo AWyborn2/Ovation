@@ -6588,6 +6588,49 @@ export const UpdateAdminTenantResponse = zod.object({
 
 
 /**
+ * @summary Concierge update of any tenant's cosmetic branding fields (name, logo, favicon, colours). Same field set as the self-serve brand write; plan, customDomain, and backgroundUrl are structurally inadmissible.
+ */
+export const UpdateAdminTenantBrandParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateAdminTenantBrandBodyPrimaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
+export const updateAdminTenantBrandBodySecondaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
+export const updateAdminTenantBrandBodyTertiaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
+
+
+export const UpdateAdminTenantBrandBody = zod.object({
+  "name": zod.string().optional(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "primaryColour": zod.string().regex(updateAdminTenantBrandBodyPrimaryColourRegExp).nullish(),
+  "secondaryColour": zod.string().regex(updateAdminTenantBrandBodySecondaryColourRegExp).nullish(),
+  "tertiaryColour": zod.string().regex(updateAdminTenantBrandBodyTertiaryColourRegExp).nullish()
+}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these seven properties — plan, customDomain, and backgroundUrl are not valid properties on this schema at all. Colour fields are validated as 6-digit hex.')
+
+export const UpdateAdminTenantBrandResponse = zod.object({
+  "tenant": zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number()
+}).describe('A tenant as listed in the platform-admin console.'),
+  "admins": zod.array(zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string()
+}))
+})
+
+
+/**
  * @summary Issue a single-use password-reset link for a club admin on this tenant, bootstrapping (creating) the admin when one does not yet exist. The link is returned for out-of-band delivery; the club admin sets their own password via it, so platform staff never learn or set the password.
  */
 export const IssueTenantAdminResetParams = zod.object({

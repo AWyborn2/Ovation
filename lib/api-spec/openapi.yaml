@@ -4556,6 +4556,40 @@ paths:
         "409":
           description: That custom domain is already in use.
 
+  /platform/admin/tenants/{id}/brand:
+    patch:
+      operationId: updateAdminTenantBrand
+      tags: [platformAdmin]
+      summary: >-
+        Concierge update of any tenant's cosmetic branding fields (name, logo,
+        favicon, colours). Same field set as the self-serve brand write; plan,
+        customDomain, and backgroundUrl are structurally inadmissible.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminTenantBrandBody"
+      responses:
+        "200":
+          description: Updated tenant detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenantDetail"
+        "400":
+          description: Invalid or empty update (e.g. malformed hex colour).
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
   /platform/admin/tenants/{id}/admin-resets:
     post:
       operationId: issueTenantAdminReset
@@ -6057,6 +6091,33 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+
+    UpdateAdminTenantBrandBody:
+      type: object
+      description: >-
+        Partial concierge (platform-admin) update of a tenant's cosmetic
+        branding fields. Closed to exactly these seven properties — plan,
+        customDomain, and backgroundUrl are not valid properties on this schema
+        at all. Colour fields are validated as 6-digit hex.
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        faviconUrl:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+          pattern: "^#[0-9a-fA-F]{6}$"
+        secondaryColour:
+          type: ["string", "null"]
+          pattern: "^#[0-9a-fA-F]{6}$"
+        tertiaryColour:
+          type: ["string", "null"]
+          pattern: "^#[0-9a-fA-F]{6}$"
 
     PlatformBrand:
       type: object
