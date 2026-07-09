@@ -29,6 +29,7 @@ import cardVideoRouter from "./card-video";
 import juniorsRouter from "./juniors";
 import navItemsRouter from "./nav-items";
 import storageRouter from "./storage";
+import platformStorageRouter from "./platform-storage";
 import tradingCardSettingsRouter from "./trading-card-settings";
 import tourContentRouter from "./tour-content";
 import honourDisplayRouter from "./honour-display";
@@ -75,6 +76,7 @@ router.use(honourDisplayRouter);
 router.use(tenantRouter);
 router.use(platformRouter);
 router.use(platformAdminRouter);
+router.use(platformStorageRouter);
 router.use(billingRouter);
 
 export default router;
