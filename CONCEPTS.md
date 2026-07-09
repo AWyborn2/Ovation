@@ -29,6 +29,14 @@ A placeholder player, identified by an id at or above the fill-in floor, standin
 ### Player curation
 A per-tenant, app-side overlay that corrects how a central player appears on a club's site — renaming the "Initial Surname" to a real name, or merging duplicate GUIDs into one player. Applied on read; never alters the central database.
 
+## Branding and onboarding
+
+### Concierge onboarding
+The operator-led setup mode: a platform admin configures a club tenant on its behalf — branding, content, admin bootstrap — from the platform console, as opposed to self-serve onboarding through the signup wizard.
+
+### Accent token
+One of five preset accent colours (amber, purple, green, blue, red) with canonical hex values. Logo palette extraction snaps its suggestion to the nearest token, and the self-serve branding editor writes only the accent slot; the other colour slots pass through unchanged.
+
 ## Milestones
 
 ### Career crossing
