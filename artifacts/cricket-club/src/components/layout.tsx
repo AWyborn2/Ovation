@@ -328,6 +328,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} {brand.name}. All rights reserved.
+            <span className="mx-2" aria-hidden>
+              ·
+            </span>
+            <Link href="/admin" className="hover:text-primary transition-colors">
+              {me.data ? "Admin" : "Admin login"}
+            </Link>
           </div>
         </div>
       </footer>
