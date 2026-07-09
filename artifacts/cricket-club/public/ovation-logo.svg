@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Ovation placeholder logo">
+  <!-- Neutral slate badge, matching DEFAULT_BRAND's fallback palette -->
+  <circle cx="64" cy="64" r="60" fill="#334155"/>
+  <circle cx="64" cy="64" r="60" fill="none" stroke="#94A3B8" stroke-width="4"/>
+  <!-- Stylised "O" ring in the amber accent (DEFAULT_BRAND.accentToken), pure
+       shapes only -- no external font dependency so this renders identically
+       everywhere. Deliberately a placeholder: a designed brand asset can
+       replace this file later without touching any code. -->
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M64 92C79.464 92 92 79.464 92 64C92 48.536 79.464 36 64 36C48.536 36 36 48.536 36 64C36 79.464 48.536 92 64 92ZM64 76C70.6274 76 76 70.6274 76 64C76 57.3726 70.6274 52 64 52C57.3726 52 52 57.3726 52 64C52 70.6274 57.3726 76 64 76Z"
+    fill="#FFB238"
+  />
+  <!-- Small motion flourish -- a bright arc suggesting applause/ovation -->
+  <path
+    d="M88 40C93 33 93 24 88 17"
+    fill="none"
+    stroke="#FFB238"
+    stroke-width="4"
+    stroke-linecap="round"
+    opacity="0.85"
+  />
+</svg>

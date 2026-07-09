@@ -47,16 +47,22 @@ export type HallsHeadBrand = ClubBrand;
 /**
  * Neutral default brand — the last-resort fallback when a DB-sourced tenant
  * brand is unavailable, so a brand-less club renders as a generic Ovation site
- * (a neutral placeholder logo + slate colours) rather than inheriting Halls
+ * (the Ovation placeholder logo + slate colours) rather than inheriting Halls
  * Head's. Per-tenant brands come from `getTenantBrand()`; Halls Head's own brand
  * lives in its tenant record (seeded from the clubs register — see
  * `scripts/seed-tenants`), so this fallback only affects tenants with no brand.
+ *
+ * `logoUrl`/`logoUrl128` point at the Ovation wordmark
+ * (`artifacts/cricket-club/public/ovation-logo.svg`), a placeholder a designed
+ * brand asset can replace later without code changes (KTD6). The old neutral
+ * `/placeholder-club-logo.svg` stays on disk (unreferenced by this default) so
+ * any lingering external references don't 404.
  */
 export const DEFAULT_BRAND: ClubBrand = {
   name: "Cricket Club",
   shortName: null,
-  logoUrl: "/placeholder-club-logo.svg",
-  logoUrl128: "/placeholder-club-logo.svg",
+  logoUrl: "/ovation-logo.svg",
+  logoUrl128: "/ovation-logo.svg",
   accentToken: "amber",
   primaryColour: "#334155",
   secondaryColour: "#94A3B8",

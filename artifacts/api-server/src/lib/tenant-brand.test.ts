@@ -99,6 +99,37 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.faviconUrl).toBeNull();
   });
 
+  it("resolves logoUrl to the Ovation placeholder asset for a tenant with no brand data (U5, AE4)", () => {
+    // A freshly provisioned tenant: no clubs-register row, no tenant brand
+    // columns set. The resolved logo must be the Ovation placeholder, not the
+    // old neutral SVG and not Halls Head's.
+    const brand = buildTenantBrand(
+      {
+        name: "Freshly Provisioned Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+      },
+      null,
+    );
+    expect(brand.logoUrl).toBe("/ovation-logo.svg");
+    expect(brand.logoUrl128).toBe("/ovation-logo.svg");
+    expect(brand.logoUrl).not.toBe("/placeholder-club-logo.svg");
+  });
+
+  it("still resolves Halls Head's own seeded brand, unaffected by the default swap (U5 regression guard)", () => {
+    // Tenant #1 always resolves through its clubs-register row (appClubId set),
+    // so swapping DEFAULT_BRAND's logo must never change what Halls Head shows.
+    expect(buildTenantBrand(hhTenantRow, hhClubRow)).toEqual(HALLS_HEAD_WIRE_BRAND);
+    expect(buildTenantBrand(hhTenantRow, hhClubRow).logoUrl).toBe(
+      HALLS_HEAD_BRAND.logoUrl,
+    );
+  });
+
   it("uses the tenant's own faviconUrl (Phase 2 R8: per-tenant, no cross-tenant leak)", () => {
     const withFavicon = buildTenantBrand(
       {
