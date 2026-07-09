@@ -109,6 +109,12 @@ function toAdminTenant(
     createdAt:
       t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
     adminCount,
+    shortName: t.shortName,
+    logoUrl: t.logoUrl,
+    faviconUrl: t.faviconUrl,
+    primaryColour: t.primaryColour,
+    secondaryColour: t.secondaryColour,
+    tertiaryColour: t.tertiaryColour,
   };
 }
 

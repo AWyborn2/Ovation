@@ -6511,7 +6511,13 @@ export const ListAllTenantsResponseItem = zod.object({
   "customDomain": zod.string().nullish(),
   "readsFromCentral": zod.boolean(),
   "createdAt": zod.string().nullish(),
-  "adminCount": zod.number()
+  "adminCount": zod.number(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
 
@@ -6551,7 +6557,13 @@ export const GetAdminTenantResponse = zod.object({
   "customDomain": zod.string().nullish(),
   "readsFromCentral": zod.boolean(),
   "createdAt": zod.string().nullish(),
-  "adminCount": zod.number()
+  "adminCount": zod.number(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
   "id": zod.number(),
@@ -6583,7 +6595,13 @@ export const UpdateAdminTenantResponse = zod.object({
   "customDomain": zod.string().nullish(),
   "readsFromCentral": zod.boolean(),
   "createdAt": zod.string().nullish(),
-  "adminCount": zod.number()
+  "adminCount": zod.number(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
 }).describe('A tenant as listed in the platform-admin console.')
 
 
@@ -6620,7 +6638,13 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "customDomain": zod.string().nullish(),
   "readsFromCentral": zod.boolean(),
   "createdAt": zod.string().nullish(),
-  "adminCount": zod.number()
+  "adminCount": zod.number(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "secondaryColour": zod.string().nullish(),
+  "tertiaryColour": zod.string().nullish()
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
   "id": zod.number(),

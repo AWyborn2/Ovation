@@ -24,4 +24,16 @@ export interface AdminTenant {
   /** @nullable */
   createdAt?: string | null;
   adminCount: number;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  faviconUrl?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+  /** @nullable */
+  tertiaryColour?: string | null;
 }

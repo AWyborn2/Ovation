@@ -6259,6 +6259,18 @@ components:
           type: ["string", "null"]
         adminCount:
           type: integer
+        shortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        faviconUrl:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        secondaryColour:
+          type: ["string", "null"]
+        tertiaryColour:
+          type: ["string", "null"]
 
     AdminTenantAdmin:
       type: object

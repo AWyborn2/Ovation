@@ -26,6 +26,8 @@ export {
   DEFAULT_TEAM_COLORS,
   HALLS_HEAD_COLORS,
   deriveOppositionColors,
+  hexToRgb,
+  luminance,
 } from "./colors";
 export { formatDismissal } from "./dismissal";
 export { oversToBalls, ballsToOvers, sumOvers, economy } from "./overs";

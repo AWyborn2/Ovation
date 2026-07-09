@@ -27,7 +27,7 @@ const NEUTRAL_OPPOSITION: TeamColors = {
   borderColor: "rgba(154,166,178,0.18)",
 };
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return null;
   let h = m[1];
@@ -66,7 +66,7 @@ const BLACK = { r: 0, g: 0, b: 0 };
 const WHITE = { r: 255, g: 255, b: 255 };
 
 /** Relative luminance (0..1) for contrast decisions. */
-function luminance({ r, g, b }: { r: number; g: number; b: number }): number {
+export function luminance({ r, g, b }: { r: number; g: number; b: number }): number {
   const f = (v: number) => {
     const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
