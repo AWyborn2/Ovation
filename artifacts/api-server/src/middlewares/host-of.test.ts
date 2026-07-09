@@ -47,4 +47,62 @@ describe("hostOf", () => {
   it("returns empty string when no host is present", () => {
     expect(hostOf(reqWith({}))).toBe("");
   });
+
+  describe("X-Ovation-Host (Cloudflare tenant-domain proxy)", () => {
+    const withSecret = (value: string | undefined, fn: () => void): void => {
+      const prev = process.env.PROXY_SHARED_SECRET;
+      if (value === undefined) delete process.env.PROXY_SHARED_SECRET;
+      else process.env.PROXY_SHARED_SECRET = value;
+      try {
+        fn();
+      } finally {
+        if (prev === undefined) delete process.env.PROXY_SHARED_SECRET;
+        else process.env.PROXY_SHARED_SECRET = prev;
+      }
+    };
+
+    it("wins over X-Forwarded-Host when the proxy key matches", () => {
+      withSecret("s3cret", () => {
+        const req = reqWith({
+          host: "internal",
+          "x-forwarded-host": "ovationcc.replit.app",
+          "x-ovation-host": "Hallshead.Ovationcc.app:443",
+          "x-ovation-proxy-key": "s3cret",
+        });
+        expect(hostOf(req)).toBe("hallshead.ovationcc.app");
+      });
+    });
+
+    it("is ignored when the proxy key is wrong", () => {
+      withSecret("s3cret", () => {
+        const req = reqWith({
+          "x-forwarded-host": "ovationcc.replit.app",
+          "x-ovation-host": "hallshead.ovationcc.app",
+          "x-ovation-proxy-key": "wrong",
+        });
+        expect(hostOf(req)).toBe("ovationcc.replit.app");
+      });
+    });
+
+    it("is ignored when the proxy key header is absent", () => {
+      withSecret("s3cret", () => {
+        const req = reqWith({
+          "x-forwarded-host": "ovationcc.replit.app",
+          "x-ovation-host": "hallshead.ovationcc.app",
+        });
+        expect(hostOf(req)).toBe("ovationcc.replit.app");
+      });
+    });
+
+    it("is ignored when PROXY_SHARED_SECRET is not configured", () => {
+      withSecret(undefined, () => {
+        const req = reqWith({
+          "x-forwarded-host": "ovationcc.replit.app",
+          "x-ovation-host": "hallshead.ovationcc.app",
+          "x-ovation-proxy-key": "anything",
+        });
+        expect(hostOf(req)).toBe("ovationcc.replit.app");
+      });
+    });
+  });
 });

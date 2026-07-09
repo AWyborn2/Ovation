@@ -93,13 +93,32 @@ async function tenantDirectory() {
 }
 
 /**
- * The request host without port, lowercased. Prefers the left-most
- * `X-Forwarded-Host` (the original public host) over `Host`: behind a reverse
- * proxy like Replit Autoscale / Cloud Run the inbound `Host` is an internal
- * value and the real apex/tenant host arrives in `X-Forwarded-Host`. `trust
- * proxy` is enabled and Replit's edge sets this header, so it's safe to trust.
+ * The request host without port, lowercased. Resolution order:
+ *
+ * 1. `X-Ovation-Host` — set by the Cloudflare tenant-domain proxy (the
+ *    `ovation-router` Worker fronting `*.ovationcc.app`). Replit's edge
+ *    rewrites `X-Forwarded-Host` on inbound requests, so the Worker carries the
+ *    real public host in this header instead. Honoured only when the request
+ *    also presents the matching `X-Ovation-Proxy-Key` (shared secret,
+ *    `PROXY_SHARED_SECRET` env on both sides) so a direct client can't
+ *    impersonate a tenant host.
+ * 2. Left-most `X-Forwarded-Host` (the original public host) over `Host`:
+ *    behind a reverse proxy like Replit Autoscale / Cloud Run the inbound
+ *    `Host` is an internal value and the real apex/tenant host arrives in
+ *    `X-Forwarded-Host`. `trust proxy` is enabled and Replit's edge sets this
+ *    header, so it's safe to trust.
  */
 export function hostOf(req: Request): string {
+  const proxyKey = process.env.PROXY_SHARED_SECRET;
+  const ovationHost = req.headers["x-ovation-host"];
+  if (
+    proxyKey &&
+    typeof ovationHost === "string" &&
+    ovationHost &&
+    req.headers["x-ovation-proxy-key"] === proxyKey
+  ) {
+    return ovationHost.split(":")[0]?.toLowerCase().trim() ?? "";
+  }
   const xfh = req.headers["x-forwarded-host"];
   const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
   const raw = forwarded || req.headers.host || "";
