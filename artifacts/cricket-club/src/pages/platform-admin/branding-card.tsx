@@ -242,9 +242,9 @@ export function BrandingCard({
     seedPersistedFromTenant(tenant),
   );
   const [name, setName] = useState(tenant.name);
-  const [shortName, setShortName] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [faviconUrl, setFaviconUrl] = useState("");
+  const [shortName, setShortName] = useState(tenant.shortName ?? "");
+  const [logoUrl, setLogoUrl] = useState(tenant.logoUrl ?? "");
+  const [faviconUrl, setFaviconUrl] = useState(tenant.faviconUrl ?? "");
   const [colourMode, setColourMode] = useState<ColourMode>("token");
   const [colours, setColours] = useState<ColourEdits>(() =>
     seedColourState(seedPersistedFromTenant(tenant)),

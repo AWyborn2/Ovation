@@ -170,7 +170,7 @@ export default function TenantDetail() {
 
         <AdminAccessCard tenantId={id} tenantName={tenant.name} />
 
-        <BrandingCard tenantId={id} tenant={tenant} />
+        <BrandingCard key={tenant.id} tenantId={id} tenant={tenant} />
       </div>
     </div>
   );

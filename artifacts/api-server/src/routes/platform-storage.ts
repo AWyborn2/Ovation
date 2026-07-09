@@ -23,25 +23,9 @@ const ALLOWED_IMAGE_MIME = new Set([
   "image/svg+xml",
   "image/gif",
 ]);
-const ALLOWED_VIDEO_MIME = new Set([
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-]);
-const ALLOWED_AUDIO_MIME = new Set([
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/ogg",
-  "audio/aac",
-  "audio/mp4",
-  "audio/x-m4a",
-  "audio/webm",
-]);
+// Deliberately narrower than the self-serve storage route: this endpoint
+// exists for brand assets (logo/favicon), so only images are presigned.
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
-const MAX_AUDIO_BYTES = 20 * 1024 * 1024; // 20MB
 
 /**
  * POST /platform/admin/storage/uploads/request-url
@@ -63,21 +47,15 @@ router.post(
 
     const { name, size, contentType } = parsed.data;
 
-    const isImage = ALLOWED_IMAGE_MIME.has(contentType);
-    const isVideo = ALLOWED_VIDEO_MIME.has(contentType);
-    const isAudio = ALLOWED_AUDIO_MIME.has(contentType);
-    if (!isImage && !isVideo && !isAudio) {
+    if (!ALLOWED_IMAGE_MIME.has(contentType)) {
       res.status(400).json({
-        error:
-          "Unsupported file type. Allowed: PNG, JPEG, WebP, SVG, GIF, MP4/WebM/MOV video, or MP3/WAV/OGG/AAC/M4A audio.",
+        error: "Unsupported file type. Allowed: PNG, JPEG, WebP, SVG, GIF.",
       });
       return;
     }
-    const maxBytes = isVideo ? MAX_VIDEO_BYTES : isAudio ? MAX_AUDIO_BYTES : MAX_IMAGE_BYTES;
-    if (size > maxBytes) {
-      const limitLabel = isVideo ? "50MB" : isAudio ? "20MB" : "10MB";
+    if (size > MAX_IMAGE_BYTES) {
       res.status(400).json({
-        error: `File too large. Maximum size is ${limitLabel}.`,
+        error: "File too large. Maximum size is 10MB.",
       });
       return;
     }
