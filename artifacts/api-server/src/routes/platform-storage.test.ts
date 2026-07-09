@@ -6,18 +6,23 @@ import { eq } from "drizzle-orm";
 // service the route delegates to. This proves the route's own logic (auth +
 // validation + delegation + response shape) without needing the sidecar —
 // the same seam storage.ts's route would need if it had tests.
-const getObjectEntityUploadURL = vi.fn(
-  async () =>
-    "https://storage.googleapis.com/test-bucket/.private/uploads/00000000-0000-0000-0000-000000000000?signed=1",
-);
+const { getObjectEntityUploadURL } = vi.hoisted(() => ({
+  getObjectEntityUploadURL: vi.fn(
+    async () =>
+      "https://storage.googleapis.com/test-bucket/.private/uploads/00000000-0000-0000-0000-000000000000?signed=1",
+  ),
+}));
+// Must stay a real class: other modules loaded via app (e.g.
+// sponsor-logo-migration.ts) call `new ObjectStorageService()` at module scope.
 vi.mock("../lib/objectStorage", () => ({
-  ObjectStorageService: vi.fn().mockImplementation(() => ({
-    getObjectEntityUploadURL,
-    normalizeObjectEntityPath: (rawPath: string) =>
+  ObjectNotFoundError: class extends Error {},
+  ObjectStorageService: class {
+    getObjectEntityUploadURL = getObjectEntityUploadURL;
+    normalizeObjectEntityPath = (rawPath: string): string =>
       rawPath.startsWith("https://storage.googleapis.com/")
         ? "/objects/uploads/00000000-0000-0000-0000-000000000000"
-        : rawPath,
-  })),
+        : rawPath;
+  },
 }));
 
 import app from "../app";
