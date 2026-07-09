@@ -10,6 +10,7 @@ import {
 import {
   PlatformAdminLoginBody,
   UpdateAdminTenantBody,
+  UpdateAdminTenantBrandBody,
   ProvisionTenantAsAdminBody,
   IssueTenantAdminResetBody,
 } from "@workspace/api-zod";
@@ -29,6 +30,7 @@ import {
   type RequestWithPlatformAdmin,
 } from "../middlewares/require-platform-admin";
 import { tenantUrl } from "../lib/tenant-url";
+import { invalidateTenantBrandCache } from "../lib/tenant-brand";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
@@ -107,6 +109,12 @@ function toAdminTenant(
     createdAt:
       t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
     adminCount,
+    shortName: t.shortName,
+    logoUrl: t.logoUrl,
+    faviconUrl: t.faviconUrl,
+    primaryColour: t.primaryColour,
+    secondaryColour: t.secondaryColour,
+    tertiaryColour: t.tertiaryColour,
   };
 }
 
@@ -316,6 +324,103 @@ router.patch(
         counts.get(row.id) ?? 0,
       ),
     );
+  },
+);
+
+// Concierge update of any tenant's cosmetic branding fields (name, short name,
+// logo, favicon, colours) by a platform admin. Targets the tenant purely by the
+// path id — the request's own tenant context (host / x-tenant-id) plays no part,
+// so the console can brand any club from the apex host. `plan`, `customDomain`,
+// and `backgroundUrl` are not properties on UpdateAdminTenantBrandBody at all
+// (additionalProperties: false in openapi.yaml), so they can't be smuggled in
+// here — plan/domain changes stay on the sibling PATCH above.
+router.patch(
+  "/platform/admin/tenants/:id/brand",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid tenant id" });
+      return;
+    }
+    const parsed = UpdateAdminTenantBrandBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    // Pre-read so an unknown id 404s before the empty-update check can misreport
+    // it as a 400 (mirrors the sibling tenant PATCH above).
+    const [existing] = await db
+      .select({ id: tenantsTable.id })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, id));
+    if (!existing) {
+      res.status(404).json({ error: "No such tenant" });
+      return;
+    }
+
+    // Field-by-field with `!== undefined` guards (never spread the body): an
+    // explicit null clears a column, an omitted field leaves it untouched, so a
+    // concierge logo-only save can never clobber a concurrent colour-only save.
+    const updates: Partial<
+      Pick<
+        TenantRow,
+        | "name"
+        | "shortName"
+        | "logoUrl"
+        | "faviconUrl"
+        | "primaryColour"
+        | "secondaryColour"
+        | "tertiaryColour"
+      >
+    > = {};
+    if (parsed.data.name !== undefined) updates.name = parsed.data.name;
+    if (parsed.data.shortName !== undefined) updates.shortName = parsed.data.shortName;
+    if (parsed.data.logoUrl !== undefined) updates.logoUrl = parsed.data.logoUrl;
+    if (parsed.data.faviconUrl !== undefined) updates.faviconUrl = parsed.data.faviconUrl;
+    if (parsed.data.primaryColour !== undefined) updates.primaryColour = parsed.data.primaryColour;
+    if (parsed.data.secondaryColour !== undefined) updates.secondaryColour = parsed.data.secondaryColour;
+    if (parsed.data.tertiaryColour !== undefined) updates.tertiaryColour = parsed.data.tertiaryColour;
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nothing to update" });
+      return;
+    }
+
+    const [row] = await db
+      .update(tenantsTable)
+      .set(updates)
+      .where(eq(tenantsTable.id, id))
+      .returning();
+    if (!row) {
+      // The tenant vanished between the pre-read and this write (no transaction
+      // spans them) — without this check the response below would fabricate a
+      // successful update for a tenant that no longer exists.
+      res.status(404).json({ error: "No such tenant" });
+      return;
+    }
+    // Drop the 5-minute brand cache so the club's site reflects the concierge
+    // change on the very next GET /tenant-brand, not up to TTL later.
+    invalidateTenantBrandCache(id);
+
+    const admins = await db
+      .select({
+        id: adminsTable.id,
+        username: adminsTable.username,
+        displayName: adminsTable.displayName,
+      })
+      .from(adminsTable)
+      .where(eq(adminsTable.tenantId, id));
+    const names = await centralClubNames();
+    res.json({
+      tenant: toAdminTenant(
+        row,
+        names.get(row.centralClubId) ?? null,
+        admins.length,
+      ),
+      admins,
+    });
   },
 );
 

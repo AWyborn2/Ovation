@@ -1191,6 +1191,35 @@ export interface UpdateTenantBrandBody {
 }
 
 /**
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these seven properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ */
+export interface UpdateAdminTenantBrandBody {
+  /** @minLength 1 */
+  name?: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  faviconUrl?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9a-fA-F]{6}$
+     */
+  primaryColour?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9a-fA-F]{6}$
+     */
+  secondaryColour?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9a-fA-F]{6}$
+     */
+  tertiaryColour?: string | null;
+}
+
+/**
  * Returned by GET /tenant-brand on the apex/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.
  */
 export interface PlatformBrand {
@@ -1301,6 +1330,18 @@ export interface AdminTenant {
   /** @nullable */
   createdAt?: string | null;
   adminCount: number;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  faviconUrl?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** @nullable */
+  secondaryColour?: string | null;
+  /** @nullable */
+  tertiaryColour?: string | null;
 }
 
 export interface AdminTenantAdmin {
