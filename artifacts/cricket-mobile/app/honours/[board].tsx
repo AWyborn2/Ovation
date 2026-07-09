@@ -181,8 +181,7 @@ function useCareerBoard(boardKey: BoardKey, opts: { enabled: boolean }) {
     if (!allLoaded || stats.length === 0) return [];
     const aggregated = aggregateCareer(stats);
     return computeBoard(aggregated, boardKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allLoaded, stats.length, boardKey]);
+  }, [allLoaded, stats, boardKey]);
 
   return { loading: opts.enabled && !allLoaded, board };
 }

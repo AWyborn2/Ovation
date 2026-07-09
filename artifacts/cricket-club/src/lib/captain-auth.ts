@@ -10,6 +10,7 @@ export function useCurrentCaptain() {
       queryKey: getGetCurrentCaptainQueryKey(),
       retry: false,
       staleTime: 30_000,
+      refetchOnWindowFocus: true,
       throwOnError: false,
     },
   });

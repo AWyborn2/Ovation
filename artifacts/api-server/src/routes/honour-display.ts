@@ -862,11 +862,32 @@ async function buildAwardPoints(): Promise<HonourBoardOut[]> {
   const awards = await db.select().from(awardsTable);
   const awardById = new Map(awards.map((a) => [a.id, a]));
 
-  const out: HonourBoardOut[] = [];
+  // Filter to eligible configs first (same guard as the old `for` loop's
+  // `continue`), then run computeLeaderboard for all of them concurrently —
+  // each is an independent join, and this function is called by
+  // assembleBoards (already Promise.all'd across board builders, but that
+  // doesn't help the sequential awaits *within* this one loop). `configs` is
+  // already ordered by `desc(season)`; `.map` over the eligible list preserves
+  // that order in `out` exactly like the original push-in-order `for` loop.
+  type AwardConfig = typeof awardPointsConfigTable.$inferSelect;
+  type Award = typeof awardsTable.$inferSelect;
+
+  const eligible: { config: AwardConfig; award: Award }[] = [];
   for (const config of configs) {
     const award = awardById.get(config.awardId);
     if (!award || !award.published || !award.pointsGrade) continue;
-    const { entries } = await computeLeaderboard(config, award.pointsGrade);
+    eligible.push({ config, award });
+  }
+
+  const results = await Promise.all(
+    eligible.map(async ({ config, award }) => {
+      const { entries } = await computeLeaderboard(config, award.pointsGrade!);
+      return { config, award, entries };
+    }),
+  );
+
+  const out: HonourBoardOut[] = [];
+  for (const { config, award, entries } of results) {
     if (entries.length === 0) continue;
     out.push({
       id: `award_points:${config.id}`,

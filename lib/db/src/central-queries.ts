@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import {
   centralDb,
   centralClubsTable,
@@ -207,6 +207,26 @@ function classifyInnings(
   return "out";
 }
 
+/**
+ * SQL mirror of {@link classifyInnings}, evaluated on `central.match_batting`
+ * rows so the per-player aggregation can run as a GROUP BY in the database
+ * instead of fetching every raw line. The branches translate the JS VERBATIM
+ * and in the same order:
+ *   - dismissal text "did not bat"                     → 'dnb'
+ *   - dismissal text "retired hurt"/"retired not out"  → 'notout'
+ *   - dismissal_type "not out" OR empty/NULL           → 'notout'
+ *   - everything else                                  → 'out'
+ * (Bare "retired" deliberately falls through to the type → 'out', same as JS.)
+ * Keep the two definitions in lockstep — the *-consistency tests and the live
+ * equivalence checks (Jul 2026) rely on them classifying identically.
+ */
+const battingInningsKindSql = sql<string>`case
+  when lower(trim(coalesce(${centralMatchBattingTable.dismissal}, ''))) = 'did not bat' then 'dnb'
+  when lower(trim(coalesce(${centralMatchBattingTable.dismissal}, ''))) in ('retired hurt', 'retired not out') then 'notout'
+  when lower(trim(coalesce(${centralMatchBattingTable.dismissalType}, ''))) in ('not out', '') then 'notout'
+  else 'out'
+end`;
+
 function splitDisplayName(displayName: string): {
   givenName: string;
   surname: string;
@@ -335,17 +355,6 @@ async function getClubMatchRows(clubId: number): Promise<CentralClubMatchRow[]> 
     );
 }
 
-interface BattingAgg {
-  runs: number;
-  innings: number;
-  notOuts: number;
-  fifties: number;
-  hundreds: number;
-  highScore: number;
-  highScoreNotOut: boolean;
-  matchIds: Set<number>;
-}
-
 /**
  * Career (or, when `seasonStartYear` is given, single-season) batting leaderboard
  * for a tenant club, read entirely from the central PCA database. Rows are sorted
@@ -403,106 +412,104 @@ async function centralGradeLeaderboardImpl(
 
   if (matchIds.length === 0) return [];
 
-  // 2 + 3 fetched together: the club's batting lines and roster lines both
-  //    depend only on matchIds, so run the two round trips in parallel.
-  const [battingLines, rosterLines] = await Promise.all([
-    centralDb
-      .select({
-        participantId: centralMatchBattingTable.participantId,
-        matchId: centralMatchBattingTable.matchId,
-        runs: centralMatchBattingTable.runs,
-        dismissal: centralMatchBattingTable.dismissal,
-        dismissalType: centralMatchBattingTable.dismissalType,
-      })
-      .from(centralMatchBattingTable)
-      .where(
-        and(
-          eq(centralMatchBattingTable.clubId, clubId),
-          inArray(centralMatchBattingTable.matchId, matchIds),
-        ),
-      ),
-    centralDb
-      .select({
-        participantId: centralMatchRostersTable.participantId,
-        matchId: centralMatchRostersTable.matchId,
-      })
-      .from(centralMatchRostersTable)
-      .where(
-        and(
-          eq(centralMatchRostersTable.clubId, clubId),
-          inArray(centralMatchRostersTable.matchId, matchIds),
-        ),
-      ),
-  ]);
+  // 2. One SQL round trip replaces the old fetch-every-line-and-aggregate-in-JS
+  //    approach (index-backed by (club_id, match_id) on match_batting/rosters):
+  //      - `i`     classifies each of the club's batting lines exactly like
+  //                classifyInnings() (see battingInningsKindSql);
+  //      - `bat`   is the per-participant GROUP BY (innings excludes DNB,
+  //                fifties are 50..99, hundreds 100+, matching the JS
+  //                if/else-if);
+  //      - hs_enc  encodes high-score-with-not-out-flag as runs*2 + notOut so a
+  //                single max() picks the top score AND whether any innings of
+  //                that score was not out (ties prefer the not-out, exactly
+  //                like the old runs===highScore && notout promotion);
+  //      - `games` counts distinct matches from batting lines (DNB included)
+  //                unioned with roster lines, restricted to players who have a
+  //                batting line — the same Set union the JS built;
+  //      - names + privacy left-join central.players (was a 2nd round trip).
+  const result = await centralDb.execute(sql`
+    with i as (
+      select
+        ${centralMatchBattingTable.participantId} as participant_id,
+        ${centralMatchBattingTable.matchId} as match_id,
+        coalesce(${centralMatchBattingTable.runs}, 0) as runs,
+        ${battingInningsKindSql} as kind
+      from ${centralMatchBattingTable}
+      where ${centralMatchBattingTable.clubId} = ${clubId}
+        and ${centralMatchBattingTable.matchId} = any(${sql.param(matchIds)})
+        and ${centralMatchBattingTable.participantId} is not null
+        and ${centralMatchBattingTable.participantId} <> ''
+    ),
+    bat as (
+      select
+        participant_id,
+        (count(*) filter (where kind <> 'dnb'))::int as innings,
+        coalesce(sum(runs) filter (where kind <> 'dnb'), 0)::int as runs,
+        (count(*) filter (where kind = 'notout'))::int as not_outs,
+        (count(*) filter (where kind <> 'dnb' and runs >= 100))::int as hundreds,
+        (count(*) filter (where kind <> 'dnb' and runs >= 50 and runs < 100))::int as fifties,
+        max(case when kind <> 'dnb' then runs * 2 + (kind = 'notout')::int end) as hs_enc
+      from i
+      group by participant_id
+    ),
+    games as (
+      select participant_id, count(distinct match_id)::int as games
+      from (
+        select participant_id, match_id from i
+        union
+        select ${centralMatchRostersTable.participantId}, ${centralMatchRostersTable.matchId}
+        from ${centralMatchRostersTable}
+        where ${centralMatchRostersTable.clubId} = ${clubId}
+          and ${centralMatchRostersTable.matchId} = any(${sql.param(matchIds)})
+          and ${centralMatchRostersTable.participantId} in (select participant_id from bat)
+      ) apps
+      group by participant_id
+    )
+    select
+      b.participant_id as "participantId",
+      b.innings,
+      b.runs,
+      b.not_outs as "notOuts",
+      b.hundreds,
+      b.fifties,
+      coalesce(b.hs_enc, 0)::int as "hsEnc",
+      g.games,
+      p.display_name as "displayName",
+      p.is_private as "isPrivate"
+    from bat b
+    join games g on g.participant_id = b.participant_id
+    left join ${centralPlayersTable} p on p.participant_id = b.participant_id
+  `);
+  const aggRows = result.rows as Array<{
+    participantId: string;
+    innings: number;
+    runs: number;
+    notOuts: number;
+    hundreds: number;
+    fifties: number;
+    hsEnc: number;
+    games: number;
+    displayName: string | null;
+    isPrivate: number | null;
+  }>;
+  if (aggRows.length === 0) return [];
 
-  const agg = new Map<string, BattingAgg>();
-  for (const line of battingLines) {
-    if (!line.participantId) continue;
-    const kind = classifyInnings(line.dismissalType, line.dismissal);
-    const a =
-      agg.get(line.participantId) ??
-      {
-        runs: 0,
-        innings: 0,
-        notOuts: 0,
-        fifties: 0,
-        hundreds: 0,
-        highScore: 0,
-        highScoreNotOut: false,
-        matchIds: new Set<number>(),
-      };
-    if (line.matchId !== null) a.matchIds.add(line.matchId);
-    if (kind !== "dnb") {
-      const runs = line.runs ?? 0;
-      a.innings += 1;
-      a.runs += runs;
-      if (kind === "notout") a.notOuts += 1;
-      if (runs >= 100) a.hundreds += 1;
-      else if (runs >= 50) a.fifties += 1;
-      if (runs > a.highScore) {
-        a.highScore = runs;
-        a.highScoreNotOut = kind === "notout";
-      } else if (runs === a.highScore && kind === "notout") {
-        a.highScoreNotOut = true;
-      }
-    }
-    agg.set(line.participantId, a);
-  }
-
-  if (agg.size === 0) return [];
-
-  // 3. Games = distinct appearances from rosters (a player counts as having
-  //    played even in matches where they didn't bat), unioned with batted
-  //    matches as a fallback for rows missing a roster entry. (Fetched above,
-  //    in parallel with the batting lines.)
-  for (const r of rosterLines) {
-    if (!r.participantId || r.matchId === null) continue;
-    agg.get(r.participantId)?.matchIds.add(r.matchId);
-  }
-
-  // 4. Names + privacy flag from the central player register.
-  const ids = [...agg.keys()];
-  const players = await centralDb
-    .select({
-      participantId: centralPlayersTable.participantId,
-      displayName: centralPlayersTable.displayName,
-      isPrivate: centralPlayersTable.isPrivate,
-    })
-    .from(centralPlayersTable)
-    .where(inArray(centralPlayersTable.participantId, ids));
-  const playerById = new Map(players.map((p) => [p.participantId, p]));
-
-  // 5. Project to the PlayerGradeStat shape the endpoint contract requires.
-  const rows: PlayerGradeStat[] = ids.map((participantId) => {
-    const a = agg.get(participantId)!;
-    const p = playerById.get(participantId);
-    const isPrivate = (p?.isPrivate ?? 0) === 1;
+  // 3. Project to the PlayerGradeStat shape the endpoint contract requires.
+  const rows: PlayerGradeStat[] = aggRows.map((r) => {
+    const participantId = r.participantId;
+    const innings = Number(r.innings);
+    const runs = Number(r.runs);
+    const notOuts = Number(r.notOuts);
+    const hsEnc = Number(r.hsEnc);
+    const highScore = hsEnc >> 1;
+    const highScoreNotOut = (hsEnc & 1) === 1;
+    const isPrivate = (r.isPrivate ?? 0) === 1;
     const name = isPrivate
       ? { givenName: "Private", surname: "Player" }
       : splitDisplayName(
-          opts.nameByGuid?.get(participantId) ?? p?.displayName ?? participantId,
+          opts.nameByGuid?.get(participantId) ?? r.displayName ?? participantId,
         );
-    const dismissals = a.innings - a.notOuts;
+    const dismissals = innings - notOuts;
     const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
     return {
       // Central has no per-grade-stat row id; use the resolved player id so the
@@ -514,17 +521,15 @@ async function centralGradeLeaderboardImpl(
       givenName: name.givenName,
       grade: appGrade,
       season: null,
-      games: a.matchIds.size,
-      innings: a.innings,
-      notOuts: a.notOuts,
-      runs: a.runs,
-      batAvg: dismissals > 0 ? round2(a.runs / dismissals) : null,
+      games: Number(r.games),
+      innings,
+      notOuts,
+      runs,
+      batAvg: dismissals > 0 ? round2(runs / dismissals) : null,
       highScore:
-        a.innings === 0
-          ? null
-          : `${a.highScore}${a.highScoreNotOut ? "*" : ""}`,
-      fifties: a.fifties,
-      hundreds: a.hundreds,
+        innings === 0 ? null : `${highScore}${highScoreNotOut ? "*" : ""}`,
+      fifties: Number(r.fifties),
+      hundreds: Number(r.hundreds),
       wickets: null,
       runsConceded: null,
       bowlAvg: null,
@@ -624,11 +629,18 @@ async function centralClubTotalsImpl(
       .filter((g): g is string => Boolean(g)),
   ).size;
 
-  // Rosters, batting sum and bowling sum are independent given matchIds — run
-  // the three round trips in parallel.
-  const [rosters, [bat], [bowl]] = await Promise.all([
+  // Roster counts, batting sum and bowling sum are independent given matchIds —
+  // run the three round trips in parallel. The roster read is a SQL aggregate
+  // now (was: fetch every roster row and count in JS): games = count(*) (one
+  // appearance per roster line), players = count(distinct participant_id),
+  // with nullif('') mirroring the old `.filter(Boolean)` that dropped both
+  // NULL and empty-string ids.
+  const [[roster], [bat], [bowl]] = await Promise.all([
     centralDb
-      .select({ participantId: centralMatchRostersTable.participantId })
+      .select({
+        games: sql<number>`count(*)::int`,
+        players: sql<number>`count(distinct nullif(${centralMatchRostersTable.participantId}, ''))::int`,
+      })
       .from(centralMatchRostersTable)
       .where(
         and(
@@ -655,14 +667,10 @@ async function centralClubTotalsImpl(
         ),
       ),
   ]);
-  const players = new Set(
-    rosters.map((r) => r.participantId).filter((p): p is string => Boolean(p)),
-  ).size;
-  const games = rosters.length;
 
   return {
-    players,
-    games,
+    players: Number(roster?.players ?? 0),
+    games: Number(roster?.games ?? 0),
     runs: Number(bat?.runs ?? 0),
     wickets: Number(bowl?.wickets ?? 0),
     grades,
@@ -784,88 +792,96 @@ async function centralPlayerCareersImpl(
   const matchRows = preloadedMatchRows ?? (await getClubMatchRows(clubId));
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
-  const matchGrade = new Map(
-    matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]),
-  );
 
-  const [batting, bowling, rosters] = await Promise.all([
+  // SQL-side aggregation (was: fetch every batting/bowling/roster line for the
+  // club's whole history and fold them in a JS Map). Runs and wickets are
+  // per-participant GROUP BY sums; `apps` unions the three sources' distinct
+  // (participant, match) appearance pairs — the same Set-union the JS built —
+  // and collapses them to one row per participant carrying the distinct match
+  // count (games) and the distinct central grade LABELS of those matches. Only
+  // the label -> app-grade mapping stays in JS (classifyCentralGrade is regex
+  // logic that doesn't translate to SQL); it now runs on a handful of labels
+  // per player instead of every raw line. The `is not null` / `<> ''` guards
+  // mirror the old `if (!pid) continue` falsy check.
+  const [batAgg, bowlAgg, appearanceRes] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
-        matchId: centralMatchBattingTable.matchId,
-        runs: centralMatchBattingTable.runs,
+        runs: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)::int`,
       })
       .from(centralMatchBattingTable)
       .where(
         and(
           eq(centralMatchBattingTable.clubId, clubId),
           inArray(centralMatchBattingTable.matchId, matchIds),
+          isNotNull(centralMatchBattingTable.participantId),
+          ne(centralMatchBattingTable.participantId, ""),
         ),
-      ),
+      )
+      .groupBy(centralMatchBattingTable.participantId),
     centralDb
       .select({
         participantId: centralMatchBowlingTable.participantId,
-        matchId: centralMatchBowlingTable.matchId,
-        wickets: centralMatchBowlingTable.wickets,
+        wickets: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)::int`,
       })
       .from(centralMatchBowlingTable)
       .where(
         and(
           eq(centralMatchBowlingTable.clubId, clubId),
           inArray(centralMatchBowlingTable.matchId, matchIds),
+          isNotNull(centralMatchBowlingTable.participantId),
+          ne(centralMatchBowlingTable.participantId, ""),
         ),
-      ),
-    centralDb
-      .select({
-        participantId: centralMatchRostersTable.participantId,
-        matchId: centralMatchRostersTable.matchId,
-      })
-      .from(centralMatchRostersTable)
-      .where(
-        and(
-          eq(centralMatchRostersTable.clubId, clubId),
-          inArray(centralMatchRostersTable.matchId, matchIds),
-        ),
-      ),
+      )
+      .groupBy(centralMatchBowlingTable.participantId),
+    centralDb.execute(sql`
+      with apps as (
+        select
+          ${centralMatchBattingTable.participantId} as participant_id,
+          ${centralMatchBattingTable.matchId} as match_id
+        from ${centralMatchBattingTable}
+        where ${centralMatchBattingTable.clubId} = ${clubId}
+          and ${centralMatchBattingTable.matchId} = any(${sql.param(matchIds)})
+          and ${centralMatchBattingTable.participantId} is not null
+          and ${centralMatchBattingTable.participantId} <> ''
+        union
+        select
+          ${centralMatchBowlingTable.participantId},
+          ${centralMatchBowlingTable.matchId}
+        from ${centralMatchBowlingTable}
+        where ${centralMatchBowlingTable.clubId} = ${clubId}
+          and ${centralMatchBowlingTable.matchId} = any(${sql.param(matchIds)})
+          and ${centralMatchBowlingTable.participantId} is not null
+          and ${centralMatchBowlingTable.participantId} <> ''
+        union
+        select
+          ${centralMatchRostersTable.participantId},
+          ${centralMatchRostersTable.matchId}
+        from ${centralMatchRostersTable}
+        where ${centralMatchRostersTable.clubId} = ${clubId}
+          and ${centralMatchRostersTable.matchId} = any(${sql.param(matchIds)})
+          and ${centralMatchRostersTable.participantId} is not null
+          and ${centralMatchRostersTable.participantId} <> ''
+      )
+      select
+        a.participant_id as "participantId",
+        count(distinct a.match_id)::int as games,
+        json_agg(distinct m.grade) as "gradeLabels"
+      from apps a
+      join ${centralMatchesTable} m on m.match_id = a.match_id
+      group by a.participant_id
+    `),
   ]);
+  const appearances = appearanceRes.rows as Array<{
+    participantId: string;
+    games: number;
+    gradeLabels: (string | null)[] | null;
+  }>;
+  if (appearances.length === 0) return [];
+  const runsByPid = new Map(batAgg.map((b) => [b.participantId, Number(b.runs)]));
+  const wktsByPid = new Map(bowlAgg.map((b) => [b.participantId, Number(b.wickets)]));
 
-  interface Agg {
-    runs: number;
-    wickets: number;
-    matchIds: Set<number>;
-    grades: Set<string>;
-  }
-  const agg = new Map<string, Agg>();
-  const get = (pid: string): Agg => {
-    let a = agg.get(pid);
-    if (!a) {
-      a = { runs: 0, wickets: 0, matchIds: new Set(), grades: new Set() };
-      agg.set(pid, a);
-    }
-    return a;
-  };
-  const touch = (pid: string | null, matchId: number | null): Agg | null => {
-    if (!pid) return null;
-    const a = get(pid);
-    if (matchId !== null) {
-      a.matchIds.add(matchId);
-      const g = matchGrade.get(matchId);
-      if (g) a.grades.add(g);
-    }
-    return a;
-  };
-  for (const b of batting) {
-    const a = touch(b.participantId, b.matchId);
-    if (a) a.runs += b.runs ?? 0;
-  }
-  for (const b of bowling) {
-    const a = touch(b.participantId, b.matchId);
-    if (a) a.wickets += b.wickets ?? 0;
-  }
-  for (const r of rosters) touch(r.participantId, r.matchId);
-
-  const ids = [...agg.keys()];
-  if (ids.length === 0) return [];
+  const ids = appearances.map((a) => a.participantId);
   const players = await centralDb
     .select({
       participantId: centralPlayersTable.participantId,
@@ -876,17 +892,23 @@ async function centralPlayerCareersImpl(
     .where(inArray(centralPlayersTable.participantId, ids));
   const byId = new Map(players.map((p) => [p.participantId, p]));
 
-  return ids.map((participantId) => {
-    const a = agg.get(participantId)!;
-    const p = byId.get(participantId);
+  return appearances.map((a) => {
+    const p = byId.get(a.participantId);
+    const grades = [
+      ...new Set(
+        (a.gradeLabels ?? [])
+          .map((g) => appGradeFromCentral(g))
+          .filter((g): g is string => Boolean(g)),
+      ),
+    ].sort();
     return {
-      participantId,
+      participantId: a.participantId,
       displayName: p?.displayName ?? null,
       isPrivate: (p?.isPrivate ?? 0) === 1,
-      games: a.matchIds.size,
-      runs: a.runs,
-      wickets: a.wickets,
-      grades: [...a.grades].sort(),
+      games: Number(a.games),
+      runs: runsByPid.get(a.participantId) ?? 0,
+      wickets: wktsByPid.get(a.participantId) ?? 0,
+      grades,
     };
   });
 }
@@ -1160,16 +1182,30 @@ function parseStage(text: string | null): string | null {
   return null;
 }
 
+/** Optional filters/paging for {@link centralClubMatches} — all applied in SQL. */
+export interface CentralClubMatchesOpts {
+  /** App grade (e.g. "A Grade") — resolved to the central grade labels that map to it. */
+  grade?: string;
+  /** Season start year (e.g. 2023 for "2023/24") — matched against the first 4-digit run in `matches.season`. */
+  season?: number;
+  /** SQL LIMIT over the season/round/id-desc ordering. Absent → all rows. */
+  limit?: number;
+  /** SQL OFFSET over the same ordering. Absent → 0. */
+  offset?: number;
+}
+
 /**
  * A club's game-by-game match list from central, shaped as MatchSummary from the
  * club's perspective (opponent = the other side). Match ids are central's own
  * ints, so no crosswalk is needed. Optional grade (app grade) / season (start
- * year) filters. Matches whose grade doesn't map or whose season can't be parsed
- * are excluded. Sorted newest-first (season, then round, then id).
+ * year) filters plus limit/offset paging — all pushed into SQL so only the
+ * requested page's rows are fetched and shaped. Matches whose grade doesn't map
+ * or whose season can't be parsed are excluded. Sorted newest-first (season,
+ * then round, then id), identically in SQL and in the retained JS sort.
  */
 export async function centralClubMatches(
   clubId: number,
-  opts: { grade?: string; season?: number } = {},
+  opts: CentralClubMatchesOpts = {},
 ): Promise<CentralMatchSummary[]> {
   return withCentralCache(cacheKey("centralClubMatches", [clubId, opts]), () =>
     centralClubMatchesImpl(clubId, opts),
@@ -1178,10 +1214,16 @@ export async function centralClubMatches(
 
 async function centralClubMatchesImpl(
   clubId: number,
-  opts: { grade?: string; season?: number },
+  opts: CentralClubMatchesOpts,
 ): Promise<CentralMatchSummary[]> {
-  const matches = await centralDb
-    .select()
+  // Grade-label boundary: `matches.grade` is a free-text central label and the
+  // label -> app-grade mapping (classifyCentralGrade) is JS regex logic that
+  // can't move into SQL. So resolve the club's DISTINCT labels first (a tiny
+  // result), classify them in JS, and push the resulting label list into the
+  // SQL WHERE — semantically identical to the old per-row JS filter, including
+  // dropping unmapped labels when no grade filter is given.
+  const labelRows = await centralDb
+    .selectDistinct({ grade: centralMatchesTable.grade })
     .from(centralMatchesTable)
     .where(
       or(
@@ -1189,6 +1231,52 @@ async function centralClubMatchesImpl(
         eq(centralMatchesTable.awayClubId, clubId),
       ),
     );
+  const labels = labelRows
+    .map((r) => r.grade)
+    .filter((g): g is string => Boolean(g))
+    .filter((g) => {
+      const appGrade = appGradeFromCentral(g);
+      if (appGrade === null) return false;
+      // Truthy check (not !== undefined) to match the old JS row filter, which
+      // treated an empty-string grade as "no filter".
+      return !opts.grade || appGrade === opts.grade;
+    });
+  if (labels.length === 0) return [];
+
+  // SQL twins of parseSeasonStartYear() (first 4-digit run in the season text)
+  // and parseRound() (finals -> null -> sorts last via -1; else first number).
+  const seasonStartYearSql = sql<number>`(substring(${centralMatchesTable.season} from '\\d{4}'))::int`;
+  const roundSortSql = sql<number>`case
+    when ${centralMatchesTable.round} ~* 'final|semi|grand|qualif|elimin|prelim' then -1
+    else coalesce((substring(${centralMatchesTable.round} from '\\d+'))::int, -1)
+  end`;
+
+  const conditions = [
+    or(
+      eq(centralMatchesTable.homeClubId, clubId),
+      eq(centralMatchesTable.awayClubId, clubId),
+    ),
+    inArray(centralMatchesTable.grade, labels),
+    // Unparseable seasons are excluded, exactly like the old JS `season === null`.
+    sql`${centralMatchesTable.season} ~ '\\d{4}'`,
+  ];
+  if (opts.season !== undefined) {
+    conditions.push(sql`${seasonStartYearSql} = ${opts.season}`);
+  }
+
+  let query = centralDb
+    .select()
+    .from(centralMatchesTable)
+    .where(and(...conditions))
+    .orderBy(
+      desc(seasonStartYearSql),
+      desc(roundSortSql),
+      desc(centralMatchesTable.matchId),
+    )
+    .$dynamic();
+  if (opts.limit !== undefined) query = query.limit(opts.limit);
+  if (opts.offset !== undefined) query = query.offset(opts.offset);
+  const matches = await query;
   if (matches.length === 0) return [];
 
   const matchIds = matches.map((m) => m.matchId);
@@ -1714,6 +1802,14 @@ export async function centralClubRecords(clubId: number): Promise<CentralClubRec
 }
 
 async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecords> {
+  // Deliberately still JS-aggregated (unlike centralGradeLeaderboard): the
+  // single-innings records (highestScore / bestBowling) and every topBy()
+  // holder resolve ties by FIRST-encountered row/insertion order, which is the
+  // database's unspecified fetch order — a SQL `order by ... limit 1` would
+  // silently pick a different (if equally arbitrary) holder on ties, and this
+  // read is cold + cached. The fetches below are already minimal-column;
+  // fielding is additionally grouped to counts per (participant, kind) so the
+  // catch regex runs per distinct kind instead of per row.
   const matchRows = await getClubMatchRows(clubId);
   const empty: CentralClubRecords = {
     mostGames: null, mostRuns: null, mostWickets: null, mostCatches: null,
@@ -1744,7 +1840,9 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
     centralDb.select({
       participantId: centralFieldingTable.participantId,
       kind: centralFieldingTable.kind,
-    }).from(centralFieldingTable).where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds))),
+      n: sql<number>`count(*)::int`,
+    }).from(centralFieldingTable).where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds)))
+      .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
   ]);
 
   interface Agg {
@@ -1790,7 +1888,7 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
   }
   for (const f of fielding) {
     if (!f.participantId) continue;
-    if (/catch|caught|^c$|^c\b/i.test(f.kind ?? "")) get(f.participantId).catches += 1;
+    if (/catch|caught|^c$|^c\b/i.test(f.kind ?? "")) get(f.participantId).catches += Number(f.n);
   }
 
   const ids = [...agg.keys()];
@@ -1874,24 +1972,37 @@ async function centralGradeSummariesImpl(
   if (matchIds.length === 0) return [];
   const gradeOf = new Map(matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]));
 
+  // Partially SQL-aggregated. The per-grade rollup itself must stay in JS —
+  // "grade" is the JS label mapping (classifyCentralGrade) applied per match,
+  // and the distinct players-per-grade count needs (participant, match)
+  // granularity — but the per-row work is pushed down:
+  //   - batting groups to one row per (participant, match) with the DNB-aware
+  //     innings count and runs sum (classification via battingInningsKindSql),
+  //     so the dismissal text columns never travel;
+  //   - bowling groups to one wickets sum per match;
+  //   - fielding groups to counts per (match, kind) — the JS regexes then run
+  //     per distinct kind instead of per row.
+  // Rosters stay row-level: every (participant, match) pair feeds the distinct
+  // players/games sets and there is nothing smaller to fetch.
   const [batting, bowling, rosters, fielding] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
         matchId: centralMatchBattingTable.matchId,
-        runs: centralMatchBattingTable.runs,
-        dismissal: centralMatchBattingTable.dismissal,
-        dismissalType: centralMatchBattingTable.dismissalType,
+        innings: sql<number>`(count(*) filter (where ${battingInningsKindSql} <> 'dnb'))::int`,
+        runs: sql<number>`coalesce(sum(coalesce(${centralMatchBattingTable.runs}, 0)) filter (where ${battingInningsKindSql} <> 'dnb'), 0)::int`,
       })
       .from(centralMatchBattingTable)
-      .where(and(eq(centralMatchBattingTable.clubId, clubId), inArray(centralMatchBattingTable.matchId, matchIds))),
+      .where(and(eq(centralMatchBattingTable.clubId, clubId), inArray(centralMatchBattingTable.matchId, matchIds)))
+      .groupBy(centralMatchBattingTable.participantId, centralMatchBattingTable.matchId),
     centralDb
       .select({
         matchId: centralMatchBowlingTable.matchId,
-        wickets: centralMatchBowlingTable.wickets,
+        wickets: sql<number>`coalesce(sum(coalesce(${centralMatchBowlingTable.wickets}, 0)), 0)::int`,
       })
       .from(centralMatchBowlingTable)
-      .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds))),
+      .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds)))
+      .groupBy(centralMatchBowlingTable.matchId),
     centralDb
       .select({
         participantId: centralMatchRostersTable.participantId,
@@ -1903,9 +2014,11 @@ async function centralGradeSummariesImpl(
       .select({
         matchId: centralFieldingTable.matchId,
         kind: centralFieldingTable.kind,
+        n: sql<number>`count(*)::int`,
       })
       .from(centralFieldingTable)
-      .where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds))),
+      .where(and(eq(centralFieldingTable.clubId, clubId), inArray(centralFieldingTable.matchId, matchIds)))
+      .groupBy(centralFieldingTable.matchId, centralFieldingTable.kind),
   ]);
 
   interface G {
@@ -1943,16 +2056,14 @@ async function centralGradeSummariesImpl(
     const a = grp(grade);
     a.games.add(b.matchId);
     if (b.participantId) a.players.add(b.participantId);
-    if (classifyInnings(b.dismissalType, b.dismissal) !== "dnb") {
-      a.innings += 1;
-      a.runs += b.runs ?? 0;
-    }
+    a.innings += Number(b.innings);
+    a.runs += Number(b.runs);
   }
   for (const b of bowling) {
     if (b.matchId === null) continue;
     const grade = gradeOf.get(b.matchId);
     if (!grade) continue;
-    grp(grade).wickets += b.wickets ?? 0;
+    grp(grade).wickets += Number(b.wickets);
   }
   for (const f of fielding) {
     if (f.matchId === null) continue;
@@ -1960,9 +2071,10 @@ async function centralGradeSummariesImpl(
     if (!grade) continue;
     const a = grp(grade);
     const kind = (f.kind ?? "").toLowerCase();
-    if (/stump/.test(kind)) a.stumpings += 1;
-    else if (/run\s*out/.test(kind)) a.runOuts += 1;
-    else if (/catch|caught|^c$/.test(kind)) a.catches += 1;
+    const n = Number(f.n);
+    if (/stump/.test(kind)) a.stumpings += n;
+    else if (/run\s*out/.test(kind)) a.runOuts += n;
+    else if (/catch|caught|^c$/.test(kind)) a.catches += n;
   }
 
   return [...byGrade.entries()]
@@ -2106,6 +2218,9 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
   if (matchIds.length === 0) return [];
   const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
 
+  // Threshold pushed into SQL: only the century lines travel over the wire
+  // (was: every batting line the club ever recorded, filtered in JS). SQL
+  // `runs >= 100` ≡ the old `(runs ?? 0) >= 100` — NULL runs fail both.
   const batting = await centralDb
     .select({
       participantId: centralMatchBattingTable.participantId,
@@ -2115,9 +2230,15 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
       dismissalType: centralMatchBattingTable.dismissalType,
     })
     .from(centralMatchBattingTable)
-    .where(and(eq(centralMatchBattingTable.clubId, clubId), inArray(centralMatchBattingTable.matchId, matchIds)));
+    .where(
+      and(
+        eq(centralMatchBattingTable.clubId, clubId),
+        inArray(centralMatchBattingTable.matchId, matchIds),
+        gte(centralMatchBattingTable.runs, 100),
+      ),
+    );
 
-  const hundreds = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId);
+  const hundreds = batting.filter((b) => b.participantId);
   const names = await centralPlayerNames([...new Set(hundreds.map((b) => b.participantId as string))]);
 
   const rows: CentralCentury[] = [];
@@ -2176,6 +2297,12 @@ async function centralMilestonesImpl(
   clubId: number,
   tiers: { games: number[]; runs: number[]; wickets: number[] },
 ): Promise<CentralMilestone[]> {
+  // Deliberately still JS-aggregated: career tier-crossings need each player's
+  // full per-match running totals walked in chronological order against
+  // caller-supplied tier arrays — a sequential scan that doesn't reduce to a
+  // GROUP BY (a SQL window-function port would be a rewrite, not a pushdown).
+  // The fetches below already select only the 2–3 columns the walk consumes,
+  // and the read is cold + cached.
   const matchRows = await centralDb
     .select({
       matchId: centralMatchesTable.matchId,
@@ -2382,6 +2509,9 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
   if (matchIds.length === 0) return [];
   const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
 
+  // Threshold pushed into SQL: only the five-for lines travel over the wire
+  // (was: every bowling line, filtered in JS). SQL `wickets >= 5` ≡ the old
+  // `(wickets ?? 0) >= 5` — NULL wickets fail both.
   const bowling = await centralDb
     .select({
       participantId: centralMatchBowlingTable.participantId,
@@ -2390,9 +2520,15 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
       runs: centralMatchBowlingTable.runs,
     })
     .from(centralMatchBowlingTable)
-    .where(and(eq(centralMatchBowlingTable.clubId, clubId), inArray(centralMatchBowlingTable.matchId, matchIds)));
+    .where(
+      and(
+        eq(centralMatchBowlingTable.clubId, clubId),
+        inArray(centralMatchBowlingTable.matchId, matchIds),
+        gte(centralMatchBowlingTable.wickets, 5),
+      ),
+    );
 
-  const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId);
+  const fivers = bowling.filter((b) => b.participantId);
   const names = await centralPlayerNames([...new Set(fivers.map((b) => b.participantId as string))]);
 
   const rows: CentralFiveWicketHaul[] = [];

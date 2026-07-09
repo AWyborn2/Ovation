@@ -15,6 +15,7 @@ export function usePlatformAdmin() {
       queryKey: getGetPlatformAdminMeQueryKey(),
       retry: false,
       staleTime: 30_000,
+      refetchOnWindowFocus: true,
       throwOnError: false,
     },
   });

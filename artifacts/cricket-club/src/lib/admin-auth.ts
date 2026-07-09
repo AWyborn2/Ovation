@@ -7,6 +7,7 @@ export function useCurrentAdmin() {
       queryKey: getGetCurrentAdminQueryKey(),
       retry: false,
       staleTime: 30_000,
+      refetchOnWindowFocus: true,
       throwOnError: false,
     },
   });
