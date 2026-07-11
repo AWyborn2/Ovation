@@ -1,0 +1,1676 @@
+
+> @workspace/api-server@0.0.0 test /home/user/Ovation/artifacts/api-server
+> vitest run
+
+
+ RUN  v4.1.7 /home/user/Ovation/artifacts/api-server
+
+(node:12998) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:13017) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:19.267] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/life-members"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[22:10:19.279] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/life-members"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:10:19.288] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/honour-boards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:19.293] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/honour-boards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:10:19.300] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/sponsors"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:10:19.313] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/sponsors"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:19.337] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/sponsors/1"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 14
+[22:10:19.343] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "DELETE",
+      "url": "/api/sponsors/1"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 3
+[22:10:19.354] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "GET",
+      "url": "/api/card-themes"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[22:10:19.360] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/card-themes"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:10:19.369] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "PATCH",
+      "url": "/api/card-themes/1"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 6
+[22:10:19.374] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "DELETE",
+      "url": "/api/card-themes/1"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 3
+[22:10:19.386] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/juniors/players"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[22:10:19.393] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/juniors/players"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:19.403] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "POST",
+      "url": "/api/life-members"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 5
+[22:10:19.407] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/life-members"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[22:10:19.410] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/life-members"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[22:10:19.436] [32mINFO[39m (13017): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "POST",
+      "url": "/api/life-members"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 23
+(node:13033) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:21.526] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/imports/playcricket-csv"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[22:10:21.544] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "DELETE",
+      "url": "/api/imports/1"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 10
+[22:10:21.558] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/imports/playcricket-csv"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[22:10:21.590] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/imports/2/commit"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 29
+[22:10:21.613] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "DELETE",
+      "url": "/api/imports/2"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 16
+[22:10:21.645] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/imports/playcricket-csv"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[22:10:21.665] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/imports/3/commit"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[22:10:21.686] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "DELETE",
+      "url": "/api/imports/3"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 17
+[22:10:21.702] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/imports/playcricket-csv"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[22:10:21.720] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "POST",
+      "url": "/api/imports/4/commit"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[22:10:21.740] [32mINFO[39m (13033): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "DELETE",
+      "url": "/api/imports/4"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 17
+(node:13049) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:23.757] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/platform/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 105
+[22:10:23.784] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 7
+[22:10:23.789] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:23.796] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/99999999/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 4
+[22:10:23.904] [32mINFO[39m (13049): [36mplatform admin issued a club-admin reset link[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mevent[39m: "admin_password_reset_issued"
+    [35mplatformAdminId[39m: 2
+    [35mtenantId[39m: 6
+    [35madminId[39m: 6
+    [35musername[39m: "secretary+1783807823501@example.com"
+    [35mcreated[39m: true
+[22:10:23.905] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 107
+[22:10:23.920] [32mINFO[39m (13049): [36mplatform admin issued a club-admin reset link[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mevent[39m: "admin_password_reset_issued"
+    [35mplatformAdminId[39m: 2
+    [35mtenantId[39m: 6
+    [35madminId[39m: 6
+    [35musername[39m: "secretary+1783807823501@example.com"
+    [35mcreated[39m: false
+[22:10:23.921] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 9
+[22:10:24.024] [32mINFO[39m (13049): [36mplatform admin issued a club-admin reset link[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mevent[39m: "admin_password_reset_issued"
+    [35mplatformAdminId[39m: 2
+    [35mtenantId[39m: 6
+    [35madminId[39m: 7
+    [35musername[39m: "captain+1783807823501@example.com"
+    [35mcreated[39m: true
+[22:10:24.025] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 101
+[22:10:24.030] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/api/auth/password-reset/7dNYxv9fUqGt5pa5pC-EM6caLpAPTeqeeixz6OR_inM"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:10:24.129] [32mINFO[39m (13049): [36mclub admin redeemed a password-reset link[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/auth/password-reset/7dNYxv9fUqGt5pa5pC-EM6caLpAPTeqeeixz6OR_inM"
+    }
+    [35mevent[39m: "admin_password_reset_redeemed"
+    [35mtenantId[39m: 6
+    [35madminId[39m: 7
+[22:10:24.130] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/auth/password-reset/7dNYxv9fUqGt5pa5pC-EM6caLpAPTeqeeixz6OR_inM"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 97
+[22:10:24.134] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/auth/password-reset/7dNYxv9fUqGt5pa5pC-EM6caLpAPTeqeeixz6OR_inM"
+    }
+    [35mres[39m: {
+      "statusCode": 410
+    }
+    [35mresponseTime[39m: 1
+[22:10:24.243] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 106
+[22:10:24.359] [32mINFO[39m (13049): [36mplatform admin issued a club-admin reset link[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mevent[39m: "admin_password_reset_issued"
+    [35mplatformAdminId[39m: 2
+    [35mtenantId[39m: 6
+    [35madminId[39m: 8
+    [35musername[39m: "shorty+1783807823501@example.com"
+    [35mcreated[39m: true
+[22:10:24.360] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "POST",
+      "url": "/api/platform/admin/tenants/6/admin-resets"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 114
+[22:10:24.363] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "POST",
+      "url": "/api/auth/password-reset/VSJjjaEKsKUTXMQ1sWoAHuIbnwuG9_I8Fnabp0ZB-fo"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 2
+[22:10:24.369] [32mINFO[39m (13049): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/auth/password-reset/VSJjjaEKsKUTXMQ1sWoAHuIbnwuG9_I8Fnabp0ZB-fo"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+(node:13505) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ❯ src/routes/senior-games-consistency.test.ts (2 tests | 1 failed) 108ms
+     × totalRuns / totalWickets / totalGames match across Directory, Detail and the per-grade Leaderboard 71ms
+(node:13534) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:30.925] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/platform/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 116
+[22:10:31.005] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/platform/admin/tenants"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 60
+[22:10:31.010] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/platform/admin/tenants"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:31.013] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/platform/admin/tenants"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 0
+[22:10:31.029] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/platform/admin/tenants/8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[22:10:31.035] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/platform/admin/tenants/8"
+    }
+    [35mres[39m: {
+      "statusCode": 402
+    }
+    [35mresponseTime[39m: 2
+[22:10:31.051] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/platform/admin/tenants/8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[22:10:31.060] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PATCH",
+      "url": "/api/platform/admin/tenants/8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:31.068] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PATCH",
+      "url": "/api/platform/admin/tenants/999999999"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 3
+[22:10:31.081] [32mINFO[39m (13534): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/platform/available-clubs"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+(node:13562) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ❯ src/routes/juniors-games-consistency.test.ts (3 tests | 3 failed) 262ms
+     × matches is identical across Directory, rich leaderboard, Most Wickets and equals roster COUNT(DISTINCT match_id) 246ms
+     × keeps brothers / namesakes (two 'C Gray') separate by participant_id 11ms
+     × scopes games, runs and wickets to the season + age-group filter 3ms
+(node:13591) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:36.341] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/partnerships"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[22:10:36.352] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/partnerships"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:10:36.358] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/partnerships"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:10:36.362] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/centuries"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[22:10:36.368] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/centuries"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:10:36.372] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/five-wicket-hauls"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:10:36.380] [32mINFO[39m (13591): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/five-wicket-hauls"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+(node:13644) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:40.552] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[22:10:40.568] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[22:10:40.579] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:40.587] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[22:10:40.594] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 2
+[22:10:40.598] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:40.601] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[22:10:40.608] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PATCH",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[22:10:40.612] [32mINFO[39m (13644): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "GET",
+      "url": "/api/tenant-brand"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+(node:13889) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:42.666] [32mINFO[39m (13889): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/honour-display"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 76
+[22:10:42.677] [32mINFO[39m (13889): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/honour-display"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 3
+[22:10:42.700] [32mINFO[39m (13889): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/honour-display"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[22:10:42.733] [32mINFO[39m (13889): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "PATCH",
+      "url": "/api/honour-display-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[22:10:42.749] [32mINFO[39m (13889): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/honour-display"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[22:10:42.763] [32mINFO[39m (13889): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/honour-display-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+ ❯ src/routes/honour-display-kiosk.test.ts (3 tests | 2 failed) 228ms
+     × includes a Most Games board and stamps display on every board 24ms
+     × round-trips boardConfigs + composites and reflects them in the bundle 49ms
+(node:14055) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:44.719] [32mINFO[39m (14055): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/captains"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[22:10:44.738] [32mINFO[39m (14055): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "PATCH",
+      "url": "/api/captains/7"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 11
+[22:10:44.743] [32mINFO[39m (14055): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "DELETE",
+      "url": "/api/captains/7"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 2
+[22:10:44.837] [32mINFO[39m (14055): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/captain-auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 91
+[22:10:44.929] [32mINFO[39m (14055): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/captain-auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 89
+[22:10:46.622] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/platform/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 106
+[22:10:46.643] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/platform/admin/storage/uploads/request-url"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[22:10:46.649] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/platform/admin/storage/uploads/request-url"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:46.652] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/platform/admin/storage/uploads/request-url"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:46.657] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/platform/admin/storage/uploads/request-url"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 3
+[22:10:46.662] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/platform/admin/storage/uploads/request-url"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 2
+[22:10:46.666] [32mINFO[39m (14071): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/platform/admin/storage/uploads/request-url"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 1
+(node:14087) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:14212) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:50.603] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/platform/available-clubs"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 63
+[22:10:50.758] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/platform/signup"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 149
+[22:10:50.762] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:10:50.769] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/platform/available-clubs"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:10:50.775] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/platform/signup"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 3
+[22:10:50.779] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/platform/signup"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 2
+[22:10:50.782] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/platform/available-clubs"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 0
+[22:10:50.785] [32mINFO[39m (14212): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/platform/signup"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 1
+(node:14481) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:52.291] [32mINFO[39m (14481): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/imports/match-batch"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 8
+[22:10:52.349] [32mINFO[39m (14481): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/imports/match-batch"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 48
+[22:10:52.379] [32mINFO[39m (14481): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/imports/match-batch"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[22:10:52.406] [32mINFO[39m (14481): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/imports/match-batch"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[22:10:52.427] [32mINFO[39m (14481): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/imports/match-batch"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[22:10:52.435] [32mINFO[39m (14481): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "DELETE",
+      "url": "/api/imports/14"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 6
+(node:14497) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:53.959] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/premierships"
+    }
+    [35mres[39m: {
+      "statusCode": 402
+    }
+    [35mresponseTime[39m: 17
+[22:10:53.968] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/sponsors"
+    }
+    [35mres[39m: {
+      "statusCode": 402
+    }
+    [35mresponseTime[39m: 4
+[22:10:53.973] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/honour-display-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 402
+    }
+    [35mresponseTime[39m: 3
+[22:10:53.979] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/premierships"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 3
+[22:10:53.984] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/sponsors"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 2
+[22:10:53.989] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/honour-display-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 402
+    }
+    [35mresponseTime[39m: 3
+[22:10:53.996] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/honour-display-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:54.000] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/premierships"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 2
+[22:10:54.005] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/sponsors"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 3
+[22:10:54.010] [32mINFO[39m (14497): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "PATCH",
+      "url": "/api/honour-display-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+(node:14513) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:55.482] [32mINFO[39m (14513): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/captain/ballots"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 29
+[22:10:55.492] [32mINFO[39m (14513): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/award-tallies"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[22:10:55.496] [32mINFO[39m (14513): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/voting-configs/7/finalise"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:55.507] [32mINFO[39m (14513): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/voting-configs/7/finalise"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[22:10:55.519] [32mINFO[39m (14513): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/voting-configs/7/finalise"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[22:10:55.532] [32mINFO[39m (14513): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/voting-configs/7/finalise"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+ ❯ src/routes/player-totals-consistency.test.ts (2 tests | 1 failed) 32ms
+     × players.total_games equals SUM(player_grade_stats.games) for every real player 29ms
+(node:14541) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:57.670] [32mINFO[39m (14541): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "PUT",
+      "url": "/api/player-curation/cur-guid-t2-1783807857582"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 13
+[22:10:57.682] [32mINFO[39m (14541): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "PUT",
+      "url": "/api/player-curation/cur-guid-t2-1783807857582"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[22:10:57.690] [32mINFO[39m (14541): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/player-curation"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[22:10:57.693] [32mINFO[39m (14541): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/player-curation"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[22:10:57.698] [32mINFO[39m (14541): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PUT",
+      "url": "/api/player-curation/cur-guid-t2-1783807857582"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 2
+[22:10:57.704] [32mINFO[39m (14541): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "DELETE",
+      "url": "/api/player-curation/cur-guid-t2-1783807857582"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 3
+(node:14558) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:10:59.324] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/social-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 34
+[22:10:59.353] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "PATCH",
+      "url": "/api/social-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[22:10:59.389] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/social-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 34
+[22:10:59.402] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/social-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[22:10:59.410] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/trading-card-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:59.418] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/trading-card-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:10:59.424] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/trading-card-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[22:10:59.427] [32mINFO[39m (14558): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/api/trading-card-settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+(node:15041) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:11:01.570] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/juniors/office-bearers"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 15
+[22:11:01.577] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/juniors/office-bearers/all"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 2
+[22:11:01.587] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/juniors/office-bearers"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 7
+[22:11:01.592] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/juniors/office-bearers/all"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:11:01.596] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/juniors/office-bearers"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:11:01.603] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/juniors/office-bearers/1"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[22:11:01.607] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/juniors/office-bearers"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[22:11:01.612] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "DELETE",
+      "url": "/api/juniors/office-bearers/1"
+    }
+    [35mres[39m: {
+      "statusCode": 204
+    }
+    [35mresponseTime[39m: 4
+[22:11:01.618] [32mINFO[39m (15041): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "GET",
+      "url": "/api/juniors/office-bearers/all"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+(node:15057) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:15077) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:11:05.233] [32mINFO[39m (15077): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/platform/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 106
+[22:11:05.327] [32mINFO[39m (15077): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/platform/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 87
+[22:11:05.416] [32mINFO[39m (15077): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/platform/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 86
+[22:11:05.421] [32mINFO[39m (15077): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/platform/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[22:11:05.425] [32mINFO[39m (15077): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/platform/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+(node:15107) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[22:11:07.307] [32mINFO[39m (15107): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/billing/webhook"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+(node:15123) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/routes/honour-display-kiosk.test.ts > honour display: Most Games board, display stamps, composites (integration) > includes a Most Games board and stamps display on every board
+AssertionError: expected undefined to be defined
+ ❯ src/routes/honour-display-kiosk.test.ts:88:23
+     86|
+     87|     const mostGames = bundle.boards.find((b) => b.id === "most_games");
+     88|     expect(mostGames).toBeDefined();
+       |                       ^
+     89|     expect(mostGames!.layout).toBe("list");
+     90|     expect(mostGames!.entries.length).toBeGreaterThan(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  src/routes/honour-display-kiosk.test.ts > honour display: Most Games board, display stamps, composites (integration) > round-trips boardConfigs + composites and reflects them in the bundle
+TypeError: Cannot read properties of undefined (reading 'display')
+ ❯ src/routes/honour-display-kiosk.test.ts:156:23
+    154|     // boardConfigs override is reflected on the Most Games board's di…
+    155|     const mostGames = bundle.boards.find((b) => b.id === "most_games");
+    156|     expect(mostGames!.display).toEqual({
+       |                       ^
+    157|       columns: 3,
+    158|       transition: "slide",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  src/routes/juniors-games-consistency.test.ts > junior Games figure is consistent across every tab > matches is identical across Directory, rich leaderboard, Most Wickets and equals roster COUNT(DISTINCT match_id)
+AssertionError: C Gray should have roster games: expected 0 to be greater than 0
+ ❯ src/routes/juniors-games-consistency.test.ts:106:62
+    104|     for (const p of KNOWN) {
+    105|       const expected = await rosterGames(p.id);
+    106|       expect(expected, `${p.name} should have roster games`).toBeGreat…
+       |                                                              ^
+    107|
+    108|       const dirRow = directory.find((r) => r.participantId === p.id);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  src/routes/juniors-games-consistency.test.ts > junior Games figure is consistent across every tab > keeps brothers / namesakes (two 'C Gray') separate by participant_id
+AssertionError: first C Gray present: expected undefined to be defined
+ ❯ src/routes/juniors-games-consistency.test.ts:132:39
+    130|     const b = rows.find((r) => r.participantId === C_GRAY_B);
+    131|
+    132|     expect(a, "first C Gray present").toBeDefined();
+       |                                       ^
+    133|     expect(b, "second C Gray present").toBeDefined();
+    134|     expect(C_GRAY_A).not.toBe(C_GRAY_B);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  src/routes/juniors-games-consistency.test.ts > junior Games figure is consistent across every tab > scopes games, runs and wickets to the season + age-group filter
+AssertionError: scoped games > 0: expected 0 to be greater than 0
+ ❯ src/routes/juniors-games-consistency.test.ts:151:47
+    149|     ]);
+    150|
+    151|     expect(expectedGames, "scoped games > 0").toBeGreaterThan(0);
+       |                                               ^
+    152|     expect(expectedRuns, "scoped runs > 0").toBeGreaterThan(0);
+    153|     expect(expectedWickets, "scoped wickets > 0").toBeGreaterThan(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  src/routes/player-totals-consistency.test.ts > club-wide player game totals stay consistent > players.total_games equals SUM(player_grade_stats.games) for every real player
+AssertionError: there should be real players to validate: expected 0 to be greater than 0
+ ❯ src/routes/player-totals-consistency.test.ts:64:70
+     62|       `)
+     63|     ).rows as unknown as { real_players: number }[];
+     64|     expect(real_players, "there should be real players to validate").t…
+       |                                                                      ^
+     65|
+     66|     const detail = mismatches
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  src/routes/senior-games-consistency.test.ts > senior career Games / Runs / Wickets are consistent across every surface > totalRuns / totalWickets / totalGames match across Directory, Detail and the per-grade Leaderboard
+AssertionError: Chris Phelps should exist: expected undefined to be defined
+ ❯ src/routes/senior-games-consistency.test.ts:83:48
+     81|     for (const p of KNOWN) {
+     82|       const career = await careerTotals(p.id);
+     83|       expect(career, `${p.name} should exist`).toBeDefined();
+       |                                                ^
+     84|
+     85|       // Directory (GET /players) — search by this player's surname so…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  4 failed | 29 passed (33)
+      Tests  7 failed | 198 passed (205)
+   Start at  22:10:11
+   Duration  56.34s (transform 2.95s, setup 0ms, import 41.94s, tests 8.55s, environment 4ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+vitest exit: 1
