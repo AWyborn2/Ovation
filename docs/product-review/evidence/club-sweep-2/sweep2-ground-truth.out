@@ -1,0 +1,441 @@
+################ CLUB 7 ################
+ players | games | runs  | wickets | grades 
+---------+-------+-------+---------+--------
+      30 |   715 | 18129 |     373 |      2
+(1 row)
+
+ display_name | games | innings | not_outs | runs |  avg  | hs  | hundreds | fifties 
+--------------+-------+---------+----------+------+-------+-----+----------+---------
+ Jake Taylor  |    28 |      23 |        5 |  985 | 54.72 | 158 |        3 |       4
+ Will Nguyen  |    28 |      24 |        6 |  712 | 39.56 | 143 |        1 |       4
+ Kane Wright  |    27 |      24 |        5 |  940 | 49.47 | 125 |        2 |       4
+ Troy Edwards |    26 |      20 |        5 |  562 | 37.47 | 88  |        0 |       4
+ Tom Reed     |    25 |      23 |        3 | 1062 | 53.10 | 167 |        4 |       2
+(5 rows)
+
+    rec     | display_name | value 
+------------+--------------+-------
+ most_games | Ben Brooks   | 28
+ most_games | Jake Taylor  | 28
+(2 rows)
+
+    rec    |  display_name  | sum  
+-----------+----------------+------
+ most_runs | Tom Reed       | 1062
+ most_runs | Ethan Anderson | 1024
+(2 rows)
+
+     rec      | display_name  | sum 
+--------------+---------------+-----
+ most_wickets | Dean Edwards  | 21
+ most_wickets | Will Thompson | 19
+(2 rows)
+
+      rec      | display_name | ?column? |  grade  
+---------------+--------------+----------+---------
+ highest_score | Hunter Cox   | 179      | B Grade
+ highest_score | Tom Reed     | 167      | B Grade
+ highest_score | Henry Green  | 159      | A Grade
+(3 rows)
+
+     rec      | display_name | ?column? |  grade  
+--------------+--------------+----------+---------
+ best_bowling | Henry Green  | 5/14     | A Grade
+ best_bowling | Liam White   | 5/16     | A Grade
+ best_bowling | Ben Baker    | 5/84     | A Grade
+(3 rows)
+
+################ CLUB 8 ################
+ players | games | runs  | wickets | grades 
+---------+-------+-------+---------+--------
+      30 |   660 | 15754 |     363 |      2
+(1 row)
+
+  display_name  | games | innings | not_outs | runs |  avg  | hs  | hundreds | fifties 
+----------------+-------+---------+----------+------+-------+-----+----------+---------
+ Sam Morris     |    25 |      21 |        7 |  657 | 46.93 | 108 |        2 |       2
+ Jack Morris    |    24 |      19 |        2 |  599 | 35.24 | 117 |        2 |       1
+ Dylan Nelson   |    24 |      21 |        7 |  342 | 24.43 | 50  |        0 |       1
+ Scott Taylor   |    23 |      20 |        4 |  493 | 30.81 | 119 |        1 |       3
+ Dylan Robinson |    23 |      20 |        3 |  491 | 28.88 | 93  |        0 |       4
+(5 rows)
+
+    rec     | display_name | value 
+------------+--------------+-------
+ most_games | Dean Martin  | 25
+ most_games | Sam Morris   | 25
+(2 rows)
+
+    rec    | display_name  | sum  
+-----------+---------------+------
+ most_runs | Liam Robinson | 1082
+ most_runs | Cooper Harris | 806
+(2 rows)
+
+     rec      | display_name | sum 
+--------------+--------------+-----
+ most_wickets | Ethan Young  | 19
+ most_wickets | Oliver Brown | 18
+(2 rows)
+
+      rec      | display_name  | ?column? |  grade  
+---------------+---------------+----------+---------
+ highest_score | Liam Robinson | 169      | A Grade
+ highest_score | Lachlan Brown | 168      | B Grade
+ highest_score | Cooper Harris | 158      | A Grade
+(3 rows)
+
+     rec      | display_name  | ?column? |  grade  
+--------------+---------------+----------+---------
+ best_bowling | Troy Murphy   | 5/15     | B Grade
+ best_bowling | Ethan Nguyen  | 4/12     | A Grade
+ best_bowling | Lachlan Brown | 4/38     | B Grade
+(3 rows)
+
+################ CLUB 9 ################
+ players | games | runs  | wickets | grades 
+---------+-------+-------+---------+--------
+      30 |   693 | 16287 |     360 |      2
+(1 row)
+
+ display_name | games | innings | not_outs | runs |  avg  | hs  | hundreds | fifties 
+--------------+-------+---------+----------+------+-------+-----+----------+---------
+ Jake King    |    27 |      19 |        3 |  776 | 48.50 | 110 |        1 |       5
+ Brad Johnson |    27 |      19 |        2 |  565 | 33.24 | 71  |        0 |       4
+ Oliver James |    26 |      18 |        3 |  666 | 44.40 | 137 |        1 |       4
+ Jake Smith   |    26 |      17 |        1 |  458 | 28.63 | 94  |        0 |       3
+ Max Wilson   |    25 |      18 |        3 |  639 | 42.60 | 120 |        1 |       5
+(5 rows)
+
+    rec     | display_name  | value 
+------------+---------------+-------
+ most_games | Cooper Clarke | 33
+ most_games | Ryan Wilson   | 29
+(2 rows)
+
+    rec    | display_name  | sum  
+-----------+---------------+------
+ most_runs | Cooper Clarke | 1219
+ most_runs | Lachlan James | 894
+(2 rows)
+
+     rec      | display_name  | sum 
+--------------+---------------+-----
+ most_wickets | Cooper Clarke | 27
+ most_wickets | Dylan Cook    | 20
+(2 rows)
+
+      rec      | display_name | ?column? |  grade  
+---------------+--------------+----------+---------
+ highest_score | Ryan Taylor  | 147      | B Grade
+ highest_score | Dylan Cook   | 140      | B Grade
+ highest_score | Oliver James | 137      | B Grade
+(3 rows)
+
+     rec      | display_name  | ?column? |  grade  
+--------------+---------------+----------+---------
+ best_bowling | Cooper Clarke | 5/26     | A Grade
+ best_bowling | Brad Johnson  | 4/20     | B Grade
+ best_bowling | Tom Morris    | 4/43     | A Grade
+(3 rows)
+
+################ CLUB 10 ################
+ players | games | runs  | wickets | grades 
+---------+-------+-------+---------+--------
+      30 |   704 | 18207 |     372 |      2
+(1 row)
+
+ display_name  | games | innings | not_outs | runs |  avg  | hs  | hundreds | fifties 
+---------------+-------+---------+----------+------+-------+-----+----------+---------
+ Mitch Taylor  |    30 |      25 |        4 |  968 | 46.10 | 147 |        3 |       4
+ Charlie Lewis |    30 |      25 |        6 |  463 | 24.37 | 74  |        0 |       2
+ Mitch Hill    |    29 |      22 |        4 |  459 | 25.50 | 97  |        0 |       4
+ Jack Cox      |    28 |      24 |        2 |  788 | 35.82 | 147 |        2 |       2
+ Brad Lewis    |    26 |      19 |        5 |  547 | 39.07 | 112 |        1 |       2
+(5 rows)
+
+    rec     | display_name | value 
+------------+--------------+-------
+ most_games | Troy Morris  | 47
+ most_games | Brad Murphy  | 30
+(2 rows)
+
+    rec    | display_name | sum  
+-----------+--------------+------
+ most_runs | Troy Morris  | 1179
+ most_runs | Ben Morris   | 1052
+(2 rows)
+
+     rec      | display_name | sum 
+--------------+--------------+-----
+ most_wickets | Archie Bell  | 25
+ most_wickets | Sam Gray     | 24
+(2 rows)
+
+      rec      | display_name | ?column? |  grade  
+---------------+--------------+----------+---------
+ highest_score | Dean Brooks  | 168      | A Grade
+ highest_score | Ben Cook     | 158      | B Grade
+ highest_score | Troy Morris  | 158      | B Grade
+(3 rows)
+
+     rec      | display_name | ?column? |  grade  
+--------------+--------------+----------+---------
+ best_bowling | Sam Gray     | 5/40     | A Grade
+ best_bowling | Ben Cook     | 5/77     | B Grade
+ best_bowling | Sam Gray     | 4/28     | A Grade
+(3 rows)
+
+################ CLUB 11 ################
+ players | games | runs  | wickets | grades 
+---------+-------+-------+---------+--------
+      30 |   682 | 15781 |     347 |      2
+(1 row)
+
+ display_name | games | innings | not_outs | runs |  avg  | hs  | hundreds | fifties 
+--------------+-------+---------+----------+------+-------+-----+----------+---------
+ Jack Carter  |    26 |      16 |        2 |  610 | 43.57 | 107 |        1 |       4
+ Henry Rogers |    25 |      16 |        2 |  696 | 49.71 | 117 |        1 |       5
+ Troy Turner  |    25 |      18 |        5 |  553 | 42.54 | 100 |        1 |       3
+ Dean Bell    |    25 |      16 |        3 |  486 | 37.38 | 144 |        2 |       1
+ Oliver White |    24 |      16 |        3 |  670 | 51.54 | 133 |        3 |       2
+(5 rows)
+
+    rec     |  display_name  | value 
+------------+----------------+-------
+ most_games | Hunter Johnson | 43
+ most_games | Jack Carter    | 26
+(2 rows)
+
+    rec    |  display_name  | sum 
+-----------+----------------+-----
+ most_runs | Hunter Johnson | 872
+ most_runs | Jack Hill      | 811
+(2 rows)
+
+     rec      |  display_name  | sum 
+--------------+----------------+-----
+ most_wickets | Noah Green     | 23
+ most_wickets | Hunter Johnson | 20
+(2 rows)
+
+      rec      |  display_name  | ?column? |  grade  
+---------------+----------------+----------+---------
+ highest_score | Ben Mitchell   | 155      | A Grade
+ highest_score | Mitch Adams    | 152      | A Grade
+ highest_score | Hunter Johnson | 148      | B Grade
+(3 rows)
+
+     rec      | display_name | ?column? |  grade  
+--------------+--------------+----------+---------
+ best_bowling | Jack Carter  | 6/26     | B Grade
+ best_bowling | Noah Green   | 6/75     | B Grade
+ best_bowling | Josh Green   | 4/30     | A Grade
+(3 rows)
+
+################ CHOSEN PLAYER CAREERS ################
+ tenant | player_id |                 guid                 |    name     | games | runs | wickets | runs_conceded | max_wkts_inn 
+--------+-----------+--------------------------------------+-------------+-------+------+---------+---------------+--------------
+      7 |        13 | 00000007-2026-4000-8000-000000000210 | Jake Taylor |    28 |  985 |      10 |           377 |            3
+(1 row)
+
+ tenant | player_id |                 guid                 |    name    | games | runs | wickets | runs_conceded | max_wkts_inn 
+--------+-----------+--------------------------------------+------------+-------+------+---------+---------------+--------------
+      8 |        14 | 00000008-2026-4000-8000-000000000240 | Sam Morris |    25 |  657 |      14 |           511 |            2
+(1 row)
+
+ tenant | player_id |                 guid                 |   name    | games | runs | wickets | runs_conceded | max_wkts_inn 
+--------+-----------+--------------------------------------+-----------+-------+------+---------+---------------+--------------
+      9 |        16 | 00000009-2026-4000-8000-000000000267 | Jake King |    27 |  776 |      12 |           602 |            3
+(1 row)
+
+ tenant | player_id |                 guid                 |     name     | games | runs | wickets | runs_conceded | max_wkts_inn 
+--------+-----------+--------------------------------------+--------------+-------+------+---------+---------------+--------------
+     10 |        22 | 00000010-2026-4000-8000-000000000300 | Mitch Taylor |    30 |  968 |      22 |           930 |            4
+(1 row)
+
+ tenant | player_id |                 guid                 |    name     | games | runs | wickets | runs_conceded | max_wkts_inn 
+--------+-----------+--------------------------------------+-------------+-------+------+---------+---------------+--------------
+     11 |        17 | 00000011-2026-4000-8000-000000000330 | Jack Carter |    26 |  610 |      13 |           300 |            6
+(1 row)
+
+################ CHOSEN MATCH SCORECARDS ################
+ match_id |  grade  |     season     |  round   |       home_team       |          away_team          | home_score | away_score |              result_text              |       venue        
+----------+---------+----------------+----------+-----------------------+-----------------------------+------------+------------+---------------------------------------+--------------------
+      345 | B Grade | Summer 2025/26 | Round 11 | Pinjarra Cricket Club | South Mandurah Cricket Club | 6/314      | 8/188      | Pinjarra Cricket Club won by 126 runs | Warnbro Rec Centre
+(1 row)
+
+ club_id | bat_order |  display_name  | runs | balls | fours | sixes | strike_rate |           dismissal            
+---------+-----------+----------------+------+-------+-------+-------+-------------+--------------------------------
+       7 |         1 | Will Nguyen    |   20 |    30 |     4 |     0 |       66.67 | c Hunter Ward b Liam Wilson
+       7 |         2 | Jake Taylor    |   43 |    98 |     4 |     0 |       43.88 | b Jack Rogers
+       7 |         3 | Troy Edwards   |   88 |    96 |     3 |     2 |       91.67 | b Hunter Ward
+       7 |         4 | Kane King      |    7 |    10 |     1 |     0 |          70 | b Hunter Ward
+       7 |         5 | Flynn Adams    |   64 |    69 |     1 |     0 |       92.75 | b Ben Walker
+       7 |         6 | Dean Brown     |   39 |    58 |     0 |     1 |       67.24 | run out (Liam Wilson)
+       7 |         7 | Henry Anderson |   26 |    38 |     0 |     3 |       68.42 | not out
+       7 |         8 | Hunter Cox     |    3 |     9 |     0 |     0 |       33.33 | not out
+       7 |         9 | Tom Harris     |      |       |     0 |     0 |             | did not bat
+       7 |        10 | Matt Harris    |      |       |     0 |     0 |             | did not bat
+       7 |        11 | Will Thompson  |      |       |     0 |     0 |             | did not bat
+       8 |         1 | Hunter Ward    |   20 |    26 |     1 |     0 |       76.92 | c Troy Edwards b Will Nguyen
+       8 |         2 | Liam Wilson    |    7 |    19 |     1 |     0 |       36.84 | c Troy Edwards b Will Nguyen
+       8 |         3 | Ben Walker     |   50 |   102 |     2 |     1 |       49.02 | b Kane King
+       8 |         4 | Jack Rogers    |   17 |    34 |     4 |     0 |          50 | run out (Tom Harris)
+       8 |         5 | Liam James     |    6 |    13 |     0 |     0 |       46.15 | st Will Thompson b Jake Taylor
+       8 |         6 | Troy Murphy    |   38 |    43 |     2 |     3 |       88.37 | lbw b Will Nguyen
+       8 |         7 | Lachlan Brown  |   13 |    23 |     0 |     0 |       56.52 | c Will Thompson b Will Nguyen
+       8 |         8 | Dylan Jones    |    6 |    14 |     1 |     0 |       42.86 | run out (Troy Edwards)
+       8 |         9 | Oliver Brown   |   13 |    24 |     1 |     0 |       54.17 | not out
+       8 |        10 | Henry White    |    6 |    10 |     0 |     0 |          60 | not out
+       8 |        11 | Scott Taylor   |      |       |     0 |     0 |             | did not bat
+(22 rows)
+
+ club_id | display_name | overs | maidens | runs | wickets | economy | wides | no_balls 
+---------+--------------+-------+---------+------+---------+---------+-------+----------
+       7 | Will Nguyen  |     9 |       1 |   52 |       4 |    5.78 |     5 |        1
+       7 | Jake Taylor  |     9 |       1 |   20 |       1 |    2.22 |     0 |        2
+       7 | Troy Edwards |     6 |       2 |   39 |       0 |     6.5 |     2 |        0
+       7 | Kane King    |     5 |       2 |   75 |       1 |      15 |     3 |        1
+       8 | Hunter Ward  |     7 |       2 |   28 |       2 |       4 |     1 |        1
+       8 | Liam Wilson  |    10 |       1 |   32 |       1 |     3.2 |     4 |        2
+       8 | Ben Walker   |     6 |       1 |   13 |       1 |    2.17 |     3 |        2
+       8 | Jack Rogers  |     6 |       2 |  241 |       1 |   40.17 |     0 |        1
+(8 rows)
+
+ match_id |  grade  |     season     |  round   |            home_team            |          away_team          | home_score | away_score |                   result_text                   |     venue     
+----------+---------+----------------+----------+---------------------------------+-----------------------------+------------+------------+-------------------------------------------------+---------------
+      340 | B Grade | Summer 2025/26 | Round 10 | Rockingham Hornets Cricket Club | South Mandurah Cricket Club | 9/453      | 7/253      | Rockingham Hornets Cricket Club won by 200 runs | Baldivis Oval
+(1 row)
+
+ club_id | bat_order |  display_name  | runs | balls | fours | sixes | strike_rate |           dismissal            
+---------+-----------+----------------+------+-------+-------+-------+-------------+--------------------------------
+       8 |         1 | Dylan Nelson   |    0 |     8 |     0 |     0 |           0 | st Dylan Cook b Lachlan Nguyen
+       8 |         2 | Hunter Ward    |   13 |    24 |     1 |     0 |       54.17 | run out (Henry Jones)
+       8 |         3 | Liam Wilson    |   10 |    18 |     0 |     0 |       55.56 | c Josh Taylor b Josh Taylor
+       8 |         4 | Ben Walker     |   10 |    22 |     0 |     0 |       45.45 | c Scott Collins b Jake Smith
+       8 |         5 | Jack Rogers    |   63 |   134 |     6 |     2 |       47.01 | c Dean Young b Lachlan Nguyen
+       8 |         6 | Liam James     |   55 |   108 |     0 |     3 |       50.93 | run out (Jake Smith)
+       8 |         7 | Troy Murphy    |   24 |    51 |     5 |     0 |       47.06 | st Dylan Cook b Lachlan Nguyen
+       8 |         8 | Lachlan Brown  |   23 |    38 |     2 |     2 |       60.53 | not out
+       8 |         9 | Dylan Jones    |   30 |    37 |     0 |     2 |       81.08 | not out
+       8 |        10 | Oliver Brown   |      |       |     0 |     0 |             | did not bat
+       8 |        11 | Henry White    |      |       |     0 |     0 |             | did not bat
+       9 |         1 | Brad Johnson   |   29 |    43 |     0 |     2 |       67.44 | c Dylan Jones b Ben Walker
+       9 |         2 | Jake Smith     |   72 |   121 |    10 |     1 |        59.5 | c Hunter Ward b Hunter Ward
+       9 |         3 | Oliver James   |  137 |   251 |     0 |     0 |       54.58 | b Jack Rogers
+       9 |         4 | Dean Young     |   61 |    83 |     2 |     0 |       73.49 | c Dylan Nelson b Ben Walker
+       9 |         5 | Josh Taylor    |   38 |    59 |     8 |     1 |       64.41 | c Dylan Jones b Dylan Nelson
+       9 |         6 | Lachlan Nguyen |   49 |    53 |     1 |     0 |       92.45 | lbw b Hunter Ward
+       9 |         7 | Scott Collins  |   23 |    36 |     5 |     0 |       63.89 | b Hunter Ward
+       9 |         8 | Dean Clarke    |   11 |    14 |     1 |     1 |       78.57 | st Henry White b Jack Rogers
+       9 |         9 | Henry Jones    |    2 |     8 |     0 |     0 |          25 | c Dylan Jones b Hunter Ward
+       9 |        10 | Ryan Taylor    |    6 |     9 |     0 |     1 |       66.67 | not out
+       9 |        11 | Dylan Cook     |   16 |    31 |     0 |     1 |       51.61 | not out
+(22 rows)
+
+ club_id |  display_name  | overs | maidens | runs | wickets | economy | wides | no_balls 
+---------+----------------+-------+---------+------+---------+---------+-------+----------
+       8 | Dylan Nelson   |     6 |       2 |   32 |       1 |    5.33 |     5 |        0
+       8 | Hunter Ward    |     4 |       0 |   61 |       4 |   15.25 |     4 |        2
+       8 | Liam Wilson    |     6 |       2 |   14 |       0 |    2.33 |     3 |        2
+       8 | Ben Walker     |     4 |       1 |   80 |       2 |      20 |     1 |        1
+       8 | Jack Rogers    |     5 |       2 |   20 |       2 |       4 |     3 |        0
+       8 | Liam James     |     4 |       1 |  243 |       0 |   60.75 |     2 |        2
+       9 | Brad Johnson   |     8 |       1 |   25 |       0 |    3.13 |     4 |        1
+       9 | Jake Smith     |     4 |       2 |   42 |       1 |    10.5 |     2 |        0
+       9 | Oliver James   |     9 |       1 |   30 |       0 |    3.33 |     1 |        0
+       9 | Dean Young     |     7 |       2 |   53 |       0 |    7.57 |     2 |        0
+       9 | Josh Taylor    |     8 |       0 |   34 |       1 |    4.25 |     5 |        1
+       9 | Lachlan Nguyen |     4 |       0 |   69 |       3 |   17.25 |     3 |        2
+(12 rows)
+
+ match_id |  grade  |     season     |  round   |         home_team          |       away_team       | home_score | away_score |             result_text              |    venue     
+----------+---------+----------------+----------+----------------------------+-----------------------+------------+------------+--------------------------------------+--------------
+      339 | B Grade | Summer 2025/26 | Round 10 | Warnbro Swans Cricket Club | Pinjarra Cricket Club | 174        | 9/216      | Pinjarra Cricket Club won by 42 runs | Rushton Park
+(1 row)
+
+ club_id | bat_order |  display_name  | runs | balls | fours | sixes | strike_rate |           dismissal           
+---------+-----------+----------------+------+-------+-------+-------+-------------+-------------------------------
+       7 |         1 | Troy Edwards   |   15 |    30 |     1 |     0 |          50 | b Mitch Taylor
+       7 |         2 | Kane King      |   70 |    90 |     0 |     3 |       77.78 | lbw b Charlie Lewis
+       7 |         3 | Flynn Adams    |    6 |    11 |     0 |     0 |       54.55 | b Archie Bell
+       7 |         4 | Dean Brown     |    7 |    13 |     0 |     0 |       53.85 | b Archie Bell
+       7 |         5 | Henry Anderson |   52 |    52 |     4 |     2 |         100 | run out (Troy Morris)
+       7 |         6 | Hunter Cox     |    5 |     7 |     0 |     0 |       71.43 | run out (Brad Lewis)
+       7 |         7 | Tom Harris     |    0 |     1 |     0 |     0 |           0 | lbw b Jack Cox
+       7 |         8 | Matt Harris    |    3 |     4 |     0 |     0 |          75 | run out (Josh Morris)
+       7 |         9 | Will Thompson  |   25 |    38 |     4 |     0 |       65.79 | c Charlie Lewis b Archie Bell
+       7 |        10 | Riley Thompson |   18 |    32 |     2 |     0 |       56.25 | not out
+       7 |        11 | Noah Harris    |    3 |    11 |     0 |     0 |       27.27 | not out
+      10 |         1 | Archie Bell    |   50 |    53 |     9 |     1 |       94.34 | c Noah Harris b Flynn Adams
+      10 |         2 | Jack Cox       |   22 |    35 |     0 |     3 |       62.86 | run out (Will Thompson)
+      10 |         3 | Mitch Taylor   |    7 |    16 |     0 |     0 |       43.75 | b Troy Edwards
+      10 |         4 | Charlie Lewis  |    0 |     1 |     0 |     0 |           0 | c Dean Brown b Dean Brown
+      10 |         5 | Mitch Hill     |   23 |    46 |     1 |     2 |          50 | run out (Dean Brown)
+      10 |         6 | Brad Lewis     |    4 |     8 |     0 |     0 |          50 | c Noah Harris b Dean Brown
+      10 |         7 | Riley Johnson  |   41 |    58 |     7 |     0 |       70.69 | run out (Riley Thompson)
+      10 |         8 | Troy Morris    |    4 |     9 |     0 |     0 |       44.44 | run out (Flynn Adams)
+      10 |         9 | Hunter Reed    |    0 |     1 |     0 |     0 |           0 | b Flynn Adams
+      10 |        10 | Oliver Green   |    6 |    11 |     1 |     0 |       54.55 | lbw b Kane King
+      10 |        11 | Josh Morris    |    3 |     6 |     0 |     0 |          50 | not out
+(22 rows)
+
+ club_id | display_name  | overs | maidens | runs | wickets | economy | wides | no_balls 
+---------+---------------+-------+---------+------+---------+---------+-------+----------
+       7 | Troy Edwards  |     4 |       1 |   43 |       1 |   10.75 |     4 |        2
+       7 | Kane King     |     4 |       0 |   57 |       1 |   14.25 |     4 |        0
+       7 | Flynn Adams   |    10 |       2 |   48 |       2 |     4.8 |     4 |        0
+       7 | Dean Brown    |     8 |       1 |   21 |       2 |    2.63 |     5 |        2
+      10 | Archie Bell   |     7 |       2 |   19 |       3 |    2.71 |     0 |        1
+      10 | Jack Cox      |     9 |       2 |   58 |       1 |    6.44 |     3 |        2
+      10 | Mitch Taylor  |    10 |       1 |   13 |       1 |     1.3 |     0 |        1
+      10 | Charlie Lewis |     6 |       1 |  126 |       1 |      21 |     2 |        0
+(8 rows)
+
+ match_id |  grade  |     season     |  round  |          home_team          |            away_team             | home_score | away_score |                   result_text                   |        venue        
+----------+---------+----------------+---------+-----------------------------+----------------------------------+------------+------------+-------------------------------------------------+---------------------
+      334 | B Grade | Summer 2025/26 | Round 9 | South Mandurah Cricket Club | Singleton Irwinians Cricket Club | 9/259      | 8/311      | Singleton Irwinians Cricket Club won by 52 runs | Secret Harbour Oval
+(1 row)
+
+ club_id | bat_order |  display_name  | runs | balls | fours | sixes | strike_rate |             dismissal             
+---------+-----------+----------------+------+-------+-------+-------+-------------+-----------------------------------
+       8 |         1 | Scott Taylor   |   26 |    52 |     0 |     3 |          50 | c Brad Thompson b Jack Carter
+       8 |         2 | Dylan Robinson |   26 |    56 |     6 |     0 |       46.43 | c Charlie Wright b Hunter Johnson
+       8 |         3 | Jack Morris    |   85 |   151 |     4 |     2 |       56.29 | b Will Martin
+       8 |         4 | Sam Morris     |    9 |    11 |     2 |     0 |       81.82 | b Will Martin
+       8 |         5 | Dylan Nelson   |   21 |    32 |     2 |     1 |       65.63 | lbw b Kane Green
+       8 |         6 | Hunter Ward    |   16 |    16 |     3 |     0 |         100 | c Kane Green b Henry Rogers
+       8 |         7 | Liam Wilson    |   39 |    62 |     5 |     2 |        62.9 | run out (Jack Carter)
+       8 |         8 | Ben Walker     |    4 |    10 |     1 |     0 |          40 | c Oliver White b Henry Rogers
+       8 |         9 | Jack Rogers    |    0 |     2 |     0 |     0 |           0 | c Henry Bailey b Hunter Johnson
+       8 |        10 | Liam James     |   22 |    26 |     4 |     1 |       84.62 | not out
+       8 |        11 | Troy Murphy    |    7 |    14 |     1 |     0 |          50 | not out
+      11 |         1 | Jack Carter    |   50 |    63 |    10 |     1 |       79.37 | c Jack Rogers b Scott Taylor
+      11 |         2 | Henry Rogers   |   50 |    79 |     2 |     1 |       63.29 | c Jack Rogers b Scott Taylor
+      11 |         3 | Hunter Johnson |    3 |     8 |     0 |     0 |        37.5 | lbw b Dylan Robinson
+      11 |         4 | Will Martin    |   90 |   169 |     6 |     3 |       53.25 | st Troy Murphy b Hunter Ward
+      11 |         5 | Kane Green     |   19 |    35 |     1 |     0 |       54.29 | b Jack Morris
+      11 |         6 | Henry Thompson |   26 |    41 |     1 |     0 |       63.41 | c Troy Murphy b Hunter Ward
+      11 |         7 | Henry Bailey   |   39 |    72 |     5 |     3 |       54.17 | c Liam James b Jack Morris
+      11 |         8 | Josh Young     |    3 |    10 |     0 |     0 |          30 | lbw b Sam Morris
+      11 |         9 | Charlie Wright |    9 |    15 |     1 |     0 |          60 | not out
+      11 |        10 | Brad Thompson  |    2 |    10 |     0 |     0 |          20 | not out
+      11 |        11 | Oliver White   |      |       |     0 |     0 |             | did not bat
+(22 rows)
+
+ club_id |  display_name  | overs | maidens | runs | wickets | economy | wides | no_balls 
+---------+----------------+-------+---------+------+---------+---------+-------+----------
+       8 | Scott Taylor   |     4 |       0 |   44 |       2 |      11 |     3 |        2
+       8 | Dylan Robinson |     6 |       2 |   57 |       1 |     9.5 |     4 |        0
+       8 | Jack Morris    |     8 |       1 |   14 |       2 |    1.75 |     4 |        0
+       8 | Sam Morris     |    10 |       0 |   12 |       1 |     1.2 |     5 |        1
+       8 | Dylan Nelson   |     8 |       0 |   35 |       0 |    4.38 |     1 |        0
+       8 | Hunter Ward    |     8 |       2 |  147 |       2 |   18.38 |     2 |        2
+      11 | Jack Carter    |     5 |       0 |   23 |       1 |     4.6 |     1 |        1
+      11 | Henry Rogers   |     9 |       0 |   26 |       2 |    2.89 |     5 |        0
+      11 | Hunter Johnson |     6 |       2 |   36 |       2 |       6 |     0 |        0
+      11 | Will Martin    |    10 |       2 |   52 |       2 |     5.2 |     0 |        2
+      11 | Kane Green     |     4 |       2 |  121 |       1 |   30.25 |     2 |        0
+(11 rows)
+

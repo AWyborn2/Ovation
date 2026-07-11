@@ -53,30 +53,45 @@ single highest-leverage UX fix in the product.
 - **(c) Add the missing viewport test layer:** land the review's overflow probe scripts as a
   standing Playwright smoke suite (see rec 10) so regressions can't ship. *(with rec 10)*
 
-## 3. Finish the central-read surface — real data must never render as "no data"
+## 3. Finish the central-read surface — real data must never render as "no data" or garble
 
-**Problem.** Central-read tenants (i.e. every self-serve club) get **confidently empty
-sections over real data** wherever an endpoint lacks a `shouldReadCentral` branch: home "Top
-Performers" ("No data for this season yet." despite a full season —
-`grades.ts:532`), `/premierships` ("No premierships found" while `central.premiers` holds the
-club's flag), leaderboard bowling/fielding columns permanently blank, honour boards "0 total
-dismissals". This is exactly the dual-read boundary risk `AGENTS.md` flags as the top
-correctness risk. Evidence: `public-visitor` findings P1-2/P1-3/P1-4 with SQL cross-checks.
+**Problem (two halves, same boundary).** The 11-club sweep proved the *numbers* are perfect
+(~200 UI-vs-DB datapoints, all exact matches) — but the presentation layer around central data
+is broken in two ways:
 
-**Impact.** A pilot club's premierships and best players are the emotional core of the pitch;
-showing "none" over 24 seasons of real history kills trust on day one.
+*Missing branches* — central-read tenants get **confidently empty sections over real data**
+wherever an endpoint lacks a `shouldReadCentral` branch: home "Top Performers" ("No data for
+this season yet." despite a full season — `grades.ts:532`), `/premierships` ("No premierships
+found" while `central.premiers` holds the club's flag), leaderboard bowling/fielding columns
+permanently "-" (`central-queries.ts:533-540` returns nulls while player pages DO show
+bowling), player fielding "Dismissals 0" vs real fielding rows (`central-queries.ts:1110`).
+
+*Wrong parsing* — the shared scorecard view-model mangles central formats on EVERY central
+match page: `parseScore` (`lib/scorecard/src/mapping.ts:40`) reads central "5/313"
+(wickets/runs) as runs=5/wickets=313, so **EXTRAS is always 0**, batting lines never reconcile
+to totals, and all-out innings render "219/0"; `formatDismissal`
+(`lib/scorecard/src/dismissal.ts`) expects legacy colon formats, producing "**c c** Ryan Ward
+b…", "**st st**…" and silently **dropping the bowler from LBWs**. Evidence: `public-visitor`
+P1-2/3/4, `club-sweep-1/findings.md` #1/#2/#5 with SQL cross-checks and videos.
+
+**Impact.** A pilot club's premierships, best players and scorecards are the emotional core of
+the pitch; showing "none" — or a scorecard a cricketer instantly spots as wrong — kills trust
+on day one. This is exactly the dual-read boundary risk `AGENTS.md` calls the top correctness
+risk, observed live.
 
 **Solutions:**
-- **(a) Close the gaps:** add central branches for top-performers, premierships seeding, and
-  the leaderboard's bowling/fielding aggregates in `central-queries.ts` (bowling data exists —
-  `centralPlayerDetail` already derives it), and extend the `*-consistency.test.ts` suites per
-  flipped read (the pattern already exists). *(days, endpoint by endpoint)*
-- **(b) Guard-rail while migrating:** a "capability map" per tenant — if a section's data
-  source isn't central-ready, hide the section entirely for central tenants instead of
-  rendering an empty state that reads as "your club has none". *(day, buys time for (a))*
-- **(c) Make divergence visible:** run the review's UI-vs-DB comparison scripts
-  (`evidence/scripts/sweep*-*.mjs`) nightly against a staging tenant; alert on mismatch.
-  *(half-day, reuses committed scripts)*
+- **(a) Fix the view-model format handling first** (biggest visible win): teach
+  `parseScore`/`formatDismissal` the central conventions (detect wickets/runs order — wickets
+  ≤ 10 disambiguates; pass central dismissal text through untouched). Add scorecard fixture
+  tests for both formats in `@workspace/scorecard`. *(1–2 days)*
+- **(b) Close the read gaps:** central branches for top-performers, premierships seeding, and
+  leaderboard bowling/fielding in `central-queries.ts` (bowling data exists —
+  `centralPlayerDetail` already derives it), extending the `*-consistency.test.ts` pattern per
+  flipped read. *(days, endpoint by endpoint)*
+- **(c) Guard-rail while migrating:** per-tenant capability map — sections whose data source
+  isn't central-ready are hidden for central tenants instead of rendering "your club has
+  none"; plus run the committed sweep scripts (`evidence/scripts/sweep*-*.mjs`) nightly
+  against staging and alert on UI-vs-DB mismatch. *(1–2 days, reuses committed scripts)*
 
 ## 4. Fix the onboarding handoff — the wizard is great, the landing is broken
 
@@ -177,12 +192,18 @@ played. Evidence: `public-visitor` P1-4/P2 with SQL cross-checks.
 ## 9. Retire the last Halls Head hard-codings from the white-label surface
 
 **Problem.** Runtime leaks a tester can see on OTHER clubs' sites: "Established 1991"
-(`honour-boards.tsx:262`), Halls-Head record-keeping caveat on Mandurah's grade page, the
-hard-coded 10-grade captain checkbox list (`admin-captains.tsx`), generic footer contact block
-(`layout.tsx:290` TODO), marketing tab title degrading to "Cricket Club". The theming/token
-system itself passed cleanly across all tenants tested — the debt is now copy-level, not
-architectural. Evidence: `juniors-empty` #7, `captain-kiosk` #6, `public-visitor` P2,
-sweep brand checks.
+(`honour-boards.tsx:262`), the Halls-Head record-keeping caveat on every tenant's grade and
+player pages (`grade-leaderboard.tsx`, `player-detail.tsx:460`), every grade badge platform-wide
+built from `HHCC_Icon_Gold_*.png` (`grade-badge.tsx:1`), the hard-coded 10-grade captain
+checkbox list (`admin-captains.tsx`), generic footer contact block (`layout.tsx:290` TODO),
+generic "Ovation" og:/meta tags (document.title is tenant-branded, so the plumbing exists),
+marketing tab title degrading to "Cricket Club". The theming/token system itself passed
+cleanly across all 10 provisioned tenants — the debt is now copy/asset-level, not
+architectural. One PM decision surfaced by the sweep: brand colours silently snap to the
+nearest of 5 fixed accent tokens (White Knights' grey renders bright amber; Shoalwater Bay's
+teal renders the same blue as Mandurah) — either constrain the onboarding colour picker to the
+5 tokens or widen the palette. Evidence: `juniors-empty` #7, `captain-kiosk` #6,
+`public-visitor` P2, `club-sweep-1/findings.md` #4 + brand table.
 
 **Solutions:**
 - **(a) Tenant fields:** add `established_year`, `contact_*` to the tenants row + branding
