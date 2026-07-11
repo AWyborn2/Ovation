@@ -1,0 +1,34 @@
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: net::ERR_CONNECTION_RESET
+HTTP-401 GET http://halls-head.ovation.test:24624/api/auth/me (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+HTTP-401 GET http://halls-head.ovation.test:24624/api/captain-auth/me (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+HTTP-401 POST http://halls-head.ovation.test:24624/api/captain-auth/login (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+HTTP-404 GET http://halls-head.ovation.test:24624/api/captain/me (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 404 (Not Found)
+HTTP-401 GET http://halls-head.ovation.test:24624/api/auth/me (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+HTTP-401 GET http://halls-head.ovation.test:24624/api/captains (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+HTTP-401 GET http://halls-head.ovation.test:24624/api/admins (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+HTTP-401 GET http://halls-head.ovation.test:24624/api/honour-display (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+REQUEST-FAILED GET http://halls-head.ovation.test:24624/api/captain/me :: net::ERR_ABORTED
+REQUEST-FAILED GET http://halls-head.ovation.test:24624/api/auth/me :: net::ERR_ABORTED
+REQUEST-FAILED GET http://halls-head.ovation.test:24624/api/honour-display :: net::ERR_ABORTED
+REQUEST-FAILED GET http://halls-head.ovation.test:24624/api/captains :: net::ERR_ABORTED
+REQUEST-FAILED GET http://halls-head.ovation.test:24624/api/admins :: net::ERR_ABORTED
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin :: Failed to load resource: net::ERR_CONNECTION_RESET
+HTTP-401 GET http://halls-head.ovation.test:24624/api/auth/me (page: http://halls-head.ovation.test:24624/admin)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: net::ERR_CONNECTION_RESET
+HTTP-401 GET http://halls-head.ovation.test:24624/api/auth/me (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+REQUEST-FAILED POST http://halls-head.ovation.test:24624/api/captain-auth/logout :: net::ERR_ABORTED
+HTTP-401 GET http://halls-head.ovation.test:24624/api/captain-auth/me (page: http://halls-head.ovation.test:24624/captain)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/captain :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
