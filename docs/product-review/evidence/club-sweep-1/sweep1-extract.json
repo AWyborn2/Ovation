@@ -1,5 +1,5 @@
 {
- "startedAt": "2026-07-11T22:49:37.182Z",
+ "startedAt": "2026-07-11T23:07:54.346Z",
  "clubs": {
   "mandurah": {
    "club": "mandurah",
@@ -21,6 +21,7 @@
      "badresponse": [
       "401 GET http://mandurah.ovation.test:24624/api/auth/me"
      ],
+     "welcomeModalSeen": true,
      "shot": "mandurah-01-home.png",
      "brand": {
       "title": "Mandurah Cricket Club",
@@ -81,7 +82,7 @@
        "label": "GRADES"
       }
      ],
-     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Mandurah Cricket Club's senior grades. 30 PLAYERS 748 GAMES 18,886 RUNS 412 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Halls Head Cricket Club 2025/26 · ROUND 11 8/266 vs 8/417 Halls Head Cricket Club won by 2 wickets 26/02/2026 Lark Hill Sportsplex A GRADE vs Halls Head Cricket Club 2025/26 · ROUND 11 8/241 vs 9/365 Halls Head Cricket Club won by 124 runs 26/02/2026 Sir Ross McLarty Oval Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login MANDURAH CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little while to "
+     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Mandurah Cricket Club's senior grades. 30 PLAYERS 748 GAMES 18,886 RUNS 412 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Halls Head Cricket Club 2025/26 · ROUND 11 8/266 vs 8/417 Halls Head Cricket Club won by 2 wickets 26/02/2026 Lark Hill Sportsplex A GRADE vs Halls Head Cricket Club 2025/26 · ROUND 11 8/241 vs 9/365 Halls Head Cricket Club won by 124 runs 26/02/2026 Sir Ross McLarty Oval Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "players",
@@ -151,9 +152,7 @@
       "text": "Bailey, Josh"
      },
      "playerCountText": [
-      "Search and filter all registered club players.",
-      "Browse every player and their career stats",
-      "Compare players side by side"
+      "Search and filter all registered club players."
      ]
     },
     {
@@ -396,6 +395,7 @@
      "console": [
       "Failed to load resource: net::ERR_CONNECTION_RESET",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
@@ -403,6 +403,7 @@
      "pageerror": [],
      "requestfailed": [
       "GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET",
+      "GET https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png :: net::ERR_TUNNEL_CONNECTION_FAILED",
       "GET https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png :: net::ERR_TUNNEL_CONNECTION_FAILED"
      ],
      "badresponse": [
@@ -451,7 +452,7 @@
      },
      "matchHref": "/matches/341",
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Mandurah Cricket Club vs Halls Head Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Lark Hill Sportsplex Share Halls Head Cricket Club won by 2 wickets MANDURAH CRICKET CLUB 8/266 HALLS HEAD CRICKET CLUB 8/417 MANDURAH CRICKET CLUB MCC 1ST INNINGS BATSMAN DISMISSAL R B SR SCOTT WILSON c c Ryan Ward b Lucas Williams 75 100 75.0 JOSH WRIGHT c c Henry Green b Tom Taylor 3 7 42.9 RILEY HILL st st Henry Wright b Tom Taylor 26 40 65.0 NOAH BROOKS run out (Tom Taylor) 60 113 53.1 JACK LEWIS c c Cooper Anderson b Ryan Ward 24 50 48.0 SAM MITCHELL c c Will Reed b Will Adams 27 55 49.1 ARCHIE CARTER st st Henry Wright b Will Adams 32 36 88.9 MATT HILL c c Will Reed b Will Adams 2 11 18.2 JACK GREEN * not out 3 10 30.0 WILL WRIGHT * not out 7 15 46.7 Did not bat: Ben Nelson OVERS 25 EXTRAS 0 (14W 7NB) 8/266 HHC HALLS HEAD CRICKET CLUB HHCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON RYAN WARD 4 1 48 1 12.00 COOPER ANDERSON 5 2 44 0 8.80 TOM TAYLOR 5 0 32 2 6.40 LUCAS WILLIAMS 6 1 13 1 2.17 WILL ADAMS 5 1 128 3 25.60 EXTRAS 0 (14W 7NB) OVERS 25 8/266 HHC HALLS HEAD CRICKET CLUB HHCC 2ND INNINGS BATSMAN DISMISSAL R B SR RYAN WARD run out (Will Wright) 23 53 43.4 COOPER ANDERSON lbw 108 178 60.7 TOM TAYLOR c c Noah Brooks b Noah Brooks 156 306 51.0 LUCAS WILLIAMS st st Ben Nelson b Josh Wright 3 9 33.3 WILL ADAMS c c Scott Wilson b Riley Hill 1 7 14.3 JACK LEWIS st st Ben Nelson b Riley Hill 40 70 57.1 WILL REED st st Ben Nelson b Riley Hill 23 30 76.7 HENRY GREEN c c Riley Hill b Scott Wilson 31 63 49.2 JACK JONES * not out 7 11 63.6 WILL BELL * not out 2 4 50.0 Did not bat: Henry Wright OVERS 28 EXTRAS 0 (11W 6NB) 8/417 MANDURAH CRICKET CLUB MCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON SCOTT WILSON 9 1 26 2 2.89 JOSH WRIGHT 4 0 29 1 7.25 RILEY HILL 8 2 52 3 6.50 NOAH BROOKS 7 0 304 1 43.43 EXTRAS 0 (11W 6NB) OVERS 28 8/417 Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login MANDURAH CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boar"
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Mandurah Cricket Club vs Halls Head Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Lark Hill Sportsplex Share Halls Head Cricket Club won by 2 wickets MANDURAH CRICKET CLUB 8/266 HALLS HEAD CRICKET CLUB 8/417 MANDURAH CRICKET CLUB MCC 1ST INNINGS BATSMAN DISMISSAL R B SR SCOTT WILSON c c Ryan Ward b Lucas Williams 75 100 75.0 JOSH WRIGHT c c Henry Green b Tom Taylor 3 7 42.9 RILEY HILL st st Henry Wright b Tom Taylor 26 40 65.0 NOAH BROOKS run out (Tom Taylor) 60 113 53.1 JACK LEWIS c c Cooper Anderson b Ryan Ward 24 50 48.0 SAM MITCHELL c c Will Reed b Will Adams 27 55 49.1 ARCHIE CARTER st st Henry Wright b Will Adams 32 36 88.9 MATT HILL c c Will Reed b Will Adams 2 11 18.2 JACK GREEN * not out 3 10 30.0 WILL WRIGHT * not out 7 15 46.7 Did not bat: Ben Nelson OVERS 25 EXTRAS 0 (14W 7NB) 8/266 HHC HALLS HEAD CRICKET CLUB HHCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON RYAN WARD 4 1 48 1 12.00 COOPER ANDERSON 5 2 44 0 8.80 TOM TAYLOR 5 0 32 2 6.40 LUCAS WILLIAMS 6 1 13 1 2.17 WILL ADAMS 5 1 128 3 25.60 EXTRAS 0 (14W 7NB) OVERS 25 8/266 HHC HALLS HEAD CRICKET CLUB HHCC 2ND INNINGS BATSMAN DISMISSAL R B SR RYAN WARD run out (Will Wright) 23 53 43.4 COOPER ANDERSON lbw 108 178 60.7 TOM TAYLOR c c Noah Brooks b Noah Brooks 156 306 51.0 LUCAS WILLIAMS st st Ben Nelson b Josh Wright 3 9 33.3 WILL ADAMS c c Scott Wilson b Riley Hill 1 7 14.3 JACK LEWIS st st Ben Nelson b Riley Hill 40 70 57.1 WILL REED st st Ben Nelson b Riley Hill 23 30 76.7 HENRY GREEN c c Riley Hill b Scott Wilson 31 63 49.2 JACK JONES * not out 7 11 63.6 WILL BELL * not out 2 4 50.0 Did not bat: Henry Wright OVERS 28 EXTRAS 0 (11W 6NB) 8/417 MANDURAH CRICKET CLUB MCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON SCOTT WILSON 9 1 26 2 2.89 JOSH WRIGHT 4 0 29 1 7.25 RILEY HILL 8 2 52 3 6.50 NOAH BROOKS 7 0 304 1 43.43 EXTRAS 0 (11W 6NB) OVERS 28 8/417 Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "grades",
@@ -870,13 +871,14 @@
       "metaDescription": "Ovation — white-label cricket stats and history.",
       "ogTitle": "Ovation"
      },
-     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET MANDURAH CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login MANDURAH CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little while to appear. Some older seasons are still being backfilled and may be incomplete, and a few junior players are kept private and hidden. Maybe later Take a quick tour Close"
+     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET MANDURAH CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "cross-club-match",
      "url": "http://mandurah.ovation.test:24624/matches/275",
      "console": [
       "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
@@ -887,6 +889,7 @@
       "GET https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png :: net::ERR_TUNNEL_CONNECTION_FAILED"
      ],
      "badresponse": [
+      "401 GET http://mandurah.ovation.test:24624/api/auth/me",
       "401 GET http://mandurah.ovation.test:24624/api/auth/me",
       "401 GET http://mandurah.ovation.test:24624/api/auth/me"
      ],
@@ -921,7 +924,7 @@
       "ogTitle": "Ovation"
      },
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches A GRADE Mandurah Cricket Club vs Waroona Cricket Club A GRADE · 2025/26 · ROUND 9 A Grade 12/02/2026 Warnbro Rec Centre Share Waroona Cricket Club won by 60 runs MANDURAH CRICKET CLUB 8/253 WAROONA CRICKET CLUB 5/313 WCC WAROONA CRICKET CLUB WCC 1ST INNINGS BATSMAN DISMISSAL R B SR JACK SMITH c c Flynn Collins b Jake Mitchell 44 61 72.1 CHARLIE TURNER lbw 94 152 61.8 ARCHIE THOMPSON run out (Flynn Collins) 1 7 14.3 HENRY ANDERSON lbw 10 17 58.8 TOM STEWART b Mitch James 10 12 83.3 MAX MURPHY * not out 40 81 49.4 DYLAN PARKER * not out 93 100 93.0 Did not bat: Josh Nguyen, Brad Murphy, Matt Brown, Riley Brooks OVERS 36 EXTRAS 0 (4W 4NB) 5/313 MANDURAH CRICKET CLUB MCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MITCH JAMES 10 2 74 3 7.40 JAKE MITCHELL 8 2 39 1 4.88 BRAD BROOKS 9 1 25 0 2.78 TROY EDWARDS 9 0 174 0 19.33 EXTRAS 0 (4W 4NB) OVERS 36 5/313 MANDURAH CRICKET CLUB MCC 2ND INNINGS BATSMAN DISMISSAL R B SR MITCH JAMES c c Matt Brown b Jack Smith 3 11 27.3 JAKE MITCHELL b Archie Thompson 11 16 68.8 BRAD BROOKS lbw 2 4 50.0 TROY EDWARDS c c Brad Murphy b Archie Thompson 40 68 58.8 JOSH BAILEY b Archie Thompson 76 72 105.6 BRAD HARRIS run out (Brad Murphy) 32 37 86.5 RILEY WILLIAMS b Charlie Turner 34 43 79.1 FLYNN COLLINS st st Riley Brooks b Henry Anderson 41 89 46.1 FLYNN BROOKS * not out 6 12 50.0 COOPER LEWIS * not out 0 4 0.0 Did not bat: Will Nguyen OVERS 31 EXTRAS 0 (20W 5NB) 8/253 WCC WAROONA CRICKET CLUB WCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON JACK SMITH 6 2 53 2 8.83 CHARLIE TURNER 5 0 22 1 4.40 ARCHIE THOMPSON 10 2 30 3 3.00 HENRY ANDERSON 5 2 50 1 10.00 TOM STEWART 5 0 96 0 19.20 EXTRAS 0 (20W 5NB) OVERS 31 8/253 Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login MANDURAH CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take"
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches A GRADE Mandurah Cricket Club vs Waroona Cricket Club A GRADE · 2025/26 · ROUND 9 A Grade 12/02/2026 Warnbro Rec Centre Share Waroona Cricket Club won by 60 runs MANDURAH CRICKET CLUB 8/253 WAROONA CRICKET CLUB 5/313 WCC WAROONA CRICKET CLUB WCC 1ST INNINGS BATSMAN DISMISSAL R B SR JACK SMITH c c Flynn Collins b Jake Mitchell 44 61 72.1 CHARLIE TURNER lbw 94 152 61.8 ARCHIE THOMPSON run out (Flynn Collins) 1 7 14.3 HENRY ANDERSON lbw 10 17 58.8 TOM STEWART b Mitch James 10 12 83.3 MAX MURPHY * not out 40 81 49.4 DYLAN PARKER * not out 93 100 93.0 Did not bat: Josh Nguyen, Brad Murphy, Matt Brown, Riley Brooks OVERS 36 EXTRAS 0 (4W 4NB) 5/313 MANDURAH CRICKET CLUB MCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MITCH JAMES 10 2 74 3 7.40 JAKE MITCHELL 8 2 39 1 4.88 BRAD BROOKS 9 1 25 0 2.78 TROY EDWARDS 9 0 174 0 19.33 EXTRAS 0 (4W 4NB) OVERS 36 5/313 MANDURAH CRICKET CLUB MCC 2ND INNINGS BATSMAN DISMISSAL R B SR MITCH JAMES c c Matt Brown b Jack Smith 3 11 27.3 JAKE MITCHELL b Archie Thompson 11 16 68.8 BRAD BROOKS lbw 2 4 50.0 TROY EDWARDS c c Brad Murphy b Archie Thompson 40 68 58.8 JOSH BAILEY b Archie Thompson 76 72 105.6 BRAD HARRIS run out (Brad Murphy) 32 37 86.5 RILEY WILLIAMS b Charlie Turner 34 43 79.1 FLYNN COLLINS st st Riley Brooks b Henry Anderson 41 89 46.1 FLYNN BROOKS * not out 6 12 50.0 COOPER LEWIS * not out 0 4 0.0 Did not bat: Will Nguyen OVERS 31 EXTRAS 0 (20W 5NB) 8/253 WCC WAROONA CRICKET CLUB WCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON JACK SMITH 6 2 53 2 8.83 CHARLIE TURNER 5 0 22 1 4.40 ARCHIE THOMPSON 10 2 30 3 3.00 HENRY ANDERSON 5 2 50 1 10.00 TOM STEWART 5 0 96 0 19.20 EXTRAS 0 (20W 5NB) OVERS 31 8/253 Mandurah Cricket Club MCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
     }
    ],
    "cur": null
@@ -944,6 +947,7 @@
      "badresponse": [
       "401 GET http://white-knights.ovation.test:24624/api/auth/me"
      ],
+     "welcomeModalSeen": true,
      "shot": "white-knights-01-home.png",
      "brand": {
       "title": "White Knights Cricket Club",
@@ -1004,7 +1008,7 @@
        "label": "GRADES"
       }
      ],
-     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for White Knights Cricket Club's senior grades. 30 PLAYERS 693 GAMES 16,154 RUNS 347 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Halls Head Cricket Club 2025/26 · ROUND 10 8/309 vs 219 White Knights Cricket Club won by 2 wickets 19/02/2026 Singleton Foreshore A GRADE vs Halls Head Cricket Club 2025/26 · ROUND 10 4/160 vs 4/221 Halls Head Cricket Club won by 6 wickets 19/02/2026 Halls Head Oval Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. White Knights Cricket Club WKCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 White Knights Cricket Club. All rights reserved.·Admin login WHITE KNIGHTS CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a "
+     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for White Knights Cricket Club's senior grades. 30 PLAYERS 693 GAMES 16,154 RUNS 347 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Halls Head Cricket Club 2025/26 · ROUND 10 8/309 vs 219 White Knights Cricket Club won by 2 wickets 19/02/2026 Singleton Foreshore A GRADE vs Halls Head Cricket Club 2025/26 · ROUND 10 4/160 vs 4/221 Halls Head Cricket Club won by 6 wickets 19/02/2026 Halls Head Oval Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. White Knights Cricket Club WKCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 White Knights Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "players",
@@ -1072,9 +1076,7 @@
       "text": "Adams, Dylan"
      },
      "playerCountText": [
-      "Search and filter all registered club players.",
-      "Browse every player and their career stats",
-      "Compare players side by side"
+      "Search and filter all registered club players."
      ]
     },
     {
@@ -1313,6 +1315,7 @@
      "console": [
       "Failed to load resource: net::ERR_CONNECTION_RESET",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
      ],
      "pageerror": [],
@@ -1320,6 +1323,7 @@
       "GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET"
      ],
      "badresponse": [
+      "401 GET http://white-knights.ovation.test:24624/api/auth/me",
       "401 GET http://white-knights.ovation.test:24624/api/auth/me",
       "401 GET http://white-knights.ovation.test:24624/api/auth/me"
      ],
@@ -1363,7 +1367,7 @@
      },
      "matchHref": "/matches/336",
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE White Knights Cricket Club vs Halls Head Cricket Club B GRADE · 2025/26 · ROUND 10 B Grade 19/02/2026 Singleton Foreshore Share White Knights Cricket Club won by 2 wickets WHITE KNIGHTS CRICKET CLUB 8/309 HALLS HEAD CRICKET CLUB 219 HHC HALLS HEAD CRICKET CLUB HHCC 1ST INNINGS BATSMAN DISMISSAL R B SR TOM TAYLOR st st Flynn Cook b Troy Lewis 59 127 46.5 LUCAS WILLIAMS run out (Liam Young) 28 40 70.0 WILL ADAMS lbw 12 25 48.0 JACK LEWIS b Dean Bell 9 27 33.3 WILL REED c c Dean Bell b Archie Martin 5 10 50.0 HENRY GREEN c c Flynn Cook b Dean Bell 20 27 74.1 JACK JONES c c Liam Young b Oliver Stewart 25 45 55.6 WILL BELL c c Flynn Cook b Lachlan Green 10 16 62.5 HENRY WRIGHT c c Lachlan Green b Lachlan Green 24 42 57.1 MAX WILSON c c Hunter Turner b Troy Lewis 12 20 60.0 NOAH CLARKE * not out 3 4 75.0 OVERS 45 EXTRAS 12 (10W 9NB) 219/0 WHITE KNIGHTS CRICKET CLUB WKCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON DEAN BELL 8 2 29 2 3.63 ARCHIE MARTIN 7 1 26 2 3.71 LACHLAN GREEN 7 0 14 2 2.00 RILEY JAMES 5 1 46 0 9.20 OLIVER STEWART 9 2 31 1 3.44 TROY LEWIS 9 0 71 2 7.89 EXTRAS 12 (10W 9NB) OVERS 45 219/0 WHITE KNIGHTS CRICKET CLUB WKCC 2ND INNINGS BATSMAN DISMISSAL R B SR DEAN BELL run out (Jack Lewis) 10 11 90.9 ARCHIE MARTIN b Will Adams 114 155 73.5 LACHLAN GREEN b Lucas Williams 19 39 48.7 RILEY JAMES c c Lucas Williams b Lucas Williams 10 18 55.6 OLIVER STEWART run out (Will Adams) 11 23 47.8 TROY LEWIS c c Max Wilson b Lucas Williams 60 77 77.9 HUNTER TURNER run out (Will Adams) 0 8 0.0 DYLAN BELL run out (Jack Jones) 16 21 76.2 LIAM YOUNG * not out 32 53 60.4 TROY SMITH * not out 17 18 94.4 Did not bat: Flynn Cook OVERS 25 EXTRAS 0 (6W 3NB) 8/309 HHC HALLS HEAD CRICKET CLUB HHCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON TOM TAYLOR 6 2 32 0 5.33 LUCAS WILLIAMS 7 0 23 3 3.29 WILL ADAMS 4 2 35 1 8.75 JACK LEWIS 8 0 215 0 26.88 EXTRAS 0 (6W 3NB) OVERS 25 8/309 White Knights Cricket Club WKCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 White Knights Cricket Club. All rights reserved.·Admin login WHITE KNIGHTS CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scoreca"
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE White Knights Cricket Club vs Halls Head Cricket Club B GRADE · 2025/26 · ROUND 10 B Grade 19/02/2026 Singleton Foreshore Share White Knights Cricket Club won by 2 wickets WHITE KNIGHTS CRICKET CLUB 8/309 HALLS HEAD CRICKET CLUB 219 HHC HALLS HEAD CRICKET CLUB HHCC 1ST INNINGS BATSMAN DISMISSAL R B SR TOM TAYLOR st st Flynn Cook b Troy Lewis 59 127 46.5 LUCAS WILLIAMS run out (Liam Young) 28 40 70.0 WILL ADAMS lbw 12 25 48.0 JACK LEWIS b Dean Bell 9 27 33.3 WILL REED c c Dean Bell b Archie Martin 5 10 50.0 HENRY GREEN c c Flynn Cook b Dean Bell 20 27 74.1 JACK JONES c c Liam Young b Oliver Stewart 25 45 55.6 WILL BELL c c Flynn Cook b Lachlan Green 10 16 62.5 HENRY WRIGHT c c Lachlan Green b Lachlan Green 24 42 57.1 MAX WILSON c c Hunter Turner b Troy Lewis 12 20 60.0 NOAH CLARKE * not out 3 4 75.0 OVERS 45 EXTRAS 12 (10W 9NB) 219/0 WHITE KNIGHTS CRICKET CLUB WKCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON DEAN BELL 8 2 29 2 3.63 ARCHIE MARTIN 7 1 26 2 3.71 LACHLAN GREEN 7 0 14 2 2.00 RILEY JAMES 5 1 46 0 9.20 OLIVER STEWART 9 2 31 1 3.44 TROY LEWIS 9 0 71 2 7.89 EXTRAS 12 (10W 9NB) OVERS 45 219/0 WHITE KNIGHTS CRICKET CLUB WKCC 2ND INNINGS BATSMAN DISMISSAL R B SR DEAN BELL run out (Jack Lewis) 10 11 90.9 ARCHIE MARTIN b Will Adams 114 155 73.5 LACHLAN GREEN b Lucas Williams 19 39 48.7 RILEY JAMES c c Lucas Williams b Lucas Williams 10 18 55.6 OLIVER STEWART run out (Will Adams) 11 23 47.8 TROY LEWIS c c Max Wilson b Lucas Williams 60 77 77.9 HUNTER TURNER run out (Will Adams) 0 8 0.0 DYLAN BELL run out (Jack Jones) 16 21 76.2 LIAM YOUNG * not out 32 53 60.4 TROY SMITH * not out 17 18 94.4 Did not bat: Flynn Cook OVERS 25 EXTRAS 0 (6W 3NB) 8/309 HHC HALLS HEAD CRICKET CLUB HHCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON TOM TAYLOR 6 2 32 0 5.33 LUCAS WILLIAMS 7 0 23 3 3.29 WILL ADAMS 4 2 35 1 8.75 JACK LEWIS 8 0 215 0 26.88 EXTRAS 0 (6W 3NB) OVERS 25 8/309 White Knights Cricket Club WKCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 White Knights Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "grades",
@@ -1776,7 +1780,7 @@
       "metaDescription": "Ovation — white-label cricket stats and history.",
       "ogTitle": "Ovation"
      },
-     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET WHITE KNIGHTS CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. White Knights Cricket Club WKCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 White Knights Cricket Club. All rights reserved.·Admin login WHITE KNIGHTS CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little while to appear. Some older seasons are still being backfilled and may be incomplete, and a few junior players are kept private and hidden. Maybe later Take a quick tour Close"
+     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET WHITE KNIGHTS CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. White Knights Cricket Club WKCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 White Knights Cricket Club. All rights reserved.·Admin login"
     }
    ],
    "cur": null
@@ -1799,6 +1803,7 @@
      "badresponse": [
       "401 GET http://shoalwater-bay.ovation.test:24624/api/auth/me"
      ],
+     "welcomeModalSeen": true,
      "shot": "shoalwater-bay-01-home.png",
      "brand": {
       "title": "Shoalwater Bay Cricket Club",
@@ -1855,7 +1860,7 @@
        "label": "GRADES"
       }
      ],
-     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Shoalwater Bay Cricket Club's senior grades. 30 PLAYERS 682 GAMES 16,191 RUNS 333 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Singleton Irwinians Cricket Club 2025/26 · ROUND 11 9/244 vs 4/275 Singleton Irwinians Cricket Club won by 6 wickets 26/02/2026 Waroona Recreation Ground A GRADE vs Singleton Irwinians Cricket Club 2025/26 · ROUND 11 9/460 vs 9/395 Shoalwater Bay Cricket Club won by 65 runs 26/02/2026 Secret Harbour Oval Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Shoalwater Bay Cricket Club SBCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Shoalwater Bay Cricket Club. All rights reserved.·Admin login SHOALWATER BAY CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each r"
+     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Shoalwater Bay Cricket Club's senior grades. 30 PLAYERS 682 GAMES 16,191 RUNS 333 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Singleton Irwinians Cricket Club 2025/26 · ROUND 11 9/244 vs 4/275 Singleton Irwinians Cricket Club won by 6 wickets 26/02/2026 Waroona Recreation Ground A GRADE vs Singleton Irwinians Cricket Club 2025/26 · ROUND 11 9/460 vs 9/395 Shoalwater Bay Cricket Club won by 65 runs 26/02/2026 Secret Harbour Oval Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Shoalwater Bay Cricket Club SBCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Shoalwater Bay Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "players",
@@ -1923,9 +1928,7 @@
       "text": "Bailey, Ethan"
      },
      "playerCountText": [
-      "Search and filter all registered club players.",
-      "Browse every player and their career stats",
-      "Compare players side by side"
+      "Search and filter all registered club players."
      ]
     },
     {
@@ -2208,7 +2211,7 @@
      },
      "matchHref": "/matches/342",
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Shoalwater Bay Cricket Club vs Singleton Irwinians Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Waroona Recreation Ground Share Singleton Irwinians Cricket Club won by 6 wickets SHOALWATER BAY CRICKET CLUB 9/244 SINGLETON IRWINIANS CRICKET CLUB 4/275 SHOALWATER BAY CRICKET CLUB SBCC 1ST INNINGS BATSMAN DISMISSAL R B SR TOM PARKER c c Will Martin b Hunter Johnson 8 18 44.4 ARCHIE LEWIS c c Henry Thompson b Henry Thompson 9 18 50.0 BEN NGUYEN c c Henry Thompson b Will Martin 50 107 46.7 ARCHIE GREEN c c Charlie Wright b Will Martin 22 37 59.5 ETHAN YOUNG c c Oliver Stewart b Henry Thompson 73 71 102.8 LIAM COX st st Oliver Stewart b Hunter Johnson 18 25 72.0 MATT BROWN c c Kane Green b Hunter Johnson 3 3 100.0 JACK MORRIS c c Josh Young b Josh Young 19 32 59.4 LACHLAN TURNER c c Henry Bailey b Henry Thompson 21 21 100.0 MATT EDWARDS * not out 3 7 42.9 RYAN WALKER * not out 14 27 51.9 OVERS 49 EXTRAS 0 (19W 4NB) 9/244 SIC SINGLETON IRWINIANS CRICKET CLUB SICC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON HUNTER JOHNSON 9 2 50 3 5.56 WILL MARTIN 9 0 50 2 5.56 KANE GREEN 7 0 25 0 3.57 HENRY THOMPSON 9 2 38 3 4.22 HENRY BAILEY 10 1 52 0 5.20 JOSH YOUNG 5 1 25 1 5.00 EXTRAS 0 (19W 4NB) OVERS 49 9/244 SIC SINGLETON IRWINIANS CRICKET CLUB SICC 2ND INNINGS BATSMAN DISMISSAL R B SR HUNTER JOHNSON run out (Ethan Young) 41 52 78.8 WILL MARTIN b Liam Cox 86 175 49.1 KANE GREEN c c Archie Green b Ben Nguyen 52 94 55.3 HENRY THOMPSON b Liam Cox 0 8 0.0 HENRY BAILEY * not out 35 69 50.7 JOSH YOUNG * not out 41 88 46.6 Did not bat: Charlie Wright, Brad Thompson, Oliver White, Noah Green, Oliver Stewart OVERS 46 EXTRAS 0 (14W 7NB) 4/275 SHOALWATER BAY CRICKET CLUB SBCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON TOM PARKER 4 2 28 0 7.00 ARCHIE LEWIS 10 2 24 0 2.40 BEN NGUYEN 7 0 58 1 8.29 ARCHIE GREEN 6 0 23 0 3.83 ETHAN YOUNG 9 2 52 0 5.78 LIAM COX 10 0 83 2 8.30 EXTRAS 0 (14W 7NB) OVERS 46 4/275 Shoalwater Bay Cricket Club SBCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Shoalwater Bay Cricket Club. All rights reserved.·Admin login SHOALWATER BAY CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and"
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Shoalwater Bay Cricket Club vs Singleton Irwinians Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Waroona Recreation Ground Share Singleton Irwinians Cricket Club won by 6 wickets SHOALWATER BAY CRICKET CLUB 9/244 SINGLETON IRWINIANS CRICKET CLUB 4/275 SHOALWATER BAY CRICKET CLUB SBCC 1ST INNINGS BATSMAN DISMISSAL R B SR TOM PARKER c c Will Martin b Hunter Johnson 8 18 44.4 ARCHIE LEWIS c c Henry Thompson b Henry Thompson 9 18 50.0 BEN NGUYEN c c Henry Thompson b Will Martin 50 107 46.7 ARCHIE GREEN c c Charlie Wright b Will Martin 22 37 59.5 ETHAN YOUNG c c Oliver Stewart b Henry Thompson 73 71 102.8 LIAM COX st st Oliver Stewart b Hunter Johnson 18 25 72.0 MATT BROWN c c Kane Green b Hunter Johnson 3 3 100.0 JACK MORRIS c c Josh Young b Josh Young 19 32 59.4 LACHLAN TURNER c c Henry Bailey b Henry Thompson 21 21 100.0 MATT EDWARDS * not out 3 7 42.9 RYAN WALKER * not out 14 27 51.9 OVERS 49 EXTRAS 0 (19W 4NB) 9/244 SIC SINGLETON IRWINIANS CRICKET CLUB SICC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON HUNTER JOHNSON 9 2 50 3 5.56 WILL MARTIN 9 0 50 2 5.56 KANE GREEN 7 0 25 0 3.57 HENRY THOMPSON 9 2 38 3 4.22 HENRY BAILEY 10 1 52 0 5.20 JOSH YOUNG 5 1 25 1 5.00 EXTRAS 0 (19W 4NB) OVERS 49 9/244 SIC SINGLETON IRWINIANS CRICKET CLUB SICC 2ND INNINGS BATSMAN DISMISSAL R B SR HUNTER JOHNSON run out (Ethan Young) 41 52 78.8 WILL MARTIN b Liam Cox 86 175 49.1 KANE GREEN c c Archie Green b Ben Nguyen 52 94 55.3 HENRY THOMPSON b Liam Cox 0 8 0.0 HENRY BAILEY * not out 35 69 50.7 JOSH YOUNG * not out 41 88 46.6 Did not bat: Charlie Wright, Brad Thompson, Oliver White, Noah Green, Oliver Stewart OVERS 46 EXTRAS 0 (14W 7NB) 4/275 SHOALWATER BAY CRICKET CLUB SBCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON TOM PARKER 4 2 28 0 7.00 ARCHIE LEWIS 10 2 24 0 2.40 BEN NGUYEN 7 0 58 1 8.29 ARCHIE GREEN 6 0 23 0 3.83 ETHAN YOUNG 9 2 52 0 5.78 LIAM COX 10 0 83 2 8.30 EXTRAS 0 (14W 7NB) OVERS 46 4/275 Shoalwater Bay Cricket Club SBCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Shoalwater Bay Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "grades",
@@ -2621,7 +2624,7 @@
       "metaDescription": "Ovation — white-label cricket stats and history.",
       "ogTitle": "Ovation"
      },
-     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SHOALWATER BAY CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Shoalwater Bay Cricket Club SBCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Shoalwater Bay Cricket Club. All rights reserved.·Admin login SHOALWATER BAY CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little while to appear. Some older seasons are still being backfilled and may be incomplete, and a few junior players are kept private and hidden. Maybe later Take a quick tour Close"
+     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SHOALWATER BAY CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Shoalwater Bay Cricket Club SBCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Shoalwater Bay Cricket Club. All rights reserved.·Admin login"
     }
    ],
    "cur": null
@@ -2644,6 +2647,7 @@
      "badresponse": [
       "401 GET http://secret-harbour.ovation.test:24624/api/auth/me"
      ],
+     "welcomeModalSeen": true,
      "shot": "secret-harbour-01-home.png",
      "brand": {
       "title": "Secret Harbour Cricket Club",
@@ -2700,7 +2704,7 @@
        "label": "GRADES"
       }
      ],
-     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Secret Harbour Cricket Club's senior grades. 30 PLAYERS 682 GAMES 16,380 RUNS 346 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Warnbro Swans Cricket Club 2025/26 · ROUND 11 6/393 vs 6/421 Warnbro Swans Cricket Club won by 28 runs 26/02/2026 Sir Ross McLarty Oval A GRADE vs Warnbro Swans Cricket Club 2025/26 · ROUND 11 9/197 vs 4/187 Secret Harbour Cricket Club won by 10 runs 26/02/2026 Warnbro Rec Centre Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Secret Harbour Cricket Club SHCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Secret Harbour Cricket Club. All rights reserved.·Admin login SECRET HARBOUR CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest "
+     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Secret Harbour Cricket Club's senior grades. 30 PLAYERS 682 GAMES 16,380 RUNS 346 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Warnbro Swans Cricket Club 2025/26 · ROUND 11 6/393 vs 6/421 Warnbro Swans Cricket Club won by 28 runs 26/02/2026 Sir Ross McLarty Oval A GRADE vs Warnbro Swans Cricket Club 2025/26 · ROUND 11 9/197 vs 4/187 Secret Harbour Cricket Club won by 10 runs 26/02/2026 Warnbro Rec Centre Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Secret Harbour Cricket Club SHCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Secret Harbour Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "players",
@@ -2768,9 +2772,7 @@
       "text": "Anderson, Lachlan"
      },
      "playerCountText": [
-      "Search and filter all registered club players.",
-      "Browse every player and their career stats",
-      "Compare players side by side"
+      "Search and filter all registered club players."
      ]
     },
     {
@@ -2779,6 +2781,7 @@
      "console": [
       "Failed to load resource: net::ERR_CONNECTION_RESET",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
      ],
      "pageerror": [],
@@ -2786,6 +2789,7 @@
       "GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET"
      ],
      "badresponse": [
+      "401 GET http://secret-harbour.ovation.test:24624/api/auth/me",
       "401 GET http://secret-harbour.ovation.test:24624/api/auth/me",
       "401 GET http://secret-harbour.ovation.test:24624/api/auth/me"
      ],
@@ -3051,7 +3055,7 @@
      },
      "matchHref": "/matches/343",
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Secret Harbour Cricket Club vs Warnbro Swans Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Sir Ross McLarty Oval Share Warnbro Swans Cricket Club won by 28 runs SECRET HARBOUR CRICKET CLUB 6/393 WARNBRO SWANS CRICKET CLUB 6/421 WSC WARNBRO SWANS CRICKET CLUB WSCC 1ST INNINGS BATSMAN DISMISSAL R B SR MITCH HILL c c Troy Edwards b Ben Ward 5 9 55.6 BRAD LEWIS b Dylan Green 112 152 73.7 RILEY JOHNSON c c Troy Edwards b Dylan Green 41 80 51.2 TROY MORRIS run out (Troy Edwards) 158 155 101.9 HUNTER REED b Dylan Green 1 7 14.3 OLIVER GREEN b Ben Ward 53 71 74.6 JOSH MORRIS * not out 23 51 45.1 SCOTT MORRIS * not out 11 31 35.5 Did not bat: Ben Cook, Ben Morris, Archie Johnson OVERS 26 EXTRAS 0 (12W 4NB) 6/421 SECRET HARBOUR CRICKET CLUB SHCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON HUNTER CARTER 5 2 105 0 21.00 TROY WATSON 4 2 99 0 24.75 BEN WARD 8 1 66 2 8.25 DYLAN GREEN 9 2 146 3 16.22 EXTRAS 0 (12W 4NB) OVERS 26 6/421 SECRET HARBOUR CRICKET CLUB SHCC 2ND INNINGS BATSMAN DISMISSAL R B SR HUNTER CARTER st st Archie Johnson b Brad Lewis 48 96 50.0 TROY WATSON b Mitch Hill 21 33 63.6 BEN WARD b Brad Lewis 123 214 57.5 DYLAN GREEN lbw 77 143 53.8 SAM ANDERSON st st Archie Johnson b Riley Johnson 45 64 70.3 MITCH GREEN c c Brad Lewis b Riley Johnson 1 3 33.3 RYAN ROGERS * not out 41 66 62.1 TROY EDWARDS * not out 31 53 58.5 Did not bat: Ethan Watson, Kane Johnson, Jake Rogers OVERS 25 EXTRAS 0 (15W 4NB) 6/393 WSC WARNBRO SWANS CRICKET CLUB WSCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MITCH HILL 4 2 68 2 17.00 BRAD LEWIS 4 0 48 2 12.00 RILEY JOHNSON 9 0 25 2 2.78 TROY MORRIS 4 1 60 0 15.00 HUNTER REED 4 0 187 0 46.75 EXTRAS 0 (15W 4NB) OVERS 25 6/393 Secret Harbour Cricket Club SHCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Secret Harbour Cricket Club. All rights reserved.·Admin login SECRET HARBOUR CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorde"
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Secret Harbour Cricket Club vs Warnbro Swans Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Sir Ross McLarty Oval Share Warnbro Swans Cricket Club won by 28 runs SECRET HARBOUR CRICKET CLUB 6/393 WARNBRO SWANS CRICKET CLUB 6/421 WSC WARNBRO SWANS CRICKET CLUB WSCC 1ST INNINGS BATSMAN DISMISSAL R B SR MITCH HILL c c Troy Edwards b Ben Ward 5 9 55.6 BRAD LEWIS b Dylan Green 112 152 73.7 RILEY JOHNSON c c Troy Edwards b Dylan Green 41 80 51.2 TROY MORRIS run out (Troy Edwards) 158 155 101.9 HUNTER REED b Dylan Green 1 7 14.3 OLIVER GREEN b Ben Ward 53 71 74.6 JOSH MORRIS * not out 23 51 45.1 SCOTT MORRIS * not out 11 31 35.5 Did not bat: Ben Cook, Ben Morris, Archie Johnson OVERS 26 EXTRAS 0 (12W 4NB) 6/421 SECRET HARBOUR CRICKET CLUB SHCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON HUNTER CARTER 5 2 105 0 21.00 TROY WATSON 4 2 99 0 24.75 BEN WARD 8 1 66 2 8.25 DYLAN GREEN 9 2 146 3 16.22 EXTRAS 0 (12W 4NB) OVERS 26 6/421 SECRET HARBOUR CRICKET CLUB SHCC 2ND INNINGS BATSMAN DISMISSAL R B SR HUNTER CARTER st st Archie Johnson b Brad Lewis 48 96 50.0 TROY WATSON b Mitch Hill 21 33 63.6 BEN WARD b Brad Lewis 123 214 57.5 DYLAN GREEN lbw 77 143 53.8 SAM ANDERSON st st Archie Johnson b Riley Johnson 45 64 70.3 MITCH GREEN c c Brad Lewis b Riley Johnson 1 3 33.3 RYAN ROGERS * not out 41 66 62.1 TROY EDWARDS * not out 31 53 58.5 Did not bat: Ethan Watson, Kane Johnson, Jake Rogers OVERS 25 EXTRAS 0 (15W 4NB) 6/393 WSC WARNBRO SWANS CRICKET CLUB WSCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MITCH HILL 4 2 68 2 17.00 BRAD LEWIS 4 0 48 2 12.00 RILEY JOHNSON 9 0 25 2 2.78 TROY MORRIS 4 1 60 0 15.00 HUNTER REED 4 0 187 0 46.75 EXTRAS 0 (15W 4NB) OVERS 25 6/393 Secret Harbour Cricket Club SHCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Secret Harbour Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "grades",
@@ -3464,7 +3468,7 @@
       "metaDescription": "Ovation — white-label cricket stats and history.",
       "ogTitle": "Ovation"
      },
-     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SECRET HARBOUR CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Secret Harbour Cricket Club SHCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Secret Harbour Cricket Club. All rights reserved.·Admin login SECRET HARBOUR CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little while to appear. Some older seasons are still being backfilled and may be incomplete, and a few junior players are kept private and hidden. Maybe later Take a quick tour Close"
+     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SECRET HARBOUR CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Secret Harbour Cricket Club SHCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Secret Harbour Cricket Club. All rights reserved.·Admin login"
     }
    ],
    "cur": null
@@ -3487,6 +3491,7 @@
      "badresponse": [
       "401 GET http://waroona.ovation.test:24624/api/auth/me"
      ],
+     "welcomeModalSeen": true,
      "shot": "waroona-01-home.png",
      "brand": {
       "title": "Waroona Cricket Club",
@@ -3543,7 +3548,7 @@
        "label": "GRADES"
       }
      ],
-     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Waroona Cricket Club's senior grades. 30 PLAYERS 704 GAMES 17,026 RUNS 404 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Rockingham Hornets Cricket Club 2025/26 · ROUND 11 8/309 vs 6/74 Waroona Cricket Club won by 235 runs 26/02/2026 Secret Harbour Oval A GRADE vs Rockingham Hornets Cricket Club 2025/26 · ROUND 11 154 vs 289 Rockingham Hornets Cricket Club won by 135 runs 26/02/2026 Singleton Foreshore Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login WAROONA CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little w"
+     "fullText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET SENIORS Senior Cricket Results, scorecards, records and player stats for Waroona Cricket Club's senior grades. 30 PLAYERS 704 GAMES 17,026 RUNS 404 WICKETS 2 GRADES Honour Boards Players Matches Grades Records Premierships Compare Recent Matches 2025/26 SEASON B GRADE vs Rockingham Hornets Cricket Club 2025/26 · ROUND 11 8/309 vs 6/74 Waroona Cricket Club won by 235 runs 26/02/2026 Secret Harbour Oval A GRADE vs Rockingham Hornets Cricket Club 2025/26 · ROUND 11 154 vs 289 Rockingham Hornets Cricket Club won by 135 runs 26/02/2026 Singleton Foreshore Top Performers 2025/26 ALL GRADES Top Run Scorers No data for this season yet. Top Wicket Takers No data for this season yet. Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "players",
@@ -3611,9 +3616,7 @@
       "text": "Anderson, Henry"
      },
      "playerCountText": [
-      "Search and filter all registered club players.",
-      "Browse every player and their career stats",
-      "Compare players side by side"
+      "Search and filter all registered club players."
      ]
     },
     {
@@ -3896,7 +3899,7 @@
      },
      "matchHref": "/matches/344",
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Waroona Cricket Club vs Rockingham Hornets Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Secret Harbour Oval Share Waroona Cricket Club won by 235 runs WAROONA CRICKET CLUB 8/309 ROCKINGHAM HORNETS CRICKET CLUB 6/74 WAROONA CRICKET CLUB WCC 1ST INNINGS BATSMAN DISMISSAL R B SR MAX GRAY run out (Josh Morris) 8 14 57.1 LIAM HILL st st Jake King b Josh Taylor 15 19 78.9 COOPER BAKER c c Lachlan Nguyen b Lachlan Nguyen 99 114 86.8 BEN WARD lbw 6 11 54.5 NOAH GRAY b Dean Clarke 29 53 54.7 ETHAN WATSON st st Jake King b Josh Taylor 7 13 53.8 SCOTT WHITE c c Ryan Taylor b Lachlan Nguyen 45 91 49.5 DYLAN WILLIAMS c c Scott Collins b Lachlan Nguyen 29 40 72.5 HENRY BROOKS * not out 8 17 47.1 SCOTT SMITH * not out 41 82 50.0 Did not bat: Mitch Clarke OVERS 33 EXTRAS 0 (12W) 8/309 RHC ROCKINGHAM HORNETS CRICKET CLUB RHCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON JOSH TAYLOR 8 1 42 2 5.25 LACHLAN NGUYEN 8 1 48 3 6.00 SCOTT COLLINS 9 2 77 0 8.56 DEAN CLARKE 8 2 134 2 16.75 EXTRAS 0 (12W) OVERS 33 8/309 RHC ROCKINGHAM HORNETS CRICKET CLUB RHCC 2ND INNINGS BATSMAN DISMISSAL R B SR JOSH TAYLOR b Ben Ward 27 37 73.0 LACHLAN NGUYEN run out (Ethan Watson) 8 15 53.3 SCOTT COLLINS c c Noah Gray b Max Gray 4 9 44.4 DEAN CLARKE c c Noah Gray b Ben Ward 12 18 66.7 HENRY JONES lbw 0 8 0.0 RYAN TAYLOR st st Mitch Clarke b Liam Hill 0 1 0.0 DYLAN COOK * not out 1 8 12.5 MITCH SMITH * not out 2 10 20.0 Did not bat: Josh Morris, Max Wilson, Jake King OVERS 24 EXTRAS 0 (13W 4NB) 6/74 WAROONA CRICKET CLUB WCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MAX GRAY 6 1 19 2 3.17 LIAM HILL 4 0 18 1 4.50 COOPER BAKER 10 2 25 0 2.50 BEN WARD 4 2 11 2 2.75 EXTRAS 0 (13W 4NB) OVERS 24 6/74 Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login WAROONA CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each roun"
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches B GRADE Waroona Cricket Club vs Rockingham Hornets Cricket Club B GRADE · 2025/26 · ROUND 11 B Grade 26/02/2026 Secret Harbour Oval Share Waroona Cricket Club won by 235 runs WAROONA CRICKET CLUB 8/309 ROCKINGHAM HORNETS CRICKET CLUB 6/74 WAROONA CRICKET CLUB WCC 1ST INNINGS BATSMAN DISMISSAL R B SR MAX GRAY run out (Josh Morris) 8 14 57.1 LIAM HILL st st Jake King b Josh Taylor 15 19 78.9 COOPER BAKER c c Lachlan Nguyen b Lachlan Nguyen 99 114 86.8 BEN WARD lbw 6 11 54.5 NOAH GRAY b Dean Clarke 29 53 54.7 ETHAN WATSON st st Jake King b Josh Taylor 7 13 53.8 SCOTT WHITE c c Ryan Taylor b Lachlan Nguyen 45 91 49.5 DYLAN WILLIAMS c c Scott Collins b Lachlan Nguyen 29 40 72.5 HENRY BROOKS * not out 8 17 47.1 SCOTT SMITH * not out 41 82 50.0 Did not bat: Mitch Clarke OVERS 33 EXTRAS 0 (12W) 8/309 RHC ROCKINGHAM HORNETS CRICKET CLUB RHCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON JOSH TAYLOR 8 1 42 2 5.25 LACHLAN NGUYEN 8 1 48 3 6.00 SCOTT COLLINS 9 2 77 0 8.56 DEAN CLARKE 8 2 134 2 16.75 EXTRAS 0 (12W) OVERS 33 8/309 RHC ROCKINGHAM HORNETS CRICKET CLUB RHCC 2ND INNINGS BATSMAN DISMISSAL R B SR JOSH TAYLOR b Ben Ward 27 37 73.0 LACHLAN NGUYEN run out (Ethan Watson) 8 15 53.3 SCOTT COLLINS c c Noah Gray b Max Gray 4 9 44.4 DEAN CLARKE c c Noah Gray b Ben Ward 12 18 66.7 HENRY JONES lbw 0 8 0.0 RYAN TAYLOR st st Mitch Clarke b Liam Hill 0 1 0.0 DYLAN COOK * not out 1 8 12.5 MITCH SMITH * not out 2 10 20.0 Did not bat: Josh Morris, Max Wilson, Jake King OVERS 24 EXTRAS 0 (13W 4NB) 6/74 WAROONA CRICKET CLUB WCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MAX GRAY 6 1 19 2 3.17 LIAM HILL 4 0 18 1 4.50 COOPER BAKER 10 2 25 0 2.50 BEN WARD 4 2 11 2 2.75 EXTRAS 0 (13W 4NB) OVERS 24 6/74 Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "grades",
@@ -4309,7 +4312,7 @@
       "metaDescription": "Ovation — white-label cricket stats and history.",
       "ogTitle": "Ovation"
      },
-     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET WAROONA CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login WAROONA CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a little while to appear. Some older seasons are still being backfilled and may be incomplete, and a few junior players are kept private and hidden. Maybe later Take a quick tour Close"
+     "bodyText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET WAROONA CRICKET CLUB PREMIERSHIPS GRADE All 0 of 0 shown No premierships found No premierships match the selected grade. Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login"
     },
     {
      "label": "cross-club-match",
@@ -4360,7 +4363,7 @@
       "ogTitle": "Ovation"
      },
      "tables": [],
-     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches A GRADE Waroona Cricket Club vs Mandurah Cricket Club A GRADE · 2025/26 · ROUND 9 A Grade 12/02/2026 Warnbro Rec Centre Share Waroona Cricket Club won by 60 runs WAROONA CRICKET CLUB 5/313 MANDURAH CRICKET CLUB 8/253 WAROONA CRICKET CLUB WCC 1ST INNINGS BATSMAN DISMISSAL R B SR JACK SMITH c c Flynn Collins b Jake Mitchell 44 61 72.1 CHARLIE TURNER lbw 94 152 61.8 ARCHIE THOMPSON run out (Flynn Collins) 1 7 14.3 HENRY ANDERSON lbw 10 17 58.8 TOM STEWART b Mitch James 10 12 83.3 MAX MURPHY * not out 40 81 49.4 DYLAN PARKER * not out 93 100 93.0 Did not bat: Josh Nguyen, Brad Murphy, Matt Brown, Riley Brooks OVERS 36 EXTRAS 0 (4W 4NB) 5/313 MCC MANDURAH CRICKET CLUB MCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MITCH JAMES 10 2 74 3 7.40 JAKE MITCHELL 8 2 39 1 4.88 BRAD BROOKS 9 1 25 0 2.78 TROY EDWARDS 9 0 174 0 19.33 EXTRAS 0 (4W 4NB) OVERS 36 5/313 MCC MANDURAH CRICKET CLUB MCC 2ND INNINGS BATSMAN DISMISSAL R B SR MITCH JAMES c c Matt Brown b Jack Smith 3 11 27.3 JAKE MITCHELL b Archie Thompson 11 16 68.8 BRAD BROOKS lbw 2 4 50.0 TROY EDWARDS c c Brad Murphy b Archie Thompson 40 68 58.8 JOSH BAILEY b Archie Thompson 76 72 105.6 BRAD HARRIS run out (Brad Murphy) 32 37 86.5 RILEY WILLIAMS b Charlie Turner 34 43 79.1 FLYNN COLLINS st st Riley Brooks b Henry Anderson 41 89 46.1 FLYNN BROOKS * not out 6 12 50.0 COOPER LEWIS * not out 0 4 0.0 Did not bat: Will Nguyen OVERS 31 EXTRAS 0 (20W 5NB) 8/253 WAROONA CRICKET CLUB WCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON JACK SMITH 6 2 53 2 8.83 CHARLIE TURNER 5 0 22 1 4.40 ARCHIE THOMPSON 10 2 30 3 3.00 HENRY ANDERSON 5 2 50 1 10.00 TOM STEWART 5 0 96 0 19.20 EXTRAS 0 (20W 5NB) OVERS 31 8/253 Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login WAROONA CRICKET CLUB Welcome to the club portal Your home for the club's players, matches, records and honours — seniors and juniors alike. WHAT YOU CAN DO Browse every player and their career stats Read full scorecards for past matches Explore records, honour boards & premierships Compare players side by side Switch to the juniors side for their results Good to know: stats reflect what club admins have recorded after each round, so the very latest games may take a "
+     "summaryText": "HONOUR BOARDS PLAYERS MATCHES GRADES RECORDS PREMIERSHIPS COMPARE SENIORS JUNIORS HELP SENIOR CRICKET All matches A GRADE Waroona Cricket Club vs Mandurah Cricket Club A GRADE · 2025/26 · ROUND 9 A Grade 12/02/2026 Warnbro Rec Centre Share Waroona Cricket Club won by 60 runs WAROONA CRICKET CLUB 5/313 MANDURAH CRICKET CLUB 8/253 WAROONA CRICKET CLUB WCC 1ST INNINGS BATSMAN DISMISSAL R B SR JACK SMITH c c Flynn Collins b Jake Mitchell 44 61 72.1 CHARLIE TURNER lbw 94 152 61.8 ARCHIE THOMPSON run out (Flynn Collins) 1 7 14.3 HENRY ANDERSON lbw 10 17 58.8 TOM STEWART b Mitch James 10 12 83.3 MAX MURPHY * not out 40 81 49.4 DYLAN PARKER * not out 93 100 93.0 Did not bat: Josh Nguyen, Brad Murphy, Matt Brown, Riley Brooks OVERS 36 EXTRAS 0 (4W 4NB) 5/313 MCC MANDURAH CRICKET CLUB MCC 1ST INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON MITCH JAMES 10 2 74 3 7.40 JAKE MITCHELL 8 2 39 1 4.88 BRAD BROOKS 9 1 25 0 2.78 TROY EDWARDS 9 0 174 0 19.33 EXTRAS 0 (4W 4NB) OVERS 36 5/313 MCC MANDURAH CRICKET CLUB MCC 2ND INNINGS BATSMAN DISMISSAL R B SR MITCH JAMES c c Matt Brown b Jack Smith 3 11 27.3 JAKE MITCHELL b Archie Thompson 11 16 68.8 BRAD BROOKS lbw 2 4 50.0 TROY EDWARDS c c Brad Murphy b Archie Thompson 40 68 58.8 JOSH BAILEY b Archie Thompson 76 72 105.6 BRAD HARRIS run out (Brad Murphy) 32 37 86.5 RILEY WILLIAMS b Charlie Turner 34 43 79.1 FLYNN COLLINS st st Riley Brooks b Henry Anderson 41 89 46.1 FLYNN BROOKS * not out 6 12 50.0 COOPER LEWIS * not out 0 4 0.0 Did not bat: Will Nguyen OVERS 31 EXTRAS 0 (20W 5NB) 8/253 WAROONA CRICKET CLUB WCC 2ND INNINGS BOWLER OVERS MAIDENS RUNS WICKETS ECON JACK SMITH 6 2 53 2 8.83 CHARLIE TURNER 5 0 22 1 4.40 ARCHIE THOMPSON 10 2 30 3 3.00 HENRY ANDERSON 5 2 50 1 10.00 TOM STEWART 5 0 96 0 19.20 EXTRAS 0 (20W 5NB) OVERS 31 8/253 Waroona Cricket Club WCC QUICK LINKS Honour Boards Players Matches Grades Records Premierships Compare CONTACT For club inquiries, please contact us via our official website. © 2026 Waroona Cricket Club. All rights reserved.·Admin login"
     }
    ],
    "cur": null
