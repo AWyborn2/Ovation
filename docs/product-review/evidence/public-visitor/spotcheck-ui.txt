@@ -1,0 +1,5 @@
+A-grade leaderboard first row: White, Lucas	28	25	3	860	109	39.09	2	5	-	-	-	-	-	
+URL: http://mandurah.ovation.test:24624/grades/A%20Grade
+
+A-grade header: Player	Mat	Inn	NO	Runs	HS	Avg	100s	50s	Wkts	Runs	Avg	BB	5WI	Share
+

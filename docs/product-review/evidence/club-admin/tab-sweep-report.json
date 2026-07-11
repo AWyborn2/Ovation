@@ -1,0 +1,282 @@
+[
+  {
+    "group": "social",
+    "tab": "studio",
+    "url": "http://halls-head.ovation.test:24624/admin/social",
+    "activeTab": "Studio",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue",
+    "panelChars": 1274,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "social",
+    "tab": "cards",
+    "url": "http://halls-head.ovation.test:24624/admin/social/cards",
+    "activeTab": "(none)",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue | On-demand share | Auto-milestone | Round-up | Season recap | Instagram | Facebook | X / Twitter",
+    "panelChars": 2403,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "social",
+    "tab": "create",
+    "url": "http://halls-head.ovation.test:24624/admin/social/create",
+    "activeTab": "(none)",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue | From a match | Build manually",
+    "panelChars": 600,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "social",
+    "tab": "sets",
+    "url": "http://halls-head.ovation.test:24624/admin/social/sets",
+    "activeTab": "Carousel sets",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue",
+    "panelChars": 559,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "social",
+    "tab": "juniors",
+    "url": "http://halls-head.ovation.test:24624/admin/social/juniors",
+    "activeTab": "(none)",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue | Junior match | Junior milestones",
+    "panelChars": 638,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "social",
+    "tab": "trading-cards",
+    "url": "http://halls-head.ovation.test:24624/admin/social/trading-cards",
+    "activeTab": "Trading cards",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue",
+    "panelChars": 1963,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "social",
+    "tab": "queue",
+    "url": "http://halls-head.ovation.test:24624/admin/social/queue",
+    "activeTab": "(none)",
+    "tabLabels": "Studio | Cards | Create a card | Carousel sets | Junior cards | Trading cards | Queue | Pending (0) | Approved (0) | Posted (0) | Dismissed (0) | Tracked links",
+    "panelChars": 587,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Social Media Studio Branded share-card factory, card builders, junior cards and the review queue. Studio Cards Create a card Carousel ",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "matches",
+    "url": "http://halls-head.ovation.test:24624/admin/settings",
+    "activeTab": "Matches page",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 1132,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "records",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/records",
+    "activeTab": "Records page",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 1238,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "honour-boards",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/honour-boards",
+    "activeTab": "Honour boards",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 411,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "milestone-board",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/milestone-board",
+    "activeTab": "Milestone board",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 1579,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "junior-matches",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/junior-matches",
+    "activeTab": "Junior matches",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 1003,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "tour",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/tour",
+    "activeTab": "Welcome & tour",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 1406,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "nav",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/nav",
+    "activeTab": "Navigation & menus",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 3157,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "settings",
+    "tab": "branding",
+    "url": "http://halls-head.ovation.test:24624/admin/settings/branding",
+    "activeTab": "Branding",
+    "tabLabels": "Matches page | Records page | Honour boards | Milestone board | Junior matches | Welcome & tour | Navigation & menus | Branding",
+    "panelChars": 974,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Display & Settings Defaults and display options for the public pages, plus site navigation. Matches page Records page Honour boards Mi",
+    "hasErrorText": false
+  },
+  {
+    "group": "people",
+    "tab": "players",
+    "url": "http://halls-head.ovation.test:24624/admin/people",
+    "activeTab": "Players",
+    "tabLabels": "Players | Stats | Committee | Captains | Junior office bearers | Non-player people",
+    "panelChars": 345,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out People Players, stats, committee, captains and club officials. Players Stats Committee Captains Junior office bearers Non-player peopl",
+    "hasErrorText": false
+  },
+  {
+    "group": "people",
+    "tab": "stats",
+    "url": "http://halls-head.ovation.test:24624/admin/people/stats",
+    "activeTab": "Stats",
+    "tabLabels": "Players | Stats | Committee | Captains | Junior office bearers | Non-player people",
+    "panelChars": 531,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out People Players, stats, committee, captains and club officials. Players Stats Committee Captains Junior office bearers Non-player peopl",
+    "hasErrorText": false
+  },
+  {
+    "group": "people",
+    "tab": "committee",
+    "url": "http://halls-head.ovation.test:24624/admin/people/committee",
+    "activeTab": "Committee",
+    "tabLabels": "Players | Stats | Committee | Captains | Junior office bearers | Non-player people",
+    "panelChars": 556,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out People Players, stats, committee, captains and club officials. Players Stats Committee Captains Junior office bearers Non-player peopl",
+    "hasErrorText": false
+  },
+  {
+    "group": "people",
+    "tab": "captains",
+    "url": "http://halls-head.ovation.test:24624/admin/people/captains",
+    "activeTab": "Captains",
+    "tabLabels": "Players | Stats | Committee | Captains | Junior office bearers | Non-player people",
+    "panelChars": 486,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out People Players, stats, committee, captains and club officials. Players Stats Committee Captains Junior office bearers Non-player peopl",
+    "hasErrorText": false
+  },
+  {
+    "group": "people",
+    "tab": "junior-office-bearers",
+    "url": "http://halls-head.ovation.test:24624/admin/people/junior-office-bearers",
+    "activeTab": "Junior office bearers",
+    "tabLabels": "Players | Stats | Committee | Captains | Junior office bearers | Non-player people",
+    "panelChars": 586,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out People Players, stats, committee, captains and club officials. Players Stats Committee Captains Junior office bearers Non-player peopl",
+    "hasErrorText": false
+  },
+  {
+    "group": "people",
+    "tab": "non-players",
+    "url": "http://halls-head.ovation.test:24624/admin/people/non-players",
+    "activeTab": "Non-player people",
+    "tabLabels": "Players | Stats | Committee | Captains | Junior office bearers | Non-player people",
+    "panelChars": 572,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out People Players, stats, committee, captains and club officials. Players Stats Committee Captains Junior office bearers Non-player peopl",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "premierships",
+    "url": "http://halls-head.ovation.test:24624/admin/honours",
+    "activeTab": "Premierships",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 416,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "awards",
+    "url": "http://halls-head.ovation.test:24624/admin/honours/awards",
+    "activeTab": "Awards",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 516,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "team-of-decade",
+    "url": "http://halls-head.ovation.test:24624/admin/honours/team-of-decade",
+    "activeTab": "Team of the Decade",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 570,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "caps",
+    "url": "http://halls-head.ovation.test:24624/admin/honours/caps",
+    "activeTab": "Cap register",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 647,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "life-members",
+    "url": "http://halls-head.ovation.test:24624/admin/honours/life-members",
+    "activeTab": "Life members",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 504,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "junior-premierships",
+    "url": "http://halls-head.ovation.test:24624/admin/honours/junior-premierships",
+    "activeTab": "Junior premierships",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 601,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  },
+  {
+    "group": "honours",
+    "tab": "display",
+    "url": "http://halls-head.ovation.test:24624/admin/honours/display",
+    "activeTab": "Display & kiosk",
+    "tabLabels": "Premierships | Awards | Team of the Decade | Cap register | Life members | Junior premierships | Display & kiosk",
+    "panelChars": 4797,
+    "panelSnippet": "SIGNED IN AS Owner @owner Hub Social Media Studio Display & Settings People Honours & Records Import CSV Admin users Sign out Honours & Records Premierships, awards, Team of the Decade, caps, life members and junior premierships. Premierships Awards Team of th",
+    "hasErrorText": false
+  }
+]
