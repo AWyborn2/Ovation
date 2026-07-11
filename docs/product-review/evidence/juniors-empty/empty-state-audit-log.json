@@ -1,0 +1,358 @@
+{
+  "pages": [
+    {
+      "label": "home",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/",
+      "navErr": null,
+      "screenshot": "31-desktop-hh-home.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nSENIORS\nSenior Cricket\nResults, scorecards, records and player stats for Halls Head Cricket Club's senior grades.\n0\nPLAYERS\n0\nGAMES\n0\nRUNS\n0\nWICKETS\n0\nGRADES\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nTop Performers\nALL GRADES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "players",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/players",
+      "navErr": null,
+      "screenshot": "32-desktop-hh-players.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nPlayer Directory\nSearch and filter all registered club players.\nAdd Player\nNo players found\nTry a different search, or add a player to get started.\nPrevious\nPage 1\nNext\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "matches",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/matches",
+      "navErr": null,
+      "screenshot": "33-desktop-hh-matches.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nMatches\nBrowse game-by-game scorecards across all grades.\nGRADE\nAll grades\nSEASON\nAll seasons\nNo matches found\nMatch scorecards appear here once per-match imports are committed.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "records",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/records",
+      "navErr": null,
+      "screenshot": "34-desktop-hh-records.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "pageerror",
+          "v": "TypeError: Cannot read properties of null (reading 'value')"
+        }
+      ],
+      "textExcerpt": ""
+    },
+    {
+      "label": "honour-boards",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/honour-boards",
+      "navErr": null,
+      "screenshot": "35-desktop-hh-honour-boards.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nHalls Head Cricket Club — Honour Boards\nESTABLISHED 1991 • CAREER MILESTONES ACROSS ALL GRADES\n0\nTOTAL PLAYERS\n0\nTOTAL GAMES\n0\nRUNS SCORED\n0\nWICKETS\n0\nTOTAL DISMISSALS\nMatches\nBrowse senior games and full scorecards.\nPremierships\nSenior honour boards and winning rosters.\nPlayers & Leaders\nRuns, wickets and games leaderboards.\nMILESTONES\nSTATISTICS\nHONOUR BOARDS\nA GRADE CAPS\nLIFE MEMBERS\nSEARCH\nMilestones\nSIGNIFICANT ACHIEVEMENTS, RANKED BY MILESTONE\nALL\nCENTURIES\nFIVE-FORS\nHAT-TRICKS\nDEBUTS\nCAREER\nNo dated milestones yet — they appear as match scorecards are imported.\nSignificant milestones\n100+ GAMES, 1,000+ RUNS AND 100+ WICKETS CLUBS\nSEASON\nAll-time\nNo significant milestones to show yet.\nLAST UPDATED: 11 JULY 2026 • HALLS HEAD CRICKET CLUB\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "premierships",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/premierships",
+      "navErr": null,
+      "screenshot": "36-desktop-hh-premierships.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nHALLS HEAD CRICKET CLUB\nPREMIERSHIPS\nGRADE\nAll\n0 of 0 shown\nNo premierships found\nNo premierships match the selected grade.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "compare",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/compare",
+      "navErr": null,
+      "screenshot": "37-desktop-hh-compare.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nHead-to-Head\nPick any two players and compare their careers side-by-side.\nPlayer A\nSelect Player A...\nPlayer B\nSelect Player B...\nSelect two players to see a head-to-head comparison.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "grades",
+      "mode": "desktop",
+      "url": "http://halls-head.ovation.test:24624/grades",
+      "navErr": null,
+      "screenshot": "38-desktop-hh-grades.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nGrades\nOverview of performance across all grades.\nNo grades yet\nGrade summaries appear here once imports are committed.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "compare-picker-open",
+      "screenshot": "39-desktop-hh-compare-picker-open.png"
+    },
+    {
+      "label": "home",
+      "mode": "mobile",
+      "url": "http://halls-head.ovation.test:24624/",
+      "navErr": null,
+      "screenshot": "40-mobile-hh-home.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "SENIORS\nJUNIORS\nSENIOR CRICKET\nSENIORS\nSenior Cricket\nResults, scorecards, records and player stats for Halls Head Cricket Club's senior grades.\n0\nPLAYERS\n0\nGAMES\n0\nRUNS\n0\nWICKETS\n0\nGRADES\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nTop Performers\nALL GRADES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "players",
+      "mode": "mobile",
+      "url": "http://halls-head.ovation.test:24624/players",
+      "navErr": null,
+      "screenshot": "41-mobile-hh-players.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "SENIORS\nJUNIORS\nSENIOR CRICKET\nPlayer Directory\nSearch and filter all registered club players.\nAdd Player\nNo players found\nTry a different search, or add a player to get started.\nPrevious\nPage 1\nNext\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "label": "records",
+      "mode": "mobile",
+      "url": "http://halls-head.ovation.test:24624/records",
+      "navErr": null,
+      "screenshot": "42-mobile-hh-records.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "pageerror",
+          "v": "TypeError: Cannot read properties of null (reading 'value')"
+        },
+        {
+          "t": "requestfailed",
+          "v": "http://halls-head.ovation.test:24624/api/grades net::ERR_ABORTED"
+        }
+      ],
+      "textExcerpt": ""
+    }
+  ]
+}
