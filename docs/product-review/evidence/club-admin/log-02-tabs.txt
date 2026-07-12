@@ -1,0 +1,64 @@
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin :: Failed to load resource: net::ERR_CONNECTION_RESET
+HTTP-401 GET http://halls-head.ovation.test:24624/api/auth/me (page: http://halls-head.ovation.test:24624/admin)
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/cards :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/cards :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/create :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/sets :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/juniors :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/trading-cards :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/social/queue :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/records :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/honour-boards :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/milestone-board :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/junior-matches :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/tour :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/nav :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/settings/branding :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/stats :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/committee :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/captains :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/junior-office-bearers :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/non-players :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours/awards :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours/team-of-decade :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours/caps :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours/life-members :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours/junior-premierships :: Failed to load resource: net::ERR_CONNECTION_RESET
+REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
+CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/honours/display :: Failed to load resource: net::ERR_CONNECTION_RESET

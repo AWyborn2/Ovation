@@ -1,0 +1,895 @@
+{
+  "pages": [
+    {
+      "host": "mandurah",
+      "label": "welcome-modal",
+      "screenshot": "01-mandurah-welcome-modal.png",
+      "note": "first-visit modal, blocks pointer events until dismissed"
+    },
+    {
+      "host": "mandurah",
+      "label": "home-seniors-mode",
+      "url": "http://mandurah.ovation.test:24624/",
+      "navErr": null,
+      "ms": 16229,
+      "screenshot": "02-mandurah-home-seniors-mode.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nSENIORS\nSenior Cricket\nResults, scorecards, records and player stats for Mandurah Cricket Club's senior grades.\n30\nPLAYERS\n748\nGAMES\n18,886\nRUNS\n412\nWICKETS\n2\nGRADES\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nRecent Matches\n2025/26 SEASON\nB GRADE\nvs Halls Head Cricket Club\n2025/26 · ROUND 11\n8/266 vs 8/417\nHalls Head Cricket Club won by 2 wickets\n26/02/2026\nLark Hill Sportsplex\nA GRADE\nvs Halls Head Cricket Club\n2025/26 · ROUND 11\n8/241 vs 9/365\nHalls Head Cricket Club won by 124 runs\n26/02/2026\nSir Ross McLarty Oval\nTop Performers\n2025/26\nALL GRADES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "toggle-present",
+      "toggleVisible": true
+    },
+    {
+      "host": "mandurah",
+      "label": "toggle-click",
+      "urlAfter": "http://mandurah.ovation.test:24624/juniors",
+      "screenshot": "03-mandurah-after-toggle-click.png",
+      "events": []
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-dashboard",
+      "url": "http://mandurah.ovation.test:24624/juniors",
+      "navErr": null,
+      "ms": 15241,
+      "screenshot": "04-mandurah-juniors-dashboard.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Cricket\nMatch results, scorecards, premierships and player stats for Mandurah Cricket Club's junior grades.\n0\nMATCHES\n0\nPLAYERS\n0\nPREMIERSHIPS\n0\nSEASONS\n0\nAGE GROUPS\nMatches\nBrowse junior games and full scorecards.\nPremierships\nJunior honour boards and winning rosters.\nPlayers & Leaders\nRuns, wickets and games leaderboards.\nTop Performers\nALL AGES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-matches",
+      "url": "http://mandurah.ovation.test:24624/juniors/matches",
+      "navErr": null,
+      "ms": 14991,
+      "screenshot": "05-mandurah-juniors-matches.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Matches\nBrowse junior game-by-game scorecards.\nAGE GROUP\nAll age groups\nSEASON\nAll seasons\nNo junior matches found\nNo junior matches match these filters.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-premierships",
+      "url": "http://mandurah.ovation.test:24624/juniors/premierships",
+      "navErr": null,
+      "ms": 15362,
+      "screenshot": "06-mandurah-juniors-premierships.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nMANDURAH CRICKET CLUB\nJUNIOR PREMIERSHIPS\nAGE GROUP\nAll\n0 of 0 shown\nNo junior premierships found\nThere are no junior premierships to show for this filter.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-players",
+      "url": "http://mandurah.ovation.test:24624/juniors/players",
+      "navErr": null,
+      "ms": 15280,
+      "screenshot": "07-mandurah-juniors-players.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Players & Leaders\nJunior runs, wickets and games — names shown as recorded.\nPLAYERS\nLEADERBOARD\nMOST RUNS\nMOST WICKETS\nMOST GAMES\nHIGHEST SCORES\nBEST BOWLING\nSEARCH\nAGE GROUP\nAll age groups\nSEASON\nAll seasons\nNo junior players found\nNo junior players match these filters.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-office-bearers",
+      "url": "http://mandurah.ovation.test:24624/juniors/office-bearers",
+      "navErr": null,
+      "ms": 15039,
+      "screenshot": "08-mandurah-juniors-office-bearers.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Office Bearers\nSeason-by-season record of the people who run Mandurah Cricket Club juniors.\nNo office bearers yet\nNo junior office bearers have been published yet.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-match-detail-nonexistent",
+      "url": "http://mandurah.ovation.test:24624/juniors/matches/1",
+      "navErr": null,
+      "ms": 15058,
+      "screenshot": "09-mandurah-juniors-match-detail-nonexistent.png",
+      "spinnersVisible": 1,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "http404",
+          "v": "http://mandurah.ovation.test:24624/api/juniors/matches/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "http404",
+          "v": "http://mandurah.ovation.test:24624/api/juniors/matches/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nBack to junior matches\nLoading match…\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-player-detail-nonexistent",
+      "url": "http://mandurah.ovation.test:24624/juniors/players/1",
+      "navErr": null,
+      "ms": 15714,
+      "screenshot": "10-mandurah-juniors-player-detail-nonexistent.png",
+      "spinnersVisible": 1,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "http404",
+          "v": "http://mandurah.ovation.test:24624/api/juniors/players/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "http404",
+          "v": "http://mandurah.ovation.test:24624/api/juniors/players/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nBack to junior players\nLoading player…\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah",
+      "label": "juniors-mode-nav-links",
+      "navLinks": [
+        {
+          "text": "OVERVIEW",
+          "href": "/juniors"
+        },
+        {
+          "text": "MATCHES",
+          "href": "/juniors/matches"
+        },
+        {
+          "text": "PREMIERSHIPS",
+          "href": "/juniors/premierships"
+        },
+        {
+          "text": "PLAYERS",
+          "href": "/juniors/players"
+        },
+        {
+          "text": "OFFICE BEARERS",
+          "href": "/juniors/office-bearers"
+        },
+        {
+          "text": "SENIORS",
+          "href": "/"
+        },
+        {
+          "text": "JUNIORS",
+          "href": "/juniors"
+        },
+        {
+          "text": "Seniors",
+          "href": "/"
+        },
+        {
+          "text": "Juniors",
+          "href": "/juniors"
+        }
+      ]
+    },
+    {
+      "host": "mandurah",
+      "label": "toggle-back-to-seniors",
+      "urlAfter": "http://mandurah.ovation.test:24624/"
+    },
+    {
+      "host": "halls-head",
+      "label": "welcome-modal",
+      "screenshot": "11-halls-head-welcome-modal.png",
+      "note": "first-visit modal, blocks pointer events until dismissed"
+    },
+    {
+      "host": "halls-head",
+      "label": "home-seniors-mode",
+      "url": "http://halls-head.ovation.test:24624/",
+      "navErr": null,
+      "ms": 16731,
+      "screenshot": "12-halls-head-home-seniors-mode.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "HONOUR BOARDS\nPLAYERS\nMATCHES\nGRADES\nRECORDS\nPREMIERSHIPS\nCOMPARE\nSENIORS\nJUNIORS\nHELP\nSENIOR CRICKET\nSENIORS\nSenior Cricket\nResults, scorecards, records and player stats for Halls Head Cricket Club's senior grades.\n0\nPLAYERS\n0\nGAMES\n0\nRUNS\n0\nWICKETS\n0\nGRADES\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nTop Performers\nALL GRADES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nHalls Head Cricket Club\nQUICK LINKS\nHonour Boards\nPlayers\nMatches\nGrades\nRecords\nPremierships\nCompare\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "toggle-present",
+      "toggleVisible": true
+    },
+    {
+      "host": "halls-head",
+      "label": "toggle-click",
+      "urlAfter": "http://halls-head.ovation.test:24624/juniors",
+      "screenshot": "13-halls-head-after-toggle-click.png",
+      "events": []
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-dashboard",
+      "url": "http://halls-head.ovation.test:24624/juniors",
+      "navErr": null,
+      "ms": 15693,
+      "screenshot": "14-halls-head-juniors-dashboard.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Cricket\nMatch results, scorecards, premierships and player stats for Halls Head Cricket Club's junior grades.\n0\nMATCHES\n0\nPLAYERS\n0\nPREMIERSHIPS\n0\nSEASONS\n0\nAGE GROUPS\nMatches\nBrowse junior games and full scorecards.\nPremierships\nJunior honour boards and winning rosters.\nPlayers & Leaders\nRuns, wickets and games leaderboards.\nTop Performers\nALL AGES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-matches",
+      "url": "http://halls-head.ovation.test:24624/juniors/matches",
+      "navErr": null,
+      "ms": 15130,
+      "screenshot": "15-halls-head-juniors-matches.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Matches\nBrowse junior game-by-game scorecards.\nAGE GROUP\nAll age groups\nSEASON\nAll seasons\nNo junior matches found\nNo junior matches match these filters.\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-premierships",
+      "url": "http://halls-head.ovation.test:24624/juniors/premierships",
+      "navErr": null,
+      "ms": 15003,
+      "screenshot": "16-halls-head-juniors-premierships.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nHALLS HEAD CRICKET CLUB\nJUNIOR PREMIERSHIPS\nAGE GROUP\nAll\n0 of 0 shown\nNo junior premierships found\nThere are no junior premierships to show for this filter.\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-players",
+      "url": "http://halls-head.ovation.test:24624/juniors/players",
+      "navErr": null,
+      "ms": 15047,
+      "screenshot": "17-halls-head-juniors-players.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Players & Leaders\nJunior runs, wickets and games — names shown as recorded.\nPLAYERS\nLEADERBOARD\nMOST RUNS\nMOST WICKETS\nMOST GAMES\nHIGHEST SCORES\nBEST BOWLING\nSEARCH\nAGE GROUP\nAll age groups\nSEASON\nAll seasons\nNo junior players found\nNo junior players match these filters.\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-office-bearers",
+      "url": "http://halls-head.ovation.test:24624/juniors/office-bearers",
+      "navErr": null,
+      "ms": 14935,
+      "screenshot": "18-halls-head-juniors-office-bearers.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nJUNIORS\nJunior Office Bearers\nSeason-by-season record of the people who run Halls Head Cricket Club juniors.\nNo office bearers yet\nNo junior office bearers have been published yet.\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-match-detail-nonexistent",
+      "url": "http://halls-head.ovation.test:24624/juniors/matches/1",
+      "navErr": null,
+      "ms": 14980,
+      "screenshot": "19-halls-head-juniors-match-detail-nonexistent.png",
+      "spinnersVisible": 1,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "http404",
+          "v": "http://halls-head.ovation.test:24624/api/juniors/matches/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "t": "http404",
+          "v": "http://halls-head.ovation.test:24624/api/juniors/matches/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nBack to junior matches\nLoading match…\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-player-detail-nonexistent",
+      "url": "http://halls-head.ovation.test:24624/juniors/players/1",
+      "navErr": null,
+      "ms": 15368,
+      "screenshot": "20-halls-head-juniors-player-detail-nonexistent.png",
+      "spinnersVisible": 1,
+      "brokenImgs": [
+        "http://halls-head.ovation.test:24624/ovation-logo.svg",
+        "http://halls-head.ovation.test:24624/ovation-logo.svg"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://halls-head.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "http404",
+          "v": "http://halls-head.ovation.test:24624/api/juniors/players/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "t": "http404",
+          "v": "http://halls-head.ovation.test:24624/api/juniors/players/1"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "textExcerpt": "OVERVIEW\nMATCHES\nPREMIERSHIPS\nPLAYERS\nOFFICE BEARERS\nSENIORS\nJUNIORS\nHELP\nJUNIOR CRICKET\nBack to junior players\nLoading player…\nHalls Head Cricket Club\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Halls Head Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "halls-head",
+      "label": "juniors-mode-nav-links",
+      "navLinks": [
+        {
+          "text": "OVERVIEW",
+          "href": "/juniors"
+        },
+        {
+          "text": "MATCHES",
+          "href": "/juniors/matches"
+        },
+        {
+          "text": "PREMIERSHIPS",
+          "href": "/juniors/premierships"
+        },
+        {
+          "text": "PLAYERS",
+          "href": "/juniors/players"
+        },
+        {
+          "text": "OFFICE BEARERS",
+          "href": "/juniors/office-bearers"
+        },
+        {
+          "text": "SENIORS",
+          "href": "/"
+        },
+        {
+          "text": "JUNIORS",
+          "href": "/juniors"
+        },
+        {
+          "text": "Seniors",
+          "href": "/"
+        },
+        {
+          "text": "Juniors",
+          "href": "/juniors"
+        }
+      ]
+    },
+    {
+      "host": "halls-head",
+      "label": "toggle-back-to-seniors",
+      "urlAfter": "http://halls-head.ovation.test:24624/"
+    },
+    {
+      "host": "mandurah-mobile",
+      "label": "welcome-modal",
+      "screenshot": "21-mandurah-mobile-welcome-modal.png",
+      "note": "first-visit modal, blocks pointer events until dismissed"
+    },
+    {
+      "host": "mandurah-mobile",
+      "label": "juniors-dashboard-mobile",
+      "url": "http://mandurah.ovation.test:24624/juniors",
+      "navErr": null,
+      "ms": 15716,
+      "screenshot": "22-mandurah-mobile-juniors-dashboard-mobile.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "SENIORS\nJUNIORS\nJUNIOR CRICKET\nJUNIORS\nJunior Cricket\nMatch results, scorecards, premierships and player stats for Mandurah Cricket Club's junior grades.\n0\nMATCHES\n0\nPLAYERS\n0\nPREMIERSHIPS\n0\nSEASONS\n0\nAGE GROUPS\nMatches\nBrowse junior games and full scorecards.\nPremierships\nJunior honour boards and winning rosters.\nPlayers & Leaders\nRuns, wickets and games leaderboards.\nTop Performers\nALL AGES\nTop Run Scorers\nNo data for this season yet.\nTop Wicket Takers\nNo data for this season yet.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah-mobile",
+      "label": "juniors-players-mobile",
+      "url": "http://mandurah.ovation.test:24624/juniors/players",
+      "navErr": null,
+      "ms": 14902,
+      "screenshot": "23-mandurah-mobile-juniors-players-mobile.png",
+      "spinnersVisible": 0,
+      "brokenImgs": [
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png",
+        "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png"
+      ],
+      "seniorBleed": [],
+      "events": [
+        {
+          "t": "requestfailed",
+          "v": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_CONNECTION_RESET"
+        },
+        {
+          "t": "http401",
+          "v": "http://mandurah.ovation.test:24624/api/auth/me"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "t": "requestfailed",
+          "v": "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/84fe5d06-5eeb-4fe5-85d1-bf3fd59956aa/1689819925822/logo.png net::ERR_TUNNEL_CONNECTION_FAILED"
+        },
+        {
+          "t": "console.error",
+          "v": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ],
+      "textExcerpt": "SENIORS\nJUNIORS\nJUNIOR CRICKET\nJUNIORS\nJunior Players & Leaders\nJunior runs, wickets and games — names shown as recorded.\nPLAYERS\nLEADERBOARD\nMOST RUNS\nMOST WICKETS\nMOST GAMES\nHIGHEST SCORES\nBEST BOWLING\nSEARCH\nAGE GROUP\nAll age groups\nSEASON\nAll seasons\nNo junior players found\nNo junior players match these filters.\nMandurah Cricket Club\nMCC\nQUICK LINKS\nOverview\nMatches\nPremierships\nPlayers\nOffice Bearers\nCONTACT\nFor club inquiries, please contact us via our official website.\n© 2026 Mandurah Cricket Club. All rights reserved.·Admin login"
+    },
+    {
+      "host": "mandurah-mobile",
+      "label": "menu-open",
+      "screenshot": "24-mandurah-mobile-juniors-menu-open.png"
+    }
+  ]
+}
