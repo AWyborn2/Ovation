@@ -117,23 +117,36 @@ after "Your club's site is live!".
 - **(c) Regression gate:** adopt the tester's `onboarding-02-signup.mjs` as a CI/staging
   smoke: signup → correctly-branded site → authenticated admin in <60s. *(with rec 10)*
 
-## 5. Crash-proof the public site: error boundaries, real 404s, no infinite spinners
+## 5. Crash-proof the first session: error boundaries, real 404s, no infinite spinners, no misplaced modals
 
 **Problem.** `/records` **white-screens the whole SPA** on an empty club
 (`records.tsx:628-644` reads `.value` on null; no error boundary; top-nav item, day-one page).
 Nonexistent match/player detail URLs spin "Loading…" forever (API 404s correctly; UI never
-resolves). The admin gate and SPA boot show bare "Loading…" text / blank pale-blue screen
-while polished skeleton primitives already exist in `data-states.tsx`. Evidence:
-`juniors-empty` #1/#5 + scorecard, `club-admin` #4.
+resolves) — including the link every redacted "Private Player" leaderboard row points at. The
+admin gate and SPA boot show bare "Loading…" text / blank pale-blue screen while polished
+skeleton primitives already exist in `data-states.tsx`. And the public "Welcome to the club
+portal" tour modal opens **on top of the admin login form** (it broke test automation; it will
+confuse volunteers). Evidence: `juniors-empty` #1/#5, `club-admin` #2/#4, `club-sweep-2` #7.
 
 **Solutions:**
 - **(a) Null-safe records + route-level error boundary** with the branded 404/error component
   (one exists — the 404 page is good) so one page's crash never blanks the app. *(day)*
 - **(b) Detail-page 404 handling:** `useQuery` error → "This match/player doesn't exist"
-  state with a back link, replacing the eternal spinner. *(hours per page type, ~4 pages)*
+  state with a back link, replacing the eternal spinner; don't link redacted rows at all.
+  *(hours per page type, ~4 pages)*
 - **(c) Swap the three bare loading gates** (`admin-shell.tsx:12`,
-  `platform-admin-shell.tsx:26`, `App.tsx:230`) to the existing `LoadingState`/skeletons.
-  *(hours)*
+  `platform-admin-shell.tsx:26`, `App.tsx:230`) to the existing `LoadingState`/skeletons, and
+  suppress the visitor tour on `/admin*`, `/captain`, and kiosk routes. *(hours)*
+
+**Also in scope (same "first 90 seconds" bucket, `club-admin` findings #4/#5):**
+entitlement-locked tabs **vanish silently** instead of showing an upsell
+(`admin-groups.tsx:64` — on a lower plan the whole Social group disappears with no
+explanation, and this is also the upsell surface billing needs once 2c/2d activate); the
+admin hub duplicates the sidebar IA as ~17 unordered tiles (Admin Users listed twice); raw
+floats leak into admin stats display ("6.8333335" instead of a formatted number). Fix: gate
+locked tabs behind a visible lock badge + "See plans" sheet, curate the hub to 6–8
+task-oriented tiles, and round through one shared `formatStat` helper. *(1–2 days, bundle
+with (a)–(c))*
 
 ## 6. Make the clubroom TV genuinely TV-ready
 
@@ -153,39 +166,50 @@ skins, sponsor slots) is genuinely sellable. Evidence: `captain-kiosk/30–33,40
   for clubs — surface them in the pricing/plan copy once billing wakes up. *(product decision,
   no code)*
 
-## 7. Respect the volunteer admin's first 90 seconds
+## 7. Close the private-player privacy gap before any real data ships
 
-**Problem.** The public "Welcome to the club portal" tour modal opens **on top of the admin
-login form** (broke test automation; will confuse humans); the admin hub duplicates the
-sidebar IA as ~17 unordered tiles (one listed twice); entitlement-locked tabs **vanish
-silently** (`admin-groups.tsx:64`) — on a lower plan the whole Social group would disappear
-with no upsell; raw floats render in stats ("6.8333335"); anonymous visitors see admin
-controls ("Add Player") that can only end in a 401. Evidence: `club-admin` findings #2/#4/#5,
-`juniors-empty` #6, `public-visitor` P2.
+**Problem.** `is_private` redaction works on the player directory ("Private Player" on
+leaderboards, excluded from the directory) but **fails on scorecards**: the OPPONENT club's
+site renders the private player's real name in full (`oppositionLines[].name` is never
+redacted — verified via API and UI on Pinjarra's view of Warnbro's private player), and
+dismissal free-text ("c Hunter Reed b …") carries private names on EVERY club's site,
+including their own. With the real PCA dataset this is a live privacy obligation
+(`central.players.is_private` exists precisely because some participants opted out), a
+data-governance commitment in CLAUDE.md, and plausibly a legal exposure for junior-adjacent
+players. Evidence: `club-sweep-2/findings.md` privacy verdict + screenshots
+`pinjarra-09-*`, `singleton-irwinians-09-*`.
 
 **Solutions:**
-- **(a) Suppress the tour on `/admin*`, `/captain`, kiosk routes.** *(hours)*
-- **(b) Gate admin-only controls on `useCurrentAdmin`** (pattern already exists in other
-  pages) and format numbers via one shared `formatStat` helper. *(day)*
-- **(c) Entitlement UX:** locked tabs stay visible with a lock badge + "See plans" sheet —
-  this is also the upsell surface billing needs when it activates (2c/2d are built but
-  dormant). Curate the hub to 6–8 task-oriented tiles. *(2 days)*
+- **(a) Redact at the read boundary:** apply the privacy mask in `central-queries.ts`
+  scorecard/opposition reads (one place, both sides of the match), replacing name AND
+  scrubbing it from dismissal text (substring replace with "Private Player" / fielder
+  initials). Add a consistency test with an is_private fixture. *(1–2 days)*
+- **(b) Defence in depth:** a serializer-level guard in the API layer that refuses to emit
+  any `display_name` belonging to an is_private participant on public routes, whatever the
+  source path — cheap insurance against future read paths repeating the miss. *(day)*
+- **(c) Also fix the UX artefact:** redacted leaderboard rows currently link to a dead,
+  forever-spinning player page — render them unlinked. *(hours, covered by rec 5b)*
 
-## 8. Leaderboards and stats tables that answer the question a fan asked
+## 8. Stats surfaces that answer the fan's question — and get records right
 
 **Problem.** The A Grade leaderboard ships **six permanently empty bowling/fielding columns**
 (central bowling data exists but isn't read — see rec 3), defaults to sort-by-games (the
-season's top scorer, 907 runs, sat 13th), and **headers aren't sortable**. Compare's career
-batting average ignores not-outs (39.43 vs correct 56.69 — the same page's By Grade table gets
-it right); home headline says "748 GAMES" counting roster appearances, not the 68 matches
-played. Evidence: `public-visitor` P1-4/P2 with SQL cross-checks.
+season's top scorer, 907 runs, sat 13th), and **headers aren't sortable**. The Records page's
+"Total Club Records" tab shows **per-(player,grade) maxima labelled as all-time career
+records** — 7 of 25 values checked were wrong across 3 of 5 clubs (Warnbro's real Most Games
+holder has 47, page shows 30; Rockingham Most Wickets shows the right holder with the wrong
+number, 20 vs 27). Compare's career batting average ignores not-outs (39.43 vs correct 56.69 —
+the same page's By Grade table gets it right); home headline says "748 GAMES" counting roster
+appearances, not the 68 matches played. Evidence: `public-visitor` P1-4/P2,
+`club-sweep-2/findings.md` §e — all SQL cross-checked.
 
 **Solutions:**
-- **(a) Sortable columns + runs-desc default** on leaderboards; hide columns whose whole
-  dataset is null for the tenant. *(1–2 days)*
-- **(b) Fix the Compare average** (dismissals = innings − not-outs — the correct helper
-  already exists for By Grade; reuse it) and label the home tile "Appearances" or count
-  distinct matches. *(hours)*
+- **(a) Fix the two wrong-number bugs first** (records tab: aggregate across grades before
+  taking the max — the By Grade tab already has the per-grade view; Compare: reuse the By
+  Grade average helper). Clubs forgive missing features, never wrong records. *(day)*
+- **(b) Sortable columns + runs-desc default** on leaderboards; hide columns whose whole
+  dataset is null for the tenant; label the home tile "Appearances" or count distinct
+  matches. *(1–2 days)*
 - **(c) Column-config per tenant** (curation feature): let clubs choose default leaderboard
   columns per grade — differentiator for stat-obsessed clubs. *(later, plan-gated)*
 
@@ -237,7 +261,8 @@ Playwright scripts already cover the critical paths and caught all of them.
 
 ### Sequencing suggestion (impact ÷ effort)
 
-**Week 1 (demo-safe):** 1a/1b · 4a · 5a/5b · 7a — the broken-logo, wrong-club-handoff,
-white-screen and tour-modal fixes make the product safe to demo to a friendly club.
-**Week 2–3 (pilot-ready):** 2a/2b · 3a/3b · 6a/6b · 8a/8b.
-**Week 4+ (self-serve-ready):** 7c · 9a/9b/9c · 10a/10b.
+**Week 1 (demo-safe):** 1a/1b · 3a (view-model format fix) · 4a · 5a/b/c · 7a/b — the
+broken-logo, garbled-scorecard, wrong-club-handoff, white-screen/tour-modal, and
+privacy-leak fixes make the product safe to demo or pilot with a real club.
+**Week 2–3 (pilot-ready):** 2a/2b · 3b/3c · 6a/6b · 8a/8b.
+**Week 4+ (self-serve-ready):** 8c · 9a/9b/9c · 10a/10b.

@@ -22,10 +22,48 @@ runs native reads. Each club's site was walked by a tester on its own subdomain
 (`<slug>.ovation.test`) with production-style host routing; every stats surface was compared to
 direct SQL ground truth.
 
-**Results:** see `PANEL-RESULTS` section placeholder — filled from
+**Results.** Two tester groups covered the ten central-read clubs (sweep 1: Mandurah, White
+Knights, Shoalwater Bay, Secret Harbour, Waroona — A Grade leaderboard; sweep 2: Pinjarra,
+South Mandurah, Rockingham Hornets, Warnbro Swans, Singleton Irwinians — B Grade leaderboard),
+each independently sampling home totals, leaderboard top-3s, one player career, one full match
+scorecard, and (sweep 2 only) the Records page, against direct SQL on the `central` schema.
+Full matrices, per-club brand checks, and raw extraction/ground-truth files are in
 `evidence/club-sweep-1/findings.md` and `evidence/club-sweep-2/findings.md`.
 
-<!-- PANEL-RESULTS -->
+**Headline verdict: data fidelity is excellent.** Across both sweeps, roughly 400 UI-vs-DB
+datapoints were compared — home headline totals (5 metrics × 10 clubs), leaderboard top-3 rows
+(6 fields × 3 rows × 10 clubs), player careers (10 fields × 10 clubs), and full match
+scorecards (innings totals + 5 sampled lines × 10 clubs) — and **every one matched
+independently-computed SQL exactly**, including subtle semantics (did-not-bat exclusion,
+not-out classification, best-bowling tie-breaks, games as batting∪roster union). The
+central-read aggregation pipeline (`central-queries.ts`) is correct.
+
+**Where the panel found real bugs — all in the presentation layer, not the aggregates:**
+
+| # | Finding | Severity | Clubs affected | Recommendation |
+|---|---|---|---|---|
+| 1 | Scorecard view-model swaps runs/wickets for central "W/R" score strings; EXTRAS always renders 0; all-out innings show "N/0" | HIGH | all 10 central tenants | Rec 3a |
+| 2 | Dismissal text corrupted for central format ("c c X b Y", "st st…", LBW drops the bowler) | HIGH | all 10 | Rec 3a |
+| 3 | Default placeholder logo (`ovation-logo.svg`) is malformed XML — broken image in header/footer/kiosk on every tenant without a custom logo | HIGH | 8 of 10 (2 have real logos) | Rec 1a |
+| 4 | `is_private` redaction misses opponent-side scorecard lines and dismissal free-text — real names leak | HIGH | any club with a private opponent (found via Pinjarra↔Warnbro) | Rec 7a/b |
+| 5 | Records "Total Club Records" tab reports per-(player,grade) maxima as all-time career records — wrong number or wrong holder for any multi-grade record-holder | HIGH | 3 of 10 sampled (Rockingham, Warnbro, Singleton Irwinians) | Rec 8a |
+| 6 | Home "Top Performers" and `/premierships` empty despite real central data (missing `shouldReadCentral` branches); leaderboard bowling/fielding columns permanently blank | MEDIUM | all 10 | Rec 3b |
+| 7 | Brand colours silently snap to nearest of 5 fixed accent tokens — occasionally a poor match (grey→amber) | LOW / design decision | all 10 | Rec 9 |
+| 8 | HHCC-branded grade-badge asset renders on every tenant's pages; generic (non-tenant) og:/meta tags | LOW | all 10 | Rec 9 |
+
+**Cross-club consistency: PASS both times.** A shared match opened from both participating
+clubs' sites rendered byte-identical scorecards (innings totals, every batting/bowling line,
+dismissal text) in both sweeps — confirming the shared match/central-club-id model has no
+per-tenant divergence; the formatting bugs above reproduce identically on both sides, i.e.
+they live in the shared view-model, not per-tenant code.
+
+**Reading this as an A/B/panel exercise:** with 10 independently-provisioned "variants" (one
+per club) exercising the same code paths, a real regression would have shown up as a
+per-club-inconsistent result — it didn't. Every mismatch found was systemic (same bug, same
+symptom, every affected club), which is the strongest possible signal that these are shared
+code defects rather than club-specific data problems, and gives high confidence that fixing
+each one once (in the shared scorecard/leaderboard/records code) resolves it for all clubs
+simultaneously — including the eventual real 27-club PCA dataset.
 
 ---
 
