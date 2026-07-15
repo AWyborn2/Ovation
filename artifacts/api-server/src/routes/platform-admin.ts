@@ -7,6 +7,7 @@ import {
   adminPasswordResetsTable,
   type TenantRow,
 } from "@workspace/db";
+import { toAdminTenant } from "../lib/admin-tenant-shape";
 import {
   PlatformAdminLoginBody,
   UpdateAdminTenantBody,
@@ -91,32 +92,6 @@ async function centralClubNames(): Promise<Map<number, string>> {
   }
 }
 
-/** Shape a tenant row for the console (plan, branding, counts). */
-function toAdminTenant(
-  t: TenantRow,
-  centralClubName: string | null,
-  adminCount: number,
-) {
-  return {
-    id: t.id,
-    slug: t.slug,
-    name: t.name,
-    plan: t.plan,
-    centralClubId: t.centralClubId,
-    centralClubName,
-    customDomain: t.customDomain,
-    readsFromCentral: t.readsFromCentral,
-    createdAt:
-      t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
-    adminCount,
-    shortName: t.shortName,
-    logoUrl: t.logoUrl,
-    faviconUrl: t.faviconUrl,
-    primaryColour: t.primaryColour,
-    secondaryColour: t.secondaryColour,
-    tertiaryColour: t.tertiaryColour,
-  };
-}
 
 // --- Auth -------------------------------------------------------------------
 

@@ -6517,7 +6517,10 @@ export const ListAllTenantsResponseItem = zod.object({
   "faviconUrl": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
+  "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
 
@@ -6563,7 +6566,10 @@ export const GetAdminTenantResponse = zod.object({
   "faviconUrl": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
+  "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
   "id": zod.number(),
@@ -6601,7 +6607,10 @@ export const UpdateAdminTenantResponse = zod.object({
   "faviconUrl": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
+  "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
 
@@ -6645,7 +6654,10 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "faviconUrl": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
+  "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
   "id": zod.number(),

@@ -6,6 +6,7 @@ import {
   getAdminById,
 } from "../lib/auth";
 import { getTenantId } from "./tenant-context";
+import { touchTenantActivity } from "../lib/tenant-activity";
 
 export type RequestWithAdmin = Request & { admin?: AdminRow };
 
@@ -37,6 +38,10 @@ export const requireAdmin: RequestHandler = (
         return;
       }
       (req as RequestWithAdmin).admin = admin;
+      // Best-effort, throttled tenant-health signal. Placed here (the
+      // requireAdmin success path) rather than in the shared resolveAdmin helper
+      // so it never fires on optional-admin read paths that also call resolveAdmin.
+      touchTenantActivity(admin.tenantId);
       next();
     })
     .catch((err) => {
