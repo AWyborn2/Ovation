@@ -6238,7 +6238,7 @@ components:
     AdminTenant:
       type: object
       description: A tenant as listed in the platform-admin console.
-      required: [id, slug, name, plan, centralClubId, readsFromCentral, adminCount]
+      required: [id, slug, name, plan, centralClubId, readsFromCentral, adminCount, brandingComplete]
       properties:
         id:
           type: integer
@@ -6273,6 +6273,19 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+        lastActiveAt:
+          type: ["string", "null"]
+          description: >-
+            ISO-8601 instant a club admin last acted on this tenant, or null if
+            never active (the onboarding-stall signal). Throttled server-side.
+        suspendedAt:
+          type: ["string", "null"]
+          description: ISO-8601 instant the tenant was suspended, or null when active.
+        brandingComplete:
+          type: boolean
+          description: >-
+            True when the tenant has set both an explicit logo and primary colour
+            (has configured its own branding rather than relying on defaults).
 
     AdminTenantAdmin:
       type: object

@@ -36,4 +36,16 @@ export interface AdminTenant {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
+  /**
+     * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
+     * @nullable
+     */
+  lastActiveAt?: string | null;
+  /**
+     * ISO-8601 instant the tenant was suspended, or null when active.
+     * @nullable
+     */
+  suspendedAt?: string | null;
+  /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
+  brandingComplete: boolean;
 }
