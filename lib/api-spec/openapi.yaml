@@ -6067,12 +6067,17 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+        badgeStyle:
+          type: ["string", "null"]
+          description: >-
+            The grade-badge SVG shape (diamond | shield | hexagon | oval | crest).
+            Null = the default "diamond" style.
 
     UpdateTenantBrandBody:
       type: object
       description: >-
         Partial self-service update of a tenant's own cosmetic branding fields.
-        Deliberately closed to exactly these seven properties — plan and
+        Deliberately closed to exactly these eight properties — plan and
         customDomain are not valid properties on this schema at all, so they
         cannot be set through this endpoint regardless of handler changes.
       additionalProperties: false
@@ -6091,12 +6096,15 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+        badgeStyle:
+          type: ["string", "null"]
+          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
 
     UpdateAdminTenantBrandBody:
       type: object
       description: >-
         Partial concierge (platform-admin) update of a tenant's cosmetic
-        branding fields. Closed to exactly these seven properties — unknown
+        branding fields. Closed to exactly these eight properties — unknown
         keys such as plan, customDomain, or backgroundUrl are stripped by
         validation and can never reach the handler. Colour fields are
         validated as 6-digit hex.
@@ -6120,6 +6128,9 @@ components:
         tertiaryColour:
           type: ["string", "null"]
           pattern: "^#[0-9a-fA-F]{6}$"
+        badgeStyle:
+          type: ["string", "null"]
+          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
 
     PlatformBrand:
       type: object
@@ -6273,6 +6284,9 @@ components:
           type: ["string", "null"]
         tertiaryColour:
           type: ["string", "null"]
+        badgeStyle:
+          type: ["string", "null"]
+          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
         lastActiveAt:
           type: ["string", "null"]
           description: >-

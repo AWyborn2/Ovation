@@ -25,6 +25,8 @@ import { Save, Loader2, Check } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { contrastWarningMessage } from "@/pages/platform-admin/branding-card";
+import { GradeBadge, BADGE_STYLE_ORDER, BADGE_STYLE_LABELS, type BadgeStyle } from "@/components/grade-badge";
+import { BadgeStyleContext } from "@/lib/brand-context";
 
 /** True when the response is the platform marker rather than a tenant brand. */
 function isPlatformResponse(
@@ -95,6 +97,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
   );
   const [customTertiary, setCustomTertiary] = useState(brand.tertiaryColour ?? "#2A4060");
 
+  const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
+    (brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
+  );
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +112,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setCustomPrimary(brand.primaryColour ?? "#1A3350");
     setCustomSecondary(brand.secondaryColour ?? ACCENT_HEX[snapped]);
     setCustomTertiary(brand.tertiaryColour ?? "#2A4060");
+    setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond");
   }, [brand]);
 
   const update = useUpdateTenantBrand({
@@ -182,6 +188,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
           primaryColour: brand.primaryColour,
           secondaryColour: ACCENT_HEX[accent],
           tertiaryColour: brand.tertiaryColour,
+          badgeStyle: badgeStyle,
         },
       });
     } else {
@@ -194,6 +201,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
           primaryColour: customPrimary || null,
           secondaryColour: customSecondary || null,
           tertiaryColour: customTertiary || null,
+          badgeStyle: badgeStyle,
         },
       });
     }
@@ -385,6 +393,38 @@ function Editor({ brand }: { brand: TenantBrand }) {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Badge style</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              The shape used for grade badges across your site.
+            </p>
+            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Badge style">
+              {BADGE_STYLE_ORDER.map((style) => (
+                <button
+                  key={style}
+                  type="button"
+                  role="radio"
+                  aria-checked={badgeStyle === style}
+                  onClick={() => setBadgeStyle(style)}
+                  disabled={busy}
+                  data-testid={`swatch-badge-${style}`}
+                  className={`flex flex-col items-center gap-1.5 rounded-md border p-2 transition-colors ${
+                    badgeStyle === style ? "border-ring" : "border-border hover:border-muted-foreground"
+                  }`}
+                >
+                  <BadgeStyleContext.Provider value={style}>
+                    <GradeBadge grade="A Grade" size="md" badgeStyle={style} />
+                  </BadgeStyleContext.Provider>
+                  <span className="text-xs font-medium">{BADGE_STYLE_LABELS[style]}</span>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {error && <div className="text-sm text-destructive">{error}</div>}
         <Button onClick={save} disabled={busy} data-testid="button-save-branding">
           {update.isPending ? (
@@ -415,6 +455,12 @@ function Editor({ brand }: { brand: TenantBrand }) {
             <div className="mt-2 rounded-md bg-secondary text-secondary-foreground px-3 py-2 text-sm font-medium inline-block ml-2">
               Secondary
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <BadgeStyleContext.Provider value={badgeStyle}>
+              <GradeBadge grade="A Grade" size="md" badgeStyle={badgeStyle} />
+              <GradeBadge grade="B Grade" size="md" badgeStyle={badgeStyle} />
+            </BadgeStyleContext.Provider>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">

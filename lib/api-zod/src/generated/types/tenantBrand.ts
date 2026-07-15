@@ -33,4 +33,9 @@ export interface TenantBrand {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
+  /**
+     * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default "diamond" style.
+     * @nullable
+     */
+  badgeStyle?: string | null;
 }

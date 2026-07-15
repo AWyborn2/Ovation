@@ -37,6 +37,11 @@ export interface AdminTenant {
   /** @nullable */
   tertiaryColour?: string | null;
   /**
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * @nullable
+     */
+  badgeStyle?: string | null;
+  /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable
      */

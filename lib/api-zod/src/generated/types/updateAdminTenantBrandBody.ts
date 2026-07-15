@@ -7,7 +7,7 @@
  */
 
 /**
- * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these seven properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
  */
 export interface UpdateAdminTenantBrandBody {
   /** @minLength 1 */
@@ -33,4 +33,9 @@ export interface UpdateAdminTenantBrandBody {
      * @pattern ^#[0-9a-fA-F]{6}$
      */
   tertiaryColour?: string | null;
+  /**
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * @nullable
+     */
+  badgeStyle?: string | null;
 }

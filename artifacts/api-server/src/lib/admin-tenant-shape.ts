@@ -30,6 +30,7 @@ export function toAdminTenant(
     primaryColour: t.primaryColour,
     secondaryColour: t.secondaryColour,
     tertiaryColour: t.tertiaryColour,
+    badgeStyle: t.badgeStyle,
     lastActiveAt:
       t.lastActiveAt instanceof Date
         ? t.lastActiveAt.toISOString()

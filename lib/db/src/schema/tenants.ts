@@ -49,6 +49,9 @@ export const tenantsTable = pgTable("tenants", {
   // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
   // entitlements; enforcement is dormant until BILLING_ENABLED=true.
   plan: text("plan").notNull().default("free"),
+  // Badge shape for grade badges (diamond | shield | hexagon | oval | crest).
+  // Null → default "diamond". Stored as text; validated client-side.
+  badgeStyle: text("badge_style"),
   // Tenant health (platform dashboard). Both nullable, no backfill.
   lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),

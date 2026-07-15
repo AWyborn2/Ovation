@@ -3,10 +3,10 @@ import { db, clubsTable, tenantsTable } from "@workspace/db";
 import { DEFAULT_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
 
 /**
- * Per-tenant brand (logo + colours), the single shape every renderer reads.
- * Structurally the established brand shape; aliased for the white-label naming.
+ * Per-tenant brand (logo + colours + badge style), the single shape every
+ * renderer reads. Extends the established brand shape with the badge selector.
  */
-export type TenantBrand = HallsHeadBrand;
+export type TenantBrand = HallsHeadBrand & { badgeStyle?: string | null };
 
 /** Minimal brand columns read from the `tenants` row. */
 interface TenantBrandRow {
@@ -18,6 +18,7 @@ interface TenantBrandRow {
   primaryColour: string | null;
   secondaryColour: string | null;
   tertiaryColour: string | null;
+  badgeStyle: string | null;
 }
 
 /** Minimal brand columns read from the `clubs` register row (`appClubId`). */
@@ -76,6 +77,8 @@ export function buildTenantBrand(
       club?.tertiaryColour ??
       tenant?.tertiaryColour ??
       (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.tertiaryColour),
+    // Badge style — tenant row only (clubs register has no badge concept).
+    badgeStyle: tenant?.badgeStyle ?? null,
   };
 }
 
@@ -99,6 +102,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       primaryColour: tenantsTable.primaryColour,
       secondaryColour: tenantsTable.secondaryColour,
       tertiaryColour: tenantsTable.tertiaryColour,
+      badgeStyle: tenantsTable.badgeStyle,
       appClubId: tenantsTable.appClubId,
     })
     .from(tenantsTable)

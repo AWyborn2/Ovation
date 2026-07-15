@@ -385,7 +385,8 @@ export const GetMatchResponse = zod.object({
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -489,7 +490,8 @@ export const UpdateMatchRoundResponse = zod.object({
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -589,7 +591,8 @@ export const SetMatchHatTrickResponse = zod.object({
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -6385,7 +6388,8 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
   "platform": zod.literal(true)
 }).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.')]).describe('A tenant\'s brand on a club host, or the platform marker on the apex\/marketing host (no tenant — the SPA mounts the landing page).')
@@ -6401,8 +6405,9 @@ export const UpdateTenantBrandBody = zod.object({
   "faviconUrl": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
-}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these seven properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
+  "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
+}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
 
 export const UpdateTenantBrandResponse = zod.object({
   "name": zod.string(),
@@ -6413,7 +6418,8 @@ export const UpdateTenantBrandResponse = zod.object({
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
 
 
@@ -6518,6 +6524,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -6567,6 +6574,7 @@ export const GetAdminTenantResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -6608,6 +6616,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -6634,8 +6643,9 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "faviconUrl": zod.string().nullish(),
   "primaryColour": zod.string().regex(updateAdminTenantBrandBodyPrimaryColourRegExp).nullish(),
   "secondaryColour": zod.string().regex(updateAdminTenantBrandBodySecondaryColourRegExp).nullish(),
-  "tertiaryColour": zod.string().regex(updateAdminTenantBrandBodyTertiaryColourRegExp).nullish()
-}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these seven properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
+  "tertiaryColour": zod.string().regex(updateAdminTenantBrandBodyTertiaryColourRegExp).nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
+}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
 
 export const UpdateAdminTenantBrandResponse = zod.object({
   "tenant": zod.object({
@@ -6655,6 +6665,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "secondaryColour": zod.string().nullish(),
   "tertiaryColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')

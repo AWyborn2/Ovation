@@ -46,6 +46,18 @@ const PlatformContext = createContext<PlatformState>({
   isLoading: true,
 });
 
+/**
+ * Badge style context — the tenant's chosen SVG badge shape key (e.g.
+ * "diamond", "shield", "hexagon"). Defaults to "diamond". Read by `GradeBadge`
+ * so every badge on the page reflects the tenant setting without prop-drilling.
+ */
+export const BadgeStyleContext = createContext<string>("diamond");
+
+/** Read the active badge style from context. */
+export function useBadgeStyle(): string {
+  return useContext(BadgeStyleContext);
+}
+
 /** The current tenant's brand (default brand until the request resolves). */
 export function useTenantBrand(): ClubBrand {
   const q = useGetTenantBrand({ query: { queryKey: getGetTenantBrandQueryKey() } });
@@ -115,9 +127,18 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     // Don't paint a tenant theme onto the platform/marketing surface.
     if (!isPlatform) applyBrandTheme(brand, mode);
   }, [brand, isPlatform, mode]);
+
+  // Badge style — read from the API response (null / undefined → "diamond").
+  const badgeStyle =
+    (!isPlatform && (q.data as TenantBrand | undefined)?.badgeStyle) || "diamond";
+
   return (
     <PlatformContext.Provider value={{ isPlatform, isLoading: q.isLoading }}>
-      <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>
+      <BrandContext.Provider value={brand}>
+        <BadgeStyleContext.Provider value={badgeStyle}>
+          {children}
+        </BadgeStyleContext.Provider>
+      </BrandContext.Provider>
     </PlatformContext.Provider>
   );
 }

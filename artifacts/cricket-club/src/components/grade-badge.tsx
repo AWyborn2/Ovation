@@ -1,4 +1,5 @@
-import iconGold from "@assets/HHCC_Icon_Gold_1779853335292.png";
+import { useContext } from "react";
+import { BadgeStyleContext } from "@/lib/brand-context";
 
 interface GradeMeta {
   full: string;
@@ -38,41 +39,106 @@ type Size = "sm" | "md" | "lg";
 
 const SIZE_PX: Record<Size, number> = { sm: 44, md: 68, lg: 112 };
 
-// The brand accent colour (same runtime CSS token every button/link uses),
-// not a fixed gold literal — so the badge recolours per-tenant.
 const ACCENT = "hsl(var(--accent))";
+
+export type BadgeStyle = "diamond" | "shield" | "hexagon" | "oval" | "crest";
+
+export const BADGE_STYLE_LABELS: Record<BadgeStyle, string> = {
+  diamond: "Diamond",
+  shield: "Shield",
+  hexagon: "Hexagon",
+  oval: "Oval",
+  crest: "Crest",
+};
+
+export const BADGE_STYLE_ORDER: BadgeStyle[] = ["diamond", "shield", "hexagon", "oval", "crest"];
+
+type BadgeRenderFn = (px: number, accent: string) => React.ReactNode;
+
+const BADGE_STYLES: Record<BadgeStyle, BadgeRenderFn> = {
+  diamond: (px, accent) => (
+    <svg width={px} height={px} viewBox="0 0 100 100" fill="none" aria-hidden>
+      <polygon
+        points="50,5 95,50 50,95 5,50"
+        stroke={accent}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  shield: (px, accent) => (
+    <svg width={px} height={px} viewBox="0 0 100 100" fill="none" aria-hidden>
+      <path
+        d="M50,7 L93,22 L93,56 Q93,82 50,95 Q7,82 7,56 L7,22 Z"
+        stroke={accent}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  hexagon: (px, accent) => (
+    <svg width={px} height={px} viewBox="0 0 100 100" fill="none" aria-hidden>
+      <polygon
+        points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5"
+        stroke={accent}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  oval: (px, accent) => (
+    <svg width={px} height={px} viewBox="0 0 100 100" fill="none" aria-hidden>
+      <ellipse cx="50" cy="50" rx="44" ry="34" stroke={accent} strokeWidth="5" />
+    </svg>
+  ),
+  crest: (px, accent) => (
+    <svg width={px} height={px} viewBox="0 0 100 100" fill="none" aria-hidden>
+      <polygon
+        points="50,5 95,50 50,95 5,50"
+        stroke={accent}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+      <polygon
+        points="50,20 80,50 50,80 20,50"
+        stroke={accent}
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        opacity="0.55"
+      />
+    </svg>
+  ),
+};
 
 interface GradeBadgeProps {
   grade: string;
   size?: Size;
   className?: string;
+  badgeStyle?: BadgeStyle;
 }
 
 /**
- * Gold outline crest badge. (Decorative crest asset; a per-tenant badge graphic
- * is a future enhancement.)
+ * Cricket-style SVG grade badge. The shape is controlled by the tenant's
+ * `badgeStyle` brand setting (read from `BadgeStyleContext`) and recolours
+ * automatically via the `--accent` CSS token, so every tenant's accent
+ * drives the badge without any hardcoded colours.
  *
- * Uses the transparent gold-outline icon PNG as the visual frame and overlays:
- *  - the grade abbreviation centred inside the diamond
- *  - the grade label on the ribbon
- *
- * Coordinates are tuned to the 1024x1024 source: the diamond's visual centre
- * is ~33% from the top and the ribbon's text band sits ~71% from the top.
+ * An explicit `badgeStyle` prop overrides the context — used by the admin
+ * badge-style picker for live preview of each shape.
  */
-export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) => {
+export const GradeBadge = ({ grade, size = "sm", className, badgeStyle: badgeStyleProp }: GradeBadgeProps) => {
+  const contextStyle = useContext(BadgeStyleContext);
+  const activeStyle: BadgeStyle = (badgeStyleProp ?? contextStyle) as BadgeStyle;
+
   const meta = getMeta(grade);
   const px = SIZE_PX[size];
 
-  // Single label rendered in the diamond's visual centre.
   const diamondLabel = size === "lg" ? meta.bannerLong : meta.bannerShort;
   const diamondScale =
     diamondLabel.length > 7 ? 0.075 : diamondLabel.length > 5 ? 0.09 : 0.11;
   const diamondFontPx = Math.max(7, px * diamondScale);
 
-  // Stack same-colour drop-shadows to visually thicken the PNG's gold outline
-  // so it matches the heavier stroke weight of the club's other crest icons.
-  const strokeBoost =
-    `drop-shadow(0 0 0.3px ${ACCENT}) drop-shadow(0 0 0.3px ${ACCENT})`;
+  const renderBadge = BADGE_STYLES[activeStyle] ?? BADGE_STYLES.diamond;
 
   return (
     <div
@@ -82,20 +148,13 @@ export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) =
       className={`relative inline-block shrink-0 select-none ${className ?? ""}`}
       style={{ width: px, height: px }}
     >
-      <img
-        src={iconGold}
-        alt=""
-        draggable={false}
-        className="block h-full w-full object-contain"
-        style={{ filter: strokeBoost }}
-      />
+      {renderBadge(px, ACCENT)}
 
-      {/* Grade label centred in the diamond's visual centre */}
       <span
         className="pointer-events-none absolute font-serif font-bold leading-none"
         style={{
           left: "50%",
-          top: "40%",
+          top: "50%",
           transform: "translate(-50%, -50%)",
           fontSize: diamondFontPx,
           color: ACCENT,

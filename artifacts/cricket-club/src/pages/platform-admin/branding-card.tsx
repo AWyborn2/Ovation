@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useUpdateAdminTenantBrand,
   getGetAdminTenantQueryKey,
+  getGetTenantBrandQueryKey,
   getListAllTenantsQueryKey,
   type AdminTenant,
   type UpdateAdminTenantBrandBody,
@@ -26,6 +27,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import {
+  GradeBadge,
+  BADGE_STYLE_ORDER,
+  BADGE_STYLE_LABELS,
+  type BadgeStyle,
+} from "@/components/grade-badge";
 
 const ACCENT_LABELS: Record<AccentToken, string> = {
   amber: "Amber",
@@ -40,7 +47,7 @@ const ACCENT_ORDER: AccentToken[] = ["amber", "purple", "green", "blue", "red"];
 /** Which colour UI is active. Mode at save time wins (KTD4) — there is never a merged payload. */
 export type ColourMode = "token" | "hex";
 
-/** The seven cosmetic fields the concierge PATCH carries, as last persisted. */
+/** The cosmetic fields the concierge PATCH carries, as last persisted. */
 export interface PersistedBrandFields {
   name: string;
   shortName: string | null;
@@ -49,6 +56,7 @@ export interface PersistedBrandFields {
   primaryColour: string | null;
   secondaryColour: string | null;
   tertiaryColour: string | null;
+  badgeStyle: string | null;
 }
 
 /** The colour inputs' current values (both modes' state lives together; only the active mode's is saved). */
@@ -74,6 +82,7 @@ export function seedPersistedFromTenant(
     | "primaryColour"
     | "secondaryColour"
     | "tertiaryColour"
+    | "badgeStyle"
   >,
 ): PersistedBrandFields {
   return {
@@ -84,6 +93,7 @@ export function seedPersistedFromTenant(
     primaryColour: tenant.primaryColour ?? null,
     secondaryColour: tenant.secondaryColour ?? null,
     tertiaryColour: tenant.tertiaryColour ?? null,
+    badgeStyle: tenant.badgeStyle ?? null,
   };
 }
 
@@ -120,6 +130,7 @@ export function buildBrandSavePayload(args: {
   faviconUrl: string;
   colourMode: ColourMode;
   colours: ColourEdits;
+  badgeStyle: string | null;
 }): UpdateAdminTenantBrandBody {
   const { persisted, colours } = args;
   const base = {
@@ -127,6 +138,7 @@ export function buildBrandSavePayload(args: {
     shortName: args.shortName.trim() || null,
     logoUrl: args.logoUrl || null,
     faviconUrl: args.faviconUrl || null,
+    badgeStyle: args.badgeStyle,
   };
   if (args.colourMode === "token") {
     return {
@@ -235,6 +247,9 @@ export function BrandingCard({
   const [shortName, setShortName] = useState(tenant.shortName ?? "");
   const [logoUrl, setLogoUrl] = useState(tenant.logoUrl ?? "");
   const [faviconUrl, setFaviconUrl] = useState(tenant.faviconUrl ?? "");
+  const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
+    (tenant.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
+  );
   const [colourMode, setColourMode] = useState<ColourMode>("token");
   const [colours, setColours] = useState<ColourEdits>(() =>
     seedColourState(seedPersistedFromTenant(tenant)),
@@ -257,9 +272,11 @@ export function BrandingCard({
           primaryColour: body.primaryColour ?? null,
           secondaryColour: body.secondaryColour ?? null,
           tertiaryColour: body.tertiaryColour ?? null,
+          badgeStyle: body.badgeStyle ?? null,
         }));
         qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
         qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetTenantBrandQueryKey() });
       },
       onError: (e) => {
         setSaved(false);
@@ -345,6 +362,7 @@ export function BrandingCard({
         faviconUrl,
         colourMode,
         colours,
+        badgeStyle,
       }),
     });
   };
@@ -457,6 +475,35 @@ export function BrandingCard({
                     data-testid="input-favicon-upload"
                   />
                 </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Badge style</Label>
+              <div
+                className="flex flex-wrap gap-3"
+                role="radiogroup"
+                aria-label="Badge style"
+              >
+                {BADGE_STYLE_ORDER.map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    role="radio"
+                    aria-checked={badgeStyle === style}
+                    onClick={() => setBadgeStyle(style)}
+                    disabled={busy}
+                    data-testid={`swatch-badge-${style}`}
+                    className={`flex flex-col items-center gap-1.5 rounded-md border p-2 transition-colors ${
+                      badgeStyle === style
+                        ? "border-ring"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <GradeBadge grade="A Grade" size="md" badgeStyle={style} />
+                    <span className="text-xs font-medium">{BADGE_STYLE_LABELS[style]}</span>
+                  </button>
+                ))}
               </div>
             </div>
 

@@ -1169,10 +1169,15 @@ export interface TenantBrand {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
+  /**
+     * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default "diamond" style.
+     * @nullable
+     */
+  badgeStyle?: string | null;
 }
 
 /**
- * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these seven properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
  */
 export interface UpdateTenantBrandBody {
   name?: string;
@@ -1188,10 +1193,15 @@ export interface UpdateTenantBrandBody {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
+  /**
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * @nullable
+     */
+  badgeStyle?: string | null;
 }
 
 /**
- * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these seven properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
  */
 export interface UpdateAdminTenantBrandBody {
   /** @minLength 1 */
@@ -1217,6 +1227,11 @@ export interface UpdateAdminTenantBrandBody {
      * @pattern ^#[0-9a-fA-F]{6}$
      */
   tertiaryColour?: string | null;
+  /**
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * @nullable
+     */
+  badgeStyle?: string | null;
 }
 
 /**
@@ -1342,6 +1357,11 @@ export interface AdminTenant {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
+  /**
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * @nullable
+     */
+  badgeStyle?: string | null;
   /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable

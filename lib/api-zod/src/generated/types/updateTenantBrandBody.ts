@@ -7,7 +7,7 @@
  */
 
 /**
- * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these seven properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
  */
 export interface UpdateTenantBrandBody {
   name?: string;
@@ -23,4 +23,9 @@ export interface UpdateTenantBrandBody {
   secondaryColour?: string | null;
   /** @nullable */
   tertiaryColour?: string | null;
+  /**
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * @nullable
+     */
+  badgeStyle?: string | null;
 }

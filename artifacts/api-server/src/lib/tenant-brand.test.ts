@@ -68,6 +68,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     primaryColour: HALLS_HEAD_BRAND.primaryColour ?? null,
     secondaryColour: HALLS_HEAD_BRAND.secondaryColour ?? null,
     tertiaryColour: HALLS_HEAD_BRAND.tertiaryColour ?? null,
+    badgeStyle: null,
   };
 
   it("returns the Halls Head brand from the clubs-register row", () => {
@@ -113,6 +114,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: null,
       },
       null,
     );
@@ -141,6 +143,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: null,
       },
       null,
     );
@@ -156,6 +159,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: null,
       },
       null,
     );
@@ -175,6 +179,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: "#123456",
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: null,
       },
       null,
     );
@@ -195,6 +200,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: null,
       },
       null,
     );
@@ -210,6 +216,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: null,
       },
       null,
     );
