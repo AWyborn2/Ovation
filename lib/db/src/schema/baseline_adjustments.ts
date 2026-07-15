@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { playersTable } from "./players";
@@ -12,31 +12,34 @@ import { playersTable } from "./players";
  * means that season was committed in "peel" mode; an "add" backfill stores
  * nothing here. Stored values are the POSITIVE amounts actually removed from the
  * baseline (>= 0, never more than the baseline held).
+ *
+ * NOTE: The (grade, season, player_id) composite unique is intentionally NOT
+ * declared here. drizzle-kit 0.31 generates an unpredictable name for anonymous
+ * unique() calls and re-proposes it every push, hanging the non-interactive
+ * post-merge on a TTY "truncate?" prompt. The constraint is created idempotently
+ * by ensure-constraints.ts. See lib/db/src/schema/cap_register.ts for the full
+ * rationale.
  */
-export const baselineAdjustmentsTable = pgTable(
-  "baseline_adjustments",
-  {
-    id: serial("id").primaryKey(),
-    grade: text("grade").notNull(),
-    season: integer("season").notNull(),
-    playerId: integer("player_id")
-      .notNull()
-      .references(() => playersTable.id, { onDelete: "cascade" }),
-    games: integer("games").notNull().default(0),
-    innings: integer("innings").notNull().default(0),
-    notOuts: integer("not_outs").notNull().default(0),
-    runs: integer("runs").notNull().default(0),
-    fifties: integer("fifties").notNull().default(0),
-    hundreds: integer("hundreds").notNull().default(0),
-    wickets: integer("wickets").notNull().default(0),
-    runsConceded: integer("runs_conceded").notNull().default(0),
-    fiveWickets: integer("five_wickets").notNull().default(0),
-    catches: integer("catches").notNull().default(0),
-    stumpings: integer("stumpings").notNull().default(0),
-    runOuts: integer("run_outs").notNull().default(0),
-  },
-  (t) => [unique().on(t.grade, t.season, t.playerId)],
-);
+export const baselineAdjustmentsTable = pgTable("baseline_adjustments", {
+  id: serial("id").primaryKey(),
+  grade: text("grade").notNull(),
+  season: integer("season").notNull(),
+  playerId: integer("player_id")
+    .notNull()
+    .references(() => playersTable.id, { onDelete: "cascade" }),
+  games: integer("games").notNull().default(0),
+  innings: integer("innings").notNull().default(0),
+  notOuts: integer("not_outs").notNull().default(0),
+  runs: integer("runs").notNull().default(0),
+  fifties: integer("fifties").notNull().default(0),
+  hundreds: integer("hundreds").notNull().default(0),
+  wickets: integer("wickets").notNull().default(0),
+  runsConceded: integer("runs_conceded").notNull().default(0),
+  fiveWickets: integer("five_wickets").notNull().default(0),
+  catches: integer("catches").notNull().default(0),
+  stumpings: integer("stumpings").notNull().default(0),
+  runOuts: integer("run_outs").notNull().default(0),
+});
 
 export const insertBaselineAdjustmentSchema = createInsertSchema(
   baselineAdjustmentsTable,

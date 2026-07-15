@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -13,21 +13,21 @@ import { tenantIdColumn } from "./_tenant";
  * cleanly onto the pre-white-label single-tenant rows. Cross-tenant access is
  * denied in `requireCaptain`/`resolveCaptain` by asserting the resolved
  * captain's `tenantId` matches the request's tenant.
+ *
+ * NOTE: The (tenant_id, username) composite unique is intentionally NOT declared
+ * here. drizzle-kit 0.31 cannot detect the existing constraint and re-proposes
+ * it every push, hanging the non-interactive post-merge on a TTY "truncate?"
+ * prompt. The constraint is created idempotently by ensure-constraints.ts.
+ * See lib/db/src/schema/cap_register.ts for the full rationale.
  */
-export const captainsTable = pgTable(
-  "captains",
-  {
-    id: serial("id").primaryKey(),
-    tenantId: tenantIdColumn(),
-    username: text("username").notNull(),
-    displayName: text("display_name").notNull(),
-    passwordHash: text("password_hash").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => ({
-    tenantUsername: unique("captains_tenant_username_unique").on(t.tenantId, t.username),
-  }),
-);
+export const captainsTable = pgTable("captains", {
+  id: serial("id").primaryKey(),
+  tenantId: tenantIdColumn(),
+  username: text("username").notNull(),
+  displayName: text("display_name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /**
  * Which grades a captain may submit ballots for. One row per (captain, grade).

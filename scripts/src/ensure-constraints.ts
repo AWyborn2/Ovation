@@ -45,6 +45,16 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["tenant_id", "username"],
   },
   {
+    table: "captains",
+    name: "captains_tenant_username_unique",
+    columns: ["tenant_id", "username"],
+  },
+  {
+    table: "baseline_adjustments",
+    name: "baseline_adjustments_grade_season_player_id_unique",
+    columns: ["grade", "season", "player_id"],
+  },
+  {
     table: "captain_grade_permissions",
     name: "captain_grade_permissions_captain_grade_unique",
     columns: ["captain_id", "grade"],
