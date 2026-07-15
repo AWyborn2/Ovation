@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2, Check } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { BadgeStylePicker } from "@/components/badge-style-picker";
+import type { BadgePresetId } from "@/components/badge-presets";
 
 /** True when the response is the platform marker rather than a tenant brand. */
 function isPlatformResponse(
@@ -82,6 +84,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [accent, setAccent] = useState<AccentToken>(
     snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour),
   );
+  const [badgeStyle, setBadgeStyle] = useState<BadgePresetId>(
+    (brand.badgeStyle as BadgePresetId) ?? "shield",
+  );
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +95,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setLogoUrl(brand.logoUrl ?? "");
     setFaviconUrl(brand.faviconUrl ?? "");
     setAccent(snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour));
+    setBadgeStyle((brand.badgeStyle as BadgePresetId) ?? "shield");
   }, [brand]);
 
   const update = useUpdateTenantBrand({
@@ -177,6 +183,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
         primaryColour: brand.primaryColour,
         secondaryColour: ACCENT_HEX[accent],
         tertiaryColour: brand.tertiaryColour,
+        badgeStyle,
       },
     });
   };
@@ -296,6 +303,19 @@ function Editor({ brand }: { brand: TenantBrand }) {
                 </button>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Grade badge style</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              The shape used for grade badges throughout the site — player
+              profiles, leaderboards, and match pages.
+            </p>
+            <BadgeStylePicker value={badgeStyle} onChange={setBadgeStyle} disabled={busy} />
           </CardContent>
         </Card>
 

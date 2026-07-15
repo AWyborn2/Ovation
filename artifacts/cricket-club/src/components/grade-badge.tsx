@@ -1,35 +1,40 @@
-import iconGold from "@assets/HHCC_Icon_Gold_1779853335292.png";
+import { useMemo } from "react";
+import {
+  useGetTenantBrand,
+  getGetTenantBrandQueryKey,
+  useGetGradeMeta,
+  type TenantBrand as ApiBrand,
+} from "@workspace/api-client-react";
+import { PRESETS, type BadgePresetId } from "./badge-presets";
 
 interface GradeMeta {
-  full: string;
   abbr: string;
-  bannerShort: string;
-  bannerLong: string;
   sortOrder: number;
 }
 
-const META: Record<string, GradeMeta> = {
-  "A Grade":        { full: "A Grade",        abbr: "A",   bannerShort: "A GRADE",  bannerLong: "A GRADE",   sortOrder: 1 },
-  "B Grade":        { full: "B Grade",        abbr: "B",   bannerShort: "B GRADE",  bannerLong: "B GRADE",   sortOrder: 2 },
-  "C Grade":        { full: "C Grade",        abbr: "C",   bannerShort: "C GRADE",  bannerLong: "C GRADE",   sortOrder: 3 },
-  "D Grade":        { full: "D Grade",        abbr: "D",   bannerShort: "D GRADE",  bannerLong: "D GRADE",   sortOrder: 4 },
-  "E Grade":        { full: "E Grade",        abbr: "E",   bannerShort: "E GRADE",  bannerLong: "E GRADE",   sortOrder: 5 },
-  "F Grade":        { full: "F Grade",        abbr: "F",   bannerShort: "F GRADE",  bannerLong: "F GRADE",   sortOrder: 6 },
-  "Female A Grade": { full: "Female A Grade", abbr: "FA",  bannerShort: "FEM A",    bannerLong: "FEMALE A",  sortOrder: 7 },
-  "Female B Grade": { full: "Female B Grade", abbr: "FB",  bannerShort: "FEM B",    bannerLong: "FEMALE B",  sortOrder: 8 },
-  "PPL":            { full: "PPL",            abbr: "PPL", bannerShort: "PPL",      bannerLong: "PPL",       sortOrder: 9 },
-  "Colts":          { full: "Colts",          abbr: "Co",  bannerShort: "COLTS",    bannerLong: "COLTS",     sortOrder: 10 },
+const FALLBACK_META: Record<string, GradeMeta> = {
+  "A Grade":        { abbr: "A GRADE",  sortOrder: 1 },
+  "B Grade":        { abbr: "B GRADE",  sortOrder: 2 },
+  "C Grade":        { abbr: "C GRADE",  sortOrder: 3 },
+  "D Grade":        { abbr: "D GRADE",  sortOrder: 4 },
+  "E Grade":        { abbr: "E GRADE",  sortOrder: 5 },
+  "F Grade":        { abbr: "F GRADE",  sortOrder: 6 },
+  "Female A Grade": { abbr: "FEM A",    sortOrder: 7 },
+  "Female B Grade": { abbr: "FEM B",    sortOrder: 8 },
+  "PPL":            { abbr: "PPL",      sortOrder: 9 },
+  "Colts":          { abbr: "COLTS",    sortOrder: 10 },
 };
 
-const getMeta = (grade: string): GradeMeta => {
-  return META[grade] ?? {
-    full: grade,
-    abbr: grade.slice(0, 2).toUpperCase(),
-    bannerShort: grade.toUpperCase().slice(0, 8),
-    bannerLong: grade.toUpperCase(),
-    sortOrder: 99,
-  };
-};
+function fallbackAbbr(grade: string): string {
+  if (grade.length <= 3) return grade.toUpperCase();
+  const words = grade.split(/\s+/);
+  if (words.length > 1) return words.map((w) => w[0]).join("").toUpperCase().slice(0, 5);
+  return grade.toUpperCase().slice(0, 8);
+}
+
+function getMeta(grade: string): GradeMeta {
+  return FALLBACK_META[grade] ?? { abbr: fallbackAbbr(grade), sortOrder: 99 };
+}
 
 export const sortGradesBySeniority = (grades: Iterable<string>): string[] =>
   Array.from(grades).sort((a, b) => getMeta(a).sortOrder - getMeta(b).sortOrder);
@@ -38,9 +43,20 @@ type Size = "sm" | "md" | "lg";
 
 const SIZE_PX: Record<Size, number> = { sm: 44, md: 68, lg: 112 };
 
-// The brand accent colour (same runtime CSS token every button/link uses),
-// not a fixed gold literal — so the badge recolours per-tenant.
-const ACCENT = "hsl(var(--accent))";
+function useBadgeStyle(): BadgePresetId {
+  const q = useGetTenantBrand({ query: { queryKey: getGetTenantBrandQueryKey() } });
+  const raw = q.data as ApiBrand | undefined;
+  const style = raw?.badgeStyle ?? "shield";
+  return (style in PRESETS ? style : "shield") as BadgePresetId;
+}
+
+function useGradeMeta(): Map<string, GradeMeta> {
+  const q = useGetGradeMeta();
+  return useMemo(() => {
+    if (!q.data) return new Map();
+    return new Map(q.data.map((m) => [m.grade, { abbr: m.abbr, sortOrder: m.sortOrder }]));
+  }, [q.data]);
+}
 
 interface GradeBadgeProps {
   grade: string;
@@ -48,63 +64,20 @@ interface GradeBadgeProps {
   className?: string;
 }
 
-/**
- * Gold outline crest badge. (Decorative crest asset; a per-tenant badge graphic
- * is a future enhancement.)
- *
- * Uses the transparent gold-outline icon PNG as the visual frame and overlays:
- *  - the grade abbreviation centred inside the diamond
- *  - the grade label on the ribbon
- *
- * Coordinates are tuned to the 1024x1024 source: the diamond's visual centre
- * is ~33% from the top and the ribbon's text band sits ~71% from the top.
- */
 export const GradeBadge = ({ grade, size = "sm", className }: GradeBadgeProps) => {
-  const meta = getMeta(grade);
+  const badgeStyle = useBadgeStyle();
+  const apiMeta = useGradeMeta();
+  const Preset = PRESETS[badgeStyle];
+  const meta = apiMeta.get(grade) ?? getMeta(grade);
   const px = SIZE_PX[size];
-
-  // Single label rendered in the diamond's visual centre.
-  const diamondLabel = size === "lg" ? meta.bannerLong : meta.bannerShort;
-  const diamondScale =
-    diamondLabel.length > 7 ? 0.075 : diamondLabel.length > 5 ? 0.09 : 0.11;
-  const diamondFontPx = Math.max(7, px * diamondScale);
-
-  // Stack same-colour drop-shadows to visually thicken the PNG's gold outline
-  // so it matches the heavier stroke weight of the club's other crest icons.
-  const strokeBoost =
-    `drop-shadow(0 0 0.3px ${ACCENT}) drop-shadow(0 0 0.3px ${ACCENT})`;
 
   return (
     <div
-      role="img"
-      aria-label={meta.full}
-      title={meta.full}
-      className={`relative inline-block shrink-0 select-none ${className ?? ""}`}
-      style={{ width: px, height: px }}
+      className={`inline-block shrink-0 select-none ${className ?? ""}`}
+      style={{ color: "hsl(var(--accent))" }}
+      title={grade}
     >
-      <img
-        src={iconGold}
-        alt=""
-        draggable={false}
-        className="block h-full w-full object-contain"
-        style={{ filter: strokeBoost }}
-      />
-
-      {/* Grade label centred in the diamond's visual centre */}
-      <span
-        className="pointer-events-none absolute font-serif font-bold leading-none"
-        style={{
-          left: "50%",
-          top: "40%",
-          transform: "translate(-50%, -50%)",
-          fontSize: diamondFontPx,
-          color: ACCENT,
-          letterSpacing: "0.05em",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {diamondLabel}
-      </span>
+      <Preset label={meta.abbr} size={px} />
     </div>
   );
 };
@@ -127,9 +100,6 @@ export const GradeBadgeList = ({ grades, size = "sm", className }: GradeBadgeLis
   );
 };
 
-/**
- * Comma-separated grade string (as stored on `players.gradesPlayed`) → badge list.
- */
 export const GradeBadgeListFromString = ({
   gradesPlayed,
   size = "sm",

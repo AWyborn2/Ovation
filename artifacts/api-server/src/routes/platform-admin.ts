@@ -115,6 +115,7 @@ function toAdminTenant(
     primaryColour: t.primaryColour,
     secondaryColour: t.secondaryColour,
     tertiaryColour: t.tertiaryColour,
+    badgeStyle: t.badgeStyle,
   };
 }
 
@@ -373,6 +374,7 @@ router.patch(
         | "primaryColour"
         | "secondaryColour"
         | "tertiaryColour"
+        | "badgeStyle"
       >
     > = {};
     if (parsed.data.name !== undefined) updates.name = parsed.data.name;
@@ -382,6 +384,7 @@ router.patch(
     if (parsed.data.primaryColour !== undefined) updates.primaryColour = parsed.data.primaryColour;
     if (parsed.data.secondaryColour !== undefined) updates.secondaryColour = parsed.data.secondaryColour;
     if (parsed.data.tertiaryColour !== undefined) updates.tertiaryColour = parsed.data.tertiaryColour;
+    if (parsed.data.badgeStyle !== undefined) updates.badgeStyle = parsed.data.badgeStyle;
 
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "Nothing to update" });

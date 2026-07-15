@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { BadgeStylePicker } from "@/components/badge-style-picker";
+import type { BadgePresetId } from "@/components/badge-presets";
 
 const ACCENT_LABELS: Record<AccentToken, string> = {
   amber: "Amber",
@@ -249,6 +251,9 @@ export function BrandingCard({
   const [colours, setColours] = useState<ColourEdits>(() =>
     seedColourState(seedPersistedFromTenant(tenant)),
   );
+  const [badgeStyle, setBadgeStyle] = useState<BadgePresetId>(
+    (tenant.badgeStyle as BadgePresetId) ?? "shield",
+  );
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -360,15 +365,18 @@ export function BrandingCard({
     setError(null);
     update.mutate({
       id: tenantId,
-      data: buildBrandSavePayload({
-        persisted,
-        name,
-        shortName,
-        logoUrl,
-        faviconUrl,
-        colourMode,
-        colours,
-      }),
+      data: {
+        ...buildBrandSavePayload({
+          persisted,
+          name,
+          shortName,
+          logoUrl,
+          faviconUrl,
+          colourMode,
+          colours,
+        }),
+        badgeStyle,
+      },
     });
   };
 
@@ -573,6 +581,11 @@ export function BrandingCard({
                   {warning}
                 </p>
               )}
+            </div>
+
+            <div className="space-y-3">
+              <Label>Grade badge style</Label>
+              <BadgeStylePicker value={badgeStyle} onChange={setBadgeStyle} disabled={busy} />
             </div>
 
             <div className="flex items-center gap-3">

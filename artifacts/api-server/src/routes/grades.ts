@@ -215,6 +215,62 @@ async function gradesForSeason(season: number | null): Promise<string[]> {
   return rows.map((r) => r.grade).filter((g): g is string => Boolean(g));
 }
 
+// Grade display metadata — canonical names, badge abbreviations, and sort
+// orders for all grades this tenant's club has played. Central-read tenants
+// derive the list from their actual match data; native tenants get the
+// default PCA grade set.
+const DEFAULT_GRADE_META: { grade: string; abbr: string; sortOrder: number }[] = [
+  { grade: "A Grade",        abbr: "A GRADE",  sortOrder: 1 },
+  { grade: "B Grade",        abbr: "B GRADE",  sortOrder: 2 },
+  { grade: "C Grade",        abbr: "C GRADE",  sortOrder: 3 },
+  { grade: "D Grade",        abbr: "D GRADE",  sortOrder: 4 },
+  { grade: "E Grade",        abbr: "E GRADE",  sortOrder: 5 },
+  { grade: "F Grade",        abbr: "F GRADE",  sortOrder: 6 },
+  { grade: "Female A Grade", abbr: "FEM A",    sortOrder: 7 },
+  { grade: "Female B Grade", abbr: "FEM B",    sortOrder: 8 },
+  { grade: "PPL",            abbr: "PPL",      sortOrder: 9 },
+  { grade: "Colts",          abbr: "COLTS",    sortOrder: 10 },
+];
+
+const GRADE_SORT: Record<string, number> = Object.fromEntries(
+  DEFAULT_GRADE_META.map((g) => [g.grade, g.sortOrder]),
+);
+
+function gradeAbbr(grade: string): string {
+  const found = DEFAULT_GRADE_META.find((g) => g.grade === grade);
+  if (found) return found.abbr;
+  if (grade.length <= 3) return grade.toUpperCase();
+  const words = grade.split(/\s+/);
+  if (words.length >= 2) {
+    return words.map((w) => w[0]).join("").toUpperCase().slice(0, 5);
+  }
+  return grade.toUpperCase().slice(0, 8);
+}
+
+router.get("/grade-meta", async (req, res): Promise<void> => {
+  if (await shouldReadCentral(req)) {
+    const { listCentralGradesForClub } = await import("@workspace/db/central-queries");
+    const clubId = await getRequestCentralClubId(req);
+    const centralGrades = await listCentralGradesForClub(clubId);
+    const seen = new Set<string>();
+    const meta: { grade: string; abbr: string; sortOrder: number }[] = [];
+    for (const { appGrade } of centralGrades) {
+      if (!appGrade || seen.has(appGrade)) continue;
+      seen.add(appGrade);
+      meta.push({
+        grade: appGrade,
+        abbr: gradeAbbr(appGrade),
+        sortOrder: GRADE_SORT[appGrade] ?? 99,
+      });
+    }
+    meta.sort((a, b) => a.sortOrder - b.sortOrder);
+    res.json(meta);
+    return;
+  }
+
+  res.json(DEFAULT_GRADE_META);
+});
+
 router.get("/grades", async (req, res): Promise<void> => {
   // Central tenants get their grade summary cards derived from the central PCA
   // database (per-grade aggregates), filtered to their club. Native tenants

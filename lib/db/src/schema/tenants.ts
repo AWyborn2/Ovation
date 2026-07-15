@@ -39,6 +39,7 @@ export const tenantsTable = pgTable("tenants", {
   primaryColour: text("primary_colour"),
   secondaryColour: text("secondary_colour"),
   tertiaryColour: text("tertiary_colour"),
+  badgeStyle: text("badge_style").notNull().default("shield"),
   customDomain: text("custom_domain"),
   // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
   // entitlements; enforcement is dormant until BILLING_ENABLED=true.
