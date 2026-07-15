@@ -373,12 +373,21 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
   };
 }
 
+/**
+ * Milestone feed for the current request's tenant: central-scoped when the
+ * tenant reads from the central PCA DB, otherwise the native (tenant-DB) build.
+ * Shared by the `/milestones` route and the honour-display board so both honour
+ * the tenant boundary instead of leaking tenant #1's players.
+ */
+export async function buildMilestonesForRequest(
+  req: Request,
+): Promise<MilestonesResult> {
+  if (await shouldReadCentral(req)) return buildCentralMilestones(req);
+  return buildMilestones();
+}
+
 router.get("/milestones", async (req, res): Promise<void> => {
-  if (await shouldReadCentral(req)) {
-    res.json(await buildCentralMilestones(req));
-    return;
-  }
-  res.json(await buildMilestones());
+  res.json(await buildMilestonesForRequest(req));
 });
 
 async function appendDebuts(

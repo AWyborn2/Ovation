@@ -227,6 +227,64 @@ const battingInningsKindSql = sql<string>`case
   else 'out'
 end`;
 
+/**
+ * The three fielding-dismissal buckets the app tracks. `central.fielding.kind`
+ * is free text ("caught"/"c", "stumped"/"st", "run out"/"ro", …); classify it
+ * into one bucket so leaderboards and player pages can report catches,
+ * stumpings and run-outs separately (their sum is the "dismissals" total).
+ */
+export type CentralFieldingKind = "catch" | "stumping" | "runOut";
+
+export function classifyFieldingKind(
+  kind: string | null | undefined,
+): CentralFieldingKind | null {
+  const k = (kind ?? "").trim().toLowerCase();
+  if (!k) return null;
+  // Order matters: run-out and stumping are checked before catch so a keeper's
+  // "st" / a "run out" never falls through to the broad catch matcher.
+  if (/run\s*-?\s*out|^ro$/.test(k)) return "runOut";
+  if (/stump|^st$/.test(k)) return "stumping";
+  if (/catch|caught|^c$|^ct$/.test(k)) return "catch";
+  return null;
+}
+
+interface FieldingTally {
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
+/** Empty fielding tally (all-zero), used as the default for players who fielded nothing. */
+function emptyFieldingTally(): FieldingTally {
+  return { catches: 0, stumpings: 0, runOuts: 0 };
+}
+
+/**
+ * Aggregate `central.fielding` rows (already scoped to a club + match set) into
+ * per-participant catch/stumping/run-out tallies. `n` is the row's grouped
+ * count (or 1 when the caller selects raw rows).
+ */
+function tallyFielding(
+  rows: { participantId: string | null; kind: string | null; n?: number }[],
+): Map<string, FieldingTally> {
+  const byPid = new Map<string, FieldingTally>();
+  for (const f of rows) {
+    if (!f.participantId) continue;
+    const cls = classifyFieldingKind(f.kind);
+    if (!cls) continue;
+    let t = byPid.get(f.participantId);
+    if (!t) {
+      t = emptyFieldingTally();
+      byPid.set(f.participantId, t);
+    }
+    const n = Number(f.n ?? 1);
+    if (cls === "catch") t.catches += n;
+    else if (cls === "stumping") t.stumpings += n;
+    else t.runOuts += n;
+  }
+  return byPid;
+}
+
 function splitDisplayName(displayName: string): {
   givenName: string;
   surname: string;
@@ -427,7 +485,11 @@ async function centralGradeLeaderboardImpl(
   //                unioned with roster lines, restricted to players who have a
   //                batting line — the same Set union the JS built;
   //      - names + privacy left-join central.players (was a 2nd round trip).
-  const result = await centralDb.execute(sql`
+  // Fielding dismissals (catches/stumpings/run-outs) run in parallel with the
+  // batting aggregate — they're keyed on the same (club, match) index and only
+  // attach to players who already have a leaderboard row.
+  const [result, fieldingRows] = await Promise.all([
+    centralDb.execute(sql`
     with i as (
       select
         ${centralMatchBattingTable.participantId} as participant_id,
@@ -479,7 +541,23 @@ async function centralGradeLeaderboardImpl(
     from bat b
     join games g on g.participant_id = b.participant_id
     left join ${centralPlayersTable} p on p.participant_id = b.participant_id
-  `);
+  `),
+    centralDb
+      .select({
+        participantId: centralFieldingTable.participantId,
+        kind: centralFieldingTable.kind,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(centralFieldingTable)
+      .where(
+        and(
+          eq(centralFieldingTable.clubId, clubId),
+          inArray(centralFieldingTable.matchId, matchIds),
+        ),
+      )
+      .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
+  ]);
+  const fieldingByPid = tallyFielding(fieldingRows);
   const aggRows = result.rows as Array<{
     participantId: string;
     innings: number;
@@ -511,6 +589,7 @@ async function centralGradeLeaderboardImpl(
         );
     const dismissals = innings - notOuts;
     const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
+    const fld = fieldingByPid.get(participantId);
     return {
       // Central has no per-grade-stat row id; use the resolved player id so the
       // client's React key (stat.id) stays distinct per row and the player link
@@ -535,9 +614,9 @@ async function centralGradeLeaderboardImpl(
       bowlAvg: null,
       bestBowling: null,
       fiveWickets: null,
-      catches: null,
-      stumpings: null,
-      runOuts: null,
+      catches: fld?.catches ?? 0,
+      stumpings: fld?.stumpings ?? 0,
+      runOuts: fld?.runOuts ?? 0,
     };
   });
 
@@ -2272,7 +2351,7 @@ export interface CentralMilestone {
   opponent: string | null;
   value: number;
   /** Career crossings only: which running total crossed a tier. */
-  boardKey?: "games" | "runs" | "wickets";
+  boardKey?: "games" | "runs" | "wickets" | "dismissals";
   tierIndex?: number;
   threshold?: number;
 }
@@ -2284,9 +2363,19 @@ const DEFAULT_CAREER_TIERS = {
   wickets: [100, 150, 200, 300],
 };
 
+// Career dismissal tiers (catches + stumpings + run-outs). The native milestone
+// board has no dismissals column, so this ladder is central-only; it mirrors the
+// client-side "Dismissals Club" bands on the honour-boards page (10/25/50/75/100).
+const DEFAULT_DISMISSALS_TIERS = [10, 25, 50, 75, 100];
+
 export async function centralMilestones(
   clubId: number,
-  tiers: { games: number[]; runs: number[]; wickets: number[] } = DEFAULT_CAREER_TIERS,
+  tiers: {
+    games: number[];
+    runs: number[];
+    wickets: number[];
+    dismissals?: number[];
+  } = DEFAULT_CAREER_TIERS,
 ): Promise<CentralMilestone[]> {
   return withCentralCache(cacheKey("centralMilestones", [clubId, tiers]), () =>
     centralMilestonesImpl(clubId, tiers),
@@ -2295,7 +2384,12 @@ export async function centralMilestones(
 
 async function centralMilestonesImpl(
   clubId: number,
-  tiers: { games: number[]; runs: number[]; wickets: number[] },
+  tiers: {
+    games: number[];
+    runs: number[];
+    wickets: number[];
+    dismissals?: number[];
+  },
 ): Promise<CentralMilestone[]> {
   // Deliberately still JS-aggregated: career tier-crossings need each player's
   // full per-match running totals walked in chronological order against
@@ -2330,10 +2424,11 @@ async function centralMilestonesImpl(
     ]),
   );
 
-  // Batting, bowling and rosters (rosters give the games count — a player
-  // counts as having played even in matches where they didn't bat or bowl) are
-  // independent given matchIds — run all three round trips in parallel.
-  const [batting, bowling, rosters] = await Promise.all([
+  // Batting, bowling, rosters (rosters give the games count — a player counts as
+  // having played even in matches where they didn't bat or bowl) and fielding
+  // (for the dismissals career ladder) are independent given matchIds — run all
+  // four round trips in parallel.
+  const [batting, bowling, rosters, fielding] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
@@ -2362,6 +2457,19 @@ async function centralMilestonesImpl(
           inArray(centralMatchRostersTable.matchId, matchIds),
         ),
       ),
+    centralDb
+      .select({
+        participantId: centralFieldingTable.participantId,
+        matchId: centralFieldingTable.matchId,
+        kind: centralFieldingTable.kind,
+      })
+      .from(centralFieldingTable)
+      .where(
+        and(
+          eq(centralFieldingTable.clubId, clubId),
+          inArray(centralFieldingTable.matchId, matchIds),
+        ),
+      ),
   ]);
 
   const centuries = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null);
@@ -2372,13 +2480,19 @@ async function centralMilestonesImpl(
   interface CareerAcc {
     runsByMatch: Map<number, number>;
     wktsByMatch: Map<number, number>;
+    dismByMatch: Map<number, number>;
     matches: Set<number>;
   }
   const byPid = new Map<string, CareerAcc>();
   const accFor = (pid: string): CareerAcc => {
     let a = byPid.get(pid);
     if (!a) {
-      a = { runsByMatch: new Map(), wktsByMatch: new Map(), matches: new Set() };
+      a = {
+        runsByMatch: new Map(),
+        wktsByMatch: new Map(),
+        dismByMatch: new Map(),
+        matches: new Set(),
+      };
       byPid.set(pid, a);
     }
     return a;
@@ -2398,6 +2512,15 @@ async function centralMilestonesImpl(
   for (const r of rosters) {
     if (!r.participantId || r.matchId === null) continue;
     accFor(r.participantId).matches.add(r.matchId);
+  }
+  for (const f of fielding) {
+    if (!f.participantId || f.matchId === null) continue;
+    if (!classifyFieldingKind(f.kind)) continue;
+    // Every classified catch/stumping/run-out counts one dismissal. Deliberately
+    // NOT added to `matches` (the games/appearance set) — a fielding row must not
+    // inflate the games tally; the walk below unions these in for dismissals only.
+    const a = accFor(f.participantId);
+    a.dismByMatch.set(f.matchId, (a.dismByMatch.get(f.matchId) ?? 0) + 1);
   }
 
   // Names for every participant that could cross a tier (superset of the
@@ -2452,18 +2575,26 @@ async function centralMilestonesImpl(
     { key: "games" as const, tiers: tiers.games },
     { key: "runs" as const, tiers: tiers.runs },
     { key: "wickets" as const, tiers: tiers.wickets },
+    { key: "dismissals" as const, tiers: tiers.dismissals ?? DEFAULT_DISMISSALS_TIERS },
   ];
   for (const [pid, acc] of byPid) {
     const p = names.get(pid);
     if (p?.isPrivate) continue;
-    const ordered = [...acc.matches].sort(chrono);
-    const totals = { games: 0, runs: 0, wickets: 0 };
+    // Walk over appearances unioned with fielding-only matches so dismissal
+    // crossings still fire in a match where the player neither batted nor bowled;
+    // `games` contrib stays gated on a real appearance so the games tally is
+    // unchanged.
+    const ordered = [
+      ...new Set([...acc.matches, ...acc.dismByMatch.keys()]),
+    ].sort(chrono);
+    const totals = { games: 0, runs: 0, wickets: 0, dismissals: 0 };
     for (const mId of ordered) {
       const meta = metaOf.get(mId);
       const contrib = {
-        games: 1,
+        games: acc.matches.has(mId) ? 1 : 0,
         runs: acc.runsByMatch.get(mId) ?? 0,
         wickets: acc.wktsByMatch.get(mId) ?? 0,
+        dismissals: acc.dismByMatch.get(mId) ?? 0,
       };
       for (const spec of tierSpecs) {
         const prev = totals[spec.key];
