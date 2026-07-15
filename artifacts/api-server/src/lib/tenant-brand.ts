@@ -3,10 +3,10 @@ import { db, clubsTable, tenantsTable } from "@workspace/db";
 import { DEFAULT_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
 
 /**
- * Per-tenant brand (logo + colours), the single shape every renderer reads.
- * Structurally the established brand shape; aliased for the white-label naming.
+ * Per-tenant brand (logo + colours + badge style), the single shape every
+ * renderer reads.  Extends the shared club-brand shape with tenant-only fields.
  */
-export type TenantBrand = HallsHeadBrand;
+export type TenantBrand = HallsHeadBrand & { badgeStyle: string };
 
 /** Minimal brand columns read from the `tenants` row. */
 interface TenantBrandRow {
@@ -18,6 +18,7 @@ interface TenantBrandRow {
   primaryColour: string | null;
   secondaryColour: string | null;
   tertiaryColour: string | null;
+  badgeStyle: string;
 }
 
 /** Minimal brand columns read from the `clubs` register row (`appClubId`). */
@@ -36,46 +37,37 @@ const cache = new Map<number, { value: TenantBrand; at: number }>();
 
 /**
  * Merge the brand sources into the final brand, pure (no IO) so the fallback
- * chain is unit-testable. Precedence per field: the `clubs` register row (the
- * brand source of truth today, where `appClubId` is set) → the tenant row's own
- * brand columns → the neutral {@link DEFAULT_BRAND} fallback. Halls Head's own
- * brand comes from its clubs/tenant record (seeded), so the neutral fallback
- * only applies to tenants that have set no brand — it never leaks Halls Head.
+ * chain is unit-testable. Precedence per field: the tenant row's own brand
+ * columns (admin-saved branding) → the `clubs` register row (seed data from
+ * central, where `appClubId` is set) → the neutral {@link DEFAULT_BRAND}
+ * fallback. Tenant branding wins so that admin edits in the platform console
+ * take immediate effect rather than being shadowed by the clubs register.
  */
 export function buildTenantBrand(
   tenant: TenantBrandRow | null,
   club: ClubBrandRow | null,
 ): TenantBrand {
   const primaryColour =
-    club?.primaryColour ?? tenant?.primaryColour ?? DEFAULT_BRAND.primaryColour;
-  // When a tenant supplies a primary colour but no secondary/tertiary (e.g. a
-  // central-sourced club that only has a primary), derive the missing accents
-  // from its OWN primary rather than leaking the default club's (Halls Head's
-  // gold/brown). The all-null case still resolves to the full default brand.
+    tenant?.primaryColour ?? club?.primaryColour ?? DEFAULT_BRAND.primaryColour;
   const tenantSuppliedPrimary =
-    (club?.primaryColour ?? tenant?.primaryColour) != null;
+    (tenant?.primaryColour ?? club?.primaryColour) != null;
   return {
-    name: club?.name ?? tenant?.name ?? DEFAULT_BRAND.name,
-    shortName: club?.shortName ?? tenant?.shortName ?? DEFAULT_BRAND.shortName,
-    logoUrl: club?.logoUrl ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl,
-    // The tenants row carries no 128px logo: prefer the clubs register's 128px,
-    // else the tenant's own logo (better than the default club's), else fallback.
+    name: tenant?.name ?? club?.name ?? DEFAULT_BRAND.name,
+    shortName: tenant?.shortName ?? club?.shortName ?? DEFAULT_BRAND.shortName,
+    logoUrl: tenant?.logoUrl ?? club?.logoUrl ?? DEFAULT_BRAND.logoUrl,
     logoUrl128: club?.logoUrl128 ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl128,
-    // No clubs-register equivalent for backgroundUrl — tenant row only, else the
-    // neutral default (no image).
     backgroundUrl: tenant?.backgroundUrl ?? DEFAULT_BRAND.backgroundUrl,
-    // No clubs-register equivalent for faviconUrl either — tenant row only,
-    // else the neutral default (the platform favicon).
     faviconUrl: tenant?.faviconUrl ?? DEFAULT_BRAND.faviconUrl,
     primaryColour,
     secondaryColour:
-      club?.secondaryColour ??
       tenant?.secondaryColour ??
+      club?.secondaryColour ??
       (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.secondaryColour),
     tertiaryColour:
-      club?.tertiaryColour ??
       tenant?.tertiaryColour ??
+      club?.tertiaryColour ??
       (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.tertiaryColour),
+    badgeStyle: tenant?.badgeStyle ?? "shield",
   };
 }
 
@@ -99,6 +91,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       primaryColour: tenantsTable.primaryColour,
       secondaryColour: tenantsTable.secondaryColour,
       tertiaryColour: tenantsTable.tertiaryColour,
+      badgeStyle: tenantsTable.badgeStyle,
       appClubId: tenantsTable.appClubId,
     })
     .from(tenantsTable)

@@ -44,8 +44,8 @@ describe("tenant-context: resolveTenantId (header > env > default)", () => {
 // (renderers snap the accent-slot hex to the nearest design-system token via
 // resolveAccentToken), so the server-built brand is the shared constant minus
 // that key.
-const { accentToken: _hhAccent, ...HALLS_HEAD_WIRE_BRAND } = HALLS_HEAD_BRAND;
-const { accentToken: _defaultAccent, ...DEFAULT_WIRE_BRAND } = DEFAULT_BRAND;
+const { accentToken: _hhAccent, ...HALLS_HEAD_WIRE_BRAND } = { ...HALLS_HEAD_BRAND, badgeStyle: "shield" };
+const { accentToken: _defaultAccent, ...DEFAULT_WIRE_BRAND } = { ...DEFAULT_BRAND, badgeStyle: "shield" };
 
 describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", () => {
   // The Halls Head clubs-register row (id 2) mirrors HALLS_HEAD_BRAND — this is
@@ -68,6 +68,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     primaryColour: HALLS_HEAD_BRAND.primaryColour ?? null,
     secondaryColour: HALLS_HEAD_BRAND.secondaryColour ?? null,
     tertiaryColour: HALLS_HEAD_BRAND.tertiaryColour ?? null,
+    badgeStyle: "shield",
   };
 
   it("returns the Halls Head brand from the clubs-register row", () => {
@@ -113,6 +114,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: "shield",
       },
       null,
     );
@@ -141,6 +143,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: "shield",
       },
       null,
     );
@@ -156,6 +159,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: "shield",
       },
       null,
     );
@@ -175,6 +179,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: "#123456",
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: "shield",
       },
       null,
     );
@@ -182,6 +187,68 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.tertiaryColour).toBe("#123456");
     expect(brand.secondaryColour).not.toBe(HALLS_HEAD_BRAND.secondaryColour);
     expect(brand.secondaryColour).not.toBe(DEFAULT_BRAND.secondaryColour);
+  });
+
+  it("tenant-saved branding wins over clubs register seed", () => {
+    const tenantRow = {
+      name: "My Custom Name",
+      shortName: "MCN",
+      logoUrl: "https://example.com/custom-logo.png",
+      backgroundUrl: null,
+      faviconUrl: "https://example.com/custom-favicon.png",
+      primaryColour: "#FF0000",
+      secondaryColour: "#00FF00",
+      tertiaryColour: "#0000FF",
+      badgeStyle: "shield",
+    };
+    const clubRow = {
+      name: "Central Register Name",
+      shortName: "CRN",
+      logoUrl: "https://example.com/register-logo.png",
+      logoUrl128: "https://example.com/register-logo-128.png",
+      primaryColour: "#111111",
+      secondaryColour: "#222222",
+      tertiaryColour: "#333333",
+    };
+    const brand = buildTenantBrand(tenantRow, clubRow);
+    expect(brand.name).toBe("My Custom Name");
+    expect(brand.shortName).toBe("MCN");
+    expect(brand.logoUrl).toBe("https://example.com/custom-logo.png");
+    expect(brand.faviconUrl).toBe("https://example.com/custom-favicon.png");
+    expect(brand.primaryColour).toBe("#FF0000");
+    expect(brand.secondaryColour).toBe("#00FF00");
+    expect(brand.tertiaryColour).toBe("#0000FF");
+    // logoUrl128 still comes from clubs register (tenant table has no 128px column)
+    expect(brand.logoUrl128).toBe("https://example.com/register-logo-128.png");
+  });
+
+  it("falls back to clubs register when tenant columns are null", () => {
+    const tenantRow = {
+      name: "Tenant Name",
+      shortName: null,
+      logoUrl: null,
+      backgroundUrl: null,
+      faviconUrl: null,
+      primaryColour: null,
+      secondaryColour: null,
+      tertiaryColour: null,
+      badgeStyle: "shield",
+    };
+    const clubRow = {
+      name: "Central Register Name",
+      shortName: "CRN",
+      logoUrl: "https://example.com/register-logo.png",
+      logoUrl128: "https://example.com/register-logo-128.png",
+      primaryColour: "#111111",
+      secondaryColour: "#222222",
+      tertiaryColour: "#333333",
+    };
+    const brand = buildTenantBrand(tenantRow, clubRow);
+    expect(brand.name).toBe("Tenant Name");
+    expect(brand.shortName).toBe("CRN");
+    expect(brand.logoUrl).toBe("https://example.com/register-logo.png");
+    expect(brand.primaryColour).toBe("#111111");
+    expect(brand.secondaryColour).toBe("#222222");
   });
 
   it("uses the tenant's own backgroundUrl (Phase 2 R6: per-tenant, no cross-tenant leak)", () => {
@@ -195,6 +262,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: "shield",
       },
       null,
     );
@@ -210,6 +278,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         primaryColour: null,
         secondaryColour: null,
         tertiaryColour: null,
+        badgeStyle: "shield",
       },
       null,
     );
