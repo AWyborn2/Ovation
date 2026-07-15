@@ -18,9 +18,23 @@ export async function getOrCreateSettings<
     .from(table as PgTable)
     .where(eq(table.tenantId, tenantId));
   if (existing) return existing as Table["$inferSelect"];
-  const [created] = await db
-    .insert(table as PgTable)
-    .values({ tenantId } as Table["$inferInsert"])
-    .returning();
-  return created as Table["$inferSelect"];
+
+  try {
+    const [created] = await db
+      .insert(table as PgTable)
+      .values({ tenantId } as Table["$inferInsert"])
+      .returning();
+    return created as Table["$inferSelect"];
+  } catch (err) {
+    const pgErr = err as { code?: string };
+    if (pgErr.code === "23505") {
+      // Another request created the row in the gap. Re-select and return it.
+      const [fallback] = await db
+        .select()
+        .from(table as PgTable)
+        .where(eq(table.tenantId, tenantId));
+      return fallback as Table["$inferSelect"];
+    }
+    throw err;
+  }
 }
