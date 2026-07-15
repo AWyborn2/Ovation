@@ -33,7 +33,8 @@ import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
 import { computeLeaderboard } from "../lib/points";
-import { buildMilestones } from "./milestones";
+import { buildMilestonesForRequest } from "./milestones";
+import type { Request } from "express";
 
 const router: IRouter = Router();
 
@@ -830,9 +831,9 @@ async function buildPartnerships(): Promise<HonourBoardOut | null> {
   };
 }
 
-/** Recently-achieved milestones (reuses the /milestones feed). */
-async function buildMilestoneBoard(): Promise<HonourBoardOut | null> {
-  const { items } = await buildMilestones();
+/** Recently-achieved milestones (reuses the /milestones feed, tenant-scoped). */
+async function buildMilestoneBoard(req: Request): Promise<HonourBoardOut | null> {
+  const { items } = await buildMilestonesForRequest(req);
   if (items.length === 0) return null;
   return {
     id: "milestones",
@@ -1567,6 +1568,7 @@ async function buildCustomGrids(
 
 async function assembleBoards(
   settings: HonourDisplaySettingsRow,
+  req: Request,
 ): Promise<HonourBoardOut[]> {
   const boardConfigsAll = settings.boardConfigs ?? {};
   const gridCols = (id: string): string[] | undefined =>
@@ -1602,7 +1604,7 @@ async function assembleBoards(
     buildCaptainsGrid(gridCols("captains_grid")),
     buildCommittee(gridCols("committee")),
     buildPartnerships(),
-    buildMilestoneBoard(),
+    buildMilestoneBoard(req),
     buildAwardPoints(),
     buildRecordsLeaderboards(),
     buildRecordsByGrade(),
@@ -1781,7 +1783,7 @@ async function buildBrand() {
 router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
   const settingsRow = await ensureHonourDisplaySettings();
   const [boards, brand, gridCatalog, activeSponsors] = await Promise.all([
-    assembleBoards(settingsRow),
+    assembleBoards(settingsRow, req),
     buildBrand(),
     buildGridCatalog(),
     loadActiveSponsors(req.log),
@@ -1805,7 +1807,7 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
     return;
   }
   const [boards, brand, activeSponsors] = await Promise.all([
-    assembleBoards(settingsRow),
+    assembleBoards(settingsRow, req),
     buildBrand(),
     loadActiveSponsors(req.log),
   ]);
