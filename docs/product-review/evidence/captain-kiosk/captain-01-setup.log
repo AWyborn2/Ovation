@@ -1,8 +1,0 @@
-REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
-CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin :: Failed to load resource: net::ERR_CONNECTION_RESET
-HTTP-401 GET http://halls-head.ovation.test:24624/api/auth/me (page: http://halls-head.ovation.test:24624/admin)
-CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
-REQUEST-FAILED GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap :: net::ERR_CONNECTION_RESET
-CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/captains :: Failed to load resource: net::ERR_CONNECTION_RESET
-HTTP-409 POST http://halls-head.ovation.test:24624/api/captains (page: http://halls-head.ovation.test:24624/admin/people/captains)
-CONSOLE-ERROR on http://halls-head.ovation.test:24624/admin/people/captains :: Failed to load resource: the server responded with a status of 409 (Conflict)
