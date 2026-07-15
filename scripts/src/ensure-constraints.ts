@@ -35,6 +35,15 @@ const CONSTRAINTS: ConstraintSpec[] = [
     name: "cap_register_category_cap_number_unique",
     columns: ["category", "cap_number"],
   },
+  // admins_tenant_username_unique is managed here (not in Drizzle schema) because
+  // drizzle-kit 0.31 cannot detect the existing constraint and re-proposes it every
+  // push, causing an interactive truncate prompt that hangs post-merge. Same pattern
+  // as cap_register above.
+  {
+    table: "admins",
+    name: "admins_tenant_username_unique",
+    columns: ["tenant_id", "username"],
+  },
   {
     table: "captain_grade_permissions",
     name: "captain_grade_permissions_captain_grade_unique",

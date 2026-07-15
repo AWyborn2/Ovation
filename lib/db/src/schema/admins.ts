@@ -4,7 +4,6 @@ import {
   integer,
   text,
   timestamp,
-  unique,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -17,20 +16,19 @@ import {
  * Cross-tenant access is denied in `requireAdmin`/`resolveAdmin` by asserting the
  * resolved admin's `tenantId` matches the request's tenant.
  */
-export const adminsTable = pgTable(
-  "admins",
-  {
-    id: serial("id").primaryKey(),
-    tenantId: integer("tenant_id").notNull().default(1),
-    username: text("username").notNull(),
-    displayName: text("display_name").notNull(),
-    passwordHash: text("password_hash").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => ({
-    tenantUsername: unique("admins_tenant_username_unique").on(t.tenantId, t.username),
-  }),
-);
+// NOTE: admins_tenant_username_unique (tenant_id, username) is intentionally NOT
+// declared here. drizzle-kit 0.31 cannot detect the existing constraint and
+// re-proposes it every push, causing an interactive truncate prompt that hangs in
+// non-TTY post-merge runs. The constraint is created idempotently in
+// scripts/src/ensure-constraints.ts instead (same pattern as cap_register).
+export const adminsTable = pgTable("admins", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1),
+  username: text("username").notNull(),
+  displayName: text("display_name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type AdminRow = typeof adminsTable.$inferSelect;
 
