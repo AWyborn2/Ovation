@@ -24,6 +24,12 @@ import {
  * - The brand columns (name … tertiaryColour) are the per-tenant theme; the
  *   brand resolver prefers the `appClubId` clubs-register row where set, then
  *   these, then the built-in fallback.
+ * - `lastActiveAt` → when a club admin last acted on this tenant (advanced,
+ *   throttled, from the club-admin auth path). Null = never active — the
+ *   onboarding-stall signal the platform health dashboard surfaces.
+ * - `suspendedAt` → when the tenant was suspended, or null when active. This
+ *   column records and displays suspended state; enforcement (blocking access)
+ *   is a separate follow-up.
  */
 export const tenantsTable = pgTable("tenants", {
   id: serial("id").primaryKey(),
@@ -43,6 +49,9 @@ export const tenantsTable = pgTable("tenants", {
   // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
   // entitlements; enforcement is dormant until BILLING_ENABLED=true.
   plan: text("plan").notNull().default("free"),
+  // Tenant health (platform dashboard). Both nullable, no backfill.
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
