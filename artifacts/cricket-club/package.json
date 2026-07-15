@@ -92,6 +92,7 @@
     "@uppy/react": "^5.2.0",
     "@workspace/object-storage-web": "workspace:*",
     "jszip": "^3.10.1",
-    "node-vibrant": "^4.0.4"
+    "node-vibrant": "^4.0.4",
+    "pantone-colors": "^1.0.3"
   }
 }

@@ -297,6 +297,9 @@ importers:
       node-vibrant:
         specifier: ^4.0.4
         version: 4.0.4
+      pantone-colors:
+        specifier: ^1.0.3
+        version: 1.0.3
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -5650,6 +5653,9 @@ packages:
 
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
+
+  pantone-colors@1.0.3:
+    resolution: {integrity: sha512-RL0b1veIfvtbp4J3iYCFh3/VEwkfzV1aM2w9IwVzEQ5c6NDlO6pZaWRbGH8hpD5TPKeahH28/pVzwv+qQsYcNw==}
 
   parse-ms@4.0.0:
     resolution: {integrity: sha512-TXfryirbmq34y8QBwgqCVLi+8oA3oWx2eAnSn62ITyEhEYaWRlVZ2DvMM9eZbMs/RfxPu/PK/aBLyGj4IrqMHw==}
@@ -13037,6 +13043,8 @@ snapshots:
   p-try@2.2.0: {}
 
   pako@1.0.11: {}
+
+  pantone-colors@1.0.3: {}
 
   parse-ms@4.0.0: {}
 

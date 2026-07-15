@@ -16,6 +16,7 @@ import {
 import { deriveThemeTokens } from "@/lib/theme-tokens";
 import { useThemeMode } from "@/lib/theme-context";
 import { extractBrandPalette } from "@/lib/color-extraction";
+import { ColourSlotPicker } from "@/components/colour-slot-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2, Check } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { contrastWarningMessage } from "@/pages/platform-admin/branding-card";
 
 /** True when the response is the platform marker rather than a tenant brand. */
 function isPlatformResponse(
@@ -40,6 +42,8 @@ const ACCENT_LABELS: Record<AccentToken, string> = {
 };
 
 const ACCENT_ORDER: AccentToken[] = ["amber", "purple", "green", "blue", "red"];
+
+type ColourTab = "preset" | "custom";
 
 export default function AdminBranding() {
   const brandQ = useGetTenantBrand({
@@ -76,12 +80,21 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [name, setName] = useState(brand.name);
   const [logoUrl, setLogoUrl] = useState(brand.logoUrl ?? "");
   const [faviconUrl, setFaviconUrl] = useState(brand.faviconUrl ?? "");
-  // The design system constrains the tenant colour to one of five named accent
-  // hues; a legacy stored hex snaps to its nearest token (Halls Head's gold →
-  // amber), and saving writes the token's canonical hex back to the accent slot.
+
+  const [colourTab, setColourTab] = useState<ColourTab>("preset");
+
+  // Preset mode state
   const [accent, setAccent] = useState<AccentToken>(
     snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour),
   );
+
+  // Custom mode state — all three colour slots
+  const [customPrimary, setCustomPrimary] = useState(brand.primaryColour ?? "#1A3350");
+  const [customSecondary, setCustomSecondary] = useState(
+    brand.secondaryColour ?? ACCENT_HEX[snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour)],
+  );
+  const [customTertiary, setCustomTertiary] = useState(brand.tertiaryColour ?? "#2A4060");
+
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,7 +102,11 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setName(brand.name);
     setLogoUrl(brand.logoUrl ?? "");
     setFaviconUrl(brand.faviconUrl ?? "");
-    setAccent(snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour));
+    const snapped = snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour);
+    setAccent(snapped);
+    setCustomPrimary(brand.primaryColour ?? "#1A3350");
+    setCustomSecondary(brand.secondaryColour ?? ACCENT_HEX[snapped]);
+    setCustomTertiary(brand.tertiaryColour ?? "#2A4060");
   }, [brand]);
 
   const update = useUpdateTenantBrand({
@@ -116,14 +133,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setError(null);
     setColourNote(null);
 
-    // Remember the pre-upload accent so it can be restored if the upload
-    // itself fails -- the suggestion below is provisional until the logo it
-    // was extracted from is actually saved.
     const priorAccent = accent;
-
-    // Suggest an accent from the local file immediately (a blob: URL is
-    // same-origin, so this doesn't need to wait for the upload round-trip):
-    // the extracted palette snaps to the nearest of the five accent tokens.
     const localUrl = URL.createObjectURL(file);
     try {
       const palette = await extractBrandPalette(localUrl);
@@ -146,9 +156,6 @@ function Editor({ brand }: { brand: TenantBrand }) {
     if (result) {
       setLogoUrl(`/api/storage${result.objectPath}`);
     } else {
-      // Upload failed -- the suggested accent belongs to a logo that was
-      // never actually saved server-side; revert rather than leave it
-      // paired with the old (unchanged) logoUrl.
       setAccent(priorAccent);
       setColourNote(null);
     }
@@ -165,32 +172,50 @@ function Editor({ brand }: { brand: TenantBrand }) {
 
   const save = () => {
     setError(null);
-    update.mutate({
-      data: {
-        name: name.trim(),
-        shortName: brand.shortName,
-        logoUrl: logoUrl || null,
-        faviconUrl: faviconUrl || null,
-        // The accent slot carries the chosen token's canonical hex; the other
-        // colour slots pass through unchanged (they still feed scorecard
-        // rendering and the juniors banner, not the site theme).
-        primaryColour: brand.primaryColour,
-        secondaryColour: ACCENT_HEX[accent],
-        tertiaryColour: brand.tertiaryColour,
-      },
-    });
+    if (colourTab === "preset") {
+      update.mutate({
+        data: {
+          name: name.trim(),
+          shortName: brand.shortName,
+          logoUrl: logoUrl || null,
+          faviconUrl: faviconUrl || null,
+          primaryColour: brand.primaryColour,
+          secondaryColour: ACCENT_HEX[accent],
+          tertiaryColour: brand.tertiaryColour,
+        },
+      });
+    } else {
+      update.mutate({
+        data: {
+          name: name.trim(),
+          shortName: brand.shortName,
+          logoUrl: logoUrl || null,
+          faviconUrl: faviconUrl || null,
+          primaryColour: customPrimary || null,
+          secondaryColour: customSecondary || null,
+          tertiaryColour: customTertiary || null,
+        },
+      });
+    }
   };
 
+  // Compute the preview brand based on active tab
+  const previewSecondary =
+    colourTab === "preset" ? ACCENT_HEX[accent] : customSecondary;
   const previewBrand = {
     ...brand,
     name,
     logoUrl: logoUrl || null,
-    secondaryColour: ACCENT_HEX[accent],
+    primaryColour: colourTab === "preset" ? brand.primaryColour : customPrimary,
+    secondaryColour: previewSecondary,
+    tertiaryColour: colourTab === "preset" ? brand.tertiaryColour : customTertiary,
   };
-  // Scoped to this container's own subtree via inline style, not
-  // document.documentElement -- editing here must not reskin the rest of the
-  // admin shell (every other open tab and control) while the admin is mid-edit.
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
+
+  const contrastWarning =
+    colourTab === "custom"
+      ? contrastWarningMessage([customPrimary, customSecondary, customTertiary], mode)
+      : null;
 
   const busy = isUploadingLogo || isUploadingFavicon || update.isPending;
 
@@ -263,39 +288,100 @@ function Editor({ brand }: { brand: TenantBrand }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Accent colour</CardTitle>
+            <CardTitle>Colours</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Your club's accent — used for buttons, highlights, and every number
-              that matters. The rest of the theme is the same considered palette
-              for every club, in light and dark.
+              Your club's colours — used for buttons, highlights, and every number
+              that matters.
             </p>
-            {colourNote && <p className="text-sm text-muted-foreground">{colourNote}</p>}
-            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent colour">
-              {ACCENT_ORDER.map((token) => (
-                <button
-                  key={token}
-                  type="button"
-                  role="radio"
-                  aria-checked={accent === token}
-                  onClick={() => setAccent(token)}
-                  disabled={busy}
-                  data-testid={`swatch-accent-${token}`}
-                  className={`flex flex-col items-center gap-1.5 rounded-md border p-2 transition-colors ${
-                    accent === token ? "border-ring" : "border-border hover:border-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className="flex h-9 w-9 items-center justify-center rounded-full"
-                    style={{ backgroundColor: ACCENT_HEX[token] }}
-                  >
-                    {accent === token && <Check className="h-4 w-4 text-[#0B0F1A]" />}
-                  </span>
-                  <span className="text-xs font-medium">{ACCENT_LABELS[token]}</span>
-                </button>
-              ))}
+
+            {/* Preset / Custom tab bar */}
+            <div className="flex gap-1 rounded-md border border-border bg-muted p-0.5 w-fit">
+              <button
+                type="button"
+                onClick={() => setColourTab("preset")}
+                disabled={busy}
+                className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                  colourTab === "preset"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Preset
+              </button>
+              <button
+                type="button"
+                onClick={() => setColourTab("custom")}
+                disabled={busy}
+                className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                  colourTab === "custom"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Custom
+              </button>
             </div>
+
+            {colourTab === "preset" ? (
+              <div className="space-y-3">
+                {colourNote && <p className="text-sm text-muted-foreground">{colourNote}</p>}
+                <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent colour">
+                  {ACCENT_ORDER.map((token) => (
+                    <button
+                      key={token}
+                      type="button"
+                      role="radio"
+                      aria-checked={accent === token}
+                      onClick={() => setAccent(token)}
+                      disabled={busy}
+                      data-testid={`swatch-accent-${token}`}
+                      className={`flex flex-col items-center gap-1.5 rounded-md border p-2 transition-colors ${
+                        accent === token ? "border-ring" : "border-border hover:border-muted-foreground"
+                      }`}
+                    >
+                      <span
+                        className="flex h-9 w-9 items-center justify-center rounded-full"
+                        style={{ backgroundColor: ACCENT_HEX[token] }}
+                      >
+                        {accent === token && <Check className="h-4 w-4 text-[#0B0F1A]" />}
+                      </span>
+                      <span className="text-xs font-medium">{ACCENT_LABELS[token]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Enter exact hex, RGB, or Pantone codes for your official club colours.
+                </p>
+                <ColourSlotPicker
+                  label="Primary"
+                  value={customPrimary}
+                  onChange={setCustomPrimary}
+                  disabled={busy}
+                />
+                <ColourSlotPicker
+                  label="Secondary (accent)"
+                  value={customSecondary}
+                  onChange={setCustomSecondary}
+                  disabled={busy}
+                />
+                <ColourSlotPicker
+                  label="Tertiary"
+                  value={customTertiary}
+                  onChange={setCustomTertiary}
+                  disabled={busy}
+                />
+                {contrastWarning && (
+                  <p className="text-sm text-amber-600 dark:text-amber-500">
+                    {contrastWarning}
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

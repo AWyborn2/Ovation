@@ -20,6 +20,7 @@ import {
 import { deriveThemeTokens } from "@/lib/theme-tokens";
 import { useThemeMode } from "@/lib/theme-context";
 import { extractBrandPalette, type ExtractedPalette } from "@/lib/color-extraction";
+import { ColourSlotPicker } from "@/components/colour-slot-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,8 +36,6 @@ const ACCENT_LABELS: Record<AccentToken, string> = {
 };
 
 const ACCENT_ORDER: AccentToken[] = ["amber", "purple", "green", "blue", "red"];
-
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
 /** Which colour UI is active. Mode at save time wins (KTD4) — there is never a merged payload. */
 export type ColourMode = "token" | "hex";
@@ -213,20 +212,11 @@ export function suggestionFromPalette(palette: ExtractedPalette): {
   };
 }
 
-const HEX_FIELDS: Array<{
-  key: "hexPrimary" | "hexSecondary" | "hexTertiary";
-  label: string;
-}> = [
-  { key: "hexPrimary", label: "Primary" },
-  { key: "hexSecondary", label: "Secondary (accent)" },
-  { key: "hexTertiary", label: "Tertiary" },
-];
-
 /**
  * Concierge branding editor for one tenant (R4–R7). Mirrors the self-serve
  * editor in `pages/admin-branding.tsx` — same upload flow, palette suggestion,
- * accent picker, and card-scoped live preview — plus an advanced exact-hex
- * mode the platform PATCH schema allows.
+ * accent picker, and card-scoped live preview — plus an advanced exact-colour
+ * mode (hex / RGB / Pantone) the platform PATCH schema allows.
  */
 export function BrandingCard({
   tenantId,
@@ -259,8 +249,6 @@ export function BrandingCard({
         setError(null);
         setSaved(true);
         const body = variables.data;
-        // Remember what was written so mode switches re-seed from persisted
-        // truth, and refresh the tenant queries this page already shows.
         setPersisted((prev) => ({
           name: body.name ?? prev.name,
           shortName: body.shortName ?? null,
@@ -304,13 +292,7 @@ export function BrandingCard({
     setSaved(false);
     setColourNote(null);
 
-    // Remember the pre-upload accent so it can be restored if the upload
-    // itself fails -- the suggestion below is provisional until the logo it
-    // was extracted from is actually saved.
     const priorAccent = colours.accent;
-
-    // Suggest an accent from the local file immediately (a blob: URL is
-    // same-origin, so this doesn't need to wait for the upload round-trip).
     const localUrl = URL.createObjectURL(file);
     try {
       const palette = await extractBrandPalette(localUrl);
@@ -328,9 +310,6 @@ export function BrandingCard({
     if (result) {
       setLogoUrl(`/api/storage${result.objectPath}`);
     } else {
-      // Upload failed -- the suggested accent belongs to a logo that was
-      // never actually saved server-side; revert rather than leave it
-      // paired with the old (unchanged) logoUrl.
       setColours((c) => ({ ...c, accent: priorAccent }));
       setColourNote(null);
     }
@@ -348,8 +327,6 @@ export function BrandingCard({
 
   const switchMode = (next: ColourMode) => {
     if (next === colourMode) return;
-    // KTD4: mode at save time wins — switching discards unsaved colour edits
-    // from the other mode by re-seeding from the last persisted values.
     setColourMode(next);
     setColours(seedColourState(persisted));
   };
@@ -390,9 +367,6 @@ export function BrandingCard({
     logoUrl: logoUrl || null,
     ...previewColours,
   };
-  // Scoped to this container's own subtree via inline style, not
-  // document.documentElement -- editing here must not reskin the rest of the
-  // platform console while the concierge is mid-edit.
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
 
   const warning = contrastWarningMessage(
@@ -537,35 +511,28 @@ export function BrandingCard({
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {HEX_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={HEX_RE.test(colours[key]) ? colours[key] : "#000000"}
-                        onChange={(e) =>
-                          setColours((c) => ({ ...c, [key]: e.target.value }))
-                        }
-                        disabled={busy}
-                        aria-label={`${label} colour`}
-                        className="h-9 w-9 shrink-0 cursor-pointer rounded border border-input bg-background p-0.5"
-                        data-testid={`picker-${key}`}
-                      />
-                      <Input
-                        value={colours[key]}
-                        onChange={(e) =>
-                          setColours((c) => ({ ...c, [key]: e.target.value }))
-                        }
-                        placeholder="#1A3350"
-                        className="font-mono"
-                        aria-label={`${label} hex`}
-                        data-testid={`input-${key}`}
-                      />
-                      <span className="w-28 shrink-0 text-xs text-muted-foreground">
-                        {label}
-                      </span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Enter hex, RGB, or Pantone codes for each slot. The preview updates live.
+                  </p>
+                  <ColourSlotPicker
+                    label="Primary"
+                    value={colours.hexPrimary}
+                    onChange={(hex) => setColours((c) => ({ ...c, hexPrimary: hex }))}
+                    disabled={busy}
+                  />
+                  <ColourSlotPicker
+                    label="Secondary (accent)"
+                    value={colours.hexSecondary}
+                    onChange={(hex) => setColours((c) => ({ ...c, hexSecondary: hex }))}
+                    disabled={busy}
+                  />
+                  <ColourSlotPicker
+                    label="Tertiary"
+                    value={colours.hexTertiary}
+                    onChange={(hex) => setColours((c) => ({ ...c, hexTertiary: hex }))}
+                    disabled={busy}
+                  />
                 </div>
               )}
               {warning && (
