@@ -59,14 +59,16 @@
    fallback silently diverges from what every tenant actually renders. */
 :root {
   /* light — deriveThemeTokens(DEFAULT_BRAND, "light"): the design system's
-     companion light theme (paper surfaces, same navy hue family, amber accent) */
+     companion light theme (paper surfaces, same navy hue family, slate accent).
+     Accent is hexToHsl(DEFAULT_BRAND.secondaryColour="#94A3B8") = 215 20% 65%.
+     Regenerate both :root/.dark blocks together if deriveThemeTokens changes. */
   --background: 220 25% 97%;
   --foreground: 222 30% 12%;
 
   --border: 220 20% 88%;
   --input: 220 20% 88%;
 
-  --ring: 37 100% 61%;
+  --ring: 215 20% 65%;
 
   --card: 0 0% 100%;
   --card-foreground: 222 30% 12%;
@@ -76,9 +78,9 @@
   --popover-foreground: 222 30% 12%;
   --popover-border: 220 20% 88%;
 
-  --primary: 37 100% 61%;
+  --primary: 215 20% 65%;
   --primary-foreground: 222 33% 8%;
-  --primary-border: 37 100% 61%;
+  --primary-border: 215 20% 65%;
 
   --secondary: 220 20% 94%;
   --secondary-foreground: 218 12% 42%;
@@ -88,9 +90,9 @@
   --muted-foreground: 218 12% 42%;
   --muted-border: 220 20% 88%;
 
-  --accent: 37 100% 61%;
+  --accent: 215 20% 65%;
   --accent-foreground: 222 33% 8%;
-  --accent-border: 37 100% 61%;
+  --accent-border: 215 20% 65%;
 
   --destructive: 6 78% 46%;
   --destructive-foreground: 0 0% 100%;
@@ -108,12 +110,13 @@
 
 .dark {
   /* dark — deriveThemeTokens(DEFAULT_BRAND, "dark"): the design system's
-     native navy scale (#0B0F1A page, #131826 card, #232B3D border) */
+     native navy scale (#0B0F1A page, #131826 card, #232B3D border).
+     Accent is hexToHsl(DEFAULT_BRAND.secondaryColour="#94A3B8") = 215 20% 65%. */
   --background: 222 33% 8%;
   --foreground: 220 20% 96%;
   --border: 220 23% 21%;
   --input: 220 23% 21%;
-  --ring: 37 100% 61%;
+  --ring: 215 20% 65%;
 
   --card: 220 30% 11%;
   --card-foreground: 220 20% 96%;
@@ -123,9 +126,9 @@
   --popover-foreground: 220 20% 96%;
   --popover-border: 220 23% 21%;
 
-  --primary: 37 100% 61%;
+  --primary: 215 20% 65%;
   --primary-foreground: 222 33% 8%;
-  --primary-border: 37 100% 61%;
+  --primary-border: 215 20% 65%;
 
   --secondary: 222 28% 16%;
   --secondary-foreground: 218 12% 60%;
@@ -135,9 +138,9 @@
   --muted-foreground: 218 12% 60%;
   --muted-border: 220 23% 21%;
 
-  --accent: 37 100% 61%;
+  --accent: 215 20% 65%;
   --accent-foreground: 222 33% 8%;
-  --accent-border: 37 100% 61%;
+  --accent-border: 215 20% 65%;
 
   --destructive: 9 85% 62%;
   --destructive-foreground: 0 0% 100%;

@@ -40,12 +40,12 @@ describe("tenant-context: resolveTenantId (header > env > default)", () => {
   });
 });
 
-// The wire brand carries no accentToken — the field is client-side only
-// (renderers snap the accent-slot hex to the nearest design-system token via
-// resolveAccentToken), so the server-built brand is the shared constant minus
-// that key.
-const { accentToken: _hhAccent, ...HALLS_HEAD_WIRE_BRAND } = HALLS_HEAD_BRAND;
-const { accentToken: _defaultAccent, ...DEFAULT_WIRE_BRAND } = DEFAULT_BRAND;
+// The wire brand carries no accentToken (client-side only) and always has
+// badgeStyle: null from buildTenantBrand's return shape.
+const { accentToken: _hhAccent, ...hhBrandBase } = HALLS_HEAD_BRAND;
+const HALLS_HEAD_WIRE_BRAND = { ...hhBrandBase, badgeStyle: null };
+const { accentToken: _defaultAccent, ...defaultBrandBase } = DEFAULT_BRAND;
+const DEFAULT_WIRE_BRAND = { ...defaultBrandBase, badgeStyle: null };
 
 describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", () => {
   // The Halls Head clubs-register row (id 2) mirrors HALLS_HEAD_BRAND — this is
@@ -187,6 +187,93 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.tertiaryColour).toBe("#123456");
     expect(brand.secondaryColour).not.toBe(HALLS_HEAD_BRAND.secondaryColour);
     expect(brand.secondaryColour).not.toBe(DEFAULT_BRAND.secondaryColour);
+  });
+
+  it("tenant colour wins over clubs-register colour (Bug 1 fix: tenant PATCH is not silently overridden)", () => {
+    // Both rows set colours; the tenant's saved value must win.
+    const brand = buildTenantBrand(
+      {
+        name: "Custom Tenant",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        primaryColour: "#AABBCC",
+        secondaryColour: "#FFFFFF",
+        tertiaryColour: "#112233",
+        badgeStyle: null,
+      },
+      {
+        name: "Club Register Name",
+        shortName: null,
+        logoUrl: null,
+        logoUrl128: null,
+        primaryColour: "#001122",
+        secondaryColour: "#FBAC27",
+        tertiaryColour: "#42342B",
+      },
+    );
+    expect(brand.primaryColour).toBe("#AABBCC");
+    expect(brand.secondaryColour).toBe("#FFFFFF");
+    expect(brand.tertiaryColour).toBe("#112233");
+  });
+
+  it("clubs-register colour is used as fallback when tenant has no colours set", () => {
+    // Tenant row has no colours; clubs-register values are the fallback.
+    const brand = buildTenantBrand(
+      {
+        name: "Some Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        primaryColour: null,
+        secondaryColour: null,
+        tertiaryColour: null,
+        badgeStyle: null,
+      },
+      {
+        name: "Club Register Name",
+        shortName: null,
+        logoUrl: null,
+        logoUrl128: null,
+        primaryColour: "#001122",
+        secondaryColour: "#FBAC27",
+        tertiaryColour: "#42342B",
+      },
+    );
+    expect(brand.primaryColour).toBe("#001122");
+    expect(brand.secondaryColour).toBe("#FBAC27");
+    expect(brand.tertiaryColour).toBe("#42342B");
+  });
+
+  it("tenant partial colours override clubs-register and leave the rest to fall back", () => {
+    // Tenant sets only secondary; clubs-register provides primary and tertiary fallbacks.
+    const brand = buildTenantBrand(
+      {
+        name: "Partial Tenant",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        primaryColour: null,
+        secondaryColour: "#FF0000",
+        tertiaryColour: null,
+        badgeStyle: null,
+      },
+      {
+        name: "Club Register Name",
+        shortName: null,
+        logoUrl: null,
+        logoUrl128: null,
+        primaryColour: "#001122",
+        secondaryColour: "#FBAC27",
+        tertiaryColour: "#42342B",
+      },
+    );
+    expect(brand.primaryColour).toBe("#001122");
+    expect(brand.secondaryColour).toBe("#FF0000");
+    expect(brand.tertiaryColour).toBe("#42342B");
   });
 
   it("uses the tenant's own backgroundUrl (Phase 2 R6: per-tenant, no cross-tenant leak)", () => {

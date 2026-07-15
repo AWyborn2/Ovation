@@ -37,9 +37,19 @@ const cache = new Map<number, { value: TenantBrand; at: number }>();
 
 /**
  * Merge the brand sources into the final brand, pure (no IO) so the fallback
- * chain is unit-testable. Precedence per field: the `clubs` register row (the
- * brand source of truth today, where `appClubId` is set) → the tenant row's own
- * brand columns → the neutral {@link DEFAULT_BRAND} fallback. Halls Head's own
+ * chain is unit-testable.
+ *
+ * Colour precedence (primaryColour / secondaryColour / tertiaryColour):
+ *   tenant row (admin-saved) → clubs register row (seed/default) → neutral DEFAULT_BRAND
+ *
+ * Both the club self-serve PATCH (`/tenant-brand`) and the platform admin PATCH
+ * (`/platform/admin/tenants/:id/brand`) write to the `tenants` table, so the
+ * tenant row must win for colours — otherwise every saved value is silently
+ * overridden by the clubs-register row.  The clubs register becomes the
+ * default/fallback (used when the tenant has explicitly set nothing).
+ *
+ * Non-colour fields (name, logo) keep the clubs-register row as primary source
+ * because those come from the authoritative central registry.  Halls Head's own
  * brand comes from its clubs/tenant record (seeded), so the neutral fallback
  * only applies to tenants that have set no brand — it never leaks Halls Head.
  */
@@ -47,14 +57,14 @@ export function buildTenantBrand(
   tenant: TenantBrandRow | null,
   club: ClubBrandRow | null,
 ): TenantBrand {
+  // Tenant row wins for colours; clubs register is the fallback/default.
   const primaryColour =
-    club?.primaryColour ?? tenant?.primaryColour ?? DEFAULT_BRAND.primaryColour;
-  // When a tenant supplies a primary colour but no secondary/tertiary (e.g. a
-  // central-sourced club that only has a primary), derive the missing accents
-  // from its OWN primary rather than leaking the default club's (Halls Head's
-  // gold/brown). The all-null case still resolves to the full default brand.
-  const tenantSuppliedPrimary =
-    (club?.primaryColour ?? tenant?.primaryColour) != null;
+    tenant?.primaryColour ?? club?.primaryColour ?? DEFAULT_BRAND.primaryColour;
+  // When any primary colour is supplied (from either source), derive missing
+  // accents from that primary rather than leaking the neutral default colours.
+  // The all-null case still resolves to the full default brand.
+  const anyPrimarySupplied =
+    (tenant?.primaryColour ?? club?.primaryColour) != null;
   return {
     name: club?.name ?? tenant?.name ?? DEFAULT_BRAND.name,
     shortName: club?.shortName ?? tenant?.shortName ?? DEFAULT_BRAND.shortName,
@@ -70,13 +80,13 @@ export function buildTenantBrand(
     faviconUrl: tenant?.faviconUrl ?? DEFAULT_BRAND.faviconUrl,
     primaryColour,
     secondaryColour:
-      club?.secondaryColour ??
       tenant?.secondaryColour ??
-      (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.secondaryColour),
+      club?.secondaryColour ??
+      (anyPrimarySupplied ? primaryColour : DEFAULT_BRAND.secondaryColour),
     tertiaryColour:
-      club?.tertiaryColour ??
       tenant?.tertiaryColour ??
-      (tenantSuppliedPrimary ? primaryColour : DEFAULT_BRAND.tertiaryColour),
+      club?.tertiaryColour ??
+      (anyPrimarySupplied ? primaryColour : DEFAULT_BRAND.tertiaryColour),
     // Badge style — tenant row only (clubs register has no badge concept).
     badgeStyle: tenant?.badgeStyle ?? null,
   };

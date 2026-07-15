@@ -126,13 +126,27 @@ describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
     }
   }
 
-  it("dark-mode accent slots carry the resolved accent", () => {
+  it("dark-mode accent slots carry the direct hex→HSL of secondaryColour", () => {
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
-    expect(tokens["--primary"]).toBe(ACCENT_TOKENS.amber);
-    expect(tokens["--accent"]).toBe(ACCENT_TOKENS.amber);
-    expect(tokens["--ring"]).toBe(ACCENT_TOKENS.amber);
-    // Text on accent is navy-950 in both modes.
+    // #FBAC27 → "38 96% 57%" (exact hex→HSL, not the ACCENT_TOKENS.amber snap value)
+    const expected = hexToHslTriplet(HALLS_HEAD_LEGACY.secondaryColour)!;
+    expect(tokens["--primary"]).toBe(expected);
+    expect(tokens["--accent"]).toBe(expected);
+    expect(tokens["--ring"]).toBe(expected);
+    // L=57 > 55 → dark navy foreground.
     expect(tokens["--primary-foreground"]).toBe("222 33% 8%");
+  });
+
+  it("preset ACCENT_HEX colours produce the same HSL as ACCENT_TOKENS (round-trip)", () => {
+    // This verifies the claim in the deriveThemeTokens comment: preset hex
+    // values were derived from ACCENT_TOKENS HSL values, so they round-trip
+    // cleanly. Existing tenants whose secondaryColour is an ACCENT_HEX value
+    // see no visual change.
+    for (const token of ALL_ACCENTS) {
+      const brand: ClubBrand = { name: "Preset Club", secondaryColour: ACCENT_HEX[token] };
+      const tokens = deriveThemeTokens(brand, "dark");
+      expect(tokens["--primary"], token).toBe(ACCENT_TOKENS[token]);
+    }
   });
 });
 
@@ -146,12 +160,16 @@ describe("deriveThemeTokens: light and dark are genuinely distinct (Phase 5 AE3)
   });
 });
 
-describe("deriveThemeTokens: every accent token is valid and distinct in both modes", () => {
+describe("deriveThemeTokens: every preset accent hex is valid and distinct in both modes", () => {
+  // The theme engine reads secondaryColour directly (not accentToken), so each
+  // ACCENT_HEX value must produce a distinct --primary in both modes.
   for (const mode of ["light", "dark"] as const) {
-    it(`each accent produces a distinct --primary (${mode})`, () => {
+    it(`each preset accent hex produces a distinct --primary (${mode})`, () => {
       const primaries = ALL_ACCENTS.map(
-        (accentToken) =>
-          deriveThemeTokens({ name: "Any Club", accentToken }, mode)["--primary"],
+        (token) =>
+          deriveThemeTokens({ name: "Any Club", secondaryColour: ACCENT_HEX[token] }, mode)[
+            "--primary"
+          ],
       );
       expect(new Set(primaries).size).toBe(ALL_ACCENTS.length);
       for (const p of primaries) {
@@ -160,14 +178,19 @@ describe("deriveThemeTokens: every accent token is valid and distinct in both mo
     });
 
     it(`accent slots are identical across modes (${mode} vs dark)`, () => {
-      for (const accentToken of ALL_ACCENTS) {
-        const brand: ClubBrand = { name: "Any Club", accentToken };
+      for (const token of ALL_ACCENTS) {
+        const brand: ClubBrand = { name: "Any Club", secondaryColour: ACCENT_HEX[token] };
         expect(deriveThemeTokens(brand, mode)["--primary"]).toBe(
           deriveThemeTokens(brand, "dark")["--primary"],
         );
       }
     });
   }
+
+  it("no secondaryColour falls back to amber", () => {
+    const tokens = deriveThemeTokens({ name: "Bare Club" }, "dark");
+    expect(tokens["--primary"]).toBe(ACCENT_TOKENS.amber);
+  });
 });
 
 describe("deriveThemeTokens: totality / edge cases", () => {

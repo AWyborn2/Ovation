@@ -1,6 +1,5 @@
 import {
   DEFAULT_BRAND,
-  resolveAccentToken,
   type AccentToken,
   type ClubBrand,
 } from "@workspace/scorecard";
@@ -97,20 +96,31 @@ export const ACCENT_TOKENS: Record<AccentToken, string> = {
 };
 export type { AccentToken };
 
-/** Navy-950 — the text colour on any accent fill, in both modes. */
-const TEXT_ON_ACCENT = NAVY_DARK[950];
-
 /**
  * Compute the full set of CSS custom properties (structural surfaces + accent)
  * for a tenant's brand at a given light/dark mode. Surfaces are the fixed navy
- * (dark) / paper (light) scales above; the only brand-variable part is which of
- * the five accent tokens fills the `--primary`/`--accent`/`--ring` slots
- * (resolved via `resolveAccentToken`, which snaps legacy stored hexes to the
- * nearest token). Depth comes from surface-level contrast + hairline borders —
- * never box-shadow.
+ * (dark) / paper (light) scales above; the brand-variable part is the accent
+ * derived directly from `brand.secondaryColour` via hex→HSL conversion.
+ *
+ * Using hexToHsl directly (rather than snapping to one of five tokens) means
+ * any hex saved by the admin — including white, navy, or a custom club colour
+ * — is faithfully reflected in the CSS custom properties. Preset hex values
+ * (from ACCENT_HEX) round-trip cleanly through hexToHsl/hslString because
+ * they were derived from the ACCENT_TOKENS HSL values in the first place, so
+ * existing tenants on preset tokens see no visual change.
+ *
+ * Foreground is contrast-aware: light accents (L > 55) use dark navy text;
+ * dark accents (L ≤ 55) use light ink — so neither white-on-white nor
+ * navy-on-navy is ever produced regardless of what colour the admin chose.
+ *
+ * Depth comes from surface-level contrast + hairline borders — never box-shadow.
  */
 export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<string, string> {
-  const accent = ACCENT_TOKENS[resolveAccentToken(brand)] ?? ACCENT_TOKENS.amber;
+  // Direct hex→HSL: faithful to the saved colour, no token snap.
+  const hsl = hexToHsl(brand.secondaryColour);
+  const accent = hsl ? hslString(hsl) : ACCENT_TOKENS.amber;
+  // Contrast-aware foreground: light fills (L > 55) → dark navy; dark fills → light ink.
+  const accentForeground = hsl && hsl.l > 55 ? NAVY_DARK[950] : INK_DARK[0];
 
   if (mode === "dark") {
     return {
@@ -126,7 +136,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
       "--popover-foreground": INK_DARK[0],
       "--popover-border": NAVY_DARK[700],
       "--primary": accent,
-      "--primary-foreground": TEXT_ON_ACCENT,
+      "--primary-foreground": accentForeground,
       "--primary-border": accent,
       "--secondary": NAVY_DARK[800],
       "--secondary-foreground": INK_DARK[2],
@@ -135,7 +145,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
       "--muted-foreground": INK_DARK[2],
       "--muted-border": NAVY_DARK[700],
       "--accent": accent,
-      "--accent-foreground": TEXT_ON_ACCENT,
+      "--accent-foreground": accentForeground,
       "--accent-border": accent,
       "--destructive": ACCENT_TOKENS.red,
       "--destructive-foreground": "0 0% 100%",
@@ -156,7 +166,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
     "--popover-foreground": INK_LIGHT[0],
     "--popover-border": NAVY_LIGHT.border,
     "--primary": accent,
-    "--primary-foreground": TEXT_ON_ACCENT,
+    "--primary-foreground": accentForeground,
     "--primary-border": accent,
     "--secondary": NAVY_LIGHT.elevated,
     "--secondary-foreground": INK_LIGHT[2],
@@ -165,7 +175,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
     "--muted-foreground": INK_LIGHT[2],
     "--muted-border": NAVY_LIGHT.border,
     "--accent": accent,
-    "--accent-foreground": TEXT_ON_ACCENT,
+    "--accent-foreground": accentForeground,
     "--accent-border": accent,
     // Deepened from the red accent for AA text contrast on white surfaces;
     // tinted fill chips keep using the accent-red at full lightness.

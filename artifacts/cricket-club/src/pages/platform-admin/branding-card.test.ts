@@ -111,6 +111,7 @@ describe("mode switching (KTD4 — mode at save time wins)", () => {
       primaryColour: null,
       secondaryColour: null,
       tertiaryColour: null,
+      badgeStyle: null,
     });
     const colours = seedColourState(persisted);
     expect(colours.accent).toBe("amber"); // platform default

@@ -76,21 +76,29 @@ describe("trading card: brand-leak regression (Phase 2 R5/R7, Phase 4/5 footer t
   });
 });
 
-describe("accent constraint: every brand resolves inside the fixed 5-accent set (UI migration §8)", () => {
-  it("arbitrary legacy hexes never reach --primary — they snap to a named accent", async () => {
-    const { deriveThemeTokens, ACCENT_TOKENS } = await import("@/lib/theme-tokens");
-    const accentValues = new Set(Object.values(ACCENT_TOKENS));
-    const legacyBrands = [
+describe("accent fidelity: deriveThemeTokens uses the saved hex directly (Bug 2 fix)", () => {
+  it("arbitrary hex values reach --primary exactly, not snapped to a fixed token", async () => {
+    const { deriveThemeTokens, hexToHslTriplet } = await import("@/lib/theme-tokens");
+    const brands = [
       { name: "Halls Head Cricket Club", primaryColour: "#333F48", secondaryColour: "#FBAC27" },
       { name: "Some Purple Club", secondaryColour: "#6A0DAD" },
-      { name: "No Colours FC" },
     ];
-    for (const brand of legacyBrands) {
+    for (const brand of brands) {
       for (const mode of ["light", "dark"] as const) {
         const tokens = deriveThemeTokens(brand, mode);
-        expect(accentValues.has(tokens["--primary"]), `${brand.name} ${mode}`).toBe(true);
-        expect(accentValues.has(tokens["--accent"]), `${brand.name} ${mode}`).toBe(true);
+        const expected = hexToHslTriplet(brand.secondaryColour)!;
+        expect(tokens["--primary"], `${brand.name} ${mode}`).toBe(expected);
+        expect(tokens["--accent"], `${brand.name} ${mode}`).toBe(expected);
       }
+    }
+  });
+
+  it("a club with no secondaryColour falls back to the amber default", async () => {
+    const { deriveThemeTokens, ACCENT_TOKENS } = await import("@/lib/theme-tokens");
+    const brand = { name: "No Colours FC" };
+    for (const mode of ["light", "dark"] as const) {
+      const tokens = deriveThemeTokens(brand, mode);
+      expect(tokens["--primary"], mode).toBe(ACCENT_TOKENS.amber);
     }
   });
 });
