@@ -18,11 +18,13 @@ export interface UpdateTenantBrandBody {
   /** @nullable */
   faviconUrl?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
+  /** When true the tenant UI uses the navy base (dark-only mode). */
+  useNavyBase?: boolean;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable

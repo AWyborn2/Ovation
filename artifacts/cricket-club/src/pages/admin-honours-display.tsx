@@ -449,7 +449,7 @@ function SettingsForm({
         boardBg: "#262626",
         ink: "#f5f5f5",
         muted: "#a3a3a3",
-        accent: brand.secondaryColour,
+        accent: brand.primaryColour,
         accentInk: "#1b1b1b",
         font: "Georgia, serif",
         backgroundImage: null,

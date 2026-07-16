@@ -18,9 +18,9 @@ export interface HallsHeadBrand {
   /** @nullable */
   logoUrl128?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
 }

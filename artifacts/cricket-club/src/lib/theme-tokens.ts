@@ -100,7 +100,7 @@ export type { AccentToken };
  * Compute the full set of CSS custom properties (structural surfaces + accent)
  * for a tenant's brand at a given light/dark mode. Surfaces are the fixed navy
  * (dark) / paper (light) scales above; the brand-variable part is the accent
- * derived directly from `brand.secondaryColour` via hex→HSL conversion.
+ * derived directly from `brand.primaryColour` via hex→HSL conversion.
  *
  * Using hexToHsl directly (rather than snapping to one of five tokens) means
  * any hex saved by the admin — including white, navy, or a custom club colour
@@ -117,7 +117,7 @@ export type { AccentToken };
  */
 export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<string, string> {
   // Direct hex→HSL: faithful to the saved colour, no token snap.
-  const hsl = hexToHsl(brand.secondaryColour);
+  const hsl = hexToHsl(brand.primaryColour);
   const accent = hsl ? hslString(hsl) : ACCENT_TOKENS.amber;
   // Contrast-aware foreground: light fills (L > 55) → dark navy; dark fills → light ink.
   const accentForeground = hsl && hsl.l > 55 ? NAVY_DARK[950] : INK_DARK[0];

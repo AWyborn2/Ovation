@@ -87,15 +87,15 @@ function Editor({ brand }: { brand: TenantBrand }) {
 
   // Preset mode state
   const [accent, setAccent] = useState<AccentToken>(
-    snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour),
+    snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour),
   );
 
   // Custom mode state — all three colour slots
-  const [customPrimary, setCustomPrimary] = useState(brand.primaryColour ?? "#1A3350");
+  const [customPrimary, setCustomPrimary] = useState(brand.backgroundColour ?? "#1A3350");
   const [customSecondary, setCustomSecondary] = useState(
-    brand.secondaryColour ?? ACCENT_HEX[snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour)],
+    brand.primaryColour ?? ACCENT_HEX[snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour)],
   );
-  const [customTertiary, setCustomTertiary] = useState(brand.tertiaryColour ?? "#2A4060");
+  const [customTertiary, setCustomTertiary] = useState(brand.juniorsColour ?? "#2A4060");
 
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
     (brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
@@ -107,11 +107,11 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setName(brand.name);
     setLogoUrl(brand.logoUrl ?? "");
     setFaviconUrl(brand.faviconUrl ?? "");
-    const snapped = snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour);
+    const snapped = snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour);
     setAccent(snapped);
-    setCustomPrimary(brand.primaryColour ?? "#1A3350");
-    setCustomSecondary(brand.secondaryColour ?? ACCENT_HEX[snapped]);
-    setCustomTertiary(brand.tertiaryColour ?? "#2A4060");
+    setCustomPrimary(brand.backgroundColour ?? "#1A3350");
+    setCustomSecondary(brand.primaryColour ?? ACCENT_HEX[snapped]);
+    setCustomTertiary(brand.juniorsColour ?? "#2A4060");
     setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond");
   }, [brand]);
 
@@ -143,9 +143,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
     const localUrl = URL.createObjectURL(file);
     try {
       const palette = await extractBrandPalette(localUrl);
-      if (palette.primaryColour) {
+      if (palette.backgroundColour) {
         const suggested = snapHexToAccentToken(
-          palette.secondaryColour ?? palette.primaryColour,
+          palette.primaryColour ?? palette.backgroundColour,
         );
         setAccent(suggested);
         setColourNote(
@@ -185,9 +185,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
           shortName: brand.shortName,
           logoUrl: logoUrl || null,
           faviconUrl: faviconUrl || null,
-          primaryColour: brand.primaryColour,
-          secondaryColour: ACCENT_HEX[accent],
-          tertiaryColour: brand.tertiaryColour,
+          backgroundColour: brand.backgroundColour,
+          primaryColour: ACCENT_HEX[accent],
+          juniorsColour: brand.juniorsColour,
           badgeStyle: badgeStyle,
         },
       });
@@ -198,9 +198,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
           shortName: brand.shortName,
           logoUrl: logoUrl || null,
           faviconUrl: faviconUrl || null,
-          primaryColour: customPrimary || null,
-          secondaryColour: customSecondary || null,
-          tertiaryColour: customTertiary || null,
+          backgroundColour: customPrimary || null,
+          primaryColour: customSecondary || null,
+          juniorsColour: customTertiary || null,
           badgeStyle: badgeStyle,
         },
       });
@@ -214,9 +214,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
     ...brand,
     name,
     logoUrl: logoUrl || null,
-    primaryColour: colourTab === "preset" ? brand.primaryColour : customPrimary,
-    secondaryColour: previewSecondary,
-    tertiaryColour: colourTab === "preset" ? brand.tertiaryColour : customTertiary,
+    backgroundColour: colourTab === "preset" ? brand.backgroundColour : customPrimary,
+    primaryColour: previewSecondary,
+    juniorsColour: colourTab === "preset" ? brand.juniorsColour : customTertiary,
   };
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
 

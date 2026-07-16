@@ -97,8 +97,8 @@ const opponentClubColumns = {
   opponentClubShortName: clubsTable.shortName,
   opponentClubLogoUrl: clubsTable.logoUrl,
   opponentClubLogoUrl128: clubsTable.logoUrl128,
+  opponentClubBackgroundColour: clubsTable.backgroundColour,
   opponentClubPrimaryColour: clubsTable.primaryColour,
-  opponentClubSecondaryColour: clubsTable.secondaryColour,
 };
 
 type OpponentClubRow = {
@@ -107,8 +107,8 @@ type OpponentClubRow = {
   opponentClubShortName: string | null;
   opponentClubLogoUrl: string | null;
   opponentClubLogoUrl128: string | null;
+  opponentClubBackgroundColour: string | null;
   opponentClubPrimaryColour: string | null;
-  opponentClubSecondaryColour: string | null;
 };
 
 // Collapse the joined club columns into a nullable branding object. Null when
@@ -121,8 +121,8 @@ function toOpponentClub(row: OpponentClubRow) {
     shortName: row.opponentClubShortName,
     logoUrl: row.opponentClubLogoUrl,
     logoUrl128: row.opponentClubLogoUrl128,
+    backgroundColour: row.opponentClubBackgroundColour,
     primaryColour: row.opponentClubPrimaryColour,
-    secondaryColour: row.opponentClubSecondaryColour,
   };
 }
 
@@ -346,7 +346,7 @@ router.get("/matches", async (req, res): Promise<void> => {
       : baseQuery);
 
   res.json(
-    rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubPrimaryColour, opponentClubSecondaryColour, ...rest }) => ({
+    rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubBackgroundColour, opponentClubPrimaryColour, ...rest }) => ({
       ...rest,
       opponentClub: toOpponentClub({
         opponentClubId,
@@ -354,8 +354,8 @@ router.get("/matches", async (req, res): Promise<void> => {
         opponentClubShortName,
         opponentClubLogoUrl,
         opponentClubLogoUrl128,
+        opponentClubBackgroundColour,
         opponentClubPrimaryColour,
-        opponentClubSecondaryColour,
       }),
     })),
   );

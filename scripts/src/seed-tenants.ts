@@ -25,9 +25,9 @@ async function main(): Promise<void> {
       name: clubsTable.name,
       shortName: clubsTable.shortName,
       logoUrl: clubsTable.logoUrl,
+      backgroundColour: clubsTable.backgroundColour,
       primaryColour: clubsTable.primaryColour,
-      secondaryColour: clubsTable.secondaryColour,
-      tertiaryColour: clubsTable.tertiaryColour,
+      juniorsColour: clubsTable.juniorsColour,
     })
     .from(clubsTable)
     .where(eq(clubsTable.id, HALLS_HEAD_APP_CLUB_ID));
@@ -41,11 +41,9 @@ async function main(): Promise<void> {
     logoUrl: club?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl ?? null,
     faviconUrl: null,
     backgroundUrl: HALLS_HEAD_BRAND.backgroundUrl ?? null,
+    backgroundColour: club?.backgroundColour ?? HALLS_HEAD_BRAND.backgroundColour ?? null,
     primaryColour: club?.primaryColour ?? HALLS_HEAD_BRAND.primaryColour ?? null,
-    secondaryColour:
-      club?.secondaryColour ?? HALLS_HEAD_BRAND.secondaryColour ?? null,
-    tertiaryColour:
-      club?.tertiaryColour ?? HALLS_HEAD_BRAND.tertiaryColour ?? null,
+    juniorsColour: club?.juniorsColour ?? HALLS_HEAD_BRAND.juniorsColour ?? null,
     customDomain: null,
     plan: "pilot",
   };

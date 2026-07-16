@@ -20,6 +20,11 @@ export const ACCENT_HEX: Record<AccentToken, string> = {
  * A club's brand (logo + colours), the single shape every renderer reads so none
  * carry their own copy of a club's colours or logo. Surfaced by the API
  * (match detail brand field, social-settings `brand`, `GET /tenant-brand`).
+ *
+ * Colour semantics (after the §351 rename):
+ *   - `backgroundColour` — the club's dark background colour (scorecard/share-card fill)
+ *   - `primaryColour`    — the club's primary accent (buttons, badges, nav highlights)
+ *   - `juniorsColour`    — the juniors section banner colour only
  */
 export interface ClubBrand {
   name: string;
@@ -28,13 +33,13 @@ export interface ClubBrand {
   logoUrl128?: string | null;
   /**
    * The tenant's accent, one of the design system's five named hues. When
-   * absent (legacy brand rows), renderers snap `secondaryColour` (the accent
+   * absent (legacy brand rows), renderers snap `primaryColour` (the accent
    * slot) to the nearest token via {@link snapHexToAccentToken}.
    */
   accentToken?: AccentToken | null;
+  backgroundColour?: string | null;
   primaryColour?: string | null;
-  secondaryColour?: string | null;
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
   /** Optional site background image. Null/absent = neutral (no image). */
   backgroundUrl?: string | null;
   /** Optional favicon. Null/absent = the platform's neutral default favicon. */
@@ -64,9 +69,9 @@ export const DEFAULT_BRAND: ClubBrand = {
   logoUrl: "/ovation-logo.svg",
   logoUrl128: "/ovation-logo.svg",
   accentToken: "amber",
-  primaryColour: "#334155",
-  secondaryColour: "#94A3B8",
-  tertiaryColour: "#475569",
+  backgroundColour: "#334155",
+  primaryColour: "#94A3B8",
+  juniorsColour: "#475569",
   backgroundUrl: null,
   faviconUrl: null,
 };
@@ -87,9 +92,9 @@ export const HALLS_HEAD_BRAND: ClubBrand = {
     "https://res.cloudinary.com/playhq/image/upload/h_128,w_128/v1/production/ca/5fe82f6b-ee78-4232-9910-f5343547c1c3/1687781014605/logo.png",
   // #FBAC27 snaps to the amber accent — Halls Head keeps its gold look.
   accentToken: "amber",
-  primaryColour: "#333F48",
-  secondaryColour: "#FBAC27",
-  tertiaryColour: "#42342B",
+  backgroundColour: "#333F48",
+  primaryColour: "#FBAC27",
+  juniorsColour: "#42342B",
   // The design system is flat solid navy — no photography/texture anywhere —
   // so the old scoreboard texture is no longer seeded (UI migration §10).
   backgroundUrl: null,
@@ -98,10 +103,10 @@ export const HALLS_HEAD_BRAND: ClubBrand = {
   faviconUrl: null,
 };
 
-/** Default primary — used when a brand record omits the primary colour. */
+/** Default background colour — used when a brand record omits the background colour. */
+const FALLBACK_BACKGROUND = DEFAULT_BRAND.backgroundColour as string;
+/** Default primary accent — used when a brand record omits the primary colour. */
 const FALLBACK_PRIMARY = DEFAULT_BRAND.primaryColour as string;
-/** Default secondary — used when a brand record omits the secondary colour. */
-const FALLBACK_SECONDARY = DEFAULT_BRAND.secondaryColour as string;
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
@@ -180,12 +185,12 @@ export function snapHexToAccentToken(hex?: string | null): AccentToken {
 
 /**
  * The accent token a brand resolves to: its explicit `accentToken` when set,
- * else its stored accent-slot hex (`secondaryColour`, falling back to
- * `primaryColour`) snapped to the nearest token, else amber.
+ * else its stored accent-slot hex (`primaryColour`, falling back to
+ * `backgroundColour`) snapped to the nearest token, else amber.
  */
 export function resolveAccentToken(brand: ClubBrand): AccentToken {
   if (brand.accentToken && brand.accentToken in ACCENT_HEX) return brand.accentToken;
-  return snapHexToAccentToken(brand.secondaryColour ?? brand.primaryColour);
+  return snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour);
 }
 
 function mix(
@@ -201,32 +206,32 @@ function mix(
 }
 
 /**
- * Build a club's scorecard colour scheme from its primary/secondary colours
- * (secondary text on primary is the signature look); missing colours degrade to
+ * Build a club's scorecard colour scheme from its background/primary colours
+ * (primary text on background is the signature look); missing colours degrade to
  * the default fallbacks.
  */
 export function deriveClubColors(
+  backgroundColour?: string | null,
   primaryColour?: string | null,
-  secondaryColour?: string | null,
 ): TeamColors {
+  const background =
+    (backgroundColour && hexToRgb(backgroundColour)) || hexToRgb(FALLBACK_BACKGROUND)!;
   const primary =
-    (primaryColour && hexToRgb(primaryColour)) || hexToRgb(FALLBACK_PRIMARY)!;
-  const secondary =
-    (secondaryColour && hexToRgb(secondaryColour)) ||
-    hexToRgb(FALLBACK_SECONDARY)!;
+    (primaryColour && hexToRgb(primaryColour)) ||
+    hexToRgb(FALLBACK_PRIMARY)!;
+  const backgroundHex = toHex(background);
   const primaryHex = toHex(primary);
-  const secondaryHex = toHex(secondary);
   return {
-    primary: primaryHex,
-    secondary: secondaryHex,
-    text: secondaryHex,
-    accentText: primaryHex,
-    rowOdd: toHex(mix(primary, BLACK, 0.18)),
-    rowEven: toHex(mix(primary, BLACK, 0.34)),
+    primary: backgroundHex,
+    secondary: primaryHex,
+    text: primaryHex,
+    accentText: backgroundHex,
+    rowOdd: toHex(mix(background, BLACK, 0.18)),
+    rowEven: toHex(mix(background, BLACK, 0.34)),
     rowText: "#e8e8e8",
-    totalBg: primaryHex,
-    totalText: secondaryHex,
-    borderColor: `rgba(${secondary.r},${secondary.g},${secondary.b},0.16)`,
+    totalBg: backgroundHex,
+    totalText: primaryHex,
+    borderColor: `rgba(${primary.r},${primary.g},${primary.b},0.16)`,
   };
 }
 

@@ -27,9 +27,9 @@ export function toAdminTenant(
     shortName: t.shortName,
     logoUrl: t.logoUrl,
     faviconUrl: t.faviconUrl,
+    backgroundColour: t.backgroundColour,
     primaryColour: t.primaryColour,
-    secondaryColour: t.secondaryColour,
-    tertiaryColour: t.tertiaryColour,
+    juniorsColour: t.juniorsColour,
     badgeStyle: t.badgeStyle,
     lastActiveAt:
       t.lastActiveAt instanceof Date
@@ -39,9 +39,9 @@ export function toAdminTenant(
       t.suspendedAt instanceof Date
         ? t.suspendedAt.toISOString()
         : t.suspendedAt,
-    // Branding is "complete" when the tenant set its own logo AND primary colour
+    // Branding is "complete" when the tenant set its own logo AND background colour
     // (explicit branding, not defaults / clubs-register fallback). Derived, not
     // stored, so it can't drift from the underlying columns.
-    brandingComplete: t.logoUrl != null && t.primaryColour != null,
+    brandingComplete: t.logoUrl != null && t.backgroundColour != null,
   };
 }

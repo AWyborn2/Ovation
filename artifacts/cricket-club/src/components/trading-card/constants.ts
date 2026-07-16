@@ -12,9 +12,9 @@ export function useCardBrand() {
   return {
     brand,
     logoUrl: brand.logoUrl ?? DEFAULT_BRAND.logoUrl ?? "",
-    CHARCOAL: brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155",
-    GOLD: brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8",
-    BROWN: brand.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? "#475569",
+    CHARCOAL: brand.backgroundColour ?? DEFAULT_BRAND.backgroundColour ?? "#334155",
+    GOLD: brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#94A3B8",
+    BROWN: brand.juniorsColour ?? DEFAULT_BRAND.juniorsColour ?? "#475569",
   };
 }
 

@@ -44,20 +44,22 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
       | "shortName"
       | "logoUrl"
       | "faviconUrl"
+      | "backgroundColour"
       | "primaryColour"
-      | "secondaryColour"
-      | "tertiaryColour"
+      | "juniorsColour"
       | "badgeStyle"
+      | "useNavyBase"
     >
   > = {};
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
   if (parsed.data.shortName !== undefined) updates.shortName = parsed.data.shortName;
   if (parsed.data.logoUrl !== undefined) updates.logoUrl = parsed.data.logoUrl;
   if (parsed.data.faviconUrl !== undefined) updates.faviconUrl = parsed.data.faviconUrl;
+  if (parsed.data.backgroundColour !== undefined) updates.backgroundColour = parsed.data.backgroundColour;
   if (parsed.data.primaryColour !== undefined) updates.primaryColour = parsed.data.primaryColour;
-  if (parsed.data.secondaryColour !== undefined) updates.secondaryColour = parsed.data.secondaryColour;
-  if (parsed.data.tertiaryColour !== undefined) updates.tertiaryColour = parsed.data.tertiaryColour;
+  if (parsed.data.juniorsColour !== undefined) updates.juniorsColour = parsed.data.juniorsColour;
   if (parsed.data.badgeStyle !== undefined) updates.badgeStyle = parsed.data.badgeStyle;
+  if (parsed.data.useNavyBase !== undefined) updates.useNavyBase = parsed.data.useNavyBase;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "Nothing to update" });

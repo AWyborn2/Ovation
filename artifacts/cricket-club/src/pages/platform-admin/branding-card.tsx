@@ -53,9 +53,9 @@ export interface PersistedBrandFields {
   shortName: string | null;
   logoUrl: string | null;
   faviconUrl: string | null;
+  backgroundColour: string | null;
   primaryColour: string | null;
-  secondaryColour: string | null;
-  tertiaryColour: string | null;
+  juniorsColour: string | null;
   badgeStyle: string | null;
 }
 
@@ -79,9 +79,9 @@ export function seedPersistedFromTenant(
     | "shortName"
     | "logoUrl"
     | "faviconUrl"
+    | "backgroundColour"
     | "primaryColour"
-    | "secondaryColour"
-    | "tertiaryColour"
+    | "juniorsColour"
     | "badgeStyle"
   >,
 ): PersistedBrandFields {
@@ -90,9 +90,9 @@ export function seedPersistedFromTenant(
     shortName: tenant.shortName ?? null,
     logoUrl: tenant.logoUrl ?? null,
     faviconUrl: tenant.faviconUrl ?? null,
+    backgroundColour: tenant.backgroundColour ?? null,
     primaryColour: tenant.primaryColour ?? null,
-    secondaryColour: tenant.secondaryColour ?? null,
-    tertiaryColour: tenant.tertiaryColour ?? null,
+    juniorsColour: tenant.juniorsColour ?? null,
     badgeStyle: tenant.badgeStyle ?? null,
   };
 }
@@ -105,13 +105,13 @@ export function seedPersistedFromTenant(
  */
 export function seedColourState(persisted: PersistedBrandFields): ColourEdits {
   const accent = snapHexToAccentToken(
-    persisted.secondaryColour ?? persisted.primaryColour,
+    persisted.primaryColour ?? persisted.backgroundColour,
   );
   return {
     accent,
-    hexPrimary: persisted.primaryColour ?? (DEFAULT_BRAND.primaryColour as string),
-    hexSecondary: persisted.secondaryColour ?? ACCENT_HEX[accent],
-    hexTertiary: persisted.tertiaryColour ?? (DEFAULT_BRAND.tertiaryColour as string),
+    hexPrimary: persisted.backgroundColour ?? (DEFAULT_BRAND.backgroundColour as string),
+    hexSecondary: persisted.primaryColour ?? ACCENT_HEX[accent],
+    hexTertiary: persisted.juniorsColour ?? (DEFAULT_BRAND.juniorsColour as string),
   };
 }
 
@@ -143,16 +143,16 @@ export function buildBrandSavePayload(args: {
   if (args.colourMode === "token") {
     return {
       ...base,
-      primaryColour: persisted.primaryColour,
-      secondaryColour: ACCENT_HEX[colours.accent],
-      tertiaryColour: persisted.tertiaryColour,
+      backgroundColour: persisted.backgroundColour,
+      primaryColour: ACCENT_HEX[colours.accent],
+      juniorsColour: persisted.juniorsColour,
     };
   }
   return {
     ...base,
-    primaryColour: colours.hexPrimary || null,
-    secondaryColour: colours.hexSecondary || null,
-    tertiaryColour: colours.hexTertiary || null,
+    backgroundColour: colours.hexPrimary || null,
+    primaryColour: colours.hexSecondary || null,
+    juniorsColour: colours.hexTertiary || null,
   };
 }
 
@@ -209,14 +209,14 @@ export function suggestionFromPalette(palette: ExtractedPalette): {
   accent: AccentToken | null;
   note: string;
 } {
-  if (!palette.primaryColour) {
+  if (!palette.backgroundColour) {
     return {
       accent: null,
       note: "Couldn't detect a colour from this logo — pick the colours below.",
     };
   }
   const accent = snapHexToAccentToken(
-    palette.secondaryColour ?? palette.primaryColour,
+    palette.primaryColour ?? palette.backgroundColour,
   );
   return {
     accent,
@@ -269,9 +269,9 @@ export function BrandingCard({
           shortName: body.shortName ?? null,
           logoUrl: body.logoUrl ?? null,
           faviconUrl: body.faviconUrl ?? null,
+          backgroundColour: body.backgroundColour ?? null,
           primaryColour: body.primaryColour ?? null,
-          secondaryColour: body.secondaryColour ?? null,
-          tertiaryColour: body.tertiaryColour ?? null,
+          juniorsColour: body.juniorsColour ?? null,
           badgeStyle: body.badgeStyle ?? null,
         }));
         qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
@@ -370,14 +370,14 @@ export function BrandingCard({
   const previewColours =
     colourMode === "token"
       ? {
-          primaryColour: persisted.primaryColour,
-          secondaryColour: ACCENT_HEX[colours.accent],
-          tertiaryColour: persisted.tertiaryColour,
+          backgroundColour: persisted.backgroundColour,
+          primaryColour: ACCENT_HEX[colours.accent],
+          juniorsColour: persisted.juniorsColour,
         }
       : {
-          primaryColour: colours.hexPrimary,
-          secondaryColour: colours.hexSecondary,
-          tertiaryColour: colours.hexTertiary,
+          backgroundColour: colours.hexPrimary,
+          primaryColour: colours.hexSecondary,
+          juniorsColour: colours.hexTertiary,
         };
   const previewBrand: ClubBrand = {
     name: name || tenant.name,

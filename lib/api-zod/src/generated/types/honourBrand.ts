@@ -15,10 +15,10 @@ export interface HonourBrand {
   monogram: string;
   /** Club crest image URL; null falls back to the monogram. */
   logoUrl?: string | null;
-  /** Club primary colour (--club-primary), e.g. navy "#333F48". */
+  /** Club background colour (--club-primary), e.g. navy "#333F48". */
+  backgroundColour: string;
+  /** Club primary accent (--club-secondary), e.g. gold "#FBAC27". */
   primaryColour: string;
-  /** Club secondary / gold accent (--club-secondary), e.g. "#FBAC27". */
-  secondaryColour: string;
-  /** Club tertiary colour (--club-accent). */
-  tertiaryColour: string;
+  /** Club juniors banner colour (--club-accent). */
+  juniorsColour: string;
 }

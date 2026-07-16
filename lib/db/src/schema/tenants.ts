@@ -21,9 +21,11 @@ import {
  *   read the central PCA DB filtered by `centralClubId` (clubs with no native
  *   data, e.g. Mandurah). Per-tenant by design so enabling central for one club
  *   never blanks another that relies on its native tables.
- * - The brand columns (name … tertiaryColour) are the per-tenant theme; the
+ * - The brand columns (name … juniorsColour) are the per-tenant theme; the
  *   brand resolver prefers the `appClubId` clubs-register row where set, then
  *   these, then the built-in fallback.
+ * - `useNavyBase` → when true the tenant's UI uses the full navy base (dark-only
+ *   design mode), overriding any light-mode surfaces. Defaults false.
  * - `lastActiveAt` → when a club admin last acted on this tenant (advanced,
  *   throttled, from the club-admin auth path). Null = never active — the
  *   onboarding-stall signal the platform health dashboard surfaces.
@@ -42,9 +44,10 @@ export const tenantsTable = pgTable("tenants", {
   logoUrl: text("logo_url"),
   faviconUrl: text("favicon_url"),
   backgroundUrl: text("background_url"),
+  backgroundColour: text("background_colour"),
   primaryColour: text("primary_colour"),
-  secondaryColour: text("secondary_colour"),
-  tertiaryColour: text("tertiary_colour"),
+  juniorsColour: text("juniors_colour"),
+  useNavyBase: boolean("use_navy_base").notNull().default(false),
   customDomain: text("custom_domain"),
   // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
   // entitlements; enforcement is dormant until BILLING_ENABLED=true.

@@ -19,7 +19,7 @@ describe("extractBrandPalette", () => {
     getPaletteMock.mockReset();
   });
 
-  it("maps Vibrant/Muted/DarkVibrant to primary/secondary/tertiary", async () => {
+  it("maps Vibrant/Muted/DarkVibrant to backgroundColour/primaryColour/juniorsColour", async () => {
     getPaletteMock.mockResolvedValue({
       Vibrant: swatch("#ff0000"),
       Muted: swatch("#888888"),
@@ -30,9 +30,9 @@ describe("extractBrandPalette", () => {
     });
     const result = await extractBrandPalette("blob:fake");
     expect(result).toEqual({
-      primaryColour: "#ff0000",
-      secondaryColour: "#800000",
-      tertiaryColour: "#888888",
+      backgroundColour: "#ff0000",
+      primaryColour: "#800000",
+      juniorsColour: "#888888",
     });
   });
 
@@ -47,9 +47,9 @@ describe("extractBrandPalette", () => {
     });
     const result = await extractBrandPalette("blob:fake");
     expect(result).toEqual({
+      backgroundColour: null,
       primaryColour: null,
-      secondaryColour: null,
-      tertiaryColour: null,
+      juniorsColour: null,
     });
   });
 
@@ -57,9 +57,9 @@ describe("extractBrandPalette", () => {
     getPaletteMock.mockRejectedValue(new Error("decode failed"));
     const result = await extractBrandPalette("blob:fake");
     expect(result).toEqual({
+      backgroundColour: null,
       primaryColour: null,
-      secondaryColour: null,
-      tertiaryColour: null,
+      juniorsColour: null,
     });
   });
 
@@ -74,9 +74,9 @@ describe("extractBrandPalette", () => {
     });
     const result = await extractBrandPalette("blob:fake");
     expect(result).toEqual({
-      primaryColour: "#123456",
-      secondaryColour: "#654321",
-      tertiaryColour: "#abcdef",
+      backgroundColour: "#123456",
+      primaryColour: "#654321",
+      juniorsColour: "#abcdef",
     });
   });
 
@@ -91,9 +91,9 @@ describe("extractBrandPalette", () => {
     });
     const result = await extractBrandPalette("blob:fake");
     expect(result).toEqual({
-      primaryColour: "#111111",
-      secondaryColour: null,
-      tertiaryColour: null,
+      backgroundColour: "#111111",
+      primaryColour: null,
+      juniorsColour: null,
     });
   });
 
@@ -105,9 +105,9 @@ describe("extractBrandPalette", () => {
       await vi.advanceTimersByTimeAsync(8000);
       const result = await pending;
       expect(result).toEqual({
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
       });
     } finally {
       vi.useRealTimers();

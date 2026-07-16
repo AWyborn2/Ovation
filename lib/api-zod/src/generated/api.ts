@@ -339,8 +339,8 @@ export const ListMatchesResponseItem = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.')
 })
 export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
@@ -373,8 +373,8 @@ export const GetMatchResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
   "club": zod.union([zod.object({
   "name": zod.string(),
@@ -383,9 +383,10 @@ export const GetMatchResponse = zod.object({
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
@@ -478,8 +479,8 @@ export const UpdateMatchRoundResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
   "club": zod.union([zod.object({
   "name": zod.string(),
@@ -488,9 +489,10 @@ export const UpdateMatchRoundResponse = zod.object({
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
@@ -579,8 +581,8 @@ export const SetMatchHatTrickResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.'),
   "club": zod.union([zod.object({
   "name": zod.string(),
@@ -589,9 +591,10 @@ export const SetMatchHatTrickResponse = zod.object({
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
@@ -1007,8 +1010,8 @@ export const GetSeniorOverviewResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Opposition club branding, or null when unmatched.')
 })).describe('Most recent match per grade fielded in the latest season.'),
   "topRunScorers": zod.array(zod.object({
@@ -4655,9 +4658,9 @@ export const GetSocialSettingsResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish()
+  "juniorsColour": zod.string().nullish()
 }).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register — the default theme\/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults.')
 })
 
@@ -4975,9 +4978,9 @@ export const GetHonourDisplayResponse = zod.object({
   "shortName": zod.string().describe('Short club name \/ abbreviation.'),
   "monogram": zod.string().describe('2-letter crest fallback (e.g. \"HH\").'),
   "logoUrl": zod.string().nullish().describe('Club crest image URL; null falls back to the monogram.'),
-  "primaryColour": zod.string().describe('Club primary colour (--club-primary), e.g. navy \"#333F48\".'),
-  "secondaryColour": zod.string().describe('Club secondary \/ gold accent (--club-secondary), e.g. \"#FBAC27\".'),
-  "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
+  "backgroundColour": zod.string().describe('Club background colour (--club-primary), e.g. navy \"#333F48\".'),
+  "primaryColour": zod.string().describe('Club primary accent (--club-secondary), e.g. gold \"#FBAC27\".'),
+  "juniorsColour": zod.string().describe('Club juniors banner colour (--club-accent).')
 }),
   "settings": zod.object({
   "defaultTemplate": zod.string().describe('The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id (\"custom:<uuid>\").'),
@@ -5194,9 +5197,9 @@ export const GetKioskDisplayResponse = zod.object({
   "shortName": zod.string().describe('Short club name \/ abbreviation.'),
   "monogram": zod.string().describe('2-letter crest fallback (e.g. \"HH\").'),
   "logoUrl": zod.string().nullish().describe('Club crest image URL; null falls back to the monogram.'),
-  "primaryColour": zod.string().describe('Club primary colour (--club-primary), e.g. navy \"#333F48\".'),
-  "secondaryColour": zod.string().describe('Club secondary \/ gold accent (--club-secondary), e.g. \"#FBAC27\".'),
-  "tertiaryColour": zod.string().describe('Club tertiary colour (--club-accent).')
+  "backgroundColour": zod.string().describe('Club background colour (--club-primary), e.g. navy \"#333F48\".'),
+  "primaryColour": zod.string().describe('Club primary accent (--club-secondary), e.g. gold \"#FBAC27\".'),
+  "juniorsColour": zod.string().describe('Club juniors banner colour (--club-accent).')
 }),
   "settings": zod.object({
   "defaultTemplate": zod.string().describe('The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id (\"custom:<uuid>\").'),
@@ -5866,8 +5869,8 @@ export const GetJuniorsOverviewResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully.')
 })).describe('Most recent match per age group fielded in the latest season.'),
   "topRunScorers": zod.array(zod.object({
@@ -5961,8 +5964,8 @@ export const ListJuniorMatchesResponseItem = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when the opponent could not be matched to a known club (most metro junior opponents are absent from the Peel-focused register); renderers fall back gracefully.')
 })
 export const ListJuniorMatchesResponse = zod.array(ListJuniorMatchesResponseItem)
@@ -6004,8 +6007,8 @@ export const GetJuniorMatchResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish()
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish()
 }).describe('Branding for the opposition club, resolved from the master club register via the match\'s opponentClubId. Null when the opponent could not be matched to a known club; renderers must fall back gracefully.'),zod.null()]).optional().describe('Branding for the opposition club, resolved from the shared clubs register via the junior match\'s opponentClubId. Null when unmatched; renderers fall back gracefully.'),
   "innings": zod.array(zod.object({
   "innings": zod.number(),
@@ -6386,9 +6389,10 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
   "platform": zod.literal(true)
@@ -6403,9 +6407,10 @@ export const UpdateTenantBrandBody = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
 }).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
 
@@ -6416,9 +6421,10 @@ export const UpdateTenantBrandResponse = zod.object({
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
   "faviconUrl": zod.string().nullish().describe('Optional per-tenant favicon URL. Null = the platform\'s neutral default favicon.'),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
 
@@ -6445,7 +6451,7 @@ export const GetAvailableClubsResponseItem = zod.object({
   "centralClubId": zod.number(),
   "name": zod.string(),
   "shortName": zod.string().nullish(),
-  "primaryColour": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "suggestedSlug": zod.string().describe('A pre-validated slug derived from the club name.')
 }).describe('A central PCA club a visitor can claim during signup.')
 export const GetAvailableClubsResponse = zod.array(GetAvailableClubsResponseItem)
@@ -6521,9 +6527,9 @@ export const ListAllTenantsResponseItem = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
@@ -6571,9 +6577,9 @@ export const GetAdminTenantResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
@@ -6613,9 +6619,9 @@ export const UpdateAdminTenantResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
@@ -6631,9 +6637,9 @@ export const UpdateAdminTenantBrandParams = zod.object({
 })
 
 
+export const updateAdminTenantBrandBodyBackgroundColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
 export const updateAdminTenantBrandBodyPrimaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
-export const updateAdminTenantBrandBodySecondaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
-export const updateAdminTenantBrandBodyTertiaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
+export const updateAdminTenantBrandBodyJuniorsColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
 
 
 export const UpdateAdminTenantBrandBody = zod.object({
@@ -6641,9 +6647,10 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().regex(updateAdminTenantBrandBodyBackgroundColourRegExp).nullish(),
   "primaryColour": zod.string().regex(updateAdminTenantBrandBodyPrimaryColourRegExp).nullish(),
-  "secondaryColour": zod.string().regex(updateAdminTenantBrandBodySecondaryColourRegExp).nullish(),
-  "tertiaryColour": zod.string().regex(updateAdminTenantBrandBodyTertiaryColourRegExp).nullish(),
+  "juniorsColour": zod.string().regex(updateAdminTenantBrandBodyJuniorsColourRegExp).nullish(),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
 }).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
 
@@ -6662,9 +6669,9 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "shortName": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
-  "secondaryColour": zod.string().nullish(),
-  "tertiaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),

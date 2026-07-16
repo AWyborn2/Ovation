@@ -19,7 +19,7 @@ export interface OpponentClub {
   /** @nullable */
   logoUrl128?: string | null;
   /** @nullable */
-  primaryColour?: string | null;
+  backgroundColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
+  primaryColour?: string | null;
 }

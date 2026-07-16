@@ -80,20 +80,20 @@ describe("accent fidelity: deriveThemeTokens uses the saved hex directly (Bug 2 
   it("arbitrary hex values reach --primary exactly, not snapped to a fixed token", async () => {
     const { deriveThemeTokens, hexToHslTriplet } = await import("@/lib/theme-tokens");
     const brands = [
-      { name: "Halls Head Cricket Club", primaryColour: "#333F48", secondaryColour: "#FBAC27" },
-      { name: "Some Purple Club", secondaryColour: "#6A0DAD" },
+      { name: "Halls Head Cricket Club", backgroundColour: "#333F48", primaryColour: "#FBAC27" },
+      { name: "Some Purple Club", primaryColour: "#6A0DAD" },
     ];
     for (const brand of brands) {
       for (const mode of ["light", "dark"] as const) {
         const tokens = deriveThemeTokens(brand, mode);
-        const expected = hexToHslTriplet(brand.secondaryColour)!;
+        const expected = hexToHslTriplet(brand.primaryColour)!;
         expect(tokens["--primary"], `${brand.name} ${mode}`).toBe(expected);
         expect(tokens["--accent"], `${brand.name} ${mode}`).toBe(expected);
       }
     }
   });
 
-  it("a club with no secondaryColour falls back to the amber default", async () => {
+  it("a club with no primaryColour falls back to the amber default", async () => {
     const { deriveThemeTokens, ACCENT_TOKENS } = await import("@/lib/theme-tokens");
     const brand = { name: "No Colours FC" };
     for (const mode of ["light", "dark"] as const) {

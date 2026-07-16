@@ -33,8 +33,8 @@ const opponentClubColumns = {
   opponentClubShortName: clubsTable.shortName,
   opponentClubLogoUrl: clubsTable.logoUrl,
   opponentClubLogoUrl128: clubsTable.logoUrl128,
+  opponentClubBackgroundColour: clubsTable.backgroundColour,
   opponentClubPrimaryColour: clubsTable.primaryColour,
-  opponentClubSecondaryColour: clubsTable.secondaryColour,
 };
 
 function toOpponentClub(row: {
@@ -43,8 +43,8 @@ function toOpponentClub(row: {
   opponentClubShortName: string | null;
   opponentClubLogoUrl: string | null;
   opponentClubLogoUrl128: string | null;
+  opponentClubBackgroundColour: string | null;
   opponentClubPrimaryColour: string | null;
-  opponentClubSecondaryColour: string | null;
 }) {
   if (row.opponentClubId == null || row.opponentClubName == null) return null;
   return {
@@ -53,8 +53,8 @@ function toOpponentClub(row: {
     shortName: row.opponentClubShortName,
     logoUrl: row.opponentClubLogoUrl,
     logoUrl128: row.opponentClubLogoUrl128,
+    backgroundColour: row.opponentClubBackgroundColour,
     primaryColour: row.opponentClubPrimaryColour,
-    secondaryColour: row.opponentClubSecondaryColour,
   };
 }
 
@@ -94,8 +94,8 @@ function toRecentMatch(row: {
   opponentClubShortName: string | null;
   opponentClubLogoUrl: string | null;
   opponentClubLogoUrl128: string | null;
+  opponentClubBackgroundColour: string | null;
   opponentClubPrimaryColour: string | null;
-  opponentClubSecondaryColour: string | null;
 }) {
   return {
     id: row.id,

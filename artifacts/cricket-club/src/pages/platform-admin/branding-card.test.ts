@@ -19,9 +19,9 @@ const PERSISTED: PersistedBrandFields = {
   shortName: "PCC",
   logoUrl: "/api/storage/objects/pinjarra/logo.png",
   faviconUrl: "/api/storage/objects/pinjarra/favicon.png",
-  primaryColour: "#333F48",
-  secondaryColour: "#FBAC27", // snaps to amber
-  tertiaryColour: "#42342B",
+  backgroundColour: "#333F48",
+  primaryColour: "#FBAC27", // snaps to amber
+  juniorsColour: "#42342B",
 };
 
 const FIELD_EDITS = {
@@ -32,7 +32,7 @@ const FIELD_EDITS = {
 };
 
 describe("buildBrandSavePayload", () => {
-  it("token mode sends the token's canonical hex in the accent slot with primary/tertiary passthrough (KTD4)", () => {
+  it("token mode sends the token's canonical hex in the accent slot with background/juniors passthrough (KTD4)", () => {
     const payload = buildBrandSavePayload({
       persisted: PERSISTED,
       ...FIELD_EDITS,
@@ -50,9 +50,9 @@ describe("buildBrandSavePayload", () => {
       shortName: "PCC",
       logoUrl: "/api/storage/objects/pinjarra/logo.png",
       faviconUrl: null,
-      primaryColour: "#333F48",
-      secondaryColour: ACCENT_HEX.blue,
-      tertiaryColour: "#42342B",
+      backgroundColour: "#333F48",
+      primaryColour: ACCENT_HEX.blue,
+      juniorsColour: "#42342B",
     });
   });
 
@@ -68,9 +68,9 @@ describe("buildBrandSavePayload", () => {
         hexTertiary: "#F5F7FA",
       },
     });
-    expect(payload.primaryColour).toBe("#1A3350");
-    expect(payload.secondaryColour).toBe("#C8102E");
-    expect(payload.tertiaryColour).toBe("#F5F7FA");
+    expect(payload.backgroundColour).toBe("#1A3350");
+    expect(payload.primaryColour).toBe("#C8102E");
+    expect(payload.juniorsColour).toBe("#F5F7FA");
     expect(payload.name).toBe("Pinjarra CC");
   });
 });
@@ -96,9 +96,9 @@ describe("mode switching (KTD4 — mode at save time wins)", () => {
       colourMode: "token",
       colours: reseeded,
     });
-    expect(payload.primaryColour).toBe(PERSISTED.primaryColour);
-    expect(payload.secondaryColour).toBe(ACCENT_HEX.amber);
-    expect(payload.tertiaryColour).toBe(PERSISTED.tertiaryColour);
+    expect(payload.backgroundColour).toBe(PERSISTED.backgroundColour);
+    expect(payload.primaryColour).toBe(ACCENT_HEX.amber);
+    expect(payload.juniorsColour).toBe(PERSISTED.juniorsColour);
   });
 
   it("seeds neutral defaults when the tenant has never been branded (detail response carries no brand fields)", () => {
@@ -108,9 +108,9 @@ describe("mode switching (KTD4 — mode at save time wins)", () => {
       shortName: null,
       logoUrl: null,
       faviconUrl: null,
+      backgroundColour: null,
       primaryColour: null,
-      secondaryColour: null,
-      tertiaryColour: null,
+      juniorsColour: null,
       badgeStyle: null,
     });
     const colours = seedColourState(persisted);
@@ -169,9 +169,9 @@ describe("contrast warning (R7, AE3)", () => {
         hexTertiary: "#feffff",
       },
     });
+    expect(payload.backgroundColour).toBe("#feffff");
     expect(payload.primaryColour).toBe("#feffff");
-    expect(payload.secondaryColour).toBe("#feffff");
-    expect(payload.tertiaryColour).toBe("#feffff");
+    expect(payload.juniorsColour).toBe("#feffff");
   });
 
   it("ignores unparseable values rather than warning on them", () => {
@@ -183,28 +183,28 @@ describe("contrast warning (R7, AE3)", () => {
 describe("suggestionFromPalette (R5)", () => {
   it("snaps the extracted colour to the nearest accent token", () => {
     const suggestion = suggestionFromPalette({
-      primaryColour: "#123B8A",
-      secondaryColour: null,
-      tertiaryColour: null,
+      backgroundColour: "#123B8A",
+      primaryColour: null,
+      juniorsColour: null,
     });
     expect(suggestion.accent).toBe("blue");
     expect(suggestion.note).toContain("blue");
   });
 
-  it("prefers the secondary (accent-slot) colour when both are present", () => {
+  it("prefers the primary (accent-slot) colour when both are present", () => {
     const suggestion = suggestionFromPalette({
-      primaryColour: "#123B8A",
-      secondaryColour: "#FBAC27",
-      tertiaryColour: null,
+      backgroundColour: "#123B8A",
+      primaryColour: "#FBAC27",
+      juniorsColour: null,
     });
     expect(suggestion.accent).toBe("amber");
   });
 
   it("degrades an all-null extraction to a couldn't-detect note with pickers untouched", () => {
     const suggestion = suggestionFromPalette({
+      backgroundColour: null,
       primaryColour: null,
-      secondaryColour: null,
-      tertiaryColour: null,
+      juniorsColour: null,
     });
     expect(suggestion.accent).toBeNull();
     expect(suggestion.note).toContain("Couldn't detect");

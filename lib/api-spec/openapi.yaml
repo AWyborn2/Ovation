@@ -6007,9 +6007,9 @@ components:
           type: ["string", "null"]
         logoUrl128:
           type: ["string", "null"]
-        primaryColour:
+        backgroundColour:
           type: ["string", "null"]
-        secondaryColour:
+        primaryColour:
           type: ["string", "null"]
 
     HallsHeadBrand:
@@ -6029,11 +6029,11 @@ components:
           type: ["string", "null"]
         logoUrl128:
           type: ["string", "null"]
+        backgroundColour:
+          type: ["string", "null"]
         primaryColour:
           type: ["string", "null"]
-        secondaryColour:
-          type: ["string", "null"]
-        tertiaryColour:
+        juniorsColour:
           type: ["string", "null"]
 
     TenantBrand:
@@ -6061,12 +6061,17 @@ components:
           description: >-
             Optional per-tenant favicon URL. Null = the platform's neutral
             default favicon.
+        backgroundColour:
+          type: ["string", "null"]
         primaryColour:
           type: ["string", "null"]
-        secondaryColour:
+        juniorsColour:
           type: ["string", "null"]
-        tertiaryColour:
-          type: ["string", "null"]
+        useNavyBase:
+          type: boolean
+          description: >-
+            When true the tenant UI uses the full navy base (dark-only design
+            mode). Defaults false.
         badgeStyle:
           type: ["string", "null"]
           description: >-
@@ -6090,12 +6095,15 @@ components:
           type: ["string", "null"]
         faviconUrl:
           type: ["string", "null"]
+        backgroundColour:
+          type: ["string", "null"]
         primaryColour:
           type: ["string", "null"]
-        secondaryColour:
+        juniorsColour:
           type: ["string", "null"]
-        tertiaryColour:
-          type: ["string", "null"]
+        useNavyBase:
+          type: boolean
+          description: When true the tenant UI uses the navy base (dark-only mode).
         badgeStyle:
           type: ["string", "null"]
           description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
@@ -6119,15 +6127,18 @@ components:
           type: ["string", "null"]
         faviconUrl:
           type: ["string", "null"]
+        backgroundColour:
+          type: ["string", "null"]
+          pattern: "^#[0-9a-fA-F]{6}$"
         primaryColour:
           type: ["string", "null"]
           pattern: "^#[0-9a-fA-F]{6}$"
-        secondaryColour:
+        juniorsColour:
           type: ["string", "null"]
           pattern: "^#[0-9a-fA-F]{6}$"
-        tertiaryColour:
-          type: ["string", "null"]
-          pattern: "^#[0-9a-fA-F]{6}$"
+        useNavyBase:
+          type: boolean
+          description: When true the tenant UI uses the navy base (dark-only mode).
         badgeStyle:
           type: ["string", "null"]
           description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
@@ -6181,7 +6192,7 @@ components:
           type: string
         shortName:
           type: ["string", "null"]
-        primaryColour:
+        backgroundColour:
           type: ["string", "null"]
         suggestedSlug:
           type: string
@@ -6278,11 +6289,11 @@ components:
           type: ["string", "null"]
         faviconUrl:
           type: ["string", "null"]
+        backgroundColour:
+          type: ["string", "null"]
         primaryColour:
           type: ["string", "null"]
-        secondaryColour:
-          type: ["string", "null"]
-        tertiaryColour:
+        juniorsColour:
           type: ["string", "null"]
         badgeStyle:
           type: ["string", "null"]
@@ -9022,9 +9033,9 @@ components:
         - name
         - shortName
         - monogram
+        - backgroundColour
         - primaryColour
-        - secondaryColour
-        - tertiaryColour
+        - juniorsColour
       properties:
         name:
           type: string
@@ -9039,15 +9050,15 @@ components:
           type: string
           nullable: true
           description: Club crest image URL; null falls back to the monogram.
+        backgroundColour:
+          type: string
+          description: Club background colour (--club-primary), e.g. navy "#333F48".
         primaryColour:
           type: string
-          description: Club primary colour (--club-primary), e.g. navy "#333F48".
-        secondaryColour:
+          description: Club primary accent (--club-secondary), e.g. gold "#FBAC27".
+        juniorsColour:
           type: string
-          description: Club secondary / gold accent (--club-secondary), e.g. "#FBAC27".
-        tertiaryColour:
-          type: string
-          description: Club tertiary colour (--club-accent).
+          description: Club juniors banner colour (--club-accent).
 
     BoardSquadMember:
       type: object

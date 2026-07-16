@@ -258,8 +258,8 @@ const lighten = (hex: string, amount: number): string => {
 // Selectable card themes still override these. textLight is a neutral cream
 // for legibility on a dark background.
 const themeFromBrand = (brand?: ClubBrand | null): CardTheme => {
-  const primary = brand?.primaryColour || DEFAULT_BRAND.primaryColour || "#334155";
-  const secondary = brand?.secondaryColour || DEFAULT_BRAND.secondaryColour || "#94A3B8";
+  const primary = brand?.backgroundColour || DEFAULT_BRAND.backgroundColour || "#334155";
+  const secondary = brand?.primaryColour || DEFAULT_BRAND.primaryColour || "#94A3B8";
   return {
     bgDark: primary,
     bgPanel: lighten(primary, 0.1),
@@ -277,7 +277,7 @@ const JUNIOR_BROWN = "#42342B";
 const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
   bgDark: JUNIOR_BROWN,
   bgPanel: lighten(JUNIOR_BROWN, 0.12),
-  accent: brand?.secondaryColour || DEFAULT_BRAND.secondaryColour || "#94A3B8",
+  accent: brand?.primaryColour || DEFAULT_BRAND.primaryColour || "#94A3B8",
   textLight: "#F5EFE6",
 });
 

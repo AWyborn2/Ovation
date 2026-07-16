@@ -15,7 +15,7 @@ export interface AvailableClub {
   /** @nullable */
   shortName?: string | null;
   /** @nullable */
-  primaryColour?: string | null;
+  backgroundColour?: string | null;
   /** A pre-validated slug derived from the club name. */
   suggestedSlug: string;
 }

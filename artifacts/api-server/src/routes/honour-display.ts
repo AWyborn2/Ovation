@@ -1770,9 +1770,9 @@ async function buildBrand() {
     shortName: b.shortName ?? b.name,
     monogram: deriveMonogram(b.name, b.shortName ?? null),
     logoUrl: b.logoUrl128 ?? b.logoUrl ?? null,
-    primaryColour: b.primaryColour ?? "#333F48",
-    secondaryColour: b.secondaryColour ?? "#FBAC27",
-    tertiaryColour: b.tertiaryColour ?? b.primaryColour ?? "#4A5A66",
+    backgroundColour: b.backgroundColour ?? "#333F48",
+    primaryColour: b.primaryColour ?? "#FBAC27",
+    juniorsColour: b.juniorsColour ?? b.backgroundColour ?? "#4A5A66",
   };
 }
 

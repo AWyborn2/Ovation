@@ -437,9 +437,9 @@ export interface OpponentClub {
   /** @nullable */
   logoUrl128?: string | null;
   /** @nullable */
-  primaryColour?: string | null;
+  backgroundColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
+  primaryColour?: string | null;
 }
 
 export interface MatchSummary {
@@ -1135,11 +1135,11 @@ export interface HallsHeadBrand {
   /** @nullable */
   logoUrl128?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
 }
 
 /**
@@ -1164,11 +1164,13 @@ export interface TenantBrand {
      */
   faviconUrl?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
+  /** When true the tenant UI uses the full navy base (dark-only design mode). Defaults false. */
+  useNavyBase?: boolean;
   /**
      * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default "diamond" style.
      * @nullable
@@ -1188,11 +1190,13 @@ export interface UpdateTenantBrandBody {
   /** @nullable */
   faviconUrl?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
+  /** When true the tenant UI uses the navy base (dark-only mode). */
+  useNavyBase?: boolean;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable
@@ -1216,17 +1220,19 @@ export interface UpdateAdminTenantBrandBody {
      * @nullable
      * @pattern ^#[0-9a-fA-F]{6}$
      */
+  backgroundColour?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9a-fA-F]{6}$
+     */
   primaryColour?: string | null;
   /**
      * @nullable
      * @pattern ^#[0-9a-fA-F]{6}$
      */
-  secondaryColour?: string | null;
-  /**
-     * @nullable
-     * @pattern ^#[0-9a-fA-F]{6}$
-     */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
+  /** When true the tenant UI uses the navy base (dark-only mode). */
+  useNavyBase?: boolean;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable
@@ -1275,7 +1281,7 @@ export interface AvailableClub {
   /** @nullable */
   shortName?: string | null;
   /** @nullable */
-  primaryColour?: string | null;
+  backgroundColour?: string | null;
   /** A pre-validated slug derived from the club name. */
   suggestedSlug: string;
 }
@@ -1352,11 +1358,11 @@ export interface AdminTenant {
   /** @nullable */
   faviconUrl?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable
@@ -3197,12 +3203,12 @@ export interface HonourBrand {
   monogram: string;
   /** Club crest image URL; null falls back to the monogram. */
   logoUrl?: string | null;
-  /** Club primary colour (--club-primary), e.g. navy "#333F48". */
+  /** Club background colour (--club-primary), e.g. navy "#333F48". */
+  backgroundColour: string;
+  /** Club primary accent (--club-secondary), e.g. gold "#FBAC27". */
   primaryColour: string;
-  /** Club secondary / gold accent (--club-secondary), e.g. "#FBAC27". */
-  secondaryColour: string;
-  /** Club tertiary colour (--club-accent). */
-  tertiaryColour: string;
+  /** Club juniors banner colour (--club-accent). */
+  juniorsColour: string;
 }
 
 export interface BoardSquadMember {

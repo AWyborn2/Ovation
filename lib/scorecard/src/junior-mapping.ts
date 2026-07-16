@@ -73,7 +73,7 @@ function tenantTeam(brand?: ClubBrand | null): ScorecardTeam {
     name: b.name,
     shortName: b.shortName ?? null,
     logoUrl: b.logoUrl128 ?? b.logoUrl ?? null,
-    colors: deriveClubColors(b.primaryColour, b.secondaryColour),
+    colors: deriveClubColors(b.backgroundColour, b.primaryColour),
     isHallsHead: true,
   };
 }
@@ -86,7 +86,7 @@ function oppositionTeam(
     name: club?.name ?? (name?.trim() || "Opposition"),
     shortName: club?.shortName ?? null,
     logoUrl: club?.logoUrl128 ?? club?.logoUrl ?? null,
-    colors: deriveOppositionColors(club?.primaryColour, club?.secondaryColour),
+    colors: deriveOppositionColors(club?.backgroundColour, club?.primaryColour),
     isHallsHead: false,
   };
 }

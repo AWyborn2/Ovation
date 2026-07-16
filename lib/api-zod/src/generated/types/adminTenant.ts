@@ -31,11 +31,11 @@ export interface AdminTenant {
   /** @nullable */
   faviconUrl?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable

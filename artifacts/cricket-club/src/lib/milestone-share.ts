@@ -84,9 +84,9 @@ export const generateMilestoneCard = async (input: MilestoneShareInput): Promise
   const brand = input.brand ?? DEFAULT_BRAND;
   const logoUrl = brand.logoUrl ?? DEFAULT_BRAND.logoUrl ?? "";
   const clubName = (brand.name ?? DEFAULT_BRAND.name).toUpperCase();
-  const BG_DARK = brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155";
+  const BG_DARK = brand.backgroundColour ?? DEFAULT_BRAND.backgroundColour ?? "#334155";
   const BG_PANEL = lighten(BG_DARK, 0.1);
-  const GOLD = brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8";
+  const GOLD = brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#94A3B8";
   const GOLD_SOFT = rgba(GOLD, 0.18);
   // A tenant with no configured hashtag gets one derived from its short name
   // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);

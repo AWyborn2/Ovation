@@ -28,11 +28,13 @@ export interface TenantBrand {
      */
   faviconUrl?: string | null;
   /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
-  secondaryColour?: string | null;
-  /** @nullable */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
+  /** When true the tenant UI uses the full navy base (dark-only design mode). Defaults false. */
+  useNavyBase?: boolean;
   /**
      * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default "diamond" style.
      * @nullable

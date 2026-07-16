@@ -75,20 +75,20 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
       .set("x-tenant-id", String(tenantAId))
       .send({
         logoUrl: "/objects/uploads/logo-a.png",
-        primaryColour: "#112233",
-        secondaryColour: "#445566",
-        tertiaryColour: "#778899",
+        backgroundColour: "#112233",
+        primaryColour: "#445566",
+        juniorsColour: "#778899",
       })
       .expect(200);
     expect(res.body.logoUrl).toBe("/objects/uploads/logo-a.png");
-    expect(res.body.primaryColour).toBe("#112233");
+    expect(res.body.backgroundColour).toBe("#112233");
 
     const [row] = await db
       .select()
       .from(tenantsTable)
       .where(eq(tenantsTable.id, tenantAId));
     expect(row.logoUrl).toBe("/objects/uploads/logo-a.png");
-    expect(row.primaryColour).toBe("#112233");
+    expect(row.backgroundColour).toBe("#112233");
   });
 
   it("a partial update (only logoUrl) leaves other fields untouched", async () => {

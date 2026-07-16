@@ -132,9 +132,9 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .send({
         name: "PAB Target (branded)",
         logoUrl: "/objects/uploads/pab-logo.png",
-        primaryColour: "#112233",
-        secondaryColour: "#445566",
-        tertiaryColour: "#778899",
+        backgroundColour: "#112233",
+        primaryColour: "#445566",
+        juniorsColour: "#778899",
       })
       .expect(200);
     // AdminTenantDetail shape, same as GET /platform/admin/tenants/:id.
@@ -158,9 +158,9 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .expect(200);
     expect(after.body.name).toBe("PAB Target (branded)");
     expect(after.body.logoUrl).toBe("/objects/uploads/pab-logo.png");
-    expect(after.body.primaryColour).toBe("#112233");
-    expect(after.body.secondaryColour).toBe("#445566");
-    expect(after.body.tertiaryColour).toBe("#778899");
+    expect(after.body.backgroundColour).toBe("#112233");
+    expect(after.body.primaryColour).toBe("#445566");
+    expect(after.body.juniorsColour).toBe("#778899");
   });
 
   it("a partial update (only logoUrl) leaves the other brand columns untouched", async () => {
@@ -289,19 +289,19 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .patch(`/api/platform/admin/tenants/${tenantAId}/brand`)
       .set("Cookie", platformCookie)
       .set("x-tenant-id", String(tenantBId))
-      .send({ tertiaryColour: "#abcdef" })
+      .send({ juniorsColour: "#abcdef" })
       .expect(200);
 
     const [rowA] = await db
       .select()
       .from(tenantsTable)
       .where(eq(tenantsTable.id, tenantAId));
-    expect(rowA.tertiaryColour).toBe("#abcdef");
+    expect(rowA.juniorsColour).toBe("#abcdef");
     const [rowB] = await db
       .select()
       .from(tenantsTable)
       .where(eq(tenantsTable.id, tenantBId));
-    expect(rowB.tertiaryColour).toBeNull();
+    expect(rowB.juniorsColour).toBeNull();
   });
 
   it("a concierge logo-only save does not clobber a concurrent self-serve colour-only save", async () => {

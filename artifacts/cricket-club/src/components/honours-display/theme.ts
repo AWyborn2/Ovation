@@ -103,9 +103,9 @@ export function rootStyle(
   settings?: HonourDisplaySettings | null,
 ): CSSProperties {
   const vars: Record<string, string> = {
-    "--club-primary": brand.primaryColour,
-    "--club-secondary": brand.secondaryColour,
-    "--club-accent": brand.tertiaryColour,
+    "--club-primary": brand.backgroundColour,
+    "--club-secondary": brand.primaryColour,
+    "--club-accent": brand.juniorsColour,
   };
 
   if (settings) {

@@ -6,8 +6,8 @@ import { DEFAULT_BRAND, deriveClubColors } from "./brand";
  * brand. Used as the scorecard fallback when a match carries no DB-sourced brand.
  */
 export const DEFAULT_TEAM_COLORS: TeamColors = deriveClubColors(
+  DEFAULT_BRAND.backgroundColour,
   DEFAULT_BRAND.primaryColour,
-  DEFAULT_BRAND.secondaryColour,
 );
 
 /** @deprecated Use {@link DEFAULT_TEAM_COLORS}. */
@@ -84,13 +84,13 @@ function readableOn(bg: { r: number; g: number; b: number }): string {
  * colours, degrading to a neutral dark scheme when nothing usable is provided.
  */
 export function deriveOppositionColors(
+  backgroundColour: string | null | undefined,
   primaryColour: string | null | undefined,
-  secondaryColour: string | null | undefined,
 ): TeamColors {
-  const primary = primaryColour ? hexToRgb(primaryColour) : null;
+  const primary = backgroundColour ? hexToRgb(backgroundColour) : null;
   if (!primary) return NEUTRAL_OPPOSITION;
 
-  const secondary = (secondaryColour && hexToRgb(secondaryColour)) ||
+  const secondary = (primaryColour && hexToRgb(primaryColour)) ||
     mix(primary, WHITE, 0.55);
 
   const primaryHex = toHex(primary);

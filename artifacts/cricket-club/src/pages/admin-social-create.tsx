@@ -217,11 +217,11 @@ const shortClubName = (name: string): string =>
 
 /** The current tenant's brand as a manual-builder team default. */
 function teamFromBrand(brand: ClubBrand): MatchSummaryTeam {
-  const accent = brand.secondaryColour ?? DEFAULT_BRAND.secondaryColour ?? "#94A3B8";
+  const accent = brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#94A3B8";
   return {
     name: shortClubName(brand.name ?? DEFAULT_BRAND.name),
     shortName: brand.shortName ?? null,
-    primaryColor: brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#334155",
+    primaryColor: brand.backgroundColour ?? DEFAULT_BRAND.backgroundColour ?? "#334155",
     secondaryColor: accent,
     textColor: accent,
     logoUrl: brand.logoUrl ?? null,

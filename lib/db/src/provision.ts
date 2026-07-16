@@ -124,11 +124,11 @@ export async function provisionTenant(
     shortName: club.shortName ?? null,
     logoUrl: opts.logoUrl ?? null,
     faviconUrl: null,
-    // central.clubs carries only a primary colour; accents derive from it
-    // (the brand resolver fills secondary/tertiary from the primary).
-    primaryColour: club.primaryColour ?? null,
-    secondaryColour: null,
-    tertiaryColour: null,
+    // central.clubs carries only a background colour; accents derive from it
+    // (the brand resolver fills primary/juniors from the background colour).
+    backgroundColour: club.primaryColour ?? null,
+    primaryColour: null,
+    juniorsColour: null,
     customDomain: null,
     plan: opts.plan ?? "free",
   };

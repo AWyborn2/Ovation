@@ -55,9 +55,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     shortName: HALLS_HEAD_BRAND.shortName ?? null,
     logoUrl: HALLS_HEAD_BRAND.logoUrl ?? null,
     logoUrl128: HALLS_HEAD_BRAND.logoUrl128 ?? null,
+    backgroundColour: HALLS_HEAD_BRAND.backgroundColour ?? null,
     primaryColour: HALLS_HEAD_BRAND.primaryColour ?? null,
-    secondaryColour: HALLS_HEAD_BRAND.secondaryColour ?? null,
-    tertiaryColour: HALLS_HEAD_BRAND.tertiaryColour ?? null,
+    juniorsColour: HALLS_HEAD_BRAND.juniorsColour ?? null,
   };
   const hhTenantRow = {
     name: HALLS_HEAD_BRAND.name,
@@ -65,9 +65,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     logoUrl: HALLS_HEAD_BRAND.logoUrl ?? null,
     backgroundUrl: HALLS_HEAD_BRAND.backgroundUrl ?? null,
     faviconUrl: HALLS_HEAD_BRAND.faviconUrl ?? null,
+    backgroundColour: HALLS_HEAD_BRAND.backgroundColour ?? null,
     primaryColour: HALLS_HEAD_BRAND.primaryColour ?? null,
-    secondaryColour: HALLS_HEAD_BRAND.secondaryColour ?? null,
-    tertiaryColour: HALLS_HEAD_BRAND.tertiaryColour ?? null,
+    juniorsColour: HALLS_HEAD_BRAND.juniorsColour ?? null,
     badgeStyle: null,
   };
 
@@ -94,7 +94,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     // (backgroundUrl needs no not-Halls-Head check any more — the design
     // system dropped the texture, so Halls Head's own value is null too.)
     expect(brand.logoUrl).not.toBe(HALLS_HEAD_BRAND.logoUrl);
-    expect(brand.primaryColour).not.toBe(HALLS_HEAD_BRAND.primaryColour);
+    expect(brand.backgroundColour).not.toBe(HALLS_HEAD_BRAND.backgroundColour);
     expect(brand.name).not.toBe(HALLS_HEAD_BRAND.name);
     expect(brand.backgroundUrl).toBeNull();
     expect(brand.faviconUrl).toBeNull();
@@ -111,9 +111,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: null,
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       null,
@@ -140,9 +140,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: "https://example.com/some-club-favicon.png",
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       null,
@@ -156,9 +156,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: null,
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       null,
@@ -168,7 +168,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(withoutFavicon.faviconUrl).toBeNull();
   });
 
-  it("derives missing accents from the tenant's OWN primary, not the default", () => {
+  it("derives missing accents from the tenant's OWN backgroundColour, not the default", () => {
     const brand = buildTenantBrand(
       {
         name: "Some Club",
@@ -176,17 +176,17 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: "https://example.com/some-club.png",
         backgroundUrl: null,
         faviconUrl: null,
-        primaryColour: "#123456",
-        secondaryColour: null,
-        tertiaryColour: null,
+        backgroundColour: "#123456",
+        primaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       null,
     );
-    expect(brand.secondaryColour).toBe("#123456");
-    expect(brand.tertiaryColour).toBe("#123456");
-    expect(brand.secondaryColour).not.toBe(HALLS_HEAD_BRAND.secondaryColour);
-    expect(brand.secondaryColour).not.toBe(DEFAULT_BRAND.secondaryColour);
+    expect(brand.primaryColour).toBe("#123456");
+    expect(brand.juniorsColour).toBe("#123456");
+    expect(brand.primaryColour).not.toBe(HALLS_HEAD_BRAND.primaryColour);
+    expect(brand.primaryColour).not.toBe(DEFAULT_BRAND.primaryColour);
   });
 
   it("tenant colour wins over clubs-register colour (Bug 1 fix: tenant PATCH is not silently overridden)", () => {
@@ -198,9 +198,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: null,
-        primaryColour: "#AABBCC",
-        secondaryColour: "#FFFFFF",
-        tertiaryColour: "#112233",
+        backgroundColour: "#AABBCC",
+        primaryColour: "#FFFFFF",
+        juniorsColour: "#112233",
         badgeStyle: null,
       },
       {
@@ -208,14 +208,14 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         shortName: null,
         logoUrl: null,
         logoUrl128: null,
-        primaryColour: "#001122",
-        secondaryColour: "#FBAC27",
-        tertiaryColour: "#42342B",
+        backgroundColour: "#001122",
+        primaryColour: "#FBAC27",
+        juniorsColour: "#42342B",
       },
     );
-    expect(brand.primaryColour).toBe("#AABBCC");
-    expect(brand.secondaryColour).toBe("#FFFFFF");
-    expect(brand.tertiaryColour).toBe("#112233");
+    expect(brand.backgroundColour).toBe("#AABBCC");
+    expect(brand.primaryColour).toBe("#FFFFFF");
+    expect(brand.juniorsColour).toBe("#112233");
   });
 
   it("clubs-register colour is used as fallback when tenant has no colours set", () => {
@@ -227,9 +227,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: null,
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       {
@@ -237,18 +237,18 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         shortName: null,
         logoUrl: null,
         logoUrl128: null,
-        primaryColour: "#001122",
-        secondaryColour: "#FBAC27",
-        tertiaryColour: "#42342B",
+        backgroundColour: "#001122",
+        primaryColour: "#FBAC27",
+        juniorsColour: "#42342B",
       },
     );
-    expect(brand.primaryColour).toBe("#001122");
-    expect(brand.secondaryColour).toBe("#FBAC27");
-    expect(brand.tertiaryColour).toBe("#42342B");
+    expect(brand.backgroundColour).toBe("#001122");
+    expect(brand.primaryColour).toBe("#FBAC27");
+    expect(brand.juniorsColour).toBe("#42342B");
   });
 
   it("tenant partial colours override clubs-register and leave the rest to fall back", () => {
-    // Tenant sets only secondary; clubs-register provides primary and tertiary fallbacks.
+    // Tenant sets only primaryColour; clubs-register provides background and juniors fallbacks.
     const brand = buildTenantBrand(
       {
         name: "Partial Tenant",
@@ -256,9 +256,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: null,
-        primaryColour: null,
-        secondaryColour: "#FF0000",
-        tertiaryColour: null,
+        backgroundColour: null,
+        primaryColour: "#FF0000",
+        juniorsColour: null,
         badgeStyle: null,
       },
       {
@@ -266,14 +266,14 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         shortName: null,
         logoUrl: null,
         logoUrl128: null,
-        primaryColour: "#001122",
-        secondaryColour: "#FBAC27",
-        tertiaryColour: "#42342B",
+        backgroundColour: "#001122",
+        primaryColour: "#FBAC27",
+        juniorsColour: "#42342B",
       },
     );
-    expect(brand.primaryColour).toBe("#001122");
-    expect(brand.secondaryColour).toBe("#FF0000");
-    expect(brand.tertiaryColour).toBe("#42342B");
+    expect(brand.backgroundColour).toBe("#001122");
+    expect(brand.primaryColour).toBe("#FF0000");
+    expect(brand.juniorsColour).toBe("#42342B");
   });
 
   it("uses the tenant's own backgroundUrl (Phase 2 R6: per-tenant, no cross-tenant leak)", () => {
@@ -284,9 +284,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: "https://example.com/some-club-bg.png",
         faviconUrl: null,
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       null,
@@ -300,9 +300,9 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         logoUrl: null,
         backgroundUrl: null,
         faviconUrl: null,
+        backgroundColour: null,
         primaryColour: null,
-        secondaryColour: null,
-        tertiaryColour: null,
+        juniorsColour: null,
         badgeStyle: null,
       },
       null,

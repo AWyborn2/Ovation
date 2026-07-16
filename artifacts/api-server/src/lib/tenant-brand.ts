@@ -15,9 +15,9 @@ interface TenantBrandRow {
   logoUrl: string | null;
   backgroundUrl: string | null;
   faviconUrl: string | null;
+  backgroundColour: string | null;
   primaryColour: string | null;
-  secondaryColour: string | null;
-  tertiaryColour: string | null;
+  juniorsColour: string | null;
   badgeStyle: string | null;
 }
 
@@ -27,9 +27,9 @@ interface ClubBrandRow {
   shortName: string | null;
   logoUrl: string | null;
   logoUrl128: string | null;
+  backgroundColour: string | null;
   primaryColour: string | null;
-  secondaryColour: string | null;
-  tertiaryColour: string | null;
+  juniorsColour: string | null;
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -39,7 +39,7 @@ const cache = new Map<number, { value: TenantBrand; at: number }>();
  * Merge the brand sources into the final brand, pure (no IO) so the fallback
  * chain is unit-testable.
  *
- * Colour precedence (primaryColour / secondaryColour / tertiaryColour):
+ * Colour precedence (backgroundColour / primaryColour / juniorsColour):
  *   tenant row (admin-saved) → clubs register row (seed/default) → neutral DEFAULT_BRAND
  *
  * Both the club self-serve PATCH (`/tenant-brand`) and the platform admin PATCH
@@ -58,13 +58,13 @@ export function buildTenantBrand(
   club: ClubBrandRow | null,
 ): TenantBrand {
   // Tenant row wins for colours; clubs register is the fallback/default.
-  const primaryColour =
-    tenant?.primaryColour ?? club?.primaryColour ?? DEFAULT_BRAND.primaryColour;
-  // When any primary colour is supplied (from either source), derive missing
-  // accents from that primary rather than leaking the neutral default colours.
+  const backgroundColour =
+    tenant?.backgroundColour ?? club?.backgroundColour ?? DEFAULT_BRAND.backgroundColour;
+  // When any background colour is supplied (from either source), derive missing
+  // accents from that background rather than leaking the neutral default colours.
   // The all-null case still resolves to the full default brand.
-  const anyPrimarySupplied =
-    (tenant?.primaryColour ?? club?.primaryColour) != null;
+  const anyBackgroundSupplied =
+    (tenant?.backgroundColour ?? club?.backgroundColour) != null;
   return {
     name: club?.name ?? tenant?.name ?? DEFAULT_BRAND.name,
     shortName: club?.shortName ?? tenant?.shortName ?? DEFAULT_BRAND.shortName,
@@ -78,15 +78,15 @@ export function buildTenantBrand(
     // No clubs-register equivalent for faviconUrl either — tenant row only,
     // else the neutral default (the platform favicon).
     faviconUrl: tenant?.faviconUrl ?? DEFAULT_BRAND.faviconUrl,
-    primaryColour,
-    secondaryColour:
-      tenant?.secondaryColour ??
-      club?.secondaryColour ??
-      (anyPrimarySupplied ? primaryColour : DEFAULT_BRAND.secondaryColour),
-    tertiaryColour:
-      tenant?.tertiaryColour ??
-      club?.tertiaryColour ??
-      (anyPrimarySupplied ? primaryColour : DEFAULT_BRAND.tertiaryColour),
+    backgroundColour,
+    primaryColour:
+      tenant?.primaryColour ??
+      club?.primaryColour ??
+      (anyBackgroundSupplied ? backgroundColour : DEFAULT_BRAND.primaryColour),
+    juniorsColour:
+      tenant?.juniorsColour ??
+      club?.juniorsColour ??
+      (anyBackgroundSupplied ? backgroundColour : DEFAULT_BRAND.juniorsColour),
     // Badge style — tenant row only (clubs register has no badge concept).
     badgeStyle: tenant?.badgeStyle ?? null,
   };
@@ -109,9 +109,9 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       logoUrl: tenantsTable.logoUrl,
       backgroundUrl: tenantsTable.backgroundUrl,
       faviconUrl: tenantsTable.faviconUrl,
+      backgroundColour: tenantsTable.backgroundColour,
       primaryColour: tenantsTable.primaryColour,
-      secondaryColour: tenantsTable.secondaryColour,
-      tertiaryColour: tenantsTable.tertiaryColour,
+      juniorsColour: tenantsTable.juniorsColour,
       badgeStyle: tenantsTable.badgeStyle,
       appClubId: tenantsTable.appClubId,
     })
@@ -126,9 +126,9 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
         shortName: clubsTable.shortName,
         logoUrl: clubsTable.logoUrl,
         logoUrl128: clubsTable.logoUrl128,
+        backgroundColour: clubsTable.backgroundColour,
         primaryColour: clubsTable.primaryColour,
-        secondaryColour: clubsTable.secondaryColour,
-        tertiaryColour: clubsTable.tertiaryColour,
+        juniorsColour: clubsTable.juniorsColour,
       })
       .from(clubsTable)
       .where(eq(clubsTable.id, tenant.appClubId));

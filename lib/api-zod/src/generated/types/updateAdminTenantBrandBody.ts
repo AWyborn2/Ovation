@@ -22,17 +22,19 @@ export interface UpdateAdminTenantBrandBody {
      * @nullable
      * @pattern ^#[0-9a-fA-F]{6}$
      */
+  backgroundColour?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9a-fA-F]{6}$
+     */
   primaryColour?: string | null;
   /**
      * @nullable
      * @pattern ^#[0-9a-fA-F]{6}$
      */
-  secondaryColour?: string | null;
-  /**
-     * @nullable
-     * @pattern ^#[0-9a-fA-F]{6}$
-     */
-  tertiaryColour?: string | null;
+  juniorsColour?: string | null;
+  /** When true the tenant UI uses the navy base (dark-only mode). */
+  useNavyBase?: boolean;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable

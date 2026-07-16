@@ -95,7 +95,7 @@ function applyBrandTheme(brand: ClubBrand, mode: ThemeMode): void {
   // back to the neutral default, never a hardcoded Halls Head literal).
   root.style.setProperty(
     "--juniors-accent",
-    brand.tertiaryColour ?? DEFAULT_BRAND.tertiaryColour ?? "#475569",
+    brand.juniorsColour ?? DEFAULT_BRAND.juniorsColour ?? "#475569",
   );
 
   // Per-tenant site background (index.css reads --app-bg-image, default none).

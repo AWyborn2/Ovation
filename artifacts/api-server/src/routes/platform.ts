@@ -73,7 +73,7 @@ router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req,
       centralClubId: c.clubId,
       name: c.name ?? `Club ${c.clubId}`,
       shortName: c.shortName ?? null,
-      primaryColour: c.primaryColour ?? null,
+      backgroundColour: c.primaryColour ?? null,
       suggestedSlug: slugify(c.name ?? `club-${c.clubId}`),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));

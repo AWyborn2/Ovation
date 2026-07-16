@@ -24,9 +24,9 @@ const HALLS_HEAD_LEGACY: ClubBrand = {
   shortName: "HHCC",
   logoUrl: "https://example.test/logo.png",
   logoUrl128: "https://example.test/logo128.png",
-  primaryColour: "#333F48",
-  secondaryColour: "#FBAC27",
-  tertiaryColour: "#42342B",
+  backgroundColour: "#333F48",
+  primaryColour: "#FBAC27",
+  juniorsColour: "#42342B",
   backgroundUrl: null,
   faviconUrl: null,
 };
@@ -108,8 +108,8 @@ describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
   // navy/paper scales; only the accent slots may vary.
   const WILD_BRAND: ClubBrand = {
     name: "Wild FC",
-    primaryColour: "#7A2E4C",
-    secondaryColour: "#2E7A5C",
+    backgroundColour: "#7A2E4C",
+    primaryColour: "#2E7A5C",
   };
 
   for (const [mode, surfaces] of [
@@ -126,10 +126,10 @@ describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
     }
   }
 
-  it("dark-mode accent slots carry the direct hex→HSL of secondaryColour", () => {
+  it("dark-mode accent slots carry the direct hex→HSL of primaryColour", () => {
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
     // #FBAC27 → "38 96% 57%" (exact hex→HSL, not the ACCENT_TOKENS.amber snap value)
-    const expected = hexToHslTriplet(HALLS_HEAD_LEGACY.secondaryColour)!;
+    const expected = hexToHslTriplet(HALLS_HEAD_LEGACY.primaryColour)!;
     expect(tokens["--primary"]).toBe(expected);
     expect(tokens["--accent"]).toBe(expected);
     expect(tokens["--ring"]).toBe(expected);
@@ -140,10 +140,10 @@ describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
   it("preset ACCENT_HEX colours produce the same HSL as ACCENT_TOKENS (round-trip)", () => {
     // This verifies the claim in the deriveThemeTokens comment: preset hex
     // values were derived from ACCENT_TOKENS HSL values, so they round-trip
-    // cleanly. Existing tenants whose secondaryColour is an ACCENT_HEX value
+    // cleanly. Existing tenants whose primaryColour is an ACCENT_HEX value
     // see no visual change.
     for (const token of ALL_ACCENTS) {
-      const brand: ClubBrand = { name: "Preset Club", secondaryColour: ACCENT_HEX[token] };
+      const brand: ClubBrand = { name: "Preset Club", primaryColour: ACCENT_HEX[token] };
       const tokens = deriveThemeTokens(brand, "dark");
       expect(tokens["--primary"], token).toBe(ACCENT_TOKENS[token]);
     }
@@ -161,13 +161,13 @@ describe("deriveThemeTokens: light and dark are genuinely distinct (Phase 5 AE3)
 });
 
 describe("deriveThemeTokens: every preset accent hex is valid and distinct in both modes", () => {
-  // The theme engine reads secondaryColour directly (not accentToken), so each
+  // The theme engine reads primaryColour directly (not accentToken), so each
   // ACCENT_HEX value must produce a distinct --primary in both modes.
   for (const mode of ["light", "dark"] as const) {
     it(`each preset accent hex produces a distinct --primary (${mode})`, () => {
       const primaries = ALL_ACCENTS.map(
         (token) =>
-          deriveThemeTokens({ name: "Any Club", secondaryColour: ACCENT_HEX[token] }, mode)[
+          deriveThemeTokens({ name: "Any Club", primaryColour: ACCENT_HEX[token] }, mode)[
             "--primary"
           ],
       );
@@ -179,7 +179,7 @@ describe("deriveThemeTokens: every preset accent hex is valid and distinct in bo
 
     it(`accent slots are identical across modes (${mode} vs dark)`, () => {
       for (const token of ALL_ACCENTS) {
-        const brand: ClubBrand = { name: "Any Club", secondaryColour: ACCENT_HEX[token] };
+        const brand: ClubBrand = { name: "Any Club", primaryColour: ACCENT_HEX[token] };
         expect(deriveThemeTokens(brand, mode)["--primary"]).toBe(
           deriveThemeTokens(brand, "dark")["--primary"],
         );
@@ -187,7 +187,7 @@ describe("deriveThemeTokens: every preset accent hex is valid and distinct in bo
     });
   }
 
-  it("no secondaryColour falls back to amber", () => {
+  it("no primaryColour falls back to amber", () => {
     const tokens = deriveThemeTokens({ name: "Bare Club" }, "dark");
     expect(tokens["--primary"]).toBe(ACCENT_TOKENS.amber);
   });
@@ -197,9 +197,9 @@ describe("deriveThemeTokens: totality / edge cases", () => {
   const TOKEN_KEYS = Object.keys(deriveThemeTokens(DEFAULT_BRAND, "dark"));
 
   const edgeCases: Array<[string, ClubBrand]> = [
-    ["all-black primary", { ...DEFAULT_BRAND, primaryColour: "#000000" }],
-    ["all-white primary", { ...DEFAULT_BRAND, primaryColour: "#FFFFFF" }],
-    ["missing tertiary", { ...DEFAULT_BRAND, tertiaryColour: null }],
+    ["all-black background", { ...DEFAULT_BRAND, backgroundColour: "#000000" }],
+    ["all-white background", { ...DEFAULT_BRAND, backgroundColour: "#FFFFFF" }],
+    ["missing juniorsColour", { ...DEFAULT_BRAND, juniorsColour: null }],
     ["missing everything", { name: "No Brand FC" }],
     ["bogus accent token", { name: "Bogus FC", accentToken: "chartreuse" as AccentToken }],
   ];

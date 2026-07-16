@@ -1,15 +1,15 @@
 import { Vibrant } from "node-vibrant/browser";
 
 export interface ExtractedPalette {
+  backgroundColour: string | null;
   primaryColour: string | null;
-  secondaryColour: string | null;
-  tertiaryColour: string | null;
+  juniorsColour: string | null;
 }
 
 const NO_COLOURS: ExtractedPalette = {
+  backgroundColour: null,
   primaryColour: null,
-  secondaryColour: null,
-  tertiaryColour: null,
+  juniorsColour: null,
 };
 
 /** node-vibrant's browser image loader has no built-in timeout -- a malformed
@@ -49,7 +49,7 @@ export async function extractBrandPalette(
   }
 
   // Priority order: the most saturated/eye-catching swatches first, since
-  // those read best as a brand's primary colour.
+  // those read best as a brand's background colour.
   const candidates = [
     palette.Vibrant,
     palette.DarkVibrant,
@@ -68,8 +68,8 @@ export async function extractBrandPalette(
   }
 
   return {
-    primaryColour: distinct[0] ?? null,
-    secondaryColour: distinct[1] ?? null,
-    tertiaryColour: distinct[2] ?? null,
+    backgroundColour: distinct[0] ?? null,
+    primaryColour: distinct[1] ?? null,
+    juniorsColour: distinct[2] ?? null,
   };
 }
