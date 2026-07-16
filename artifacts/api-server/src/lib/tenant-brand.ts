@@ -4,9 +4,13 @@ import { DEFAULT_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
 
 /**
  * Per-tenant brand (logo + colours + badge style), the single shape every
- * renderer reads. Extends the established brand shape with the badge selector.
+ * renderer reads. Extends the established brand shape with the badge selector
+ * and the navy-base design-mode flag.
  */
-export type TenantBrand = HallsHeadBrand & { badgeStyle?: string | null };
+export type TenantBrand = HallsHeadBrand & {
+  badgeStyle?: string | null;
+  useNavyBase: boolean;
+};
 
 /** Minimal brand columns read from the `tenants` row. */
 interface TenantBrandRow {
@@ -18,6 +22,7 @@ interface TenantBrandRow {
   backgroundColour: string | null;
   primaryColour: string | null;
   juniorsColour: string | null;
+  useNavyBase: boolean;
   badgeStyle: string | null;
 }
 
@@ -89,6 +94,8 @@ export function buildTenantBrand(
       (anyBackgroundSupplied ? backgroundColour : DEFAULT_BRAND.juniorsColour),
     // Badge style — tenant row only (clubs register has no badge concept).
     badgeStyle: tenant?.badgeStyle ?? null,
+    // Navy-base flag — tenant row only, defaults false when unset.
+    useNavyBase: tenant?.useNavyBase ?? false,
   };
 }
 
@@ -112,6 +119,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       backgroundColour: tenantsTable.backgroundColour,
       primaryColour: tenantsTable.primaryColour,
       juniorsColour: tenantsTable.juniorsColour,
+      useNavyBase: tenantsTable.useNavyBase,
       badgeStyle: tenantsTable.badgeStyle,
       appClubId: tenantsTable.appClubId,
     })

@@ -40,12 +40,12 @@ describe("tenant-context: resolveTenantId (header > env > default)", () => {
   });
 });
 
-// The wire brand carries no accentToken (client-side only) and always has
-// badgeStyle: null from buildTenantBrand's return shape.
+// The wire brand carries no accentToken (client-side only), always has
+// badgeStyle: null and useNavyBase: false from buildTenantBrand's return shape.
 const { accentToken: _hhAccent, ...hhBrandBase } = HALLS_HEAD_BRAND;
-const HALLS_HEAD_WIRE_BRAND = { ...hhBrandBase, badgeStyle: null };
+const HALLS_HEAD_WIRE_BRAND = { ...hhBrandBase, badgeStyle: null, useNavyBase: false };
 const { accentToken: _defaultAccent, ...defaultBrandBase } = DEFAULT_BRAND;
-const DEFAULT_WIRE_BRAND = { ...defaultBrandBase, badgeStyle: null };
+const DEFAULT_WIRE_BRAND = { ...defaultBrandBase, badgeStyle: null, useNavyBase: false };
 
 describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", () => {
   // The Halls Head clubs-register row (id 2) mirrors HALLS_HEAD_BRAND — this is
@@ -68,19 +68,15 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     backgroundColour: HALLS_HEAD_BRAND.backgroundColour ?? null,
     primaryColour: HALLS_HEAD_BRAND.primaryColour ?? null,
     juniorsColour: HALLS_HEAD_BRAND.juniorsColour ?? null,
+    useNavyBase: false,
     badgeStyle: null,
   };
 
   it("returns the Halls Head brand from the clubs-register row", () => {
-    // getTenantBrand(1) resolves club row 2 then merges via buildTenantBrand —
-    // this is the exact object getHallsHeadBrand() returned before.
     expect(buildTenantBrand(hhTenantRow, hhClubRow)).toEqual(HALLS_HEAD_WIRE_BRAND);
   });
 
   it("falls back to the tenant row's own brand columns when no clubs row", () => {
-    // With no clubs-register row, the 128px logo falls back to the tenant's own
-    // logoUrl (better than the default club's 128px) — the tenants table has no
-    // 128px column. Everything else comes from the tenant row.
     expect(buildTenantBrand(hhTenantRow, null)).toEqual({
       ...HALLS_HEAD_WIRE_BRAND,
       logoUrl128: hhTenantRow.logoUrl,
@@ -90,20 +86,15 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   it("falls back to the NEUTRAL default, never Halls Head, when nothing is set", () => {
     const brand = buildTenantBrand(null, null);
     expect(brand).toEqual(DEFAULT_WIRE_BRAND);
-    // The Phase 2 R5 regression guard: no Halls Head asset leaks through.
-    // (backgroundUrl needs no not-Halls-Head check any more — the design
-    // system dropped the texture, so Halls Head's own value is null too.)
     expect(brand.logoUrl).not.toBe(HALLS_HEAD_BRAND.logoUrl);
     expect(brand.backgroundColour).not.toBe(HALLS_HEAD_BRAND.backgroundColour);
     expect(brand.name).not.toBe(HALLS_HEAD_BRAND.name);
     expect(brand.backgroundUrl).toBeNull();
     expect(brand.faviconUrl).toBeNull();
+    expect(brand.useNavyBase).toBe(false);
   });
 
   it("resolves logoUrl to the Ovation placeholder asset for a tenant with no brand data (U5, AE4)", () => {
-    // A freshly provisioned tenant: no clubs-register row, no tenant brand
-    // columns set. The resolved logo must be the Ovation placeholder, not the
-    // old neutral SVG and not Halls Head's.
     const brand = buildTenantBrand(
       {
         name: "Freshly Provisioned Club",
@@ -114,6 +105,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       null,
@@ -124,8 +116,6 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   });
 
   it("still resolves Halls Head's own seeded brand, unaffected by the default swap (U5 regression guard)", () => {
-    // Tenant #1 always resolves through its clubs-register row (appClubId set),
-    // so swapping DEFAULT_BRAND's logo must never change what Halls Head shows.
     expect(buildTenantBrand(hhTenantRow, hhClubRow)).toEqual(HALLS_HEAD_WIRE_BRAND);
     expect(buildTenantBrand(hhTenantRow, hhClubRow).logoUrl).toBe(
       HALLS_HEAD_BRAND.logoUrl,
@@ -143,6 +133,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       null,
@@ -159,11 +150,11 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       null,
     );
-    // No favicon set -> neutral default, never Halls Head's.
     expect(withoutFavicon.faviconUrl).toBe(DEFAULT_BRAND.faviconUrl);
     expect(withoutFavicon.faviconUrl).toBeNull();
   });
@@ -179,6 +170,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: "#123456",
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       null,
@@ -190,7 +182,6 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   });
 
   it("tenant colour wins over clubs-register colour (Bug 1 fix: tenant PATCH is not silently overridden)", () => {
-    // Both rows set colours; the tenant's saved value must win.
     const brand = buildTenantBrand(
       {
         name: "Custom Tenant",
@@ -201,6 +192,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: "#AABBCC",
         primaryColour: "#FFFFFF",
         juniorsColour: "#112233",
+        useNavyBase: false,
         badgeStyle: null,
       },
       {
@@ -219,7 +211,6 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   });
 
   it("clubs-register colour is used as fallback when tenant has no colours set", () => {
-    // Tenant row has no colours; clubs-register values are the fallback.
     const brand = buildTenantBrand(
       {
         name: "Some Club",
@@ -230,6 +221,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       {
@@ -248,7 +240,6 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   });
 
   it("tenant partial colours override clubs-register and leave the rest to fall back", () => {
-    // Tenant sets only primaryColour; clubs-register provides background and juniors fallbacks.
     const brand = buildTenantBrand(
       {
         name: "Partial Tenant",
@@ -259,6 +250,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: "#FF0000",
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       {
@@ -276,6 +268,46 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.juniorsColour).toBe("#42342B");
   });
 
+  it("useNavyBase is passed through from the tenant row (true and false)", () => {
+    const navyBrand = buildTenantBrand(
+      {
+        name: "Navy Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        backgroundColour: null,
+        primaryColour: null,
+        juniorsColour: null,
+        useNavyBase: true,
+        badgeStyle: null,
+      },
+      null,
+    );
+    expect(navyBrand.useNavyBase).toBe(true);
+
+    const standardBrand = buildTenantBrand(
+      {
+        name: "Standard Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        backgroundColour: null,
+        primaryColour: null,
+        juniorsColour: null,
+        useNavyBase: false,
+        badgeStyle: null,
+      },
+      null,
+    );
+    expect(standardBrand.useNavyBase).toBe(false);
+  });
+
+  it("useNavyBase defaults false when tenant row is null", () => {
+    expect(buildTenantBrand(null, null).useNavyBase).toBe(false);
+  });
+
   it("uses the tenant's own backgroundUrl (Phase 2 R6: per-tenant, no cross-tenant leak)", () => {
     const withBackground = buildTenantBrand(
       {
@@ -287,6 +319,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       null,
@@ -303,11 +336,11 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
         backgroundColour: null,
         primaryColour: null,
         juniorsColour: null,
+        useNavyBase: false,
         badgeStyle: null,
       },
       null,
     );
-    // No background set -> neutral default (no image), never Halls Head's texture.
     expect(withoutBackground.backgroundUrl).toBe(DEFAULT_BRAND.backgroundUrl);
     expect(withoutBackground.backgroundUrl).toBeNull();
   });
