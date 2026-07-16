@@ -16,8 +16,8 @@
 BEGIN;
 
 -- ─── tenants: rename colour columns ────────────────────────────────────────
--- Guard: only rename when the OLD column name still exists AND the NEW one
--- doesn't — prevents double-run errors.
+-- Guard: only rename when the OLD column name still exists (secondary_colour)
+-- and the NEW one doesn't — prevents double-run errors.
 
 DO $$
 BEGIN
@@ -58,24 +58,28 @@ BEGIN
 END $$;
 
 -- ─── Data fix: Secret Harbour (tenant #96) ─────────────────────────────────
--- Prior to the rename, Secret Harbour's data was entered with colours in the
--- wrong columns (background stored as primary, accent stored as background).
--- The fix targets the EXACT pre-fix inverted values so re-running is safe:
--- if the row already has the corrected values, the WHERE clause finds no rows
--- and no swap occurs.
+-- Prior to the rename, Secret Harbour's colours were entered in the wrong
+-- columns: the dark navy (#271E54) was stored as old secondary_colour (accent)
+-- and white (#ffffff) was stored as old primary_colour (background), so after
+-- the column rename they ended up inverted.
 --
--- Pre-fix (wrong) state:
---   background_colour = '#FBAC27'   ← was stored as old primary_colour (accent)
---   primary_colour    = '#1A3350'   ← was stored as old secondary_colour (background)
--- Correct post-fix state:
---   background_colour = '#1A3350'
---   primary_colour    = '#FBAC27'
+-- Pre-fix (inverted) values after rename:
+--   background_colour = '#ffffff'   ← was stored as old primary_colour (background slot)
+--   primary_colour    = '#271E54'   ← was stored as old secondary_colour (accent slot)
+--
+-- Required post-fix values (correct semantics):
+--   background_colour = '#271E54'   ← dark navy for backgrounds/scorecards
+--   primary_colour    = '#ffffff'   ← white accent for buttons/nav/badges
+--
+-- The WHERE clause targets the exact known inverted values, making this
+-- fully idempotent: if the row is already corrected, no rows match and
+-- nothing changes.
 
 UPDATE tenants
-   SET background_colour = '#1A3350',
-       primary_colour    = '#FBAC27'
+   SET background_colour = '#271E54',
+       primary_colour    = '#ffffff'
  WHERE id = 96
-   AND background_colour = '#FBAC27'
-   AND primary_colour    = '#1A3350';
+   AND background_colour = '#ffffff'
+   AND primary_colour    = '#271E54';
 
 COMMIT;
