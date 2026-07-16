@@ -563,21 +563,21 @@ export function BrandingCard({
                     Enter hex, RGB, or Pantone codes for each slot. The preview updates live.
                   </p>
                   <ColourSlotPicker
-                    label="Primary"
+                    label="Background colour"
                     description="Scorecards, share card backgrounds"
                     value={colours.hexPrimary}
                     onChange={(hex) => setColours((c) => ({ ...c, hexPrimary: hex }))}
                     disabled={busy}
                   />
                   <ColourSlotPicker
-                    label="Secondary (accent)"
+                    label="Primary colour"
                     description="Buttons, nav highlights, badges, all interactive colours"
                     value={colours.hexSecondary}
                     onChange={(hex) => setColours((c) => ({ ...c, hexSecondary: hex }))}
                     disabled={busy}
                   />
                   <ColourSlotPicker
-                    label="Tertiary"
+                    label="Juniors colour"
                     description="Juniors section banner only"
                     value={colours.hexTertiary}
                     onChange={(hex) => setColours((c) => ({ ...c, hexTertiary: hex }))}

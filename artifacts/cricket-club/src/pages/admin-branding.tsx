@@ -366,21 +366,21 @@ function Editor({ brand }: { brand: TenantBrand }) {
                   Enter exact hex, RGB, or Pantone codes for your official club colours.
                 </p>
                 <ColourSlotPicker
-                  label="Primary"
+                  label="Background colour"
                   description="Scorecards, share card backgrounds"
                   value={customPrimary}
                   onChange={setCustomPrimary}
                   disabled={busy}
                 />
                 <ColourSlotPicker
-                  label="Secondary (accent)"
+                  label="Primary colour"
                   description="Buttons, nav highlights, badges, all interactive colours"
                   value={customSecondary}
                   onChange={setCustomSecondary}
                   disabled={busy}
                 />
                 <ColourSlotPicker
-                  label="Tertiary"
+                  label="Juniors colour"
                   description="Juniors section banner only"
                   value={customTertiary}
                   onChange={setCustomTertiary}
