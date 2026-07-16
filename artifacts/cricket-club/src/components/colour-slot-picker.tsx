@@ -25,6 +25,8 @@ function rgbToHex(r: number, g: number, b: number): string {
 
 interface Props {
   label: string;
+  /** Optional helper text shown beneath the label, e.g. "Buttons, nav highlights". */
+  description?: string;
   value: string | null;
   onChange: (hex: string) => void;
   disabled?: boolean;
@@ -41,7 +43,7 @@ interface Props {
  * rest. `onChange` fires with the current valid hex whenever any input commits
  * a parseable value.
  */
-export function ColourSlotPicker({ label, value, onChange, disabled }: Props) {
+export function ColourSlotPicker({ label, description, value, onChange, disabled }: Props) {
   const safeHex = value && HEX_RE.test(value) ? value : "#000000";
   const rgb = hexToRgb(safeHex) ?? { r: 0, g: 0, b: 0 };
 
@@ -89,6 +91,9 @@ export function ColourSlotPicker({ label, value, onChange, disabled }: Props) {
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {label}
       </p>
+      {description && (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      )}
 
       <div className="flex items-center gap-2">
         <input

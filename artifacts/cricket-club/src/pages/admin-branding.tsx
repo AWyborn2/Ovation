@@ -367,18 +367,21 @@ function Editor({ brand }: { brand: TenantBrand }) {
                 </p>
                 <ColourSlotPicker
                   label="Primary"
+                  description="Scorecards, share card backgrounds"
                   value={customPrimary}
                   onChange={setCustomPrimary}
                   disabled={busy}
                 />
                 <ColourSlotPicker
                   label="Secondary (accent)"
+                  description="Buttons, nav highlights, badges, all interactive colours"
                   value={customSecondary}
                   onChange={setCustomSecondary}
                   disabled={busy}
                 />
                 <ColourSlotPicker
                   label="Tertiary"
+                  description="Juniors section banner only"
                   value={customTertiary}
                   onChange={setCustomTertiary}
                   disabled={busy}

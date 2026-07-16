@@ -564,18 +564,21 @@ export function BrandingCard({
                   </p>
                   <ColourSlotPicker
                     label="Primary"
+                    description="Scorecards, share card backgrounds"
                     value={colours.hexPrimary}
                     onChange={(hex) => setColours((c) => ({ ...c, hexPrimary: hex }))}
                     disabled={busy}
                   />
                   <ColourSlotPicker
                     label="Secondary (accent)"
+                    description="Buttons, nav highlights, badges, all interactive colours"
                     value={colours.hexSecondary}
                     onChange={(hex) => setColours((c) => ({ ...c, hexSecondary: hex }))}
                     disabled={busy}
                   />
                   <ColourSlotPicker
                     label="Tertiary"
+                    description="Juniors section banner only"
                     value={colours.hexTertiary}
                     onChange={(hex) => setColours((c) => ({ ...c, hexTertiary: hex }))}
                     disabled={busy}

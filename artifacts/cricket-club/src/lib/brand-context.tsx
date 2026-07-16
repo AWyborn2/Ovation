@@ -124,8 +124,11 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const brand = isPlatform ? DEFAULT_BRAND : (q.data as TenantBrand | undefined) ?? DEFAULT_BRAND;
   const { mode } = useThemeMode();
   useEffect(() => {
-    // Don't paint a tenant theme onto the platform/marketing surface.
-    if (!isPlatform) applyBrandTheme(brand, mode);
+    // Always apply a theme so that switching back to the platform surface resets
+    // any CSS custom properties written by the previously-visited tenant.  When
+    // isPlatform is true `brand` is already DEFAULT_BRAND, so this writes the
+    // neutral defaults, clearing stale club colours without a hard-refresh.
+    applyBrandTheme(brand, mode);
   }, [brand, isPlatform, mode]);
 
   // Badge style — read from the API response (null / undefined → "diamond").
