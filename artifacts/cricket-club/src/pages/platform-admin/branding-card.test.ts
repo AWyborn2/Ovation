@@ -22,6 +22,8 @@ const PERSISTED: PersistedBrandFields = {
   backgroundColour: "#333F48",
   primaryColour: "#FBAC27", // snaps to amber
   juniorsColour: "#42342B",
+  badgeStyle: null,
+  useNavyBase: false,
 };
 
 const FIELD_EDITS = {
@@ -29,6 +31,8 @@ const FIELD_EDITS = {
   shortName: "PCC",
   logoUrl: "/api/storage/objects/pinjarra/logo.png",
   faviconUrl: "",
+  badgeStyle: null as string | null,
+  useNavyBase: false,
 };
 
 describe("buildBrandSavePayload", () => {
@@ -53,6 +57,8 @@ describe("buildBrandSavePayload", () => {
       backgroundColour: "#333F48",
       primaryColour: ACCENT_HEX.blue,
       juniorsColour: "#42342B",
+      badgeStyle: null,
+      useNavyBase: false,
     });
   });
 
@@ -112,6 +118,7 @@ describe("mode switching (KTD4 — mode at save time wins)", () => {
       primaryColour: null,
       juniorsColour: null,
       badgeStyle: null,
+      useNavyBase: false,
     });
     const colours = seedColourState(persisted);
     expect(colours.accent).toBe("amber"); // platform default

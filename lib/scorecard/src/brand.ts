@@ -44,6 +44,12 @@ export interface ClubBrand {
   backgroundUrl?: string | null;
   /** Optional favicon. Null/absent = the platform's neutral default favicon. */
   faviconUrl?: string | null;
+  /**
+   * When true, the app's structural surfaces (page, card, panels, borders) use
+   * Ovation's fixed navy scale regardless of `backgroundColour`. Lets a club opt
+   * back into the standard look even when a backgroundColour is stored.
+   */
+  useNavyBase?: boolean;
 }
 
 /** @deprecated Use {@link ClubBrand}. Kept so downstream imports compile. */

@@ -57,6 +57,7 @@ export interface PersistedBrandFields {
   primaryColour: string | null;
   juniorsColour: string | null;
   badgeStyle: string | null;
+  useNavyBase: boolean;
 }
 
 /** The colour inputs' current values (both modes' state lives together; only the active mode's is saved). */
@@ -83,6 +84,7 @@ export function seedPersistedFromTenant(
     | "primaryColour"
     | "juniorsColour"
     | "badgeStyle"
+    | "useNavyBase"
   >,
 ): PersistedBrandFields {
   return {
@@ -94,6 +96,7 @@ export function seedPersistedFromTenant(
     primaryColour: tenant.primaryColour ?? null,
     juniorsColour: tenant.juniorsColour ?? null,
     badgeStyle: tenant.badgeStyle ?? null,
+    useNavyBase: tenant.useNavyBase ?? false,
   };
 }
 
@@ -131,6 +134,7 @@ export function buildBrandSavePayload(args: {
   colourMode: ColourMode;
   colours: ColourEdits;
   badgeStyle: string | null;
+  useNavyBase: boolean;
 }): UpdateAdminTenantBrandBody {
   const { persisted, colours } = args;
   const base = {
@@ -139,6 +143,7 @@ export function buildBrandSavePayload(args: {
     logoUrl: args.logoUrl || null,
     faviconUrl: args.faviconUrl || null,
     badgeStyle: args.badgeStyle,
+    useNavyBase: args.useNavyBase,
   };
   if (args.colourMode === "token") {
     return {
@@ -250,6 +255,7 @@ export function BrandingCard({
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
     (tenant.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
   );
+  const [useNavyBase, setUseNavyBase] = useState<boolean>(tenant.useNavyBase ?? false);
   const [colourMode, setColourMode] = useState<ColourMode>("token");
   const [colours, setColours] = useState<ColourEdits>(() =>
     seedColourState(seedPersistedFromTenant(tenant)),
@@ -273,6 +279,7 @@ export function BrandingCard({
           primaryColour: body.primaryColour ?? null,
           juniorsColour: body.juniorsColour ?? null,
           badgeStyle: body.badgeStyle ?? null,
+          useNavyBase: body.useNavyBase ?? false,
         }));
         qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
         qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
@@ -363,6 +370,7 @@ export function BrandingCard({
         colourMode,
         colours,
         badgeStyle,
+        useNavyBase,
       }),
     });
   };
@@ -384,6 +392,7 @@ export function BrandingCard({
     shortName: shortName || null,
     logoUrl: logoUrl || null,
     ...previewColours,
+    useNavyBase,
   };
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
 
@@ -521,6 +530,17 @@ export function BrandingCard({
                   Advanced: exact colours
                 </label>
               </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={useNavyBase}
+                  onChange={(e) => setUseNavyBase(e.target.checked)}
+                  disabled={busy}
+                  data-testid="toggle-navy-base"
+                  className="rounded"
+                />
+                <span>Use standard navy background</span>
+              </label>
               {colourNote && (
                 <p className="text-sm text-muted-foreground">{colourNote}</p>
               )}

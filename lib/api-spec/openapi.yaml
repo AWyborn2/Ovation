@@ -6298,6 +6298,11 @@ components:
         badgeStyle:
           type: ["string", "null"]
           description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+        useNavyBase:
+          type: boolean
+          description: >-
+            When true the tenant's structural surfaces use the fixed Ovation navy
+            scale instead of being derived from backgroundColour.
         lastActiveAt:
           type: ["string", "null"]
           description: >-

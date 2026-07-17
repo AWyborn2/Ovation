@@ -6531,6 +6531,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -6581,6 +6582,7 @@ export const GetAdminTenantResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -6623,6 +6625,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -6673,6 +6676,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')

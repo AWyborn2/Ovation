@@ -1368,6 +1368,8 @@ export interface AdminTenant {
      * @nullable
      */
   badgeStyle?: string | null;
+  /** When true the tenant's structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour. */
+  useNavyBase?: boolean;
   /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable

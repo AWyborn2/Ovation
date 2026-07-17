@@ -100,6 +100,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
     (brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
   );
+  const [useNavyBase, setUseNavyBase] = useState<boolean>(brand.useNavyBase ?? false);
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,6 +114,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setCustomSecondary(brand.primaryColour ?? ACCENT_HEX[snapped]);
     setCustomTertiary(brand.juniorsColour ?? "#2A4060");
     setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond");
+    setUseNavyBase(brand.useNavyBase ?? false);
   }, [brand]);
 
   const update = useUpdateTenantBrand({
@@ -189,6 +191,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
           primaryColour: ACCENT_HEX[accent],
           juniorsColour: brand.juniorsColour,
           badgeStyle: badgeStyle,
+          useNavyBase: useNavyBase,
         },
       });
     } else {
@@ -202,6 +205,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
           primaryColour: customSecondary || null,
           juniorsColour: customTertiary || null,
           badgeStyle: badgeStyle,
+          useNavyBase: useNavyBase,
         },
       });
     }
@@ -217,6 +221,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     backgroundColour: colourTab === "preset" ? brand.backgroundColour : customPrimary,
     primaryColour: previewSecondary,
     juniorsColour: colourTab === "preset" ? brand.juniorsColour : customTertiary,
+    useNavyBase,
   };
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
 
@@ -303,6 +308,22 @@ function Editor({ brand }: { brand: TenantBrand }) {
               Your club's colours — used for buttons, highlights, and every number
               that matters.
             </p>
+
+            {/* useNavyBase toggle */}
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={useNavyBase}
+                onChange={(e) => setUseNavyBase(e.target.checked)}
+                disabled={busy}
+                data-testid="toggle-navy-base"
+                className="rounded"
+              />
+              <span className="font-medium">Use standard navy background</span>
+              <span className="text-muted-foreground">
+                — keeps Ovation's built-in page colour
+              </span>
+            </label>
 
             {/* Preset / Custom tab bar */}
             <div className="flex gap-1 rounded-md border border-border bg-muted p-0.5 w-fit">

@@ -33,7 +33,8 @@ const HALLS_HEAD_LEGACY: ClubBrand = {
 
 const ALL_ACCENTS = Object.keys(ACCENT_TOKENS) as AccentToken[];
 
-// The design system's fixed surface values (Ovation UI migration §2/§4).
+// The design system's fixed navy surface values — used by the fallback path
+// (no backgroundColour, L > 60%, or useNavyBase=true).
 const DARK_SURFACES: Record<string, string> = {
   "--background": "222 33% 8%", // #0B0F1A
   "--card": "220 30% 11%", // #131826
@@ -103,21 +104,31 @@ describe("snapHexToAccentToken / resolveAccentToken", () => {
   });
 });
 
-describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
-  // A brand with an off-palette legacy hex — surfaces must still be the fixed
-  // navy/paper scales; only the accent slots may vary.
-  const WILD_BRAND: ClubBrand = {
-    name: "Wild FC",
-    backgroundColour: "#7A2E4C",
-    primaryColour: "#2E7A5C",
+describe("deriveThemeTokens: navy fallback (no backgroundColour, L > 60%, or useNavyBase)", () => {
+  // No backgroundColour set — surfaces fall back to fixed navy.
+  const NO_BG_BRAND: ClubBrand = { name: "No BG FC", primaryColour: "#FFB238" };
+
+  // backgroundColour too light (L=87% > 60%) — surfaces fall back to navy.
+  const LIGHT_BG_BRAND: ClubBrand = {
+    name: "Light BG FC",
+    backgroundColour: "#CCDDEE",
+    primaryColour: "#FFB238",
+  };
+
+  // Dark backgroundColour, but useNavyBase=true forces navy regardless.
+  const NAVY_FORCED_BRAND: ClubBrand = {
+    name: "Forced Navy FC",
+    backgroundColour: "#7A2E4C", // L=33% — would derive without the flag
+    primaryColour: "#FFB238",
+    useNavyBase: true,
   };
 
   for (const [mode, surfaces] of [
     ["dark", DARK_SURFACES],
     ["light", LIGHT_SURFACES],
   ] as const) {
-    for (const brandCase of [DEFAULT_BRAND, HALLS_HEAD_LEGACY, WILD_BRAND]) {
-      it(`${brandCase.name} (${mode}) gets the fixed surface scale`, () => {
+    for (const brandCase of [NO_BG_BRAND, LIGHT_BG_BRAND, NAVY_FORCED_BRAND]) {
+      it(`${brandCase.name} (${mode}) uses the fixed navy surface scale`, () => {
         const tokens = deriveThemeTokens(brandCase, mode);
         for (const [key, value] of Object.entries(surfaces)) {
           expect(tokens[key], key).toBe(value);
@@ -127,13 +138,15 @@ describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
   }
 
   it("dark-mode accent slots carry the direct hex→HSL of primaryColour", () => {
+    // Halls Head has a dark backgroundColour so it derives surfaces, but
+    // the accent slots are purely from primaryColour and are unaffected.
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
-    // #FBAC27 → "38 96% 57%" (exact hex→HSL, not the ACCENT_TOKENS.amber snap value)
+    // #FBAC27 → "38 96% 57%" (exact hex→HSL, not the ACCENT_TOKENS.amber snap)
     const expected = hexToHslTriplet(HALLS_HEAD_LEGACY.primaryColour)!;
     expect(tokens["--primary"]).toBe(expected);
     expect(tokens["--accent"]).toBe(expected);
     expect(tokens["--ring"]).toBe(expected);
-    // L=57 > 55 → dark navy foreground.
+    // L=57 > 55 → dark navy foreground on the accent fill.
     expect(tokens["--primary-foreground"]).toBe("222 33% 8%");
   });
 
@@ -147,6 +160,57 @@ describe("deriveThemeTokens: fixed surfaces regardless of brand", () => {
       const tokens = deriveThemeTokens(brand, "dark");
       expect(tokens["--primary"], token).toBe(ACCENT_TOKENS[token]);
     }
+  });
+});
+
+describe("deriveThemeTokens: surfaces derived from backgroundColour", () => {
+  // Halls Head #333F48 → hexToHsl: {h:206, s:17, l:24}
+  // s_dark = min(17, 35) = 17; s_light = min(17, 20) = 17
+  it("Halls Head (dark) derives surfaces from its background hue", () => {
+    const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
+    expect(tokens["--background"]).toBe("206 17% 8%");
+    expect(tokens["--card"]).toBe("206 15% 11%");   // Math.round(17*0.9)=15
+    expect(tokens["--muted"]).toBe("206 14% 16%");   // Math.round(17*0.85)=14
+    expect(tokens["--border"]).toBe("206 12% 21%");  // Math.round(17*0.7)=12
+    // Foreground and accent are unaffected by the surface derivation.
+    expect(tokens["--foreground"]).toBe("220 20% 96%");
+    expect(tokens["--primary"]).toBe(hexToHslTriplet(HALLS_HEAD_LEGACY.primaryColour)!);
+  });
+
+  it("Halls Head (light) derives surfaces from its background hue", () => {
+    const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "light");
+    expect(tokens["--background"]).toBe("206 17% 97%");
+    expect(tokens["--card"]).toBe("0 0% 100%");
+    expect(tokens["--muted"]).toBe("206 15% 94%");   // Math.round(17*0.9)=15
+    expect(tokens["--border"]).toBe("206 14% 88%");  // Math.round(17*0.85)=14
+    expect(tokens["--foreground"]).toBe("222 30% 12%");
+  });
+
+  // Wild #7A2E4C → hexToHsl: {h:336, s:45, l:33}; s_dark clamped to 35
+  it("wild brand (dark) clamps saturation at 35 and uses its hue", () => {
+    const wild: ClubBrand = { name: "Wild FC", backgroundColour: "#7A2E4C", primaryColour: "#2E7A5C" };
+    const tokens = deriveThemeTokens(wild, "dark");
+    expect(tokens["--background"]).toBe("336 35% 8%");
+    expect(tokens["--card"]).toBe("336 32% 11%");    // Math.round(35*0.9)=32
+    expect(tokens["--muted"]).toBe("336 30% 16%");   // Math.round(35*0.85)=30
+    expect(tokens["--border"]).toBe("336 25% 21%");  // Math.round(35*0.7)=25
+  });
+
+  it("useNavyBase=true overrides a valid dark backgroundColour and restores navy", () => {
+    const navyBrand: ClubBrand = { ...HALLS_HEAD_LEGACY, useNavyBase: true };
+    const dark = deriveThemeTokens(navyBrand, "dark");
+    expect(dark["--background"]).toBe("222 33% 8%");
+    expect(dark["--card"]).toBe("220 30% 11%");
+    const light = deriveThemeTokens(navyBrand, "light");
+    expect(light["--background"]).toBe("220 25% 97%");
+    expect(light["--card"]).toBe("0 0% 100%");
+  });
+
+  it("backgroundColour with L > 60% falls back to navy", () => {
+    const lightBrand: ClubBrand = { name: "Light FC", backgroundColour: "#CCDDEE" }; // L=87%
+    const tokens = deriveThemeTokens(lightBrand, "dark");
+    expect(tokens["--background"]).toBe("222 33% 8%");
+    expect(tokens["--card"]).toBe("220 30% 11%");
   });
 });
 
@@ -202,6 +266,7 @@ describe("deriveThemeTokens: totality / edge cases", () => {
     ["missing juniorsColour", { ...DEFAULT_BRAND, juniorsColour: null }],
     ["missing everything", { name: "No Brand FC" }],
     ["bogus accent token", { name: "Bogus FC", accentToken: "chartreuse" as AccentToken }],
+    ["useNavyBase true, no backgroundColour", { name: "Navy FC", useNavyBase: true }],
   ];
 
   for (const [label, brand] of edgeCases) {
