@@ -12,6 +12,7 @@ import {
   PlatformAdminLoginBody,
   UpdateAdminTenantBody,
   UpdateAdminTenantBrandBody,
+  UpdatePlatformBrandBody,
   ProvisionTenantAsAdminBody,
   IssueTenantAdminResetBody,
 } from "@workspace/api-zod";
@@ -31,7 +32,11 @@ import {
   type RequestWithPlatformAdmin,
 } from "../middlewares/require-platform-admin";
 import { tenantUrl } from "../lib/tenant-url";
-import { invalidateTenantBrandCache } from "../lib/tenant-brand";
+import {
+  invalidateTenantBrandCache,
+  getPlatformBrandFields,
+  upsertPlatformBrand,
+} from "../lib/tenant-brand";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
@@ -594,6 +599,44 @@ router.post(
       tenantName: tenant.name,
       created,
     });
+  },
+);
+
+// --- Platform brand (Ovation's own branding) --------------------------------
+
+// Read the platform brand singleton (platform_settings id=1). Returns null
+// fields for columns that have not been set yet (DEFAULT_BRAND falls back).
+router.get(
+  "/platform/admin/platform-brand",
+  requirePlatformAdmin,
+  async (_req, res): Promise<void> => {
+    res.json(await getPlatformBrandFields());
+  },
+);
+
+// Update the platform brand. All fields are optional; unset fields are left
+// as-is so a logo-only save never clobbers a prior colour save.
+router.patch(
+  "/platform/admin/platform-brand",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = UpdatePlatformBrandBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    // Require at least one field to avoid a no-op round-trip to the DB.
+    if (Object.values(parsed.data).every((v) => v === undefined)) {
+      res.status(400).json({ error: "Nothing to update" });
+      return;
+    }
+    const result = await upsertPlatformBrand({
+      name: parsed.data.name,
+      logoUrl: parsed.data.logoUrl,
+      accentColour: parsed.data.accentColour,
+      faviconUrl: parsed.data.faviconUrl,
+    });
+    res.json(result);
   },
 );
 

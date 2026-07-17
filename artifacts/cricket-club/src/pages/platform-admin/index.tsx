@@ -3,6 +3,7 @@ import { PlatformAdminShell } from "@/components/platform-admin-shell";
 import TenantsList from "./tenants-list";
 import TenantDetail from "./tenant-detail";
 import ProvisionTenant from "./provision";
+import PlatformBrand from "./platform-brand";
 
 /**
  * The platform-admin (super-admin) console, mounted on the apex host inside
@@ -14,6 +15,7 @@ export function PlatformAdminRoutes() {
     <PlatformAdminShell>
       <Switch>
         <Route path="/platform-admin" component={TenantsList} />
+        <Route path="/platform-admin/brand" component={PlatformBrand} />
         <Route path="/platform-admin/provision" component={ProvisionTenant} />
         <Route path="/platform-admin/tenants/:id" component={TenantDetail} />
       </Switch>

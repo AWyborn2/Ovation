@@ -34,6 +34,23 @@ function isPlatformResponse(
   return !!data && "platform" in data && data.platform === true;
 }
 
+/**
+ * Build a ClubBrand from the platform response, merging admin-configured fields
+ * (name, logoUrl, primaryColour, faviconUrl) over DEFAULT_BRAND. This lets the
+ * landing page header, document title, and favicon reflect platform brand
+ * settings without a code change.
+ */
+function platformResponseToBrand(data: PlatformBrand): ClubBrand {
+  return {
+    ...DEFAULT_BRAND,
+    name: data.name ?? DEFAULT_BRAND.name,
+    logoUrl: data.logoUrl ?? DEFAULT_BRAND.logoUrl,
+    logoUrl128: data.logoUrl ?? DEFAULT_BRAND.logoUrl128,
+    primaryColour: data.primaryColour ?? DEFAULT_BRAND.primaryColour,
+    faviconUrl: data.faviconUrl ?? DEFAULT_BRAND.faviconUrl,
+  };
+}
+
 export interface PlatformState {
   /** The request resolved to the apex/marketing host (no tenant). */
   isPlatform: boolean;
@@ -121,7 +138,12 @@ function applyBrandTheme(brand: ClubBrand, mode: ThemeMode): void {
 export function BrandProvider({ children }: { children: ReactNode }) {
   const q = useGetTenantBrand({ query: { queryKey: getGetTenantBrandQueryKey() } });
   const isPlatform = isPlatformResponse(q.data);
-  const brand = isPlatform ? DEFAULT_BRAND : (q.data as TenantBrand | undefined) ?? DEFAULT_BRAND;
+  // On the platform/apex host apply the admin-configured platform brand (name,
+  // logo, accent colour, favicon) so the landing page reflects DB-sourced values
+  // rather than always falling back to the DEFAULT_BRAND constants.
+  const brand = isPlatform
+    ? platformResponseToBrand(q.data as PlatformBrand)
+    : (q.data as TenantBrand | undefined) ?? DEFAULT_BRAND;
   const { mode } = useThemeMode();
   useEffect(() => {
     // Always apply a theme so that switching back to the platform surface resets
