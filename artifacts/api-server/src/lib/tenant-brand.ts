@@ -197,12 +197,14 @@ export async function getPlatformBrandFields(): Promise<PlatformBrandFields> {
     .from(platformSettingsTable)
     .where(eq(platformSettingsTable.id, 1));
 
+  // Apply DEFAULT_BRAND as the server-side fallback so every platform brand
+  // field is non-null even before a super-admin has made any edits.
   const value: PlatformBrandFields = {
     platform: true,
-    name: row?.name ?? null,
-    logoUrl: row?.logoUrl ?? null,
-    primaryColour: row?.accentColour ?? null,
-    faviconUrl: row?.faviconUrl ?? null,
+    name: row?.name ?? DEFAULT_BRAND.name,
+    logoUrl: row?.logoUrl ?? DEFAULT_BRAND.logoUrl ?? null,
+    primaryColour: row?.accentColour ?? DEFAULT_BRAND.primaryColour ?? null,
+    faviconUrl: row?.faviconUrl ?? DEFAULT_BRAND.faviconUrl ?? null,
   };
   platformBrandCache = { value, at: Date.now() };
   return value;
@@ -229,9 +231,17 @@ export async function upsertPlatformBrand(fields: {
   // (insert-ignore then update) rather than ON CONFLICT DO UPDATE with a
   // partial set, because Drizzle's onConflictDoUpdate can't express "only
   // update columns whose value was supplied in the JS call".
+  // Seed with DEFAULT_BRAND values so the admin editor is pre-populated
+  // from day one rather than showing a blank form.
   await db
     .insert(platformSettingsTable)
-    .values({ id: 1 })
+    .values({
+      id: 1,
+      name: DEFAULT_BRAND.name,
+      logoUrl: DEFAULT_BRAND.logoUrl,
+      accentColour: DEFAULT_BRAND.primaryColour,
+      faviconUrl: DEFAULT_BRAND.faviconUrl,
+    })
     .onConflictDoNothing();
 
   const updates: Partial<{
@@ -262,9 +272,9 @@ export async function upsertPlatformBrand(fields: {
   invalidatePlatformBrandCache();
   return {
     platform: true,
-    name: row?.name ?? null,
-    logoUrl: row?.logoUrl ?? null,
-    primaryColour: row?.accentColour ?? null,
-    faviconUrl: row?.faviconUrl ?? null,
+    name: row?.name ?? DEFAULT_BRAND.name,
+    logoUrl: row?.logoUrl ?? DEFAULT_BRAND.logoUrl ?? null,
+    primaryColour: row?.accentColour ?? DEFAULT_BRAND.primaryColour ?? null,
+    faviconUrl: row?.faviconUrl ?? DEFAULT_BRAND.faviconUrl ?? null,
   };
 }
