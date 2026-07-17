@@ -355,6 +355,7 @@ export * from './tradingCardSettingsUpdateStatKeysByRole';
 export * from './undoSeasonInput';
 export * from './undoSeasonResult';
 export * from './updateAdminTenantBrandBody';
+export * from './updatePlatformBrandBody';
 export * from './updateTenantBody';
 export * from './updateTenantBodyPlan';
 export * from './updateTenantBrandBody';

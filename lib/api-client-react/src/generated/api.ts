@@ -209,6 +209,7 @@ import type {
   UndoSeasonInput,
   UndoSeasonResult,
   UpdateAdminTenantBrandBody,
+  UpdatePlatformBrandBody,
   UpdateTenantBody,
   UpdateTenantBrandBody,
   UploadMatchBatchBody,
@@ -16570,6 +16571,154 @@ export const useUpdateAdminTenantBrand = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateAdminTenantBrandMutationOptions(options));
+    }
+
+export const getGetPlatformBrandUrl = () => {
+
+
+
+
+  return `/api/platform/admin/platform-brand`
+}
+
+/**
+ * @summary Read the current platform brand (name, logo, accent colour, favicon) as stored in platform_settings id=1. Fields that have never been set are returned as null (client falls back to DEFAULT_BRAND).
+ */
+export const getPlatformBrand = async ( options?: RequestInit): Promise<PlatformBrand> => {
+
+  return customFetch<PlatformBrand>(getGetPlatformBrandUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformBrandQueryKey = () => {
+    return [
+    `/api/platform/admin/platform-brand`
+    ] as const;
+    }
+
+
+export const getGetPlatformBrandQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformBrand>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformBrand>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformBrandQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformBrand>>> = ({ signal }) => getPlatformBrand({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformBrand>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformBrandQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformBrand>>>
+export type GetPlatformBrandQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read the current platform brand (name, logo, accent colour, favicon) as stored in platform_settings id=1. Fields that have never been set are returned as null (client falls back to DEFAULT_BRAND).
+ */
+
+export function useGetPlatformBrand<TData = Awaited<ReturnType<typeof getPlatformBrand>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformBrand>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformBrandQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdatePlatformBrandUrl = () => {
+
+
+
+
+  return `/api/platform/admin/platform-brand`
+}
+
+/**
+ * @summary Update the Ovation platform brand (name, logo, accent colour, favicon). Upserts platform_settings id=1 and invalidates the platform brand cache so GET /tenant-brand reflects the change on the next request.
+ */
+export const updatePlatformBrand = async (updatePlatformBrandBody: UpdatePlatformBrandBody, options?: RequestInit): Promise<PlatformBrand> => {
+
+  return customFetch<PlatformBrand>(getUpdatePlatformBrandUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePlatformBrandBody,)
+  }
+);}
+
+
+
+
+export const getUpdatePlatformBrandMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatformBrand>>, TError,{data: BodyType<UpdatePlatformBrandBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePlatformBrand>>, TError,{data: BodyType<UpdatePlatformBrandBody>}, TContext> => {
+
+const mutationKey = ['updatePlatformBrand'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePlatformBrand>>, {data: BodyType<UpdatePlatformBrandBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePlatformBrand(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePlatformBrandMutationResult = NonNullable<Awaited<ReturnType<typeof updatePlatformBrand>>>
+    export type UpdatePlatformBrandMutationBody = BodyType<UpdatePlatformBrandBody>
+    export type UpdatePlatformBrandMutationError = ErrorType<void>
+
+    /**
+ * @summary Update the Ovation platform brand (name, logo, accent colour, favicon). Upserts platform_settings id=1 and invalidates the platform brand cache so GET /tenant-brand reflects the change on the next request.
+ */
+export const useUpdatePlatformBrand = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatformBrand>>, TError,{data: BodyType<UpdatePlatformBrandBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePlatformBrand>>,
+        TError,
+        {data: BodyType<UpdatePlatformBrandBody>},
+        TContext
+      > => {
+      return useMutation(getUpdatePlatformBrandMutationOptions(options));
     }
 
 export const getIssueTenantAdminResetUrl = (id: number,) => {

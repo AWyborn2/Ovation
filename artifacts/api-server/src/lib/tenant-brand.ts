@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db, clubsTable, tenantsTable } from "@workspace/db";
+import { db, clubsTable, tenantsTable, platformSettingsTable } from "@workspace/db";
 import { DEFAULT_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
 
 /**
@@ -165,4 +165,106 @@ export async function getHallsHeadBrand(): Promise<TenantBrand> {
  */
 export function invalidateTenantBrandCache(tenantId: number): void {
   cache.delete(tenantId);
+}
+
+// ---------------------------------------------------------------------------
+// Platform brand (apex host) — singleton platform_settings id=1
+// ---------------------------------------------------------------------------
+
+export interface PlatformBrandFields {
+  platform: true;
+  name: string | null;
+  logoUrl: string | null;
+  primaryColour: string | null;
+  faviconUrl: string | null;
+}
+
+let platformBrandCache: { value: PlatformBrandFields; at: number } | null = null;
+
+/**
+ * Read the Ovation platform brand from `platform_settings` id=1.
+ * Falls back to DEFAULT_BRAND values when the row is absent or a field is null.
+ * Cached for {@link CACHE_TTL_MS} to avoid a DB round-trip on every landing
+ * page load; invalidated by {@link invalidatePlatformBrandCache} after a PATCH.
+ */
+export async function getPlatformBrandFields(): Promise<PlatformBrandFields> {
+  if (platformBrandCache && Date.now() - platformBrandCache.at < CACHE_TTL_MS) {
+    return platformBrandCache.value;
+  }
+
+  const [row] = await db
+    .select()
+    .from(platformSettingsTable)
+    .where(eq(platformSettingsTable.id, 1));
+
+  const value: PlatformBrandFields = {
+    platform: true,
+    name: row?.name ?? null,
+    logoUrl: row?.logoUrl ?? null,
+    primaryColour: row?.accentColour ?? null,
+    faviconUrl: row?.faviconUrl ?? null,
+  };
+  platformBrandCache = { value, at: Date.now() };
+  return value;
+}
+
+/** Drop the platform brand cache after a PATCH so the next GET is fresh. */
+export function invalidatePlatformBrandCache(): void {
+  platformBrandCache = null;
+}
+
+/**
+ * Upsert platform_settings id=1 with the given fields and return the updated
+ * PlatformBrandFields. Accepts partial updates: undefined fields are left as-is
+ * (the PATCH semantics the route handler needs).
+ */
+export async function upsertPlatformBrand(fields: {
+  name?: string | null;
+  logoUrl?: string | null;
+  accentColour?: string | null;
+  faviconUrl?: string | null;
+}): Promise<PlatformBrandFields> {
+  // Upsert: create the singleton row if it doesn't exist yet; then update
+  // only the fields that were explicitly supplied. We do a two-step
+  // (insert-ignore then update) rather than ON CONFLICT DO UPDATE with a
+  // partial set, because Drizzle's onConflictDoUpdate can't express "only
+  // update columns whose value was supplied in the JS call".
+  await db
+    .insert(platformSettingsTable)
+    .values({ id: 1 })
+    .onConflictDoNothing();
+
+  const updates: Partial<{
+    name: string | null;
+    logoUrl: string | null;
+    accentColour: string | null;
+    faviconUrl: string | null;
+  }> = {};
+  if (fields.name !== undefined) updates.name = fields.name;
+  if (fields.logoUrl !== undefined) updates.logoUrl = fields.logoUrl;
+  if (fields.accentColour !== undefined) updates.accentColour = fields.accentColour;
+  if (fields.faviconUrl !== undefined) updates.faviconUrl = fields.faviconUrl;
+
+  let row;
+  if (Object.keys(updates).length > 0) {
+    [row] = await db
+      .update(platformSettingsTable)
+      .set(updates)
+      .where(eq(platformSettingsTable.id, 1))
+      .returning();
+  } else {
+    [row] = await db
+      .select()
+      .from(platformSettingsTable)
+      .where(eq(platformSettingsTable.id, 1));
+  }
+
+  invalidatePlatformBrandCache();
+  return {
+    platform: true,
+    name: row?.name ?? null,
+    logoUrl: row?.logoUrl ?? null,
+    primaryColour: row?.accentColour ?? null,
+    faviconUrl: row?.faviconUrl ?? null,
+  };
 }

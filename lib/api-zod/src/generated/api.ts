@@ -6395,8 +6395,12 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
-  "platform": zod.literal(true)
-}).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.')]).describe('A tenant\'s brand on a club host, or the platform marker on the apex\/marketing host (no tenant — the SPA mounts the landing page).')
+  "platform": zod.literal(true),
+  "name": zod.string().nullish().describe('Platform name (e.g. \"Ovation\"). Null = DEFAULT_BRAND fallback.'),
+  "logoUrl": zod.string().nullish().describe('Platform logo URL. Null = DEFAULT_BRAND fallback.'),
+  "primaryColour": zod.string().nullish().describe('Platform accent colour (buttons, nav highlights). Maps from platform_settings.accent_colour. Null = DEFAULT_BRAND fallback.'),
+  "faviconUrl": zod.string().nullish().describe('Platform favicon URL. Null = DEFAULT_BRAND fallback.')
+}).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app. Also carries the platform\'s own brand fields (name, logo, accent colour, favicon) sourced from the platform_settings singleton, falling back to DEFAULT_BRAND values when not yet configured.')]).describe('A tenant\'s brand on a club host, or the platform marker on the apex\/marketing host (no tenant — the SPA mounts the landing page).')
 
 
 /**
@@ -6687,6 +6691,40 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "displayName": zod.string()
 }))
 })
+
+
+/**
+ * @summary Read the current platform brand (name, logo, accent colour, favicon) as stored in platform_settings id=1. Fields that have never been set are returned as null (client falls back to DEFAULT_BRAND).
+ */
+export const GetPlatformBrandResponse = zod.object({
+  "platform": zod.literal(true),
+  "name": zod.string().nullish().describe('Platform name (e.g. \"Ovation\"). Null = DEFAULT_BRAND fallback.'),
+  "logoUrl": zod.string().nullish().describe('Platform logo URL. Null = DEFAULT_BRAND fallback.'),
+  "primaryColour": zod.string().nullish().describe('Platform accent colour (buttons, nav highlights). Maps from platform_settings.accent_colour. Null = DEFAULT_BRAND fallback.'),
+  "faviconUrl": zod.string().nullish().describe('Platform favicon URL. Null = DEFAULT_BRAND fallback.')
+}).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app. Also carries the platform\'s own brand fields (name, logo, accent colour, favicon) sourced from the platform_settings singleton, falling back to DEFAULT_BRAND values when not yet configured.')
+
+
+/**
+ * @summary Update the Ovation platform brand (name, logo, accent colour, favicon). Upserts platform_settings id=1 and invalidates the platform brand cache so GET /tenant-brand reflects the change on the next request.
+ */
+export const updatePlatformBrandBodyAccentColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
+
+
+export const UpdatePlatformBrandBody = zod.object({
+  "name": zod.string().nullish().describe('Platform display name.'),
+  "logoUrl": zod.string().nullish().describe('Platform logo URL (null = remove).'),
+  "accentColour": zod.string().regex(updatePlatformBrandBodyAccentColourRegExp).nullish().describe('Accent colour as a 6-digit hex (null = remove \/ use default).'),
+  "faviconUrl": zod.string().nullish().describe('Platform favicon URL (null = remove).')
+}).describe('Partial update of the Ovation platform brand (name, logo, accent colour, favicon). Closed to exactly these four properties — tenant-specific fields like backgroundColour, juniorsColour, and badgeStyle are not applicable to the platform surface.')
+
+export const UpdatePlatformBrandResponse = zod.object({
+  "platform": zod.literal(true),
+  "name": zod.string().nullish().describe('Platform name (e.g. \"Ovation\"). Null = DEFAULT_BRAND fallback.'),
+  "logoUrl": zod.string().nullish().describe('Platform logo URL. Null = DEFAULT_BRAND fallback.'),
+  "primaryColour": zod.string().nullish().describe('Platform accent colour (buttons, nav highlights). Maps from platform_settings.accent_colour. Null = DEFAULT_BRAND fallback.'),
+  "faviconUrl": zod.string().nullish().describe('Platform favicon URL. Null = DEFAULT_BRAND fallback.')
+}).describe('Returned by GET \/tenant-brand on the apex\/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app. Also carries the platform\'s own brand fields (name, logo, accent colour, favicon) sourced from the platform_settings singleton, falling back to DEFAULT_BRAND values when not yet configured.')
 
 
 /**

@@ -4590,6 +4590,48 @@ paths:
         "404":
           description: No such tenant.
 
+  /platform/admin/platform-brand:
+    get:
+      operationId: getPlatformBrand
+      tags: [platformAdmin]
+      summary: >-
+        Read the current platform brand (name, logo, accent colour, favicon)
+        as stored in platform_settings id=1. Fields that have never been set
+        are returned as null (client falls back to DEFAULT_BRAND).
+      responses:
+        "200":
+          description: Current platform brand settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformBrand"
+        "401":
+          description: Not authenticated as platform admin.
+    patch:
+      operationId: updatePlatformBrand
+      tags: [platformAdmin]
+      summary: >-
+        Update the Ovation platform brand (name, logo, accent colour, favicon).
+        Upserts platform_settings id=1 and invalidates the platform brand cache
+        so GET /tenant-brand reflects the change on the next request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlatformBrandBody"
+      responses:
+        "200":
+          description: Updated platform brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformBrand"
+        "400":
+          description: Invalid request body (e.g. malformed hex colour).
+        "401":
+          description: Not authenticated as platform admin.
+
   /platform/admin/tenants/{id}/admin-resets:
     post:
       operationId: issueTenantAdminReset
@@ -6148,12 +6190,52 @@ components:
       description: >-
         Returned by GET /tenant-brand on the apex/marketing host, where no tenant
         resolves. The web client treats this as the signal to render the platform
-        landing page (and signup) instead of a club app.
+        landing page (and signup) instead of a club app. Also carries the
+        platform's own brand fields (name, logo, accent colour, favicon) sourced
+        from the platform_settings singleton, falling back to DEFAULT_BRAND values
+        when not yet configured.
       required: [platform]
       properties:
         platform:
           type: boolean
           enum: [true]
+        name:
+          type: ["string", "null"]
+          description: Platform name (e.g. "Ovation"). Null = DEFAULT_BRAND fallback.
+        logoUrl:
+          type: ["string", "null"]
+          description: Platform logo URL. Null = DEFAULT_BRAND fallback.
+        primaryColour:
+          type: ["string", "null"]
+          description: >-
+            Platform accent colour (buttons, nav highlights). Maps from
+            platform_settings.accent_colour. Null = DEFAULT_BRAND fallback.
+        faviconUrl:
+          type: ["string", "null"]
+          description: Platform favicon URL. Null = DEFAULT_BRAND fallback.
+
+    UpdatePlatformBrandBody:
+      type: object
+      description: >-
+        Partial update of the Ovation platform brand (name, logo, accent colour,
+        favicon). Closed to exactly these four properties — tenant-specific fields
+        like backgroundColour, juniorsColour, and badgeStyle are not applicable to
+        the platform surface.
+      additionalProperties: false
+      properties:
+        name:
+          type: ["string", "null"]
+          description: Platform display name.
+        logoUrl:
+          type: ["string", "null"]
+          description: Platform logo URL (null = remove).
+        accentColour:
+          type: ["string", "null"]
+          description: Accent colour as a 6-digit hex (null = remove / use default).
+          pattern: "^#[0-9a-fA-F]{6}$"
+        faviconUrl:
+          type: ["string", "null"]
+          description: Platform favicon URL (null = remove).
 
     Entitlements:
       type: object

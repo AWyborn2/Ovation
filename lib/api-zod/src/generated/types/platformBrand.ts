@@ -7,8 +7,28 @@
  */
 
 /**
- * Returned by GET /tenant-brand on the apex/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app.
+ * Returned by GET /tenant-brand on the apex/marketing host, where no tenant resolves. The web client treats this as the signal to render the platform landing page (and signup) instead of a club app. Also carries the platform's own brand fields (name, logo, accent colour, favicon) sourced from the platform_settings singleton, falling back to DEFAULT_BRAND values when not yet configured.
  */
 export interface PlatformBrand {
   platform: true;
+  /**
+     * Platform name (e.g. "Ovation"). Null = DEFAULT_BRAND fallback.
+     * @nullable
+     */
+  name?: string | null;
+  /**
+     * Platform logo URL. Null = DEFAULT_BRAND fallback.
+     * @nullable
+     */
+  logoUrl?: string | null;
+  /**
+     * Platform accent colour (buttons, nav highlights). Maps from platform_settings.accent_colour. Null = DEFAULT_BRAND fallback.
+     * @nullable
+     */
+  primaryColour?: string | null;
+  /**
+     * Platform favicon URL. Null = DEFAULT_BRAND fallback.
+     * @nullable
+     */
+  faviconUrl?: string | null;
 }

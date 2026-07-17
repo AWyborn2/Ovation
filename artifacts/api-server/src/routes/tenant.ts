@@ -2,7 +2,11 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, tenantsTable, type TenantRow } from "@workspace/db";
 import { UpdateTenantBrandBody } from "@workspace/api-zod";
-import { getTenantBrand, invalidateTenantBrandCache } from "../lib/tenant-brand";
+import {
+  getTenantBrand,
+  invalidateTenantBrandCache,
+  getPlatformBrandFields,
+} from "../lib/tenant-brand";
 import { getRequestEntitlements } from "../lib/tenant";
 import { getTenantId, isPlatformRequest } from "../middlewares/tenant-context";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -18,7 +22,9 @@ const router: IRouter = Router();
 // instead of a club app.
 router.get("/tenant-brand", async (req, res): Promise<void> => {
   if (isPlatformRequest(req)) {
-    res.json({ platform: true });
+    // Return the platform brand fields so the landing page header, document
+    // title, and favicon reflect admin-configured values without a redeploy.
+    res.json(await getPlatformBrandFields());
     return;
   }
   const brand = await getTenantBrand(getTenantId(req));
