@@ -18,5 +18,67 @@
   },
   "libOverrides": {
     "source-kit.mjs": "synth entry: explicit re-exports for componentSrcMap-pinned names resolve star-export ambiguity (7 duplicate names)"
+  },
+  "overrides": {
+    "AlertDialog": {
+      "cardMode": "single",
+      "primaryStory": "DeleteSeasonImportAlert"
+    },
+    "ContextMenu": {
+      "cardMode": "single",
+      "primaryStory": "MatchRowMenu"
+    },
+    "ContextMenuLabel": {
+      "cardMode": "single",
+      "primaryStory": "PlayerRowMenu"
+    },
+    "Dialog": {
+      "cardMode": "single",
+      "primaryStory": "EditPlayerDialog"
+    },
+    "Drawer": {
+      "cardMode": "single",
+      "primaryStory": "InningsSummaryDrawer"
+    },
+    "DrawerFooter": {
+      "cardMode": "single",
+      "primaryStory": "DrawerFooterInContext"
+    },
+    "DrawerHeader": {
+      "cardMode": "single",
+      "primaryStory": "DrawerHeaderInContext"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "primaryStory": "SeasonActionsMenu"
+    },
+    "DropdownMenuLabel": {
+      "cardMode": "single",
+      "primaryStory": "LabelledMenu"
+    },
+    "HoverCard": {
+      "cardMode": "single",
+      "primaryStory": "PlayerHoverCard"
+    },
+    "Menubar": {
+      "cardMode": "single",
+      "primaryStory": "AdminMenubar"
+    },
+    "MenubarLabel": {
+      "cardMode": "single",
+      "primaryStory": "ReportsMenuWithLabel"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "primaryStory": "StatsFilterPopover"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "primaryStory": "MatchDetailsSheet"
+    },
+    "Tooltip": {
+      "cardMode": "single",
+      "primaryStory": "ScorecardTooltip"
+    }
   }
 }

@@ -40,3 +40,28 @@
   everything sensible (2B) — subcomponents composed inside parent previews, not solo.
 - Main CI was red independently of this branch (API test failures in brand-colour pipeline,
   pre-existing since ~15 Jul) — do not chase those from this branch.
+
+## Preview-authoring techniques (folded from wave 1 — all 63 components graded good)
+
+- Radix static-open tricks: DropdownMenu `open modal={false}`; Menubar controlled `value` matching a
+  MenubarMenu value; ContextMenu has NO open prop — dispatch a real `MouseEvent("contextmenu")` from a
+  mount `useEffect` (see previews/ContextMenu.tsx `useAutoContextMenu`); Tooltip needs TooltipProvider +
+  controlled `open`; vaul Drawer renders open with `open shouldScaleBackground={false}`; cmdk Command
+  uses controlled value + `shouldFilter={false}` (garbage value to show CommandEmpty); Select previews
+  use closed trigger + defaultValue (open SelectContent would escape the cell).
+- ScrollArea (and any Radix scroll component) needs `type="always"` or the scrollbar is invisible in
+  static capture. Separator vertical needs explicit container height.
+- Portaled/fixed overlay content stays inside its capture cell — no cardMode overrides were needed for
+  any wave-1 component. Give modal previews a wrapper div with minHeight ~380-460px.
+- Flex wrappers around trigger buttons must set `alignItems` explicitly (default stretch makes buttons
+  hundreds of px tall — bit Popover once).
+- `defaultChecked`/`defaultPressed`/`defaultValue`/`defaultOpen` all render on-states statically.
+- AvatarImage: base64 SVG data-URI loads in headless; broken relative src reliably shows AvatarFallback.
+- InputOTP needs `maxLength`, explicit InputOTPGroup/InputOTPSlot `index` children, and `defaultValue`
+  to show digits. Label `peer-disabled:` styling needs the input BEFORE the label with className="peer".
+- Leaf subcomponents are graded as full parent compositions (only true render); grade JSON keys must
+  equal export names exactly.
+- Preview content convention: neutral fictional clubs (Seacrest CC, Dunes CC, Mandurah) — never add
+  Halls Head literals to the sync tree.
+- Known component-level defect (app-side, not preview): ui/slider.tsx hardcodes ONE Thumb — range
+  values render fill correctly but only the first thumb shows. Worth an app fix if range sliders needed.
