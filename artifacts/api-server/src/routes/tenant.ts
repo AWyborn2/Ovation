@@ -7,6 +7,7 @@ import {
   invalidateTenantBrandCache,
   getPlatformBrandFields,
 } from "../lib/tenant-brand";
+import { invalidateClubBrandOverlayCache } from "../lib/club-brand";
 import { getRequestEntitlements } from "../lib/tenant";
 import { getTenantId, isPlatformRequest } from "../middlewares/tenant-context";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -87,6 +88,9 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
   invalidateTenantBrandCache(tenantId);
+  // This tenant's brand also drives how it appears as an OPPONENT on other
+  // tenants' scorecards; drop that overlay cache so the change shows at once.
+  invalidateClubBrandOverlayCache();
   const brand = await getTenantBrand(tenantId);
   res.json(brand);
 });

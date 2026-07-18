@@ -26,6 +26,11 @@ import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getOrCreateSettings } from "../lib/settings";
+import {
+  getOpponentBrandsByAppClubId,
+  getOpponentBrandsByCentralClubId,
+  mergeOpponentBrand,
+} from "../lib/club-brand";
 
 /** Split a central display name into given/surname (surname = last token). */
 function splitCentralName(displayName: string | null): { givenName: string; surname: string } {
@@ -185,6 +190,14 @@ async function loadMatchDetail(matchId: number, tenantId: number) {
   // spec + generated types).
   const hallsHead = await getTenantBrand(tenantId);
 
+  // If the opponent club is itself a tenant that uploaded its own brand, show
+  // that (its crest/colours) instead of the PlayHQ-scraped register default.
+  let opponentClub = toOpponentClub(match);
+  if (opponentClub) {
+    const overlays = await getOpponentBrandsByAppClubId([opponentClub.id]);
+    opponentClub = mergeOpponentBrand(opponentClub, overlays.get(opponentClub.id));
+  }
+
   return {
     id: match.id,
     grade: match.grade,
@@ -200,7 +213,7 @@ async function loadMatchDetail(matchId: number, tenantId: number) {
     opponentScore: match.opponentScore,
     clubBattedFirst: match.clubBattedFirst,
     abandoned: match.abandoned,
-    opponentClub: toOpponentClub(match),
+    opponentClub,
     club: hallsHead,
     lines,
     oppositionLines,
@@ -243,7 +256,21 @@ router.get("/matches", async (req, res): Promise<void> => {
       limit,
       offset: off,
     });
-    res.json(rows);
+    // central.clubs has no logo; overlay any opponent that is itself a tenant
+    // with an uploaded brand (keyed by its central club id) so its crest shows.
+    const overlays = await getOpponentBrandsByCentralClubId(
+      rows
+        .map((r) => r.opponentClub?.id)
+        .filter((id): id is number => id != null),
+    );
+    res.json(
+      rows.map((r) => ({
+        ...r,
+        opponentClub: r.opponentClub
+          ? mergeOpponentBrand(r.opponentClub, overlays.get(r.opponentClub.id))
+          : null,
+      })),
+    );
     return;
   }
 
@@ -313,10 +340,17 @@ router.get("/matches", async (req, res): Promise<void> => {
       ? baseQuery.offset(off)
       : baseQuery);
 
+  // Overlay tenant-uploaded brands over the register defaults for any opponent
+  // clubs that are themselves tenants (batched, one lookup for the whole page).
+  const overlays = await getOpponentBrandsByAppClubId(
+    rows
+      .map((r) => r.opponentClubId)
+      .filter((id): id is number => id != null),
+  );
+
   res.json(
-    rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubBackgroundColour, opponentClubPrimaryColour, ...rest }) => ({
-      ...rest,
-      opponentClub: toOpponentClub({
+    rows.map(({ opponentClubId, opponentClubName, opponentClubShortName, opponentClubLogoUrl, opponentClubLogoUrl128, opponentClubBackgroundColour, opponentClubPrimaryColour, ...rest }) => {
+      const opponentClub = toOpponentClub({
         opponentClubId,
         opponentClubName,
         opponentClubShortName,
@@ -324,8 +358,14 @@ router.get("/matches", async (req, res): Promise<void> => {
         opponentClubLogoUrl128,
         opponentClubBackgroundColour,
         opponentClubPrimaryColour,
-      }),
-    })),
+      });
+      return {
+        ...rest,
+        opponentClub: opponentClub
+          ? mergeOpponentBrand(opponentClub, overlays.get(opponentClub.id))
+          : null,
+      };
+    }),
   );
 });
 
@@ -362,6 +402,15 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
 
     const { playerCount, ...summary } = card.summary;
     void playerCount;
+    // Overlay the opponent's own uploaded brand (crest/colours) if that club is
+    // a tenant — central.clubs carries no logo, so this is where it comes from.
+    if (summary.opponentClub) {
+      const overlays = await getOpponentBrandsByCentralClubId([summary.opponentClub.id]);
+      summary.opponentClub = mergeOpponentBrand(
+        summary.opponentClub,
+        overlays.get(summary.opponentClub.id),
+      );
+    }
     res.json({
       ...summary,
       clubBattedFirst: card.battedFirst,
