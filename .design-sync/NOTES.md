@@ -90,3 +90,21 @@
   - public/ovation-logo.svg is invalid XML ("--" inside a comment) — fails as <img> in the real app.
   - src/index.css defines NO --sidebar-* tokens, so bg-sidebar* utilities don't exist in compiled
     CSS; sidebar renders on structure + standard tokens only.
+
+## Wave-3 findings (folded)
+
+- Floor-carded on the react-query wall (confirmed at source; unfixable preview-side): WinnerForm
+  (PlayerTypeahead's useListPlayers runs before its early return), CardLayoutEditor, TemplatesCard,
+  WelcomeGuide, AdminShell, CaptainShell, PlatformAdminShell, AdminLayout, Layout, EntitlementGate
+  (its ALL_ON default applies only after useGetTenantPlan runs — trap). Triage rule: read CHILD
+  component imports too — the wall can live one level down.
+- PhotoReposition: component clamps maxHeight:220 which fights CSS aspect-ratio — keep preview
+  wrappers ≤216px wide. SponsorStrip logo row is overflow:hidden (3 logos fit).
+
+## Final state (18 Jul 2026 first sync)
+
+- 366 components imported; 166 authored previews all graded good; 197 floor cards (mostly radix
+  leaf/portal pieces covered by family cards, plus the react-query-walled app components above);
+  render check 366/366 clean; _ds_sync.json anchor uploaded — future syncs skip unchanged work.
+- Expected validate warns on re-sync: [TOKENS_MISSING] 8 runtime vars, [FONT_REMOTE] Google Fonts,
+  floor-card notices. Anything else is new.

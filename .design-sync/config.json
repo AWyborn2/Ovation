@@ -164,5 +164,6 @@
     "SummaryStat": {
       "cardMode": "column"
     }
-  }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
 }
