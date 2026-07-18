@@ -38,6 +38,7 @@ import {
   upsertPlatformBrand,
 } from "../lib/tenant-brand";
 import { invalidateTenantConfigCache } from "../lib/tenant";
+import { invalidateClubBrandOverlayCache } from "../lib/club-brand";
 import { invalidateTenantDirectoryCache } from "../middlewares/tenant-context";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
@@ -392,8 +393,10 @@ router.patch(
       return;
     }
     // Drop the 5-minute brand cache so the club's site reflects the concierge
-    // change on the very next GET /tenant-brand, not up to TTL later.
+    // change on the very next GET /tenant-brand, not up to TTL later — and the
+    // opponent-brand overlay cache so it also updates on other tenants' scorecards.
     invalidateTenantBrandCache(id);
+    invalidateClubBrandOverlayCache();
 
     const admins = await db
       .select({
