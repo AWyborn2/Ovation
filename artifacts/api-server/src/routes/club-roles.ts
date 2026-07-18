@@ -13,27 +13,36 @@ import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
-const orderedSelect = () =>
+const orderedSelect = (tenantId: number) =>
   db
     .select()
     .from(clubRolesTable)
+    .where(eq(clubRolesTable.tenantId, tenantId))
+    .orderBy(
+      desc(clubRolesTable.season),
+      asc(clubRolesTable.displayOrder),
+      asc(clubRolesTable.id),
+    )
+    .$dynamic();
+
+// Public: published role records only.
+router.get("/club-roles", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const rows = await db
+    .select()
+    .from(clubRolesTable)
+    .where(and(eq(clubRolesTable.tenantId, tenantId), eq(clubRolesTable.published, true)))
     .orderBy(
       desc(clubRolesTable.season),
       asc(clubRolesTable.displayOrder),
       asc(clubRolesTable.id),
     );
-
-// Public: published role records only.
-router.get("/club-roles", async (req, res): Promise<void> => {
-  const rows = await orderedSelect().where(
-    and(eq(clubRolesTable.tenantId, getTenantId(req)), eq(clubRolesTable.published, true)),
-  );
   res.json(rows);
 });
 
-// Admin: every role record including unpublished drafts.
-router.get("/club-roles/all", requireAdmin, async (_req, res): Promise<void> => {
-  const rows = await orderedSelect();
+// Admin: every role record including unpublished drafts — for this tenant only.
+router.get("/club-roles/all", requireAdmin, async (req, res): Promise<void> => {
+  const rows = await orderedSelect(getTenantId(req));
   res.json(rows);
 });
 
@@ -46,6 +55,7 @@ router.post("/club-roles", requireAdmin, requireEntitlement("curation"), async (
   const [row] = await db
     .insert(clubRolesTable)
     .values({
+      tenantId: getTenantId(req),
       season: parsed.data.season,
       role: parsed.data.role,
       grade: parsed.data.grade ?? null,
@@ -73,7 +83,7 @@ router.patch("/club-roles/:id", requireAdmin, requireEntitlement("curation"), as
   const [row] = await db
     .update(clubRolesTable)
     .set(body.data)
-    .where(eq(clubRolesTable.id, params.data.id))
+    .where(and(eq(clubRolesTable.tenantId, getTenantId(req)), eq(clubRolesTable.id, params.data.id)))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Club role not found" });
@@ -90,7 +100,7 @@ router.delete("/club-roles/:id", requireAdmin, requireEntitlement("curation"), a
   }
   const [row] = await db
     .delete(clubRolesTable)
-    .where(eq(clubRolesTable.id, params.data.id))
+    .where(and(eq(clubRolesTable.tenantId, getTenantId(req)), eq(clubRolesTable.id, params.data.id)))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Club role not found" });

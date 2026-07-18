@@ -66,10 +66,11 @@ router.get("/team-of-decade-boards", async (req, res): Promise<void> => {
 router.get(
   "/admin/team-of-decade-boards",
   requireAdmin,
-  async (_req, res): Promise<void> => {
+  async (req, res): Promise<void> => {
     const boards = await db
       .select()
       .from(teamOfDecadeBoardsTable)
+      .where(eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)))
       .orderBy(
         asc(teamOfDecadeBoardsTable.displayOrder),
         asc(teamOfDecadeBoardsTable.id),
@@ -92,6 +93,7 @@ router.post(
     const [row] = await db
       .insert(teamOfDecadeBoardsTable)
       .values({
+        tenantId: getTenantId(req),
         key: parsed.data.key,
         title: parsed.data.title,
         teamLabel: parsed.data.teamLabel ?? "",
@@ -123,7 +125,12 @@ router.patch(
     const [row] = await db
       .update(teamOfDecadeBoardsTable)
       .set(body.data)
-      .where(eq(teamOfDecadeBoardsTable.id, params.data.id))
+      .where(
+        and(
+          eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)),
+          eq(teamOfDecadeBoardsTable.id, params.data.id),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Board not found" });
@@ -146,7 +153,12 @@ router.delete(
     }
     const [row] = await db
       .delete(teamOfDecadeBoardsTable)
-      .where(eq(teamOfDecadeBoardsTable.id, params.data.id))
+      .where(
+        and(
+          eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)),
+          eq(teamOfDecadeBoardsTable.id, params.data.id),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Board not found" });
@@ -171,10 +183,16 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    const tenantId = getTenantId(req);
     const [board] = await db
       .select()
       .from(teamOfDecadeBoardsTable)
-      .where(eq(teamOfDecadeBoardsTable.id, params.data.id));
+      .where(
+        and(
+          eq(teamOfDecadeBoardsTable.tenantId, tenantId),
+          eq(teamOfDecadeBoardsTable.id, params.data.id),
+        ),
+      );
     if (!board) {
       res.status(404).json({ error: "Board not found" });
       return;
@@ -182,6 +200,7 @@ router.post(
     const [row] = await db
       .insert(teamOfDecadeMembersTable)
       .values({
+        tenantId,
         boardId: params.data.id,
         playerId: body.data.playerId ?? null,
         name: body.data.name,
@@ -215,7 +234,12 @@ router.patch(
     const [row] = await db
       .update(teamOfDecadeMembersTable)
       .set(body.data)
-      .where(eq(teamOfDecadeMembersTable.id, params.data.id))
+      .where(
+        and(
+          eq(teamOfDecadeMembersTable.tenantId, getTenantId(req)),
+          eq(teamOfDecadeMembersTable.id, params.data.id),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Member not found" });
@@ -237,7 +261,12 @@ router.delete(
     }
     const [row] = await db
       .delete(teamOfDecadeMembersTable)
-      .where(eq(teamOfDecadeMembersTable.id, params.data.id))
+      .where(
+        and(
+          eq(teamOfDecadeMembersTable.tenantId, getTenantId(req)),
+          eq(teamOfDecadeMembersTable.id, params.data.id),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Member not found" });

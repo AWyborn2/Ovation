@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db, nonPlayerPeopleTable } from "@workspace/db";
 import {
   CreatePersonBody,
@@ -33,7 +33,12 @@ router.get("/people/:id", async (req, res): Promise<void> => {
   const [row] = await db
     .select()
     .from(nonPlayerPeopleTable)
-    .where(eq(nonPlayerPeopleTable.id, params.data.id));
+    .where(
+      and(
+        eq(nonPlayerPeopleTable.tenantId, getTenantId(req)),
+        eq(nonPlayerPeopleTable.id, params.data.id),
+      ),
+    );
   if (!row) {
     res.status(404).json({ error: "Person not found" });
     return;
@@ -50,6 +55,7 @@ router.post("/people", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .insert(nonPlayerPeopleTable)
     .values({
+      tenantId: getTenantId(req),
       name: parsed.data.name,
       bio: parsed.data.bio ?? null,
     })
@@ -71,7 +77,12 @@ router.patch("/people/:id", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .update(nonPlayerPeopleTable)
     .set(body.data)
-    .where(eq(nonPlayerPeopleTable.id, params.data.id))
+    .where(
+      and(
+        eq(nonPlayerPeopleTable.tenantId, getTenantId(req)),
+        eq(nonPlayerPeopleTable.id, params.data.id),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Person not found" });
@@ -88,7 +99,12 @@ router.delete("/people/:id", requireAdmin, async (req, res): Promise<void> => {
   }
   const [row] = await db
     .delete(nonPlayerPeopleTable)
-    .where(eq(nonPlayerPeopleTable.id, params.data.id))
+    .where(
+      and(
+        eq(nonPlayerPeopleTable.tenantId, getTenantId(req)),
+        eq(nonPlayerPeopleTable.id, params.data.id),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Person not found" });

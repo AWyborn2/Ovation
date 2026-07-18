@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import {
   db,
   capRegisterTable,
@@ -37,7 +37,7 @@ router.get("/caps", async (req, res): Promise<void> => {
  * debut first: dated debuts (by season, then round) ahead of seeded caps with
  * no match record, with cap number as the tiebreak.
  */
-router.get("/caps/debutants", async (_req, res): Promise<void> => {
+router.get("/caps/debutants", async (req, res): Promise<void> => {
   const caps = await db
     .select({
       capNumber: capRegisterTable.capNumber,
@@ -46,7 +46,12 @@ router.get("/caps/debutants", async (_req, res): Promise<void> => {
       playerId: capRegisterTable.playerId,
     })
     .from(capRegisterTable)
-    .where(isNotNull(capRegisterTable.playerId));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, getTenantId(req)),
+        isNotNull(capRegisterTable.playerId),
+      ),
+    );
 
   const grades = Object.values(CAP_CATEGORY_TO_GRADE);
   const lines = await db
@@ -159,6 +164,7 @@ router.post("/caps", requireAdmin, requireEntitlement("curation"), async (req, r
       const [created] = await tx
         .insert(capRegisterTable)
         .values({
+          tenantId: getTenantId(req),
           capNumber: parsed.data.capNumber,
           category,
           name: parsed.data.name,
@@ -212,7 +218,12 @@ router.patch("/caps/:id", requireAdmin, requireEntitlement("curation"), async (r
       const [updatedRow] = await tx
         .update(capRegisterTable)
         .set(body.data)
-        .where(eq(capRegisterTable.id, params.data.id))
+        .where(
+          and(
+            eq(capRegisterTable.tenantId, getTenantId(req)),
+            eq(capRegisterTable.id, params.data.id),
+          ),
+        )
         .returning();
       if (!updatedRow) return null;
 
@@ -274,7 +285,12 @@ router.delete("/caps/:id", requireAdmin, requireEntitlement("curation"), async (
   }
   const [row] = await db
     .delete(capRegisterTable)
-    .where(eq(capRegisterTable.id, params.data.id))
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, getTenantId(req)),
+        eq(capRegisterTable.id, params.data.id),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Cap entry not found" });
