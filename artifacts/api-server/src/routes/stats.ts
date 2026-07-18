@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, desc, asc, count, and, isNull } from "drizzle-orm";
+import { eq, ilike, or, desc, asc, count, and, isNull, lt } from "drizzle-orm";
 import {
   db,
   playerGradeStatsTable,
@@ -16,13 +16,32 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
+import { shouldReadCentral } from "../lib/tenant";
 
 const router: IRouter = Router();
+
+const FILL_IN_FLOOR = 90000;
+
+// The /stats CRUD surface curates the NATIVE snapshot tables
+// (player_grade_season_stats → player_grade_stats), which hold only the demo
+// tenant's (Halls Head) data. Central-read tenants have no native snapshots:
+// reads fail closed (empty list / 404) and writes are rejected so another
+// tenant's admin can never see or mutate the demo club's stats.
 
 router.get("/stats", async (req, res): Promise<void> => {
   const query = ListStatsQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
+    return;
+  }
+
+  if (await shouldReadCentral(req)) {
+    res.json({
+      stats: [],
+      total: 0,
+      page: Number(query.data.page ?? 1),
+      limit: Number(query.data.limit ?? 20),
+    });
     return;
   }
 
@@ -40,7 +59,10 @@ router.get("/stats", async (req, res): Promise<void> => {
   const offset = (Number(page) - 1) * Number(limit);
   const lim = Number(limit);
 
-  const conditions = [];
+  // Fill-ins (playerId >= 90000) are excluded from every stats derivation.
+  const conditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
+    lt(playerGradeStatsTable.playerId, FILL_IN_FLOOR),
+  ];
   if (search) {
     conditions.push(
       or(
@@ -150,6 +172,10 @@ function pickSnapshotFields(src: Record<string, unknown>): SnapshotPatch {
 }
 
 router.post("/stats", requireAdmin, async (req, res): Promise<void> => {
+  if (await shouldReadCentral(req)) {
+    res.status(403).json({ error: "Stats are read from the central database for this tenant" });
+    return;
+  }
   const parsed = CreateStatBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -196,6 +222,10 @@ router.get("/stats/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (await shouldReadCentral(req)) {
+    res.status(404).json({ error: "Stat not found" });
+    return;
+  }
   const [stat] = await db
     .select()
     .from(playerGradeStatsTable)
@@ -208,6 +238,10 @@ router.get("/stats/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/stats/:id", requireAdmin, async (req, res): Promise<void> => {
+  if (await shouldReadCentral(req)) {
+    res.status(403).json({ error: "Stats are read from the central database for this tenant" });
+    return;
+  }
   const params = UpdateStatParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -263,6 +297,10 @@ router.patch("/stats/:id", requireAdmin, async (req, res): Promise<void> => {
 });
 
 router.delete("/stats/:id", requireAdmin, async (req, res): Promise<void> => {
+  if (await shouldReadCentral(req)) {
+    res.status(403).json({ error: "Stats are read from the central database for this tenant" });
+    return;
+  }
   const params = DeleteStatParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

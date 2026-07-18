@@ -71,7 +71,12 @@ router.patch("/honour-boards/:key", requireAdmin, requireEntitlement("curation")
   const [row] = await db
     .update(honourBoardsTable)
     .set(body.data)
-    .where(eq(honourBoardsTable.key, params.data.key))
+    .where(
+      and(
+        eq(honourBoardsTable.tenantId, getTenantId(req)),
+        eq(honourBoardsTable.key, params.data.key),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Honour board not found" });
@@ -89,7 +94,12 @@ router.delete("/honour-boards/:key", requireAdmin, requireEntitlement("curation"
   const [row] = await db
     .update(honourBoardsTable)
     .set({ deletedAt: new Date() })
-    .where(eq(honourBoardsTable.key, params.data.key))
+    .where(
+      and(
+        eq(honourBoardsTable.tenantId, getTenantId(req)),
+        eq(honourBoardsTable.key, params.data.key),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Honour board not found" });
@@ -107,7 +117,12 @@ router.get("/honour-boards/:key/overrides", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(honourBoardOverridesTable)
-    .where(eq(honourBoardOverridesTable.boardKey, params.data.key));
+    .where(
+      and(
+        eq(honourBoardOverridesTable.tenantId, getTenantId(req)),
+        eq(honourBoardOverridesTable.boardKey, params.data.key),
+      ),
+    );
   res.json(rows);
 });
 
@@ -127,6 +142,7 @@ router.post(
       return;
     }
     const values = {
+      tenantId: getTenantId(req),
       boardKey: params.data.key,
       playerId: body.data.playerId,
       pinned: body.data.pinned ?? false,
@@ -166,6 +182,7 @@ router.delete(
       .delete(honourBoardOverridesTable)
       .where(
         and(
+          eq(honourBoardOverridesTable.tenantId, getTenantId(req)),
           eq(honourBoardOverridesTable.boardKey, params.data.key),
           eq(honourBoardOverridesTable.playerId, params.data.playerId),
         ),

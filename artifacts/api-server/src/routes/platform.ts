@@ -15,6 +15,7 @@ import {
   SESSION_COOKIE,
 } from "../lib/auth";
 import { platformBaseDomain } from "../lib/tenant-url";
+import { invalidateTenantDirectoryCache } from "../middlewares/tenant-context";
 import {
   signupRateLimiter,
   signupDiscoveryRateLimiter,
@@ -175,6 +176,11 @@ router.post(
       // new tenant's own subdomain, a different host from the one setting it.
       const token = encodeSession({ adminId: admin.id, issuedAt: Date.now() });
       res.cookie(SESSION_COOKIE, token, signupSessionCookieOpts(req));
+
+      // The new tenant's slug must resolve on its subdomain right away (the
+      // response redirects the browser straight there); without this the fresh
+      // host misses the directory and serves the demo tenant for up to 5 min.
+      invalidateTenantDirectoryCache();
 
       const apex = platformBaseDomain(req);
       res.status(201).json({

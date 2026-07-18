@@ -3,23 +3,10 @@ import { eq } from "drizzle-orm";
 import { db, tourContentTable } from "@workspace/db";
 import { UpdateTourContentBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
+import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
-
-const TOUR_CONTENT_ID = 1;
-
-async function ensureTourContent() {
-  const [existing] = await db
-    .select()
-    .from(tourContentTable)
-    .where(eq(tourContentTable.id, TOUR_CONTENT_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(tourContentTable)
-    .values({ id: TOUR_CONTENT_ID })
-    .returning();
-  return created;
-}
 
 function serializeTourContent(row: typeof tourContentTable.$inferSelect) {
   return {
@@ -30,8 +17,8 @@ function serializeTourContent(row: typeof tourContentTable.$inferSelect) {
   };
 }
 
-router.get("/tour-content", async (_req, res): Promise<void> => {
-  const content = await ensureTourContent();
+router.get("/tour-content", async (req, res): Promise<void> => {
+  const content = await getOrCreateSettings(tourContentTable, getTenantId(req));
   res.json(serializeTourContent(content));
 });
 
@@ -44,11 +31,12 @@ router.patch(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    await ensureTourContent();
+    const tenantId = getTenantId(req);
+    await getOrCreateSettings(tourContentTable, tenantId);
     const [row] = await db
       .update(tourContentTable)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(tourContentTable.id, TOUR_CONTENT_ID))
+      .where(eq(tourContentTable.tenantId, tenantId))
       .returning();
     res.json(serializeTourContent(row));
   },

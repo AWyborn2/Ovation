@@ -46,9 +46,10 @@ describe("admin-tenant-shape: brandingComplete derivation", () => {
     expect(out.brandingComplete).toBe(false);
   });
 
-  it("is false when the primary colour is missing", () => {
+  it("is false when the background colour is missing", () => {
+    // brandingComplete gates on logo + background colour (admin-tenant-shape.ts).
     const out = toAdminTenant(
-      tenantRow({ logoUrl: "https://x/y.png", primaryColour: null }),
+      tenantRow({ logoUrl: "https://x/y.png", backgroundColour: null }),
       null,
       0,
     );
@@ -57,7 +58,7 @@ describe("admin-tenant-shape: brandingComplete derivation", () => {
 
   it("is false when both are missing", () => {
     const out = toAdminTenant(
-      tenantRow({ logoUrl: null, primaryColour: null }),
+      tenantRow({ logoUrl: null, backgroundColour: null }),
       null,
       0,
     );

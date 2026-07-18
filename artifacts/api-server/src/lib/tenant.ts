@@ -19,21 +19,44 @@ import {
  *   blanks another that relies on its native tables.
  *
  * Reads the tenants register (the tenant db, always available), cached briefly to
- * avoid a lookup on every stats request. Falls back to Halls Head's native config
- * (club 1, native) if the row is missing, so a misconfigured tenant degrades to
- * the demo rather than erroring.
+ * avoid a lookup on every stats request.
+ *
+ * FAIL CLOSED: if the tenant row is missing we throw rather than defaulting to
+ * Halls Head's config — silently degrading to `{club 1, native}` served the
+ * entire demo dataset under another club's brand (the Mandurah leak). A
+ * misconfigured/unprovisioned tenant must error, never impersonate the demo.
+ * The cache is invalidated by {@link invalidateTenantConfigCache} whenever a
+ * platform admin changes a tenant's plan / central club / data source.
  */
 
-const HALLS_HEAD_CENTRAL_CLUB_ID = 1;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+/** Thrown when a request resolves to a tenant id with no tenants row. */
+export class TenantNotFoundError extends Error {
+  readonly status = 404;
+  constructor(readonly tenantId: number) {
+    super(`No tenant configured for id ${tenantId}`);
+    this.name = "TenantNotFoundError";
+  }
+}
+
 interface TenantConfig {
-  centralClubId: number;
+  centralClubId: number | null;
   readsFromCentral: boolean;
   plan: Plan;
 }
 
 const cache = new Map<number, { cfg: TenantConfig; at: number }>();
+
+/**
+ * Drop cached tenant config so the next read reflects a just-changed row. Pass a
+ * tenant id to clear one entry, or omit to clear all. Call after any write that
+ * changes `plan`, `central_club_id` or `reads_from_central`.
+ */
+export function invalidateTenantConfigCache(tenantId?: number): void {
+  if (tenantId === undefined) cache.clear();
+  else cache.delete(tenantId);
+}
 
 async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
   const hit = cache.get(tenantId);
@@ -48,10 +71,12 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
     .from(tenantsTable)
     .where(eq(tenantsTable.id, tenantId));
 
+  if (!row) throw new TenantNotFoundError(tenantId);
+
   const cfg: TenantConfig = {
-    centralClubId: row?.centralClubId ?? HALLS_HEAD_CENTRAL_CLUB_ID,
-    readsFromCentral: row?.readsFromCentral ?? false,
-    plan: planFromString(row?.plan),
+    centralClubId: row.centralClubId ?? null,
+    readsFromCentral: row.readsFromCentral ?? false,
+    plan: planFromString(row.plan),
   };
   cache.set(tenantId, { cfg, at: Date.now() });
   return cfg;
@@ -70,8 +95,25 @@ export async function getRequestEntitlements(
   return { plan, entitlements: entitlementsFor(plan) };
 }
 
+/**
+ * Whether a tenant reads its stats from the central PCA DB (vs native tables).
+ * The by-id form of {@link shouldReadCentral} for pipeline code that has a
+ * tenant id but no request (e.g. round-up generation). Honours the
+ * `CENTRAL_READS=0` global kill-switch.
+ */
+export async function tenantReadsFromCentral(tenantId: number): Promise<boolean> {
+  if (process.env.CENTRAL_READS === "0") return false;
+  return (await getTenantConfig(tenantId)).readsFromCentral;
+}
+
 export async function getTenantCentralClubId(tenantId: number): Promise<number> {
-  return (await getTenantConfig(tenantId)).centralClubId;
+  const { centralClubId } = await getTenantConfig(tenantId);
+  if (centralClubId === null) {
+    // A central-read tenant with no club id can't be filtered — fail closed
+    // rather than fall back to a default club (which would leak that club).
+    throw new TenantNotFoundError(tenantId);
+  }
+  return centralClubId;
 }
 
 /** The central club id for the current request's tenant. */

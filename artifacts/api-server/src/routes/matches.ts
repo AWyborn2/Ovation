@@ -23,8 +23,9 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantBrand } from "../lib/tenant-brand";
-import { DEFAULT_TENANT_ID, getTenantId } from "../middlewares/tenant-context";
+import { getTenantId } from "../middlewares/tenant-context";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { getOrCreateSettings } from "../lib/settings";
 
 /** Split a central display name into given/surname (surname = last token). */
 function splitCentralName(displayName: string | null): { givenName: string; surname: string } {
@@ -36,46 +37,12 @@ function splitCentralName(displayName: string | null): { givenName: string; surn
 
 const router: IRouter = Router();
 
-const DISPLAY_SETTINGS_ID = 1;
-
-// Short-TTL cache for the single match-display-settings row (id=1). Mirrors the
-// tenant-config cache pattern in `lib/tenant.ts`: a single row that changes only
-// via its own admin PATCH route below, so a brief cache avoids a select (and
-// possible insert) on every /matches list request. The PATCH route refreshes
-// this cache immediately on write so an admin's change takes effect without
-// waiting out the TTL.
-const DISPLAY_SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
-let displaySettingsCache: {
-  value: typeof matchDisplaySettingsTable.$inferSelect;
-  at: number;
-} | null = null;
-
-async function ensureMatchDisplaySettings() {
-  if (
-    displaySettingsCache &&
-    Date.now() - displaySettingsCache.at < DISPLAY_SETTINGS_CACHE_TTL_MS
-  ) {
-    return displaySettingsCache.value;
-  }
-  const [existing] = await db
-    .select()
-    .from(matchDisplaySettingsTable)
-    .where(eq(matchDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
-  if (existing) {
-    displaySettingsCache = { value: existing, at: Date.now() };
-    return existing;
-  }
-  const [created] = await db
-    .insert(matchDisplaySettingsTable)
-    .values({ id: DISPLAY_SETTINGS_ID })
-    .returning();
-  displaySettingsCache = { value: created, at: Date.now() };
-  return created;
-}
-
-/** Drop the cached match-display-settings row (tests; or after a direct DB write). */
-export function clearMatchDisplaySettingsCache(): void {
-  displaySettingsCache = null;
+// Per-tenant match-display settings (one row per tenant, unique on tenantId),
+// created with schema defaults on first access. Was a single global id=1 row +
+// module cache, which meant one tenant's admin PATCH reshaped every tenant's
+// public Matches page. The indexed per-tenant lookup replaces the cache.
+function ensureMatchDisplaySettings(tenantId: number) {
+  return getOrCreateSettings(matchDisplaySettingsTable, tenantId);
 }
 
 function serializeMatchDisplaySettings(
@@ -126,7 +93,7 @@ function toOpponentClub(row: OpponentClubRow) {
   };
 }
 
-async function loadMatchDetail(matchId: number) {
+async function loadMatchDetail(matchId: number, tenantId: number) {
   const [match] = await db
     .select({
       id: matchesTable.id,
@@ -213,9 +180,10 @@ async function loadMatchDetail(matchId: number) {
     .from(matchHatTricksTable)
     .where(eq(matchHatTricksTable.matchId, matchId));
 
-  // req-less builder → default tenant. The DTO field stays `hallsHead` for now
-  // (renaming it ripples through the OpenAPI spec + generated types).
-  const hallsHead = await getTenantBrand(DEFAULT_TENANT_ID);
+  // Brand the DTO with the REQUEST's tenant, not a hard-coded demo tenant. The
+  // DTO field stays `hallsHead` for now (renaming it ripples through the OpenAPI
+  // spec + generated types).
+  const hallsHead = await getTenantBrand(tenantId);
 
   return {
     id: match.id,
@@ -286,7 +254,7 @@ router.get("/matches", async (req, res): Promise<void> => {
   conditions.push(notEmptyFixture);
 
   // Within-season round direction is admin-configurable; season stays newest-first.
-  const settings = await ensureMatchDisplaySettings();
+  const settings = await ensureMatchDisplaySettings(getTenantId(req));
   const roundDir = settings.roundOrder === "asc" ? asc : desc;
   const idDir = settings.roundOrder === "asc" ? asc : desc;
   // Finals carry no round number (round IS NULL) so they cluster together; order
@@ -458,7 +426,7 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const detail = await loadMatchDetail(params.data.id);
+  const detail = await loadMatchDetail(params.data.id, getTenantId(req));
   if (!detail) {
     res.status(404).json({ error: "Match not found" });
     return;
@@ -559,7 +527,7 @@ router.patch(
       }
     }
 
-    const detail = await loadMatchDetail(match.id);
+    const detail = await loadMatchDetail(match.id, getTenantId(req));
     res.json(detail);
   },
 );
@@ -620,13 +588,13 @@ router.post(
         .where(eq(matchHatTricksTable.id, existing.id));
     }
 
-    const detail = await loadMatchDetail(matchId);
+    const detail = await loadMatchDetail(matchId, getTenantId(req));
     res.json(detail);
   },
 );
 
-router.get("/match-display-settings", async (_req, res): Promise<void> => {
-  const settings = await ensureMatchDisplaySettings();
+router.get("/match-display-settings", async (req, res): Promise<void> => {
+  const settings = await ensureMatchDisplaySettings(getTenantId(req));
   res.json(serializeMatchDisplaySettings(settings));
 });
 
@@ -639,14 +607,13 @@ router.patch(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    await ensureMatchDisplaySettings();
+    const tenantId = getTenantId(req);
+    await ensureMatchDisplaySettings(tenantId);
     const [row] = await db
       .update(matchDisplaySettingsTable)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(matchDisplaySettingsTable.id, DISPLAY_SETTINGS_ID))
+      .where(eq(matchDisplaySettingsTable.tenantId, tenantId))
       .returning();
-    // Refresh (not just clear) so the very next read is already up to date.
-    displaySettingsCache = { value: row, at: Date.now() };
     res.json(serializeMatchDisplaySettings(row));
   },
 );

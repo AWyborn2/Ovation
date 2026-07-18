@@ -26,6 +26,20 @@ export type RequestWithTenant = Request & {
 };
 
 /**
+ * Thrown when a tenant-scoped route is reached on the platform/marketing surface
+ * (apex host, an unknown public host, or a real tenant host during a DB outage),
+ * where there is no tenant to serve. Fails closed with a 404 instead of quietly
+ * defaulting to the demo tenant (#1) and leaking its data on the wrong URL.
+ */
+export class NoTenantContextError extends Error {
+  readonly status = 404;
+  constructor() {
+    super("No tenant for this request");
+    this.name = "NoTenantContextError";
+  }
+}
+
+/**
  * The apex/marketing hosts that serve the platform landing page rather than any
  * tenant's club app. Configured via `PLATFORM_HOSTS` (comma-separated, e.g.
  * `ovation.app,www.ovation.app`). When a request host matches one of these AND no
@@ -69,6 +83,16 @@ const DIRECTORY_TTL_MS = 5 * 60 * 1000;
 let directoryCache:
   | { at: number; bySlug: Map<string, number>; byDomain: Map<string, number> }
   | null = null;
+
+/**
+ * Drop the cached tenant host directory so the next request rebuilds it from the
+ * tenants table. Call after provisioning a tenant or changing its slug / custom
+ * domain — otherwise a brand-new tenant host resolves as non-tenant (and falls
+ * back to the demo tenant) until the 5-minute TTL expires.
+ */
+export function invalidateTenantDirectoryCache(): void {
+  directoryCache = null;
+}
 
 /** Tenant host directory (slug + custom domain → id), cached briefly. */
 async function tenantDirectory() {
@@ -171,9 +195,28 @@ function isPublishedReplitHost(host: string): boolean {
 }
 
 /**
+ * Local development hosts where the demo-tenant fallback (header → env →
+ * default) is appropriate: loopback and empty host (curl / native fetch /
+ * supertest), plus `.replit.dev` previews. A PUBLIC host that matches nothing
+ * must NOT fall through to the demo tenant — it gets platform mode instead, so
+ * a typo'd subdomain or a real tenant host during a DB outage never serves the
+ * demo club's data under the wrong URL.
+ */
+function isLocalDevHost(host: string): boolean {
+  return (
+    host === "" ||
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host.endsWith(".localhost") ||
+    isPreviewHost(host)
+  );
+}
+
+/**
  * DB-free classification for a host that matched no tenant. Also the degraded
- * path when the tenant directory is unavailable, so a platform host keeps its
- * landing surface during a DB outage instead of re-serving the default
+ * path when the tenant directory is unavailable, so a platform/unknown host
+ * keeps its landing surface during a DB outage instead of re-serving the demo
  * tenant's brand.
  */
 export function classifyNonTenantHost(req: Request): HostMode {
@@ -193,7 +236,16 @@ export function classifyNonTenantHost(req: Request): HostMode {
 
   if (platformHosts().has(host)) return { mode: "platform" };
   if (isPublishedReplitHost(host)) return { mode: "platform" };
-  return { mode: "fallback" };
+
+  // Local/dev hosts keep the demo-tenant fallback (header → env → default) so
+  // localhost, previews and curl still land on a tenant. An explicit
+  // DEFAULT_TENANT_ID env means the operator chose a single-tenant default for
+  // any host. Everything else — an unknown PUBLIC host — is platform mode, NOT
+  // the demo tenant: fail closed rather than leak tenant #1.
+  if (isLocalDevHost(host) || process.env.DEFAULT_TENANT_ID) {
+    return { mode: "fallback" };
+  }
+  return { mode: "platform" };
 }
 
 export async function resolveHostMode(req: Request): Promise<HostMode> {
@@ -214,15 +266,22 @@ export const tenantContext: RequestHandler = (
   _res: Response,
   next: NextFunction,
 ): void => {
+  const apply = (r: RequestWithTenant, hm: HostMode): void => {
+    if (hm.mode === "tenant") {
+      r.tenantId = hm.tenantId;
+    } else if (hm.mode === "fallback") {
+      // Dev/single-tenant default (localhost, previews, DEFAULT_TENANT_ID env).
+      r.tenantId = resolveTenantId(req);
+    } else {
+      // Platform mode: the marketing surface or an unknown/outage public host.
+      // Carry NO tenant id — a tenant-scoped route that calls getTenantId() then
+      // fails closed (404) instead of serving the demo tenant on the wrong host.
+      r.platform = true;
+    }
+  };
   resolveHostMode(req)
     .then((hm) => {
-      const r = req as RequestWithTenant;
-      if (hm.mode === "tenant") {
-        r.tenantId = hm.tenantId;
-      } else {
-        r.platform = hm.mode === "platform";
-        r.tenantId = resolveTenantId(req);
-      }
+      apply(req as RequestWithTenant, hm);
       next();
     })
     .catch((err) => {
@@ -230,14 +289,7 @@ export const tenantContext: RequestHandler = (
       // DB-free, so classify without it. A real tenant host degrades to the
       // platform landing for the outage — never to another tenant's brand.
       req.log?.warn?.({ err }, "tenant host resolution failed; using DB-free host classification");
-      const r = req as RequestWithTenant;
-      const hm = classifyNonTenantHost(req);
-      if (hm.mode === "tenant") {
-        r.tenantId = hm.tenantId;
-      } else {
-        r.platform = hm.mode === "platform";
-        r.tenantId = resolveTenantId(req);
-      }
+      apply(req as RequestWithTenant, classifyNonTenantHost(req));
       next();
     });
 };
@@ -249,9 +301,14 @@ export function isPlatformRequest(req: Request): boolean {
 
 /**
  * Read the tenant id for the current request. Returns the value attached by
- * {@link tenantContext}; if the middleware hasn't run (e.g. a unit test), it
+ * {@link tenantContext}. On the platform/marketing surface (no tenant) it throws
+ * {@link NoTenantContextError} so tenant-scoped routes fail closed rather than
+ * serving the demo tenant. If the middleware hasn't run (e.g. a unit test), it
  * falls back to the non-host resolution so callers always get a valid id.
  */
 export function getTenantId(req: Request): number {
-  return (req as RequestWithTenant).tenantId ?? resolveTenantId(req);
+  const r = req as RequestWithTenant;
+  if (r.tenantId !== undefined) return r.tenantId;
+  if (r.platform === true) throw new NoTenantContextError();
+  return resolveTenantId(req);
 }

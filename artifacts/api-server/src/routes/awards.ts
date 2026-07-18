@@ -52,11 +52,13 @@ router.get("/awards", async (req, res): Promise<void> => {
   res.json(awards.map((a) => ({ ...a, winners: byAward.get(a.id) ?? [] })));
 });
 
-// Admin: every award (incl. drafts) with every winner (incl. unpublished).
-router.get("/admin/awards", requireAdmin, async (_req, res): Promise<void> => {
+// Admin: every award (incl. drafts) with every winner (incl. unpublished) —
+// scoped to the requesting tenant so one club's console never lists another's.
+router.get("/admin/awards", requireAdmin, async (req, res): Promise<void> => {
   const awards = await db
     .select()
     .from(awardsTable)
+    .where(eq(awardsTable.tenantId, getTenantId(req)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
   const byAward = await loadWinners(awards.map((a) => a.id), false);
@@ -72,6 +74,7 @@ router.post("/awards", requireAdmin, requireEntitlement("curation"), async (req,
   const [row] = await db
     .insert(awardsTable)
     .values({
+      tenantId: getTenantId(req),
       key: parsed.data.key,
       title: parsed.data.title,
       description: parsed.data.description ?? "",
@@ -99,7 +102,7 @@ router.patch("/awards/:id", requireAdmin, requireEntitlement("curation"), async 
   const [row] = await db
     .update(awardsTable)
     .set(body.data)
-    .where(eq(awardsTable.id, params.data.id))
+    .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.id, params.data.id)))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Award not found" });
@@ -117,7 +120,7 @@ router.delete("/awards/:id", requireAdmin, requireEntitlement("curation"), async
   }
   const [row] = await db
     .delete(awardsTable)
-    .where(eq(awardsTable.id, params.data.id))
+    .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.id, params.data.id)))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Award not found" });
@@ -141,10 +144,11 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    const tenantId = getTenantId(req);
     const [award] = await db
       .select()
       .from(awardsTable)
-      .where(eq(awardsTable.id, params.data.id));
+      .where(and(eq(awardsTable.tenantId, tenantId), eq(awardsTable.id, params.data.id)));
     if (!award) {
       res.status(404).json({ error: "Award not found" });
       return;
@@ -152,6 +156,7 @@ router.post(
     const [row] = await db
       .insert(awardWinnersTable)
       .values({
+        tenantId,
         awardId: params.data.id,
         season: body.data.season,
         playerId: body.data.playerId ?? null,
@@ -182,7 +187,12 @@ router.patch(
     const [row] = await db
       .update(awardWinnersTable)
       .set(body.data)
-      .where(eq(awardWinnersTable.id, params.data.id))
+      .where(
+        and(
+          eq(awardWinnersTable.tenantId, getTenantId(req)),
+          eq(awardWinnersTable.id, params.data.id),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Winner not found" });
@@ -204,7 +214,12 @@ router.delete(
     }
     const [row] = await db
       .delete(awardWinnersTable)
-      .where(eq(awardWinnersTable.id, params.data.id))
+      .where(
+        and(
+          eq(awardWinnersTable.tenantId, getTenantId(req)),
+          eq(awardWinnersTable.id, params.data.id),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Winner not found" });

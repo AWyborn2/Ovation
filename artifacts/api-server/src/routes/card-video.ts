@@ -4,6 +4,7 @@ import { stat } from "node:fs/promises";
 import { CreateCardVideoJobBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
+import { getTenantId } from "../middlewares/tenant-context";
 import { createJob, getJob, publicJob } from "../lib/card-video-jobs";
 
 const router: IRouter = Router();
@@ -22,7 +23,7 @@ router.post(
       return;
     }
     const { input, options, fps } = parsed.data;
-    const job = createJob(input, options, fps ?? undefined);
+    const job = createJob(getTenantId(req), input, options, fps ?? undefined);
     res.status(201).json(publicJob(job));
   },
 );
@@ -33,7 +34,9 @@ router.get(
   requireAdmin,
   async (req, res): Promise<void> => {
     const job = getJob(String(req.params.id));
-    if (!job) {
+    // Scope by tenant so a job UUID leaked from another club (logs, a shared
+    // screenshot) can't be polled or downloaded across tenants.
+    if (!job || job.tenantId !== getTenantId(req)) {
       res.status(404).json({ error: "Unknown job" });
       return;
     }
@@ -47,7 +50,7 @@ router.get(
   requireAdmin,
   async (req, res): Promise<void> => {
     const job = getJob(String(req.params.id));
-    if (!job || job.status !== "done" || !job.filePath) {
+    if (!job || job.tenantId !== getTenantId(req) || job.status !== "done" || !job.filePath) {
       res.status(404).json({ error: "Unknown job or not yet finished" });
       return;
     }

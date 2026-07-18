@@ -37,6 +37,8 @@ import {
   getPlatformBrandFields,
   upsertPlatformBrand,
 } from "../lib/tenant-brand";
+import { invalidateTenantConfigCache } from "../lib/tenant";
+import { invalidateTenantDirectoryCache } from "../middlewares/tenant-context";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
@@ -293,6 +295,11 @@ router.patch(
       res.status(404).json({ error: "No such tenant" });
       return;
     }
+    // Plan / data-source / club changes must take effect now, not after the
+    // 5-minute config-cache TTL; a custom-domain change invalidates the host
+    // directory so the new domain resolves immediately.
+    invalidateTenantConfigCache(id);
+    if (updates.customDomain !== undefined) invalidateTenantDirectoryCache();
     const [names, counts] = await Promise.all([
       centralClubNames(),
       adminCountsByTenant(),
@@ -463,6 +470,11 @@ router.post(
           passwordHash,
         });
       }
+
+      // A brand-new tenant's slug must resolve on its subdomain immediately, not
+      // after the directory cache's 5-minute TTL (else its first visitors get
+      // the demo tenant's site).
+      invalidateTenantDirectoryCache();
 
       const counts = await adminCountsByTenant();
       res

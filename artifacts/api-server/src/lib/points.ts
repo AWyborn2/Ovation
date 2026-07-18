@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, lt } from "drizzle-orm";
 import {
   db,
   playersTable,
@@ -99,13 +99,22 @@ export async function computeLeaderboard(
   config: AwardPointsConfigRow,
   grade: string,
 ): Promise<ComputedLeaderboard> {
+  // Fill-ins (playerId >= 90000) are excluded from every stats derivation
+  // (replit.md Gotcha) — a fill-in must never accrue award points.
+  const excludeFillIns = lt(matchPlayerLinesTable.playerId, 90000);
   const matchWhere = config.includeFinals
-    ? and(eq(matchesTable.grade, grade), eq(matchesTable.season, config.season), eq(matchesTable.abandoned, false))
+    ? and(
+        eq(matchesTable.grade, grade),
+        eq(matchesTable.season, config.season),
+        eq(matchesTable.abandoned, false),
+        excludeFillIns,
+      )
     : and(
         eq(matchesTable.grade, grade),
         eq(matchesTable.season, config.season),
         eq(matchesTable.abandoned, false),
         isNull(matchesTable.stage),
+        excludeFillIns,
       );
 
   const lines = await db

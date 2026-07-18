@@ -18,6 +18,7 @@ import {
   FinalisePointsConfigParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 import {
   computeLeaderboard,
   configCategories,
@@ -26,6 +27,25 @@ import {
 } from "../lib/points";
 
 const router: IRouter = Router();
+
+/**
+ * award_points_config has no tenant_id — tenancy is inherited from the parent
+ * award. Returns true when the config's award belongs to the tenant, so admin
+ * mutations keyed on a bare config id can't reach across clubs.
+ */
+async function configTenantOk(configId: number, tenantId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ id: awardsTable.id })
+    .from(awardPointsConfigTable)
+    .innerJoin(awardsTable, eq(awardsTable.id, awardPointsConfigTable.awardId))
+    .where(
+      and(
+        eq(awardPointsConfigTable.id, configId),
+        eq(awardsTable.tenantId, tenantId),
+      ),
+    );
+  return !!row;
+}
 
 function serializeConfig(c: AwardPointsConfigRow) {
   return {
@@ -96,6 +116,14 @@ router.get("/awards/:id/points-config", requireAdmin, async (req, res): Promise<
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [award] = await db
+    .select({ id: awardsTable.id })
+    .from(awardsTable)
+    .where(and(eq(awardsTable.id, params.data.id), eq(awardsTable.tenantId, getTenantId(req))));
+  if (!award) {
+    res.status(404).json({ error: "Award not found" });
+    return;
+  }
   const rows = await db
     .select()
     .from(awardPointsConfigTable)
@@ -115,7 +143,10 @@ router.post("/awards/:id/points-config", requireAdmin, async (req, res): Promise
     res.status(400).json({ error: body.error.message });
     return;
   }
-  const [award] = await db.select().from(awardsTable).where(eq(awardsTable.id, params.data.id));
+  const [award] = await db
+    .select()
+    .from(awardsTable)
+    .where(and(eq(awardsTable.id, params.data.id), eq(awardsTable.tenantId, getTenantId(req))));
   if (!award) {
     res.status(404).json({ error: "Award not found" });
     return;
@@ -162,6 +193,10 @@ router.patch("/points-configs/:id", requireAdmin, async (req, res): Promise<void
     res.status(400).json({ error: body.error.message });
     return;
   }
+  if (!(await configTenantOk(params.data.id, getTenantId(req)))) {
+    res.status(404).json({ error: "Config not found" });
+    return;
+  }
   const patch: Partial<AwardPointsConfigRow> = {};
   if (body.data.includeFinals !== undefined) patch.includeFinals = body.data.includeFinals;
   if (body.data.leaderboardVisible !== undefined) {
@@ -200,6 +235,10 @@ router.delete("/points-configs/:id", requireAdmin, async (req, res): Promise<voi
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!(await configTenantOk(params.data.id, getTenantId(req)))) {
+    res.status(404).json({ error: "Config not found" });
+    return;
+  }
   const [row] = await db
     .delete(awardPointsConfigTable)
     .where(eq(awardPointsConfigTable.id, params.data.id))
@@ -225,7 +264,10 @@ router.get("/points-configs/:id/leaderboard", requireAdmin, async (req, res): Pr
     res.status(404).json({ error: "Config not found" });
     return;
   }
-  const [award] = await db.select().from(awardsTable).where(eq(awardsTable.id, config.awardId));
+  const [award] = await db
+    .select()
+    .from(awardsTable)
+    .where(and(eq(awardsTable.id, config.awardId), eq(awardsTable.tenantId, getTenantId(req))));
   if (!award) {
     res.status(404).json({ error: "Award not found" });
     return;
@@ -247,7 +289,10 @@ router.post("/points-configs/:id/finalise", requireAdmin, async (req, res): Prom
     res.status(404).json({ error: "Config not found" });
     return;
   }
-  const [award] = await db.select().from(awardsTable).where(eq(awardsTable.id, config.awardId));
+  const [award] = await db
+    .select()
+    .from(awardsTable)
+    .where(and(eq(awardsTable.id, config.awardId), eq(awardsTable.tenantId, getTenantId(req))));
   if (!award) {
     res.status(404).json({ error: "Award not found" });
     return;
@@ -273,6 +318,7 @@ router.post("/points-configs/:id/finalise", requireAdmin, async (req, res): Prom
   if (winnerPlayerIds.length > 0) {
     await db.insert(awardWinnersTable).values(
       winnerPlayerIds.map((playerId, i) => ({
+        tenantId: award.tenantId,
         awardId: award.id,
         season: config.season,
         playerId,
@@ -301,7 +347,7 @@ router.post("/points-configs/:id/finalise", requireAdmin, async (req, res): Prom
 
 // ---- Public: visible leaderboards ----
 
-router.get("/award-points", async (_req, res): Promise<void> => {
+router.get("/award-points", async (req, res): Promise<void> => {
   const configs = await db
     .select()
     .from(awardPointsConfigTable)
@@ -310,7 +356,13 @@ router.get("/award-points", async (_req, res): Promise<void> => {
     res.json([]);
     return;
   }
-  const awards = await db.select().from(awardsTable);
+  // award_points_config carries no tenant_id — tenancy is inherited from the
+  // parent award. Scope to this tenant's awards so one club's public
+  // leaderboards never surface another club's players.
+  const awards = await db
+    .select()
+    .from(awardsTable)
+    .where(eq(awardsTable.tenantId, getTenantId(req)));
   const awardById = new Map(awards.map((a) => [a.id, a]));
 
   const out = [];

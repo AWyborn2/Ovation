@@ -10,6 +10,7 @@ import {
   ReorderNavItemsBody,
 } from "@workspace/api-zod";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -108,7 +109,7 @@ router.get("/nav-items", async (req, res): Promise<void> => {
   const includeHidden =
     parsed.data.includeHidden === true && !!(await resolveAdmin(req));
 
-  const conditions: SQL[] = [];
+  const conditions: SQL[] = [eq(navItemsTable.tenantId, getTenantId(req))];
   if (parsed.data.surface) {
     conditions.push(eq(navItemsTable.surface, parsed.data.surface));
   }
@@ -119,7 +120,7 @@ router.get("/nav-items", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(navItemsTable)
-    .where(conditions.length ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(asc(navItemsTable.surface), asc(navItemsTable.sortOrder), asc(navItemsTable.id));
 
   res.json(rows.map(serialize));
@@ -131,11 +132,17 @@ router.post("/nav-items", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  // New items go to the end of their surface by default.
+  const tenantId = getTenantId(req);
+  // New items go to the end of their surface by default (within this tenant).
   const existing = await db
     .select({ sortOrder: navItemsTable.sortOrder })
     .from(navItemsTable)
-    .where(eq(navItemsTable.surface, parsed.data.surface));
+    .where(
+      and(
+        eq(navItemsTable.tenantId, tenantId),
+        eq(navItemsTable.surface, parsed.data.surface),
+      ),
+    );
   const nextOrder =
     parsed.data.sortOrder ??
     (existing.length === 0
@@ -145,6 +152,7 @@ router.post("/nav-items", requireAdmin, async (req, res): Promise<void> => {
   const [row] = await db
     .insert(navItemsTable)
     .values({
+      tenantId,
       surface: parsed.data.surface,
       label: parsed.data.label,
       description: parsed.data.description ?? "",
@@ -164,13 +172,19 @@ router.patch("/nav-items/reorder", requireAdmin, async (req, res): Promise<void>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const tenantId = getTenantId(req);
   const { surface, ids } = parsed.data;
   if (ids.length > 0) {
-    // Verify all ids belong to the surface before reordering.
+    // Verify all ids belong to this tenant's surface before reordering.
     const rows = await db
       .select({ id: navItemsTable.id, surface: navItemsTable.surface })
       .from(navItemsTable)
-      .where(inArray(navItemsTable.id, ids));
+      .where(
+        and(
+          eq(navItemsTable.tenantId, tenantId),
+          inArray(navItemsTable.id, ids),
+        ),
+      );
     const bySurface = new Set(rows.filter((r) => r.surface === surface).map((r) => r.id));
     if (ids.some((id) => !bySurface.has(id))) {
       res.status(400).json({ error: "All ids must belong to the given surface." });
@@ -181,14 +195,19 @@ router.patch("/nav-items/reorder", requireAdmin, async (req, res): Promise<void>
         await tx
           .update(navItemsTable)
           .set({ sortOrder: i, updatedAt: new Date() })
-          .where(eq(navItemsTable.id, ids[i]));
+          .where(
+            and(
+              eq(navItemsTable.tenantId, tenantId),
+              eq(navItemsTable.id, ids[i]),
+            ),
+          );
       }
     });
   }
   const out = await db
     .select()
     .from(navItemsTable)
-    .where(eq(navItemsTable.surface, surface))
+    .where(and(eq(navItemsTable.tenantId, tenantId), eq(navItemsTable.surface, surface)))
     .orderBy(asc(navItemsTable.sortOrder), asc(navItemsTable.id));
   res.json(out.map(serialize));
 });
@@ -207,7 +226,12 @@ router.patch("/nav-items/:id", requireAdmin, async (req, res): Promise<void> => 
   const [row] = await db
     .update(navItemsTable)
     .set({ ...body.data, updatedAt: new Date() })
-    .where(eq(navItemsTable.id, params.data.id))
+    .where(
+      and(
+        eq(navItemsTable.tenantId, getTenantId(req)),
+        eq(navItemsTable.id, params.data.id),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Nav item not found" });
@@ -224,7 +248,12 @@ router.delete("/nav-items/:id", requireAdmin, async (req, res): Promise<void> =>
   }
   const [row] = await db
     .delete(navItemsTable)
-    .where(eq(navItemsTable.id, params.data.id))
+    .where(
+      and(
+        eq(navItemsTable.tenantId, getTenantId(req)),
+        eq(navItemsTable.id, params.data.id),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Nav item not found" });

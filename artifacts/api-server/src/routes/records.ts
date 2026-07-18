@@ -7,6 +7,7 @@ import {
   clubRolesTable,
 } from "@workspace/db";
 import { shouldReadCentral } from "../lib/tenant";
+import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
 
@@ -109,6 +110,8 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
     return;
   }
 
+  const tenantId = getTenantId(req);
+
   // --- Role tenure leaderboards (office bearers only: grade is null) ---
   const roleRows = await db
     .select({
@@ -119,7 +122,12 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
       grade: clubRolesTable.grade,
     })
     .from(clubRolesTable)
-    .where(eq(clubRolesTable.published, true));
+    .where(
+      and(
+        eq(clubRolesTable.published, true),
+        eq(clubRolesTable.tenantId, tenantId),
+      ),
+    );
 
   const byRole = new Map<
     string,
@@ -146,7 +154,7 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
   const awards = await db
     .select()
     .from(awardsTable)
-    .where(eq(awardsTable.published, true))
+    .where(and(eq(awardsTable.published, true), eq(awardsTable.tenantId, tenantId)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
   const awardIds = awards.map((a) => a.id);
@@ -163,6 +171,7 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
           and(
             inArray(awardWinnersTable.awardId, awardIds),
             eq(awardWinnersTable.published, true),
+            eq(awardWinnersTable.tenantId, tenantId),
           ),
         )
     : [];

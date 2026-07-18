@@ -281,6 +281,14 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   const allTime = parsed.data.allTime === true;
   const requestedSeason = parsed.data.season?.trim() || undefined;
 
+  // Junior data is tenant-local (the native junior_* tables hold only the demo
+  // tenant's juniors) — a central tenant gets the empty shape, never another
+  // club's junior players.
+  if (await shouldReadCentral(req)) {
+    res.json({ season: null, availableAgeGroups: [], topRunScorers: [], topWicketTakers: [] });
+    return;
+  }
+
   // Age groups that actually have leaderboard records in the resolved season
   // (or every age group ever, for the all-time list) — derived from the SAME
   // source as the leaders (HH lines + non-private participants) so a chip never
@@ -373,7 +381,12 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 // GET /juniors/filters
 // ---------------------------------------------------------------------------
-router.get("/juniors/filters", async (_req, res): Promise<void> => {
+router.get("/juniors/filters", async (req, res): Promise<void> => {
+  // Central tenants have no native junior history — empty filters, no leak.
+  if (await shouldReadCentral(req)) {
+    res.json({ seasons: [], ageGroups: [] });
+    return;
+  }
   const seasonRows = await db
     .selectDistinct({ season: juniorMatchesTable.season })
     .from(juniorMatchesTable)
@@ -398,6 +411,11 @@ router.get("/juniors/matches", async (req, res): Promise<void> => {
   const query = ListJuniorMatchesQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
+    return;
+  }
+  // Central tenants have no native junior matches — empty list, no leak.
+  if (await shouldReadCentral(req)) {
+    res.json([]);
     return;
   }
   const { season, ageGroup } = query.data;
@@ -425,6 +443,12 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     return;
   }
   const matchId = params.data.id;
+
+  // Central tenants have no native junior matches — 404, never the demo club's.
+  if (await shouldReadCentral(req)) {
+    res.status(404).json({ error: "Match not found" });
+    return;
+  }
 
   const [matchRow] = await db
     .select({ match: juniorMatchesTable, ...opponentClubColumns })
@@ -566,6 +590,12 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   }
   const { search, season, ageGroup } = query.data;
 
+  // Central tenants have no native junior participants — empty list, no leak.
+  if (await shouldReadCentral(req)) {
+    res.json([]);
+    return;
+  }
+
   const conds = [
     eq(juniorParticipantsTable.tenantId, getTenantId(req)),
     eq(juniorParticipantsTable.isPrivate, false),
@@ -688,10 +718,21 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
   }
   const pid = params.data.id;
 
+  // Central tenants have no native junior participants — 404, never the demo club's.
+  if (await shouldReadCentral(req)) {
+    res.status(404).json({ error: "Player not found" });
+    return;
+  }
+
   const [participant] = await db
     .select()
     .from(juniorParticipantsTable)
-    .where(eq(juniorParticipantsTable.participantId, pid));
+    .where(
+      and(
+        eq(juniorParticipantsTable.participantId, pid),
+        eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+      ),
+    );
   if (!participant || participant.isPrivate) {
     res.status(404).json({ error: "Player not found" });
     return;
@@ -918,7 +959,12 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 // GET /juniors/leaderboards
 // ---------------------------------------------------------------------------
-router.get("/juniors/leaderboards", async (_req, res): Promise<void> => {
+router.get("/juniors/leaderboards", async (req, res): Promise<void> => {
+  // Central tenants have no native junior lines — empty boards, no leak.
+  if (await shouldReadCentral(req)) {
+    res.json({ mostRuns: [], mostWickets: [], highestScores: [], bestBowling: [] });
+    return;
+  }
   const [mostRuns, mostWickets, highestScores, bestBowling] = await Promise.all([
     battingLeaders(25),
     bowlingLeaders(25),
@@ -941,6 +987,12 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
     return;
   }
   const { season, ageGroup } = parsed.data;
+
+  // Central tenants have no native junior lines — empty leaderboard, no leak.
+  if (await shouldReadCentral(req)) {
+    res.json([]);
+    return;
+  }
 
   const matchConds = [eq(juniorMatchBattingTable.isHallsHead, true)];
   if (season) matchConds.push(eq(juniorMatchesTable.season, season));
@@ -1102,7 +1154,12 @@ const JUNIOR_MILESTONE_TIERS = {
 
 const JUNIOR_STAT_SINGULAR = { runs: "Run", wickets: "Wicket", games: "Game" } as const;
 
-router.get("/juniors/social-milestones", async (_req, res): Promise<void> => {
+router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
+  // Central tenants have no native junior lines — no milestones, no leak.
+  if (await shouldReadCentral(req)) {
+    res.json([]);
+    return;
+  }
   const [battingRows, bowlingRows] = await Promise.all([
     db
       .select({
@@ -1676,9 +1733,13 @@ const officeBearersOrdered = () =>
       asc(juniorOfficeBearersTable.id),
     );
 
-router.get("/juniors/office-bearers", async (_req, res): Promise<void> => {
+router.get("/juniors/office-bearers", async (req, res): Promise<void> => {
+  // Curated content is tenant-scoped: only this tenant's published rows.
   const rows = await officeBearersOrdered().where(
-    eq(juniorOfficeBearersTable.published, true),
+    and(
+      eq(juniorOfficeBearersTable.published, true),
+      eq(juniorOfficeBearersTable.tenantId, getTenantId(req)),
+    ),
   );
   res.json(rows);
 });
@@ -1686,8 +1747,10 @@ router.get("/juniors/office-bearers", async (_req, res): Promise<void> => {
 router.get(
   "/juniors/office-bearers/all",
   requireAdmin,
-  async (_req, res): Promise<void> => {
-    const rows = await officeBearersOrdered();
+  async (req, res): Promise<void> => {
+    const rows = await officeBearersOrdered().where(
+      eq(juniorOfficeBearersTable.tenantId, getTenantId(req)),
+    );
     res.json(rows);
   },
 );
