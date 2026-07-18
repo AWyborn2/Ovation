@@ -15,6 +15,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { shouldReadCentral } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -223,37 +224,43 @@ router.get("/premierships", async (req, res): Promise<void> => {
     byPrem.get(p.premiershipId)!.push(p);
   }
 
-  // Most competitions label their decider "Grand Final", but a few (e.g. the
-  // PPL T20 Cup and PCA Colts) label it generically as "Finals". Fetch both so
-  // a premiership whose grade+season has no "Grand Final" can fall back to the
-  // "Finals" decider — without per-match source_key hardcoding in the ETL.
-  const finalMatches = await db
-    .select({
-      id: matchesTable.id,
-      grade: matchesTable.grade,
-      season: matchesTable.season,
-      opponent: matchesTable.opponent,
-      matchDate: matchesTable.matchDate,
-      result: matchesTable.result,
-      stage: matchesTable.stage,
-    })
-    .from(matchesTable)
-    .where(inArray(matchesTable.stage, ["Grand Final", "Finals"]));
-
+  // Grand-final match linking reads the NATIVE matches table (Halls Head's).
+  // For a central tenant those ids belong to another club, so skip linking
+  // (matchId null) rather than attach a wrong-club match to their premiership.
+  const central = await shouldReadCentral(req);
   const gfByKey = new Map<string, GfMatch[]>();
   const finalsByKey = new Map<string, GfMatch[]>();
-  for (const m of finalMatches) {
-    const key = `${m.grade}|${m.season}`;
-    const target = m.stage === "Grand Final" ? gfByKey : finalsByKey;
-    if (!target.has(key)) target.set(key, []);
-    target.get(key)!.push(m);
+  if (!central) {
+    // Most competitions label their decider "Grand Final", but a few (e.g. the
+    // PPL T20 Cup and PCA Colts) label it generically as "Finals". Fetch both so
+    // a premiership whose grade+season has no "Grand Final" can fall back to the
+    // "Finals" decider — without per-match source_key hardcoding in the ETL.
+    const finalMatches = await db
+      .select({
+        id: matchesTable.id,
+        grade: matchesTable.grade,
+        season: matchesTable.season,
+        opponent: matchesTable.opponent,
+        matchDate: matchesTable.matchDate,
+        result: matchesTable.result,
+        stage: matchesTable.stage,
+      })
+      .from(matchesTable)
+      .where(inArray(matchesTable.stage, ["Grand Final", "Finals"]));
+
+    for (const m of finalMatches) {
+      const key = `${m.grade}|${m.season}`;
+      const target = m.stage === "Grand Final" ? gfByKey : finalsByKey;
+      if (!target.has(key)) target.set(key, []);
+      target.get(key)!.push(m);
+    }
   }
 
   res.json(
     prems.map((p) => ({
       ...p,
       players: byPrem.get(p.id) ?? [],
-      matchId: linkPremiershipMatch(p, gfByKey, finalsByKey),
+      matchId: central ? null : linkPremiershipMatch(p, gfByKey, finalsByKey),
     })),
   );
 });

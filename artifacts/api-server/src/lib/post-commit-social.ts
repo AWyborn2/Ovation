@@ -18,10 +18,11 @@ import {
 } from "./match-milestone-detector";
 import { generateRoundUpDrafts } from "./roundup";
 
-// The import/match-commit pipeline (players/matches/imports) is single-tenant
-// (Halls Head) until the central-read refactor (see lib/db/src/schema/_tenant.ts)
-// — every row this module touches belongs to tenant #1 today.
-const DEFAULT_TENANT_ID = 1;
+// The import/match-commit pipeline reads the NATIVE stats tables (Halls Head's
+// curated history). The committing tenant is threaded in from the request so
+// social_settings are read for the right tenant and the milestone_events /
+// social_drafts rows it writes carry that tenant, rather than always landing on
+// the demo tenant (#1).
 
 export type CareerTotals = {
   games: number;
@@ -88,6 +89,7 @@ export async function snapshotGradeGames(
  * `socialSettings.engineMilestone`.
  */
 async function queueCareerCrossings(
+  tenantId: number,
   sourceImportId: number,
   beforeMap: Map<number, CareerTotals>,
 ): Promise<void> {
@@ -111,6 +113,7 @@ async function queueCareerCrossings(
     const [event] = await db
       .insert(milestoneEventsTable)
       .values({
+        tenantId,
         playerId: c.playerId,
         boardKey: c.boardKey,
         tierIndex: c.tierIndex,
@@ -123,6 +126,7 @@ async function queueCareerCrossings(
       })
       .returning();
     await db.insert(socialDraftsTable).values({
+      tenantId,
       engine: "milestone",
       status: "pending",
       cardInput: {
@@ -153,6 +157,7 @@ async function queueCareerCrossings(
  *    `socialSettings.engineRoundUp`).
  */
 export async function runPostCommitSocial(opts: {
+  tenantId: number;
   importId: number;
   affectedGrades: string[];
   season: number;
@@ -161,16 +166,16 @@ export async function runPostCommitSocial(opts: {
   /** Present only for per-match commits; drives debut/cap/century/5-for cards. */
   matchContext?: MatchMilestoneContext;
 }): Promise<void> {
-  const { importId, affectedGrades, season, beforeMap, logger, matchContext } =
+  const { tenantId, importId, affectedGrades, season, beforeMap, logger, matchContext } =
     opts;
   const [socialSettings] = await db
     .select()
     .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, DEFAULT_TENANT_ID));
+    .where(eq(socialSettingsTable.tenantId, tenantId));
 
   if (socialSettings?.engineMilestone) {
     try {
-      await queueCareerCrossings(importId, beforeMap);
+      await queueCareerCrossings(tenantId, importId, beforeMap);
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }
@@ -187,7 +192,7 @@ export async function runPostCommitSocial(opts: {
   try {
     if (socialSettings?.engineRoundUp) {
       for (const grade of affectedGrades) {
-        await generateRoundUpDrafts(DEFAULT_TENANT_ID, grade, season, importId);
+        await generateRoundUpDrafts(tenantId, grade, season, importId);
       }
     }
   } catch (err) {
@@ -205,6 +210,7 @@ export async function runPostCommitSocial(opts: {
  * (grade, season). All gated on the social settings engines.
  */
 export async function runBatchPostCommitSocial(opts: {
+  tenantId: number;
   /** Representative import id (the first committed match) for crossing events. */
   sourceImportId: number;
   beforeMap: Map<number, CareerTotals>;
@@ -214,15 +220,15 @@ export async function runBatchPostCommitSocial(opts: {
   matchContexts: MatchMilestoneContext[];
   logger: Logger;
 }): Promise<void> {
-  const { sourceImportId, beforeMap, affected, matchContexts, logger } = opts;
+  const { tenantId, sourceImportId, beforeMap, affected, matchContexts, logger } = opts;
   const [socialSettings] = await db
     .select()
     .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, DEFAULT_TENANT_ID));
+    .where(eq(socialSettingsTable.tenantId, tenantId));
 
   if (socialSettings?.engineMilestone) {
     try {
-      await queueCareerCrossings(sourceImportId, beforeMap);
+      await queueCareerCrossings(tenantId, sourceImportId, beforeMap);
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }
@@ -238,7 +244,7 @@ export async function runBatchPostCommitSocial(opts: {
   try {
     if (socialSettings?.engineRoundUp) {
       for (const { grade, season } of affected) {
-        await generateRoundUpDrafts(DEFAULT_TENANT_ID, grade, season, sourceImportId);
+        await generateRoundUpDrafts(tenantId, grade, season, sourceImportId);
       }
     }
   } catch (err) {

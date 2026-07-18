@@ -34,6 +34,7 @@ import {
   type RosterPlayer,
 } from "../lib/name-match";
 import { deriveSeasonSnapshotFromMatches } from "../lib/match-aggregate";
+import { getTenantId } from "../middlewares/tenant-context";
 import {
   snapshotCareerTotals,
   snapshotGradeGames,
@@ -579,6 +580,7 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
   // Suppressed for backfills — previous-season imports must not trigger social.
   if (!isBackfill) {
     await runPostCommitSocial({
+      tenantId: getTenantId(req),
       importId: imp.id,
       affectedGrades,
       season,
@@ -1564,6 +1566,7 @@ async function commitMatchImport(
   // milestone detection or social drafts.
   if (!isBackfill) {
     await runPostCommitSocial({
+      tenantId: getTenantId(req),
       importId: imp.id,
       affectedGrades: [grade],
       season,
@@ -2023,6 +2026,7 @@ router.post(
     // Suppressed for backfills — previous-season batches must not trigger social.
     if (!isBackfill) {
       await runBatchPostCommitSocial({
+        tenantId: getTenantId(req),
         sourceImportId: committedMatches[0]?.importId ?? imp.id,
         beforeMap,
         affected,

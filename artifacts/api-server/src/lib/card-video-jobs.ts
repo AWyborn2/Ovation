@@ -7,6 +7,8 @@ export type JobStatus = "queued" | "rendering" | "encoding" | "done" | "error";
 
 export type CardVideoJob = {
   id: string;
+  /** Owning tenant — a job is only readable/downloadable by its own tenant. */
+  tenantId: number;
   status: JobStatus;
   progress: number;
   error: string | null;
@@ -36,8 +38,10 @@ function prune(): void {
   }
 }
 
-// Public view (no internal file path) — matches the OpenAPI CardVideoJob schema.
-export function publicJob(job: CardVideoJob): Omit<CardVideoJob, "filePath" | "createdAt"> {
+// Public view (no internal file path / tenant) — matches the OpenAPI CardVideoJob schema.
+export function publicJob(
+  job: CardVideoJob,
+): Omit<CardVideoJob, "filePath" | "createdAt" | "tenantId"> {
   return {
     id: job.id,
     status: job.status,
@@ -67,12 +71,18 @@ function deriveMeta(
   return { filename: `${prefix}-${kind}-${sizeCode}.mp4`, sizeCode };
 }
 
-export function createJob(input: unknown, options: unknown, fps?: number): CardVideoJob {
+export function createJob(
+  tenantId: number,
+  input: unknown,
+  options: unknown,
+  fps?: number,
+): CardVideoJob {
   prune();
   const id = randomUUID();
   const { filename, sizeCode } = deriveMeta(input, options);
   const job: CardVideoJob = {
     id,
+    tenantId,
     status: "queued",
     progress: 0,
     error: null,

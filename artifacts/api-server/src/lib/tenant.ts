@@ -95,6 +95,17 @@ export async function getRequestEntitlements(
   return { plan, entitlements: entitlementsFor(plan) };
 }
 
+/**
+ * Whether a tenant reads its stats from the central PCA DB (vs native tables).
+ * The by-id form of {@link shouldReadCentral} for pipeline code that has a
+ * tenant id but no request (e.g. round-up generation). Honours the
+ * `CENTRAL_READS=0` global kill-switch.
+ */
+export async function tenantReadsFromCentral(tenantId: number): Promise<boolean> {
+  if (process.env.CENTRAL_READS === "0") return false;
+  return (await getTenantConfig(tenantId)).readsFromCentral;
+}
+
 export async function getTenantCentralClubId(tenantId: number): Promise<number> {
   const { centralClubId } = await getTenantConfig(tenantId);
   if (centralClubId === null) {

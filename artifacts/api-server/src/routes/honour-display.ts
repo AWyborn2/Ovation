@@ -30,6 +30,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
+import { shouldReadCentral } from "../lib/tenant";
 import { getOrCreateSettings } from "../lib/settings";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
@@ -377,7 +378,10 @@ function seasonLabel(startYear: number): string {
   return `${startYear}/${String(startYear + 1).slice(-2)}`;
 }
 
-async function buildPremierships(tenantId: number): Promise<HonourBoardOut | null> {
+async function buildPremierships(
+  tenantId: number,
+  central: boolean,
+): Promise<HonourBoardOut | null> {
   const prems = await db
     .select()
     .from(premiershipsTable)
@@ -401,28 +405,38 @@ async function buildPremierships(tenantId: number): Promise<HonourBoardOut | nul
     byPrem.get(p.premiershipId)!.push(p);
   }
 
-  // Grand-final match linking (mirrors /premierships).
-  const finalMatches = await db
-    .select({
-      id: matchesTable.id,
-      grade: matchesTable.grade,
-      season: matchesTable.season,
-      opponent: matchesTable.opponent,
-      matchDate: matchesTable.matchDate,
-      result: matchesTable.result,
-      stage: matchesTable.stage,
-    })
-    .from(matchesTable)
-    .where(inArray(matchesTable.stage, ["Grand Final", "Finals"]));
-  type GfMatch = Omit<(typeof finalMatches)[number], "stage">;
+  // Grand-final match linking reads the NATIVE matches table (Halls Head's).
+  // For a central tenant those ids belong to another club, so skip linking.
+  type GfMatch = {
+    id: number;
+    grade: string;
+    season: number;
+    opponent: string | null;
+    matchDate: string | null;
+    result: string | null;
+  };
   const gfByKey = new Map<string, GfMatch[]>();
   const finalsByKey = new Map<string, GfMatch[]>();
-  for (const m of finalMatches) {
-    const { stage, ...rest } = m;
-    const key = `${m.grade}|${m.season}`;
-    const target = stage === "Grand Final" ? gfByKey : finalsByKey;
-    if (!target.has(key)) target.set(key, []);
-    target.get(key)!.push(rest);
+  if (!central) {
+    const finalMatches = await db
+      .select({
+        id: matchesTable.id,
+        grade: matchesTable.grade,
+        season: matchesTable.season,
+        opponent: matchesTable.opponent,
+        matchDate: matchesTable.matchDate,
+        result: matchesTable.result,
+        stage: matchesTable.stage,
+      })
+      .from(matchesTable)
+      .where(inArray(matchesTable.stage, ["Grand Final", "Finals"]));
+    for (const m of finalMatches) {
+      const { stage, ...rest } = m;
+      const key = `${m.grade}|${m.season}`;
+      const target = stage === "Grand Final" ? gfByKey : finalsByKey;
+      if (!target.has(key)) target.set(key, []);
+      target.get(key)!.push(rest);
+    }
   }
 
   const entries: BoardEntry[] = prems.map((p) => {
@@ -437,7 +451,7 @@ async function buildPremierships(tenantId: number): Promise<HonourBoardOut | nul
       primaryText: tidyCompetition(p.competition),
       detail: p.result ?? null,
       playerId: captainRow?.playerId ?? null,
-      matchId: linkPremiershipMatch(p, gfByKey, finalsByKey),
+      matchId: central ? null : linkPremiershipMatch(p, gfByKey, finalsByKey),
       meta: {
         venue: p.venue,
         date: p.matchDate,
@@ -1595,6 +1609,7 @@ async function assembleBoards(
   // Every curated board is scoped to the requesting tenant so a kiosk/admin
   // never renders another club's premierships, life members, awards, etc.
   const tenantId = getTenantId(req);
+  const central = await shouldReadCentral(req);
   const boardConfigsAll = settings.boardConfigs ?? {};
   const gridCols = (id: string): string[] | undefined =>
     boardConfigsAll[id]?.gridColumns;
@@ -1618,7 +1633,7 @@ async function assembleBoards(
     clubRecords,
     mostGames,
   ] = await Promise.all([
-    buildPremierships(tenantId),
+    buildPremierships(tenantId, central),
     buildPremiershipsGrid(tenantId, gridCols("premierships_grid")),
     buildAwardBoards(tenantId),
     buildAwardWinnersGrid(tenantId, gridCols("award_winners")),

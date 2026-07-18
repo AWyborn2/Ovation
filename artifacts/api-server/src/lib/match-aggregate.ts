@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import {
   matchesTable,
   matchPlayerLinesTable,
@@ -81,6 +81,10 @@ export async function deriveSeasonSnapshotFromMatches(
         eq(matchesTable.grade, grade),
         eq(matchesTable.season, season),
         eq(matchesTable.abandoned, false),
+        // Fill-ins (playerId >= 90000) are excluded from EVERY stats derivation
+        // (replit.md Gotcha) — they must not land in the season snapshot, career
+        // totals or cap sync that consume this aggregate.
+        lt(matchPlayerLinesTable.playerId, 90000),
       ),
     );
 

@@ -8,8 +8,12 @@ import {
   premiershipsTable,
   type SocialDraftRow,
 } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
+import { tenantReadsFromCentral } from "./tenant";
+
+// Fill-ins (playerId >= 90000) are excluded from every stats derivation.
+const FILL_IN_FLOOR = 90000;
 
 type SocialDraft = SocialDraftRow;
 
@@ -34,11 +38,13 @@ const queryPerformers = async (
   grade: string,
   seasonFilter: { season: number } | "all",
 ): Promise<PerformerRow[]> => {
+  const fillInFloor = lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR);
   const where = seasonFilter === "all"
-    ? eq(playerGradeSeasonStatsTable.grade, grade)
+    ? and(eq(playerGradeSeasonStatsTable.grade, grade), fillInFloor)
     : and(
         eq(playerGradeSeasonStatsTable.grade, grade),
         eq(playerGradeSeasonStatsTable.season, seasonFilter.season),
+        fillInFloor,
       );
   const rows = await db
     .select({
@@ -87,6 +93,7 @@ const queryInningsRows = async (
       and(
         eq(playerGradeSeasonStatsTable.grade, grade),
         eq(playerGradeSeasonStatsTable.season, season),
+        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
       ),
     );
 
@@ -178,6 +185,10 @@ export async function generateRoundUpDrafts(
   season: number,
   sourceImportId: number | null,
 ): Promise<SocialDraft[]> {
+  // Round-ups are computed from the native (Halls Head) stats tables. A central
+  // tenant has no native data of its own — generating here would celebrate the
+  // demo club's players under that tenant, so bail rather than leak.
+  if (await tenantReadsFromCentral(tenantId)) return [];
   const stats = await queryPerformers(grade, { season });
   const innings = await queryInningsRows(grade, season);
   const created: SocialDraft[] = [];
@@ -331,7 +342,13 @@ async function generatePremiershipRecapCards(
   const prems = await db
     .select()
     .from(premiershipsTable)
-    .where(and(eq(premiershipsTable.grade, grade), eq(premiershipsTable.year, season)));
+    .where(
+      and(
+        eq(premiershipsTable.tenantId, tenantId),
+        eq(premiershipsTable.grade, grade),
+        eq(premiershipsTable.year, season),
+      ),
+    );
   const created: SocialDraft[] = [];
   for (const p of prems) {
     created.push(
@@ -362,6 +379,8 @@ export async function generateRecapDrafts(
   grade: string,
   season: number,
 ): Promise<SocialDraft[]> {
+  // Native-derived (see generateRoundUpDrafts) — no recap for central tenants.
+  if (await tenantReadsFromCentral(tenantId)) return [];
   const stats = await queryPerformers(grade, { season });
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Season Recap`;
