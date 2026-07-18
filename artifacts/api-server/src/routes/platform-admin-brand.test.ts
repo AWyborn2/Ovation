@@ -148,7 +148,8 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .from(tenantsTable)
       .where(eq(tenantsTable.id, tenantAId));
     expect(row.logoUrl).toBe("/objects/uploads/pab-logo.png");
-    expect(row.primaryColour).toBe("#112233");
+    expect(row.backgroundColour).toBe("#112233");
+    expect(row.primaryColour).toBe("#445566");
 
     // Without invalidateTenantBrandCache, this would still serve the pre-PATCH
     // cached brand for up to 5 minutes.
@@ -176,7 +177,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .where(eq(tenantsTable.id, tenantAId));
     expect(row.logoUrl).toBe("/objects/uploads/pab-logo-v2.png");
     // Colours set by the previous test and the seeded favicon are unaffected.
-    expect(row.primaryColour).toBe("#112233");
+    expect(row.backgroundColour).toBe("#112233");
     expect(row.faviconUrl).toBe("/objects/uploads/pab-favicon-original.png");
   });
 
@@ -227,7 +228,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .select()
       .from(tenantsTable)
       .where(eq(tenantsTable.id, tenantAId));
-    expect(row.primaryColour).toBe("#112233");
+    expect(row.backgroundColour).toBe("#112233");
   });
 
   it("rejects a non-integer tenant id (400)", async () => {
@@ -330,14 +331,12 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
     expect(row.primaryColour).toBe("#224466");
   });
 
-  it("KTD8: a clubs-register colour masks the tenant-row value in the resolved brand", async () => {
-    // Known tension, documented deliberately: the brand resolver
-    // (lib/tenant-brand.ts buildTenantBrand) prefers the appClubId
-    // clubs-register row per field. So for a tenant linked to a register row
-    // with a non-null colour, this PATCH persists to the tenants row (and the
-    // console will report it), but GET /tenant-brand keeps serving the
-    // register's colour — the concierge write appears to "not take" until the
-    // register value is cleared or the resolver's precedence changes.
+  it("a concierge colour write wins over the clubs-register value in the resolved brand", async () => {
+    // Colour precedence: the brand resolver (lib/tenant-brand.ts buildTenantBrand)
+    // takes the tenant row's colour first, falling back to the appClubId
+    // clubs-register row only when the tenant row's is null. So a concierge PATCH
+    // both persists to the tenants row AND takes effect in GET /tenant-brand,
+    // overriding the register's #0000ff.
     const res = await request(app)
       .patch(`/api/platform/admin/tenants/${tenantCId}/brand`)
       .set("Cookie", platformCookie)
@@ -352,11 +351,11 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .where(eq(tenantsTable.id, tenantCId));
     expect(row.primaryColour).toBe("#ff0000");
 
-    // ...but the resolved brand still serves the clubs-register value.
+    // ...and the resolved brand serves the tenant-row value, not the register's.
     const brand = await request(app)
       .get("/api/tenant-brand")
       .set("x-tenant-id", String(tenantCId))
       .expect(200);
-    expect(brand.body.primaryColour).toBe("#0000ff");
+    expect(brand.body.primaryColour).toBe("#ff0000");
   });
 });

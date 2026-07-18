@@ -105,7 +105,7 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
       .where(eq(tenantsTable.id, tenantAId));
     expect(row.logoUrl).toBe("/objects/uploads/logo-a-v2.png");
     // Colours set by the previous test are unaffected by this partial update.
-    expect(row.primaryColour).toBe("#112233");
+    expect(row.backgroundColour).toBe("#112233");
   });
 
   it("rejects an unauthenticated request (401)", async () => {
