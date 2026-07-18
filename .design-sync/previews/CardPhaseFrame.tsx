@@ -1,4 +1,4 @@
-import { CardPhaseFrame } from "@workspace/cricket-club";
+import { CardPhaseFrame, ScaledCard } from "@workspace/cricket-club";
 
 const PHOTO =
   "data:image/svg+xml," +
@@ -46,11 +46,14 @@ const JASPER = {
   },
 };
 
-/** Animation opening frame — star rating and "since" line under the fixed portrait. */
+/** Animation opening frame — star rating and "since" line under the fixed portrait.
+ *  All frames scaled 0.75 so the full 800px card fits the capture cell. */
 export function IntroPhase() {
   return (
     <div style={{ padding: 8 }}>
-      <CardPhaseFrame data={JASPER} phase="intro" />
+      <ScaledCard scale={0.75}>
+        <CardPhaseFrame data={JASPER} phase="intro" />
+      </ScaledCard>
     </div>
   );
 }
@@ -59,7 +62,9 @@ export function IntroPhase() {
 export function CareerStatsPhase() {
   return (
     <div style={{ padding: 8 }}>
-      <CardPhaseFrame data={JASPER} phase="careerStats" />
+      <ScaledCard scale={0.75}>
+        <CardPhaseFrame data={JASPER} phase="careerStats" />
+      </ScaledCard>
     </div>
   );
 }
@@ -68,7 +73,9 @@ export function CareerStatsPhase() {
 export function PremiershipsPhase() {
   return (
     <div style={{ padding: 8 }}>
-      <CardPhaseFrame data={JASPER} phase="premierships" />
+      <ScaledCard scale={0.75}>
+        <CardPhaseFrame data={JASPER} phase="premierships" />
+      </ScaledCard>
     </div>
   );
 }

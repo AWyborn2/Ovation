@@ -1,9 +1,11 @@
-import { CardSurface } from "@workspace/cricket-club";
+import { CardSurface, ScaledCard } from "@workspace/cricket-club";
 
-/** The bare 384x800 card shell — brand gradient, gold border, rounded corners. */
+/** The bare 384x800 card shell — brand gradient, gold border, rounded corners.
+ *  Scaled 0.75 so the full 800px surface fits the capture cell. */
 export function EmptySurface() {
   return (
     <div style={{ padding: 8 }}>
+      <ScaledCard scale={0.75}>
       <CardSurface>
         <div
           style={{
@@ -32,6 +34,7 @@ export function EmptySurface() {
           </div>
         </div>
       </CardSurface>
+      </ScaledCard>
     </div>
   );
 }

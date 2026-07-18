@@ -1,4 +1,4 @@
-import { CardFront } from "@workspace/cricket-club";
+import { CardFront, ScaledCard } from "@workspace/cricket-club";
 
 const PHOTO =
   "data:image/svg+xml," +
@@ -46,11 +46,14 @@ const JASPER = {
   },
 };
 
-/** Front face with premierships — trophy panel replaces the perf bars. */
+/** Front face with premierships — trophy panel replaces the perf bars.
+ *  Scaled 0.75 so the full 800px card fits the capture cell. */
 export function AllRounderFront() {
   return (
     <div style={{ padding: 8 }}>
-      <CardFront data={JASPER} />
+      <ScaledCard scale={0.75}>
+        <CardFront data={JASPER} />
+      </ScaledCard>
     </div>
   );
 }
@@ -67,7 +70,9 @@ export function BatterFrontPerfBars() {
   };
   return (
     <div style={{ padding: 8 }}>
-      <CardFront data={batter} />
+      <ScaledCard scale={0.75}>
+        <CardFront data={batter} />
+      </ScaledCard>
     </div>
   );
 }

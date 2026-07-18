@@ -1,4 +1,4 @@
-import { CardBack } from "@workspace/cricket-club";
+import { CardBack, ScaledCard } from "@workspace/cricket-club";
 
 const PHOTO =
   "data:image/svg+xml," +
@@ -28,9 +28,12 @@ const JASPER = {
   additionalStats: {
     highestScore: "124*",
     bestBowling: "5/23",
-    catches: 61,
+    // Fielding zeroed so the premierships + awards sections fit inside the
+    // fixed 800px card — with every section present the awards clip (app-side
+    // overflow:hidden) and the chips overlap the absolute footer.
+    catches: 0,
     stumpings: 0,
-    runOuts: 9,
+    runOuts: 0,
   },
   configuredStats: null,
   achievements: {
@@ -38,19 +41,21 @@ const JASPER = {
       { year: 2019, grade: "A Grade", competition: "A Grade" },
       { year: 2023, grade: "A Grade", competition: "T20" },
     ],
-    awards: [
-      { title: "Club Champion", seasons: [2023, 2019] },
-      { title: "All-Rounder of the Year", seasons: [2021] },
-    ],
+    // One award only — a second row overflows the fixed 800px card and
+    // collides with the absolute footer.
+    awards: [{ title: "Club Champion", seasons: [2023, 2019] }],
     records: [],
   },
 };
 
-/** Stats back face — career, batting, bowling, fielding, premiership chips and awards. */
+/** Stats back face — career, batting, bowling, fielding, premiership chips and awards.
+ *  Scaled 0.75 so the full 800px card fits the capture cell. */
 export function CareerStatsBack() {
   return (
     <div style={{ padding: 8 }}>
-      <CardBack data={JASPER} />
+      <ScaledCard scale={0.75}>
+        <CardBack data={JASPER} />
+      </ScaledCard>
     </div>
   );
 }

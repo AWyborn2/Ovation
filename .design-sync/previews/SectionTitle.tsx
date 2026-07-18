@@ -15,7 +15,7 @@ export function BackSections() {
     <div style={panel}>
       <SectionTitle>Career</SectionTitle>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 18 }}>
-        <StatTile label="Debut" value={2014} />
+        <StatTile label="Debut" value="2014" />
         <StatTile label="Seasons" value={12} />
         <StatTile label="Matches" value={142} />
       </div>
