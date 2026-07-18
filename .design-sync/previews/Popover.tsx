@@ -14,6 +14,7 @@ export function StatsFilterPopover() {
         minHeight: 340,
         display: "flex",
         justifyContent: "center",
+        alignItems: "flex-start",
         paddingTop: 24,
       }}
     >
