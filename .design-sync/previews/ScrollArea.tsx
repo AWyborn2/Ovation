@@ -21,6 +21,7 @@ const dismissals = [
 export function WicketLog() {
   return (
     <ScrollArea
+      type="always"
       style={{
         height: 200,
         width: 300,
