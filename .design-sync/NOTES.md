@@ -65,3 +65,28 @@
   Halls Head literals to the sync tree.
 - Known component-level defect (app-side, not preview): ui/slider.tsx hardcodes ONE Thumb — range
   values render fill correctly but only the first thumb shows. Worth an app fix if range sliders needed.
+
+## Wave-2 findings (folded)
+
+- **react-query wall (structural)**: components calling generated API hooks (ShareButton →
+  useGetSocialSettings, SearchResultCard → useGetPlayer, PlayerStatsModal, DigitalScorecard's
+  always-mounted modal) resolve @tanstack/react-query INSIDE the DS bundle — a preview-side
+  QueryClientProvider is a different module instance and can never satisfy them ("No QueryClient
+  set"). These stay floor cards by construction: PromotionCard, DebutCard, SearchResultCard,
+  PlayerStatsModal; DigitalScorecard previews only its abandoned-match state. Possible future fix:
+  app-side `ds-query-provider` component exported from src/components, or harness vendoring of
+  react-query like vendorReact.
+- Capture server doesn't serve the app's public/ — DEFAULT_BRAND's /ovation-logo.svg 404s in
+  previews (tiny broken img in trading-card headers; cosmetic, graded with nit).
+- Trading-card full faces are 384x800 — previews wrap in ScaledCard scale={0.75} to fit capture.
+- Tall honour boards budget ~560px of cell height; `.hb` + `hb-compact` fits a full XI.
+- lucide-react and wouter Link render statically in previews without extra setup.
+- SidebarMenuSkeleton uses Math.random() widths → its render hash churns by design; expect
+  [SPOT_CHECK]/hash noise on that component across rebuilds.
+- **App-side defects surfaced (not fixed by design-sync — for the app backlog):**
+  - ui/slider.tsx hardcodes one Thumb (range sliders show a single thumb).
+  - trading-card/constants.ts fmt() renders debut year as "2,014".
+  - card-faces.tsx CardBack clips/overlaps its footer with a rich dataset.
+  - public/ovation-logo.svg is invalid XML ("--" inside a comment) — fails as <img> in the real app.
+  - src/index.css defines NO --sidebar-* tokens, so bg-sidebar* utilities don't exist in compiled
+    CSS; sidebar renders on structure + standard tokens only.

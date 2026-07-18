@@ -79,6 +79,90 @@
     "Tooltip": {
       "cardMode": "single",
       "primaryStory": "ScorecardTooltip"
+    },
+    "ApproachingCard": {
+      "cardMode": "column"
+    },
+    "DatedMilestoneCard": {
+      "cardMode": "column"
+    },
+    "PlayerPhoto": {
+      "cardMode": "column"
+    },
+    "Sidebar": {
+      "cardMode": "column"
+    },
+    "SidebarContent": {
+      "cardMode": "column"
+    },
+    "SidebarFooter": {
+      "cardMode": "column"
+    },
+    "SidebarGroup": {
+      "cardMode": "column"
+    },
+    "SidebarGroupAction": {
+      "cardMode": "column"
+    },
+    "SidebarGroupContent": {
+      "cardMode": "column"
+    },
+    "SidebarGroupLabel": {
+      "cardMode": "column"
+    },
+    "SidebarHeader": {
+      "cardMode": "column"
+    },
+    "SidebarInput": {
+      "cardMode": "column"
+    },
+    "SidebarInset": {
+      "cardMode": "column"
+    },
+    "SidebarMenu": {
+      "cardMode": "column"
+    },
+    "SidebarMenuAction": {
+      "cardMode": "column"
+    },
+    "SidebarMenuBadge": {
+      "cardMode": "column"
+    },
+    "SidebarMenuButton": {
+      "cardMode": "column"
+    },
+    "SidebarMenuItem": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSkeleton": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSub": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSubButton": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSubItem": {
+      "cardMode": "column"
+    },
+    "SidebarProvider": {
+      "cardMode": "column"
+    },
+    "SidebarRail": {
+      "cardMode": "column"
+    },
+    "SidebarSeparator": {
+      "cardMode": "column"
+    },
+    "SidebarTrigger": {
+      "cardMode": "column"
+    },
+    "StatTile": {
+      "cardMode": "column"
+    },
+    "SummaryStat": {
+      "cardMode": "column"
     }
   }
 }

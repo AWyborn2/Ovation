@@ -120,20 +120,6 @@ const match = {
   ],
 };
 
-/**
- * Full two-innings composition: batting card then bowling card per innings,
- * tenant navy/gold vs the opponent's maroon/gold, on the dark match surface.
- */
-export function TwoInningsMatch() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <div style={{ maxWidth: 620 }}>
-        <DigitalScorecard match={match} />
-      </div>
-    </QueryClientProvider>
-  );
-}
-
 /** Abandoned match with no recorded lines — the empty-state panel. */
 export function AbandonedMatch() {
   return (
