@@ -29,7 +29,8 @@ import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantBrand } from "../lib/tenant-brand";
-import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
+import { getTenantId } from "../middlewares/tenant-context";
+import { getOrCreateSettings } from "../lib/settings";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
 import { computeLeaderboard } from "../lib/points";
@@ -37,8 +38,6 @@ import { buildMilestonesForRequest } from "./milestones";
 import type { Request } from "express";
 
 const router: IRouter = Router();
-
-const DISPLAY_SETTINGS_ID = 1;
 
 // Seniority order for grade-grouped boards (captains, records-by-grade) so they
 // roll A Grade → Colts.
@@ -63,17 +62,11 @@ function gradeRank(g: string): number {
 // Settings singleton
 // ---------------------------------------------------------------------------
 
-async function ensureHonourDisplaySettings() {
-  const [existing] = await db
-    .select()
-    .from(honourDisplaySettingsTable)
-    .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
-  if (existing) return existing;
-  const [created] = await db
-    .insert(honourDisplaySettingsTable)
-    .values({ id: DISPLAY_SETTINGS_ID })
-    .returning();
-  return created;
+// Per-tenant honour-display settings + kiosk token (one row per tenant, unique
+// on tenantId). Was a single global id=1 row, so one club's kiosk token and
+// board config were shared platform-wide.
+function ensureHonourDisplaySettings(tenantId: number) {
+  return getOrCreateSettings(honourDisplaySettingsTable, tenantId);
 }
 
 function serializeSettings(
@@ -384,10 +377,11 @@ function seasonLabel(startYear: number): string {
   return `${startYear}/${String(startYear + 1).slice(-2)}`;
 }
 
-async function buildPremierships(): Promise<HonourBoardOut | null> {
+async function buildPremierships(tenantId: number): Promise<HonourBoardOut | null> {
   const prems = await db
     .select()
     .from(premiershipsTable)
+    .where(eq(premiershipsTable.tenantId, tenantId))
     .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade));
   if (prems.length === 0) return null;
 
@@ -471,10 +465,11 @@ async function buildPremierships(): Promise<HonourBoardOut | null> {
   };
 }
 
-async function buildCenturies(): Promise<HonourBoardOut | null> {
+async function buildCenturies(tenantId: number): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(centuriesTable)
+    .where(eq(centuriesTable.tenantId, tenantId))
     .orderBy(desc(centuriesTable.season), asc(centuriesTable.batsman));
   if (rows.length === 0) return null;
   return {
@@ -493,10 +488,11 @@ async function buildCenturies(): Promise<HonourBoardOut | null> {
   };
 }
 
-async function buildFiveWicketHauls(): Promise<HonourBoardOut | null> {
+async function buildFiveWicketHauls(tenantId: number): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(fiveWicketHaulsTable)
+    .where(eq(fiveWicketHaulsTable.tenantId, tenantId))
     .orderBy(desc(fiveWicketHaulsTable.season), asc(fiveWicketHaulsTable.bowler));
   if (rows.length === 0) return null;
   return {
@@ -515,10 +511,11 @@ async function buildFiveWicketHauls(): Promise<HonourBoardOut | null> {
   };
 }
 
-async function buildLifeMembers(): Promise<HonourBoardOut | null> {
+async function buildLifeMembers(tenantId: number): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(lifeMembersTable)
+    .where(eq(lifeMembersTable.tenantId, tenantId))
     .orderBy(asc(lifeMembersTable.inductionYear), asc(lifeMembersTable.name));
   if (rows.length === 0) return null;
   return {
@@ -536,10 +533,11 @@ async function buildLifeMembers(): Promise<HonourBoardOut | null> {
   };
 }
 
-async function buildClubRecords(): Promise<HonourBoardOut | null> {
+async function buildClubRecords(tenantId: number): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(clubRecordsTable)
+    .where(eq(clubRecordsTable.tenantId, tenantId))
     .orderBy(asc(clubRecordsTable.id));
   if (rows.length === 0) return null;
   return {
@@ -558,12 +556,16 @@ async function buildClubRecords(): Promise<HonourBoardOut | null> {
 }
 
 /** Grade captains — ONE board per grade that has any published captain. */
-async function buildCaptains(): Promise<HonourBoardOut[]> {
+async function buildCaptains(tenantId: number): Promise<HonourBoardOut[]> {
   const rows = await db
     .select()
     .from(clubRolesTable)
     .where(
-      and(eq(clubRolesTable.role, "Grade Captain"), eq(clubRolesTable.published, true)),
+      and(
+        eq(clubRolesTable.tenantId, tenantId),
+        eq(clubRolesTable.role, "Grade Captain"),
+        eq(clubRolesTable.published, true),
+      ),
     )
     .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder));
   if (rows.length === 0) return [];
@@ -599,12 +601,13 @@ async function buildCaptains(): Promise<HonourBoardOut[]> {
  * admin has chosen grid columns (each column is an office/role).
  */
 async function buildCommittee(
+  tenantId: number,
   gridColumns?: string[],
 ): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(clubRolesTable)
-    .where(eq(clubRolesTable.published, true))
+    .where(and(eq(clubRolesTable.tenantId, tenantId), eq(clubRolesTable.published, true)))
     .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder), asc(clubRolesTable.id));
   const officeBearers = rows.filter((r) => r.grade == null);
   if (officeBearers.length === 0) return null;
@@ -657,12 +660,13 @@ async function buildCommittee(
  * boards, which remain. Always emitted when there are published award winners.
  */
 async function buildAwardWinnersGrid(
+  tenantId: number,
   gridColumns?: string[],
 ): Promise<HonourBoardOut | null> {
   const awards = await db
     .select()
     .from(awardsTable)
-    .where(eq(awardsTable.published, true))
+    .where(and(eq(awardsTable.tenantId, tenantId), eq(awardsTable.published, true)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
   if (awards.length === 0) return null;
 
@@ -718,6 +722,7 @@ async function buildAwardWinnersGrid(
  * admin configures columns; the per-grade list boards (buildCaptains) remain.
  */
 async function buildCaptainsGrid(
+  tenantId: number,
   gridColumns?: string[],
 ): Promise<HonourBoardOut | null> {
   if (!gridColumns || gridColumns.length === 0) return null;
@@ -725,7 +730,11 @@ async function buildCaptainsGrid(
     .select()
     .from(clubRolesTable)
     .where(
-      and(eq(clubRolesTable.role, "Grade Captain"), eq(clubRolesTable.published, true)),
+      and(
+        eq(clubRolesTable.tenantId, tenantId),
+        eq(clubRolesTable.role, "Grade Captain"),
+        eq(clubRolesTable.published, true),
+      ),
     )
     .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder));
   if (rows.length === 0) return null;
@@ -763,12 +772,14 @@ async function buildCaptainsGrid(
  * ONLY when the admin configures columns; the premiership-layout board remains.
  */
 async function buildPremiershipsGrid(
+  tenantId: number,
   gridColumns?: string[],
 ): Promise<HonourBoardOut | null> {
   if (!gridColumns || gridColumns.length === 0) return null;
   const prems = await db
     .select()
     .from(premiershipsTable)
+    .where(eq(premiershipsTable.tenantId, tenantId))
     .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade));
   if (prems.length === 0) return null;
 
@@ -802,10 +813,11 @@ async function buildPremiershipsGrid(
 }
 
 /** Partnership records — highest stand per wicket per grade. */
-async function buildPartnerships(): Promise<HonourBoardOut | null> {
+async function buildPartnerships(tenantId: number): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
     .from(partnershipRecordsTable)
+    .where(eq(partnershipRecordsTable.tenantId, tenantId))
     .orderBy(
       asc(partnershipRecordsTable.grade),
       desc(partnershipRecordsTable.runs),
@@ -853,14 +865,18 @@ async function buildMilestoneBoard(req: Request): Promise<HonourBoardOut | null>
 }
 
 /** Award points leaderboards (published, visible configs only). */
-async function buildAwardPoints(): Promise<HonourBoardOut[]> {
+async function buildAwardPoints(tenantId: number): Promise<HonourBoardOut[]> {
   const configs = await db
     .select()
     .from(awardPointsConfigTable)
     .where(eq(awardPointsConfigTable.leaderboardVisible, true))
     .orderBy(desc(awardPointsConfigTable.season));
   if (configs.length === 0) return [];
-  const awards = await db.select().from(awardsTable);
+  // award_points_config has no tenant_id — scope via the parent award.
+  const awards = await db
+    .select()
+    .from(awardsTable)
+    .where(eq(awardsTable.tenantId, tenantId));
   const awardById = new Map(awards.map((a) => [a.id, a]));
 
   // Filter to eligible configs first (same guard as the old `for` loop's
@@ -973,7 +989,7 @@ function roleRank(role: string): number {
   return i === -1 ? ROLE_ORDER.length : i;
 }
 
-async function buildRecordsLeaderboards(): Promise<HonourBoardOut[]> {
+async function buildRecordsLeaderboards(tenantId: number): Promise<HonourBoardOut[]> {
   const roleRows = await db
     .select({
       role: clubRolesTable.role,
@@ -983,7 +999,7 @@ async function buildRecordsLeaderboards(): Promise<HonourBoardOut[]> {
       grade: clubRolesTable.grade,
     })
     .from(clubRolesTable)
-    .where(eq(clubRolesTable.published, true));
+    .where(and(eq(clubRolesTable.tenantId, tenantId), eq(clubRolesTable.published, true)));
 
   const byRole = new Map<string, { name: string; playerId: number | null; season: number }[]>();
   for (const r of roleRows) {
@@ -1011,7 +1027,7 @@ async function buildRecordsLeaderboards(): Promise<HonourBoardOut[]> {
   const awards = await db
     .select()
     .from(awardsTable)
-    .where(eq(awardsTable.published, true))
+    .where(and(eq(awardsTable.tenantId, tenantId), eq(awardsTable.published, true)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
   const awardIds = awards.map((a) => a.id);
   const winners = awardIds.length
@@ -1133,11 +1149,16 @@ async function buildRecordsByGrade(): Promise<HonourBoardOut[]> {
 }
 
 /** Team of the Decade — published boards only, full XI lineup. */
-async function buildTeamOfDecade(): Promise<HonourBoardOut[]> {
+async function buildTeamOfDecade(tenantId: number): Promise<HonourBoardOut[]> {
   const boards = await db
     .select()
     .from(teamOfDecadeBoardsTable)
-    .where(eq(teamOfDecadeBoardsTable.published, true))
+    .where(
+      and(
+        eq(teamOfDecadeBoardsTable.tenantId, tenantId),
+        eq(teamOfDecadeBoardsTable.published, true),
+      ),
+    )
     .orderBy(asc(teamOfDecadeBoardsTable.displayOrder), asc(teamOfDecadeBoardsTable.id));
   if (boards.length === 0) return [];
   const boardIds = boards.map((b) => b.id);
@@ -1183,11 +1204,11 @@ async function buildTeamOfDecade(): Promise<HonourBoardOut[]> {
 }
 
 /** Per-published-award honour boards, each under its REAL award title. */
-async function buildAwardBoards(): Promise<HonourBoardOut[]> {
+async function buildAwardBoards(tenantId: number): Promise<HonourBoardOut[]> {
   const awards = await db
     .select()
     .from(awardsTable)
-    .where(eq(awardsTable.published, true))
+    .where(and(eq(awardsTable.tenantId, tenantId), eq(awardsTable.published, true)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
   if (awards.length === 0) return [];
 
@@ -1430,6 +1451,7 @@ export function composeCustomGrid(
  * future seasons). Carries its own skin / fill mode / footnote.
  */
 async function buildCustomGrids(
+  tenantId: number,
   defs: CustomGridDefJson[],
 ): Promise<HonourBoardOut[]> {
   const valid = (defs ?? []).filter(
@@ -1452,12 +1474,12 @@ async function buildCustomGrids(
         playerId: clubRolesTable.playerId,
       })
       .from(clubRolesTable)
-      .where(eq(clubRolesTable.published, true)),
+      .where(and(eq(clubRolesTable.tenantId, tenantId), eq(clubRolesTable.published, true))),
     db
       .select()
       .from(awardsTable)
-      .where(eq(awardsTable.published, true)),
-    db.select().from(premiershipsTable),
+      .where(and(eq(awardsTable.tenantId, tenantId), eq(awardsTable.published, true))),
+    db.select().from(premiershipsTable).where(eq(premiershipsTable.tenantId, tenantId)),
   ]);
   const awardByKey = new Map(awards.map((a) => [a.key, a]));
   const awardIds = awards.map((a) => a.id);
@@ -1570,6 +1592,9 @@ async function assembleBoards(
   settings: HonourDisplaySettingsRow,
   req: Request,
 ): Promise<HonourBoardOut[]> {
+  // Every curated board is scoped to the requesting tenant so a kiosk/admin
+  // never renders another club's premierships, life members, awards, etc.
+  const tenantId = getTenantId(req);
   const boardConfigsAll = settings.boardConfigs ?? {};
   const gridCols = (id: string): string[] | undefined =>
     boardConfigsAll[id]?.gridColumns;
@@ -1593,23 +1618,23 @@ async function assembleBoards(
     clubRecords,
     mostGames,
   ] = await Promise.all([
-    buildPremierships(),
-    buildPremiershipsGrid(gridCols("premierships_grid")),
-    buildAwardBoards(),
-    buildAwardWinnersGrid(gridCols("award_winners")),
-    buildCenturies(),
-    buildFiveWicketHauls(),
-    buildLifeMembers(),
-    buildCaptains(),
-    buildCaptainsGrid(gridCols("captains_grid")),
-    buildCommittee(gridCols("committee")),
-    buildPartnerships(),
+    buildPremierships(tenantId),
+    buildPremiershipsGrid(tenantId, gridCols("premierships_grid")),
+    buildAwardBoards(tenantId),
+    buildAwardWinnersGrid(tenantId, gridCols("award_winners")),
+    buildCenturies(tenantId),
+    buildFiveWicketHauls(tenantId),
+    buildLifeMembers(tenantId),
+    buildCaptains(tenantId),
+    buildCaptainsGrid(tenantId, gridCols("captains_grid")),
+    buildCommittee(tenantId, gridCols("committee")),
+    buildPartnerships(tenantId),
     buildMilestoneBoard(req),
-    buildAwardPoints(),
-    buildRecordsLeaderboards(),
+    buildAwardPoints(tenantId),
+    buildRecordsLeaderboards(tenantId),
     buildRecordsByGrade(),
-    buildTeamOfDecade(),
-    buildClubRecords(),
+    buildTeamOfDecade(tenantId),
+    buildClubRecords(tenantId),
     buildMostGames(),
   ]);
 
@@ -1638,7 +1663,7 @@ async function assembleBoards(
   boards.push(...buildComposites(settings.composites ?? [], boards));
 
   // Admin-built custom grid boards (independent of the base boards).
-  boards.push(...(await buildCustomGrids(settings.customGrids ?? [])));
+  boards.push(...(await buildCustomGrids(tenantId, settings.customGrids ?? [])));
 
   // Stamp the resolved display config + per-board skin/footnote onto every board.
   const boardConfigs = settings.boardConfigs ?? {};
@@ -1692,7 +1717,7 @@ function deriveMonogram(name: string, shortName: string | null): string {
  * pickers. Covers committee (offices), award_winners (awards), captains_grid
  * and premierships_grid (grades).
  */
-async function buildGridCatalog(): Promise<GridCatalogEntryOut[]> {
+async function buildGridCatalog(tenantId: number): Promise<GridCatalogEntryOut[]> {
   const [roleRows, awards, prems] = await Promise.all([
     db
       .select({
@@ -1701,15 +1726,16 @@ async function buildGridCatalog(): Promise<GridCatalogEntryOut[]> {
         displayOrder: clubRolesTable.displayOrder,
       })
       .from(clubRolesTable)
-      .where(eq(clubRolesTable.published, true)),
+      .where(and(eq(clubRolesTable.tenantId, tenantId), eq(clubRolesTable.published, true))),
     db
       .select()
       .from(awardsTable)
-      .where(eq(awardsTable.published, true))
+      .where(and(eq(awardsTable.tenantId, tenantId), eq(awardsTable.published, true)))
       .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id)),
     db
       .select({ grade: premiershipsTable.grade })
-      .from(premiershipsTable),
+      .from(premiershipsTable)
+      .where(eq(premiershipsTable.tenantId, tenantId)),
   ]);
 
   // Distinct offices (grade-null roles), ranked by the office order.
@@ -1762,9 +1788,9 @@ async function buildGridCatalog(): Promise<GridCatalogEntryOut[]> {
   ];
 }
 
-async function buildBrand() {
-  // req-less builder → default tenant brand.
-  const b = await getTenantBrand(DEFAULT_TENANT_ID);
+async function buildBrand(tenantId: number) {
+  // Brand the display with the request's tenant, not a hard-coded demo tenant.
+  const b = await getTenantBrand(tenantId);
   return {
     name: b.name,
     shortName: b.shortName ?? b.name,
@@ -1781,11 +1807,12 @@ async function buildBrand() {
 // ---------------------------------------------------------------------------
 
 router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
-  const settingsRow = await ensureHonourDisplaySettings();
+  const tenantId = getTenantId(req);
+  const settingsRow = await ensureHonourDisplaySettings(tenantId);
   const [boards, brand, gridCatalog, activeSponsors] = await Promise.all([
     assembleBoards(settingsRow, req),
-    buildBrand(),
-    buildGridCatalog(),
+    buildBrand(tenantId),
+    buildGridCatalog(tenantId),
     loadActiveSponsors(req.log),
   ]);
   res.json({
@@ -1801,14 +1828,15 @@ router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
 // the rotation with a long-lived token instead of an admin session, without
 // exposing the rest of the admin surface.
 router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
-  const settingsRow = await ensureHonourDisplaySettings();
+  const tenantId = getTenantId(req);
+  const settingsRow = await ensureHonourDisplaySettings(tenantId);
   if (!kioskTokenMatches(settingsRow.kioskToken, req.query.token)) {
     res.status(403).json({ error: "Invalid or revoked kiosk token" });
     return;
   }
   const [boards, brand, activeSponsors] = await Promise.all([
     assembleBoards(settingsRow, req),
-    buildBrand(),
+    buildBrand(tenantId),
     loadActiveSponsors(req.log),
   ]);
   res.json({ boards, brand, settings: serializeSettings(settingsRow), activeSponsors });
@@ -1820,7 +1848,8 @@ router.post(
   "/honour-display/kiosk-token",
   requireAdmin,
   async (req, res): Promise<void> => {
-    await ensureHonourDisplaySettings();
+    const tenantId = getTenantId(req);
+    await ensureHonourDisplaySettings(tenantId);
     // A non-empty `token` in the body sets a custom code; otherwise generate a
     // random one. An invalid custom code is rejected rather than silently
     // falling back, so the admin knows their chosen code wasn't accepted.
@@ -1842,7 +1871,7 @@ router.post(
     await db
       .update(honourDisplaySettingsTable)
       .set({ kioskToken: token, updatedAt: new Date() })
-      .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+      .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
     res.json({ token });
   },
 );
@@ -1852,12 +1881,13 @@ router.delete(
   "/honour-display/kiosk-token",
   requireAdmin,
   requireEntitlement("clubroomTv"),
-  async (_req, res): Promise<void> => {
-    await ensureHonourDisplaySettings();
+  async (req, res): Promise<void> => {
+    const tenantId = getTenantId(req);
+    await ensureHonourDisplaySettings(tenantId);
     await db
       .update(honourDisplaySettingsTable)
       .set({ kioskToken: null, updatedAt: new Date() })
-      .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+      .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
     res.json({ token: null });
   },
 );
@@ -1872,7 +1902,8 @@ router.patch(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    await ensureHonourDisplaySettings();
+    const tenantId = getTenantId(req);
+    await ensureHonourDisplaySettings(tenantId);
     const updateFields: Partial<typeof honourDisplaySettingsTable.$inferInsert> = {};
     for (const [k, v] of Object.entries(parsed.data)) {
       if (v !== undefined) (updateFields as Record<string, unknown>)[k] = v;
@@ -1882,12 +1913,12 @@ router.patch(
       await db
         .update(honourDisplaySettingsTable)
         .set(updateFields)
-        .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+        .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
     }
     const [row] = await db
       .select()
       .from(honourDisplaySettingsTable)
-      .where(eq(honourDisplaySettingsTable.id, DISPLAY_SETTINGS_ID));
+      .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
     res.json(serializeSettings(row));
   },
 );

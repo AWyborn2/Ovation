@@ -2,7 +2,12 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, adminsTable } from "@workspace/db";
+import {
+  db,
+  tenantsTable,
+  adminsTable,
+  honourDisplaySettingsTable,
+} from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
@@ -81,6 +86,11 @@ describe("entitlement gating: paid admin mutations are plan-gated", () => {
     if (billingBefore === undefined) delete process.env.BILLING_ENABLED;
     else process.env.BILLING_ENABLED = billingBefore;
     for (const t of [free, club, pro]) {
+      // The pro tenant's honour-display PATCH now creates a per-tenant settings
+      // row (previously a shared singleton); clear it before the tenant FK.
+      await db
+        .delete(honourDisplaySettingsTable)
+        .where(eq(honourDisplaySettingsTable.tenantId, t.id));
       await db.delete(adminsTable).where(eq(adminsTable.id, t.adminId));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, t.id));
     }
