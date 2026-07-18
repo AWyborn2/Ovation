@@ -539,6 +539,80 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
   const allTime = parsed.data.allTime === true;
   const requestedSeason = parsed.data.season ?? null;
 
+  // Central tenants: leaders, season default and grade chips all come from the
+  // central PCA database filtered to the tenant's club — never the native
+  // (Halls Head) snapshot tables. GUIDs map to tenant int ids via player_id_map.
+  if (await shouldReadCentral(req)) {
+    const central = await import("@workspace/db/central-queries");
+    const clubId = await getRequestCentralClubId(req);
+    const tenantId = getTenantId(req);
+    const mapRows = await db
+      .select({
+        participantId: playerIdMapTable.participantId,
+        playerId: playerIdMapTable.playerId,
+      })
+      .from(playerIdMapTable)
+      .where(eq(playerIdMapTable.tenantId, tenantId));
+    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const splitName = (dn: string | null) => {
+      const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return { givenName: "", surname: "" };
+      if (parts.length === 1) return { givenName: parts[0], surname: "" };
+      return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+    };
+    const toLeader = (l: { participantId: string; displayName: string | null; value: number }) => ({
+      playerId: intByGuid.get(l.participantId) ?? 0,
+      ...splitName(l.displayName),
+      value: l.value,
+    });
+
+    if (allTime) {
+      const [runs, wkts, availableGrades] = await Promise.all([
+        central.centralAllTimeLeaders(clubId, "runs", grade),
+        central.centralAllTimeLeaders(clubId, "wickets", grade),
+        central.centralGradesForSeason(clubId, null),
+      ]);
+      res.json({
+        season: null,
+        seasonLabel: null,
+        availableGrades,
+        topRunScorers: runs.map(toLeader),
+        topWicketTakers: wkts.map(toLeader),
+      });
+      return;
+    }
+
+    let season = requestedSeason;
+    if (season === null) {
+      const seasons = await central.centralClubSeasons(clubId);
+      season = seasons[0] ?? null;
+    }
+    if (season === null) {
+      res.json({
+        season: null,
+        seasonLabel: null,
+        availableGrades: [],
+        topRunScorers: [],
+        topWicketTakers: [],
+      });
+      return;
+    }
+
+    const [runs, wkts, availableGrades] = await Promise.all([
+      central.centralSeasonLeaders(clubId, season, "runs", grade),
+      central.centralSeasonLeaders(clubId, season, "wickets", grade),
+      central.centralGradesForSeason(clubId, season),
+    ]);
+    res.json({
+      season,
+      seasonLabel: seasonLabel(season),
+      availableGrades,
+      topRunScorers: runs.map(toLeader),
+      topWicketTakers: wkts.map(toLeader),
+    });
+    return;
+  }
+
   if (allTime) {
     const [topRunScorers, topWicketTakers, availableGrades] = await Promise.all([
       allTimeLeaders("runs", grade),

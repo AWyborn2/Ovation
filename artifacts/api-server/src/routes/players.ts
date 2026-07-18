@@ -398,10 +398,45 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   });
 });
 
+/**
+ * Resolve a central tenant's int player id to the participant GUID, or null
+ * when the id isn't in this tenant's crosswalk. Central-tenant int ids overlap
+ * the native players.id range, so the native tables must NEVER be queried with
+ * a central tenant's id — resolve via player_id_map or 404.
+ */
+async function centralParticipantFor(
+  req: Parameters<typeof getTenantId>[0],
+  playerId: number,
+): Promise<string | null> {
+  const [mapRow] = await db
+    .select({ participantId: playerIdMapTable.participantId })
+    .from(playerIdMapTable)
+    .where(
+      and(
+        eq(playerIdMapTable.tenantId, getTenantId(req)),
+        eq(playerIdMapTable.playerId, playerId),
+      ),
+    );
+  return mapRow?.participantId ?? null;
+}
+
 router.get("/players/:id/seasons", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (await shouldReadCentral(req)) {
+    const { centralPlayerSeasons } = await import("@workspace/db/central-queries");
+    const participantId = await centralParticipantFor(req, params.data.id);
+    if (!participantId) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.json(
+      await centralPlayerSeasons(await getRequestCentralClubId(req), participantId),
+    );
     return;
   }
 
@@ -471,6 +506,19 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (await shouldReadCentral(req)) {
+    const { centralPlayerMatchLog } = await import("@workspace/db/central-queries");
+    const participantId = await centralParticipantFor(req, params.data.id);
+    if (!participantId) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.json(
+      await centralPlayerMatchLog(await getRequestCentralClubId(req), participantId),
+    );
     return;
   }
 
