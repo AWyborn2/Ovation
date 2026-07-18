@@ -40,10 +40,10 @@ const board = {
 };
 
 // Heritage Timber skin (p1) — the classic carved-board look for a Team of the
-// Decade lineup.
+// Decade lineup. hb-compact keeps all eleven rows inside the capture cell.
 export function TeamOfTheDecade() {
   return (
-    <div className="hb skin-p1" style={{ maxWidth: 760, padding: 8 }}>
+    <div className="hb skin-p1 hb-compact" style={{ maxWidth: 700 }}>
       <TeamOfDecadeBoard board={board as any} brand={brand as any} />
     </div>
   );

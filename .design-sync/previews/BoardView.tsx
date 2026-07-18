@@ -59,7 +59,6 @@ const gamesTiers = [
     rows: [
       { playerId: 103, surname: "Nguyen", givenName: "Thanh", headline: "261", supporting: "1,904", sortValue: 261, gradesPlayed: ["A Grade"] },
       { playerId: 102, surname: "Duarte", givenName: "Sofia", headline: "223", supporting: "6,102", sortValue: 223, gradesPlayed: ["Female A Grade", "A Grade"] },
-      { playerId: 106, surname: "Te Rangi", givenName: "Kahu", headline: "207", supporting: "2,988", sortValue: 207, gradesPlayed: ["B Grade", "C Grade"] },
     ],
   },
 ];

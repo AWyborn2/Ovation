@@ -10,23 +10,46 @@ const brand = {
   juniorsColour: "#42342b",
 };
 
-// 90 rows > LIST_PAGE_SIZE (80): the renderer paginates and shows the pager.
-const SURNAMES = ["Callaghan", "Duarte", "Nguyen", "Whitfield", "Osei", "Te Rangi", "Sorensen", "Fitzgerald", "Okafor", "Marsh", "Patel", "Bramley", "Lindqvist", "Hartigan", "Kaur"];
-const GIVEN = ["R.", "S.", "T.", "J.", "M.", "K.", "B.", "A.", "D.", "C.", "H.", "G."];
+// An admin "custom:" skin resolved by the renderer via boardSkinStyle, plus a
+// per-board admin config (heading override, small text, compact rows).
+const customSkins = [
+  {
+    id: "custom:oak",
+    name: "Oak & Cream",
+    background: "#f2ead9",
+    boardBg: "#fbf6ea",
+    ink: "#3b2f1e",
+    muted: "#8a7a5f",
+    accent: "#7c5c2e",
+    accentInk: "#ffffff",
+    font: '"Georgia", "Times New Roman", serif',
+  },
+];
 
-const longList = {
-  id: "life-members",
+const champions = {
+  id: "club-champions",
   category: "Honour Boards",
   layout: "list",
-  title: "100 Games Club",
-  subtitle: "Every player to reach 100 senior games",
-  entries: Array.from({ length: 90 }, (_, i) => ({
-    season: `${1999 + Math.floor(i / 3)}/${String((2000 + Math.floor(i / 3)) % 100).padStart(2, "0")}`,
-    primaryText: `${GIVEN[i % GIVEN.length]} ${SURNAMES[i % SURNAMES.length]}`,
-    detail: `${350 - i * 2} games`,
-    playerId: 500 + i,
-  })),
-  display: { columns: 3, transition: "scroll", fit: false },
+  title: "Club Champions",
+  subtitle: "Senior club champion by season",
+  skin: "custom:oak",
+  footnote: "Awarded on aggregate championship points since 1998/99.",
+  entries: [
+    { season: "2025/26", primaryText: "S. Duarte", detail: "812 runs · 3 centuries", playerId: 102, meta: { grade: "A Grade" } },
+    { season: "2024/25", primaryText: "T. Nguyen", detail: "41 wickets @ 14.2", playerId: 103, meta: { grade: "A Grade" } },
+    { season: "2023/24", primaryText: "R. Callaghan", detail: "689 runs · 12 catches", playerId: 101, meta: { grade: "A Grade" } },
+    { season: "2022/23", primaryText: "M. Osei", detail: "512 runs · 28 wickets", playerId: 105, meta: { grade: "B Grade" } },
+    { season: "2021/22", primaryText: "K. Te Rangi", detail: "24 dismissals · 455 runs", playerId: 106 },
+    { season: "2020/21", primaryText: "J. Whitfield", detail: "734 runs · 2 centuries", playerId: 104 },
+    { season: "2019/20", primaryText: "R. Callaghan", detail: "702 runs · 9 catches", playerId: 101 },
+  ],
+  display: { columns: 1, transition: "scroll", fit: false },
+};
+
+const championsCfg = {
+  heading: "Champions Honour Roll",
+  textSize: "sm",
+  density: "compact",
 };
 
 const premiershipP2 = {
@@ -67,17 +90,24 @@ const premiershipP2 = {
   display: { columns: 1, transition: "slide", fit: false },
 };
 
-// Long list board: BoardRenderer paginates at 80 rows and renders the pager.
-export function ListBoardWithPager() {
+// Renderer resolving a per-board admin "custom:" skin (inline --hb-* vars) and
+// applying the admin config: heading override + small text + compact density,
+// with the footnote rendered under the board.
+export function CustomSkinWithAdminConfig() {
   return (
-    <div className="hb" style={{ maxWidth: 980, padding: 8 }}>
-      <BoardRenderer board={longList as any} brand={brand as any} />
+    <div className="hb" style={{ maxWidth: 860, padding: 8 }}>
+      <BoardRenderer
+        board={champions as any}
+        brand={brand as any}
+        cfg={championsCfg as any}
+        skins={customSkins as any}
+      />
     </div>
   );
 }
 
 // Per-board built-in skin override (p2 · Club Colours) plus a footnote; the
-// club vars feed the skin's plaque background and accents.
+// dark page backdrop is what the skin sits on in the kiosk.
 export function PremiershipWithSkinAndFootnote() {
   return (
     <div
@@ -85,7 +115,9 @@ export function PremiershipWithSkinAndFootnote() {
       style={
         {
           maxWidth: 940,
-          padding: 8,
+          padding: 16,
+          background: "#10203a",
+          borderRadius: 12,
           "--club-primary": "#1e3a5f",
           "--club-accent": "#c8a951",
         } as any
