@@ -22,6 +22,7 @@ import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
+import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
 
 const router: IRouter = Router();
 
@@ -412,6 +413,12 @@ router.get("/overview", async (req, res): Promise<void> => {
         seen.add(m.grade);
         return true;
       });
+      // Show an opponent's own uploaded brand (crest/colours) where that club is
+      // a tenant — central.clubs has no logo, so this is its source.
+      const overlaid = await overlayCentralOpponents(
+        recentMatches.map((m) => m.opponentClub),
+      );
+      recentMatches = recentMatches.map((m, i) => ({ ...m, opponentClub: overlaid[i] }));
       const splitName = (dn: string | null) => {
         const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
         if (parts.length === 0) return { givenName: "", surname: "" };
@@ -505,6 +512,12 @@ router.get("/overview", async (req, res): Promise<void> => {
         return true;
       })
       .map(toRecentMatch);
+
+    // Overlay uploaded brands for opponent clubs that are themselves tenants.
+    const overlaid = await overlayNativeOpponents(
+      recentMatches.map((m) => m.opponentClub),
+    );
+    recentMatches = recentMatches.map((m, i) => ({ ...m, opponentClub: overlaid[i] }));
 
     [topRunScorers, topWicketTakers] = await Promise.all([
       seasonLeaders(latestSeason, "runs"),

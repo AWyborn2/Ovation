@@ -156,3 +156,42 @@ export function mergeOpponentBrand<
   }
   return merged;
 }
+
+/** An opponent-club branding object carrying at least an id + the brand fields. */
+type BrandableOpponent = {
+  id: number;
+  shortName: string | null;
+  logoUrl: string | null;
+  logoUrl128: string | null;
+  primaryColour: string | null;
+  backgroundColour?: string | null;
+};
+
+/**
+ * Overlay uploaded tenant brands over a list of NATIVE opponent-club objects
+ * (keyed by the app clubs-register id = opponent_club_id). One batched lookup for
+ * the whole list; nulls pass through. Use for scorecards, match lists and the
+ * recent-matches / junior-match surfaces on the native path.
+ */
+export async function overlayNativeOpponents<T extends BrandableOpponent>(
+  opponents: (T | null)[],
+): Promise<(T | null)[]> {
+  const overlays = await getOpponentBrandsByAppClubId(
+    opponents.filter((o): o is T => o != null).map((o) => o.id),
+  );
+  return opponents.map((o) => (o ? mergeOpponentBrand(o, overlays.get(o.id)) : null));
+}
+
+/**
+ * Overlay uploaded tenant brands over a list of CENTRAL opponent-club objects
+ * (keyed by the central clubs-register club_id). This is where a central-path
+ * opponent gets a logo, since central.clubs has none.
+ */
+export async function overlayCentralOpponents<T extends BrandableOpponent>(
+  opponents: (T | null)[],
+): Promise<(T | null)[]> {
+  const overlays = await getOpponentBrandsByCentralClubId(
+    opponents.filter((o): o is T => o != null).map((o) => o.id),
+  );
+  return opponents.map((o) => (o ? mergeOpponentBrand(o, overlays.get(o.id)) : null));
+}
