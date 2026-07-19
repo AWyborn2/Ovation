@@ -41,6 +41,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { shouldReadCentral } from "../lib/tenant";
+import { overlayNativeOpponents } from "../lib/club-brand";
 import { getOrCreateSettings } from "../lib/settings";
 
 const router: IRouter = Router();
@@ -237,14 +238,15 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
       .where(eq(juniorMatchesTable.season, latestSeason))
       .orderBy(desc(juniorMatchesTable.id));
     const seenAge = new Set<string>();
-    recentMatches = seasonRows
-      .filter((r) => {
-        const key = r.match.ageGroup ?? "";
-        if (seenAge.has(key)) return false;
-        seenAge.add(key);
-        return true;
-      })
-      .map((r) => toMatchSummary(r.match, toOpponentClub(r)));
+    const recentRows = seasonRows.filter((r) => {
+      const key = r.match.ageGroup ?? "";
+      if (seenAge.has(key)) return false;
+      seenAge.add(key);
+      return true;
+    });
+    // Overlay uploaded brands for opponent clubs that are themselves tenants.
+    const recentOpps = await overlayNativeOpponents(recentRows.map(toOpponentClub));
+    recentMatches = recentRows.map((r, i) => toMatchSummary(r.match, recentOpps[i]));
 
     [topRunScorers, topWicketTakers] = await Promise.all([
       battingLeaders(5, { season: latestSeason }),
@@ -430,7 +432,8 @@ router.get("/juniors/matches", async (req, res): Promise<void> => {
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(seasonYear), desc(juniorMatchesTable.id));
 
-  res.json(rows.map((r) => toMatchSummary(r.match, toOpponentClub(r))));
+  const opps = await overlayNativeOpponents(rows.map(toOpponentClub));
+  res.json(rows.map((r, i) => toMatchSummary(r.match, opps[i])));
 });
 
 // ---------------------------------------------------------------------------
@@ -460,7 +463,9 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     return;
   }
   const match = matchRow.match;
-  const opponentClub = toOpponentClub(matchRow);
+  // Overlay the opponent's uploaded brand if that club is a tenant, so the
+  // junior scorecard + junior match-summary share card show its crest/colours.
+  const [opponentClub] = await overlayNativeOpponents([toOpponentClub(matchRow)]);
 
   const privateIds = await getPrivateIds();
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
