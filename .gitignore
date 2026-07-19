@@ -54,3 +54,10 @@ Thumbs.db
 # Claude Code skill symlinks -> .agents/skills/ (source of truth); on
 # platforms without symlink support these dereference into duplicate copies
 .claude/skills/
+
+# design-sync machine state
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

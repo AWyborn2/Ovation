@@ -1,0 +1,169 @@
+{
+  "projectId": "78bce92d-d7fe-4d4b-ace7-80409944e458",
+  "shape": "package",
+  "pkg": "@workspace/cricket-club",
+  "globalName": "OvationDS",
+  "tsconfig": "tsconfig.design-sync.json",
+  "srcDir": "src/components",
+  "cssEntry": "dist/ds-styles.css",
+  "buildCmd": "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/cricket-club... build && cat artifacts/cricket-club/dist/public/assets/index-*.css artifacts/cricket-club/dist/public/assets/honour-boards-*.css > artifacts/cricket-club/dist/ds-styles.css",
+  "componentSrcMap": {
+    "CardHeader": "src/components/ui/card.tsx",
+    "CardFooter": "src/components/ui/card.tsx",
+    "Spinner": "src/components/ui/spinner.tsx",
+    "Toaster": "src/components/ui/toaster.tsx",
+    "CardFront": "src/components/trading-card/card-faces.tsx",
+    "CardBack": "src/components/trading-card/card-faces.tsx",
+    "CardPhaseFrame": "src/components/trading-card/card-faces.tsx"
+  },
+  "libOverrides": {
+    "source-kit.mjs": "synth entry: explicit re-exports for componentSrcMap-pinned names resolve star-export ambiguity (7 duplicate names)"
+  },
+  "overrides": {
+    "AlertDialog": {
+      "cardMode": "single",
+      "primaryStory": "DeleteSeasonImportAlert"
+    },
+    "ContextMenu": {
+      "cardMode": "single",
+      "primaryStory": "MatchRowMenu"
+    },
+    "ContextMenuLabel": {
+      "cardMode": "single",
+      "primaryStory": "PlayerRowMenu"
+    },
+    "Dialog": {
+      "cardMode": "single",
+      "primaryStory": "EditPlayerDialog"
+    },
+    "Drawer": {
+      "cardMode": "single",
+      "primaryStory": "InningsSummaryDrawer"
+    },
+    "DrawerFooter": {
+      "cardMode": "single",
+      "primaryStory": "DrawerFooterInContext"
+    },
+    "DrawerHeader": {
+      "cardMode": "single",
+      "primaryStory": "DrawerHeaderInContext"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "primaryStory": "SeasonActionsMenu"
+    },
+    "DropdownMenuLabel": {
+      "cardMode": "single",
+      "primaryStory": "LabelledMenu"
+    },
+    "HoverCard": {
+      "cardMode": "single",
+      "primaryStory": "PlayerHoverCard"
+    },
+    "Menubar": {
+      "cardMode": "single",
+      "primaryStory": "AdminMenubar"
+    },
+    "MenubarLabel": {
+      "cardMode": "single",
+      "primaryStory": "ReportsMenuWithLabel"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "primaryStory": "StatsFilterPopover"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "primaryStory": "MatchDetailsSheet"
+    },
+    "Tooltip": {
+      "cardMode": "single",
+      "primaryStory": "ScorecardTooltip"
+    },
+    "ApproachingCard": {
+      "cardMode": "column"
+    },
+    "DatedMilestoneCard": {
+      "cardMode": "column"
+    },
+    "PlayerPhoto": {
+      "cardMode": "column"
+    },
+    "Sidebar": {
+      "cardMode": "column"
+    },
+    "SidebarContent": {
+      "cardMode": "column"
+    },
+    "SidebarFooter": {
+      "cardMode": "column"
+    },
+    "SidebarGroup": {
+      "cardMode": "column"
+    },
+    "SidebarGroupAction": {
+      "cardMode": "column"
+    },
+    "SidebarGroupContent": {
+      "cardMode": "column"
+    },
+    "SidebarGroupLabel": {
+      "cardMode": "column"
+    },
+    "SidebarHeader": {
+      "cardMode": "column"
+    },
+    "SidebarInput": {
+      "cardMode": "column"
+    },
+    "SidebarInset": {
+      "cardMode": "column"
+    },
+    "SidebarMenu": {
+      "cardMode": "column"
+    },
+    "SidebarMenuAction": {
+      "cardMode": "column"
+    },
+    "SidebarMenuBadge": {
+      "cardMode": "column"
+    },
+    "SidebarMenuButton": {
+      "cardMode": "column"
+    },
+    "SidebarMenuItem": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSkeleton": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSub": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSubButton": {
+      "cardMode": "column"
+    },
+    "SidebarMenuSubItem": {
+      "cardMode": "column"
+    },
+    "SidebarProvider": {
+      "cardMode": "column"
+    },
+    "SidebarRail": {
+      "cardMode": "column"
+    },
+    "SidebarSeparator": {
+      "cardMode": "column"
+    },
+    "SidebarTrigger": {
+      "cardMode": "column"
+    },
+    "StatTile": {
+      "cardMode": "column"
+    },
+    "SummaryStat": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

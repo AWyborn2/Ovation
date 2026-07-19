@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/components/share-card-modal": ["./src/components/share-card-modal.tsx"],
+      "@/components/trading-card": ["./src/components/trading-card.tsx"],
+      "@/*": ["./src/*"]
+    }
+  }
+}
