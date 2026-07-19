@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps, useGetPlayerMatches, getGetPlayerMatchesQueryKey, useGetPlayerSeasons, getGetPlayerSeasonsQueryKey } from "@workspace/api-client-react";
+import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps, useGetPlayerMatches, getGetPlayerMatchesQueryKey, useGetPlayerSeasons, getGetPlayerSeasonsQueryKey, useListJuniorPlayersBySenior, getListJuniorPlayersBySeniorQueryKey, useGetJuniorPlayer, getGetJuniorPlayerQueryKey } from "@workspace/api-client-react";
 import type { PlayerSeasonStat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -712,6 +712,87 @@ export default function PlayerDetail() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <JuniorCareerSection playerId={player.id} />
+    </div>
+  );
+}
+
+/**
+ * Junior career cross-section, shown only when an admin has linked this senior
+ * player to junior participant profile(s). Junior figures are fetched from the
+ * juniors API in the browser (the senior API never reads junior tables) and
+ * rendered as a clearly-labelled SEPARATE section — junior and senior records
+ * are never combined into any total, and this section never feeds the
+ * milestone tracker or any senior record/leaderboard.
+ */
+function JuniorCareerSection({ playerId }: { playerId: number }) {
+  const { data: links } = useListJuniorPlayersBySenior(playerId, {
+    query: { queryKey: getListJuniorPlayersBySeniorQueryKey(playerId) },
+  });
+  if (!links?.length) return null;
+  return (
+    <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <h2 className="text-lg font-serif font-bold text-primary m-0">Junior career</h2>
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">Kept separate from senior records</span>
+      </div>
+      <div className="w-12 h-[2px] bg-primary mb-4" />
+      <div className="space-y-4">
+        {links.map((l) => (
+          <JuniorIdentitySummary key={l.participantId} participantId={l.participantId} />
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground mt-4">
+        Junior records are kept completely separate from senior records and are
+        never combined into any career figure.
+      </p>
+    </div>
+  );
+}
+
+function JuniorIdentitySummary({ participantId }: { participantId: string }) {
+  const { data: junior } = useGetJuniorPlayer(participantId, {
+    query: { queryKey: getGetJuniorPlayerQueryKey(participantId) },
+  });
+  if (!junior) return null;
+  const tiles: { label: string; value: string | number }[] = [
+    { label: "Matches", value: junior.batting.matches },
+    { label: "Runs", value: junior.batting.runs },
+    { label: "High Score", value: junior.batting.highScore ?? "—" },
+    { label: "Wickets", value: junior.bowling.wickets },
+    {
+      label: "Best Bowling",
+      value:
+        junior.bowling.bestWickets != null
+          ? `${junior.bowling.bestWickets}/${junior.bowling.bestRuns ?? "—"}`
+          : "—",
+    },
+  ];
+  return (
+    <div className="border border-border rounded-md p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+        <div>
+          <span className="font-semibold text-primary">{junior.displayName}</span>
+          <span className="ml-2 text-xs text-muted-foreground">
+            {junior.firstSeason && junior.lastSeason
+              ? `${junior.firstSeason} – ${junior.lastSeason}`
+              : junior.firstSeason ?? ""}
+            {junior.teams ? ` · ${junior.teams}` : ""}
+          </span>
+        </div>
+        <Link href={`/juniors/players/${junior.participantId}`} className="text-sm text-primary hover:underline">
+          View junior profile →
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {tiles.map((t) => (
+          <div key={t.label} className="bg-background/60 border border-border rounded-md p-2 text-center">
+            <div className="text-lg font-serif font-bold text-primary">{t.value}</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{t.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

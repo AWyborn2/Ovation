@@ -1,5 +1,5 @@
 import { Link, useParams } from "wouter";
-import { useGetJuniorPlayer, getGetJuniorPlayerQueryKey } from "@workspace/api-client-react";
+import { useGetJuniorPlayer, getGetJuniorPlayerQueryKey, useGetPlayer, getGetPlayerQueryKey } from "@workspace/api-client-react";
 import { ArrowLeft } from "lucide-react";
 import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
@@ -140,8 +140,59 @@ export default function JuniorsPlayerDetail() {
               </div>
             </section>
           )}
+
+          {player.seniorPlayerId != null && (
+            <SeniorCareerSection seniorPlayerId={player.seniorPlayerId} />
+          )}
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Senior career cross-section, shown only when an admin has linked this junior
+ * participant to a senior player profile. Senior figures come from the senior
+ * API in the browser (no junior endpoint reads a senior table) and render as a
+ * clearly-labelled SEPARATE section — junior and senior records never combine.
+ */
+function SeniorCareerSection({ seniorPlayerId }: { seniorPlayerId: number }) {
+  const { data: senior } = useGetPlayer(seniorPlayerId, {
+    query: { queryKey: getGetPlayerQueryKey(seniorPlayerId) },
+  });
+  if (!senior) return null;
+  const clubTotal = senior.stats.find((s) => s.grade === "CLUB TOTAL");
+  const gradeRows = senior.stats.filter((s) => s.grade !== "CLUB TOTAL");
+  const sum = (pick: (s: (typeof gradeRows)[number]) => number | null | undefined): number =>
+    gradeRows.reduce((acc, s) => acc + (pick(s) ?? 0), 0);
+  const games = clubTotal?.games ?? sum((s) => s.games);
+  const runs = clubTotal?.runs ?? sum((s) => s.runs);
+  const wickets = clubTotal?.wickets ?? sum((s) => s.wickets);
+  return (
+    <section className="space-y-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-serif font-bold text-primary">Senior Career</h2>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Kept separate from junior records</span>
+      </div>
+      <div className="bg-card border border-border rounded-md p-4 shadow-sm">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+          <span className="font-semibold text-primary">
+            {senior.givenName} {senior.surname}
+          </span>
+          <Link href={`/players/${senior.id}`} className="text-sm text-primary hover:underline">
+            View senior profile →
+          </Link>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="Games" value={games} />
+          <Stat label="Runs" value={runs} />
+          <Stat label="Wickets" value={wickets} />
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Senior records are kept completely separate from junior records and
+          are never combined into any career figure.
+        </p>
+      </div>
+    </section>
   );
 }

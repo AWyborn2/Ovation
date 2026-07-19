@@ -243,3 +243,221 @@ FROM (
   ) m WHERE m.rn = 1
 ) best
 WHERE jm.id = best.match_id;
+
+-- 6. Re-apply admin stat corrections (junior_stat_corrections). The journal is
+-- APP-OWNED: this ETL reads it but NEVER deletes it — it is the permanent
+-- record of admin edits to the read-only dump data (and the API's audit
+-- trail). Ordering: re-create admin-added rows first (6a), then apply merged
+-- update patches (6b: per-column last-write-wins by journal id), then apply
+-- deletions (6c). Every pass is guarded by the stored playhq_match_id anchor:
+-- if a future dump renumbers row ids, a mismatched correction is SKIPPED (the
+-- loader reports skips loudly), never applied to the wrong row.
+
+-- 6a. Re-create admin-added rows (op='insert'; patch = the full row). Admin
+-- ids live at 100,000,000+ so they can never collide with dump ids.
+INSERT INTO public.junior_match_batting (
+  id, match_id, innings, batting_team, is_halls_head, bat_order,
+  participant_id, player_name, runs, balls, fours, sixes, strike_rate, dismissal
+)
+SELECT
+  (c.patch->>'id')::int, (c.patch->>'match_id')::int,
+  (c.patch->>'innings')::int, c.patch->>'batting_team',
+  COALESCE((c.patch->>'is_halls_head')::boolean, TRUE),
+  (c.patch->>'bat_order')::int, c.patch->>'participant_id',
+  c.patch->>'player_name', (c.patch->>'runs')::int, (c.patch->>'balls')::int,
+  (c.patch->>'fours')::int, (c.patch->>'sixes')::int,
+  (c.patch->>'strike_rate')::real, c.patch->>'dismissal'
+FROM public.junior_stat_corrections c
+WHERE c.target_table = 'junior_match_batting' AND c.op = 'insert'
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = (c.patch->>'match_id')::int
+      AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
+  )
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.junior_match_bowling (
+  id, match_id, innings, bowling_team, is_halls_head, participant_id,
+  player_name, overs, maidens, runs, wickets, economy, wides, no_balls
+)
+SELECT
+  (c.patch->>'id')::int, (c.patch->>'match_id')::int,
+  (c.patch->>'innings')::int, c.patch->>'bowling_team',
+  COALESCE((c.patch->>'is_halls_head')::boolean, TRUE),
+  c.patch->>'participant_id', c.patch->>'player_name',
+  (c.patch->>'overs')::real, (c.patch->>'maidens')::int,
+  (c.patch->>'runs')::int, (c.patch->>'wickets')::int,
+  (c.patch->>'economy')::real, (c.patch->>'wides')::int,
+  (c.patch->>'no_balls')::int
+FROM public.junior_stat_corrections c
+WHERE c.target_table = 'junior_match_bowling' AND c.op = 'insert'
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = (c.patch->>'match_id')::int
+      AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
+  )
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.junior_match_rosters (
+  id, match_id, team_name, is_halls_head, participant_id, player_name
+)
+SELECT
+  (c.patch->>'id')::int, (c.patch->>'match_id')::int, c.patch->>'team_name',
+  COALESCE((c.patch->>'is_halls_head')::boolean, TRUE),
+  c.patch->>'participant_id', c.patch->>'player_name'
+FROM public.junior_stat_corrections c
+WHERE c.target_table = 'junior_match_rosters' AND c.op = 'insert'
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = (c.patch->>'match_id')::int
+      AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- 6b. Merged update patches. Per (target_table, target_id): later journal
+-- rows win per column (jsonb_object_agg keeps the last value for a duplicate
+-- key, and the aggregate is ordered by journal id).
+CREATE TEMP TABLE _jsc_upd ON COMMIT DROP AS
+SELECT
+  c.target_table,
+  c.target_id,
+  jsonb_object_agg(kv.key, kv.value ORDER BY c.id) AS eff,
+  max(c.playhq_match_id) AS playhq_match_id
+FROM public.junior_stat_corrections c
+CROSS JOIN LATERAL jsonb_each(c.patch) kv
+WHERE c.op = 'update' AND c.patch IS NOT NULL
+GROUP BY c.target_table, c.target_id;
+
+UPDATE public.junior_matches t
+SET
+  team1_score     = CASE WHEN u.eff ? 'team1_score'     THEN u.eff->>'team1_score'                ELSE t.team1_score END,
+  team2_score     = CASE WHEN u.eff ? 'team2_score'     THEN u.eff->>'team2_score'                ELSE t.team2_score END,
+  hh_result       = CASE WHEN u.eff ? 'hh_result'       THEN u.eff->>'hh_result'                  ELSE t.hh_result END,
+  winner          = CASE WHEN u.eff ? 'winner'          THEN u.eff->>'winner'                     ELSE t.winner END,
+  toss_winner     = CASE WHEN u.eff ? 'toss_winner'     THEN u.eff->>'toss_winner'                ELSE t.toss_winner END,
+  hh_batted_first = CASE WHEN u.eff ? 'hh_batted_first' THEN (u.eff->>'hh_batted_first')::boolean ELSE t.hh_batted_first END,
+  status          = CASE WHEN u.eff ? 'status'          THEN u.eff->>'status'                     ELSE t.status END,
+  match_date      = CASE WHEN u.eff ? 'match_date'      THEN u.eff->>'match_date'                 ELSE t.match_date END,
+  round           = CASE WHEN u.eff ? 'round'           THEN u.eff->>'round'                      ELSE t.round END,
+  venue           = CASE WHEN u.eff ? 'venue'           THEN u.eff->>'venue'                      ELSE t.venue END
+FROM _jsc_upd u
+WHERE u.target_table = 'junior_matches'
+  AND t.id = u.target_id::int
+  AND (u.playhq_match_id IS NULL OR t.playhq_match_id = u.playhq_match_id);
+
+UPDATE public.junior_match_batting t
+SET
+  runs           = CASE WHEN u.eff ? 'runs'           THEN (u.eff->>'runs')::int        ELSE t.runs END,
+  balls          = CASE WHEN u.eff ? 'balls'          THEN (u.eff->>'balls')::int       ELSE t.balls END,
+  fours          = CASE WHEN u.eff ? 'fours'          THEN (u.eff->>'fours')::int       ELSE t.fours END,
+  sixes          = CASE WHEN u.eff ? 'sixes'          THEN (u.eff->>'sixes')::int       ELSE t.sixes END,
+  strike_rate    = CASE WHEN u.eff ? 'strike_rate'    THEN (u.eff->>'strike_rate')::real ELSE t.strike_rate END,
+  dismissal      = CASE WHEN u.eff ? 'dismissal'      THEN u.eff->>'dismissal'          ELSE t.dismissal END,
+  bat_order      = CASE WHEN u.eff ? 'bat_order'      THEN (u.eff->>'bat_order')::int   ELSE t.bat_order END,
+  participant_id = CASE WHEN u.eff ? 'participant_id' THEN u.eff->>'participant_id'     ELSE t.participant_id END,
+  player_name    = CASE WHEN u.eff ? 'player_name'    THEN u.eff->>'player_name'        ELSE t.player_name END
+FROM _jsc_upd u
+WHERE u.target_table = 'junior_match_batting'
+  AND t.id = u.target_id::int
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = t.match_id
+      AND (u.playhq_match_id IS NULL OR m.playhq_match_id = u.playhq_match_id)
+  );
+
+UPDATE public.junior_match_bowling t
+SET
+  overs          = CASE WHEN u.eff ? 'overs'          THEN (u.eff->>'overs')::real      ELSE t.overs END,
+  maidens        = CASE WHEN u.eff ? 'maidens'        THEN (u.eff->>'maidens')::int     ELSE t.maidens END,
+  runs           = CASE WHEN u.eff ? 'runs'           THEN (u.eff->>'runs')::int        ELSE t.runs END,
+  wickets        = CASE WHEN u.eff ? 'wickets'        THEN (u.eff->>'wickets')::int     ELSE t.wickets END,
+  economy        = CASE WHEN u.eff ? 'economy'        THEN (u.eff->>'economy')::real    ELSE t.economy END,
+  wides          = CASE WHEN u.eff ? 'wides'          THEN (u.eff->>'wides')::int       ELSE t.wides END,
+  no_balls       = CASE WHEN u.eff ? 'no_balls'       THEN (u.eff->>'no_balls')::int    ELSE t.no_balls END,
+  participant_id = CASE WHEN u.eff ? 'participant_id' THEN u.eff->>'participant_id'     ELSE t.participant_id END,
+  player_name    = CASE WHEN u.eff ? 'player_name'    THEN u.eff->>'player_name'        ELSE t.player_name END
+FROM _jsc_upd u
+WHERE u.target_table = 'junior_match_bowling'
+  AND t.id = u.target_id::int
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = t.match_id
+      AND (u.playhq_match_id IS NULL OR m.playhq_match_id = u.playhq_match_id)
+  );
+
+UPDATE public.junior_match_rosters t
+SET
+  participant_id = CASE WHEN u.eff ? 'participant_id' THEN u.eff->>'participant_id' ELSE t.participant_id END,
+  player_name    = CASE WHEN u.eff ? 'player_name'    THEN u.eff->>'player_name'    ELSE t.player_name END
+FROM _jsc_upd u
+WHERE u.target_table = 'junior_match_rosters'
+  AND t.id = u.target_id::int
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = t.match_id
+      AND (u.playhq_match_id IS NULL OR m.playhq_match_id = u.playhq_match_id)
+  );
+
+-- Participants re-key by their stable PlayHQ GUID — no anchor needed.
+UPDATE public.junior_participants t
+SET
+  display_name = CASE WHEN u.eff ? 'display_name' THEN u.eff->>'display_name'          ELSE t.display_name END,
+  is_private   = CASE WHEN u.eff ? 'is_private'   THEN (u.eff->>'is_private')::boolean ELSE t.is_private END
+FROM _jsc_upd u
+WHERE u.target_table = 'junior_participants'
+  AND t.participant_id = u.target_id;
+
+-- A corrected display name flows onto the participant's HH scorecard/roster
+-- lines, matching what the admin API does at edit time.
+UPDATE public.junior_match_batting b
+SET player_name = p.display_name
+FROM _jsc_upd u
+JOIN public.junior_participants p ON p.participant_id = u.target_id
+WHERE u.target_table = 'junior_participants' AND u.eff ? 'display_name'
+  AND b.participant_id = p.participant_id AND b.is_halls_head;
+
+UPDATE public.junior_match_bowling w
+SET player_name = p.display_name
+FROM _jsc_upd u
+JOIN public.junior_participants p ON p.participant_id = u.target_id
+WHERE u.target_table = 'junior_participants' AND u.eff ? 'display_name'
+  AND w.participant_id = p.participant_id AND w.is_halls_head;
+
+UPDATE public.junior_match_rosters r
+SET player_name = p.display_name
+FROM _jsc_upd u
+JOIN public.junior_participants p ON p.participant_id = u.target_id
+WHERE u.target_table = 'junior_participants' AND u.eff ? 'display_name'
+  AND r.participant_id = p.participant_id AND r.is_halls_head;
+
+-- 6c. Re-apply deletions last (a deleted admin-created row was re-inserted in
+-- 6a and is removed again here — net correct). Anchored like the updates.
+DELETE FROM public.junior_match_batting t
+USING public.junior_stat_corrections c
+WHERE c.target_table = 'junior_match_batting' AND c.op = 'delete'
+  AND t.id = c.target_id::int
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = t.match_id
+      AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
+  );
+
+DELETE FROM public.junior_match_bowling t
+USING public.junior_stat_corrections c
+WHERE c.target_table = 'junior_match_bowling' AND c.op = 'delete'
+  AND t.id = c.target_id::int
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = t.match_id
+      AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
+  );
+
+DELETE FROM public.junior_match_rosters t
+USING public.junior_stat_corrections c
+WHERE c.target_table = 'junior_match_rosters' AND c.op = 'delete'
+  AND t.id = c.target_id::int
+  AND EXISTS (
+    SELECT 1 FROM public.junior_matches m
+    WHERE m.id = t.match_id
+      AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
+  );

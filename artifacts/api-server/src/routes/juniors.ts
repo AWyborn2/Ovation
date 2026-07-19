@@ -21,6 +21,7 @@ import {
   juniorOfficeBearersTable,
   juniorMatchDisplaySettingsTable,
   clubsTable,
+  playersTable,
   type JuniorMatchDisplaySettingsRow,
 } from "@workspace/db";
 import {
@@ -37,10 +38,19 @@ import {
   UpdateJuniorMatchDisplaySettingsBody,
   UpdateJuniorPremiershipParams,
   UpdateJuniorPremiershipBody,
+  ListJuniorPlayersBySeniorParams,
+  SetJuniorSeniorLinkParams,
+  SetJuniorSeniorLinkBody,
+  ClearJuniorSeniorLinkParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { shouldReadCentral } from "../lib/tenant";
+import {
+  BALLS_PER_OVER,
+  oversToBalls,
+  ballsToOvers,
+} from "../lib/junior-cricket";
 import { overlayNativeOpponents } from "../lib/club-brand";
 import { getOrCreateSettings } from "../lib/settings";
 
@@ -154,21 +164,8 @@ function toMatchSummary(
   };
 }
 
-// Junior overs are stored in cricket ball notation (e.g. 4.5 = 4 overs 5 balls,
-// 6 balls per over), NOT decimal — so they must be converted to balls before
-// summing, then back. Summing the raw reals would corrupt totals and economy.
-const BALLS_PER_OVER = 6;
-
-function oversToBalls(overs: number | null): number {
-  if (!overs) return 0;
-  const whole = Math.floor(overs);
-  const balls = Math.round((overs - whole) * 10);
-  return whole * BALLS_PER_OVER + balls;
-}
-
-function ballsToOvers(balls: number): number {
-  return Math.floor(balls / BALLS_PER_OVER) + (balls % BALLS_PER_OVER) / 10;
-}
+// Ball-notation helpers live in ../lib/junior-cricket (shared with the
+// juniors admin routes): overs are cricket ball notation, never decimal.
 
 /** A dismissal counts as "not out" when there is no out-dismissal recorded. */
 function isNotOut(dismissal: string | null): boolean {
@@ -578,6 +575,12 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     hhBattedFirst: match.hhBattedFirst,
     hhScore,
     opponentScore,
+    // Raw team columns as stored (the admin scorecard editor patches these
+    // directly rather than inverting the hh/opponent score mapping).
+    team1: match.team1,
+    team2: match.team2,
+    team1Score: match.team1Score,
+    team2Score: match.team2Score,
     opponentClub,
     innings,
     rosters,
@@ -711,6 +714,153 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
     })),
   );
 });
+
+// ---------------------------------------------------------------------------
+// GET /juniors/players/by-senior/{playerId}
+//
+// Junior participants cross-linked to a senior player. Registered BEFORE
+// /juniors/players/:id so "by-senior" is not swallowed by the :id param. The
+// link is junior_participants.senior_player_id — a profile cross-reference
+// only; this endpoint returns identities, never any figure, so junior and
+// senior stats stay completely separate.
+// ---------------------------------------------------------------------------
+router.get(
+  "/juniors/players/by-senior/:playerId",
+  async (req, res): Promise<void> => {
+    const params = ListJuniorPlayersBySeniorParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    // Central tenants have no native junior participants — empty list, no leak.
+    if (await shouldReadCentral(req)) {
+      res.json([]);
+      return;
+    }
+
+    const rows = await db
+      .select({
+        participantId: juniorParticipantsTable.participantId,
+        displayName: juniorParticipantsTable.displayName,
+        firstSeason: juniorParticipantsTable.firstSeason,
+        lastSeason: juniorParticipantsTable.lastSeason,
+      })
+      .from(juniorParticipantsTable)
+      .where(
+        and(
+          eq(juniorParticipantsTable.seniorPlayerId, params.data.playerId),
+          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+          eq(juniorParticipantsTable.isPrivate, false),
+        ),
+      )
+      .orderBy(juniorParticipantsTable.displayName);
+
+    res.json(
+      rows.map((r) => ({
+        participantId: r.participantId,
+        displayName: r.displayName ?? "",
+        firstSeason: r.firstSeason,
+        lastSeason: r.lastSeason,
+      })),
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// PUT /juniors/participants/{id}/senior-link (admin)
+// DELETE /juniors/participants/{id}/senior-link (admin)
+//
+// Set / clear the junior→senior profile cross-reference at admin discretion.
+// The write touches ONLY junior_participants. The lone read of the senior
+// players table is a referential existence check (the same EXISTS check the
+// juniors ETL performs when re-applying links) — it returns a boolean, never a
+// figure, so the juniors-isolation rule (junior and senior STATS never
+// combine) is untouched. Multiple junior participants may link to one senior
+// player: PlayHQ occasionally minted duplicate GUIDs for the same child.
+// ---------------------------------------------------------------------------
+router.put(
+  "/juniors/participants/:id/senior-link",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = SetJuniorSeniorLinkParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = SetJuniorSeniorLinkBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    if (await shouldReadCentral(req)) {
+      res.status(404).json({ error: "Participant not found" });
+      return;
+    }
+
+    const [senior] = await db
+      .select({ id: playersTable.id })
+      .from(playersTable)
+      .where(eq(playersTable.id, body.data.seniorPlayerId));
+    if (!senior) {
+      res.status(404).json({ error: "Senior player not found" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(juniorParticipantsTable)
+      .set({ seniorPlayerId: body.data.seniorPlayerId })
+      .where(
+        and(
+          eq(juniorParticipantsTable.participantId, params.data.id),
+          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning();
+    if (!updated) {
+      res.status(404).json({ error: "Participant not found" });
+      return;
+    }
+
+    res.json({
+      participantId: updated.participantId,
+      displayName: updated.displayName ?? "",
+      seniorPlayerId: updated.seniorPlayerId,
+    });
+  },
+);
+
+router.delete(
+  "/juniors/participants/:id/senior-link",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = ClearJuniorSeniorLinkParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (await shouldReadCentral(req)) {
+      res.status(404).json({ error: "Participant not found" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(juniorParticipantsTable)
+      .set({ seniorPlayerId: null })
+      .where(
+        and(
+          eq(juniorParticipantsTable.participantId, params.data.id),
+          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning();
+    if (!updated) {
+      res.status(404).json({ error: "Participant not found" });
+      return;
+    }
+    res.status(204).end();
+  },
+);
 
 // ---------------------------------------------------------------------------
 // GET /juniors/players/{id}

@@ -32,6 +32,7 @@ export * from "./clubs";
 export * from "./partnerships";
 export * from "./historical_records";
 export * from "./juniors";
+export * from "./junior_stat_corrections";
 export * from "./tenants";
 export * from "./player_id_map";
 export * from "./player_curation";

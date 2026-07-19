@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddJuniorRosterEntryBody,
   Admin,
   AdminInput,
   AdminResetIssued,
@@ -81,6 +82,8 @@ import type {
   ClubRoleUpdate,
   CommitImportInput,
   CommitImportResult,
+  CreateJuniorBattingLineBody,
+  CreateJuniorBowlingLineBody,
   Dashboard,
   DebutEntry,
   ErrorEnvelope,
@@ -101,6 +104,11 @@ import type {
   ImportPreview,
   ImportRecord,
   IssueAdminResetBody,
+  JuniorAdminBattingLine,
+  JuniorAdminBowlingLine,
+  JuniorAdminMatchMeta,
+  JuniorAdminParticipant,
+  JuniorAdminRosterEntry,
   JuniorFilters,
   JuniorLeaderboardRow,
   JuniorLeaderboards,
@@ -117,7 +125,10 @@ import type {
   JuniorPremiership,
   JuniorPremiershipUpdate,
   JuniorSeasonTopPerformers,
+  JuniorSeniorLink,
+  JuniorSeniorLinkSummary,
   JuniorSocialMilestone,
+  JuniorStatCorrection,
   KioskTokenInput,
   KioskTokenResponse,
   LifeMember,
@@ -126,6 +137,7 @@ import type {
   ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
+  ListJuniorStatCorrectionsParams,
   ListMatchesParams,
   ListNavItemsParams,
   ListPlayersParams,
@@ -179,6 +191,7 @@ import type {
   RoundUpInput,
   SeasonTopPerformers,
   SeniorOverview,
+  SetJuniorSeniorLinkBody,
   SignupBody,
   SignupResult,
   SlugAvailability,
@@ -209,6 +222,10 @@ import type {
   UndoSeasonInput,
   UndoSeasonResult,
   UpdateAdminTenantBrandBody,
+  UpdateJuniorBattingLineBody,
+  UpdateJuniorBowlingLineBody,
+  UpdateJuniorMatchBody,
+  UpdateJuniorParticipantBody,
   UpdatePlatformBrandBody,
   UpdateTenantBody,
   UpdateTenantBrandBody,
@@ -14607,6 +14624,884 @@ export function useGetJuniorMatch<TData = Awaited<ReturnType<typeof getJuniorMat
 
 
 
+export const getUpdateJuniorMatchUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${id}`
+}
+
+/**
+ * @summary Correct junior match metadata (admin). Every change is journalled in junior_stat_corrections so it survives a juniors data reload.
+ */
+export const updateJuniorMatch = async (id: number,
+    updateJuniorMatchBody: UpdateJuniorMatchBody, options?: RequestInit): Promise<JuniorAdminMatchMeta> => {
+
+  return customFetch<JuniorAdminMatchMeta>(getUpdateJuniorMatchUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateJuniorMatchBody,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorMatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorMatch>>, TError,{id: number;data: BodyType<UpdateJuniorMatchBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorMatch>>, TError,{id: number;data: BodyType<UpdateJuniorMatchBody>}, TContext> => {
+
+const mutationKey = ['updateJuniorMatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorMatch>>, {id: number;data: BodyType<UpdateJuniorMatchBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateJuniorMatch(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorMatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorMatch>>>
+    export type UpdateJuniorMatchMutationBody = BodyType<UpdateJuniorMatchBody>
+    export type UpdateJuniorMatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct junior match metadata (admin). Every change is journalled in junior_stat_corrections so it survives a juniors data reload.
+ */
+export const useUpdateJuniorMatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorMatch>>, TError,{id: number;data: BodyType<UpdateJuniorMatchBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorMatch>>,
+        TError,
+        {id: number;data: BodyType<UpdateJuniorMatchBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorMatchMutationOptions(options));
+    }
+
+export const getCreateJuniorBattingLineUrl = (matchId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/batting`
+}
+
+/**
+ * @summary Add a missing Halls Head junior batting line (admin, journalled)
+ */
+export const createJuniorBattingLine = async (matchId: number,
+    createJuniorBattingLineBody: CreateJuniorBattingLineBody, options?: RequestInit): Promise<JuniorAdminBattingLine> => {
+
+  return customFetch<JuniorAdminBattingLine>(getCreateJuniorBattingLineUrl(matchId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createJuniorBattingLineBody,)
+  }
+);}
+
+
+
+
+export const getCreateJuniorBattingLineMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorBattingLine>>, TError,{matchId: number;data: BodyType<CreateJuniorBattingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createJuniorBattingLine>>, TError,{matchId: number;data: BodyType<CreateJuniorBattingLineBody>}, TContext> => {
+
+const mutationKey = ['createJuniorBattingLine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createJuniorBattingLine>>, {matchId: number;data: BodyType<CreateJuniorBattingLineBody>}> = (props) => {
+          const {matchId,data} = props ?? {};
+
+          return  createJuniorBattingLine(matchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateJuniorBattingLineMutationResult = NonNullable<Awaited<ReturnType<typeof createJuniorBattingLine>>>
+    export type CreateJuniorBattingLineMutationBody = BodyType<CreateJuniorBattingLineBody>
+    export type CreateJuniorBattingLineMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a missing Halls Head junior batting line (admin, journalled)
+ */
+export const useCreateJuniorBattingLine = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorBattingLine>>, TError,{matchId: number;data: BodyType<CreateJuniorBattingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createJuniorBattingLine>>,
+        TError,
+        {matchId: number;data: BodyType<CreateJuniorBattingLineBody>},
+        TContext
+      > => {
+      return useMutation(getCreateJuniorBattingLineMutationOptions(options));
+    }
+
+export const getUpdateJuniorBattingLineUrl = (matchId: number,
+    lineId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/batting/${lineId}`
+}
+
+/**
+ * @summary Correct a junior batting line (admin, journalled)
+ */
+export const updateJuniorBattingLine = async (matchId: number,
+    lineId: number,
+    updateJuniorBattingLineBody: UpdateJuniorBattingLineBody, options?: RequestInit): Promise<JuniorAdminBattingLine> => {
+
+  return customFetch<JuniorAdminBattingLine>(getUpdateJuniorBattingLineUrl(matchId,lineId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateJuniorBattingLineBody,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorBattingLineMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorBattingLine>>, TError,{matchId: number;lineId: number;data: BodyType<UpdateJuniorBattingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorBattingLine>>, TError,{matchId: number;lineId: number;data: BodyType<UpdateJuniorBattingLineBody>}, TContext> => {
+
+const mutationKey = ['updateJuniorBattingLine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorBattingLine>>, {matchId: number;lineId: number;data: BodyType<UpdateJuniorBattingLineBody>}> = (props) => {
+          const {matchId,lineId,data} = props ?? {};
+
+          return  updateJuniorBattingLine(matchId,lineId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorBattingLineMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorBattingLine>>>
+    export type UpdateJuniorBattingLineMutationBody = BodyType<UpdateJuniorBattingLineBody>
+    export type UpdateJuniorBattingLineMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct a junior batting line (admin, journalled)
+ */
+export const useUpdateJuniorBattingLine = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorBattingLine>>, TError,{matchId: number;lineId: number;data: BodyType<UpdateJuniorBattingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorBattingLine>>,
+        TError,
+        {matchId: number;lineId: number;data: BodyType<UpdateJuniorBattingLineBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorBattingLineMutationOptions(options));
+    }
+
+export const getDeleteJuniorBattingLineUrl = (matchId: number,
+    lineId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/batting/${lineId}`
+}
+
+/**
+ * @summary Remove a duplicate/erroneous junior batting line (admin, journalled)
+ */
+export const deleteJuniorBattingLine = async (matchId: number,
+    lineId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteJuniorBattingLineUrl(matchId,lineId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteJuniorBattingLineMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorBattingLine>>, TError,{matchId: number;lineId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorBattingLine>>, TError,{matchId: number;lineId: number}, TContext> => {
+
+const mutationKey = ['deleteJuniorBattingLine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJuniorBattingLine>>, {matchId: number;lineId: number}> = (props) => {
+          const {matchId,lineId} = props ?? {};
+
+          return  deleteJuniorBattingLine(matchId,lineId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJuniorBattingLineMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJuniorBattingLine>>>
+
+    export type DeleteJuniorBattingLineMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a duplicate/erroneous junior batting line (admin, journalled)
+ */
+export const useDeleteJuniorBattingLine = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorBattingLine>>, TError,{matchId: number;lineId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJuniorBattingLine>>,
+        TError,
+        {matchId: number;lineId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteJuniorBattingLineMutationOptions(options));
+    }
+
+export const getCreateJuniorBowlingLineUrl = (matchId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/bowling`
+}
+
+/**
+ * @summary Add a missing Halls Head junior bowling line (admin, journalled)
+ */
+export const createJuniorBowlingLine = async (matchId: number,
+    createJuniorBowlingLineBody: CreateJuniorBowlingLineBody, options?: RequestInit): Promise<JuniorAdminBowlingLine> => {
+
+  return customFetch<JuniorAdminBowlingLine>(getCreateJuniorBowlingLineUrl(matchId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createJuniorBowlingLineBody,)
+  }
+);}
+
+
+
+
+export const getCreateJuniorBowlingLineMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorBowlingLine>>, TError,{matchId: number;data: BodyType<CreateJuniorBowlingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createJuniorBowlingLine>>, TError,{matchId: number;data: BodyType<CreateJuniorBowlingLineBody>}, TContext> => {
+
+const mutationKey = ['createJuniorBowlingLine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createJuniorBowlingLine>>, {matchId: number;data: BodyType<CreateJuniorBowlingLineBody>}> = (props) => {
+          const {matchId,data} = props ?? {};
+
+          return  createJuniorBowlingLine(matchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateJuniorBowlingLineMutationResult = NonNullable<Awaited<ReturnType<typeof createJuniorBowlingLine>>>
+    export type CreateJuniorBowlingLineMutationBody = BodyType<CreateJuniorBowlingLineBody>
+    export type CreateJuniorBowlingLineMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a missing Halls Head junior bowling line (admin, journalled)
+ */
+export const useCreateJuniorBowlingLine = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorBowlingLine>>, TError,{matchId: number;data: BodyType<CreateJuniorBowlingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createJuniorBowlingLine>>,
+        TError,
+        {matchId: number;data: BodyType<CreateJuniorBowlingLineBody>},
+        TContext
+      > => {
+      return useMutation(getCreateJuniorBowlingLineMutationOptions(options));
+    }
+
+export const getUpdateJuniorBowlingLineUrl = (matchId: number,
+    lineId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/bowling/${lineId}`
+}
+
+/**
+ * @summary Correct a junior bowling line (admin, journalled)
+ */
+export const updateJuniorBowlingLine = async (matchId: number,
+    lineId: number,
+    updateJuniorBowlingLineBody: UpdateJuniorBowlingLineBody, options?: RequestInit): Promise<JuniorAdminBowlingLine> => {
+
+  return customFetch<JuniorAdminBowlingLine>(getUpdateJuniorBowlingLineUrl(matchId,lineId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateJuniorBowlingLineBody,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorBowlingLineMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorBowlingLine>>, TError,{matchId: number;lineId: number;data: BodyType<UpdateJuniorBowlingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorBowlingLine>>, TError,{matchId: number;lineId: number;data: BodyType<UpdateJuniorBowlingLineBody>}, TContext> => {
+
+const mutationKey = ['updateJuniorBowlingLine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorBowlingLine>>, {matchId: number;lineId: number;data: BodyType<UpdateJuniorBowlingLineBody>}> = (props) => {
+          const {matchId,lineId,data} = props ?? {};
+
+          return  updateJuniorBowlingLine(matchId,lineId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorBowlingLineMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorBowlingLine>>>
+    export type UpdateJuniorBowlingLineMutationBody = BodyType<UpdateJuniorBowlingLineBody>
+    export type UpdateJuniorBowlingLineMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct a junior bowling line (admin, journalled)
+ */
+export const useUpdateJuniorBowlingLine = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorBowlingLine>>, TError,{matchId: number;lineId: number;data: BodyType<UpdateJuniorBowlingLineBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorBowlingLine>>,
+        TError,
+        {matchId: number;lineId: number;data: BodyType<UpdateJuniorBowlingLineBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorBowlingLineMutationOptions(options));
+    }
+
+export const getDeleteJuniorBowlingLineUrl = (matchId: number,
+    lineId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/bowling/${lineId}`
+}
+
+/**
+ * @summary Remove a duplicate/erroneous junior bowling line (admin, journalled)
+ */
+export const deleteJuniorBowlingLine = async (matchId: number,
+    lineId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteJuniorBowlingLineUrl(matchId,lineId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteJuniorBowlingLineMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorBowlingLine>>, TError,{matchId: number;lineId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorBowlingLine>>, TError,{matchId: number;lineId: number}, TContext> => {
+
+const mutationKey = ['deleteJuniorBowlingLine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJuniorBowlingLine>>, {matchId: number;lineId: number}> = (props) => {
+          const {matchId,lineId} = props ?? {};
+
+          return  deleteJuniorBowlingLine(matchId,lineId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJuniorBowlingLineMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJuniorBowlingLine>>>
+
+    export type DeleteJuniorBowlingLineMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a duplicate/erroneous junior bowling line (admin, journalled)
+ */
+export const useDeleteJuniorBowlingLine = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorBowlingLine>>, TError,{matchId: number;lineId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJuniorBowlingLine>>,
+        TError,
+        {matchId: number;lineId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteJuniorBowlingLineMutationOptions(options));
+    }
+
+export const getAddJuniorRosterEntryUrl = (matchId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/roster`
+}
+
+/**
+ * @summary Add a Halls Head junior to a match roster (admin, journalled)
+ */
+export const addJuniorRosterEntry = async (matchId: number,
+    addJuniorRosterEntryBody: AddJuniorRosterEntryBody, options?: RequestInit): Promise<JuniorAdminRosterEntry> => {
+
+  return customFetch<JuniorAdminRosterEntry>(getAddJuniorRosterEntryUrl(matchId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      addJuniorRosterEntryBody,)
+  }
+);}
+
+
+
+
+export const getAddJuniorRosterEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addJuniorRosterEntry>>, TError,{matchId: number;data: BodyType<AddJuniorRosterEntryBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addJuniorRosterEntry>>, TError,{matchId: number;data: BodyType<AddJuniorRosterEntryBody>}, TContext> => {
+
+const mutationKey = ['addJuniorRosterEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addJuniorRosterEntry>>, {matchId: number;data: BodyType<AddJuniorRosterEntryBody>}> = (props) => {
+          const {matchId,data} = props ?? {};
+
+          return  addJuniorRosterEntry(matchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddJuniorRosterEntryMutationResult = NonNullable<Awaited<ReturnType<typeof addJuniorRosterEntry>>>
+    export type AddJuniorRosterEntryMutationBody = BodyType<AddJuniorRosterEntryBody>
+    export type AddJuniorRosterEntryMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a Halls Head junior to a match roster (admin, journalled)
+ */
+export const useAddJuniorRosterEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addJuniorRosterEntry>>, TError,{matchId: number;data: BodyType<AddJuniorRosterEntryBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addJuniorRosterEntry>>,
+        TError,
+        {matchId: number;data: BodyType<AddJuniorRosterEntryBody>},
+        TContext
+      > => {
+      return useMutation(getAddJuniorRosterEntryMutationOptions(options));
+    }
+
+export const getRemoveJuniorRosterEntryUrl = (matchId: number,
+    lineId: number,) => {
+
+
+
+
+  return `/api/juniors/matches/${matchId}/roster/${lineId}`
+}
+
+/**
+ * @summary Remove a junior roster entry (admin, journalled)
+ */
+export const removeJuniorRosterEntry = async (matchId: number,
+    lineId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveJuniorRosterEntryUrl(matchId,lineId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveJuniorRosterEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeJuniorRosterEntry>>, TError,{matchId: number;lineId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeJuniorRosterEntry>>, TError,{matchId: number;lineId: number}, TContext> => {
+
+const mutationKey = ['removeJuniorRosterEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeJuniorRosterEntry>>, {matchId: number;lineId: number}> = (props) => {
+          const {matchId,lineId} = props ?? {};
+
+          return  removeJuniorRosterEntry(matchId,lineId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveJuniorRosterEntryMutationResult = NonNullable<Awaited<ReturnType<typeof removeJuniorRosterEntry>>>
+
+    export type RemoveJuniorRosterEntryMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a junior roster entry (admin, journalled)
+ */
+export const useRemoveJuniorRosterEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeJuniorRosterEntry>>, TError,{matchId: number;lineId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeJuniorRosterEntry>>,
+        TError,
+        {matchId: number;lineId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveJuniorRosterEntryMutationOptions(options));
+    }
+
+export const getUpdateJuniorParticipantUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}`
+}
+
+/**
+ * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ */
+export const updateJuniorParticipant = async (id: string,
+    updateJuniorParticipantBody: UpdateJuniorParticipantBody, options?: RequestInit): Promise<JuniorAdminParticipant> => {
+
+  return customFetch<JuniorAdminParticipant>(getUpdateJuniorParticipantUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateJuniorParticipantBody,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorParticipantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorParticipant>>, TError,{id: string;data: BodyType<UpdateJuniorParticipantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorParticipant>>, TError,{id: string;data: BodyType<UpdateJuniorParticipantBody>}, TContext> => {
+
+const mutationKey = ['updateJuniorParticipant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorParticipant>>, {id: string;data: BodyType<UpdateJuniorParticipantBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateJuniorParticipant(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorParticipantMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorParticipant>>>
+    export type UpdateJuniorParticipantMutationBody = BodyType<UpdateJuniorParticipantBody>
+    export type UpdateJuniorParticipantMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ */
+export const useUpdateJuniorParticipant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorParticipant>>, TError,{id: string;data: BodyType<UpdateJuniorParticipantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorParticipant>>,
+        TError,
+        {id: string;data: BodyType<UpdateJuniorParticipantBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorParticipantMutationOptions(options));
+    }
+
+export const getListJuniorStatCorrectionsUrl = (params?: ListJuniorStatCorrectionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/corrections?${stringifiedParams}` : `/api/juniors/corrections`
+}
+
+/**
+ * @summary List junior stat corrections, optionally for one match (admin)
+ */
+export const listJuniorStatCorrections = async (params?: ListJuniorStatCorrectionsParams, options?: RequestInit): Promise<JuniorStatCorrection[]> => {
+
+  return customFetch<JuniorStatCorrection[]>(getListJuniorStatCorrectionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorStatCorrectionsQueryKey = (params?: ListJuniorStatCorrectionsParams,) => {
+    return [
+    `/api/juniors/corrections`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJuniorStatCorrectionsQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorStatCorrections>>, TError = ErrorType<unknown>>(params?: ListJuniorStatCorrectionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorStatCorrections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorStatCorrectionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorStatCorrections>>> = ({ signal }) => listJuniorStatCorrections(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorStatCorrections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorStatCorrectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorStatCorrections>>>
+export type ListJuniorStatCorrectionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List junior stat corrections, optionally for one match (admin)
+ */
+
+export function useListJuniorStatCorrections<TData = Awaited<ReturnType<typeof listJuniorStatCorrections>>, TError = ErrorType<unknown>>(
+ params?: ListJuniorStatCorrectionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorStatCorrections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorStatCorrectionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRevertJuniorStatCorrectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/corrections/${id}`
+}
+
+/**
+ * @summary Revert a junior stat correction (admin). Corrections must be reverted newest-first per target row; reverting under a newer correction on the same row returns 409.
+ */
+export const revertJuniorStatCorrection = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevertJuniorStatCorrectionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevertJuniorStatCorrectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertJuniorStatCorrection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revertJuniorStatCorrection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['revertJuniorStatCorrection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revertJuniorStatCorrection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revertJuniorStatCorrection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevertJuniorStatCorrectionMutationResult = NonNullable<Awaited<ReturnType<typeof revertJuniorStatCorrection>>>
+
+    export type RevertJuniorStatCorrectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Revert a junior stat correction (admin). Corrections must be reverted newest-first per target row; reverting under a newer correction on the same row returns 409.
+ */
+export const useRevertJuniorStatCorrection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertJuniorStatCorrection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revertJuniorStatCorrection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRevertJuniorStatCorrectionMutationOptions(options));
+    }
+
 export const getListJuniorPlayersUrl = (params?: ListJuniorPlayersParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -14679,6 +15574,83 @@ export function useListJuniorPlayers<TData = Awaited<ReturnType<typeof listJunio
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListJuniorPlayersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListJuniorPlayersBySeniorUrl = (playerId: number,) => {
+
+
+
+
+  return `/api/juniors/players/by-senior/${playerId}`
+}
+
+/**
+ * @summary Junior participants cross-linked to a senior player (profile cross-reference only — junior and senior figures are never combined). Private participants are excluded.
+ */
+export const listJuniorPlayersBySenior = async (playerId: number, options?: RequestInit): Promise<JuniorSeniorLinkSummary[]> => {
+
+  return customFetch<JuniorSeniorLinkSummary[]>(getListJuniorPlayersBySeniorUrl(playerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorPlayersBySeniorQueryKey = (playerId: number,) => {
+    return [
+    `/api/juniors/players/by-senior/${playerId}`
+    ] as const;
+    }
+
+
+export const getListJuniorPlayersBySeniorQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorPlayersBySenior>>, TError = ErrorType<unknown>>(playerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPlayersBySenior>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorPlayersBySeniorQueryKey(playerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorPlayersBySenior>>> = ({ signal }) => listJuniorPlayersBySenior(playerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(playerId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorPlayersBySenior>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorPlayersBySeniorQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorPlayersBySenior>>>
+export type ListJuniorPlayersBySeniorQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Junior participants cross-linked to a senior player (profile cross-reference only — junior and senior figures are never combined). Private participants are excluded.
+ */
+
+export function useListJuniorPlayersBySenior<TData = Awaited<ReturnType<typeof listJuniorPlayersBySenior>>, TError = ErrorType<unknown>>(
+ playerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPlayersBySenior>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorPlayersBySeniorQueryOptions(playerId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -14767,6 +15739,148 @@ export function useGetJuniorPlayer<TData = Awaited<ReturnType<typeof getJuniorPl
 
 
 
+
+export const getSetJuniorSeniorLinkUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/senior-link`
+}
+
+/**
+ * @summary Link a junior participant to a senior player profile (admin). The link is a profile cross-reference only; junior and senior stats stay completely separate and are never merged into any figure.
+ */
+export const setJuniorSeniorLink = async (id: string,
+    setJuniorSeniorLinkBody: SetJuniorSeniorLinkBody, options?: RequestInit): Promise<JuniorSeniorLink> => {
+
+  return customFetch<JuniorSeniorLink>(getSetJuniorSeniorLinkUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setJuniorSeniorLinkBody,)
+  }
+);}
+
+
+
+
+export const getSetJuniorSeniorLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorSeniorLink>>, TError,{id: string;data: BodyType<SetJuniorSeniorLinkBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setJuniorSeniorLink>>, TError,{id: string;data: BodyType<SetJuniorSeniorLinkBody>}, TContext> => {
+
+const mutationKey = ['setJuniorSeniorLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setJuniorSeniorLink>>, {id: string;data: BodyType<SetJuniorSeniorLinkBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setJuniorSeniorLink(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetJuniorSeniorLinkMutationResult = NonNullable<Awaited<ReturnType<typeof setJuniorSeniorLink>>>
+    export type SetJuniorSeniorLinkMutationBody = BodyType<SetJuniorSeniorLinkBody>
+    export type SetJuniorSeniorLinkMutationError = ErrorType<void>
+
+    /**
+ * @summary Link a junior participant to a senior player profile (admin). The link is a profile cross-reference only; junior and senior stats stay completely separate and are never merged into any figure.
+ */
+export const useSetJuniorSeniorLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorSeniorLink>>, TError,{id: string;data: BodyType<SetJuniorSeniorLinkBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setJuniorSeniorLink>>,
+        TError,
+        {id: string;data: BodyType<SetJuniorSeniorLinkBody>},
+        TContext
+      > => {
+      return useMutation(getSetJuniorSeniorLinkMutationOptions(options));
+    }
+
+export const getClearJuniorSeniorLinkUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/senior-link`
+}
+
+/**
+ * @summary Remove a junior participant's senior profile link (admin)
+ */
+export const clearJuniorSeniorLink = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getClearJuniorSeniorLinkUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getClearJuniorSeniorLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearJuniorSeniorLink>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clearJuniorSeniorLink>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['clearJuniorSeniorLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clearJuniorSeniorLink>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clearJuniorSeniorLink(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClearJuniorSeniorLinkMutationResult = NonNullable<Awaited<ReturnType<typeof clearJuniorSeniorLink>>>
+
+    export type ClearJuniorSeniorLinkMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a junior participant's senior profile link (admin)
+ */
+export const useClearJuniorSeniorLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearJuniorSeniorLink>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clearJuniorSeniorLink>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getClearJuniorSeniorLinkMutationOptions(options));
+    }
 
 export const getGetJuniorLeaderboardsUrl = () => {
 

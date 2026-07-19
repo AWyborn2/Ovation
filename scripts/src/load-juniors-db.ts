@@ -170,6 +170,51 @@ function main(): void {
   console.log(`  private participants (hidden by API): ${privateCount}`);
   console.log(`  preserved junior->senior links:       ${linkCount}`);
 
+  // Admin stat corrections (junior_stat_corrections) are re-applied by ETL
+  // step 6, guarded by their playhq_match_id anchor: if a dump renumbered row
+  // ids, a correction whose target no longer resolves is SKIPPED, not applied
+  // to the wrong row. Count and report unresolved corrections loudly — the
+  // journal is never deleted, so a skip means "review/re-anchor", not "lost".
+  const correctionCount = psql(
+    `SELECT count(*) FROM public.junior_stat_corrections`,
+  );
+  const skippedCorrections = psql(`
+    SELECT count(*) FROM public.junior_stat_corrections c
+    WHERE
+      (c.target_table = 'junior_matches' AND NOT EXISTS (
+        SELECT 1 FROM public.junior_matches m
+        WHERE m.id = c.target_id::int
+          AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
+      OR (c.target_table = 'junior_match_batting' AND c.op <> 'delete' AND NOT EXISTS (
+        SELECT 1 FROM public.junior_match_batting t
+        JOIN public.junior_matches m ON m.id = t.match_id
+        WHERE t.id = c.target_id::int
+          AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
+      OR (c.target_table = 'junior_match_bowling' AND c.op <> 'delete' AND NOT EXISTS (
+        SELECT 1 FROM public.junior_match_bowling t
+        JOIN public.junior_matches m ON m.id = t.match_id
+        WHERE t.id = c.target_id::int
+          AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
+      OR (c.target_table = 'junior_match_rosters' AND c.op <> 'delete' AND NOT EXISTS (
+        SELECT 1 FROM public.junior_match_rosters t
+        JOIN public.junior_matches m ON m.id = t.match_id
+        WHERE t.id = c.target_id::int
+          AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
+      OR (c.target_table = 'junior_participants' AND NOT EXISTS (
+        SELECT 1 FROM public.junior_participants p
+        WHERE p.participant_id = c.target_id))
+  `);
+  console.log(`  admin stat corrections journalled:    ${correctionCount}`);
+  if (Number(skippedCorrections) > 0) {
+    console.log(
+      `\n  *** WARNING: ${skippedCorrections} correction(s) no longer resolve — ` +
+        `dump ids may have been renumbered. They were SKIPPED (never applied ` +
+        `to the wrong row) and remain in junior_stat_corrections for review.`,
+    );
+  } else {
+    console.log(`  corrections skipped on re-apply:      0`);
+  }
+
   console.log("\nDone.");
 }
 

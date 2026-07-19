@@ -4188,6 +4188,14 @@ export interface JuniorMatchDetail {
   hhScore?: string | null;
   /** @nullable */
   opponentScore?: string | null;
+  /** @nullable */
+  team1?: string | null;
+  /** @nullable */
+  team2?: string | null;
+  /** @nullable */
+  team1Score?: string | null;
+  /** @nullable */
+  team2Score?: string | null;
   /** Branding for the opposition club, resolved from the shared clubs register via the junior match's opponentClubId. Null when unmatched; renderers fall back gracefully. */
   opponentClub?: OpponentClub | null;
   innings: JuniorInnings[];
@@ -4211,6 +4219,279 @@ export interface JuniorPlayerSummary {
      * @nullable
      */
   seniorPlayerId?: number | null;
+}
+
+export interface JuniorSeniorLinkSummary {
+  participantId: string;
+  displayName: string;
+  /** @nullable */
+  firstSeason?: string | null;
+  /** @nullable */
+  lastSeason?: string | null;
+}
+
+export interface SetJuniorSeniorLinkBody {
+  /** Senior players.id to cross-reference. Profile linking only; never combines stats. */
+  seniorPlayerId: number;
+}
+
+export interface JuniorSeniorLink {
+  participantId: string;
+  displayName: string;
+  /** @nullable */
+  seniorPlayerId?: number | null;
+}
+
+export interface UpdateJuniorMatchBody {
+  /** @nullable */
+  team1Score?: string | null;
+  /** @nullable */
+  team2Score?: string | null;
+  /** @nullable */
+  hhResult?: string | null;
+  /** @nullable */
+  winner?: string | null;
+  /** @nullable */
+  tossWinner?: string | null;
+  /** @nullable */
+  hhBattedFirst?: boolean | null;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  round?: string | null;
+  /** @nullable */
+  venue?: string | null;
+}
+
+export interface JuniorAdminMatchMeta {
+  id: number;
+  /** @nullable */
+  team1?: string | null;
+  /** @nullable */
+  team2?: string | null;
+  /** @nullable */
+  team1Score?: string | null;
+  /** @nullable */
+  team2Score?: string | null;
+  /** @nullable */
+  hhResult?: string | null;
+  /** @nullable */
+  winner?: string | null;
+  /** @nullable */
+  tossWinner?: string | null;
+  /** @nullable */
+  hhBattedFirst?: boolean | null;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  matchDate?: string | null;
+  /** @nullable */
+  round?: string | null;
+  /** @nullable */
+  venue?: string | null;
+}
+
+export interface UpdateJuniorBattingLineBody {
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  /** @nullable */
+  dismissal?: string | null;
+  /** @nullable */
+  batOrder?: number | null;
+  /** Re-attribute this line to a different Halls Head junior participant. */
+  participantId?: string;
+}
+
+export interface CreateJuniorBattingLineBody {
+  innings: number;
+  participantId: string;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  /** @nullable */
+  dismissal?: string | null;
+  /** @nullable */
+  batOrder?: number | null;
+}
+
+export interface JuniorAdminBattingLine {
+  id: number;
+  matchId: number;
+  /** @nullable */
+  innings?: number | null;
+  /** @nullable */
+  batOrder?: number | null;
+  /** @nullable */
+  participantId?: string | null;
+  /** @nullable */
+  playerName?: string | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  balls?: number | null;
+  /** @nullable */
+  fours?: number | null;
+  /** @nullable */
+  sixes?: number | null;
+  /** @nullable */
+  strikeRate?: number | null;
+  /** @nullable */
+  dismissal?: string | null;
+}
+
+export interface UpdateJuniorBowlingLineBody {
+  /**
+     * Cricket ball notation (e.g. 3.4 = 3 overs 4 balls; fractional digit 0-5).
+     * @nullable
+     */
+  overs?: number | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+  /** Re-attribute this line to a different Halls Head junior participant. */
+  participantId?: string;
+}
+
+export interface CreateJuniorBowlingLineBody {
+  innings: number;
+  participantId: string;
+  /**
+     * Cricket ball notation (e.g. 3.4 = 3 overs 4 balls; fractional digit 0-5).
+     * @nullable
+     */
+  overs?: number | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+}
+
+export interface JuniorAdminBowlingLine {
+  id: number;
+  matchId: number;
+  /** @nullable */
+  innings?: number | null;
+  /** @nullable */
+  participantId?: string | null;
+  /** @nullable */
+  playerName?: string | null;
+  /** @nullable */
+  overs?: number | null;
+  /** @nullable */
+  maidens?: number | null;
+  /** @nullable */
+  runs?: number | null;
+  /** @nullable */
+  wickets?: number | null;
+  /** @nullable */
+  economy?: number | null;
+  /** @nullable */
+  wides?: number | null;
+  /** @nullable */
+  noBalls?: number | null;
+}
+
+export interface AddJuniorRosterEntryBody {
+  participantId: string;
+}
+
+export interface JuniorAdminRosterEntry {
+  id: number;
+  matchId: number;
+  /** @nullable */
+  participantId?: string | null;
+  /** @nullable */
+  playerName?: string | null;
+}
+
+export interface UpdateJuniorParticipantBody {
+  /** @minLength 1 */
+  displayName?: string;
+  isPrivate?: boolean;
+}
+
+export interface JuniorAdminParticipant {
+  participantId: string;
+  displayName: string;
+  isPrivate: boolean;
+}
+
+export type JuniorStatCorrectionTargetTable = typeof JuniorStatCorrectionTargetTable[keyof typeof JuniorStatCorrectionTargetTable];
+
+
+export const JuniorStatCorrectionTargetTable = {
+  junior_matches: 'junior_matches',
+  junior_match_batting: 'junior_match_batting',
+  junior_match_bowling: 'junior_match_bowling',
+  junior_match_rosters: 'junior_match_rosters',
+  junior_participants: 'junior_participants',
+} as const;
+
+export type JuniorStatCorrectionOp = typeof JuniorStatCorrectionOp[keyof typeof JuniorStatCorrectionOp];
+
+
+export const JuniorStatCorrectionOp = {
+  update: 'update',
+  insert: 'insert',
+  delete: 'delete',
+} as const;
+
+/**
+ * @nullable
+ */
+export type JuniorStatCorrectionPatch = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type JuniorStatCorrectionPrevValues = { [key: string]: unknown } | null;
+
+export interface JuniorStatCorrection {
+  id: number;
+  targetTable: JuniorStatCorrectionTargetTable;
+  targetId: string;
+  op: JuniorStatCorrectionOp;
+  /** @nullable */
+  patch?: JuniorStatCorrectionPatch;
+  /** @nullable */
+  prevValues?: JuniorStatCorrectionPrevValues;
+  /** @nullable */
+  matchId?: number | null;
+  /** @nullable */
+  playhqMatchId?: string | null;
+  /** @nullable */
+  participantId?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  createdBy?: string | null;
+  createdAt: string;
 }
 
 export interface JuniorBattingTotals {
@@ -4713,6 +4994,13 @@ season?: string;
  * Filter by age group (e.g. "U14")
  */
 ageGroup?: string;
+};
+
+export type ListJuniorStatCorrectionsParams = {
+/**
+ * Restrict to corrections anchored to this junior match
+ */
+matchId?: number;
 };
 
 export type ListJuniorPlayersParams = {

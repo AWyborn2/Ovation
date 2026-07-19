@@ -158,4 +158,12 @@ describe("central tenant never receives native (Halls Head) data", () => {
     expect(res.body.topRunScorers).toEqual([]);
     expect(res.body.topWicketTakers).toEqual([]);
   });
+
+  it("/juniors/players/by-senior: a central tenant gets an empty list, never the demo club's links", async () => {
+    const res = await request(app)
+      .get(`/api/juniors/players/by-senior/${nativePlayerId}`)
+      .set("x-tenant-id", String(centralTenantId))
+      .expect(200);
+    expect(res.body).toEqual([]);
+  });
 });
