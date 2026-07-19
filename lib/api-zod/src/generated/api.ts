@@ -6001,6 +6001,10 @@ export const GetJuniorMatchResponse = zod.object({
   "hhBattedFirst": zod.boolean().nullish(),
   "hhScore": zod.string().nullish(),
   "opponentScore": zod.string().nullish(),
+  "team1": zod.string().nullish(),
+  "team2": zod.string().nullish(),
+  "team1Score": zod.string().nullish(),
+  "team2Score": zod.string().nullish(),
   "opponentClub": zod.union([zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -6055,6 +6059,242 @@ export const GetJuniorMatchResponse = zod.object({
 
 
 /**
+ * @summary Correct junior match metadata (admin). Every change is journalled in junior_stat_corrections so it survives a juniors data reload.
+ */
+export const UpdateJuniorMatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateJuniorMatchBody = zod.object({
+  "team1Score": zod.string().nullish(),
+  "team2Score": zod.string().nullish(),
+  "hhResult": zod.string().nullish(),
+  "winner": zod.string().nullish(),
+  "tossWinner": zod.string().nullish(),
+  "hhBattedFirst": zod.boolean().nullish(),
+  "status": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "round": zod.string().nullish(),
+  "venue": zod.string().nullish()
+})
+
+export const UpdateJuniorMatchResponse = zod.object({
+  "id": zod.number(),
+  "team1": zod.string().nullish(),
+  "team2": zod.string().nullish(),
+  "team1Score": zod.string().nullish(),
+  "team2Score": zod.string().nullish(),
+  "hhResult": zod.string().nullish(),
+  "winner": zod.string().nullish(),
+  "tossWinner": zod.string().nullish(),
+  "hhBattedFirst": zod.boolean().nullish(),
+  "status": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "round": zod.string().nullish(),
+  "venue": zod.string().nullish()
+})
+
+
+/**
+ * @summary Add a missing Halls Head junior batting line (admin, journalled)
+ */
+export const CreateJuniorBattingLineParams = zod.object({
+  "matchId": zod.coerce.number()
+})
+
+export const CreateJuniorBattingLineBody = zod.object({
+  "innings": zod.number(),
+  "participantId": zod.string(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "dismissal": zod.string().nullish(),
+  "batOrder": zod.number().nullish()
+})
+
+
+/**
+ * @summary Correct a junior batting line (admin, journalled)
+ */
+export const UpdateJuniorBattingLineParams = zod.object({
+  "matchId": zod.coerce.number(),
+  "lineId": zod.coerce.number()
+})
+
+export const UpdateJuniorBattingLineBody = zod.object({
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "dismissal": zod.string().nullish(),
+  "batOrder": zod.number().nullish(),
+  "participantId": zod.string().optional().describe('Re-attribute this line to a different Halls Head junior participant.')
+})
+
+export const UpdateJuniorBattingLineResponse = zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "innings": zod.number().nullish(),
+  "batOrder": zod.number().nullish(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string().nullish(),
+  "runs": zod.number().nullish(),
+  "balls": zod.number().nullish(),
+  "fours": zod.number().nullish(),
+  "sixes": zod.number().nullish(),
+  "strikeRate": zod.number().nullish(),
+  "dismissal": zod.string().nullish()
+})
+
+
+/**
+ * @summary Remove a duplicate/erroneous junior batting line (admin, journalled)
+ */
+export const DeleteJuniorBattingLineParams = zod.object({
+  "matchId": zod.coerce.number(),
+  "lineId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a missing Halls Head junior bowling line (admin, journalled)
+ */
+export const CreateJuniorBowlingLineParams = zod.object({
+  "matchId": zod.coerce.number()
+})
+
+export const CreateJuniorBowlingLineBody = zod.object({
+  "innings": zod.number(),
+  "participantId": zod.string(),
+  "overs": zod.number().nullish().describe('Cricket ball notation (e.g. 3.4 = 3 overs 4 balls; fractional digit 0-5).'),
+  "maidens": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish()
+})
+
+
+/**
+ * @summary Correct a junior bowling line (admin, journalled)
+ */
+export const UpdateJuniorBowlingLineParams = zod.object({
+  "matchId": zod.coerce.number(),
+  "lineId": zod.coerce.number()
+})
+
+export const UpdateJuniorBowlingLineBody = zod.object({
+  "overs": zod.number().nullish().describe('Cricket ball notation (e.g. 3.4 = 3 overs 4 balls; fractional digit 0-5).'),
+  "maidens": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish(),
+  "participantId": zod.string().optional().describe('Re-attribute this line to a different Halls Head junior participant.')
+})
+
+export const UpdateJuniorBowlingLineResponse = zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "innings": zod.number().nullish(),
+  "participantId": zod.string().nullish(),
+  "playerName": zod.string().nullish(),
+  "overs": zod.number().nullish(),
+  "maidens": zod.number().nullish(),
+  "runs": zod.number().nullish(),
+  "wickets": zod.number().nullish(),
+  "economy": zod.number().nullish(),
+  "wides": zod.number().nullish(),
+  "noBalls": zod.number().nullish()
+})
+
+
+/**
+ * @summary Remove a duplicate/erroneous junior bowling line (admin, journalled)
+ */
+export const DeleteJuniorBowlingLineParams = zod.object({
+  "matchId": zod.coerce.number(),
+  "lineId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a Halls Head junior to a match roster (admin, journalled)
+ */
+export const AddJuniorRosterEntryParams = zod.object({
+  "matchId": zod.coerce.number()
+})
+
+export const AddJuniorRosterEntryBody = zod.object({
+  "participantId": zod.string()
+})
+
+
+/**
+ * @summary Remove a junior roster entry (admin, journalled)
+ */
+export const RemoveJuniorRosterEntryParams = zod.object({
+  "matchId": zod.coerce.number(),
+  "lineId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ */
+export const UpdateJuniorParticipantParams = zod.object({
+  "id": zod.coerce.string().describe('PlayHQ participant_id')
+})
+
+
+
+
+export const UpdateJuniorParticipantBody = zod.object({
+  "displayName": zod.string().min(1).optional(),
+  "isPrivate": zod.boolean().optional()
+})
+
+export const UpdateJuniorParticipantResponse = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "isPrivate": zod.boolean()
+})
+
+
+/**
+ * @summary List junior stat corrections, optionally for one match (admin)
+ */
+export const ListJuniorStatCorrectionsQueryParams = zod.object({
+  "matchId": zod.coerce.number().optional().describe('Restrict to corrections anchored to this junior match')
+})
+
+export const ListJuniorStatCorrectionsResponseItem = zod.object({
+  "id": zod.number(),
+  "targetTable": zod.enum(['junior_matches', 'junior_match_batting', 'junior_match_bowling', 'junior_match_rosters', 'junior_participants']),
+  "targetId": zod.string(),
+  "op": zod.enum(['update', 'insert', 'delete']),
+  "patch": zod.record(zod.string(), zod.unknown()).nullish(),
+  "prevValues": zod.record(zod.string(), zod.unknown()).nullish(),
+  "matchId": zod.number().nullish(),
+  "playhqMatchId": zod.string().nullish(),
+  "participantId": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListJuniorStatCorrectionsResponse = zod.array(ListJuniorStatCorrectionsResponseItem)
+
+
+/**
+ * @summary Revert a junior stat correction (admin). Corrections must be reverted newest-first per target row; reverting under a newer correction on the same row returns 409.
+ */
+export const RevertJuniorStatCorrectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Searchable directory of junior players (private participants excluded)
  */
 export const ListJuniorPlayersQueryParams = zod.object({
@@ -6075,6 +6315,22 @@ export const ListJuniorPlayersResponseItem = zod.object({
   "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.')
 })
 export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
+
+
+/**
+ * @summary Junior participants cross-linked to a senior player (profile cross-reference only — junior and senior figures are never combined). Private participants are excluded.
+ */
+export const ListJuniorPlayersBySeniorParams = zod.object({
+  "playerId": zod.coerce.number().describe('Senior players.id')
+})
+
+export const ListJuniorPlayersBySeniorResponseItem = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "firstSeason": zod.string().nullish(),
+  "lastSeason": zod.string().nullish()
+})
+export const ListJuniorPlayersBySeniorResponse = zod.array(ListJuniorPlayersBySeniorResponseItem)
 
 
 /**
@@ -6156,6 +6412,32 @@ export const GetJuniorPlayerResponse = zod.object({
   "noBalls": zod.number().nullish()
 }).describe('One bowling line in a junior innings. Private participants are masked.'),zod.null()]).optional()
 }))
+})
+
+
+/**
+ * @summary Link a junior participant to a senior player profile (admin). The link is a profile cross-reference only; junior and senior stats stay completely separate and are never merged into any figure.
+ */
+export const SetJuniorSeniorLinkParams = zod.object({
+  "id": zod.coerce.string().describe('PlayHQ participant_id')
+})
+
+export const SetJuniorSeniorLinkBody = zod.object({
+  "seniorPlayerId": zod.number().describe('Senior players.id to cross-reference. Profile linking only; never combines stats.')
+})
+
+export const SetJuniorSeniorLinkResponse = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "seniorPlayerId": zod.number().nullish()
+})
+
+
+/**
+ * @summary Remove a junior participant's senior profile link (admin)
+ */
+export const ClearJuniorSeniorLinkParams = zod.object({
+  "id": zod.coerce.string().describe('PlayHQ participant_id')
 })
 
 

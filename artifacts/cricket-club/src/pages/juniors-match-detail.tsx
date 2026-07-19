@@ -1,7 +1,8 @@
 import { Link, useParams } from "wouter";
 import { useBrand } from "@/lib/brand-context";
 import { useGetJuniorMatch, getGetJuniorMatchQueryKey } from "@workspace/api-client-react";
-import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarDays, MapPin, Pencil } from "lucide-react";
+import { useCurrentAdmin } from "@/lib/admin-auth";
 import { JuniorScorecard } from "@/components/scorecard/junior-scorecard";
 import { fmtJuniorDate } from "@/lib/juniors";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
@@ -10,17 +11,28 @@ export default function JuniorsMatchDetail() {
   const brand = useBrand();
   const params = useParams();
   const id = Number(params.id);
+  const me = useCurrentAdmin();
+  const isAdmin = !!me.data;
   const { data: match, isLoading, isError, refetch } = useGetJuniorMatch(id, {
     query: { enabled: Number.isFinite(id), queryKey: getGetJuniorMatchQueryKey(id) },
   });
 
   return (
     <div className="space-y-6">
-      <Link href="/juniors/matches">
-        <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
-          <ArrowLeft className="h-4 w-4" /> Back to junior matches
-        </span>
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/juniors/matches">
+          <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+            <ArrowLeft className="h-4 w-4" /> Back to junior matches
+          </span>
+        </Link>
+        {isAdmin && Number.isFinite(id) && (
+          <Link href={`/admin/people/junior-scorecards?matchId=${id}`}>
+            <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+              <Pencil className="h-3.5 w-3.5" /> Edit scorecard
+            </span>
+          </Link>
+        )}
+      </div>
 
       {isLoading ? (
         <LoadingState label="Loading match…" />

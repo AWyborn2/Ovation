@@ -4033,6 +4033,314 @@ paths:
                 $ref: "#/components/schemas/JuniorMatchDetail"
         "404":
           description: Not found
+    patch:
+      operationId: updateJuniorMatch
+      tags: [juniors]
+      summary: >-
+        Correct junior match metadata (admin). Every change is journalled in
+        junior_stat_corrections so it survives a juniors data reload.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJuniorMatchBody"
+      responses:
+        "200":
+          description: Updated match metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminMatchMeta"
+        "404":
+          description: Match not found
+
+  /juniors/matches/{matchId}/batting:
+    post:
+      operationId: createJuniorBattingLine
+      tags: [juniors]
+      summary: Add a missing Halls Head junior batting line (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJuniorBattingLineBody"
+      responses:
+        "201":
+          description: Created batting line
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminBattingLine"
+        "404":
+          description: Match or participant not found
+
+  /juniors/matches/{matchId}/batting/{lineId}:
+    patch:
+      operationId: updateJuniorBattingLine
+      tags: [juniors]
+      summary: Correct a junior batting line (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lineId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJuniorBattingLineBody"
+      responses:
+        "200":
+          description: Updated batting line
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminBattingLine"
+        "404":
+          description: Match, line, or participant not found
+    delete:
+      operationId: deleteJuniorBattingLine
+      tags: [juniors]
+      summary: Remove a duplicate/erroneous junior batting line (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lineId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Line removed
+        "404":
+          description: Match or line not found
+
+  /juniors/matches/{matchId}/bowling:
+    post:
+      operationId: createJuniorBowlingLine
+      tags: [juniors]
+      summary: Add a missing Halls Head junior bowling line (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJuniorBowlingLineBody"
+      responses:
+        "201":
+          description: Created bowling line
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminBowlingLine"
+        "404":
+          description: Match or participant not found
+
+  /juniors/matches/{matchId}/bowling/{lineId}:
+    patch:
+      operationId: updateJuniorBowlingLine
+      tags: [juniors]
+      summary: Correct a junior bowling line (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lineId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJuniorBowlingLineBody"
+      responses:
+        "200":
+          description: Updated bowling line
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminBowlingLine"
+        "404":
+          description: Match, line, or participant not found
+    delete:
+      operationId: deleteJuniorBowlingLine
+      tags: [juniors]
+      summary: Remove a duplicate/erroneous junior bowling line (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lineId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Line removed
+        "404":
+          description: Match or line not found
+
+  /juniors/matches/{matchId}/roster:
+    post:
+      operationId: addJuniorRosterEntry
+      tags: [juniors]
+      summary: Add a Halls Head junior to a match roster (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddJuniorRosterEntryBody"
+      responses:
+        "201":
+          description: Created roster entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminRosterEntry"
+        "404":
+          description: Match or participant not found
+        "409":
+          description: Participant already on this match roster
+
+  /juniors/matches/{matchId}/roster/{lineId}:
+    delete:
+      operationId: removeJuniorRosterEntry
+      tags: [juniors]
+      summary: Remove a junior roster entry (admin, journalled)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lineId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Entry removed
+        "404":
+          description: Match or entry not found
+
+  /juniors/participants/{id}:
+    patch:
+      operationId: updateJuniorParticipant
+      tags: [juniors]
+      summary: Correct a junior participant's display name or privacy flag (admin, journalled)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: PlayHQ participant_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJuniorParticipantBody"
+      responses:
+        "200":
+          description: Updated participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminParticipant"
+        "404":
+          description: Participant not found
+
+  /juniors/corrections:
+    get:
+      operationId: listJuniorStatCorrections
+      tags: [juniors]
+      summary: List junior stat corrections, optionally for one match (admin)
+      parameters:
+        - name: matchId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Restrict to corrections anchored to this junior match
+      responses:
+        "200":
+          description: Corrections, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorStatCorrection"
+
+  /juniors/corrections/{id}:
+    delete:
+      operationId: revertJuniorStatCorrection
+      tags: [juniors]
+      summary: >-
+        Revert a junior stat correction (admin). Corrections must be reverted
+        newest-first per target row; reverting under a newer correction on the
+        same row returns 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Correction reverted and removed from the journal
+        "404":
+          description: Correction not found
+        "409":
+          description: A newer correction targets the same row — revert that first
 
   /juniors/players:
     get:
@@ -4065,6 +4373,31 @@ paths:
                 items:
                   $ref: "#/components/schemas/JuniorPlayerSummary"
 
+  /juniors/players/by-senior/{playerId}:
+    get:
+      operationId: listJuniorPlayersBySenior
+      tags: [juniors]
+      summary: >-
+        Junior participants cross-linked to a senior player (profile
+        cross-reference only — junior and senior figures are never combined).
+        Private participants are excluded.
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Senior players.id
+      responses:
+        "200":
+          description: Linked junior participants (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorSeniorLinkSummary"
+
   /juniors/players/{id}:
     get:
       operationId: getJuniorPlayer
@@ -4086,6 +4419,53 @@ paths:
                 $ref: "#/components/schemas/JuniorPlayerDetail"
         "404":
           description: Not found (or a private participant)
+
+  /juniors/participants/{id}/senior-link:
+    put:
+      operationId: setJuniorSeniorLink
+      tags: [juniors]
+      summary: >-
+        Link a junior participant to a senior player profile (admin). The link
+        is a profile cross-reference only; junior and senior stats stay
+        completely separate and are never merged into any figure.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: PlayHQ participant_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetJuniorSeniorLinkBody"
+      responses:
+        "200":
+          description: Updated cross-reference link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorSeniorLink"
+        "404":
+          description: Participant or senior player not found
+    delete:
+      operationId: clearJuniorSeniorLink
+      tags: [juniors]
+      summary: Remove a junior participant's senior profile link (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: PlayHQ participant_id
+      responses:
+        "204":
+          description: Link removed
+        "404":
+          description: Participant not found
 
   /juniors/leaderboards:
     get:
@@ -10505,6 +10885,14 @@ components:
           type: ["string", "null"]
         opponentScore:
           type: ["string", "null"]
+        team1:
+          type: ["string", "null"]
+        team2:
+          type: ["string", "null"]
+        team1Score:
+          type: ["string", "null"]
+        team2Score:
+          type: ["string", "null"]
         opponentClub:
           oneOf:
             - $ref: "#/components/schemas/OpponentClub"
@@ -10545,6 +10933,311 @@ components:
         seniorPlayerId:
           type: ["integer", "null"]
           description: Optional cross-reference to a senior player record. For profile linking only; never combines stats.
+
+    JuniorSeniorLinkSummary:
+      type: object
+      required: [participantId, displayName]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        firstSeason:
+          type: ["string", "null"]
+        lastSeason:
+          type: ["string", "null"]
+
+    SetJuniorSeniorLinkBody:
+      type: object
+      required: [seniorPlayerId]
+      properties:
+        seniorPlayerId:
+          type: integer
+          description: Senior players.id to cross-reference. Profile linking only; never combines stats.
+
+    JuniorSeniorLink:
+      type: object
+      required: [participantId, displayName]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        seniorPlayerId:
+          type: ["integer", "null"]
+
+    UpdateJuniorMatchBody:
+      type: object
+      properties:
+        team1Score:
+          type: ["string", "null"]
+        team2Score:
+          type: ["string", "null"]
+        hhResult:
+          type: ["string", "null"]
+        winner:
+          type: ["string", "null"]
+        tossWinner:
+          type: ["string", "null"]
+        hhBattedFirst:
+          type: ["boolean", "null"]
+        status:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        round:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+
+    JuniorAdminMatchMeta:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+        team1:
+          type: ["string", "null"]
+        team2:
+          type: ["string", "null"]
+        team1Score:
+          type: ["string", "null"]
+        team2Score:
+          type: ["string", "null"]
+        hhResult:
+          type: ["string", "null"]
+        winner:
+          type: ["string", "null"]
+        tossWinner:
+          type: ["string", "null"]
+        hhBattedFirst:
+          type: ["boolean", "null"]
+        status:
+          type: ["string", "null"]
+        matchDate:
+          type: ["string", "null"]
+        round:
+          type: ["string", "null"]
+        venue:
+          type: ["string", "null"]
+
+    UpdateJuniorBattingLineBody:
+      type: object
+      properties:
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        dismissal:
+          type: ["string", "null"]
+        batOrder:
+          type: ["integer", "null"]
+        participantId:
+          type: string
+          description: Re-attribute this line to a different Halls Head junior participant.
+
+    CreateJuniorBattingLineBody:
+      type: object
+      required: [innings, participantId]
+      properties:
+        innings:
+          type: integer
+        participantId:
+          type: string
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        dismissal:
+          type: ["string", "null"]
+        batOrder:
+          type: ["integer", "null"]
+
+    JuniorAdminBattingLine:
+      type: object
+      required: [id, matchId]
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+        innings:
+          type: ["integer", "null"]
+        batOrder:
+          type: ["integer", "null"]
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: ["string", "null"]
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        fours:
+          type: ["integer", "null"]
+        sixes:
+          type: ["integer", "null"]
+        strikeRate:
+          type: ["number", "null"]
+        dismissal:
+          type: ["string", "null"]
+
+    UpdateJuniorBowlingLineBody:
+      type: object
+      properties:
+        overs:
+          type: ["number", "null"]
+          description: Cricket ball notation (e.g. 3.4 = 3 overs 4 balls; fractional digit 0-5).
+        maidens:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+        participantId:
+          type: string
+          description: Re-attribute this line to a different Halls Head junior participant.
+
+    CreateJuniorBowlingLineBody:
+      type: object
+      required: [innings, participantId]
+      properties:
+        innings:
+          type: integer
+        participantId:
+          type: string
+        overs:
+          type: ["number", "null"]
+          description: Cricket ball notation (e.g. 3.4 = 3 overs 4 balls; fractional digit 0-5).
+        maidens:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+
+    JuniorAdminBowlingLine:
+      type: object
+      required: [id, matchId]
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+        innings:
+          type: ["integer", "null"]
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: ["string", "null"]
+        overs:
+          type: ["number", "null"]
+        maidens:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        wickets:
+          type: ["integer", "null"]
+        economy:
+          type: ["number", "null"]
+        wides:
+          type: ["integer", "null"]
+        noBalls:
+          type: ["integer", "null"]
+
+    AddJuniorRosterEntryBody:
+      type: object
+      required: [participantId]
+      properties:
+        participantId:
+          type: string
+
+    JuniorAdminRosterEntry:
+      type: object
+      required: [id, matchId]
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+        participantId:
+          type: ["string", "null"]
+        playerName:
+          type: ["string", "null"]
+
+    UpdateJuniorParticipantBody:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+        isPrivate:
+          type: boolean
+
+    JuniorAdminParticipant:
+      type: object
+      required: [participantId, displayName, isPrivate]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+        isPrivate:
+          type: boolean
+
+    JuniorStatCorrection:
+      type: object
+      required: [id, targetTable, targetId, op, createdAt]
+      properties:
+        id:
+          type: integer
+        targetTable:
+          type: string
+          enum:
+            - junior_matches
+            - junior_match_batting
+            - junior_match_bowling
+            - junior_match_rosters
+            - junior_participants
+        targetId:
+          type: string
+        op:
+          type: string
+          enum: [update, insert, delete]
+        patch:
+          type: ["object", "null"]
+          additionalProperties: true
+        prevValues:
+          type: ["object", "null"]
+          additionalProperties: true
+        matchId:
+          type: ["integer", "null"]
+        playhqMatchId:
+          type: ["string", "null"]
+        participantId:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        createdBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
 
     JuniorBattingTotals:
       type: object

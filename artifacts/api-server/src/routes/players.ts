@@ -14,6 +14,7 @@ import {
   matchPlayerLinesTable,
   awardsTable,
   awardWinnersTable,
+  juniorParticipantsTable,
 } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -612,6 +613,12 @@ router.delete("/players/:id", requireAdmin, async (req, res): Promise<void> => {
     if (!player) {
       throw new Error("__NOT_FOUND__");
     }
+    // Clear the junior→senior profile cross-reference (a link-only column with
+    // no FK; never carries stats) so junior profiles don't point at a ghost.
+    await tx
+      .update(juniorParticipantsTable)
+      .set({ seniorPlayerId: null })
+      .where(eq(juniorParticipantsTable.seniorPlayerId, params.data.id));
     if (grades.length > 0) {
       await recomputeAggregates(tx, grades.map((g) => g.grade));
     }
@@ -912,6 +919,12 @@ router.post("/players/:id/merge", requireAdmin, async (req, res): Promise<void> 
         .update(lifeMembersTable)
         .set({ playerId: keeperId })
         .where(eq(lifeMembersTable.playerId, duplicateId));
+      // Junior→senior profile cross-reference (link-only column, no FK, never
+      // stats): follow the keeper so linked junior profiles stay connected.
+      await tx
+        .update(juniorParticipantsTable)
+        .set({ seniorPlayerId: keeperId })
+        .where(eq(juniorParticipantsTable.seniorPlayerId, duplicateId));
 
       // Delete duplicate (cascades aggregates rows).
       await tx.delete(playersTable).where(eq(playersTable.id, duplicateId));

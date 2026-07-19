@@ -76,6 +76,12 @@ import { tenantsTable } from "./tenants";
  *   - Junior child tables (junior_match_batting/bowling/rosters,
  *     junior_premiership_players): isolated transitively via their
  *     tenant-scoped parent (junior_matches / junior_premierships).
+ *
+ * APPLIED (junior stat corrections):
+ *   junior_stat_corrections — app-owned journal of admin edits to the
+ *   read-only junior dump data; the juniors ETL re-applies it after its full
+ *   replace but never deletes it. Directly tenant-scoped (reads filter,
+ *   writes set from request context).
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>
