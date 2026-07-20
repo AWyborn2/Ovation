@@ -22,6 +22,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { topUpClubs } from "./topup-clubs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..");
@@ -163,6 +164,12 @@ function main(): void {
 
   console.log("\nrunning ETL (single transaction)...");
   psqlFile(etlSql, true);
+
+  // Backfill PCA club branding (colours + logos) — the master dump carries the
+  // roster but most rows land with null colours. This top-up fills only
+  // null/empty columns so it is safe to re-run and won't clobber curated data.
+  console.log("\npatching PCA club branding...");
+  topUpClubs(psql);
 
   const after = counts("public", TRACKED_TABLES);
   console.log("\n--- table row counts: before -> after ---");

@@ -30,6 +30,7 @@
     "seed-tenants": "tsx ./src/seed-tenants.ts",
     "seed-mandurah-tenant": "tsx ./src/seed-mandurah-tenant.ts",
     "seed-mandurah-premierships": "tsx ./src/seed-mandurah-premierships.ts",
+    "topup-clubs": "tsx ./src/topup-clubs.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
