@@ -12,4 +12,5 @@ export type CardTemplateUpdateSource = typeof CardTemplateUpdateSource[keyof typ
 export const CardTemplateUpdateSource = {
   background: 'background',
   layers: 'layers',
+  pack: 'pack',
 } as const;

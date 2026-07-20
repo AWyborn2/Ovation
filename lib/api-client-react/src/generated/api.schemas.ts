@@ -2656,12 +2656,16 @@ export interface CardTemplateSlot {
   shape?: CardTemplateSlotShape;
 }
 
+/**
+ * Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack)
+ */
 export type CardTemplateSource = typeof CardTemplateSource[keyof typeof CardTemplateSource];
 
 
 export const CardTemplateSource = {
   background: 'background',
   layers: 'layers',
+  pack: 'pack',
 } as const;
 
 export type CardTemplateBackgroundKind = typeof CardTemplateBackgroundKind[keyof typeof CardTemplateBackgroundKind];
@@ -2824,7 +2828,12 @@ export interface CardTemplate {
   id: number;
   name: string;
   cardKinds: string[];
+  /** Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack) */
   source: CardTemplateSource;
+  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  packId?: string | null;
+  /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
+  packVariant?: string | null;
   baseKind?: string | null;
   layers: CardLayoutLayer[];
   defaultForKinds: string[];
@@ -2846,6 +2855,7 @@ export type CardTemplateInputSource = typeof CardTemplateInputSource[keyof typeo
 export const CardTemplateInputSource = {
   background: 'background',
   layers: 'layers',
+  pack: 'pack',
 } as const;
 
 export type CardTemplateInputBackgroundKind = typeof CardTemplateInputBackgroundKind[keyof typeof CardTemplateInputBackgroundKind];
@@ -2871,6 +2881,10 @@ export interface CardTemplateInput {
   name: string;
   cardKinds?: string[];
   source?: CardTemplateInputSource;
+  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  packId?: string | null;
+  /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
+  packVariant?: string | null;
   baseKind?: string | null;
   layers?: CardLayoutLayer[];
   defaultForKinds?: string[];
@@ -2892,6 +2906,7 @@ export type CardTemplateUpdateSource = typeof CardTemplateUpdateSource[keyof typ
 export const CardTemplateUpdateSource = {
   background: 'background',
   layers: 'layers',
+  pack: 'pack',
 } as const;
 
 export type CardTemplateUpdateBackgroundKind = typeof CardTemplateUpdateBackgroundKind[keyof typeof CardTemplateUpdateBackgroundKind];
@@ -2917,6 +2932,10 @@ export interface CardTemplateUpdate {
   name?: string;
   cardKinds?: string[];
   source?: CardTemplateUpdateSource;
+  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  packId?: string | null;
+  /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
+  packVariant?: string | null;
   baseKind?: string | null;
   layers?: CardLayoutLayer[];
   defaultForKinds?: string[];
@@ -3003,11 +3022,22 @@ export interface CardSetInput {
   isPublished?: boolean;
 }
 
+/**
+ * Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior)
+ */
+export type SocialSettingsMatchSummaryGradeConfig = {[key: string]: {
+  enabled: boolean;
+}};
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
   engineRoundUp: boolean;
   engineRecap: boolean;
+  /** Whether match summary auto-drafts are enabled (defaults ON for senior, OFF for junior) */
+  engineMatchSummary: boolean;
+  /** Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior) */
+  matchSummaryGradeConfig?: SocialSettingsMatchSummaryGradeConfig;
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;
@@ -3017,11 +3047,22 @@ export interface SocialSettings {
   clubUrl: string;
 }
 
+/**
+ * Per-grade auto-draft config
+ */
+export type SocialSettingsUpdateMatchSummaryGradeConfig = {[key: string]: {
+  enabled: boolean;
+}};
+
 export interface SocialSettingsUpdate {
   engineOnDemand?: boolean;
   engineMilestone?: boolean;
   engineRoundUp?: boolean;
   engineRecap?: boolean;
+  /** Whether match summary auto-drafts are enabled */
+  engineMatchSummary?: boolean;
+  /** Per-grade auto-draft config */
+  matchSummaryGradeConfig?: SocialSettingsUpdateMatchSummaryGradeConfig;
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;
@@ -3964,6 +4005,12 @@ export interface SocialDraft {
   milestoneEventId?: number | null;
   /** @nullable */
   sourceImportId?: number | null;
+  /** Engine-specific source discriminator (e.g. 'matchSummary') */
+  sourceKind?: string | null;
+  /** Source match PK when sourceKind = 'matchSummary' */
+  sourceMatchId?: number | null;
+  /** Whether the source match is a junior match */
+  sourceMatchIsJunior: boolean;
   createdAt: string;
   /** @nullable */
   reviewedAt?: string | null;

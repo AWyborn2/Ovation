@@ -19,6 +19,12 @@ export interface SocialDraft {
   milestoneEventId?: number | null;
   /** @nullable */
   sourceImportId?: number | null;
+  /** Engine-specific source discriminator (e.g. 'matchSummary') */
+  sourceKind?: string | null;
+  /** Source match PK when sourceKind = 'matchSummary' */
+  sourceMatchId?: number | null;
+  /** Whether the source match is a junior match */
+  sourceMatchIsJunior: boolean;
   createdAt: Date;
   /** @nullable */
   reviewedAt?: Date | null;

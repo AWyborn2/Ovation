@@ -3785,7 +3785,9 @@ export const ListCardTemplatesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
-  "source": zod.enum(['background', 'layers']),
+  "source": zod.enum(['background', 'layers', 'pack']).describe('Design source: \'background\' (BYO image), \'layers\' (layer editor), or \'pack\' (bundled design pack)'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
   "id": zod.string(),
@@ -3869,7 +3871,9 @@ export const ListCardTemplatesResponse = zod.array(ListCardTemplatesResponseItem
 export const CreateCardTemplateBody = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()).optional(),
-  "source": zod.enum(['background', 'layers']).optional(),
+  "source": zod.enum(['background', 'layers', 'pack']).optional(),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
   "id": zod.string(),
@@ -3956,7 +3960,9 @@ export const UpdateCardTemplateParams = zod.object({
 export const UpdateCardTemplateBody = zod.object({
   "name": zod.string().optional(),
   "cardKinds": zod.array(zod.string()).optional(),
-  "source": zod.enum(['background', 'layers']).optional(),
+  "source": zod.enum(['background', 'layers', 'pack']).optional(),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
   "id": zod.string(),
@@ -4036,7 +4042,9 @@ export const UpdateCardTemplateResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
-  "source": zod.enum(['background', 'layers']),
+  "source": zod.enum(['background', 'layers', 'pack']).describe('Design source: \'background\' (BYO image), \'layers\' (layer editor), or \'pack\' (bundled design pack)'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
   "id": zod.string(),
@@ -4630,6 +4638,10 @@ export const GetSocialSettingsResponse = zod.object({
   "engineMilestone": zod.boolean(),
   "engineRoundUp": zod.boolean(),
   "engineRecap": zod.boolean(),
+  "engineMatchSummary": zod.boolean().describe('Whether match summary auto-drafts are enabled (defaults ON for senior, OFF for junior)'),
+  "matchSummaryGradeConfig": zod.record(zod.string(), zod.object({
+  "enabled": zod.boolean()
+})).optional().describe('Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior)'),
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
@@ -4673,6 +4685,10 @@ export const UpdateSocialSettingsBody = zod.object({
   "engineMilestone": zod.boolean().optional(),
   "engineRoundUp": zod.boolean().optional(),
   "engineRecap": zod.boolean().optional(),
+  "engineMatchSummary": zod.boolean().optional().describe('Whether match summary auto-drafts are enabled'),
+  "matchSummaryGradeConfig": zod.record(zod.string(), zod.object({
+  "enabled": zod.boolean()
+})).optional().describe('Per-grade auto-draft config'),
   "sizeSquare": zod.boolean().optional(),
   "sizePortrait": zod.boolean().optional(),
   "sizeStory": zod.boolean().optional(),
@@ -4687,6 +4703,10 @@ export const UpdateSocialSettingsResponse = zod.object({
   "engineMilestone": zod.boolean(),
   "engineRoundUp": zod.boolean(),
   "engineRecap": zod.boolean(),
+  "engineMatchSummary": zod.boolean().describe('Whether match summary auto-drafts are enabled (defaults ON for senior, OFF for junior)'),
+  "matchSummaryGradeConfig": zod.record(zod.string(), zod.object({
+  "enabled": zod.boolean()
+})).optional().describe('Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior)'),
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
@@ -5701,6 +5721,9 @@ export const ListSocialDraftsResponseItem = zod.object({
   "trackedSlug": zod.string().nullish(),
   "milestoneEventId": zod.number().nullish(),
   "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullish()
 })
@@ -5728,6 +5751,9 @@ export const ApproveSocialDraftResponse = zod.object({
   "trackedSlug": zod.string().nullish(),
   "milestoneEventId": zod.number().nullish(),
   "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullish()
 })
@@ -5755,6 +5781,9 @@ export const GenerateRoundUpResponseItem = zod.object({
   "trackedSlug": zod.string().nullish(),
   "milestoneEventId": zod.number().nullish(),
   "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
   "reviewedAt": zod.coerce.date().nullish()
 })

@@ -6,10 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack)
+ */
 export type CardTemplateSource = typeof CardTemplateSource[keyof typeof CardTemplateSource];
 
 
 export const CardTemplateSource = {
   background: 'background',
   layers: 'layers',
+  pack: 'pack',
 } as const;
