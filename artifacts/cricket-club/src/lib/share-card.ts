@@ -36,39 +36,19 @@ export type StatLine = {
 // on the card itself (they come from the opposition club brand + the HHCC
 // palette) rather than the theme, so the innings blocks render in true team
 // colours. Built either from a stored match (via buildScorecard) or by hand.
-export type MatchSummaryTeam = {
-  name: string;
-  shortName?: string | null;
-  primaryColor: string;
-  secondaryColor: string;
-  textColor: string;
-  logoUrl?: string | null;
-};
-
-export type MatchSummaryBatter = {
-  name: string;
-  runs: number;
-  balls?: number | null;
-  notOut?: boolean;
-};
-
-export type MatchSummaryBowler = {
-  name: string;
-  wickets: number;
-  runs: number;
-  overs: string;
-};
-
-export type MatchSummaryInnings = {
-  teamKey: "club" | "opposition";
-  inningsNum: 1 | 2;
-  totalRuns: string;
-  wickets: string;
-  overs: string;
-  declared?: boolean;
-  topBatters: MatchSummaryBatter[];
-  topBowlers: MatchSummaryBowler[];
-};
+// Types now live in @workspace/scorecard; re-exported here for existing consumers.
+export type {
+  MatchSummaryTeam,
+  MatchSummaryBatter,
+  MatchSummaryBowler,
+  MatchSummaryInnings,
+} from "@workspace/scorecard";
+import type {
+  MatchSummaryTeam,
+  MatchSummaryBatter,
+  MatchSummaryBowler,
+  MatchSummaryInnings,
+} from "@workspace/scorecard";
 
 export type ShareCardInput =
   | {
