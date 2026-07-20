@@ -51,6 +51,7 @@ import { loadActiveSponsors } from "../lib/active-sponsors";
 import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
+import { ensurePackTemplates } from "../lib/design-packs";
 
 const router: IRouter = Router();
 
@@ -489,10 +490,13 @@ const clearDefaultKinds = async (
 };
 
 router.get("/card-templates", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  // Lazily ensure pack templates exist for this tenant before listing.
+  await ensurePackTemplates(tenantId);
   const rows = await db
     .select()
     .from(cardTemplatesTable)
-    .where(eq(cardTemplatesTable.tenantId, getTenantId(req)))
+    .where(eq(cardTemplatesTable.tenantId, tenantId))
     .orderBy(asc(cardTemplatesTable.displayOrder), asc(cardTemplatesTable.id));
   res.json(rows);
 });
