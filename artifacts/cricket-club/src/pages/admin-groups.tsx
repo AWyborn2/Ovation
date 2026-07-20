@@ -20,6 +20,7 @@ import AdminNav from "@/pages/admin-nav";
 import AdminPlayers from "@/pages/admin-players";
 import AdminStats from "@/pages/admin-stats";
 import AdminJuniorStats from "@/pages/admin-junior-stats";
+import AdminJuniorPlayers from "@/pages/admin-junior-players";
 import AdminCommittee from "@/pages/admin-committee";
 import AdminCaptains from "@/pages/admin-captains";
 import AdminJuniorCommittee from "@/pages/admin-junior-committee";
@@ -155,6 +156,7 @@ export function AdminPeopleGroup() {
         { value: "players", label: "Players", path: "/admin/people", element: <AdminPlayers /> },
         { value: "stats", label: "Stats", path: "/admin/people/stats", element: <AdminStats /> },
         { value: "junior-scorecards", label: "Junior scorecards", path: "/admin/people/junior-scorecards", element: <AdminJuniorStats /> },
+        { value: "junior-players", label: "Junior players", path: "/admin/people/junior-players", element: <AdminJuniorPlayers /> },
         { value: "committee", label: "Committee", path: "/admin/people/committee", element: <AdminCommittee />, feature: "curation" },
         { value: "captains", label: "Captains", path: "/admin/people/captains", element: <AdminCaptains /> },
         { value: "junior-office-bearers", label: "Junior office bearers", path: "/admin/people/junior-office-bearers", element: <AdminJuniorCommittee /> },

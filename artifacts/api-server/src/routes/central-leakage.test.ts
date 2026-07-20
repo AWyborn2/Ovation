@@ -166,4 +166,5 @@ describe("central tenant never receives native (Halls Head) data", () => {
       .expect(200);
     expect(res.body).toEqual([]);
   });
+
 });

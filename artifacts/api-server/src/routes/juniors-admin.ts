@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
 import {
   db,
   juniorMatchesTable,
@@ -7,7 +7,10 @@ import {
   juniorMatchBowlingTable,
   juniorMatchRostersTable,
   juniorParticipantsTable,
+  juniorPremiershipPlayersTable,
+  juniorOfficeBearersTable,
   juniorStatCorrectionsTable,
+  juniorParticipantMergesTable,
   type JuniorMatchRow,
   type JuniorMatchBattingRow,
   type JuniorMatchBowlingRow,
@@ -32,6 +35,8 @@ import {
   RemoveJuniorRosterEntryParams,
   UpdateJuniorParticipantParams,
   UpdateJuniorParticipantBody,
+  MergeJuniorParticipantParams,
+  MergeJuniorParticipantBody,
   ListJuniorStatCorrectionsQueryParams,
   RevertJuniorStatCorrectionParams,
 } from "@workspace/api-zod";
@@ -1141,6 +1146,331 @@ router.patch(
       displayName: updated.displayName ?? "",
       isPrivate: updated.isPrivate,
     });
+  },
+);
+
+// ---------------------------------------------------------------------------
+// POST /juniors/participants/:id/merge — absorb a duplicate junior profile
+//
+// PlayHQ occasionally minted two participant GUIDs for the same child. This
+// PERMANENTLY merges the duplicate (:id) into the keeper: every junior line
+// is reassigned, the duplicate profile row is deleted, and the merge is
+// recorded in junior_participant_merges so the juniors ETL re-applies it
+// after every full-replace reload (step 7) — without that record the dump
+// would silently resurrect the duplicate. The map stays FLAT: absorbing a
+// GUID that is itself a keeper re-points its merge rows to the new keeper.
+// Requesting a keeper that has itself been merged away returns 409 with the
+// canonical keeper rather than silently redirecting the merge.
+// ---------------------------------------------------------------------------
+
+/** Recompute a keeper's stored dump-derived metadata from its live lines.
+ * The ETL copies these columns verbatim from the dump and never recomputes
+ * them, so after a merge they must be refreshed here. The SQL mirrors ETL
+ * step 7f (set-based there, single-GUID here) — keep the two in sync. */
+async function recomputeParticipantMetadata(
+  tx: Tx,
+  participantId: string,
+): Promise<void> {
+  await tx.execute(sql`
+    UPDATE junior_participants p SET
+      scorecard_lines =
+        (SELECT count(*) FROM junior_match_batting b
+          WHERE b.participant_id = p.participant_id AND b.is_halls_head)
+      + (SELECT count(*) FROM junior_match_bowling w
+          WHERE w.participant_id = p.participant_id AND w.is_halls_head),
+      roster_appearances =
+        (SELECT count(*) FROM junior_match_rosters r
+          WHERE r.participant_id = p.participant_id AND r.is_halls_head),
+      first_season = (
+        SELECT m.season FROM junior_matches m
+        JOIN (
+          SELECT match_id FROM junior_match_batting
+            WHERE participant_id = p.participant_id AND is_halls_head
+          UNION SELECT match_id FROM junior_match_bowling
+            WHERE participant_id = p.participant_id AND is_halls_head
+          UNION SELECT match_id FROM junior_match_rosters
+            WHERE participant_id = p.participant_id AND is_halls_head
+        ) t ON t.match_id = m.id
+        WHERE m.season IS NOT NULL
+        ORDER BY m.season_start_year ASC NULLS LAST LIMIT 1),
+      last_season = (
+        SELECT m.season FROM junior_matches m
+        JOIN (
+          SELECT match_id FROM junior_match_batting
+            WHERE participant_id = p.participant_id AND is_halls_head
+          UNION SELECT match_id FROM junior_match_bowling
+            WHERE participant_id = p.participant_id AND is_halls_head
+          UNION SELECT match_id FROM junior_match_rosters
+            WHERE participant_id = p.participant_id AND is_halls_head
+        ) t ON t.match_id = m.id
+        WHERE m.season IS NOT NULL
+        ORDER BY m.season_start_year DESC NULLS LAST LIMIT 1),
+      teams = (
+        SELECT string_agg(DISTINCT r.team_name, ', ' ORDER BY r.team_name)
+        FROM junior_match_rosters r
+        WHERE r.participant_id = p.participant_id AND r.is_halls_head
+          AND r.team_name IS NOT NULL)
+    WHERE p.participant_id = ${participantId}
+  `);
+}
+
+router.post(
+  "/juniors/participants/:id/merge",
+  requireAdmin,
+  async (req: RequestWithAdmin, res): Promise<void> => {
+    const params = MergeJuniorParticipantParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = MergeJuniorParticipantBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const duplicateId = params.data.id;
+    const keeperId = body.data.keeperParticipantId;
+    if (duplicateId === keeperId) {
+      res.status(400).json({ error: "Cannot merge a profile into itself" });
+      return;
+    }
+    if (await shouldReadCentral(req)) {
+      res.status(404).json({ error: "Participant not found" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+
+    try {
+      const result = await db.transaction(async (tx) => {
+        const [dup] = await tx
+          .select()
+          .from(juniorParticipantsTable)
+          .where(
+            and(
+              eq(juniorParticipantsTable.participantId, duplicateId),
+              eq(juniorParticipantsTable.tenantId, tenantId),
+            ),
+          );
+        if (!dup) throw new Error("__DUP_NOT_FOUND__");
+        const [keeper] = await tx
+          .select()
+          .from(juniorParticipantsTable)
+          .where(
+            and(
+              eq(juniorParticipantsTable.participantId, keeperId),
+              eq(juniorParticipantsTable.tenantId, tenantId),
+            ),
+          );
+        if (!keeper) {
+          // A missing keeper that is a recorded duplicate means the client is
+          // stale — refuse with the canonical keeper instead of silently
+          // merging into a profile the admin never looked at.
+          const [merged] = await tx
+            .select({
+              keeper: juniorParticipantMergesTable.keeperParticipantId,
+            })
+            .from(juniorParticipantMergesTable)
+            .where(
+              and(
+                eq(juniorParticipantMergesTable.tenantId, tenantId),
+                eq(
+                  juniorParticipantMergesTable.duplicateParticipantId,
+                  keeperId,
+                ),
+              ),
+            );
+          if (merged) {
+            const err = new Error("__KEEPER_MERGED_AWAY__") as Error & {
+              canonicalKeeper?: string;
+            };
+            err.canonicalKeeper = merged.keeper;
+            throw err;
+          }
+          throw new Error("__KEEPER_NOT_FOUND__");
+        }
+
+        // Reassign every junior line from the duplicate to the keeper. The
+        // HH flag is untouched — a line carrying this GUID is the same human
+        // whichever side of the card it sits on.
+        const batting = await tx
+          .update(juniorMatchBattingTable)
+          .set({ participantId: keeperId })
+          .where(eq(juniorMatchBattingTable.participantId, duplicateId))
+          .returning({ id: juniorMatchBattingTable.id });
+        const bowling = await tx
+          .update(juniorMatchBowlingTable)
+          .set({ participantId: keeperId })
+          .where(eq(juniorMatchBowlingTable.participantId, duplicateId))
+          .returning({ id: juniorMatchBowlingTable.id });
+        const rosters = await tx
+          .update(juniorMatchRostersTable)
+          .set({ participantId: keeperId })
+          .where(eq(juniorMatchRostersTable.participantId, duplicateId))
+          .returning({ id: juniorMatchRostersTable.id });
+
+        // Same-match roster duplicates cannot double-count Games (canonical
+        // figure is COUNT(DISTINCT match_id)) but are deduped for tidiness.
+        const dedupedRes = await tx.execute(sql`
+          DELETE FROM junior_match_rosters a
+          USING junior_match_rosters b
+          WHERE a.participant_id = ${keeperId}
+            AND b.participant_id = ${keeperId}
+            AND a.match_id = b.match_id
+            AND a.id > b.id
+        `);
+        const rostersDeduped = Number(
+          (dedupedRes as unknown as { rowCount?: number }).rowCount ?? 0,
+        );
+
+        const premPlayers = await tx
+          .update(juniorPremiershipPlayersTable)
+          .set({ participantId: keeperId })
+          .where(eq(juniorPremiershipPlayersTable.participantId, duplicateId))
+          .returning({ id: juniorPremiershipPlayersTable.id });
+        await tx.execute(sql`
+          DELETE FROM junior_premiership_players a
+          USING junior_premiership_players b
+          WHERE a.participant_id = ${keeperId}
+            AND b.participant_id = ${keeperId}
+            AND a.premiership_id = b.premiership_id
+            AND a.id > b.id
+        `);
+        const officeBearers = await tx
+          .update(juniorOfficeBearersTable)
+          .set({ participantId: keeperId })
+          .where(
+            and(
+              eq(juniorOfficeBearersTable.participantId, duplicateId),
+              eq(juniorOfficeBearersTable.tenantId, tenantId),
+            ),
+          )
+          .returning({ id: juniorOfficeBearersTable.id });
+
+        // Keeper's directory name flows onto its (now combined) HH lines so
+        // scorecards keep matching the directory — mirrors the rename
+        // propagation in PATCH /juniors/participants/:id.
+        if (keeper.displayName) {
+          await tx
+            .update(juniorMatchBattingTable)
+            .set({ playerName: keeper.displayName })
+            .where(
+              and(
+                eq(juniorMatchBattingTable.participantId, keeperId),
+                eq(juniorMatchBattingTable.isHallsHead, true),
+              ),
+            );
+          await tx
+            .update(juniorMatchBowlingTable)
+            .set({ playerName: keeper.displayName })
+            .where(
+              and(
+                eq(juniorMatchBowlingTable.participantId, keeperId),
+                eq(juniorMatchBowlingTable.isHallsHead, true),
+              ),
+            );
+          await tx
+            .update(juniorMatchRostersTable)
+            .set({ playerName: keeper.displayName })
+            .where(
+              and(
+                eq(juniorMatchRostersTable.participantId, keeperId),
+                eq(juniorMatchRostersTable.isHallsHead, true),
+              ),
+            );
+        }
+
+        // Carry the senior cross-link (keeper's own wins) and privacy
+        // (sticky: private if either side was private).
+        const [updatedKeeper] = await tx
+          .update(juniorParticipantsTable)
+          .set({
+            seniorPlayerId: keeper.seniorPlayerId ?? dup.seniorPlayerId,
+            isPrivate: keeper.isPrivate || dup.isPrivate,
+          })
+          .where(eq(juniorParticipantsTable.participantId, keeperId))
+          .returning();
+
+        await recomputeParticipantMetadata(tx, keeperId);
+
+        // Snapshot then delete the absorbed profile row.
+        await tx
+          .delete(juniorParticipantsTable)
+          .where(eq(juniorParticipantsTable.participantId, duplicateId));
+
+        // Keep the map flat: earlier merges that pointed at the duplicate now
+        // point at the new keeper.
+        await tx
+          .update(juniorParticipantMergesTable)
+          .set({ keeperParticipantId: keeperId })
+          .where(
+            and(
+              eq(juniorParticipantMergesTable.tenantId, tenantId),
+              eq(
+                juniorParticipantMergesTable.keeperParticipantId,
+                duplicateId,
+              ),
+            ),
+          );
+
+        await tx.insert(juniorParticipantMergesTable).values({
+          tenantId,
+          duplicateParticipantId: duplicateId,
+          keeperParticipantId: keeperId,
+          duplicateRow: {
+            participant_id: dup.participantId,
+            display_name: dup.displayName,
+            is_private: dup.isPrivate,
+            scorecard_lines: dup.scorecardLines,
+            roster_appearances: dup.rosterAppearances,
+            first_season: dup.firstSeason,
+            last_season: dup.lastSeason,
+            teams: dup.teams,
+            senior_player_id: dup.seniorPlayerId,
+          },
+          createdBy: adminName(req),
+        });
+
+        return {
+          keeper: updatedKeeper,
+          counts: {
+            batting: batting.length,
+            bowling: bowling.length,
+            rosters: rosters.length,
+            rostersDeduped,
+            premiershipPlayers: premPlayers.length,
+            officeBearers: officeBearers.length,
+          },
+        };
+      });
+
+      res.json({
+        keeperParticipantId: result.keeper.participantId,
+        duplicateParticipantId: duplicateId,
+        displayName: result.keeper.displayName ?? "",
+        isPrivate: result.keeper.isPrivate,
+        seniorPlayerId: result.keeper.seniorPlayerId,
+        reassigned: result.counts,
+      });
+    } catch (err) {
+      const e = err as Error & { canonicalKeeper?: string };
+      if (e.message === "__DUP_NOT_FOUND__") {
+        res.status(404).json({ error: "Duplicate participant not found" });
+        return;
+      }
+      if (e.message === "__KEEPER_NOT_FOUND__") {
+        res.status(404).json({ error: "Keeper participant not found" });
+        return;
+      }
+      if (e.message === "__KEEPER_MERGED_AWAY__") {
+        res.status(409).json({
+          error:
+            "The requested keeper has itself been merged away — retry with the canonical keeper",
+          canonicalKeeperParticipantId: e.canonicalKeeper,
+        });
+        return;
+      }
+      throw err;
+    }
   },
 );
 

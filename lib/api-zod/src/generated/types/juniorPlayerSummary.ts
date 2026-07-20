@@ -23,4 +23,6 @@ export interface JuniorPlayerSummary {
      * @nullable
      */
   seniorPlayerId?: number | null;
+  /** Only present/true on admin requests with includePrivate. */
+  isPrivate?: boolean;
 }

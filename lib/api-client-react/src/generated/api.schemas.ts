@@ -4219,6 +4219,8 @@ export interface JuniorPlayerSummary {
      * @nullable
      */
   seniorPlayerId?: number | null;
+  /** Only present/true on admin requests with includePrivate. */
+  isPrivate?: boolean;
 }
 
 export interface JuniorSeniorLinkSummary {
@@ -4240,6 +4242,38 @@ export interface JuniorSeniorLink {
   displayName: string;
   /** @nullable */
   seniorPlayerId?: number | null;
+}
+
+export interface MergeJuniorParticipantBody {
+  /**
+     * PlayHQ participant_id of the profile to keep.
+     * @minLength 1
+     */
+  keeperParticipantId: string;
+}
+
+export type MergeJuniorParticipantResultReassigned = {
+  batting: number;
+  bowling: number;
+  rosters: number;
+  rostersDeduped: number;
+  premiershipPlayers: number;
+  officeBearers: number;
+};
+
+export interface MergeJuniorParticipantResult {
+  keeperParticipantId: string;
+  duplicateParticipantId: string;
+  displayName: string;
+  isPrivate: boolean;
+  /** @nullable */
+  seniorPlayerId?: number | null;
+  reassigned: MergeJuniorParticipantResultReassigned;
+}
+
+export interface MergeJuniorParticipantConflict {
+  error: string;
+  canonicalKeeperParticipantId?: string;
 }
 
 export interface UpdateJuniorMatchBody {
@@ -5016,6 +5050,10 @@ season?: string;
  * Filter to players who appeared for this age group
  */
 ageGroup?: string;
+/**
+ * Include private participants (honoured only for a signed-in admin — the flag is silently ignored otherwise). Used by the junior players admin so the privacy flag can be managed in both directions.
+ */
+includePrivate?: boolean;
 };
 
 export type ListJuniorLeaderboardParams = {

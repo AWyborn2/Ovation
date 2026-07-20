@@ -4363,6 +4363,14 @@ paths:
           schema:
             type: string
           description: Filter to players who appeared for this age group
+        - name: includePrivate
+          in: query
+          schema:
+            type: boolean
+          description: >-
+            Include private participants (honoured only for a signed-in admin —
+            the flag is silently ignored otherwise). Used by the junior players
+            admin so the privacy flag can be managed in both directions.
       responses:
         "200":
           description: List of junior players
@@ -4419,6 +4427,49 @@ paths:
                 $ref: "#/components/schemas/JuniorPlayerDetail"
         "404":
           description: Not found (or a private participant)
+
+  /juniors/participants/{id}/merge:
+    post:
+      operationId: mergeJuniorParticipant
+      tags: [juniors]
+      summary: >-
+        Merge a duplicate junior profile into a keeper (admin, PERMANENT).
+        PlayHQ occasionally minted two participant GUIDs for the same child;
+        this reassigns every junior line from the duplicate to the keeper,
+        deletes the duplicate profile, and records the merge so it survives
+        juniors data reloads. The absorbed profile's URL aliases to the keeper.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: PlayHQ participant_id of the DUPLICATE profile to absorb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MergeJuniorParticipantBody"
+      responses:
+        "200":
+          description: Merge result (keeper profile + reassignment counts)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeJuniorParticipantResult"
+        "400":
+          description: Cannot merge a profile into itself
+        "404":
+          description: Duplicate or keeper participant not found
+        "409":
+          description: >-
+            The requested keeper has itself been merged away; the body carries
+            canonicalKeeperParticipantId for a deliberate retry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeJuniorParticipantConflict"
 
   /juniors/participants/{id}/senior-link:
     put:
@@ -10933,6 +10984,9 @@ components:
         seniorPlayerId:
           type: ["integer", "null"]
           description: Optional cross-reference to a senior player record. For profile linking only; never combines stats.
+        isPrivate:
+          type: boolean
+          description: Only present/true on admin requests with includePrivate.
 
     JuniorSeniorLinkSummary:
       type: object
@@ -10965,6 +11019,55 @@ components:
           type: string
         seniorPlayerId:
           type: ["integer", "null"]
+
+    MergeJuniorParticipantBody:
+      type: object
+      required: [keeperParticipantId]
+      properties:
+        keeperParticipantId:
+          type: string
+          minLength: 1
+          description: PlayHQ participant_id of the profile to keep.
+
+    MergeJuniorParticipantResult:
+      type: object
+      required: [keeperParticipantId, duplicateParticipantId, displayName, isPrivate, reassigned]
+      properties:
+        keeperParticipantId:
+          type: string
+        duplicateParticipantId:
+          type: string
+        displayName:
+          type: string
+        isPrivate:
+          type: boolean
+        seniorPlayerId:
+          type: ["integer", "null"]
+        reassigned:
+          type: object
+          required: [batting, bowling, rosters, rostersDeduped, premiershipPlayers, officeBearers]
+          properties:
+            batting:
+              type: integer
+            bowling:
+              type: integer
+            rosters:
+              type: integer
+            rostersDeduped:
+              type: integer
+            premiershipPlayers:
+              type: integer
+            officeBearers:
+              type: integer
+
+    MergeJuniorParticipantConflict:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        canonicalKeeperParticipantId:
+          type: string
 
     UpdateJuniorMatchBody:
       type: object

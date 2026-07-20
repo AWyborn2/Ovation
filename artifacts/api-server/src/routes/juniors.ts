@@ -20,6 +20,7 @@ import {
   juniorPremiershipPlayersTable,
   juniorOfficeBearersTable,
   juniorMatchDisplaySettingsTable,
+  juniorParticipantMergesTable,
   clubsTable,
   playersTable,
   type JuniorMatchDisplaySettingsRow,
@@ -43,7 +44,7 @@ import {
   SetJuniorSeniorLinkBody,
   ClearJuniorSeniorLinkParams,
 } from "@workspace/api-zod";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { shouldReadCentral } from "../lib/tenant";
 import {
@@ -596,7 +597,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
-  const { search, season, ageGroup } = query.data;
+  const { search, season, ageGroup, includePrivate } = query.data;
 
   // Central tenants have no native junior participants — empty list, no leak.
   if (await shouldReadCentral(req)) {
@@ -604,10 +605,13 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
     return;
   }
 
-  const conds = [
-    eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-    eq(juniorParticipantsTable.isPrivate, false),
-  ];
+  // includePrivate is honoured ONLY for a signed-in admin (the junior players
+  // admin needs private rows so the privacy flag can be turned back off);
+  // for everyone else the flag is silently ignored and privacy holds.
+  const withPrivate = includePrivate === true && !!(await resolveAdmin(req));
+
+  const conds = [eq(juniorParticipantsTable.tenantId, getTenantId(req))];
+  if (!withPrivate) conds.push(eq(juniorParticipantsTable.isPrivate, false));
   if (search) conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
 
   // Season / age-group filters restrict to participants who actually appeared in
@@ -711,6 +715,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
       runs: runsBy.get(p.participantId) ?? 0,
       wickets: wktsBy.get(p.participantId) ?? 0,
       seniorPlayerId: p.seniorPlayerId,
+      ...(withPrivate ? { isPrivate: p.isPrivate } : {}),
     })),
   );
 });
@@ -871,7 +876,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const pid = params.data.id;
+  let pid = params.data.id;
 
   // Central tenants have no native junior participants — 404, never the demo club's.
   if (await shouldReadCentral(req)) {
@@ -879,15 +884,52 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [participant] = await db
-    .select()
-    .from(juniorParticipantsTable)
-    .where(
-      and(
-        eq(juniorParticipantsTable.participantId, pid),
-        eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-      ),
-    );
+  const tenantId = getTenantId(req);
+  const loadParticipant = async (id: string) => {
+    const [row] = await db
+      .select()
+      .from(juniorParticipantsTable)
+      .where(
+        and(
+          eq(juniorParticipantsTable.participantId, id),
+          eq(juniorParticipantsTable.tenantId, tenantId),
+        ),
+      );
+    return row;
+  };
+
+  let participant = await loadParticipant(pid);
+
+  // Absorbed duplicate GUIDs alias to their keeper so old bookmarks and
+  // shared links keep working after an admin merge. The map is flat by
+  // construction; the hop loop is defensive only (cycle/cap ⇒ treat as miss).
+  if (!participant) {
+    let cur = pid;
+    for (let hop = 0; hop < 16; hop++) {
+      const [merge] = await db
+        .select({
+          keeper: juniorParticipantMergesTable.keeperParticipantId,
+        })
+        .from(juniorParticipantMergesTable)
+        .where(
+          and(
+            eq(juniorParticipantMergesTable.tenantId, tenantId),
+            eq(juniorParticipantMergesTable.duplicateParticipantId, cur),
+          ),
+        );
+      if (!merge) break;
+      cur = merge.keeper;
+      const resolved = await loadParticipant(cur);
+      if (resolved) {
+        participant = resolved;
+        // The rest of the handler (and the response's participantId) uses the
+        // keeper GUID, so client URLs self-heal on the next navigation.
+        pid = cur;
+        break;
+      }
+    }
+  }
+
   if (!participant || participant.isPrivate) {
     res.status(404).json({ error: "Player not found" });
     return;

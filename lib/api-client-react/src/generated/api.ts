@@ -150,6 +150,9 @@ import type {
   MatchImportPreview,
   MatchRoundUpdate,
   MatchSummary,
+  MergeJuniorParticipantBody,
+  MergeJuniorParticipantConflict,
+  MergeJuniorParticipantResult,
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
   MilestonesBoard,
@@ -15739,6 +15742,78 @@ export function useGetJuniorPlayer<TData = Awaited<ReturnType<typeof getJuniorPl
 
 
 
+
+export const getMergeJuniorParticipantUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/merge`
+}
+
+/**
+ * @summary Merge a duplicate junior profile into a keeper (admin, PERMANENT). PlayHQ occasionally minted two participant GUIDs for the same child; this reassigns every junior line from the duplicate to the keeper, deletes the duplicate profile, and records the merge so it survives juniors data reloads. The absorbed profile's URL aliases to the keeper.
+ */
+export const mergeJuniorParticipant = async (id: string,
+    mergeJuniorParticipantBody: MergeJuniorParticipantBody, options?: RequestInit): Promise<MergeJuniorParticipantResult> => {
+
+  return customFetch<MergeJuniorParticipantResult>(getMergeJuniorParticipantUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mergeJuniorParticipantBody,)
+  }
+);}
+
+
+
+
+export const getMergeJuniorParticipantMutationOptions = <TError = ErrorType<void | MergeJuniorParticipantConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeJuniorParticipant>>, TError,{id: string;data: BodyType<MergeJuniorParticipantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof mergeJuniorParticipant>>, TError,{id: string;data: BodyType<MergeJuniorParticipantBody>}, TContext> => {
+
+const mutationKey = ['mergeJuniorParticipant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof mergeJuniorParticipant>>, {id: string;data: BodyType<MergeJuniorParticipantBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  mergeJuniorParticipant(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MergeJuniorParticipantMutationResult = NonNullable<Awaited<ReturnType<typeof mergeJuniorParticipant>>>
+    export type MergeJuniorParticipantMutationBody = BodyType<MergeJuniorParticipantBody>
+    export type MergeJuniorParticipantMutationError = ErrorType<void | MergeJuniorParticipantConflict>
+
+    /**
+ * @summary Merge a duplicate junior profile into a keeper (admin, PERMANENT). PlayHQ occasionally minted two participant GUIDs for the same child; this reassigns every junior line from the duplicate to the keeper, deletes the duplicate profile, and records the merge so it survives juniors data reloads. The absorbed profile's URL aliases to the keeper.
+ */
+export const useMergeJuniorParticipant = <TError = ErrorType<void | MergeJuniorParticipantConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeJuniorParticipant>>, TError,{id: string;data: BodyType<MergeJuniorParticipantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof mergeJuniorParticipant>>,
+        TError,
+        {id: string;data: BodyType<MergeJuniorParticipantBody>},
+        TContext
+      > => {
+      return useMutation(getMergeJuniorParticipantMutationOptions(options));
+    }
 
 export const getSetJuniorSeniorLinkUrl = (id: string,) => {
 
