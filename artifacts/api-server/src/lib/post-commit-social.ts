@@ -5,8 +5,9 @@ import {
   milestoneEventsTable,
   socialDraftsTable,
   socialSettingsTable,
+  matchesTable,
 } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import {
   detectCrossings,
   BOARD_STAT_LABEL,
@@ -17,6 +18,7 @@ import {
   type MatchMilestoneContext,
 } from "./match-milestone-detector";
 import { generateRoundUpDrafts } from "./roundup";
+import { generateMatchSummaryDrafts } from "./match-summary-drafter";
 
 // The import/match-commit pipeline reads the NATIVE stats tables (Halls Head's
 // curated history). The committing tenant is threaded in from the request so
@@ -198,6 +200,22 @@ export async function runPostCommitSocial(opts: {
   } catch (err) {
     logger.error({ err }, "auto roundup failed");
   }
+
+  // Match-summary drafts: look up the match(es) created by this import and
+  // generate a matchSummary social card draft for each. Gated internally by
+  // socialSettings.engineMatchSummary + per-grade config.
+  try {
+    const matchRows = await db
+      .select({ id: matchesTable.id })
+      .from(matchesTable)
+      .where(eq(matchesTable.importId, importId));
+    const matchIds = matchRows.map((r) => r.id);
+    if (matchIds.length > 0) {
+      await generateMatchSummaryDrafts(tenantId, matchIds);
+    }
+  } catch (err) {
+    logger.error({ err }, "match summary drafts failed");
+  }
 }
 
 /**
@@ -249,5 +267,25 @@ export async function runBatchPostCommitSocial(opts: {
     }
   } catch (err) {
     logger.error({ err }, "auto roundup failed");
+  }
+
+  // Match-summary drafts for the entire batch: gather all import IDs from the
+  // match contexts, look up the real match IDs, and generate drafts in one call.
+  try {
+    const batchImportIds = Array.from(
+      new Set(matchContexts.map((c) => c.importId)),
+    );
+    if (batchImportIds.length > 0) {
+      const matchRows = await db
+        .select({ id: matchesTable.id })
+        .from(matchesTable)
+        .where(inArray(matchesTable.importId, batchImportIds));
+      const matchIds = matchRows.map((r) => r.id);
+      if (matchIds.length > 0) {
+        await generateMatchSummaryDrafts(tenantId, matchIds);
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, "batch match summary drafts failed");
   }
 }

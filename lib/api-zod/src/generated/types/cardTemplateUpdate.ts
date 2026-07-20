@@ -15,6 +15,10 @@ export interface CardTemplateUpdate {
   name?: string;
   cardKinds?: string[];
   source?: CardTemplateUpdateSource;
+  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  packId?: string | null;
+  /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
+  packVariant?: string | null;
   baseKind?: string | null;
   layers?: CardLayoutLayer[];
   defaultForKinds?: string[];

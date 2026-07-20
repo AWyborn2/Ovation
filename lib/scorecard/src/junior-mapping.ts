@@ -4,7 +4,7 @@ import type {
   JuniorBattingLine,
   JuniorBowlingLine,
   OpponentClub,
-} from "@workspace/api-client-react";
+} from "@workspace/api-zod";
 import type {
   Scorecard,
   ScorecardBatsman,

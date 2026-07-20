@@ -1,7 +1,7 @@
 import type { MotionPreset, ShareCardInput } from "@/lib/share-card";
 import type { Platform } from "@/lib/captions";
 
-export type EngineKey = "ondemand" | "milestone" | "roundup" | "recap";
+export type EngineKey = "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary";
 
 export type Props = {
   open: boolean;

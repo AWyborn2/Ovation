@@ -7,7 +7,7 @@ export type {
   JuniorInnings,
   JuniorBattingLine,
   JuniorBowlingLine,
-} from "@workspace/api-client-react";
+} from "@workspace/api-zod";
 export * from "./types";
 export {
   DEFAULT_BRAND,
@@ -33,3 +33,12 @@ export { formatDismissal } from "./dismissal";
 export { oversToBalls, ballsToOvers, sumOvers, economy } from "./overs";
 export { buildScorecard } from "./mapping";
 export { buildJuniorScorecard } from "./junior-mapping";
+export * from "./match-summary-types";
+export {
+  matchToSummaryInput,
+  juniorMatchToSummaryInput,
+  seasonLabel,
+  deriveWinner,
+  topBatters,
+  topBowlers,
+} from "./match-summary-input";

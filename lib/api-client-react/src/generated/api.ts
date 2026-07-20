@@ -209,6 +209,8 @@ import type {
   StatInput,
   StatListResponse,
   StatUpdate,
+  SweepMatchSummaryDrafts200,
+  SweepMatchSummaryDraftsBody,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
   TeamOfDecadeBoardUpdate,
@@ -13915,6 +13917,77 @@ export const useGenerateRoundUp = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getGenerateRoundUpMutationOptions(options));
+    }
+
+export const getSweepMatchSummaryDraftsUrl = () => {
+
+
+
+
+  return `/api/social-drafts/sweep`
+}
+
+/**
+ * @summary Sweep matches to generate match summary drafts
+ */
+export const sweepMatchSummaryDrafts = async (sweepMatchSummaryDraftsBody: SweepMatchSummaryDraftsBody, options?: RequestInit): Promise<SweepMatchSummaryDrafts200> => {
+
+  return customFetch<SweepMatchSummaryDrafts200>(getSweepMatchSummaryDraftsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sweepMatchSummaryDraftsBody,)
+  }
+);}
+
+
+
+
+export const getSweepMatchSummaryDraftsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext> => {
+
+const mutationKey = ['sweepMatchSummaryDrafts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, {data: BodyType<SweepMatchSummaryDraftsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sweepMatchSummaryDrafts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SweepMatchSummaryDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>>
+    export type SweepMatchSummaryDraftsMutationBody = BodyType<SweepMatchSummaryDraftsBody>
+    export type SweepMatchSummaryDraftsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Sweep matches to generate match summary drafts
+ */
+export const useSweepMatchSummaryDrafts = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>,
+        TError,
+        {data: BodyType<SweepMatchSummaryDraftsBody>},
+        TContext
+      > => {
+      return useMutation(getSweepMatchSummaryDraftsMutationOptions(options));
     }
 
 export const getListTrackedLinksUrl = () => {

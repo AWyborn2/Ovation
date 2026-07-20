@@ -15,7 +15,12 @@ export interface CardTemplate {
   id: number;
   name: string;
   cardKinds: string[];
+  /** Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack) */
   source: CardTemplateSource;
+  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  packId?: string | null;
+  /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
+  packVariant?: string | null;
   baseKind?: string | null;
   layers: CardLayoutLayer[];
   defaultForKinds: string[];

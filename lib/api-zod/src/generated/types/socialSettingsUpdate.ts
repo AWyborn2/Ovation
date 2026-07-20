@@ -5,12 +5,17 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { SocialSettingsUpdateMatchSummaryGradeConfig } from './socialSettingsUpdateMatchSummaryGradeConfig';
 
 export interface SocialSettingsUpdate {
   engineOnDemand?: boolean;
   engineMilestone?: boolean;
   engineRoundUp?: boolean;
   engineRecap?: boolean;
+  /** Whether match summary auto-drafts are enabled */
+  engineMatchSummary?: boolean;
+  /** Per-grade auto-draft config */
+  matchSummaryGradeConfig?: SocialSettingsUpdateMatchSummaryGradeConfig;
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;

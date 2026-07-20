@@ -12,4 +12,5 @@ export type CardTemplateInputSource = typeof CardTemplateInputSource[keyof typeo
 export const CardTemplateInputSource = {
   background: 'background',
   layers: 'layers',
+  pack: 'pack',
 } as const;

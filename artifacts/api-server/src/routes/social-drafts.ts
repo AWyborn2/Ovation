@@ -6,10 +6,16 @@ import {
   trackedLinksTable,
   importsTable,
   milestoneEventsTable,
+  matchesTable,
+  juniorMatchesTable,
 } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
+import {
+  generateMatchSummaryDrafts,
+  generateJuniorMatchSummaryDrafts,
+} from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -159,6 +165,60 @@ router.post("/social-recaps", requireAdmin, requireEntitlement("socialStudio"), 
   }
   const created = await generateRecapDrafts(getTenantId(req), grade, season);
   res.json(created);
+});
+
+// ---------------------------------------------------------------------------
+// Sweep: bulk-generate match summary drafts for a set of matches.
+// ---------------------------------------------------------------------------
+router.post("/social-drafts/sweep", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const matchIds: number[] | undefined = req.body?.matchIds;
+  const junior: boolean = !!req.body?.junior;
+  const season: number | undefined =
+    req.body?.season != null ? parseInt(String(req.body.season), 10) : undefined;
+  const grade: string | undefined = req.body?.grade || undefined;
+
+  let ids: number[] = [];
+
+  if (Array.isArray(matchIds) && matchIds.length > 0) {
+    // Explicit match IDs provided.
+    ids = matchIds.map((id) => parseInt(String(id), 10)).filter(Number.isInteger);
+  } else if (season != null && Number.isInteger(season)) {
+    // Query matches for the given season (+grade) filter.
+    if (junior) {
+      const conditions = [
+        eq(juniorMatchesTable.tenantId, tenantId),
+        eq(juniorMatchesTable.seasonStartYear, season),
+      ];
+      if (grade) {
+        conditions.push(eq(juniorMatchesTable.ageGroup, grade));
+      }
+      const rows = await db
+        .select({ id: juniorMatchesTable.id })
+        .from(juniorMatchesTable)
+        .where(and(...conditions));
+      ids = rows.map((r) => r.id);
+    } else {
+      const conditions = [eq(matchesTable.season, season)];
+      if (grade) {
+        conditions.push(eq(matchesTable.grade, grade));
+      }
+      const rows = await db
+        .select({ id: matchesTable.id })
+        .from(matchesTable)
+        .where(and(...conditions));
+      ids = rows.map((r) => r.id);
+    }
+  } else {
+    res.status(400).json({ error: "Provide matchIds or season to sweep" });
+    return;
+  }
+
+  const result = junior
+    ? await generateJuniorMatchSummaryDrafts(tenantId, ids)
+    : await generateMatchSummaryDrafts(tenantId, ids);
+
+  res.json(result);
 });
 
 // Mint a tracked short link for an on-demand share. Public (share buttons are

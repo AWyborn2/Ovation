@@ -98,7 +98,7 @@ function toOpponentClub(row: OpponentClubRow) {
   };
 }
 
-async function loadMatchDetail(matchId: number, tenantId: number) {
+export async function loadMatchDetail(matchId: number, tenantId: number) {
   const [match] = await db
     .select({
       id: matchesTable.id,

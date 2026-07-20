@@ -8,6 +8,6 @@
     "./brand": "./src/brand.ts"
   },
   "dependencies": {
-    "@workspace/api-client-react": "workspace:*"
+    "@workspace/api-zod": "workspace:*"
   }
 }

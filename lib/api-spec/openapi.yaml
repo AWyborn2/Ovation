@@ -3805,6 +3805,48 @@ paths:
                 items:
                   $ref: "#/components/schemas/SocialDraft"
 
+  /social-drafts/sweep:
+    post:
+      summary: Sweep matches to generate match summary drafts
+      operationId: sweepMatchSummaryDrafts
+      tags: [social-drafts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                matchIds:
+                  type: array
+                  items:
+                    type: integer
+                junior:
+                  type: boolean
+                season:
+                  type: integer
+                grade:
+                  type: string
+      responses:
+        "200":
+          description: Sweep results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  drafted:
+                    type: integer
+                  skipped:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                required: [drafted, skipped, errors]
+
   /tracked-links:
     get:
       operationId: listTrackedLinks
@@ -8860,7 +8902,16 @@ components:
             type: string
         source:
           type: string
-          enum: [background, layers]
+          enum: [background, layers, pack]
+          description: "Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack)"
+        packId:
+          type: string
+          nullable: true
+          description: "Design pack identifier (e.g. 'matchSummary-v1')"
+        packVariant:
+          type: string
+          nullable: true
+          description: "Variant within the pack (e.g. 'square', 'portrait', 'story')"
         baseKind:
           type: string
           nullable: true
@@ -8911,7 +8962,15 @@ components:
             type: string
         source:
           type: string
-          enum: [background, layers]
+          enum: [background, layers, pack]
+        packId:
+          type: string
+          nullable: true
+          description: "Design pack identifier (e.g. 'matchSummary-v1')"
+        packVariant:
+          type: string
+          nullable: true
+          description: "Variant within the pack (e.g. 'square', 'portrait', 'story')"
         baseKind:
           type: string
           nullable: true
@@ -8961,7 +9020,15 @@ components:
             type: string
         source:
           type: string
-          enum: [background, layers]
+          enum: [background, layers, pack]
+        packId:
+          type: string
+          nullable: true
+          description: "Design pack identifier (e.g. 'matchSummary-v1')"
+        packVariant:
+          type: string
+          nullable: true
+          description: "Variant within the pack (e.g. 'square', 'portrait', 'story')"
         baseKind:
           type: string
           nullable: true
@@ -9223,6 +9290,7 @@ components:
         - engineMilestone
         - engineRoundUp
         - engineRecap
+        - engineMatchSummary
         - sizeSquare
         - sizePortrait
         - sizeStory
@@ -9239,6 +9307,18 @@ components:
           type: boolean
         engineRecap:
           type: boolean
+        engineMatchSummary:
+          type: boolean
+          description: "Whether match summary auto-drafts are enabled (defaults ON for senior, OFF for junior)"
+        matchSummaryGradeConfig:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              enabled:
+                type: boolean
+            required: [enabled]
+          description: "Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior)"
         sizeSquare:
           type: boolean
         sizePortrait:
@@ -9265,6 +9345,18 @@ components:
           type: boolean
         engineRecap:
           type: boolean
+        engineMatchSummary:
+          type: boolean
+          description: "Whether match summary auto-drafts are enabled"
+        matchSummaryGradeConfig:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              enabled:
+                type: boolean
+            required: [enabled]
+          description: "Per-grade auto-draft config"
         sizeSquare:
           type: boolean
         sizePortrait:
@@ -10661,7 +10753,7 @@ components:
 
     SocialDraft:
       type: object
-      required: [id, engine, status, cardInput, appPath, createdAt]
+      required: [id, engine, status, cardInput, appPath, sourceMatchIsJunior, createdAt]
       properties:
         id: { type: integer }
         engine: { type: string }
@@ -10671,6 +10763,17 @@ components:
         trackedSlug: { type: ["string", "null"] }
         milestoneEventId: { type: ["integer", "null"] }
         sourceImportId: { type: ["integer", "null"] }
+        sourceKind:
+          type: string
+          nullable: true
+          description: "Engine-specific source discriminator (e.g. 'matchSummary')"
+        sourceMatchId:
+          type: integer
+          nullable: true
+          description: "Source match PK when sourceKind = 'matchSummary'"
+        sourceMatchIsJunior:
+          type: boolean
+          description: "Whether the source match is a junior match"
         createdAt: { type: string, format: date-time }
         reviewedAt: { type: ["string", "null"], format: date-time }
 

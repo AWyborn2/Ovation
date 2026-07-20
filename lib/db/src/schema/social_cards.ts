@@ -9,6 +9,7 @@ import {
   jsonb,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
 
 export const sponsorsTable = pgTable("sponsors", {
@@ -109,7 +110,10 @@ export const cardTemplatesTable = pgTable("card_templates", {
   // data-bound slots (the original BYO templates). "layers" = a design authored
   // in the layer editor (built-in chrome overrides + extra image/text/sticker
   // layers); stored in `layers` and consumed via the renderer's `layout` option.
+  // "pack" = a bundled design pack (e.g. match summary cards).
   source: text("source").notNull().default("background"),
+  packId: text("pack_id"), // nullable — identifies which design pack (e.g. "matchSummary-v1")
+  packVariant: text("pack_variant"), // nullable — variant within the pack (e.g. "square", "portrait", "story")
   // The card kind a "layers" design was authored against (drives the editor's
   // field/element context + the gallery thumbnail). Null for BYO backgrounds.
   baseKind: text("base_kind"),
@@ -282,6 +286,8 @@ export const socialSettingsTable = pgTable(
     engineMilestone: boolean("engine_milestone").notNull().default(false),
     engineRoundUp: boolean("engine_round_up").notNull().default(false),
     engineRecap: boolean("engine_recap").notNull().default(false),
+    engineMatchSummary: boolean("engine_match_summary").notNull().default(true), // deliberately defaults ON (convention break — see plan)
+    matchSummaryGradeConfig: jsonb("match_summary_grade_config").$type<Record<string, { enabled: boolean }>>().notNull().default({}),
     sizeSquare: boolean("size_square").notNull().default(true),
     sizePortrait: boolean("size_portrait").notNull().default(true),
     sizeStory: boolean("size_story").notNull().default(true),
@@ -376,21 +382,35 @@ export const milestoneEventsTable = pgTable("milestone_events", {
 
 export type MilestoneEventRow = typeof milestoneEventsTable.$inferSelect;
 
-// Ready-to-post draft queue. Populated by the auto-detectors (milestone, round-up, recap)
-// and reviewed by admins in /admin/social-queue.
-export const socialDraftsTable = pgTable("social_drafts", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  engine: text("engine").notNull(), // "milestone" | "roundup" | "recap"
-  status: text("status").notNull().default("pending"), // "pending" | "approved" | "dismissed"
-  cardInput: jsonb("card_input").notNull(), // ShareCardInput JSON
-  appPath: text("app_path").notNull().default(""),
-  trackedSlug: text("tracked_slug"), // populated when approved
-  milestoneEventId: integer("milestone_event_id"),
-  sourceImportId: integer("source_import_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-});
+// Ready-to-post draft queue. Populated by the auto-detectors (milestone, round-up, recap,
+// matchSummary) and reviewed by admins in /admin/social-queue.
+export const socialDraftsTable = pgTable(
+  "social_drafts",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    engine: text("engine").notNull(), // "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary"
+    status: text("status").notNull().default("pending"), // "pending" | "approved" | "dismissed"
+    cardInput: jsonb("card_input").notNull(), // ShareCardInput JSON
+    appPath: text("app_path").notNull().default(""),
+    trackedSlug: text("tracked_slug"), // populated when approved
+    milestoneEventId: integer("milestone_event_id"),
+    sourceImportId: integer("source_import_id"),
+    sourceKind: text("source_kind"), // nullable — "matchSummary" | null (null for legacy milestone/roundup/recap)
+    sourceMatchId: integer("source_match_id"), // nullable — match PK when sourceKind = "matchSummary"
+    sourceMatchIsJunior: boolean("source_match_is_junior").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (t) => ({
+    // Partial unique index for match summary dedupe. Only enforced when
+    // sourceKind = 'matchSummary' AND the draft hasn't been dismissed, so a
+    // dismissed draft can be re-created for the same match.
+    matchDedupe: uniqueIndex("social_drafts_match_dedupe")
+      .on(t.tenantId, t.sourceKind, t.sourceMatchId, t.sourceMatchIsJunior)
+      .where(sql`source_kind = 'matchSummary' AND status != 'dismissed'`),
+  }),
+);
 
 export type SocialDraftRow = typeof socialDraftsTable.$inferSelect;
 

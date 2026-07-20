@@ -852,7 +852,8 @@ export type MotionPreset =
   | "popIn"
   | "wipe"
   | "stagger"
-  | "countUp";
+  | "countUp"
+  | "matchReveal";
 
 export type PhotoPlacement = "feature" | "headshot";
 
@@ -1791,6 +1792,589 @@ const renderMatchSummaryCard = async (
       const inn = innings[i];
       const by = inningsAreaTop + i * (blockH + blockGap);
       drawInningsBlock(padX, by, W - padX * 2, blockH, inn, teamOf(inn.teamKey));
+    }
+  }
+};
+
+// ===========================================================================
+// Pack renderers — Match Summary designs (square / portrait / story)
+// ---------------------------------------------------------------------------
+// Three canvas-rendered match summary card variants registered as "pack"
+// templates. They share a visual language (dark gradient, accent glow, team
+// crests, innings breakdowns) but adapt density and spacing to the canvas size.
+// The primary font is Roboto Condensed (loaded via card-fonts.ts).
+// ===========================================================================
+
+const PACK_FONT = "'Roboto Condensed', 'Helvetica Neue', Arial, sans-serif";
+const PACK_FONT_SERIF = "Georgia, 'Times New Roman', serif";
+
+// Shared helper: draw the dark gradient background + accent glow + inset border
+// common to all three pack variants.
+const drawPackBackground = (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  p: Palette,
+  clubPrimary: string,
+) => {
+  // Dark gradient base
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, p.bgPanel);
+  bg.addColorStop(0.5, p.bgDark);
+  bg.addColorStop(1, p.bgDark);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Club primary colour as a subtle radial glow at top
+  const glow = ctx.createRadialGradient(W / 2, H * 0.06, 0, W / 2, H * 0.06, W * 0.9);
+  glow.addColorStop(0, rgba(clubPrimary, 0.12));
+  glow.addColorStop(1, rgba(clubPrimary, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Thin accent-coloured inset border
+  const inset = Math.round(W * 0.022);
+  ctx.strokeStyle = rgba(p.accent, 0.45);
+  ctx.lineWidth = Math.max(3, Math.round(W * 0.004));
+  ctx.strokeRect(inset, inset, W - inset * 2, H - inset * 2);
+};
+
+// Shared helper: draw a team crest (circular logo with white bg, or initials
+// chip fallback). Mirrors the pattern from renderMatchSummaryCard.
+const drawPackTeamCrest = async (
+  ctx: CanvasRenderingContext2D,
+  team: MatchSummaryTeam,
+  cx: number,
+  cy: number,
+  r: number,
+  scale: number,
+) => {
+  if (team.logoUrl) {
+    try {
+      const img = await loadImage(team.logoUrl);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.clip();
+      drawImageContain(ctx, img, cx - r * 0.78, cy - r * 0.78, r * 1.56, r * 1.56);
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = team.primaryColor;
+      ctx.lineWidth = Math.round(4 * scale);
+      ctx.stroke();
+      return;
+    } catch {
+      // fall through to initials chip
+    }
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = team.primaryColor;
+  ctx.fill();
+  ctx.strokeStyle = rgba("#ffffff", 0.35);
+  ctx.lineWidth = Math.round(3 * scale);
+  ctx.stroke();
+  const initials = (team.shortName || team.name)
+    .replace(/[^A-Za-z ]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+  ctx.fillStyle = team.textColor;
+  ctx.font = `800 ${Math.round(r * 0.7)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(initials || "?", cx, cy);
+};
+
+// Shared helper: draw a single innings block for the pack cards.
+const drawPackInningsBlock = (
+  ctx: CanvasRenderingContext2D,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+  inn: MatchSummaryInnings,
+  team: MatchSummaryTeam,
+  scale: number,
+  p: Palette,
+  maxPerformers: number,
+) => {
+  const radius = Math.round(14 * scale);
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, radius);
+  ctx.fillStyle = rgba(p.textLight, 0.05);
+  ctx.fill();
+  ctx.strokeStyle = rgba(p.textLight, 0.1);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Team-coloured header bar
+  const hb = Math.round(50 * scale);
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, hb, [radius, radius, 0, 0]);
+  ctx.fillStyle = team.primaryColor;
+  ctx.fill();
+  const shortName = (team.shortName || team.name).toUpperCase();
+  ctx.fillStyle = team.textColor;
+  ctx.font = `700 ${Math.round(24 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(shortName, bx + Math.round(20 * scale), by + hb / 2);
+  ctx.textAlign = "right";
+  ctx.fillText(
+    `${inn.totalRuns}/${inn.wickets}${inn.declared ? "d" : ""}  (${inn.overs})`,
+    bx + bw - Math.round(20 * scale),
+    by + hb / 2,
+  );
+
+  // Batting / bowling columns below the header
+  const colTop = by + hb + Math.round(14 * scale);
+  const colBottom = by + bh - Math.round(12 * scale);
+  const midX = bx + bw / 2;
+  const leftLabelX = bx + Math.round(20 * scale);
+  const rightLabelX = midX + Math.round(16 * scale);
+  ctx.textBaseline = "top";
+  ctx.textAlign = "left";
+  ctx.font = `700 ${Math.round(14 * scale)}px ${PACK_FONT}`;
+  ctx.fillStyle = p.accent;
+  ctx.fillText("BATTING", leftLabelX, colTop);
+  ctx.fillText("BOWLING", rightLabelX, colTop);
+
+  const ry = colTop + Math.round(24 * scale);
+  const rowH = Math.round(30 * scale);
+  const maxRows = Math.min(maxPerformers, Math.max(0, Math.floor((colBottom - ry) / rowH)));
+  if (maxRows === 0) return;
+  const nameFont = `500 ${Math.round(17 * scale)}px ${PACK_FONT}`;
+  const valFont = `700 ${Math.round(17 * scale)}px ${PACK_FONT}`;
+  const leftValX = midX - Math.round(18 * scale);
+  const rightValX = bx + bw - Math.round(20 * scale);
+  const batters = inn.topBatters.slice(0, maxRows);
+  const bowlers = inn.topBowlers.slice(0, maxRows);
+  for (let i = 0; i < maxRows; i++) {
+    const yy = ry + i * rowH;
+    const b = batters[i];
+    if (b) {
+      ctx.font = valFont;
+      const bv = `${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`;
+      const bvW = ctx.measureText(bv).width;
+      ctx.font = nameFont;
+      ctx.textAlign = "left";
+      ctx.fillStyle = p.textLight;
+      ctx.fillText(
+        ellipsize(ctx, b.name, leftValX - leftLabelX - bvW - Math.round(12 * scale)),
+        leftLabelX,
+        yy,
+      );
+      ctx.font = valFont;
+      ctx.textAlign = "right";
+      ctx.fillStyle = p.accent;
+      ctx.fillText(bv, leftValX, yy);
+    }
+    const w = bowlers[i];
+    if (w) {
+      ctx.font = valFont;
+      const wv = `${w.wickets}/${w.runs} (${w.overs})`;
+      const wvW = ctx.measureText(wv).width;
+      ctx.font = nameFont;
+      ctx.textAlign = "left";
+      ctx.fillStyle = p.textLight;
+      ctx.fillText(
+        ellipsize(ctx, w.name, rightValX - rightLabelX - wvW - Math.round(12 * scale)),
+        rightLabelX,
+        yy,
+      );
+      ctx.font = valFont;
+      ctx.textAlign = "right";
+      ctx.fillStyle = p.accent;
+      ctx.fillText(wv, rightValX, yy);
+    }
+  }
+};
+
+// Shared helper: draw the result banner at the bottom of a pack card.
+const drawPackResultBanner = (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  bannerY: number,
+  bannerH: number,
+  padX: number,
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  scale: number,
+  p: Palette,
+) => {
+  const winnerTeam =
+    input.resultWinner === "club"
+      ? input.club
+      : input.resultWinner === "opposition"
+        ? input.opposition
+        : null;
+  ctx.beginPath();
+  ctx.roundRect(padX, bannerY, W - padX * 2, bannerH, Math.round(12 * scale));
+  ctx.fillStyle = winnerTeam ? winnerTeam.primaryColor : p.accent;
+  ctx.fill();
+  ctx.fillStyle = winnerTeam ? winnerTeam.textColor : p.bgDark;
+  ctx.font = `700 ${Math.round(26 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const resLines = wrapText(ctx, input.result.toUpperCase(), W - padX * 2 - Math.round(48 * scale));
+  const resLineH = Math.round(32 * scale);
+  const resStart = bannerY + bannerH / 2 - ((resLines.length - 1) * resLineH) / 2;
+  resLines.forEach((l, i) => ctx.fillText(l, W / 2, resStart + i * resLineH));
+};
+
+// ---- Pack Square Match Summary (1080x1080) --------------------------------
+const renderPackSquareMatchSummary = async (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  opts: RenderOptions,
+  p: Palette,
+) => {
+  drawPackBackground(ctx, W, H, p, input.club.primaryColor);
+
+  // Sponsor strip + footer (drawn first; content paints above)
+  const sponsors = opts.sponsors ?? [];
+  const sponsorsTop = await drawSponsors(ctx, W, H, sponsors, scale, p);
+  drawFooter(ctx, W, H, opts.clubUrl ?? "", opts.hashtag ?? defaultHashtag(opts.brand), scale, p);
+
+  const padX = Math.round(56 * scale);
+  let y = Math.round(48 * scale);
+
+  // Junior eyebrow
+  if (input.junior) {
+    ctx.fillStyle = "#FBAC27";
+    ctx.font = `700 ${Math.round(18 * scale)}px ${PACK_FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("JUNIOR MATCH", W / 2, y);
+    y += Math.round(28 * scale);
+  }
+
+  // Match title
+  ctx.fillStyle = p.textLight;
+  ctx.font = `700 ${Math.round(40 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const titleLines = wrapText(ctx, input.matchTitle, W - padX * 2);
+  const titleLineH = Math.round(46 * scale);
+  titleLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * titleLineH));
+  y += titleLines.length * titleLineH + Math.round(4 * scale);
+
+  // Match type
+  if (input.matchType) {
+    ctx.fillStyle = p.accent;
+    ctx.font = `600 ${Math.round(20 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(input.matchType, W / 2, y);
+    y += Math.round(26 * scale);
+  }
+
+  // Date & venue
+  const meta = [input.date, input.venue].filter(Boolean).join("   |   ");
+  if (meta) {
+    ctx.fillStyle = p.textMuted;
+    ctx.font = `400 ${Math.round(18 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(meta, W / 2, y);
+    y += Math.round(28 * scale);
+  }
+
+  // Team crests + VS
+  y += Math.round(6 * scale);
+  const crestR = Math.round(44 * scale);
+  const vsGap = Math.round(96 * scale);
+  const crestCy = y + crestR;
+  const leftCx = W / 2 - vsGap;
+  const rightCx = W / 2 + vsGap;
+  await drawPackTeamCrest(ctx, input.club, leftCx, crestCy, crestR, scale);
+  await drawPackTeamCrest(ctx, input.opposition, rightCx, crestCy, crestR, scale);
+  ctx.fillStyle = p.accent;
+  ctx.font = `700 ${Math.round(30 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("VS", W / 2, crestCy);
+
+  // Team short names under crests
+  ctx.fillStyle = p.textLight;
+  ctx.font = `600 ${Math.round(18 * scale)}px ${PACK_FONT}`;
+  ctx.textBaseline = "top";
+  const shortOf = (t: MatchSummaryTeam) => (t.shortName || t.name).toUpperCase();
+  const crestLabelY = crestCy + crestR + Math.round(8 * scale);
+  ctx.fillText(shortOf(input.club), leftCx, crestLabelY);
+  ctx.fillText(shortOf(input.opposition), rightCx, crestLabelY);
+  y = crestLabelY + Math.round(32 * scale);
+
+  // Result banner
+  const resultBannerH = Math.round(68 * scale);
+  const contentBottom = sponsorsTop - Math.round(16 * scale);
+  const resultBannerY = contentBottom - resultBannerH;
+  drawPackResultBanner(ctx, W, resultBannerY, resultBannerH, padX, input, scale, p);
+
+  // Innings blocks (compact: 2 batters/bowlers per innings)
+  const innings = input.innings.slice(0, 4);
+  const n = innings.length;
+  if (n > 0) {
+    const inningsAreaTop = y;
+    const inningsAreaBottom = resultBannerY - Math.round(14 * scale);
+    const blockGap = Math.round(12 * scale);
+    const areaH = Math.max(0, inningsAreaBottom - inningsAreaTop);
+    const blockH = (areaH - blockGap * (n - 1)) / n;
+    const teamOf = (key: "club" | "opposition") =>
+      key === "club" ? input.club : input.opposition;
+    for (let i = 0; i < n; i++) {
+      const inn = innings[i];
+      const by = inningsAreaTop + i * (blockH + blockGap);
+      drawPackInningsBlock(ctx, padX, by, W - padX * 2, blockH, inn, teamOf(inn.teamKey), scale, p, 2);
+    }
+  }
+};
+
+// ---- Pack Portrait Match Summary (1080x1350) ------------------------------
+const renderPackPortraitMatchSummary = async (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  opts: RenderOptions,
+  p: Palette,
+) => {
+  drawPackBackground(ctx, W, H, p, input.club.primaryColor);
+
+  const sponsors = opts.sponsors ?? [];
+  const sponsorsTop = await drawSponsors(ctx, W, H, sponsors, scale, p);
+  drawFooter(ctx, W, H, opts.clubUrl ?? "", opts.hashtag ?? defaultHashtag(opts.brand), scale, p);
+
+  const padX = Math.round(56 * scale);
+  let y = Math.round(56 * scale);
+
+  // Junior eyebrow
+  if (input.junior) {
+    ctx.fillStyle = "#FBAC27";
+    ctx.font = `700 ${Math.round(20 * scale)}px ${PACK_FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("JUNIOR MATCH", W / 2, y);
+    y += Math.round(32 * scale);
+  }
+
+  // Match title (larger)
+  ctx.fillStyle = p.textLight;
+  ctx.font = `700 ${Math.round(48 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const titleLines = wrapText(ctx, input.matchTitle, W - padX * 2);
+  const titleLineH = Math.round(54 * scale);
+  titleLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * titleLineH));
+  y += titleLines.length * titleLineH + Math.round(6 * scale);
+
+  // Match type
+  if (input.matchType) {
+    ctx.fillStyle = p.accent;
+    ctx.font = `600 ${Math.round(22 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(input.matchType, W / 2, y);
+    y += Math.round(30 * scale);
+  }
+
+  // Date & venue
+  const meta = [input.date, input.venue].filter(Boolean).join("   |   ");
+  if (meta) {
+    ctx.fillStyle = p.textMuted;
+    ctx.font = `400 ${Math.round(20 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(meta, W / 2, y);
+    y += Math.round(34 * scale);
+  }
+
+  // Team crests + VS (larger crests for portrait)
+  y += Math.round(10 * scale);
+  const crestR = Math.round(56 * scale);
+  const vsGap = Math.round(110 * scale);
+  const crestCy = y + crestR;
+  const leftCx = W / 2 - vsGap;
+  const rightCx = W / 2 + vsGap;
+  await drawPackTeamCrest(ctx, input.club, leftCx, crestCy, crestR, scale);
+  await drawPackTeamCrest(ctx, input.opposition, rightCx, crestCy, crestR, scale);
+  ctx.fillStyle = p.accent;
+  ctx.font = `700 ${Math.round(34 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("VS", W / 2, crestCy);
+
+  ctx.fillStyle = p.textLight;
+  ctx.font = `600 ${Math.round(20 * scale)}px ${PACK_FONT}`;
+  ctx.textBaseline = "top";
+  const shortOf = (t: MatchSummaryTeam) => (t.shortName || t.name).toUpperCase();
+  const crestLabelY = crestCy + crestR + Math.round(10 * scale);
+  ctx.fillText(shortOf(input.club), leftCx, crestLabelY);
+  ctx.fillText(shortOf(input.opposition), rightCx, crestLabelY);
+  y = crestLabelY + Math.round(38 * scale);
+
+  // Result banner
+  const resultBannerH = Math.round(76 * scale);
+  const contentBottom = sponsorsTop - Math.round(18 * scale);
+  const resultBannerY = contentBottom - resultBannerH;
+  drawPackResultBanner(ctx, W, resultBannerY, resultBannerH, padX, input, scale, p);
+
+  // Innings blocks (portrait: 3 batters/bowlers per innings)
+  const innings = input.innings.slice(0, 4);
+  const n = innings.length;
+  if (n > 0) {
+    const inningsAreaTop = y;
+    const inningsAreaBottom = resultBannerY - Math.round(16 * scale);
+    const blockGap = Math.round(14 * scale);
+    const areaH = Math.max(0, inningsAreaBottom - inningsAreaTop);
+    const blockH = (areaH - blockGap * (n - 1)) / n;
+    const teamOf = (key: "club" | "opposition") =>
+      key === "club" ? input.club : input.opposition;
+    for (let i = 0; i < n; i++) {
+      const inn = innings[i];
+      const by = inningsAreaTop + i * (blockH + blockGap);
+      drawPackInningsBlock(ctx, padX, by, W - padX * 2, blockH, inn, teamOf(inn.teamKey), scale, p, 3);
+    }
+  }
+};
+
+// ---- Pack Story Match Summary (1080x1920) ---------------------------------
+const renderPackStoryMatchSummary = async (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  opts: RenderOptions,
+  p: Palette,
+) => {
+  drawPackBackground(ctx, W, H, p, input.club.primaryColor);
+
+  const sponsors = opts.sponsors ?? [];
+  const sponsorsTop = await drawSponsors(ctx, W, H, sponsors, scale, p);
+  drawFooter(ctx, W, H, opts.clubUrl ?? "", opts.hashtag ?? defaultHashtag(opts.brand), scale, p);
+
+  const padX = Math.round(56 * scale);
+  let y = Math.round(72 * scale);
+
+  // Junior eyebrow
+  if (input.junior) {
+    ctx.fillStyle = "#FBAC27";
+    ctx.font = `700 ${Math.round(22 * scale)}px ${PACK_FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("JUNIOR MATCH", W / 2, y);
+    y += Math.round(36 * scale);
+  }
+
+  // Match title (largest text for story)
+  ctx.fillStyle = p.textLight;
+  ctx.font = `700 ${Math.round(56 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const titleLines = wrapText(ctx, input.matchTitle, W - padX * 2);
+  const titleLineH = Math.round(64 * scale);
+  titleLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * titleLineH));
+  y += titleLines.length * titleLineH + Math.round(8 * scale);
+
+  // Match type
+  if (input.matchType) {
+    ctx.fillStyle = p.accent;
+    ctx.font = `600 ${Math.round(26 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(input.matchType, W / 2, y);
+    y += Math.round(36 * scale);
+  }
+
+  // Date & venue
+  const meta = [input.date, input.venue].filter(Boolean).join("   |   ");
+  if (meta) {
+    ctx.fillStyle = p.textMuted;
+    ctx.font = `400 ${Math.round(22 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(meta, W / 2, y);
+    y += Math.round(40 * scale);
+  }
+
+  // Team crests + VS (generous sizing)
+  y += Math.round(14 * scale);
+  const crestR = Math.round(64 * scale);
+  const vsGap = Math.round(130 * scale);
+  const crestCy = y + crestR;
+  const leftCx = W / 2 - vsGap;
+  const rightCx = W / 2 + vsGap;
+  await drawPackTeamCrest(ctx, input.club, leftCx, crestCy, crestR, scale);
+  await drawPackTeamCrest(ctx, input.opposition, rightCx, crestCy, crestR, scale);
+  ctx.fillStyle = p.accent;
+  ctx.font = `700 ${Math.round(40 * scale)}px ${PACK_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("VS", W / 2, crestCy);
+
+  ctx.fillStyle = p.textLight;
+  ctx.font = `600 ${Math.round(22 * scale)}px ${PACK_FONT}`;
+  ctx.textBaseline = "top";
+  const shortOf = (t: MatchSummaryTeam) => (t.shortName || t.name).toUpperCase();
+  const crestLabelY = crestCy + crestR + Math.round(12 * scale);
+  ctx.fillText(shortOf(input.club), leftCx, crestLabelY);
+  ctx.fillText(shortOf(input.opposition), rightCx, crestLabelY);
+  y = crestLabelY + Math.round(42 * scale);
+
+  // Per-team score summary boxes (story has room for these)
+  const teamOf = (key: "club" | "opposition") =>
+    key === "club" ? input.club : input.opposition;
+  const teamScoreText = (key: "club" | "opposition") =>
+    input.innings
+      .filter((i) => i.teamKey === key)
+      .map((i) => `${i.totalRuns}/${i.wickets}${i.declared ? "d" : ""}`)
+      .join(" & ");
+  const boxGap = Math.round(20 * scale);
+  const boxW = (W - padX * 2 - boxGap) / 2;
+  const boxH = Math.round(100 * scale);
+  (["club", "opposition"] as const).forEach((key, i) => {
+    const team = teamOf(key);
+    const x = padX + i * (boxW + boxGap);
+    ctx.beginPath();
+    ctx.roundRect(x, y, boxW, boxH, Math.round(12 * scale));
+    ctx.fillStyle = rgba(team.primaryColor, 0.18);
+    ctx.fill();
+    ctx.strokeStyle = rgba(team.primaryColor, 0.5);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = team.primaryColor;
+    ctx.fillRect(x, y + Math.round(14 * scale), Math.round(6 * scale), boxH - Math.round(28 * scale));
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = p.textMuted;
+    ctx.font = `600 ${Math.round(20 * scale)}px ${PACK_FONT}`;
+    ctx.fillText(shortOf(team), x + Math.round(24 * scale), y + Math.round(18 * scale));
+    ctx.fillStyle = p.textLight;
+    ctx.font = `700 ${Math.round(36 * scale)}px ${PACK_FONT_SERIF}`;
+    ctx.fillText(teamScoreText(key) || "—", x + Math.round(24 * scale), y + Math.round(50 * scale));
+  });
+  y += boxH + Math.round(28 * scale);
+
+  // Result banner
+  const resultBannerH = Math.round(88 * scale);
+  const contentBottom = sponsorsTop - Math.round(20 * scale);
+  const resultBannerY = contentBottom - resultBannerH;
+  drawPackResultBanner(ctx, W, resultBannerY, resultBannerH, padX, input, scale, p);
+
+  // Innings blocks (story: 3 batters/bowlers, most generous spacing)
+  const innings = input.innings.slice(0, 4);
+  const n = innings.length;
+  if (n > 0) {
+    const inningsAreaTop = y;
+    const inningsAreaBottom = resultBannerY - Math.round(20 * scale);
+    const blockGap = Math.round(16 * scale);
+    const areaH = Math.max(0, inningsAreaBottom - inningsAreaTop);
+    const blockH = (areaH - blockGap * (n - 1)) / n;
+    for (let i = 0; i < n; i++) {
+      const inn = innings[i];
+      const by = inningsAreaTop + i * (blockH + blockGap);
+      drawPackInningsBlock(ctx, padX, by, W - padX * 2, blockH, inn, teamOf(inn.teamKey), scale, p, 3);
     }
   }
 };
@@ -3427,7 +4011,16 @@ const buildMatchSummaryLayers = async (
   off.height = H;
   const offCtx = off.getContext("2d");
   if (offCtx) {
-    await renderMatchSummaryCard(offCtx, W, H, scale, input, opts, p);
+    // If a pack template is applied, dispatch to the pack variant renderer
+    if (opts.template?.source === "pack" && opts.template.packVariant) {
+      const variant = opts.template.packVariant;
+      if (variant === "square") await renderPackSquareMatchSummary(offCtx, W, H, scale, input, opts, p);
+      else if (variant === "portrait") await renderPackPortraitMatchSummary(offCtx, W, H, scale, input, opts, p);
+      else if (variant === "story") await renderPackStoryMatchSummary(offCtx, W, H, scale, input, opts, p);
+      else await renderMatchSummaryCard(offCtx, W, H, scale, input, opts, p);
+    } else {
+      await renderMatchSummaryCard(offCtx, W, H, scale, input, opts, p);
+    }
   }
   const natural: PxRect = { x: 0, y: 0, w: W, h: H };
   return [
@@ -3478,7 +4071,9 @@ export const computeCardLayers = async (
   input: ShareCardInput,
   opts: RenderOptions,
 ): Promise<EditorLayer[]> => {
-  if (opts.template) return [];
+  // BYO templates bypass the layer pipeline; pack templates flow through it
+  // because their renderers paint onto the scorecard base layer.
+  if (opts.template && opts.template.source !== "pack") return [];
   await ensureCardFonts();
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
@@ -3591,7 +4186,8 @@ export const renderShareCard = async (
 
   // Custom uploaded template path: render the bg + data-bound slots and bail
   // out before any built-in chrome. Sponsors are overlaid inside the helper.
-  if (opts.template) {
+  // Pack templates skip this — they flow through the built-in layer pipeline.
+  if (opts.template && opts.template.source !== "pack") {
     await renderTemplateCard(ctx, W, H, scale, input, opts.template, opts, p);
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((blob) => {
@@ -3739,7 +4335,8 @@ export const prepareAnimation = async (
   const speed = effectiveSpeed(opts);
 
   // Template-based animated card: animated/still background + data-bound slots.
-  if (opts.template) {
+  // Pack templates skip this — they flow through the built-in layer animation.
+  if (opts.template && opts.template.source !== "pack") {
     const template = opts.template;
     const bgKind = template.backgroundKind ?? "image";
     // Canvas text never triggers a font fetch on its own (see ensureCardFonts'
@@ -3834,7 +4431,9 @@ export const prepareAnimation = async (
       ? 0.3
       : motion === "stagger"
         ? 0.55
-        : 0;
+        : motion === "matchReveal"
+          ? 0.6
+          : 0;
   const winBase = 0.45;
   const spread = spreadBase / speed;
   const win = winBase / speed;
@@ -3878,6 +4477,31 @@ export const prepareAnimation = async (
       ctx.rect(b.rx, b.ry, Math.max(1, b.rw * e), b.rh);
       ctx.clip();
       ctx.drawImage(b.bitmap, 0, 0, W, H);
+    } else if (motion === "matchReveal" && b.bitmap) {
+      const headerEnd = H * 0.2;
+      const crestsEnd = H * 0.35;
+      const inningsEnd = H * 0.78;
+      const p1 = clamp01(lp / 0.25);
+      const p2 = clamp01((lp - 0.15) / 0.3);
+      const p3 = clamp01((lp - 0.4) / 0.35);
+      const p4 = clamp01((lp - 0.7) / 0.3);
+      const bmp = b.bitmap;
+      const drawRegion = (ry: number, rh: number, progress: number, slideY = 0) => {
+        if (progress <= 0) return;
+        const ep = easeOutCubic(progress);
+        ctx.save();
+        ctx.globalAlpha = ep;
+        ctx.beginPath();
+        ctx.rect(0, ry, W, rh);
+        ctx.clip();
+        if (slideY !== 0) ctx.translate(0, (1 - ep) * slideY);
+        ctx.drawImage(bmp, 0, 0, W, H);
+        ctx.restore();
+      };
+      drawRegion(0, headerEnd, p1, -20 * (W / 1080));
+      drawRegion(headerEnd, crestsEnd - headerEnd, p2, 0);
+      drawRegion(crestsEnd, inningsEnd - crestsEnd, p3, 0);
+      drawRegion(inningsEnd, H - inningsEnd, p4, 30 * (W / 1080));
     } else {
       // fadeIn / slideUp / stagger / countUp(non-numeric): fade (+ rise).
       ctx.globalAlpha = e;
