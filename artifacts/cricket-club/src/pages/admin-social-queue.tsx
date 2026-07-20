@@ -27,7 +27,7 @@ import type { ShareCardInput } from "@/lib/share-card";
 
 type DraftStatus = "pending" | "approved" | "posted" | "dismissed";
 
-type EngineFilter = "all" | "milestone" | "roundup" | "recap" | "matchSummary";
+type EngineFilter = "all" | Exclude<EngineKey, "ondemand">;
 
 const ENGINE_FILTER_OPTIONS: { value: EngineFilter; label: string }[] = [
   { value: "all", label: "All types" },

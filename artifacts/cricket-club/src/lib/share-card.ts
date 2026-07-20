@@ -4012,9 +4012,8 @@ const buildMatchSummaryLayers = async (
   const offCtx = off.getContext("2d");
   if (offCtx) {
     // If a pack template is applied, dispatch to the pack variant renderer
-    const tpl = opts.template as { source?: string; packVariant?: string } | null | undefined;
-    if (tpl?.source === "pack" && tpl.packVariant) {
-      const variant = tpl.packVariant;
+    if (opts.template?.source === "pack" && opts.template.packVariant) {
+      const variant = opts.template.packVariant;
       if (variant === "square") await renderPackSquareMatchSummary(offCtx, W, H, scale, input, opts, p);
       else if (variant === "portrait") await renderPackPortraitMatchSummary(offCtx, W, H, scale, input, opts, p);
       else if (variant === "story") await renderPackStoryMatchSummary(offCtx, W, H, scale, input, opts, p);
@@ -4074,8 +4073,7 @@ export const computeCardLayers = async (
 ): Promise<EditorLayer[]> => {
   // BYO templates bypass the layer pipeline; pack templates flow through it
   // because their renderers paint onto the scorecard base layer.
-  const tplSource = (opts.template as { source?: string } | null | undefined)?.source;
-  if (opts.template && tplSource !== "pack") return [];
+  if (opts.template && opts.template.source !== "pack") return [];
   await ensureCardFonts();
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080;
@@ -4189,8 +4187,7 @@ export const renderShareCard = async (
   // Custom uploaded template path: render the bg + data-bound slots and bail
   // out before any built-in chrome. Sponsors are overlaid inside the helper.
   // Pack templates skip this — they flow through the built-in layer pipeline.
-  const tplSrc = (opts.template as { source?: string } | null | undefined)?.source;
-  if (opts.template && tplSrc !== "pack") {
+  if (opts.template && opts.template.source !== "pack") {
     await renderTemplateCard(ctx, W, H, scale, input, opts.template, opts, p);
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((blob) => {
@@ -4339,8 +4336,7 @@ export const prepareAnimation = async (
 
   // Template-based animated card: animated/still background + data-bound slots.
   // Pack templates skip this — they flow through the built-in layer animation.
-  const animTplSource = (opts.template as { source?: string } | null | undefined)?.source;
-  if (opts.template && animTplSource !== "pack") {
+  if (opts.template && opts.template.source !== "pack") {
     const template = opts.template;
     const bgKind = template.backgroundKind ?? "image";
     // Canvas text never triggers a font fetch on its own (see ensureCardFonts'
