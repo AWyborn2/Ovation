@@ -357,6 +357,8 @@ export * from './stat';
 export * from './statInput';
 export * from './statListResponse';
 export * from './statUpdate';
+export * from './sweepMatchSummaryDrafts200';
+export * from './sweepMatchSummaryDraftsBody';
 export * from './tallyEntry';
 export * from './teamOfDecadeBoard';
 export * from './teamOfDecadeBoardInput';

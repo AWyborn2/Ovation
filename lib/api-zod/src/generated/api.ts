@@ -5791,6 +5791,23 @@ export const GenerateRoundUpResponse = zod.array(GenerateRoundUpResponseItem)
 
 
 /**
+ * @summary Sweep matches to generate match summary drafts
+ */
+export const SweepMatchSummaryDraftsBody = zod.object({
+  "matchIds": zod.array(zod.number()).optional(),
+  "junior": zod.boolean().optional(),
+  "season": zod.number().optional(),
+  "grade": zod.string().optional()
+})
+
+export const SweepMatchSummaryDraftsResponse = zod.object({
+  "drafted": zod.number(),
+  "skipped": zod.number(),
+  "errors": zod.array(zod.string())
+})
+
+
+/**
  * @summary List tracked short links with click counts
  */
 export const ListTrackedLinksResponseItem = zod.object({

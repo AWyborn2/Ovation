@@ -5051,6 +5051,19 @@ surface?: NavSurface;
 includeHidden?: boolean;
 };
 
+export type SweepMatchSummaryDraftsBody = {
+  matchIds?: number[];
+  junior?: boolean;
+  season?: number;
+  grade?: string;
+};
+
+export type SweepMatchSummaryDrafts200 = {
+  drafted: number;
+  skipped: number;
+  errors: string[];
+};
+
 export type GetJuniorSeasonTopPerformersParams = {
 /**
  * Single age group to scope the leaders to; omit for club-wide.

@@ -3805,6 +3805,48 @@ paths:
                 items:
                   $ref: "#/components/schemas/SocialDraft"
 
+  /social-drafts/sweep:
+    post:
+      summary: Sweep matches to generate match summary drafts
+      operationId: sweepMatchSummaryDrafts
+      tags: [social-drafts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                matchIds:
+                  type: array
+                  items:
+                    type: integer
+                junior:
+                  type: boolean
+                season:
+                  type: integer
+                grade:
+                  type: string
+      responses:
+        "200":
+          description: Sweep results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  drafted:
+                    type: integer
+                  skipped:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                required: [drafted, skipped, errors]
+
   /tracked-links:
     get:
       operationId: listTrackedLinks
