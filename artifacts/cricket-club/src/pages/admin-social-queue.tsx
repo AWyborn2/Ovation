@@ -20,12 +20,22 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ShareCardModal } from "@/components/share-card-modal";
+import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { CardGridSkeleton, ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { Loader2, Check, X, ExternalLink, Copy } from "lucide-react";
 import type { ShareCardInput } from "@/lib/share-card";
 
 type DraftStatus = "pending" | "approved" | "posted" | "dismissed";
+
+type EngineFilter = "all" | "milestone" | "roundup" | "recap" | "matchSummary";
+
+const ENGINE_FILTER_OPTIONS: { value: EngineFilter; label: string }[] = [
+  { value: "all", label: "All types" },
+  { value: "milestone", label: "Milestone" },
+  { value: "roundup", label: "Round-up" },
+  { value: "recap", label: "Recap" },
+  { value: "matchSummary", label: "Match Summary" },
+];
 
 export default function AdminSocialQueue() {
   const qc = useQueryClient();
@@ -86,6 +96,7 @@ export default function AdminSocialQueue() {
 
   const [previewDraft, setPreviewDraft] = useState<SocialDraft | null>(null);
   const [approveMode, setApproveMode] = useState(false);
+  const [engineFilter, setEngineFilter] = useState<EngineFilter>("all");
   const [grade, setGrade] = useState("A Grade");
   const [season, setSeason] = useState<number>(new Date().getFullYear());
 
@@ -120,11 +131,12 @@ export default function AdminSocialQueue() {
       dismissed: [],
     };
     for (const d of drafts) {
+      if (engineFilter !== "all" && d.engine !== engineFilter) continue;
       const key = (d.status as DraftStatus) ?? "pending";
       (groups[key] ??= []).push(d);
     }
     return groups;
-  }, [drafts]);
+  }, [drafts, engineFilter]);
 
   const clubUrl = bundle?.settings.clubUrl ?? "";
   const buildShortUrl = (slug: string) =>
@@ -152,21 +164,36 @@ export default function AdminSocialQueue() {
       <div className="grid gap-3 md:grid-cols-2">
         {list.map((d) => {
           const input = d.cardInput as ShareCardInput | null;
-          const heading =
-            (input && (input as { playerName?: string }).playerName) ??
-            (input && (input as { headline?: string }).headline) ??
-            d.engine;
-          const sub =
-            (input && (input as { tierLabel?: string }).tierLabel) ??
-            (input && (input as { category?: string }).category) ??
-            (input && (input as { grade?: string }).grade) ??
-            d.appPath;
+          const msInput = input?.kind === "matchSummary" ? input : null;
+          const isJuniorMatch = !!(msInput && msInput.junior);
+          const heading = msInput
+            ? `${msInput.club.name} vs ${msInput.opposition.name}`
+            : (input && (input as { playerName?: string }).playerName) ??
+              (input && (input as { headline?: string }).headline) ??
+              d.engine;
+          const sub = msInput
+            ? `${msInput.matchTitle} — ${msInput.result}`
+            : (input && (input as { tierLabel?: string }).tierLabel) ??
+              (input && (input as { category?: string }).category) ??
+              (input && (input as { grade?: string }).grade) ??
+              d.appPath;
+          const engineLabel = msInput ? "Match Summary" : d.engine;
           return (
             <Card key={d.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">{heading}</CardTitle>
-                  <Badge variant="outline" className="capitalize">{d.engine}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    {isJuniorMatch && (
+                      <Badge
+                        className="text-white text-[10px] uppercase tracking-wide"
+                        style={{ backgroundColor: "#42342B" }}
+                      >
+                        Junior
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="capitalize">{engineLabel}</Badge>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{sub}</p>
               </CardHeader>
@@ -305,6 +332,24 @@ export default function AdminSocialQueue() {
         </CardContent>
       </Card>
 
+      <div className="flex items-center gap-3">
+        <Label htmlFor="engine-filter" className="text-sm whitespace-nowrap">
+          Filter by type
+        </Label>
+        <select
+          id="engine-filter"
+          value={engineFilter}
+          onChange={(e) => setEngineFilter(e.target.value as EngineFilter)}
+          className="px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+        >
+          {ENGINE_FILTER_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <Tabs defaultValue="pending">
         <TabsList>
           <TabsTrigger value="pending">
@@ -373,7 +418,7 @@ export default function AdminSocialQueue() {
           }
         }}
         input={(previewDraft?.cardInput as ShareCardInput | null) ?? null}
-        engine={(previewDraft?.engine as "ondemand" | "milestone" | "roundup" | "recap") ?? "ondemand"}
+        engine={(previewDraft?.engine as EngineKey) ?? "ondemand"}
         appPath={previewDraft?.appPath ?? undefined}
         trackedSlug={previewDraft?.trackedSlug ?? null}
         onApprove={
