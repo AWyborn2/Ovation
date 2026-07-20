@@ -6300,7 +6300,8 @@ export const RevertJuniorStatCorrectionParams = zod.object({
 export const ListJuniorPlayersQueryParams = zod.object({
   "search": zod.coerce.string().optional().describe('Case-insensitive name search'),
   "season": zod.coerce.string().optional().describe('Filter to players active in this season'),
-  "ageGroup": zod.coerce.string().optional().describe('Filter to players who appeared for this age group')
+  "ageGroup": zod.coerce.string().optional().describe('Filter to players who appeared for this age group'),
+  "includePrivate": zod.coerce.boolean().optional().describe('Include private participants (honoured only for a signed-in admin — the flag is silently ignored otherwise). Used by the junior players admin so the privacy flag can be managed in both directions.')
 })
 
 export const ListJuniorPlayersResponseItem = zod.object({
@@ -6312,7 +6313,8 @@ export const ListJuniorPlayersResponseItem = zod.object({
   "matches": zod.number().optional(),
   "runs": zod.number().optional(),
   "wickets": zod.number().optional(),
-  "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.')
+  "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.'),
+  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.')
 })
 export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
 
@@ -6412,6 +6414,37 @@ export const GetJuniorPlayerResponse = zod.object({
   "noBalls": zod.number().nullish()
 }).describe('One bowling line in a junior innings. Private participants are masked.'),zod.null()]).optional()
 }))
+})
+
+
+/**
+ * @summary Merge a duplicate junior profile into a keeper (admin, PERMANENT). PlayHQ occasionally minted two participant GUIDs for the same child; this reassigns every junior line from the duplicate to the keeper, deletes the duplicate profile, and records the merge so it survives juniors data reloads. The absorbed profile's URL aliases to the keeper.
+ */
+export const MergeJuniorParticipantParams = zod.object({
+  "id": zod.coerce.string().describe('PlayHQ participant_id of the DUPLICATE profile to absorb')
+})
+
+
+
+
+export const MergeJuniorParticipantBody = zod.object({
+  "keeperParticipantId": zod.string().min(1).describe('PlayHQ participant_id of the profile to keep.')
+})
+
+export const MergeJuniorParticipantResponse = zod.object({
+  "keeperParticipantId": zod.string(),
+  "duplicateParticipantId": zod.string(),
+  "displayName": zod.string(),
+  "isPrivate": zod.boolean(),
+  "seniorPlayerId": zod.number().nullish(),
+  "reassigned": zod.object({
+  "batting": zod.number(),
+  "bowling": zod.number(),
+  "rosters": zod.number(),
+  "rostersDeduped": zod.number(),
+  "premiershipPlayers": zod.number(),
+  "officeBearers": zod.number()
+})
 })
 
 

@@ -205,6 +205,50 @@ function main(): void {
         WHERE p.participant_id = c.target_id))
   `);
   console.log(`  admin stat corrections journalled:    ${correctionCount}`);
+
+  // Junior profile merges (junior_participant_merges) are re-applied by ETL
+  // step 7: duplicate GUIDs' lines are funnelled to the keeper and the
+  // resurrected duplicate rows removed. A merge whose keeper GUID is missing
+  // from the new dump is SKIPPED entirely (duplicate temporarily live again)
+  // and reported here; the map row remains, so a later dump containing the
+  // keeper self-heals.
+  const mergeCount = psql(
+    `SELECT count(*) FROM public.junior_participant_merges`,
+  );
+  const skippedMerges = psql(`
+    SELECT count(*) FROM public.junior_participant_merges m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM public.junior_participants k
+      WHERE k.participant_id = m.keeper_participant_id
+    )
+  `);
+  const liveDuplicates = psql(`
+    SELECT count(*) FROM public.junior_participant_merges m
+    JOIN public.junior_participants d
+      ON d.participant_id = m.duplicate_participant_id
+    WHERE EXISTS (
+      SELECT 1 FROM public.junior_participants k
+      WHERE k.participant_id = m.keeper_participant_id
+    )
+  `);
+  console.log(`  junior profile merges journalled:     ${mergeCount}`);
+  if (Number(skippedMerges) > 0) {
+    console.log(
+      `\n  *** WARNING: ${skippedMerges} merge(s) skipped — keeper GUID missing ` +
+        `from this dump. The duplicate profile is live again until a future ` +
+        `dump restores the keeper; the merge record remains in ` +
+        `junior_participant_merges.`,
+    );
+  } else {
+    console.log(`  merges skipped on re-apply:           0`);
+  }
+  if (Number(liveDuplicates) > 0) {
+    console.log(
+      `\n  *** WARNING: ${liveDuplicates} applied merge(s) still have a live ` +
+        `duplicate participant row — ETL step 7 did not clean up as expected; ` +
+        `investigate before trusting junior figures.`,
+    );
+  }
   if (Number(skippedCorrections) > 0) {
     console.log(
       `\n  *** WARNING: ${skippedCorrections} correction(s) no longer resolve — ` +

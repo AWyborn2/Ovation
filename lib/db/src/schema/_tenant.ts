@@ -82,6 +82,10 @@ import { tenantsTable } from "./tenants";
  *   read-only junior dump data; the juniors ETL re-applies it after its full
  *   replace but never deletes it. Directly tenant-scoped (reads filter,
  *   writes set from request context).
+ *   junior_participant_merges — app-owned map of merged duplicate junior
+ *   profiles (duplicate GUID → keeper GUID, flat, permanent); the ETL
+ *   re-applies it after its full replace (step 7) but never deletes it.
+ *   Directly tenant-scoped like the corrections journal.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

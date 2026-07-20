@@ -461,3 +461,139 @@ WHERE c.target_table = 'junior_match_rosters' AND c.op = 'delete'
     WHERE m.id = t.match_id
       AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)
   );
+
+-- 7. Re-apply junior profile merges (junior_participant_merges). Like the
+-- corrections journal, the map is APP-OWNED: this ETL reads it but NEVER
+-- deletes it. Each row records a permanent admin merge of a duplicate PlayHQ
+-- GUID into a keeper; the dump just re-created the duplicate participant row
+-- and its lines, so every merge is re-applied here. MUST run AFTER step 6:
+-- corrections re-applied in 6b may restore an absorbed GUID onto a line, and
+-- this step funnels those to the keeper. Guard: a merge whose keeper GUID is
+-- absent from the fresh load is SKIPPED entirely (the duplicate stays live
+-- and the loader reports it loudly) — never guess.
+--
+-- _jp_links interplay: step 4 re-applied senior links by GUID, so a link
+-- snapshotted under the keeper GUID is already on the keeper; one stored on a
+-- resurrected duplicate row is carried across by 7c before the row is deleted.
+
+CREATE TEMP TABLE _jpm ON COMMIT DROP AS
+SELECT m.duplicate_participant_id AS dup, m.keeper_participant_id AS keeper
+FROM public.junior_participant_merges m
+WHERE EXISTS (
+  SELECT 1 FROM public.junior_participants k
+  WHERE k.participant_id = m.keeper_participant_id
+);
+
+-- 7a. Reassign every junior line and reference from duplicate to keeper.
+UPDATE public.junior_match_batting t SET participant_id = _jpm.keeper
+FROM _jpm WHERE t.participant_id = _jpm.dup;
+
+UPDATE public.junior_match_bowling t SET participant_id = _jpm.keeper
+FROM _jpm WHERE t.participant_id = _jpm.dup;
+
+UPDATE public.junior_match_rosters t SET participant_id = _jpm.keeper
+FROM _jpm WHERE t.participant_id = _jpm.dup;
+
+UPDATE public.junior_premiership_players t SET participant_id = _jpm.keeper
+FROM _jpm WHERE t.participant_id = _jpm.dup;
+
+UPDATE public.junior_office_bearers t SET participant_id = _jpm.keeper
+FROM _jpm WHERE t.participant_id = _jpm.dup;
+
+-- 7b. Dedupe: the duplicate and keeper often shared a match (that's why they
+-- are duplicates) — keep the lowest-id row per (participant, match) /
+-- (premiership, participant).
+DELETE FROM public.junior_match_rosters a
+USING public.junior_match_rosters b, _jpm
+WHERE a.participant_id = _jpm.keeper
+  AND b.participant_id = _jpm.keeper
+  AND a.match_id = b.match_id
+  AND a.id > b.id;
+
+DELETE FROM public.junior_premiership_players a
+USING public.junior_premiership_players b, _jpm
+WHERE a.participant_id = _jpm.keeper
+  AND b.participant_id = _jpm.keeper
+  AND a.premiership_id = b.premiership_id
+  AND a.id > b.id;
+
+-- 7c. Carry the senior cross-link (keeper's own wins) and sticky privacy from
+-- the resurrected duplicate row onto the keeper.
+UPDATE public.junior_participants k
+SET senior_player_id = COALESCE(k.senior_player_id, d.senior_player_id),
+    is_private = k.is_private OR d.is_private
+FROM _jpm
+JOIN public.junior_participants d ON d.participant_id = _jpm.dup
+WHERE k.participant_id = _jpm.keeper;
+
+-- 7d. Keeper's directory name flows onto its combined HH lines (mirrors the
+-- admin rename propagation; runs after 6b's rename refresh so the keeper's
+-- name wins on absorbed lines).
+UPDATE public.junior_match_batting b
+SET player_name = k.display_name
+FROM _jpm
+JOIN public.junior_participants k ON k.participant_id = _jpm.keeper
+WHERE k.display_name IS NOT NULL
+  AND b.participant_id = k.participant_id AND b.is_halls_head;
+
+UPDATE public.junior_match_bowling w
+SET player_name = k.display_name
+FROM _jpm
+JOIN public.junior_participants k ON k.participant_id = _jpm.keeper
+WHERE k.display_name IS NOT NULL
+  AND w.participant_id = k.participant_id AND w.is_halls_head;
+
+UPDATE public.junior_match_rosters r
+SET player_name = k.display_name
+FROM _jpm
+JOIN public.junior_participants k ON k.participant_id = _jpm.keeper
+WHERE k.display_name IS NOT NULL
+  AND r.participant_id = k.participant_id AND r.is_halls_head;
+
+-- 7e. Delete the resurrected duplicate profile rows.
+DELETE FROM public.junior_participants d
+USING _jpm WHERE d.participant_id = _jpm.dup;
+
+-- 7f. Recompute the keepers' stored dump-derived metadata from their live
+-- lines (the dump's figures describe each GUID separately). Mirrors the
+-- admin merge endpoint's recomputeParticipantMetadata — keep in sync.
+UPDATE public.junior_participants p SET
+  scorecard_lines =
+    (SELECT count(*) FROM public.junior_match_batting b
+      WHERE b.participant_id = p.participant_id AND b.is_halls_head)
+  + (SELECT count(*) FROM public.junior_match_bowling w
+      WHERE w.participant_id = p.participant_id AND w.is_halls_head),
+  roster_appearances =
+    (SELECT count(*) FROM public.junior_match_rosters r
+      WHERE r.participant_id = p.participant_id AND r.is_halls_head),
+  first_season = (
+    SELECT m.season FROM public.junior_matches m
+    JOIN (
+      SELECT match_id FROM public.junior_match_batting
+        WHERE participant_id = p.participant_id AND is_halls_head
+      UNION SELECT match_id FROM public.junior_match_bowling
+        WHERE participant_id = p.participant_id AND is_halls_head
+      UNION SELECT match_id FROM public.junior_match_rosters
+        WHERE participant_id = p.participant_id AND is_halls_head
+    ) t ON t.match_id = m.id
+    WHERE m.season IS NOT NULL
+    ORDER BY m.season_start_year ASC NULLS LAST LIMIT 1),
+  last_season = (
+    SELECT m.season FROM public.junior_matches m
+    JOIN (
+      SELECT match_id FROM public.junior_match_batting
+        WHERE participant_id = p.participant_id AND is_halls_head
+      UNION SELECT match_id FROM public.junior_match_bowling
+        WHERE participant_id = p.participant_id AND is_halls_head
+      UNION SELECT match_id FROM public.junior_match_rosters
+        WHERE participant_id = p.participant_id AND is_halls_head
+    ) t ON t.match_id = m.id
+    WHERE m.season IS NOT NULL
+    ORDER BY m.season_start_year DESC NULLS LAST LIMIT 1),
+  teams = (
+    SELECT string_agg(DISTINCT r.team_name, ', ' ORDER BY r.team_name)
+    FROM public.junior_match_rosters r
+    WHERE r.participant_id = p.participant_id AND r.is_halls_head
+      AND r.team_name IS NOT NULL)
+FROM _jpm
+WHERE p.participant_id = _jpm.keeper;

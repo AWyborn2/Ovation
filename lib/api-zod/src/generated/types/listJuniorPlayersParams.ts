@@ -19,4 +19,8 @@ season?: string;
  * Filter to players who appeared for this age group
  */
 ageGroup?: string;
+/**
+ * Include private participants (honoured only for a signed-in admin — the flag is silently ignored otherwise). Used by the junior players admin so the privacy flag can be managed in both directions.
+ */
+includePrivate?: boolean;
 };
