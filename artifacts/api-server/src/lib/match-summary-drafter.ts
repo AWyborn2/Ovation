@@ -115,7 +115,7 @@ function splitScores(m: typeof juniorMatchesTable.$inferSelect): {
  * Load a junior match in the JuniorMatchDetail shape needed by
  * `juniorMatchToSummaryInput`. Returns null when the match doesn't exist.
  */
-async function loadJuniorMatchDetail(matchId: number) {
+async function loadJuniorMatchDetail(matchId: number, tenantId: number, privateIds: Set<string>) {
   const [matchRow] = await db
     .select({
       match: juniorMatchesTable,
@@ -129,7 +129,7 @@ async function loadJuniorMatchDetail(matchId: number) {
     })
     .from(juniorMatchesTable)
     .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
-    .where(eq(juniorMatchesTable.id, matchId));
+    .where(and(eq(juniorMatchesTable.id, matchId), eq(juniorMatchesTable.tenantId, tenantId)));
 
   if (!matchRow) return null;
   const match = matchRow.match;
@@ -148,7 +148,6 @@ async function loadJuniorMatchDetail(matchId: number) {
       : null;
   const [opponentClub] = await overlayNativeOpponents([opponentClubRaw]);
 
-  const privateIds = await getPrivateIds();
   const isPriv = (pid: string | null) => !!pid && privateIds.has(pid);
 
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
@@ -290,6 +289,7 @@ async function upsertDraft(
         eq(socialDraftsTable.tenantId, tenantId),
         eq(socialDraftsTable.sourceKind, "matchSummary"),
         eq(socialDraftsTable.sourceMatchId, matchId),
+        eq(socialDraftsTable.sourceMatchIsJunior, junior),
         ne(socialDraftsTable.status, "dismissed"),
       ),
     );
@@ -393,10 +393,11 @@ export async function generateJuniorMatchSummaryDrafts(
   }
 
   const brand = await getTenantBrand(tenantId);
+  const privateIds = await getPrivateIds();
 
   for (const matchId of matchIds) {
     try {
-      const detail = await loadJuniorMatchDetail(matchId);
+      const detail = await loadJuniorMatchDetail(matchId, tenantId, privateIds);
       if (!detail) {
         result.skipped++;
         continue;

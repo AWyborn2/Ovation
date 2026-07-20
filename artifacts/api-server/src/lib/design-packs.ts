@@ -69,12 +69,20 @@ export function getPackById(id: string): DesignPack | undefined {
   return PACKS.find((p) => p.id === id);
 }
 
+export function _resetEnsuredTenants(): void {
+  ensuredTenants.clear();
+}
+
+const ensuredTenants = new Set<number>();
+
 /**
  * Ensure every registered design-pack variant has a corresponding
  * `card_templates` row for `tenantId`. Idempotent — skips variants that
  * already have a row (matched on tenantId + source + packId + packVariant).
+ * Results are cached per-tenant for the lifetime of the process.
  */
 export async function ensurePackTemplates(tenantId: number): Promise<void> {
+  if (ensuredTenants.has(tenantId)) return;
   for (const pack of PACKS) {
     for (const variant of pack.variants) {
       // Check whether this (tenant, pack, variant) already exists.
@@ -111,4 +119,5 @@ export async function ensurePackTemplates(tenantId: number): Promise<void> {
       });
     }
   }
+  ensuredTenants.add(tenantId);
 }

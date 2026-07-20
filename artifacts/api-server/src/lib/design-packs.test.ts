@@ -74,7 +74,7 @@ vi.mock("@workspace/db", () => {
 });
 
 // Import AFTER the mock is in place so the module picks up the stub.
-const { ensurePackTemplates } = await import("./design-packs");
+const { ensurePackTemplates, _resetEnsuredTenants } = await import("./design-packs");
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -84,6 +84,7 @@ describe("design-packs registry", () => {
   beforeEach(() => {
     insertedRows = [];
     existingRows = [];
+    _resetEnsuredTenants();
   });
 
   // --- getPackById ----------------------------------------------------------

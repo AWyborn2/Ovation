@@ -407,7 +407,7 @@ export const socialDraftsTable = pgTable(
     // sourceKind = 'matchSummary' AND the draft hasn't been dismissed, so a
     // dismissed draft can be re-created for the same match.
     matchDedupe: uniqueIndex("social_drafts_match_dedupe")
-      .on(t.tenantId, t.sourceKind, t.sourceMatchId)
+      .on(t.tenantId, t.sourceKind, t.sourceMatchId, t.sourceMatchIsJunior)
       .where(sql`source_kind = 'matchSummary' AND status != 'dismissed'`),
   }),
 );

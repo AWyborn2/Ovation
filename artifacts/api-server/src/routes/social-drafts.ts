@@ -186,7 +186,10 @@ router.post("/social-drafts/sweep", requireAdmin, requireEntitlement("socialStud
   } else if (season != null && Number.isInteger(season)) {
     // Query matches for the given season (+grade) filter.
     if (junior) {
-      const conditions = [eq(juniorMatchesTable.seasonStartYear, season)];
+      const conditions = [
+        eq(juniorMatchesTable.tenantId, tenantId),
+        eq(juniorMatchesTable.seasonStartYear, season),
+      ];
       if (grade) {
         conditions.push(eq(juniorMatchesTable.ageGroup, grade));
       }

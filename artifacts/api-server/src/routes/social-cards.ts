@@ -491,8 +491,9 @@ const clearDefaultKinds = async (
 
 router.get("/card-templates", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
-  // Lazily ensure pack templates exist for this tenant before listing.
-  await ensurePackTemplates(tenantId);
+  try {
+    await ensurePackTemplates(tenantId);
+  } catch { /* pack provisioning is best-effort; listing proceeds without */ }
   const rows = await db
     .select()
     .from(cardTemplatesTable)
