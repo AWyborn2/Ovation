@@ -15,7 +15,7 @@ import type {
   ScorecardBatsman,
   ScorecardBowler,
 } from "./types";
-import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-client-react";
+import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import type {
   MatchSummaryTeam,
   MatchSummaryInnings,

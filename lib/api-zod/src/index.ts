@@ -39,4 +39,12 @@ export type {
   StatInput,
   StatListResponse,
   StatUpdate,
+  MatchDetail,
+  MatchScorecardLine,
+  MatchOppositionLine,
+  OpponentClub,
+  JuniorMatchDetail,
+  JuniorInnings,
+  JuniorBattingLine,
+  JuniorBowlingLine,
 } from "./generated/types";

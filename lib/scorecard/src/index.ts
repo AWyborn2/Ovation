@@ -7,7 +7,7 @@ export type {
   JuniorInnings,
   JuniorBattingLine,
   JuniorBowlingLine,
-} from "@workspace/api-client-react";
+} from "@workspace/api-zod";
 export * from "./types";
 export {
   DEFAULT_BRAND,

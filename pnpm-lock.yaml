@@ -910,9 +910,9 @@ importers:
 
   lib/scorecard:
     dependencies:
-      '@workspace/api-client-react':
+      '@workspace/api-zod':
         specifier: workspace:*
-        version: link:../api-client-react
+        version: link:../api-zod
 
   scripts:
     dependencies:
