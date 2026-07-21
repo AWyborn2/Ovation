@@ -14,6 +14,7 @@ import {
   socialSettingsTable,
   socialDraftsTable,
   matchesTable,
+  importsTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -22,6 +23,7 @@ const STAMP = Date.now();
 let tenantId: number;
 let adminId: number;
 let cookie: string;
+let importId: number;
 let matchId: number;
 
 beforeAll(async () => {
@@ -57,9 +59,23 @@ beforeAll(async () => {
     matchSummaryGradeConfig: {},
   });
 
+  const [imp] = await db
+    .insert(importsTable)
+    .values({
+      filename: `sweep-test-${STAMP}.csv`,
+      grade: "A Grade",
+      season: 2024,
+      kind: "csv",
+      rowCount: 1,
+      status: "complete",
+    })
+    .returning();
+  importId = imp.id;
+
   const [match] = await db
     .insert(matchesTable)
     .values({
+      importId,
       season: 2024,
       grade: "A Grade",
       round: 1,
@@ -80,6 +96,7 @@ afterAll(async () => {
     .delete(socialSettingsTable)
     .where(eq(socialSettingsTable.tenantId, tenantId));
   await db.delete(matchesTable).where(eq(matchesTable.id, matchId));
+  await db.delete(importsTable).where(eq(importsTable.id, importId));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
 });
