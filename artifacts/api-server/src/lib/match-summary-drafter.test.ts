@@ -1,48 +1,51 @@
 /**
- * Tests for the match-summary auto-draft engine. These exercise the pure
- * decision logic (grade config, junior defaults, settings gates) by mocking
- * the DB layer. The actual card-input transformation is tested in the
+ * Tests for the match-summary auto-draft engine. These exercise the real
+ * exported `shouldDraftGrade` decision logic (grade config, junior defaults,
+ * settings gates). The actual card-input transformation is tested in the
  * @workspace/scorecard package; here we verify the drafter's control flow.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
-// ---------------------------------------------------------------------------
-// Inline the shouldDraftGrade logic extracted from the drafter so we can test
-// it without standing up a DB. The real function is not exported, so we test
-// an identical copy. If the implementation drifts, these tests fail as a
-// canary — the integration suite (on CI with a real DB) is the source of truth.
-// ---------------------------------------------------------------------------
+vi.mock("@workspace/db", () => ({
+  db: {},
+  clubsTable: {},
+  socialDraftsTable: {},
+  socialSettingsTable: {},
+  juniorMatchesTable: {},
+  juniorMatchBattingTable: {},
+  juniorMatchBowlingTable: {},
+  juniorMatchRostersTable: {},
+}));
+vi.mock("@workspace/api-zod", () => ({}));
+vi.mock("@workspace/scorecard", () => ({
+  matchToSummaryInput: vi.fn(),
+  juniorMatchToSummaryInput: vi.fn(),
+}));
+vi.mock("./tenant-brand", () => ({ getTenantBrand: vi.fn() }));
+vi.mock("../routes/matches", () => ({ loadMatchDetail: vi.fn() }));
+vi.mock("./club-brand", () => ({
+  getOpponentBrandsByAppClubId: vi.fn(),
+  overlayNativeOpponents: vi.fn(),
+}));
+vi.mock("./junior-helpers", () => ({
+  getPrivateIds: vi.fn(),
+  splitScores: vi.fn(),
+  MASK_NAME: "Private Player",
+}));
 
-type SocialSettings = {
-  engineMatchSummary: boolean;
-  matchSummaryGradeConfig: Record<string, { enabled: boolean }>;
-};
+import { shouldDraftGrade } from "./match-summary-drafter";
 
-function shouldDraftGrade(
-  settings: SocialSettings | null,
-  grade: string | null,
-  junior: boolean,
-): boolean {
-  if (!settings) return false;
-  if (!settings.engineMatchSummary) return false;
-
-  const config = settings.matchSummaryGradeConfig ?? {};
-  const key = grade ?? "";
-  if (key in config) return config[key].enabled;
-
-  // Default: senior ON, junior OFF.
-  return !junior;
-}
+type SocialSettings = Parameters<typeof shouldDraftGrade>[0];
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("shouldDraftGrade", () => {
-  const baseSettings: SocialSettings = {
+  const baseSettings: NonNullable<SocialSettings> = {
     engineMatchSummary: true,
     matchSummaryGradeConfig: {},
-  };
+  } as NonNullable<SocialSettings>;
 
   it("returns false when settings are null", () => {
     expect(shouldDraftGrade(null, "A Grade", false)).toBe(false);
@@ -105,27 +108,25 @@ describe("shouldDraftGrade", () => {
 });
 
 describe("match summary draft engine design", () => {
-  it("senior default is ON, junior default is OFF", () => {
-    // This captures the invariant: when a grade is absent from the config,
-    // senior matches draft automatically but junior matches do not.
-    const settings: SocialSettings = {
-      engineMatchSummary: true,
-      matchSummaryGradeConfig: {},
-    };
+  const baseSettings: NonNullable<SocialSettings> = {
+    engineMatchSummary: true,
+    matchSummaryGradeConfig: {},
+  } as NonNullable<SocialSettings>;
 
+  it("senior default is ON, junior default is OFF", () => {
     // Senior grades auto-draft
-    expect(shouldDraftGrade(settings, "A Grade", false)).toBe(true);
-    expect(shouldDraftGrade(settings, "B Grade", false)).toBe(true);
-    expect(shouldDraftGrade(settings, "C Grade", false)).toBe(true);
+    expect(shouldDraftGrade(baseSettings, "A Grade", false)).toBe(true);
+    expect(shouldDraftGrade(baseSettings, "B Grade", false)).toBe(true);
+    expect(shouldDraftGrade(baseSettings, "C Grade", false)).toBe(true);
 
     // Junior grades do NOT auto-draft by default
-    expect(shouldDraftGrade(settings, "Under 14", true)).toBe(false);
-    expect(shouldDraftGrade(settings, "Under 12", true)).toBe(false);
+    expect(shouldDraftGrade(baseSettings, "Under 14", true)).toBe(false);
+    expect(shouldDraftGrade(baseSettings, "Under 12", true)).toBe(false);
   });
 
   it("per-grade config overrides defaults in both directions", () => {
-    const settings: SocialSettings = {
-      engineMatchSummary: true,
+    const settings = {
+      ...baseSettings,
       matchSummaryGradeConfig: {
         "A Grade": { enabled: false }, // senior OFF (override)
         "Under 14": { enabled: true }, // junior ON (override)
@@ -139,7 +140,8 @@ describe("match summary draft engine design", () => {
   });
 
   it("global kill switch overrides all per-grade config", () => {
-    const settings: SocialSettings = {
+    const settings = {
+      ...baseSettings,
       engineMatchSummary: false,
       matchSummaryGradeConfig: {
         "A Grade": { enabled: true },

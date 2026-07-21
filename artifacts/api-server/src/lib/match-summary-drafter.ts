@@ -13,11 +13,6 @@
 
 import {
   db,
-  matchesTable,
-  matchPlayerLinesTable,
-  matchOppositionLinesTable,
-  matchHatTricksTable,
-  playersTable,
   clubsTable,
   socialDraftsTable,
   socialSettingsTable,
@@ -25,9 +20,9 @@ import {
   juniorMatchBattingTable,
   juniorMatchBowlingTable,
   juniorMatchRostersTable,
-  juniorParticipantsTable,
 } from "@workspace/db";
-import { eq, and, ne, asc, sql } from "drizzle-orm";
+import { eq, and, ne, sql } from "drizzle-orm";
+import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import {
   matchToSummaryInput,
   juniorMatchToSummaryInput,
@@ -38,6 +33,7 @@ import {
   getOpponentBrandsByAppClubId,
   overlayNativeOpponents,
 } from "./club-brand";
+import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,7 +66,7 @@ async function loadSocialSettings(
  *
  * Default: senior ON, junior OFF (junior content is opt-in per grade).
  */
-function shouldDraftGrade(
+export function shouldDraftGrade(
   settings: SocialSettings | null,
   grade: string | null,
   junior: boolean,
@@ -87,29 +83,14 @@ function shouldDraftGrade(
 }
 
 // ---------------------------------------------------------------------------
-// Junior match loader (self-contained — mirrors the juniors route shape)
+// Junior match loader — sanctioned cross-boundary read.
+// The social-drafts engine reads junior_* tables directly (rather than going
+// through /api/juniors routes) because it runs server-side in a batch context
+// with no HTTP request. This is the ONLY non-juniors-route consumer of these
+// tables; the isolation invariant (junior tables never blended with senior
+// stats) is preserved because the output feeds juniorMatchToSummaryInput which
+// produces a card marked junior:true, rendered in the distinct brown palette.
 // ---------------------------------------------------------------------------
-
-const MASK_NAME = "Private Player";
-
-async function getPrivateIds(): Promise<Set<string>> {
-  const rows = await db
-    .select({ id: juniorParticipantsTable.participantId })
-    .from(juniorParticipantsTable)
-    .where(eq(juniorParticipantsTable.isPrivate, true));
-  return new Set(rows.map((r) => r.id));
-}
-
-/** Resolve HH vs opposition score from the two team columns. */
-function splitScores(m: typeof juniorMatchesTable.$inferSelect): {
-  hhScore: string | null;
-  opponentScore: string | null;
-} {
-  if (m.opponentName && m.team1 && m.team1 === m.opponentName) {
-    return { hhScore: m.team2Score ?? null, opponentScore: m.team1Score ?? null };
-  }
-  return { hhScore: m.team1Score ?? null, opponentScore: m.team2Score ?? null };
-}
 
 /**
  * Load a junior match in the JuniorMatchDetail shape needed by
@@ -340,33 +321,30 @@ export async function generateMatchSummaryDrafts(
     return result;
   }
 
-  for (const matchId of matchIds) {
-    try {
-      const detail = await loadMatchDetail(matchId, tenantId);
-      if (!detail) {
-        result.skipped++;
-        continue;
+  const BATCH = 10;
+  for (let i = 0; i < matchIds.length; i += BATCH) {
+    const batch = matchIds.slice(i, i + BATCH);
+    const outcomes = await Promise.allSettled(
+      batch.map(async (matchId) => {
+        const detail = await loadMatchDetail(matchId, tenantId);
+        if (!detail) { result.skipped++; return; }
+        if (!shouldDraftGrade(settings, detail.grade, false)) { result.skipped++; return; }
+        const cardInput = matchToSummaryInput(detail as MatchDetail);
+        const outcome = await upsertDraft(
+          tenantId, matchId, false,
+          cardInput as Record<string, unknown>,
+          `/matches/${matchId}`,
+        );
+        if (outcome === "drafted") result.drafted++;
+        else result.skipped++;
+      }),
+    );
+    for (const o of outcomes) {
+      if (o.status === "rejected") {
+        result.errors.push(
+          o.reason instanceof Error ? o.reason.message : String(o.reason),
+        );
       }
-
-      if (!shouldDraftGrade(settings, detail.grade, false)) {
-        result.skipped++;
-        continue;
-      }
-
-      const cardInput = matchToSummaryInput(detail as any);
-      const outcome = await upsertDraft(
-        tenantId,
-        matchId,
-        false,
-        cardInput as unknown as Record<string, unknown>,
-        `/matches/${matchId}`,
-      );
-      if (outcome === "drafted") result.drafted++;
-      else result.skipped++;
-    } catch (err) {
-      result.errors.push(
-        `match ${matchId}: ${err instanceof Error ? err.message : String(err)}`,
-      );
     }
   }
 
@@ -393,36 +371,33 @@ export async function generateJuniorMatchSummaryDrafts(
   }
 
   const brand = await getTenantBrand(tenantId);
-  const privateIds = await getPrivateIds();
+  const privateIds = await getPrivateIds(tenantId);
 
-  for (const matchId of matchIds) {
-    try {
-      const detail = await loadJuniorMatchDetail(matchId, tenantId, privateIds);
-      if (!detail) {
-        result.skipped++;
-        continue;
+  const BATCH = 10;
+  for (let i = 0; i < matchIds.length; i += BATCH) {
+    const batch = matchIds.slice(i, i + BATCH);
+    const outcomes = await Promise.allSettled(
+      batch.map(async (matchId) => {
+        const detail = await loadJuniorMatchDetail(matchId, tenantId, privateIds);
+        if (!detail) { result.skipped++; return; }
+        const grade = detail.ageGroup ?? detail.grade;
+        if (!shouldDraftGrade(settings, grade, true)) { result.skipped++; return; }
+        const cardInput = juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand);
+        const outcome = await upsertDraft(
+          tenantId, matchId, true,
+          cardInput as Record<string, unknown>,
+          `/juniors/matches/${matchId}`,
+        );
+        if (outcome === "drafted") result.drafted++;
+        else result.skipped++;
+      }),
+    );
+    for (const o of outcomes) {
+      if (o.status === "rejected") {
+        result.errors.push(
+          o.reason instanceof Error ? o.reason.message : String(o.reason),
+        );
       }
-
-      const grade = detail.ageGroup ?? detail.grade;
-      if (!shouldDraftGrade(settings, grade, true)) {
-        result.skipped++;
-        continue;
-      }
-
-      const cardInput = juniorMatchToSummaryInput(detail as any, brand);
-      const outcome = await upsertDraft(
-        tenantId,
-        matchId,
-        true,
-        cardInput as unknown as Record<string, unknown>,
-        `/juniors/matches/${matchId}`,
-      );
-      if (outcome === "drafted") result.drafted++;
-      else result.skipped++;
-    } catch (err) {
-      result.errors.push(
-        `junior match ${matchId}: ${err instanceof Error ? err.message : String(err)}`,
-      );
     }
   }
 

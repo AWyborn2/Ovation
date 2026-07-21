@@ -1,4 +1,3 @@
-import { and, eq } from "drizzle-orm";
 import { db, cardTemplatesTable } from "@workspace/db";
 
 // ---------------------------------------------------------------------------
@@ -83,41 +82,26 @@ const ensuredTenants = new Set<number>();
  */
 export async function ensurePackTemplates(tenantId: number): Promise<void> {
   if (ensuredTenants.has(tenantId)) return;
-  for (const pack of PACKS) {
-    for (const variant of pack.variants) {
-      // Check whether this (tenant, pack, variant) already exists.
-      const [existing] = await db
-        .select({ id: cardTemplatesTable.id })
-        .from(cardTemplatesTable)
-        .where(
-          and(
-            eq(cardTemplatesTable.tenantId, tenantId),
-            eq(cardTemplatesTable.source, "pack"),
-            eq(cardTemplatesTable.packId, pack.id),
-            eq(cardTemplatesTable.packVariant, variant.key),
-          ),
-        )
-        .limit(1);
-
-      if (existing) continue;
-
-      await db.insert(cardTemplatesTable).values({
-        tenantId,
-        name: `${pack.name} — ${variant.label}`,
-        cardKinds: pack.cardKinds,
-        source: "pack",
-        packId: pack.id,
-        packVariant: variant.key,
-        backgroundKind: variant.backgroundKind,
-        motionPreset: variant.motionPreset ?? "none",
-        bgWidth: variant.width,
-        bgHeight: variant.height,
-        slots: [],
-        isActive: true,
-        isDefault: false,
-        displayOrder: 0,
-      });
-    }
+  const rows = PACKS.flatMap((pack) =>
+    pack.variants.map((variant) => ({
+      tenantId,
+      name: `${pack.name} — ${variant.label}`,
+      cardKinds: pack.cardKinds,
+      source: "pack" as const,
+      packId: pack.id,
+      packVariant: variant.key,
+      backgroundKind: variant.backgroundKind,
+      motionPreset: variant.motionPreset ?? "none",
+      bgWidth: variant.width,
+      bgHeight: variant.height,
+      slots: [] as never[],
+      isActive: true,
+      isDefault: false,
+      displayOrder: 0,
+    })),
+  );
+  if (rows.length > 0) {
+    await db.insert(cardTemplatesTable).values(rows).onConflictDoNothing();
   }
   ensuredTenants.add(tenantId);
 }

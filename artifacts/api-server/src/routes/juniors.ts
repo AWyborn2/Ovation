@@ -25,6 +25,7 @@ import {
   playersTable,
   type JuniorMatchDisplaySettingsRow,
 } from "@workspace/db";
+import { getPrivateIds, splitScores, MASK_NAME } from "../lib/junior-helpers";
 import {
   ListJuniorMatchesQueryParams,
   GetJuniorMatchParams,
@@ -108,8 +109,6 @@ function toOpponentClub(row: OpponentClubRow) {
  * which naturally drops both opposition players and private participants).
  */
 
-const MASK_NAME = "Private Player";
-
 type MatchRow = typeof juniorMatchesTable.$inferSelect;
 
 /**
@@ -118,25 +117,6 @@ type MatchRow = typeof juniorMatchesTable.$inferSelect;
  * parsing the season text inline for any row that predates that column.
  */
 const seasonYear = sql<number>`coalesce(${juniorMatchesTable.seasonStartYear}, nullif(substring(${juniorMatchesTable.season} from 1 for 4), '')::int)`;
-
-async function getPrivateIds(): Promise<Set<string>> {
-  const rows = await db
-    .select({ id: juniorParticipantsTable.participantId })
-    .from(juniorParticipantsTable)
-    .where(eq(juniorParticipantsTable.isPrivate, true));
-  return new Set(rows.map((r) => r.id));
-}
-
-/** Resolve Halls Head vs opposition score from the match's two team columns. */
-function splitScores(m: MatchRow): {
-  hhScore: string | null;
-  opponentScore: string | null;
-} {
-  if (m.opponentName && m.team1 && m.team1 === m.opponentName) {
-    return { hhScore: m.team2Score ?? null, opponentScore: m.team1Score ?? null };
-  }
-  return { hhScore: m.team1Score ?? null, opponentScore: m.team2Score ?? null };
-}
 
 function toMatchSummary(
   m: MatchRow,
@@ -465,7 +445,7 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
   // junior scorecard + junior match-summary share card show its crest/colours.
   const [opponentClub] = await overlayNativeOpponents([toOpponentClub(matchRow)]);
 
-  const privateIds = await getPrivateIds();
+  const privateIds = await getPrivateIds(getTenantId(req));
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
     db
       .select()
@@ -1544,7 +1524,7 @@ router.get("/juniors/premierships", async (req, res): Promise<void> => {
     res.json([]);
     return;
   }
-  const privateIds = await getPrivateIds();
+  const privateIds = await getPrivateIds(getTenantId(req));
   const prems = await db
     .select()
     .from(juniorPremiershipsTable)
@@ -1648,7 +1628,7 @@ router.patch(
       }
     });
 
-    const privateIds = await getPrivateIds();
+    const privateIds = await getPrivateIds(getTenantId(req));
     const [updated] = await db
       .select()
       .from(juniorPremiershipsTable)
