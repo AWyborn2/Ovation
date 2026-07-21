@@ -231,6 +231,238 @@ describe("seasonLabel", () => {
 });
 
 // ---------------------------------------------------------------------------
+// matchToSummaryInput: primary code path (club/opposition, performers, result)
+// ---------------------------------------------------------------------------
+
+describe("matchToSummaryInput: primary path", () => {
+  const clubColors = {
+    primary: "#333F48",
+    secondary: "#FBAC27",
+    text: "#ffffff",
+    accentText: "#333F48",
+    rowOdd: "#f5f5f5",
+    rowEven: "#ffffff",
+    rowText: "#333333",
+    totalBg: "#333F48",
+    totalText: "#ffffff",
+    borderColor: "#e0e0e0",
+  };
+  const oppColors = {
+    primary: "#CC0000",
+    secondary: "#FFD700",
+    text: "#ffffff",
+    accentText: "#CC0000",
+    rowOdd: "#f5f5f5",
+    rowEven: "#ffffff",
+    rowText: "#333333",
+    totalBg: "#CC0000",
+    totalText: "#ffffff",
+    borderColor: "#e0e0e0",
+  };
+
+  const clubTeam = {
+    name: "Halls Head",
+    shortName: "HH",
+    logoUrl: "/logos/hh.png",
+    colors: clubColors,
+    isHallsHead: true,
+  };
+  const oppTeam = {
+    name: "Mandurah",
+    shortName: "Mand",
+    logoUrl: "/logos/mand.png",
+    colors: oppColors,
+    isHallsHead: false,
+  };
+
+  it("maps club and opposition teams from scorecard innings", () => {
+    (buildScorecard as any).mockReturnValue({
+      innings: [
+        {
+          battingTeam: clubTeam,
+          bowlingTeam: oppTeam,
+          inningsLabel: "1ST INNINGS",
+          batsmen: [bat("A Smith", 75, 60, false), bat("B Jones", 45, 50, true)],
+          didNotBat: [],
+          bowlers: [bowl("X Kumar", 3, 28, "8"), bowl("Y Patel", 1, 35, "6")],
+          extras: { total: 10, wides: 4, noBalls: 2, other: 4 },
+          totalRuns: 180,
+          wickets: 8,
+          oversTotal: "45",
+        },
+        {
+          battingTeam: oppTeam,
+          bowlingTeam: clubTeam,
+          inningsLabel: "2ND INNINGS",
+          batsmen: [bat("P Lee", 55, 70, false), bat("Q Martin", 30, 40, false)],
+          didNotBat: [],
+          bowlers: [bowl("C Brown", 2, 22, "7"), bowl("D White", 0, 40, "5")],
+          extras: { total: 5, wides: 3, noBalls: 1, other: 1 },
+          totalRuns: 150,
+          wickets: 10,
+          oversTotal: "38.2",
+        },
+      ],
+      orderKnown: true,
+    });
+
+    const match = {
+      id: 42,
+      season: 2024,
+      grade: "A Grade",
+      round: 8,
+      stage: null,
+      matchDate: "2025-02-15",
+      venue: "Doddi Oval",
+      opponent: "Mandurah",
+      opponentName: "Mandurah",
+      opponentClub: null,
+      club: null,
+      competition: "One Day",
+      clubScore: "180",
+      opponentScore: "150",
+      clubBattedFirst: true,
+      result: "Won by 30 runs",
+      abandoned: false,
+      lines: [],
+      oppositionLines: [],
+    } as any;
+
+    const input = matchToSummaryInput(match);
+
+    expect(input.kind).toBe("matchSummary");
+    expect(input.matchTitle).toBe("A Grade • Round 8");
+    expect(input.matchType).toBe("One Day");
+    expect(input.venue).toBe("Doddi Oval");
+    expect(input.result).toBe("Won by 30 runs");
+    expect(input.resultWinner).toBe("club");
+
+    // Club team identity
+    expect(input.club.name).toBe("Halls Head");
+    expect(input.club.shortName).toBe("HH");
+    expect(input.club.primaryColor).toBe("#333F48");
+    expect(input.club.logoUrl).toBe("/logos/hh.png");
+
+    // Opposition team identity
+    expect(input.opposition.name).toBe("Mandurah");
+    expect(input.opposition.shortName).toBe("Mand");
+    expect(input.opposition.primaryColor).toBe("#CC0000");
+
+    // Two innings present
+    expect(input.innings).toHaveLength(2);
+
+    // 1st innings: club batting
+    expect(input.innings[0].teamKey).toBe("club");
+    expect(input.innings[0].totalRuns).toBe("180");
+    expect(input.innings[0].wickets).toBe("8");
+    expect(input.innings[0].overs).toBe("45");
+    expect(input.innings[0].topBatters[0].name).toBe("A Smith");
+    expect(input.innings[0].topBatters[0].runs).toBe(75);
+
+    // 2nd innings: opposition batting
+    expect(input.innings[1].teamKey).toBe("opposition");
+    expect(input.innings[1].totalRuns).toBe("150");
+    expect(input.innings[1].wickets).toBe("10");
+    expect(input.innings[1].overs).toBe("38.2");
+    expect(input.innings[1].topBatters[0].name).toBe("P Lee");
+    expect(input.innings[1].topBatters[0].runs).toBe(55);
+  });
+
+  it("formats result as 'Match abandoned' when abandoned flag is set", () => {
+    (buildScorecard as any).mockReturnValue({
+      innings: [
+        {
+          battingTeam: clubTeam,
+          bowlingTeam: oppTeam,
+          inningsLabel: "1ST INNINGS",
+          batsmen: [bat("A Smith", 20)],
+          didNotBat: [],
+          bowlers: [],
+          extras: { total: 0, wides: 0, noBalls: 0, other: 0 },
+          totalRuns: 20,
+          wickets: 1,
+          oversTotal: "10",
+        },
+      ],
+      orderKnown: true,
+    });
+
+    const match = {
+      id: 99,
+      season: 2024,
+      grade: "B Grade",
+      round: 3,
+      stage: null,
+      matchDate: "2025-01-10",
+      venue: null,
+      opponent: "South",
+      opponentName: "South",
+      opponentClub: null,
+      club: null,
+      competition: null,
+      clubScore: null,
+      opponentScore: null,
+      clubBattedFirst: true,
+      result: "Lost by 5 wickets",
+      abandoned: true,
+      lines: [],
+      oppositionLines: [],
+    } as any;
+
+    const input = matchToSummaryInput(match);
+
+    expect(input.result).toBe("Match abandoned");
+    expect(input.resultWinner).toBe("draw");
+    expect(input.matchType).toBe("2024/25");
+  });
+
+  it("uses stage label instead of round when stage is present", () => {
+    (buildScorecard as any).mockReturnValue({
+      innings: [
+        {
+          battingTeam: clubTeam,
+          bowlingTeam: oppTeam,
+          inningsLabel: "1ST INNINGS",
+          batsmen: [],
+          didNotBat: [],
+          bowlers: [],
+          extras: { total: 0, wides: 0, noBalls: 0, other: 0 },
+          totalRuns: 200,
+          wickets: 5,
+          oversTotal: "50",
+        },
+      ],
+      orderKnown: true,
+    });
+
+    const match = {
+      id: 55,
+      season: 2024,
+      grade: "A Grade",
+      round: null,
+      stage: "Grand Final",
+      matchDate: "2025-03-22",
+      venue: "Test Oval",
+      opponent: "Opp CC",
+      opponentName: "Opp CC",
+      opponentClub: null,
+      club: null,
+      competition: "Two Day",
+      clubScore: null,
+      opponentScore: null,
+      clubBattedFirst: true,
+      result: "Won by an innings",
+      abandoned: false,
+      lines: [],
+      oppositionLines: [],
+    } as any;
+
+    const input = matchToSummaryInput(match);
+    expect(input.matchTitle).toBe("A Grade • Grand Final");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // matchToSummaryInput: zero-innings guard (thin-data crash fix)
 // ---------------------------------------------------------------------------
 

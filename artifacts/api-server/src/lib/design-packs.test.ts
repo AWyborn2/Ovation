@@ -45,9 +45,13 @@ function makeSelectChain() {
 // Drizzle-like chained builder stubs for INSERT.
 function makeInsertChain() {
   return {
-    values: (row: MockRow) => {
-      insertedRows.push(row);
-      return { returning: () => [row] };
+    values: (rows: MockRow | MockRow[]) => {
+      const arr = Array.isArray(rows) ? rows : [rows];
+      insertedRows.push(...arr);
+      return {
+        returning: () => arr,
+        onConflictDoNothing: () => ({ returning: () => arr }),
+      };
     },
   };
 }
@@ -169,16 +173,15 @@ describe("design-packs registry", () => {
     }
   });
 
-  it("is idempotent — second call inserts nothing when rows already exist", async () => {
-    // Simulate all variants already present in the DB.
-    existingRows = [
-      { tenantId: 1, source: "pack", packId: "matchSummary-v1", packVariant: "square", id: 100 },
-    ];
-
+  it("is idempotent — second call for same tenant inserts nothing", async () => {
+    // First call seeds the in-memory cache.
     await ensurePackTemplates(1);
+    const firstCallCount = insertedRows.length;
+    expect(firstCallCount).toBeGreaterThan(0);
 
-    // Because existingRows is non-empty for every select, all variants are
-    // skipped and nothing is inserted.
-    expect(insertedRows).toHaveLength(0);
+    // Second call for the same tenant hits the ensuredTenants cache and
+    // returns early without touching the DB.
+    await ensurePackTemplates(1);
+    expect(insertedRows).toHaveLength(firstCallCount);
   });
 });
