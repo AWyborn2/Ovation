@@ -85,7 +85,9 @@ app.use(cookieParser());
 // be mounted before the JSON body parser. Inert while billing is disabled.
 app.post(
   "/billing/webhook",
-  express.raw({ type: "application/json" }),
+  // Explicit ceiling: this parser is mounted before the global one, so it does
+  // not inherit it. Stripe event payloads sit well under 100kb.
+  express.raw({ type: "application/json", limit: "100kb" }),
   billingWebhookHandler,
 );
 

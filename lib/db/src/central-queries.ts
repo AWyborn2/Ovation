@@ -363,9 +363,38 @@ function cacheKey(fn: string, args: unknown[]): string {
   return `${fn}:${JSON.stringify(args.map(stableCacheArg))}`;
 }
 
+/** Hard ceiling on cached entries; expired ones are swept before eviction. */
+const MAX_CENTRAL_CACHE_ENTRIES = 500;
+
+/** In-flight builds, so concurrent misses on one key share a single query run. */
+const centralInFlight = new Map<string, Promise<unknown>>();
+
+/**
+ * Drop expired entries; if still over the ceiling, evict oldest-first. Without
+ * this the Map only ever grows — entries expire logically but were never removed.
+ */
+function pruneCentralCache(ttl: number): void {
+  if (centralCache.size <= MAX_CENTRAL_CACHE_ENTRIES) return;
+  const now = Date.now();
+  for (const [k, v] of centralCache) {
+    if (now - v.at >= ttl) centralCache.delete(k);
+  }
+  if (centralCache.size <= MAX_CENTRAL_CACHE_ENTRIES) return;
+  const excess = centralCache.size - MAX_CENTRAL_CACHE_ENTRIES;
+  let dropped = 0;
+  for (const k of centralCache.keys()) {
+    if (dropped++ >= excess) break;
+    centralCache.delete(k);
+  }
+}
+
 /**
  * Run `fn` through the short-TTL cache. Resolved values only (a failed read is
  * never cached); TTL <= 0 bypasses the cache completely.
+ *
+ * Single-flight: the in-flight promise is shared, so N concurrent misses on a
+ * cold key run `fn` once rather than N times. These reads are unbounded scans
+ * against a central DB with no secondary indexes, so a stampede is expensive.
  */
 export async function withCentralCache<T>(
   key: string,
@@ -375,9 +404,21 @@ export async function withCentralCache<T>(
   if (ttl <= 0) return fn();
   const hit = centralCache.get(key);
   if (hit && Date.now() - hit.at < ttl) return hit.value as T;
-  const value = await fn();
-  centralCache.set(key, { value, at: Date.now() });
-  return value;
+
+  const existing = centralInFlight.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const run = (async () => {
+    const value = await fn();
+    centralCache.set(key, { value, at: Date.now() });
+    pruneCentralCache(ttl);
+    return value;
+  })().finally(() => {
+    centralInFlight.delete(key);
+  });
+
+  centralInFlight.set(key, run);
+  return run as Promise<T>;
 }
 
 // ---------------------------------------------------------------------------
