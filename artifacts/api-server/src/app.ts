@@ -89,8 +89,12 @@ app.post(
   billingWebhookHandler,
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Explicit body ceilings. Bodies here are small JSON (settings patches, import
+// reconcile maps); images and logos travel as URLs and file uploads go through
+// multer's multipart handling in `imports.ts`, so neither is affected by this.
+// Without a limit, any write endpoint accepts an arbitrarily large payload.
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).
