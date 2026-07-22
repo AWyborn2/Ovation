@@ -350,7 +350,10 @@ export async function buildMilestones(
   };
 }
 
-async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
+async function buildCentralMilestones(
+  req: Request,
+  health: BuildHealth = { degraded: false },
+): Promise<MilestonesResult> {
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const tenantId = getTenantId(req);
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
@@ -360,7 +363,15 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
     wickets: settings?.wicketsTiers ?? DEFAULT_WICKETS_TIERS,
   };
   const [raw, mapRows, curation] = await Promise.all([
-    centralMilestones(await getRequestCentralClubId(req), tiers),
+    // The one remote dependency on this path. A central outage should cost the
+    // milestone items, not the whole homepage board — and because a degraded
+    // build is never cached, it recovers on the next request.
+    optionalSection(
+      "central_milestones",
+      health,
+      async () => centralMilestones(await getRequestCentralClubId(req), tiers),
+      [] as Awaited<ReturnType<typeof centralMilestones>>,
+    ),
     db
       .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
       .from(playerIdMapTable)
@@ -450,7 +461,7 @@ export async function buildMilestonesForRequest(
   return withMilestonesCache(key, async () => {
     const health: BuildHealth = { degraded: false };
     const value = central
-      ? await buildCentralMilestones(req)
+      ? await buildCentralMilestones(req, health)
       : await buildMilestones(tenantId, health);
     return { value, degraded: health.degraded };
   });

@@ -176,7 +176,7 @@ describe("tenant-scoped milestone board", () => {
         slug: `iso-milestones-t3-${STAMP}`,
         centralClubId: 9402,
         name: "Iso Milestones T3",
-        readsFromCentral: false,
+        readsFromCentral: true,
       })
       .returning();
 
