@@ -42,12 +42,9 @@ describe("tenant-scoped milestone board", () => {
         slug: `iso-milestones-t2-${STAMP}`,
         centralClubId: 9401,
         name: "Iso Milestones T2",
-        // Native path: keeps this suite off the central PCA DB.
-        // NOTE: the native stats tables (matches/players/match_player_lines)
-        // carry no tenant_id, so this tenant reads tenant #1's shared match
-        // data. That is a test-only convenience — see the caveat in the
-        // cap_register test below for what this suite does and does not prove.
-        readsFromCentral: false,
+        // Central path — the only configuration a non-#1 tenant is allowed to
+        // run in, since the native stats tables hold only tenant #1's data.
+        readsFromCentral: true,
       })
       .returning();
     tenant2Id = tenant2.id;
@@ -144,16 +141,32 @@ describe("tenant-scoped milestone board", () => {
       .where(eq(milestoneBoardSettingsTable.tenantId, tenant2Id));
   });
 
-  it("never renders another tenant's cap register as a debut milestone", async () => {
-    // Tenant 2's own cap register is empty, so any debut item attributed to it
-    // could only have come from another tenant's curated rows.
-    const res = await request(app)
-      .get("/api/milestones")
-      .set("x-tenant-id", String(tenant2Id))
-      .expect(200);
+  it("refuses to serve native stats to a tenant other than #1", async () => {
+    // The native stats tables carry no tenant_id, so they can only represent
+    // tenant #1. A row inserted outside provision.ts picks up the column
+    // default (false) and would otherwise be served Halls Head's whole history.
+    const [nativeTenant] = await db
+      .insert(tenantsTable)
+      .values({
+        slug: `iso-milestones-native-${STAMP}`,
+        centralClubId: 9403,
+        name: "Iso Milestones Native",
+        readsFromCentral: false,
+      })
+      .returning();
 
-    const debuts = (res.body.items as { kind: string }[]).filter((i) => i.kind === "debut");
-    expect(debuts).toEqual([]);
+    try {
+      const res = await request(app)
+        .get("/api/milestones")
+        .set("x-tenant-id", String(nativeTenant.id));
+
+      expect(res.status).not.toBe(200);
+    } finally {
+      await db
+        .delete(milestoneBoardSettingsTable)
+        .where(eq(milestoneBoardSettingsTable.tenantId, nativeTenant.id));
+      await db.delete(tenantsTable).where(eq(tenantsTable.id, nativeTenant.id));
+    }
   });
 
   it("creates a settings row on first access for a tenant that has none", async () => {

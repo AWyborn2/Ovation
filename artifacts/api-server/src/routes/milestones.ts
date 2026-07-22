@@ -12,7 +12,12 @@ import {
   playerIdMapTable,
 } from "@workspace/db";
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
-import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import {
+  getRequestCentralClubId,
+  shouldReadCentral,
+  NATIVE_STATS_TENANT_ID,
+  NativeStatsUnavailableError,
+} from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
@@ -119,6 +124,15 @@ export async function buildMilestones(
   tenantId: number,
   health: BuildHealth = { degraded: false },
 ): Promise<MilestonesResult> {
+  // The tables below (matches, players, match_player_lines, cap_register's
+  // match joins) carry no tenant_id — deliberately, since they are slated for
+  // replacement by central reads filtered on club_id. Serving them to any other
+  // tenant would hand over tenant #1's entire stats history, so refuse rather
+  // than silently mislabel one club's data as another's.
+  if (tenantId !== NATIVE_STATS_TENANT_ID) {
+    throw new NativeStatsUnavailableError(tenantId);
+  }
+
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const recencyWeeks = settings?.recencyWeeks ?? 4;
   const gamesTiers = (settings?.gamesTiers?.length ? settings.gamesTiers : DEFAULT_GAMES_TIERS)
