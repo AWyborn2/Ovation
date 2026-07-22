@@ -23,6 +23,7 @@ import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
 import { withMilestonesCache } from "../lib/milestones-cache";
+import { parseMatchDate, partitionMatchDates } from "../lib/match-date";
 
 const router: IRouter = Router();
 
@@ -90,22 +91,8 @@ export type MilestoneItem = {
   recent: boolean;
 };
 
-const MONTHS: Record<string, string> = {
-  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
-};
-
-function parseMatchDate(d: string | null): string | null {
-  if (!d) return null;
-  const s = d.replace(/"/g, "").trim();
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  const m = s.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
-  if (!m) return null;
-  const mon = MONTHS[m[2].slice(0, 3).toLowerCase()];
-  if (!mon) return null;
-  return `${m[3]}-${mon}-${m[1].padStart(2, "0")}`;
-}
+// Date parsing lives in ../lib/match-date so it can be unit-tested without a
+// database. See that module for the formats understood and why.
 
 function addWeeks(iso: string, weeks: number): string {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -158,10 +145,27 @@ export async function buildMilestones(
     .from(matchesTable);
   const matchById = new Map(matches.map((m) => [m.id, m]));
 
+  // The recency window is derived from the latest parseable date, so a format
+  // the parser cannot read doesn't just drop one row — it can shift what
+  // "recent" means for the whole board. Surface those instead of swallowing
+  // them; a blank date is ordinary missing data and is not reported.
+  const { parsed: parsedDates, unparsed } = partitionMatchDates(
+    matches.map((m) => m.matchDate),
+  );
+  if (unparsed.length > 0) {
+    logger.warn(
+      {
+        tenantId,
+        unparseable: unparsed.length,
+        ofMatches: matches.length,
+        samples: [...new Set(unparsed)].slice(0, 5),
+      },
+      "milestones: match dates could not be parsed; recency window derived without them",
+    );
+  }
   let latestDate: string | null = null;
-  for (const m of matches) {
-    const iso = parseMatchDate(m.matchDate);
-    if (iso && (!latestDate || iso > latestDate)) latestDate = iso;
+  for (const iso of parsedDates) {
+    if (!latestDate || iso > latestDate) latestDate = iso;
   }
   const windowStart = latestDate ? addWeeks(latestDate, recencyWeeks) : null;
   const inWindow = (d: string | null): boolean => {
