@@ -68,16 +68,27 @@ export const signupDiscoveryRateLimiter = rateLimit({
  * The limit is sized for real admin work: a busy Saturday-evening results entry
  * is a handful of commits, not dozens per minute.
  */
+/**
+ * Exported for direct unit testing. The failure mode this guards is silent: if
+ * the limiter is ever mounted before `requireAdmin`, `req.admin` is undefined
+ * and every request falls back to the IP key. Nothing errors — but behind
+ * `trust proxy`, a whole club on one office NAT would then share a single
+ * bucket and start seeing spurious 429s. Testing the limiter end-to-end would
+ * need ~31 real requests and would leak its process-global counters into other
+ * suites, so the key function is tested instead.
+ */
+export function adminWriteRateLimitKey(req: Request): string {
+  const admin = (req as RequestWithAdmin).admin;
+  if (admin) return `admin:${admin.id}`;
+  return ipKeyGenerator(req.ip ?? "");
+}
+
 export const adminWriteRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request): string => {
-    const admin = (req as RequestWithAdmin).admin;
-    if (admin) return `admin:${admin.id}`;
-    return ipKeyGenerator(req.ip ?? "");
-  },
+  keyGenerator: adminWriteRateLimitKey,
   message: {
     error:
       "Too many admin write requests. Please wait a few minutes and try again.",
