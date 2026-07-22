@@ -621,7 +621,7 @@ export default function Records() {
     setGradeApplied(true);
   }, [grades, settingsSettled, settings, gradeApplied]);
 
-  const { data: gradeStats, isLoading: loadingGrade, isError: errorGrade, refetch: refetchGrade } = useGetGradeLeaderboard(selectedGrade, {
+  const { data: gradeStats, isLoading: loadingGrade, isError: errorGrade, refetch: refetchGrade } = useGetGradeLeaderboard(selectedGrade, undefined, {
     query: { enabled: tab === "by-grade" && !!selectedGrade, queryKey: getGetGradeLeaderboardQueryKey(selectedGrade) },
   });
 

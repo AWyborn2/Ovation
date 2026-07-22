@@ -27,12 +27,18 @@ export default function GradeLeaderboardScreen() {
   const decoded = decodeURIComponent(grade ?? "");
   const [sort, setSort] = useState<Sort>("runs");
 
-  const { data, isLoading, isError } = useGetGradeLeaderboard(decoded, {
-    query: {
-      enabled: !!decoded,
-      queryKey: getGetGradeLeaderboardQueryKey(decoded),
+  // The hook now takes (grade, params, options); passing no params keeps the
+  // full grade, which is what this screen renders.
+  const { data, isLoading, isError } = useGetGradeLeaderboard(
+    decoded,
+    undefined,
+    {
+      query: {
+        enabled: !!decoded,
+        queryKey: getGetGradeLeaderboardQueryKey(decoded),
+      },
     },
-  });
+  );
 
   const sorted = useMemo(() => {
     if (!data) return [];

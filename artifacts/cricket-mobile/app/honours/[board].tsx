@@ -188,12 +188,18 @@ function useCareerBoard(boardKey: BoardKey, opts: { enabled: boolean }) {
 
 function useGradeBoard(boardKey: BoardKey, grade: string | null, opts: { enabled: boolean }) {
   const enabled = opts.enabled && !!grade;
-  const { data, isLoading, isError } = useGetGradeLeaderboard(grade ?? "", {
-    query: {
-      enabled,
-      queryKey: getGetGradeLeaderboardQueryKey(grade ?? ""),
+  // The hook now takes (grade, params, options); passing no params keeps the
+  // full grade, which the honour board aggregates over.
+  const { data, isLoading, isError } = useGetGradeLeaderboard(
+    grade ?? "",
+    undefined,
+    {
+      query: {
+        enabled,
+        queryKey: getGetGradeLeaderboardQueryKey(grade ?? ""),
+      },
     },
-  });
+  );
 
   const board = useMemo(() => {
     if (!data) return [];
