@@ -52,6 +52,7 @@ import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { ensurePackTemplates } from "../lib/design-packs";
+import { invalidateMilestonesCache } from "../lib/milestones-cache";
 
 const router: IRouter = Router();
 
@@ -882,6 +883,9 @@ router.patch("/milestone-board-settings", requireAdmin, requireEntitlement("cura
     .set({ ...parsed.data, updatedAt: new Date() })
     .where(eq(milestoneBoardSettingsTable.tenantId, tenantId))
     .returning();
+  // The milestone board is cached per tenant and these settings drive it, so
+  // without this the admin sees a successful save and an unchanged board.
+  invalidateMilestonesCache(tenantId);
   res.json({
     displayMode: row.displayMode,
     gamesThreshold: row.gamesThreshold,

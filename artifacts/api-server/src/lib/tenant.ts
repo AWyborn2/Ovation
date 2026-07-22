@@ -40,6 +40,33 @@ export class TenantNotFoundError extends Error {
   }
 }
 
+/**
+ * The one tenant the native (non-central) stats tables belong to. Those tables
+ * have no tenant_id, so they can only ever represent this tenant's history.
+ */
+export const NATIVE_STATS_TENANT_ID = 1;
+
+/**
+ * A tenant other than #1 is about to be served from the native stats tables,
+ * which hold only tenant #1's data. Fail closed rather than serve another
+ * club's stats under this tenant's brand.
+ *
+ * Deliberately raised at the native stats read, not in `getTenantConfig` —
+ * that config also carries `plan`, so guarding there would reject entitlement
+ * checks for every native-configured tenant, which is a far wider blast radius
+ * than the leak being closed.
+ */
+export class NativeStatsUnavailableError extends Error {
+  readonly status = 409;
+  constructor(readonly tenantId: number) {
+    super(
+      `Tenant ${tenantId} is configured for native stats reads, but the native ` +
+        `stats tables are not tenant-scoped. Set reads_from_central = true.`,
+    );
+    this.name = "NativeStatsUnavailableError";
+  }
+}
+
 interface TenantConfig {
   centralClubId: number | null;
   readsFromCentral: boolean;

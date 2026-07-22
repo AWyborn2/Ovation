@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request } from "express";
-import { eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   matchesTable,
@@ -12,13 +12,49 @@ import {
   playerIdMapTable,
 } from "@workspace/db";
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
-import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import {
+  getRequestCentralClubId,
+  shouldReadCentral,
+  NATIVE_STATS_TENANT_ID,
+  NativeStatsUnavailableError,
+} from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { resolveCuration } from "../lib/central-curation";
+import { getOrCreateSettings } from "../lib/settings";
+import { logger } from "../lib/logger";
+import { withMilestonesCache } from "../lib/milestones-cache";
 
 const router: IRouter = Router();
 
-const SETTINGS_ID = 1;
+/** Tracks whether any optional section fell back, so we never cache a partial board. */
+type BuildHealth = { degraded: boolean };
+
+/**
+ * An *optional* board section failing should cost that section, not the whole
+ * homepage. Only sections whose absence leaves the rest of the board correct go
+ * through here — `hat_tricks` and `debuts`.
+ *
+ * The load-bearing reads (matches, players, match_player_lines) are deliberately
+ * NOT wrapped: swallowing those produces a board that is structurally valid and
+ * semantically false rather than empty. A failed `players` read, for instance,
+ * would still emit every century and five-for but name each achiever "Unknown"
+ * and silently drop all career crossings — worse than a 500, because nothing
+ * downstream can tell it apart from real data.
+ */
+async function optionalSection<T>(
+  name: string,
+  health: BuildHealth,
+  fn: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    health.degraded = true;
+    logger.error({ err, section: name }, "milestones: optional section failed; omitting it");
+    return fallback;
+  }
+}
 
 const DEFAULT_GAMES_TIERS = [100, 150, 200, 250, 300];
 const DEFAULT_RUNS_TIERS = [1000, 2000, 3000, 5000, 7500, 10000];
@@ -84,11 +120,20 @@ export type MilestonesResult = {
   items: MilestoneItem[];
 };
 
-export async function buildMilestones(): Promise<MilestonesResult> {
-  const [settings] = await db
-    .select()
-    .from(milestoneBoardSettingsTable)
-    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID));
+export async function buildMilestones(
+  tenantId: number,
+  health: BuildHealth = { degraded: false },
+): Promise<MilestonesResult> {
+  // The tables below (matches, players, match_player_lines, cap_register's
+  // match joins) carry no tenant_id — deliberately, since they are slated for
+  // replacement by central reads filtered on club_id. Serving them to any other
+  // tenant would hand over tenant #1's entire stats history, so refuse rather
+  // than silently mislabel one club's data as another's.
+  if (tenantId !== NATIVE_STATS_TENANT_ID) {
+    throw new NativeStatsUnavailableError(tenantId);
+  }
+
+  const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const recencyWeeks = settings?.recencyWeeks ?? 4;
   const gamesTiers = (settings?.gamesTiers?.length ? settings.gamesTiers : DEFAULT_GAMES_TIERS)
     .slice()
@@ -100,6 +145,7 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     .slice()
     .sort((a, b) => a - b);
 
+  // Load-bearing: every item on the board resolves through matchById.
   const matches = await db
     .select({
       id: matchesTable.id,
@@ -123,6 +169,8 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     return iso != null && windowStart != null && iso >= windowStart;
   };
 
+  // Load-bearing: these two carry the achievements and the names/careers they
+  // are attributed to. Degrading either yields a plausible-but-wrong board.
   const lines = await db
     .select({
       matchId: matchPlayerLinesTable.matchId,
@@ -211,13 +259,19 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     }
   }
 
-  const hatTricks = await db
-    .select({
-      matchId: matchHatTricksTable.matchId,
-      playerId: matchHatTricksTable.playerId,
-    })
-    .from(matchHatTricksTable)
-    .where(sql`${matchHatTricksTable.playerId} < 90000`);
+  const hatTricks = await optionalSection(
+    "hat_tricks",
+    health,
+    () =>
+      db
+        .select({
+          matchId: matchHatTricksTable.matchId,
+          playerId: matchHatTricksTable.playerId,
+        })
+        .from(matchHatTricksTable)
+        .where(sql`${matchHatTricksTable.playerId} < 90000`),
+    [] as { matchId: number; playerId: number }[],
+  );
   for (const h of hatTricks) {
     const m = matchById.get(h.matchId);
     if (!m) continue;
@@ -243,7 +297,12 @@ export async function buildMilestones(): Promise<MilestonesResult> {
     });
   }
 
-  await appendDebuts(items, { matchById, nameFor, inWindow });
+  await optionalSection(
+    "debuts",
+    health,
+    () => appendDebuts(items, { tenantId, matchById, nameFor, inWindow }),
+    undefined,
+  );
 
   if (latestDate != null) {
     appendCareerCrossings(items, {
@@ -291,20 +350,28 @@ export async function buildMilestones(): Promise<MilestonesResult> {
   };
 }
 
-async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
+async function buildCentralMilestones(
+  req: Request,
+  health: BuildHealth = { degraded: false },
+): Promise<MilestonesResult> {
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const tenantId = getTenantId(req);
-  const [settings] = await db
-    .select()
-    .from(milestoneBoardSettingsTable)
-    .where(eq(milestoneBoardSettingsTable.id, SETTINGS_ID));
+  const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const tiers = {
     games: settings?.gamesTiers ?? DEFAULT_GAMES_TIERS,
     runs: settings?.runsTiers ?? DEFAULT_RUNS_TIERS,
     wickets: settings?.wicketsTiers ?? DEFAULT_WICKETS_TIERS,
   };
   const [raw, mapRows, curation] = await Promise.all([
-    centralMilestones(await getRequestCentralClubId(req), tiers),
+    // The one remote dependency on this path. A central outage should cost the
+    // milestone items, not the whole homepage board — and because a degraded
+    // build is never cached, it recovers on the next request.
+    optionalSection(
+      "central_milestones",
+      health,
+      async () => centralMilestones(await getRequestCentralClubId(req), tiers),
+      [] as Awaited<ReturnType<typeof centralMilestones>>,
+    ),
     db
       .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
       .from(playerIdMapTable)
@@ -382,8 +449,22 @@ async function buildCentralMilestones(req: Request): Promise<MilestonesResult> {
 export async function buildMilestonesForRequest(
   req: Request,
 ): Promise<MilestonesResult> {
-  if (await shouldReadCentral(req)) return buildCentralMilestones(req);
-  return buildMilestones();
+  const tenantId = getTenantId(req);
+  const central = await shouldReadCentral(req);
+  // Key on every input that varies the board: the tenant (its settings row
+  // drives the recency window and tiers), the read path, and — on the central
+  // path — the club id, so remapping a tenant to a different central club can
+  // never keep serving the previous club's players under the new brand.
+  const clubId = central ? await getRequestCentralClubId(req) : null;
+  const key = `${tenantId}:${central ? `central:${clubId}` : "native"}`;
+
+  return withMilestonesCache(key, async () => {
+    const health: BuildHealth = { degraded: false };
+    const value = central
+      ? await buildCentralMilestones(req, health)
+      : await buildMilestones(tenantId, health);
+    return { value, degraded: health.degraded };
+  });
 }
 
 router.get("/milestones", async (req, res): Promise<void> => {
@@ -393,6 +474,7 @@ router.get("/milestones", async (req, res): Promise<void> => {
 async function appendDebuts(
   items: MilestoneItem[],
   ctx: {
+    tenantId: number;
     matchById: Map<
       number,
       {
@@ -408,9 +490,12 @@ async function appendDebuts(
     inWindow: (d: string | null) => boolean;
   },
 ): Promise<void> {
-  const { matchById, nameFor, inWindow } = ctx;
+  const { tenantId, matchById, nameFor, inWindow } = ctx;
   const grades = Object.values(CAP_CATEGORY_TO_GRADE);
 
+  // cap_register is tenant-scoped curated content. Reading it unfiltered here
+  // rendered one club's cap numbers as another club's debut milestones on a
+  // public board.
   const caps = await db
     .select({
       category: capRegisterTable.category,
@@ -418,7 +503,9 @@ async function appendDebuts(
       playerId: capRegisterTable.playerId,
     })
     .from(capRegisterTable)
-    .where(isNotNull(capRegisterTable.playerId));
+    .where(
+      and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)),
+    );
 
   const capLines = await db
     .select({
