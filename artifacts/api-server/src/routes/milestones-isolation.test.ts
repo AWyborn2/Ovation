@@ -1,29 +1,41 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, milestoneBoardSettingsTable } from "@workspace/db";
-import { clearCentralQueriesCache } from "@workspace/db/central-queries";
+import {
+  db,
+  tenantsTable,
+  adminsTable,
+  milestoneBoardSettingsTable,
+  capRegisterTable,
+} from "@workspace/db";
+import { clearMilestonesCache } from "../lib/milestones-cache";
+import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
- * Tenant-scoped milestone board settings.
+ * Tenant scoping for the milestone board.
  *
  * `milestones.ts` used to read its settings row with a hardcoded
- * `where id = SETTINGS_ID (1)` at both call sites (the native build and the
- * central build), even though `milestone_board_settings` carries a `tenant_id`
- * with a `milestone_board_settings_tenant_unique` index. Every tenant therefore
- * saw tenant #1's recency window and tier thresholds.
+ * `where id = SETTINGS_ID (1)` at both call sites, and `appendDebuts` read the
+ * whole `cap_register` table unfiltered — so every tenant got tenant #1's
+ * recency window, tier thresholds, and curated cap register.
  *
- * These are the same shape as `settings-isolation.test.ts` — real-DB
- * integration against the tenant-scoped `getOrCreateSettings` pattern.
+ * Same shape as `settings-isolation.test.ts` — real-DB integration.
  */
 
 const STAMP = Date.now();
+const T1_RECENCY = 4;
+const T2_RECENCY = 9;
 
-describe("tenant-scoped milestone board settings", () => {
+describe("tenant-scoped milestone board", () => {
   let tenant2Id: number;
+  let adminId: number;
+  let adminCookie: string;
 
   beforeAll(async () => {
+    process.env.SESSION_SECRET =
+      process.env.SESSION_SECRET ?? "test-secret-for-milestones-isolation";
+
     const [tenant2] = await db
       .insert(tenantsTable)
       .values({
@@ -31,53 +43,117 @@ describe("tenant-scoped milestone board settings", () => {
         centralClubId: 9401,
         name: "Iso Milestones T2",
         // Native path: keeps this suite off the central PCA DB.
+        // NOTE: the native stats tables (matches/players/match_player_lines)
+        // carry no tenant_id, so this tenant reads tenant #1's shared match
+        // data. That is a test-only convenience — see the caveat in the
+        // cap_register test below for what this suite does and does not prove.
         readsFromCentral: false,
       })
       .returning();
     tenant2Id = tenant2.id;
 
-    // A recency window that is deliberately not the schema default (4) and not
-    // whatever tenant #1 happens to have saved.
+    // Pin tenant #1 to a known recency so the cross-tenant assertions compare
+    // against a fixed value rather than "whatever tenant 1 happens to have".
+    await db
+      .update(milestoneBoardSettingsTable)
+      .set({ recencyWeeks: T1_RECENCY })
+      .where(eq(milestoneBoardSettingsTable.tenantId, 1));
+
     await db
       .insert(milestoneBoardSettingsTable)
-      .values({ tenantId: tenant2Id, recencyWeeks: 9 });
+      .values({ tenantId: tenant2Id, recencyWeeks: T2_RECENCY });
+
+    const [admin] = await db
+      .insert(adminsTable)
+      .values({
+        tenantId: tenant2Id,
+        username: `iso_milestones_admin_${STAMP}`,
+        displayName: "Iso Milestones Admin",
+        passwordHash: "x",
+      })
+      .returning();
+    adminId = admin.id;
+    adminCookie = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
   });
 
   afterAll(async () => {
+    await db.delete(capRegisterTable).where(eq(capRegisterTable.tenantId, tenant2Id));
     await db
       .delete(milestoneBoardSettingsTable)
       .where(eq(milestoneBoardSettingsTable.tenantId, tenant2Id));
+    await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant2Id));
+    clearMilestonesCache();
+  });
+
+  beforeEach(() => {
+    clearMilestonesCache();
   });
 
   it("serves each tenant its own recency window, not tenant #1's", async () => {
-    clearCentralQueriesCache();
-
     const res = await request(app)
       .get("/api/milestones")
       .set("x-tenant-id", String(tenant2Id))
       .expect(200);
 
-    expect(res.body.recencyWeeks).toBe(9);
+    expect(res.body.recencyWeeks).toBe(T2_RECENCY);
   });
 
-  it("does not serve a cached board across tenants", async () => {
-    clearCentralQueriesCache();
-
-    // Tenant #1 first, so any cache is populated with its result...
+  it("does not serve a warm cached board across tenants", async () => {
+    // Deliberately does NOT clear between the two requests — the point is to
+    // exercise a populated cache. Tenant #1 first so its entry is warm...
     const asT1 = await request(app)
       .get("/api/milestones")
       .set("x-tenant-id", "1")
       .expect(200);
+    expect(asT1.body.recencyWeeks).toBe(T1_RECENCY);
 
-    // ...then tenant 2 must still get its own settings, not the cached ones.
+    // ...then tenant 2 must miss that entry and build its own.
     const asT2 = await request(app)
       .get("/api/milestones")
       .set("x-tenant-id", String(tenant2Id))
       .expect(200);
+    expect(asT2.body.recencyWeeks).toBe(T2_RECENCY);
+  });
 
-    expect(asT2.body.recencyWeeks).toBe(9);
-    expect(asT2.body.recencyWeeks).not.toBe(asT1.body.recencyWeeks);
+  it("reflects a settings change immediately instead of serving the cached board", async () => {
+    // Warm the cache for tenant 2.
+    const before = await request(app)
+      .get("/api/milestones")
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(before.body.recencyWeeks).toBe(T2_RECENCY);
+
+    await request(app)
+      .patch("/api/milestone-board-settings")
+      .set("Cookie", adminCookie)
+      .set("x-tenant-id", String(tenant2Id))
+      .send({ recencyWeeks: 3 })
+      .expect(200);
+
+    const after = await request(app)
+      .get("/api/milestones")
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(after.body.recencyWeeks).toBe(3);
+
+    // Restore for any later assertions.
+    await db
+      .update(milestoneBoardSettingsTable)
+      .set({ recencyWeeks: T2_RECENCY })
+      .where(eq(milestoneBoardSettingsTable.tenantId, tenant2Id));
+  });
+
+  it("never renders another tenant's cap register as a debut milestone", async () => {
+    // Tenant 2's own cap register is empty, so any debut item attributed to it
+    // could only have come from another tenant's curated rows.
+    const res = await request(app)
+      .get("/api/milestones")
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+
+    const debuts = (res.body.items as { kind: string }[]).filter((i) => i.kind === "debut");
+    expect(debuts).toEqual([]);
   });
 
   it("creates a settings row on first access for a tenant that has none", async () => {
@@ -92,7 +168,6 @@ describe("tenant-scoped milestone board settings", () => {
       .returning();
 
     try {
-      clearCentralQueriesCache();
       const res = await request(app)
         .get("/api/milestones")
         .set("x-tenant-id", String(tenant3.id))
