@@ -639,6 +639,24 @@ paths:
           required: true
           schema:
             type: string
+        # Optional and additive: omitting them returns the full grade exactly as
+        # before, so existing web and mobile callers are unaffected. A 300-player
+        # grade previously had to be returned and sorted client-side.
+        - name: limit
+          in: query
+          required: false
+          description: Maximum entries to return. Omit for the whole grade.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          required: false
+          description: Entries to skip before returning results.
+          schema:
+            type: integer
+            minimum: 0
       responses:
         "200":
           description: Leaderboard entries
