@@ -41,7 +41,11 @@ import {
   RevertJuniorStatCorrectionParams,
 } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
-import { adminWriteRateLimiter } from "../middlewares/rate-limit";
+import {
+  adminWriteRateLimiter,
+  juniorEditRateLimiter,
+  juniorMergeRateLimiter,
+} from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
 import { shouldReadCentral } from "../lib/tenant";
 import {
@@ -201,6 +205,7 @@ function serializeMatchMeta(m: JuniorMatchRow) {
 router.patch(
   "/juniors/matches/:id",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = UpdateJuniorMatchParams.safeParse(req.params);
     if (!params.success) {
@@ -294,6 +299,7 @@ const BATTING_STAT_COLS = {
 router.post(
   "/juniors/matches/:matchId/batting",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = CreateJuniorBattingLineParams.safeParse(req.params);
     if (!params.success) {
@@ -388,6 +394,7 @@ router.post(
 router.patch(
   "/juniors/matches/:matchId/batting/:lineId",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = UpdateJuniorBattingLineParams.safeParse(req.params);
     if (!params.success) {
@@ -498,6 +505,7 @@ router.patch(
 router.delete(
   "/juniors/matches/:matchId/batting/:lineId",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = DeleteJuniorBattingLineParams.safeParse(req.params);
     if (!params.success) {
@@ -592,6 +600,7 @@ const BOWLING_STAT_COLS = {
 router.post(
   "/juniors/matches/:matchId/bowling",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = CreateJuniorBowlingLineParams.safeParse(req.params);
     if (!params.success) {
@@ -690,6 +699,7 @@ router.post(
 router.patch(
   "/juniors/matches/:matchId/bowling/:lineId",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = UpdateJuniorBowlingLineParams.safeParse(req.params);
     if (!params.success) {
@@ -802,6 +812,7 @@ router.patch(
 router.delete(
   "/juniors/matches/:matchId/bowling/:lineId",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = DeleteJuniorBowlingLineParams.safeParse(req.params);
     if (!params.success) {
@@ -879,6 +890,7 @@ function serializeRosterEntry(l: JuniorMatchRosterRow) {
 router.post(
   "/juniors/matches/:matchId/roster",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = AddJuniorRosterEntryParams.safeParse(req.params);
     if (!params.success) {
@@ -1028,6 +1040,7 @@ router.delete(
 router.patch(
   "/juniors/participants/:id",
   requireAdmin,
+  juniorEditRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = UpdateJuniorParticipantParams.safeParse(req.params);
     if (!params.success) {
@@ -1218,6 +1231,7 @@ async function recomputeParticipantMetadata(
 router.post(
   "/juniors/participants/:id/merge",
   requireAdmin,
+  juniorMergeRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = MergeJuniorParticipantParams.safeParse(req.params);
     if (!params.success) {

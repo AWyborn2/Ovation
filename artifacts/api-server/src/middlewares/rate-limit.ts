@@ -83,6 +83,45 @@ export function adminWriteRateLimitKey(req: Request): string {
   return ipKeyGenerator(req.ip ?? "");
 }
 
+/**
+ * Throttle the junior scorecard edit routes.
+ *
+ * Deliberately NOT `adminWriteRateLimiter`. That limiter is sized for import
+ * commits — a handful per sitting. Scorecard entry is the opposite shape:
+ * roughly 11 batting lines, 6 bowling lines, a roster and any corrections for a
+ * SINGLE match, so an admin entering two matches would blow a 30-per-5-minute
+ * budget doing their job. This is set high enough to be invisible to a human
+ * typing as fast as they can, while still bounding a script.
+ */
+export const juniorEditRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: adminWriteRateLimitKey,
+  message: {
+    error: "Too many edits in a short period. Please wait a minute and retry.",
+  },
+});
+
+/**
+ * Throttle permanent junior participant merges.
+ *
+ * The inverse trade to the edit limiter: merging two profiles is destructive
+ * and awkward to unwind, and a real admin does it a few times after spotting
+ * duplicates — never in a tight loop. Low limit, long window.
+ */
+export const juniorMergeRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: adminWriteRateLimitKey,
+  message: {
+    error: "Too many profile merges. Please wait before merging more.",
+  },
+});
+
 export const adminWriteRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   limit: 30,
