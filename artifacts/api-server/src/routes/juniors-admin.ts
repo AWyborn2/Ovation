@@ -47,6 +47,17 @@ import {
   juniorMergeRateLimiter,
 } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
+import {
+  journal,
+  adminName,
+  tenantMatch,
+  hhTeamName,
+  tenantParticipant,
+  serializeMatchMeta,
+  snakeToCamel,
+  MATCH_COLS,
+  type Tx,
+} from "../lib/junior-admin-helpers";
 import { shouldReadCentral } from "../lib/tenant";
 import {
   isValidOversNotation,
@@ -78,129 +89,6 @@ const router: IRouter = Router();
  * reproduces the same id deterministically. */
 const ADMIN_JUNIOR_LINE_ID_BASE = 100_000_000;
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-type JournalEntry = {
-  tenantId: number;
-  targetTable:
-    | "junior_matches"
-    | "junior_match_batting"
-    | "junior_match_bowling"
-    | "junior_match_rosters"
-    | "junior_participants";
-  targetId: string;
-  op: "update" | "insert" | "delete";
-  patch: Record<string, unknown> | null;
-  prevValues: Record<string, unknown> | null;
-  matchId?: number | null;
-  playhqMatchId?: string | null;
-  participantId?: string | null;
-  createdBy?: string | null;
-};
-
-async function journal(tx: Tx, entry: JournalEntry): Promise<number> {
-  const [row] = await tx
-    .insert(juniorStatCorrectionsTable)
-    .values({
-      tenantId: entry.tenantId,
-      targetTable: entry.targetTable,
-      targetId: entry.targetId,
-      op: entry.op,
-      patch: entry.patch,
-      prevValues: entry.prevValues,
-      matchId: entry.matchId ?? null,
-      playhqMatchId: entry.playhqMatchId ?? null,
-      participantId: entry.participantId ?? null,
-      createdBy: entry.createdBy ?? null,
-    })
-    .returning({ id: juniorStatCorrectionsTable.id });
-  return row.id;
-}
-
-function adminName(req: RequestWithAdmin): string | null {
-  return req.admin?.username ?? null;
-}
-
-/** Resolve a junior match in the requesting tenant, or null. */
-async function tenantMatch(
-  req: RequestWithAdmin,
-  matchId: number,
-): Promise<JuniorMatchRow | null> {
-  const [match] = await db
-    .select()
-    .from(juniorMatchesTable)
-    .where(
-      and(
-        eq(juniorMatchesTable.id, matchId),
-        eq(juniorMatchesTable.tenantId, getTenantId(req)),
-      ),
-    );
-  return match ?? null;
-}
-
-/** The Halls Head side's team name, mirroring splitScores in juniors.ts. */
-function hhTeamName(m: JuniorMatchRow): string | null {
-  if (m.opponentName && m.team1 && m.team1 === m.opponentName) {
-    return m.team2;
-  }
-  return m.team1;
-}
-
-/** Resolve an in-tenant, existing junior participant, or null. */
-async function tenantParticipant(
-  req: RequestWithAdmin,
-  participantId: string,
-): Promise<{ participantId: string; displayName: string | null } | null> {
-  const [p] = await db
-    .select({
-      participantId: juniorParticipantsTable.participantId,
-      displayName: juniorParticipantsTable.displayName,
-    })
-    .from(juniorParticipantsTable)
-    .where(
-      and(
-        eq(juniorParticipantsTable.participantId, participantId),
-        eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-      ),
-    );
-  return p ?? null;
-}
-
-// ---------------------------------------------------------------------------
-// PATCH /juniors/matches/:id — correct match metadata
-// ---------------------------------------------------------------------------
-
-/** camelCase → snake_case column map for journalled junior_matches patches. */
-const MATCH_COLS = {
-  team1Score: "team1_score",
-  team2Score: "team2_score",
-  hhResult: "hh_result",
-  winner: "winner",
-  tossWinner: "toss_winner",
-  hhBattedFirst: "hh_batted_first",
-  status: "status",
-  matchDate: "match_date",
-  round: "round",
-  venue: "venue",
-} as const;
-
-function serializeMatchMeta(m: JuniorMatchRow) {
-  return {
-    id: m.id,
-    team1: m.team1,
-    team2: m.team2,
-    team1Score: m.team1Score,
-    team2Score: m.team2Score,
-    hhResult: m.hhResult,
-    winner: m.winner,
-    tossWinner: m.tossWinner,
-    hhBattedFirst: m.hhBattedFirst,
-    status: m.status,
-    matchDate: m.matchDate,
-    round: m.round,
-    venue: m.venue,
-  };
-}
 
 router.patch(
   "/juniors/matches/:id",
@@ -1547,10 +1435,6 @@ const SNAKE_TO_TABLE = {
   junior_match_rosters: juniorMatchRostersTable,
   junior_participants: juniorParticipantsTable,
 } as const;
-
-function snakeToCamel(s: string): string {
-  return s.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-}
 
 router.delete(
   "/juniors/corrections/:id",
