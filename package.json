@@ -4,9 +4,15 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "build": "pnpm run typecheck:release && pnpm -r --filter \"!@workspace/mockup-sandbox\" --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "typecheck:release": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --filter \"!@workspace/mockup-sandbox\" --if-present run typecheck"
+  },
+  "//scripts": {
+    "typecheck": "Full sweep, including the mockup-sandbox scratch workspace. This is what CI runs — sandbox breakage should still be visible.",
+    "typecheck:release": "Shippable projects only. Used by `build` so a scratch workspace can never block a production deploy.",
+    "build": "Builds everything that ships. mockup-sandbox is private, deploys nowhere, and is not referenced by .replit."
   },
   "private": true,
   "devDependencies": {
