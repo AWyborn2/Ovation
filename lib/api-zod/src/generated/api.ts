@@ -877,6 +877,17 @@ export const GetGradeLeaderboardParams = zod.object({
   "grade": zod.coerce.string()
 })
 
+export const getGradeLeaderboardQueryLimitMax = 500;
+
+export const getGradeLeaderboardQueryOffsetMin = 0;
+
+
+
+export const GetGradeLeaderboardQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(getGradeLeaderboardQueryLimitMax).optional().describe('Maximum entries to return. Omit for the whole grade.'),
+  "offset": zod.coerce.number().min(getGradeLeaderboardQueryOffsetMin).optional().describe('Entries to skip before returning results.')
+})
+
 export const GetGradeLeaderboardResponseItem = zod.object({
   "id": zod.number(),
   "playerId": zod.number(),

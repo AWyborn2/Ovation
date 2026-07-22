@@ -88,6 +88,7 @@ import type {
   DebutEntry,
   ErrorEnvelope,
   FiveWicketHaul,
+  GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
   GetSeniorSeasonTopPerformersParams,
@@ -2014,20 +2015,29 @@ export function useListGrades<TData = Awaited<ReturnType<typeof listGrades>>, TE
 
 
 
-export const getGetGradeLeaderboardUrl = (grade: string,) => {
+export const getGetGradeLeaderboardUrl = (grade: string,
+    params?: GetGradeLeaderboardParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/grades/${grade}/leaderboard`
+  return stringifiedParams.length > 0 ? `/api/grades/${grade}/leaderboard?${stringifiedParams}` : `/api/grades/${grade}/leaderboard`
 }
 
 /**
  * @summary Get leaderboard for a specific grade
  */
-export const getGradeLeaderboard = async (grade: string, options?: RequestInit): Promise<Stat[]> => {
+export const getGradeLeaderboard = async (grade: string,
+    params?: GetGradeLeaderboardParams, options?: RequestInit): Promise<Stat[]> => {
 
-  return customFetch<Stat[]>(getGetGradeLeaderboardUrl(grade),
+  return customFetch<Stat[]>(getGetGradeLeaderboardUrl(grade,params),
   {
     ...options,
     method: 'GET'
@@ -2040,23 +2050,25 @@ export const getGradeLeaderboard = async (grade: string, options?: RequestInit):
 
 
 
-export const getGetGradeLeaderboardQueryKey = (grade: string,) => {
+export const getGetGradeLeaderboardQueryKey = (grade: string,
+    params?: GetGradeLeaderboardParams,) => {
     return [
-    `/api/grades/${grade}/leaderboard`
+    `/api/grades/${grade}/leaderboard`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetGradeLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getGradeLeaderboard>>, TError = ErrorType<unknown>>(grade: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGradeLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetGradeLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getGradeLeaderboard>>, TError = ErrorType<unknown>>(grade: string,
+    params?: GetGradeLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGradeLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetGradeLeaderboardQueryKey(grade);
+  const queryKey =  queryOptions?.queryKey ?? getGetGradeLeaderboardQueryKey(grade,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGradeLeaderboard>>> = ({ signal }) => getGradeLeaderboard(grade, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGradeLeaderboard>>> = ({ signal }) => getGradeLeaderboard(grade,params, { signal, ...requestOptions });
 
 
 
@@ -2074,11 +2086,12 @@ export type GetGradeLeaderboardQueryError = ErrorType<unknown>
  */
 
 export function useGetGradeLeaderboard<TData = Awaited<ReturnType<typeof getGradeLeaderboard>>, TError = ErrorType<unknown>>(
- grade: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGradeLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ grade: string,
+    params?: GetGradeLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGradeLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetGradeLeaderboardQueryOptions(grade,options)
+  const queryOptions = getGetGradeLeaderboardQueryOptions(grade,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

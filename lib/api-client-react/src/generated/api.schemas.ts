@@ -5001,6 +5001,20 @@ export const ListStatsSortOrder = {
   desc: 'desc',
 } as const;
 
+export type GetGradeLeaderboardParams = {
+/**
+ * Maximum entries to return. Omit for the whole grade.
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+/**
+ * Entries to skip before returning results.
+ * @minimum 0
+ */
+offset?: number;
+};
+
 export type GetSeniorSeasonTopPerformersParams = {
 /**
  * Single grade to scope the leaders to; omit for club-wide.

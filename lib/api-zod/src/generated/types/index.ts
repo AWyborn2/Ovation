@@ -150,6 +150,7 @@ export * from './displayBoardLayout';
 export * from './entitlements';
 export * from './errorEnvelope';
 export * from './fiveWicketHaul';
+export * from './getGradeLeaderboardParams';
 export * from './getJuniorSeasonTopPerformersParams';
 export * from './getKioskDisplayParams';
 export * from './getSeniorSeasonTopPerformersParams';

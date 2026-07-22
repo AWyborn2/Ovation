@@ -35,7 +35,7 @@ export default function GradeLeaderboard() {
 
   const isValid = decodedGrade !== "CLUB TOTAL";
   const isAGrade = decodedGrade === "A Grade";
-  const { data: stats, isLoading, isError, refetch } = useGetGradeLeaderboard(decodedGrade, {
+  const { data: stats, isLoading, isError, refetch } = useGetGradeLeaderboard(decodedGrade, undefined, {
     query: { enabled: !!decodedGrade && isValid, queryKey: getGetGradeLeaderboardQueryKey(decodedGrade) },
   });
   const { data: caps } = useListCaps({ query: { enabled: isAGrade, queryKey: getListCapsQueryKey() } });

@@ -1024,7 +1024,7 @@ function PlayerSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
 function GradeLeaderSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
   const [grade, setGrade] = useState(GRADES[0]);
   const [category, setCategory] = useState<"Runs" | "Wickets">("Runs");
-  const statsQ = useGetGradeLeaderboard(grade, {
+  const statsQ = useGetGradeLeaderboard(grade, undefined, {
     query: { queryKey: getGetGradeLeaderboardQueryKey(grade) },
   });
   const stats = (statsQ.data ?? []) as Stat[];
