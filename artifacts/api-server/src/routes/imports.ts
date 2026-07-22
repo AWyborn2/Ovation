@@ -16,7 +16,6 @@ import { parsePlaycricketCsv, type ParsedCsvRow } from "../lib/playcricket-csv";
 import {
   parseMatchScorecard,
   parseFinalsStage,
-  FINALS_STAGES,
   type ParsedMatch,
   type FinalsStage,
 } from "../lib/match-scorecard";
@@ -58,6 +57,15 @@ import {
 import { recomputeCapsFromStats } from "../lib/cap-sync";
 import { requireAdmin } from "../middlewares/require-admin";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
+
+import {
+  PlayerResolution,
+  buildResolutionMap,
+  coerceStage,
+  normalizeRoundStage,
+  parseCommitRound,
+  parseCommitStage,
+} from "../lib/import-body-parsers";
 
 /** Per-player backfill net-effect figures returned in import previews. */
 type BackfillFigures = {
@@ -126,82 +134,6 @@ type MulterRequest = Request & { file?: Express.Multer.File };
 type MulterArrayRequest = Request & { files?: Express.Multer.File[] };
 
 /** An admin's per-name decision sent in the commit body. */
-type PlayerResolution =
-  | { action: "link"; playerId: number }
-  | { action: "create" };
-
-/**
- * Parse the optional `resolutions` array from a commit request body into a map
- * keyed by the canonical name key, so the parsed row a resolution refers to can
- * be looked up unambiguously. Invalid/partial entries are ignored.
- */
-function buildResolutionMap(body: unknown): Map<string, PlayerResolution> {
-  const map = new Map<string, PlayerResolution>();
-  const list = (body as { resolutions?: unknown } | null)?.resolutions;
-  if (!Array.isArray(list)) return map;
-  for (const r of list) {
-    if (!r || typeof r !== "object") continue;
-    const { surname, givenName, action, playerId } = r as Record<
-      string,
-      unknown
-    >;
-    if (typeof surname !== "string" || typeof givenName !== "string") continue;
-    const key = nameKey(surname, givenName);
-    if (action === "link" && typeof playerId === "number") {
-      map.set(key, { action: "link", playerId });
-    } else if (action === "create") {
-      map.set(key, { action: "create" });
-    }
-  }
-  return map;
-}
-
-/**
- * Read an optional `round` override from a commit request body.
- * Returns `undefined` when the field is absent (caller should fall back to the
- * parsed/header value), `null` when explicitly cleared, or the integer round.
- * Non-integer junk is treated as absent.
- */
-function parseCommitRound(body: unknown): number | null | undefined {
-  if (!body || typeof body !== "object" || !("round" in body)) return undefined;
-  const r = (body as { round?: unknown }).round;
-  if (r == null) return null;
-  const n = typeof r === "number" ? r : parseInt(String(r), 10);
-  return Number.isInteger(n) ? n : undefined;
-}
-
-/** Narrow an arbitrary value to a known finals stage, else null. */
-function coerceStage(v: unknown): FinalsStage | null {
-  return typeof v === "string" && (FINALS_STAGES as readonly string[]).includes(v)
-    ? (v as FinalsStage)
-    : null;
-}
-
-/**
- * Read an optional finals `stage` override from a commit request body.
- * Returns `undefined` when absent, `null` when explicitly cleared, or the
- * recognised finals stage. Unknown strings are treated as cleared (null).
- */
-function parseCommitStage(body: unknown): FinalsStage | null | undefined {
-  if (!body || typeof body !== "object" || !("stage" in body)) return undefined;
-  const s = (body as { stage?: unknown }).stage;
-  if (s == null) return null;
-  return coerceStage(s);
-}
-
-/**
- * Enforce the round XOR stage invariant for a match identity: a finals stage
- * always wins and forces round to null; otherwise stage is null and the round
- * (possibly null) stands. The DB identity is (grade, season, round, stage) with
- * NULLS NOT DISTINCT, so exactly one of round/stage should be set per match.
- */
-function normalizeRoundStage(
-  round: number | null,
-  stage: FinalsStage | null,
-): { round: number | null; stage: FinalsStage | null } {
-  if (stage != null) return { round: null, stage };
-  return { round: round ?? null, stage: null };
-}
 
 /** Load the full roster as matcher input. */
 async function loadRoster(): Promise<RosterPlayer[]> {
