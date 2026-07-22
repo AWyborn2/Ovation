@@ -1,4 +1,6 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import type { Request } from "express";
+import type { RequestWithAdmin } from "./require-admin";
 
 // Throttle repeated failed logins to slow brute-force attacks while staying
 // lenient enough that a real admin/captain mistyping a password is unaffected.
@@ -41,5 +43,43 @@ export const signupDiscoveryRateLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     error: "Too many requests. Please wait a few minutes and try again.",
+  },
+});
+
+/**
+ * Throttle authenticated admin writes that are expensive or destructive — the
+ * import pipeline and the stat-correction endpoints.
+ *
+ * Login was the only throttled surface, so a stolen session cookie (or a
+ * runaway script) could drive commits, undo-season and correction writes as
+ * fast as the server would answer. Each of those recomputes aggregates across
+ * the club's whole history, so this is a resource-exhaustion vector as much as
+ * an integrity one.
+ *
+ * Keyed on the admin id, not the IP: the threat is one compromised session, and
+ * an IP key would both let an attacker rotate addresses to escape the limit and
+ * punish a whole club behind one office NAT. Falls back to the IP (via
+ * `ipKeyGenerator`, which normalises IPv6 to its /56 subnet) only if the limiter
+ * somehow runs before `requireAdmin` has attached the admin.
+ *
+ * Successful requests count. Unlike login, a *successful* import commit is the
+ * expensive operation, so skipping successes would defeat the purpose.
+ *
+ * The limit is sized for real admin work: a busy Saturday-evening results entry
+ * is a handful of commits, not dozens per minute.
+ */
+export const adminWriteRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request): string => {
+    const admin = (req as RequestWithAdmin).admin;
+    if (admin) return `admin:${admin.id}`;
+    return ipKeyGenerator(req.ip ?? "");
+  },
+  message: {
+    error:
+      "Too many admin write requests. Please wait a few minutes and try again.",
   },
 });

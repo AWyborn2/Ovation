@@ -41,6 +41,7 @@ import {
   RevertJuniorStatCorrectionParams,
 } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
+import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
 import { shouldReadCentral } from "../lib/tenant";
 import {
@@ -1540,6 +1541,7 @@ function snakeToCamel(s: string): string {
 router.delete(
   "/juniors/corrections/:id",
   requireAdmin,
+  adminWriteRateLimiter,
   async (req: RequestWithAdmin, res): Promise<void> => {
     const params = RevertJuniorStatCorrectionParams.safeParse(req.params);
     if (!params.success) {

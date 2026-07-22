@@ -57,6 +57,7 @@ import {
 } from "../lib/baseline-reconcile";
 import { recomputeCapsFromStats } from "../lib/cap-sync";
 import { requireAdmin } from "../middlewares/require-admin";
+import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 
 /** Per-player backfill net-effect figures returned in import previews. */
 type BackfillFigures = {
@@ -234,6 +235,7 @@ router.get("/imports", async (_req, res): Promise<void> => {
 router.post(
   "/imports/playcricket-csv",
   requireAdmin,
+  adminWriteRateLimiter,
   upload.single("file"),
   async (req: MulterRequest, res): Promise<void> => {
     const file = req.file;
@@ -413,7 +415,7 @@ router.post(
   },
 );
 
-router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void> => {
+router.post("/imports/:id/commit", requireAdmin, adminWriteRateLimiter, async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -626,7 +628,7 @@ router.post("/imports/:id/commit", requireAdmin, async (req, res): Promise<void>
   });
 });
 
-router.delete("/imports/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/imports/:id", requireAdmin, adminWriteRateLimiter, async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -738,6 +740,7 @@ async function resolveMatchPlayers(
 router.post(
   "/imports/match-xlsx",
   requireAdmin,
+  adminWriteRateLimiter,
   upload.single("file"),
   async (req: MulterRequest, res): Promise<void> => {
     const file = req.file;
@@ -1173,6 +1176,7 @@ function toBatchFileDto(c: ClassifiedFile) {
 router.post(
   "/imports/match-batch",
   requireAdmin,
+  adminWriteRateLimiter,
   uploadBatch.array("files", 80),
   async (req: MulterArrayRequest, res): Promise<void> => {
     const files = req.files;
@@ -1638,6 +1642,7 @@ async function commitMatchImport(
 router.post(
   "/imports/match-batch/:id/revalidate",
   requireAdmin,
+  adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const id = parseInt(String(req.params.id), 10);
     if (!Number.isInteger(id)) {
@@ -1671,6 +1676,7 @@ router.post(
 router.post(
   "/imports/match-batch/:id/commit",
   requireAdmin,
+  adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const id = parseInt(String(req.params.id), 10);
     if (!Number.isInteger(id)) {
@@ -2102,6 +2108,7 @@ async function deleteMatchImport(
 router.post(
   "/imports/undo-season",
   requireAdmin,
+  adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const grade = typeof req.body?.grade === "string" ? req.body.grade : "";
     const seasonRaw = req.body?.season;
