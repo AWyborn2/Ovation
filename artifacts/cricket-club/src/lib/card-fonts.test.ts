@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { ensureCardFontsLoaded, __resetCardFontsForTests } from "./card-fonts";
 
-const selector = 'link[href^="https://fonts.googleapis.com/css2?family=Cinzel"]';
+// Match the single card-fonts stylesheet by its stable prefix, independent of
+// which font family happens to be listed first (the family list grows/reorders
+// as packs add display fonts).
+const selector = 'link[href^="https://fonts.googleapis.com/css2?family="]';
 
 /** jsdom never fires load events for stylesheets — fire it by hand. */
 function fireLoad() {

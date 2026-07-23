@@ -9,6 +9,8 @@ import {
   fixturesTable,
   teamListsTable,
   socialSettingsTable,
+  captionTemplatesTable,
+  cardThemesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -89,6 +91,11 @@ describe("fixtures + team lists", () => {
     for (const tenantId of [tenantAId, tenantBId]) {
       await db.delete(teamListsTable).where(eq(teamListsTable.tenantId, tenantId));
       await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, tenantId));
+      // Hitting the social-settings PATCH runs ensureSettings, which also seeds
+      // default caption templates (and can seed card themes); clear those
+      // tenant-scoped rows before deleting the tenant or the FK blocks it.
+      await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
+      await db.delete(cardThemesTable).where(eq(cardThemesTable.tenantId, tenantId));
       await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
     }
     await db.delete(adminsTable).where(eq(adminsTable.id, adminAId));
