@@ -35,6 +35,15 @@ export interface CardVideoJob {
   sizeCode?: string | null;
 }
 
+export type CardRenderStillInputInput = { [key: string]: unknown };
+
+export type CardRenderStillInputOptions = { [key: string]: unknown };
+
+export interface CardRenderStillInput {
+  input: CardRenderStillInputInput;
+  options: CardRenderStillInputOptions;
+}
+
 export interface HealthStatus {
   status: string;
 }

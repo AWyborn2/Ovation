@@ -6911,6 +6911,16 @@ export const DownloadCardVideoJobParams = zod.object({
 
 
 /**
+ * Renders a standard Pack A ("Broadcast Dark") share-card to a PNG through the same headless-Chromium harness the MP4 renderer uses, but in a static mode: the harness mounts the pack card at native size (1080 × 1920/1350/ 1080 by size) and the server screenshots that element. Pack cards are static (no animation pipeline), so this bypasses ffmpeg entirely and streams the image synchronously. `input` is the opaque ShareCardInput JSON the client builds for the preview; `options` carries the size, sponsor toggle, junior flag and theme. Admin-only (enforced by route middleware); BYO (bring-your-own) templates keep the client-side canvas PNG path.
+ * @summary Server-side PNG render of a standard (pack) share-card (admin only)
+ */
+export const CreateCardRenderStillBody = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "options": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
 export const GetTenantBrandResponse = zod.union([zod.object({

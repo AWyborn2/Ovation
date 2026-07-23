@@ -64,6 +64,7 @@ import type {
   CardEffectPresetInput,
   CardLayout,
   CardLayoutInput,
+  CardRenderStillInput,
   CardSet,
   CardSetInput,
   CardTemplate,
@@ -17261,6 +17262,78 @@ export function useDownloadCardVideoJob<TData = Awaited<ReturnType<typeof downlo
 
 
 
+
+export const getCreateCardRenderStillUrl = () => {
+
+
+
+
+  return `/api/card-renders/still`
+}
+
+/**
+ * Renders a standard Pack A ("Broadcast Dark") share-card to a PNG through the same headless-Chromium harness the MP4 renderer uses, but in a static mode: the harness mounts the pack card at native size (1080 × 1920/1350/ 1080 by size) and the server screenshots that element. Pack cards are static (no animation pipeline), so this bypasses ffmpeg entirely and streams the image synchronously. `input` is the opaque ShareCardInput JSON the client builds for the preview; `options` carries the size, sponsor toggle, junior flag and theme. Admin-only (enforced by route middleware); BYO (bring-your-own) templates keep the client-side canvas PNG path.
+ * @summary Server-side PNG render of a standard (pack) share-card (admin only)
+ */
+export const createCardRenderStill = async (cardRenderStillInput: CardRenderStillInput, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getCreateCardRenderStillUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardRenderStillInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardRenderStillMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardRenderStill>>, TError,{data: BodyType<CardRenderStillInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardRenderStill>>, TError,{data: BodyType<CardRenderStillInput>}, TContext> => {
+
+const mutationKey = ['createCardRenderStill'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardRenderStill>>, {data: BodyType<CardRenderStillInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardRenderStill(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardRenderStillMutationResult = NonNullable<Awaited<ReturnType<typeof createCardRenderStill>>>
+    export type CreateCardRenderStillMutationBody = BodyType<CardRenderStillInput>
+    export type CreateCardRenderStillMutationError = ErrorType<void>
+
+    /**
+ * @summary Server-side PNG render of a standard (pack) share-card (admin only)
+ */
+export const useCreateCardRenderStill = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardRenderStill>>, TError,{data: BodyType<CardRenderStillInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardRenderStill>>,
+        TError,
+        {data: BodyType<CardRenderStillInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardRenderStillMutationOptions(options));
+    }
 
 export const getGetTenantBrandUrl = () => {
 

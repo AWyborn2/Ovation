@@ -11,6 +11,7 @@ import {
   getListCardTemplatesQueryKey,
   useListCardLayouts,
   getListCardLayoutsQueryKey,
+  useCreateCardRenderStill,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
   type CardAudioTrack as ApiCardAudioTrack,
@@ -259,10 +260,40 @@ export function ShareCardModal({
 
   const [activeSize, setActiveSize] = useState<CardSize>("square");
 
+  // A "pack" (standard / built-in) card is one with no BYO template selected
+  // whose kind the Broadcast Dark pack renders. These export as PNG through the
+  // server-side still harness (pixel-true web fonts + un-tainted logos), while
+  // BYO templates keep the client-side canvas path. Junior cards are pack cards
+  // too (the pack renderer forces the brown palette).
+  const isPackCard = useMemo(
+    () => !!input && selectedTemplate === null && packSupportsKind(input.kind),
+    [input, selectedTemplate],
+  );
+
+  const stillMutation = useCreateCardRenderStill();
+
+  // The static-render payload mirrors the props that drive the live <PackCard>
+  // preview, so the server PNG matches what the admin sees.
+  const stillOptions = (size: CardSize) => ({
+    size,
+    sponsorsOn: includeSponsors,
+    junior: isJunior,
+    theme: selectedTheme ?? null,
+  });
+
+  // Render one pack size to a PNG blob via the server harness.
+  const renderPackStill = (size: CardSize): Promise<Blob> =>
+    stillMutation.mutateAsync({
+      data: { input: input!, options: stillOptions(size) },
+    }) as Promise<Blob>;
+
   // A video/GIF template always animates; otherwise the motion preset decides.
+  // Pack cards are always static (KTD10) — never offer video/GIF for them.
   const animated = useMemo(
-    () => isAnimatedCard({ size: activeSize, template: bgTemplate, motionPreset: motion }),
-    [activeSize, bgTemplate, motion],
+    () =>
+      !isPackCard &&
+      isAnimatedCard({ size: activeSize, template: bgTemplate, motionPreset: motion }),
+    [isPackCard, activeSize, bgTemplate, motion],
   );
   const videoSupported = useMemo(() => canExportVideo(), []);
   const videoFormat = useMemo(() => videoFormatLabel(), []);
@@ -373,7 +404,10 @@ export function ShareCardModal({
     setExportError(null);
     setDownloading(true);
     try {
-      const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+      // Pack cards render server-side (PNG); BYO templates use the client canvas.
+      const blob = isPackCard
+        ? await renderPackStill(size)
+        : await renderShareCard(input, buildOpts(size, photoTransform));
       downloadBlob(blob, `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}.png`);
     } catch (e) {
       console.error("Card download failed", e);
@@ -396,7 +430,10 @@ export function ShareCardModal({
       // below) — skip it and note it, rather than losing every other size too.
       for (const size of enabledSizes) {
         try {
-          const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+          // Pack cards render server-side (PNG); BYO templates use the canvas.
+          const blob = isPackCard
+            ? await renderPackStill(size)
+            : await renderShareCard(input, buildOpts(size, photoTransform));
           zip.file(`${base}-${SIZES[size].code}.png`, blob);
         } catch (e) {
           console.error(`Card PNG export failed for size ${size}`, e);
@@ -597,7 +634,7 @@ export function ShareCardModal({
               </div>
             )}
 
-            {isAdmin && (
+            {isAdmin && !isPackCard && (
               <div className="space-y-1.5 rounded border px-3 py-2">
                 <Label htmlFor="motion-select" className="text-sm">
                   Motion
