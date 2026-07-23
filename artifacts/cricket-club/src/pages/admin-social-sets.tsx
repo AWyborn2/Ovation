@@ -55,9 +55,7 @@ import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
 import {
   SIZES,
   renderShareCard,
-  renderShareCardVideo,
   isAnimatedCard,
-  canExportVideo,
   downloadBlob,
   sponsorAppliesToKind,
   type CardSize,
@@ -66,6 +64,10 @@ import {
   type MotionPreset,
   type StatLine,
 } from "@/lib/share-card";
+import {
+  renderShareCardVideo,
+  canExportVideo,
+} from "@/lib/share-card-animation";
 
 const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
   { value: "none", label: "No animation (still PNG)" },

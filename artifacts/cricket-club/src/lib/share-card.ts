@@ -274,7 +274,7 @@ const themeFromBrand = (brand?: ClubBrand | null): CardTheme => {
 // overrides the club's own primary colour; the accent still follows the
 // tenant's brand (or the neutral default) rather than a fixed hex.
 const JUNIOR_BROWN = "#42342B";
-const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
+export const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
   bgDark: JUNIOR_BROWN,
   bgPanel: lighten(JUNIOR_BROWN, 0.12),
   accent: brand?.primaryColour || DEFAULT_BRAND.primaryColour || "#94A3B8",
@@ -282,10 +282,10 @@ const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
 });
 
 // True when an input is a junior-flagged card kind.
-const isJuniorInput = (input: ShareCardInput): boolean =>
+export const isJuniorInput = (input: ShareCardInput): boolean =>
   "junior" in input && input.junior === true;
 
-const resolvePalette = (theme?: CardTheme | null, brand?: ClubBrand | null): Palette => {
+export const resolvePalette = (theme?: CardTheme | null, brand?: ClubBrand | null): Palette => {
   const fallback = themeFromBrand(brand);
   const t = theme ?? fallback;
   return {
@@ -300,7 +300,7 @@ const resolvePalette = (theme?: CardTheme | null, brand?: ClubBrand | null): Pal
   };
 };
 
-const loadImage = (src: string): Promise<HTMLImageElement> =>
+export const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -581,7 +581,7 @@ const drawSponsors = async (
 // A tenant with no configured hashtag gets one derived from its short name
 // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
 // a brand-less tenant gets no hashtag rather than Halls Head's.
-const defaultHashtag = (brand?: ClubBrand | null): string =>
+export const defaultHashtag = (brand?: ClubBrand | null): string =>
   brand?.shortName ? `#${brand.shortName.replace(/\s+/g, "")}` : "";
 
 const drawFooter = (
@@ -679,7 +679,7 @@ const CARD_FONT_FAMILIES = [
 // has already requested, so without this the rarer families silently fall back
 // to a system font in both the live preview and the exported image. Best-effort:
 // failures (e.g. offline) just fall through to document.fonts.ready.
-const ensureCardFonts = async (): Promise<void> => {
+export const ensureCardFonts = async (): Promise<void> => {
   // The decorative families live in an on-demand stylesheet (not index.html);
   // make sure its @font-face rules exist before asking FontFaceSet to load them.
   await ensureCardFontsLoaded();
@@ -1112,10 +1112,10 @@ const drawImageContain = (
 
 // --- Animation primitives ---------------------------------------------------
 
-const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
-const easeOutCubic = (n: number): number => 1 - Math.pow(1 - clamp01(n), 3);
+export const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+export const easeOutCubic = (n: number): number => 1 - Math.pow(1 - clamp01(n), 3);
 // Overshoot ease for the "popIn" preset (settles slightly past 1 then back).
-const easeOutBack = (n: number): number => {
+export const easeOutBack = (n: number): number => {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   const x = clamp01(n);
@@ -1149,7 +1149,7 @@ type TemplateBgSource = {
 // Load a template background. For "video" kind: when `play` is true the element
 // loops in real time (animation/export); otherwise it is seeked to a poster
 // frame for the still PNG. Images and GIFs load as an <img> either way.
-const loadTemplateBg = async (
+export const loadTemplateBg = async (
   template: CardTemplate,
   play: boolean,
 ): Promise<TemplateBgSource | null> => {
@@ -1227,7 +1227,7 @@ const drawSourceCover = (
 
 // Preload sponsor logos (up to 4) into a cache so the sponsor strip can be
 // drawn synchronously every animation frame.
-const loadSponsorLogos = async (
+export const loadSponsorLogos = async (
   sponsors: CardSponsor[],
 ): Promise<Map<string, HTMLImageElement>> => {
   const map = new Map<string, HTMLImageElement>();
@@ -1287,7 +1287,7 @@ const drawSponsorsSync = (
 // Synchronous, frame-aware template renderer shared by the still PNG path
 // (motion "none", t = 1) and the animation path. Draws the background (cover),
 // then each data-bound slot honouring the motion preset at progress `t` (0-1).
-const drawTemplateFrame = (
+export const drawTemplateFrame = (
   ctx: CanvasRenderingContext2D,
   W: number,
   H: number,
@@ -3477,7 +3477,7 @@ const drawCustomText = (ctx: CanvasRenderingContext2D, s: CardLayoutLayer, r: Px
 
 // Apply a saved layout to the freshly built built-in layers: override matching
 // `element` rects/z/hidden in place and append custom layers.
-const applyLayout = (
+export const applyLayout = (
   builtins: RenderLayer[],
   saved: CardLayoutLayer[],
   H: number,
@@ -3519,7 +3519,7 @@ const applyLayout = (
 // Apply a built-in layer's natural→rect transform to the context (identity when
 // rect === natural). Shared by the still renderer and the animation baker so a
 // baked layer lands in exactly the same pixels as the static draw.
-const applyLayerTransform = (ctx: CanvasRenderingContext2D, l: RenderLayer) => {
+export const applyLayerTransform = (ctx: CanvasRenderingContext2D, l: RenderLayer) => {
   if (l.drawsAtNatural && l.natural.w > 0 && l.natural.h > 0) {
     const sx = l.rect.w / l.natural.w;
     const sy = l.rect.h / l.natural.h;
@@ -3781,7 +3781,7 @@ const drawLayers = async (ctx: CanvasRenderingContext2D, layers: RenderLayer[]) 
 // canvas (so its pixels already sit at final position). Compositing the bitmap
 // with a per-layer alpha/transform is what lets every element animate
 // independently without re-running its (sometimes async) draw each frame.
-type BakedLayer = {
+export type BakedLayer = {
   layer: RenderLayer;
   bitmap: ImageBitmap | null;
   // Element-space centre + bounds (final pixels) for popIn scaling / wipe clip.
@@ -3795,7 +3795,7 @@ type BakedLayer = {
 
 // Render a single layer onto its own full-frame canvas and snapshot it. Returns
 // a null bitmap if the layer is empty/zero-sized (composited as a no-op).
-const bakeLayer = async (
+export const bakeLayer = async (
   l: RenderLayer,
   W: number,
   H: number,
@@ -3887,7 +3887,7 @@ const buildMatchSummaryLayers = async (
 // scorecard into a single base layer; every other kind builds the standard body.
 // Shared by the editor, the still renderer, and the animation baker so all three
 // agree on the layer model.
-const buildBuiltinLayers = async (
+export const buildBuiltinLayers = async (
   input: ShareCardInput,
   opts: RenderOptions,
   p: Palette,
@@ -4136,7 +4136,7 @@ export const MIN_SPEED = 0.5;
 export const MAX_SPEED = 2;
 
 // Animated cards are short looping clips. Clamp every duration into a sane band.
-const clampDuration = (ms: number): number =>
+export const clampDuration = (ms: number): number =>
   Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, Math.round(ms)));
 
 // Clamp the animation speed multiplier into its safe band (default 1).
@@ -4158,457 +4158,3 @@ export const effectiveSpeed = (opts: RenderOptions): number =>
     ? clampSpeed(opts.speed)
     : 1;
 
-// Build an animation for a card. Preloads every asset up front so each draw()
-// call is synchronous and cheap (safe to run inside a rAF / capture loop).
-export const prepareAnimation = async (
-  input: ShareCardInput,
-  opts: RenderOptions,
-): Promise<AnimationHandle> => {
-  const { w: W, h: H } = SIZES[opts.size];
-  const scale = W / 1080;
-  const p = isJuniorInput(input)
-    ? resolvePalette(juniorThemeFromBrand(opts.brand), opts.brand)
-    : resolvePalette(opts.theme, opts.brand);
-  const motion = effectiveMotion(opts);
-  const speed = effectiveSpeed(opts);
-
-  // Template-based animated card: animated/still background + data-bound slots.
-  // Pack templates skip this — they flow through the built-in layer animation.
-  if (opts.template && opts.template.source !== "pack") {
-    const template = opts.template;
-    const bgKind = template.backgroundKind ?? "image";
-    // Canvas text never triggers a font fetch on its own (see ensureCardFonts'
-    // own comment) — without this, an animated/exported template card can bake
-    // in a system-font fallback while the PNG export of the same card is correct.
-    await ensureCardFonts();
-    const bg = await loadTemplateBg(template, true);
-    const tctx: TemplateContext = {
-      clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
-      clubUrl: opts.clubUrl ?? "",
-      hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
-      photoUrl: opts.photoUrl,
-    };
-    const purl = resolvePhotoField(input, tctx);
-    const photoImg = purl ? await loadImage(purl).catch(() => null) : null;
-    const logos = await loadSponsorLogos(opts.sponsors ?? []);
-
-    // Admin clip length wins; else a video bg's own duration; else the default.
-    let durationMs = effectiveDuration(opts);
-    if (typeof opts.durationMs !== "number" && bgKind === "video" && bg?.video) {
-      const vid = bg.video.duration ? bg.video.duration * 1000 : 4000;
-      durationMs = clampDuration(template.backgroundDurationMs ?? vid);
-    }
-
-    return {
-      width: W,
-      height: H,
-      durationMs,
-      loop: true,
-      draw: (ctx, t) =>
-        drawTemplateFrame(ctx, W, H, scale, input, template, opts, p, bg, photoImg, logos, motion, t, speed),
-      cleanup: () => {
-        const v = bg?.video;
-        if (v) {
-          v.pause();
-          v.removeAttribute("src");
-          v.load();
-          v.remove();
-        }
-      },
-    };
-  }
-
-  const durationMs = effectiveDuration(opts);
-
-  // Built-in still card (motion "none" or no real layers): render once, draw flat.
-  if (motion === "none") {
-    const stillBlob = await renderShareCard(input, { ...opts, template: null, motionPreset: "none" });
-    const bmp = await createImageBitmap(stillBlob);
-    return {
-      width: W,
-      height: H,
-      durationMs,
-      loop: true,
-      draw: (ctx, t) => {
-        void t;
-        ctx.clearRect(0, 0, W, H);
-        ctx.drawImage(bmp, 0, 0, W, H);
-      },
-      cleanup: () => bmp.close(),
-    };
-  }
-
-  // Built-in animated card: build the real layer model and bake every visible
-  // layer to its own bitmap so each element can enter independently. The
-  // background draws immediately (full alpha, no flash); foreground layers
-  // composite in z-order with a per-layer stagger + entrance. "countUp" redraws
-  // numeric layers live (drawCount) instead of compositing their bitmap.
-  await ensureCardFonts();
-  const builtins = await buildBuiltinLayers(input, opts, p, W, H, scale);
-  const tplCtx: TemplateContext = {
-    clubName: opts.brand?.name ?? DEFAULT_BRAND.name,
-    clubUrl: opts.clubUrl ?? "",
-    hashtag: opts.hashtag ?? defaultHashtag(opts.brand),
-    photoUrl: opts.photoUrl,
-  };
-  const laidOut =
-    opts.layout && opts.layout.length > 0
-      ? applyLayout(builtins, opts.layout, H, input, tplCtx)
-      : builtins;
-  const ordered = laidOut.filter((l) => !l.hidden).sort((a, b) => a.z - b.z);
-  const baked = await Promise.all(ordered.map((l) => bakeLayer(l, W, H)));
-  const fg = baked.filter((b) => b.layer.id !== "background");
-  const bgBaked = baked.filter((b) => b.layer.id === "background");
-
-  // Per-preset stagger spread (fraction of timeline the element starts spread
-  // over) and per-element entrance window. fadeIn/slideUp move as one block
-  // (zero spread); the per-element presets spread their starts out. Both shrink
-  // with speed so faster = snappier and holds longer.
-  const spreadBase =
-    motion === "popIn" || motion === "wipe" || motion === "countUp"
-      ? 0.3
-      : motion === "stagger"
-        ? 0.55
-        : motion === "matchReveal"
-          ? 0.6
-          : 0;
-  const winBase = 0.45;
-  const spread = spreadBase / speed;
-  const win = winBase / speed;
-  const n = Math.max(1, fg.length);
-  const layerProgress = (idx: number, t: number): number => {
-    const start = n > 1 ? (idx / (n - 1)) * spread : 0;
-    return clamp01((t - start) / win);
-  };
-
-  // Composite one foreground baked layer at local progress `lp` (0-1) under the
-  // active preset's entrance. Skips zero-progress layers (avoids a blank flash).
-  const drawFg = (ctx: CanvasRenderingContext2D, b: BakedLayer, lp: number) => {
-    if (lp <= 0) return;
-    // countUp: re-render numeric layers live so the figure ticks up; the value
-    // fades in alongside (alpha = lp). drawCount(1) === draw() so rest matches.
-    if (motion === "countUp" && b.layer.numeric && b.layer.drawCount) {
-      ctx.save();
-      // countUp redraws live (not the baked bitmap), so fold in the layer's own
-      // opacity here — the baked path already has it composited in.
-      ctx.globalAlpha = easeOutCubic(lp) * Math.max(0, Math.min(1, b.layer.effects?.opacity ?? 1));
-      applyLayerTransform(ctx, b.layer);
-      try {
-        b.layer.drawCount(ctx, lp);
-      } catch {}
-      ctx.restore();
-      return;
-    }
-    if (!b.bitmap) return;
-    const e = easeOutCubic(lp);
-    ctx.save();
-    if (motion === "popIn") {
-      const s = easeOutBack(lp);
-      ctx.globalAlpha = e;
-      ctx.translate(b.cx, b.cy);
-      ctx.scale(s, s);
-      ctx.translate(-b.cx, -b.cy);
-      ctx.drawImage(b.bitmap, 0, 0, W, H);
-    } else if (motion === "wipe") {
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.rect(b.rx, b.ry, Math.max(1, b.rw * e), b.rh);
-      ctx.clip();
-      ctx.drawImage(b.bitmap, 0, 0, W, H);
-    } else if (motion === "matchReveal" && b.bitmap) {
-      const headerEnd = H * 0.2;
-      const crestsEnd = H * 0.35;
-      const inningsEnd = H * 0.78;
-      const p1 = clamp01(lp / 0.25);
-      const p2 = clamp01((lp - 0.15) / 0.3);
-      const p3 = clamp01((lp - 0.4) / 0.35);
-      const p4 = clamp01((lp - 0.7) / 0.3);
-      const bmp = b.bitmap;
-      const drawRegion = (ry: number, rh: number, progress: number, slideY = 0) => {
-        if (progress <= 0) return;
-        const ep = easeOutCubic(progress);
-        ctx.save();
-        ctx.globalAlpha = ep;
-        ctx.beginPath();
-        ctx.rect(0, ry, W, rh);
-        ctx.clip();
-        if (slideY !== 0) ctx.translate(0, (1 - ep) * slideY);
-        ctx.drawImage(bmp, 0, 0, W, H);
-        ctx.restore();
-      };
-      drawRegion(0, headerEnd, p1, -20 * (W / 1080));
-      drawRegion(headerEnd, crestsEnd - headerEnd, p2, 0);
-      drawRegion(crestsEnd, inningsEnd - crestsEnd, p3, 0);
-      drawRegion(inningsEnd, H - inningsEnd, p4, 30 * (W / 1080));
-    } else {
-      // fadeIn / slideUp / stagger / countUp(non-numeric): fade (+ rise).
-      ctx.globalAlpha = e;
-      if (motion === "slideUp" || motion === "stagger") {
-        ctx.translate(0, (1 - e) * 0.06 * H);
-      }
-      ctx.drawImage(b.bitmap, 0, 0, W, H);
-    }
-    ctx.restore();
-  };
-
-  return {
-    width: W,
-    height: H,
-    durationMs,
-    loop: true,
-    draw: (ctx, t) => {
-      ctx.clearRect(0, 0, W, H);
-      // Background is always fully visible from frame 0 so nothing flashes.
-      for (const b of bgBaked) {
-        if (b.bitmap) ctx.drawImage(b.bitmap, 0, 0, W, H);
-      }
-      fg.forEach((b, idx) => drawFg(ctx, b, layerProgress(idx, t)));
-    },
-    cleanup: () => {
-      for (const b of baked) b.bitmap?.close();
-    },
-  };
-};
-
-// Pick the best MediaRecorder container the browser supports. MP4 is preferred
-// (broad social-platform support); WebM is the universal fallback in Chromium.
-// When `withAudio` is set, prefer mime strings that name an audio codec too
-// (avc1+mp4a for MP4, vp9/vp8+opus for WebM) so the muxed track is actually
-// encoded — a video-only mime can silently drop the audio track.
-export const pickVideoMime = (withAudio = false): { mime: string; ext: string } => {
-  const supported = (m: string): boolean =>
-    typeof MediaRecorder !== "undefined" &&
-    typeof MediaRecorder.isTypeSupported === "function" &&
-    MediaRecorder.isTypeSupported(m);
-  if (withAudio) {
-    if (supported("video/mp4;codecs=avc1,mp4a.40.2"))
-      return { mime: "video/mp4;codecs=avc1,mp4a.40.2", ext: "mp4" };
-    if (supported("video/mp4")) return { mime: "video/mp4", ext: "mp4" };
-    if (supported("video/webm;codecs=vp9,opus"))
-      return { mime: "video/webm;codecs=vp9,opus", ext: "webm" };
-    if (supported("video/webm;codecs=vp8,opus"))
-      return { mime: "video/webm;codecs=vp8,opus", ext: "webm" };
-    if (supported("video/webm")) return { mime: "video/webm", ext: "webm" };
-    return { mime: "", ext: "webm" };
-  }
-  if (supported("video/mp4;codecs=avc1")) return { mime: "video/mp4;codecs=avc1", ext: "mp4" };
-  if (supported("video/mp4")) return { mime: "video/mp4", ext: "mp4" };
-  if (supported("video/webm;codecs=vp9")) return { mime: "video/webm;codecs=vp9", ext: "webm" };
-  if (supported("video/webm")) return { mime: "video/webm", ext: "webm" };
-  return { mime: "", ext: "webm" };
-};
-
-// Load + decode a track and build a looping audio graph feeding a MediaStream
-// audio track, ready to mux into the canvas capture stream. Returns the stream
-// track plus start/stop controls and a cleanup, or null if anything fails (so
-// the caller degrades to a silent clip instead of throwing). The source loops
-// from `trimStartMs` so a clip longer than the (trimmed) track never falls
-// silent; volume is applied via a GainNode.
-type ClipAudio = {
-  track: MediaStreamTrack;
-  start: (when: number) => void;
-  stop: () => void;
-  cleanup: () => void;
-};
-const prepareClipAudio = async (spec: CardAudioSpec): Promise<ClipAudio | null> => {
-  try {
-    const AudioCtx =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioCtx) return null;
-    const res = await fetch(spec.url);
-    if (!res.ok) return null;
-    const arrayBuf = await res.arrayBuffer();
-    const ctx = new AudioCtx();
-    const buffer = await ctx.decodeAudioData(arrayBuf);
-    const dest = ctx.createMediaStreamDestination();
-    const gain = ctx.createGain();
-    gain.gain.value = Math.max(0, Math.min(1, spec.volume));
-    gain.connect(dest);
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.loop = true;
-    // Loop the trimmed window: playback starts at trimStart and wraps back to
-    // it (not to 0) so the clip keeps using the admin-chosen section.
-    const trimStart = Math.max(0, Math.min(spec.trimStartMs / 1000, buffer.duration));
-    src.loopStart = trimStart;
-    src.loopEnd = buffer.duration;
-    src.connect(gain);
-    const track = dest.stream.getAudioTracks()[0];
-    if (!track) {
-      void ctx.close();
-      return null;
-    }
-    return {
-      track,
-      start: (when: number) => {
-        void ctx.resume().catch(() => {});
-        src.start(when, trimStart);
-      },
-      stop: () => {
-        try {
-          src.stop();
-        } catch {}
-      },
-      cleanup: () => {
-        try {
-          src.disconnect();
-          gain.disconnect();
-        } catch {}
-        void ctx.close().catch(() => {});
-      },
-    };
-  } catch {
-    return null;
-  }
-};
-
-// Human-facing label for the export format the current browser will produce
-// (so the admin UI can document the constraint, e.g. "MP4" vs "WebM").
-export const videoFormatLabel = (): string => pickVideoMime().ext.toUpperCase();
-
-// Whether this browser can export video at all (needs MediaRecorder +
-// canvas.captureStream). Lets the UI hide the video button gracefully.
-export const canExportVideo = (): boolean =>
-  typeof MediaRecorder !== "undefined" &&
-  typeof document.createElement("canvas").captureStream === "function";
-
-// Render a card to a downloadable video clip via canvas.captureStream +
-// MediaRecorder. Returns the encoded blob and its file extension. Runs the
-// animation once in real time (no loop) so the clip is a single clean pass.
-export const renderShareCardVideo = async (
-  input: ShareCardInput,
-  opts: RenderOptions,
-): Promise<{ blob: Blob; ext: string }> => {
-  if (!canExportVideo()) {
-    throw new Error("This browser can't export video (MediaRecorder unavailable).");
-  }
-  const anim = await prepareAnimation(input, opts);
-  const canvas = document.createElement("canvas");
-  canvas.width = anim.width;
-  canvas.height = anim.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not get canvas 2D context");
-
-  // Paint the first frame before the recorder starts so the clip opens cleanly.
-  anim.draw(ctx, 0);
-
-  // Optional background music: build a looping audio graph and mux its stream
-  // track into the canvas capture stream BEFORE constructing the recorder (a
-  // track added after start() is not encoded). A failed decode/load yields null
-  // → silent clip, never a thrown error.
-  const clipAudio = opts.audio ? await prepareClipAudio(opts.audio) : null;
-  const { mime, ext } = pickVideoMime(!!clipAudio);
-  const stream = canvas.captureStream(30);
-  if (clipAudio) stream.addTrack(clipAudio.track);
-  const recorder = new MediaRecorder(
-    stream,
-    mime ? { mimeType: mime, videoBitsPerSecond: 8_000_000 } : undefined,
-  );
-  const chunks: Blob[] = [];
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) chunks.push(e.data);
-  };
-  const stopped = new Promise<Blob>((resolve) => {
-    recorder.onstop = () => resolve(new Blob(chunks, { type: mime || "video/webm" }));
-  });
-
-  recorder.start();
-  // Start the music in lockstep with recording so the audio aligns with frame 0.
-  if (clipAudio) clipAudio.start(0);
-  const start = performance.now();
-  await new Promise<void>((resolve, reject) => {
-    const tick = (now: number) => {
-      try {
-        const elapsed = now - start;
-        anim.draw(ctx, Math.min(1, elapsed / anim.durationMs));
-        if (elapsed >= anim.durationMs) {
-          resolve();
-          return;
-        }
-        requestAnimationFrame(tick);
-      } catch (err) {
-        // A throw inside an rAF callback is otherwise an uncaught error that
-        // never settles this promise, leaving the caller's export state stuck.
-        reject(err instanceof Error ? err : new Error(String(err)));
-      }
-    };
-    requestAnimationFrame(tick);
-  });
-  anim.draw(ctx, 1);
-  recorder.stop();
-
-  const blob = await stopped;
-  if (clipAudio) {
-    clipAudio.stop();
-    clipAudio.cleanup();
-  }
-  anim.cleanup();
-  return { blob, ext };
-};
-
-// Whether GIF export is feasible in this browser (needs an offscreen 2D canvas
-// + createImageBitmap, both used by the animation pipeline). gifenc itself is
-// pure JS and loaded on demand.
-export const canExportGif = (): boolean =>
-  typeof document !== "undefined" &&
-  typeof document.createElement("canvas").getContext === "function" &&
-  typeof createImageBitmap === "function";
-
-// Render a card to a looping GIF via gifenc. Downscales to ~540px wide (GIFs are
-// heavy) at ~12fps over a single pass of the animation, then quantises each
-// frame to a 256-colour palette and writes a looping image. Returns the blob +
-// "gif" extension. Loaded dynamically so gifenc stays out of the main bundle.
-export const renderShareCardGif = async (
-  input: ShareCardInput,
-  opts: RenderOptions,
-): Promise<{ blob: Blob; ext: string }> => {
-  if (!canExportGif()) {
-    throw new Error("This browser can't export GIF.");
-  }
-  const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
-  const anim = await prepareAnimation(input, opts);
-
-  // Downscale: GIF palette + size make full-res clips huge. Cap the long edge.
-  const maxW = 540;
-  const ratio = anim.height / anim.width;
-  const gw = Math.min(maxW, anim.width);
-  const gh = Math.round(gw * ratio);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = gw;
-  canvas.height = gh;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not get canvas 2D context");
-
-  const fps = 12;
-  const frameCount = Math.max(2, Math.round((anim.durationMs / 1000) * fps));
-  const delay = Math.round(1000 / fps);
-  const gif = GIFEncoder();
-
-  try {
-    for (let i = 0; i < frameCount; i++) {
-      const t = frameCount > 1 ? i / (frameCount - 1) : 1;
-      ctx.clearRect(0, 0, gw, gh);
-      // The animation draws at full size; scale the whole frame down to GIF size.
-      ctx.save();
-      ctx.scale(gw / anim.width, gh / anim.height);
-      anim.draw(ctx, t);
-      ctx.restore();
-      const { data } = ctx.getImageData(0, 0, gw, gh);
-      const palette = quantize(data, 256);
-      const indexed = applyPalette(data, palette);
-      gif.writeFrame(indexed, gw, gh, { palette, delay, repeat: 0 });
-    }
-    gif.finish();
-  } finally {
-    // Ensures every baked bitmap prepareAnimation created for this clip is
-    // released even if a mid-loop error (e.g. a tainted-canvas getImageData
-    // throw) skips the rest of the loop.
-    anim.cleanup();
-  }
-  const bytes = gif.bytes();
-  const blob = new Blob([bytes as BlobPart], { type: "image/gif" });
-  return { blob, ext: "gif" };
-};

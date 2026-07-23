@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  prepareAnimation,
   type AnimationHandle,
   type ShareCardInput,
   type RenderOptions,
 } from "@/lib/share-card";
+import {
+  prepareAnimation,
+} from "@/lib/share-card-animation";
 
 // Metrics returned by init() so the server knows how many frames to capture.
 type HarnessMeta = {

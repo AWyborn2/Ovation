@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import {
-  prepareAnimation,
   type ShareCardInput,
   type RenderOptions,
   type AnimationHandle,
 } from "@/lib/share-card";
+import {
+  prepareAnimation,
+} from "@/lib/share-card-animation";
 
 // Live, looping canvas preview for animated cards. Prepares the animation once
 // per `sig` change and drives it with requestAnimationFrame; cleans up any

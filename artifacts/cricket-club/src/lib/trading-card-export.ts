@@ -1,5 +1,8 @@
 import { toPng, toCanvas } from "html-to-image";
-import { pickVideoMime, canExportVideo } from "@/lib/share-card";
+import {
+  pickVideoMime,
+  canExportVideo,
+} from "@/lib/share-card-animation";
 
 export { canExportVideo };
 export const videoFormatLabel = (): string => pickVideoMime().ext.toUpperCase();
