@@ -27,6 +27,7 @@ import {
   type TemplateMode,
 } from "@/components/card-layout-editor";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { PackCard } from "@/components/pack-card";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import {
   renderShareCard,
@@ -300,11 +301,19 @@ export default function AdminSocialStudio() {
             const def = defaultByKind.get(kind);
             return (
               <Card key={kind} className="overflow-hidden">
-                <CardThumb
-                  input={sampleCardInput(kind)}
-                  baseOpts={baseOpts}
-                  layout={layout?.layers ?? []}
-                />
+                <div
+                  className="overflow-hidden rounded bg-muted"
+                  style={{
+                    aspectRatio: `${SIZES[THUMB_SIZE].w} / ${SIZES[THUMB_SIZE].h}`,
+                  }}
+                >
+                  <PackCard
+                    input={sampleCardInput(kind)}
+                    size={THUMB_SIZE}
+                    sponsorsOn
+                    junior={false}
+                  />
+                </div>
                 <CardContent className="space-y-2 p-3">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-medium">{o.label}</span>

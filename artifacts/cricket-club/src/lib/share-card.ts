@@ -817,6 +817,13 @@ const CARD_FONT_FAMILIES = [
   "EB Garamond",
   "Space Mono",
   "Inter",
+  // Pack A ("Broadcast Dark") display + script families so pack cards render
+  // their headline type in both the DOM preview and the server-side export.
+  "Anton",
+  "Bebas Neue",
+  "Teko",
+  "Archivo Black",
+  "Kaushan Script",
 ];
 
 // Force-load every card font (at light + bold) before drawing. Canvas text does

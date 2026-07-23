@@ -53,6 +53,8 @@ import {
   videoFormatLabel,
 } from "@/lib/share-card-animation";
 import { templateAppliesToKind } from "@/lib/card-template";
+import { PackCard } from "@/components/pack-card";
+import { packSupportsKind } from "@/lib/pack-render";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { Wand2 } from "lucide-react";
@@ -547,6 +549,16 @@ export function ShareCardModal({
                         opts={buildOpts(s, renderTransform)}
                         sig={animSig}
                         soundOn={isAdmin && previewSoundOn && !!audioSpec}
+                      />
+                    ) : input && selectedTemplate === null && packSupportsKind(input.kind) ? (
+                      // Pack (standard / built-in) cards preview as a live scaled
+                      // DOM subtree; only BYO templates use the canvas path below.
+                      <PackCard
+                        input={input}
+                        size={s}
+                        sponsorsOn={includeSponsors}
+                        theme={selectedTheme}
+                        junior={isJunior}
                       />
                     ) : rendering && !previewUrls[s] ? (
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
