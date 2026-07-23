@@ -8,6 +8,7 @@ import {
   centralMatchRostersTable,
   centralFieldingTable,
   centralPlayersTable,
+  centralLadderTable,
 } from "./central";
 import type { PlayerGradeStat } from "./schema";
 
@@ -801,6 +802,129 @@ async function centralClubTotalsImpl(
 }
 
 /**
+ * Points awarded per result, used to DERIVE the ladder card's `points` — the
+ * central `ladder` table stores no points column, so it is computed here.
+ * Adjust if the association's points system differs (win 6 / tie or wash 3 is
+ * the common Australian community system).
+ */
+const LADDER_POINTS = { win: 6, tie: 3, noResult: 3, loss: 0 } as const;
+
+/**
+ * One ladder standings row shaped for the Pack A "Ladder" social card (A7).
+ * `isClub` marks the tenant's own club so the card can highlight its row.
+ */
+export interface CentralLadderCardRow {
+  pos: number;
+  team: string;
+  played: number;
+  won: number;
+  lost: number;
+  points: number;
+  isClub: boolean;
+}
+
+/**
+ * Grade standings from the central `ladder` table, shaped for the Ladder card.
+ * First (and currently only) consumer of `centralLadderTable`.
+ *
+ * IMPORTANT data-shape caveat (verified against the live central schema): the
+ * central `ladder` table is an ALL-TIME cumulative record per (grade, club) —
+ * it has NO `season`, `points` or position columns. Consequences:
+ *   - `season` is accepted for API symmetry with the other prefill reads and
+ *     forward-compat, but does NOT filter — the table carries no season
+ *     dimension, so every season returns the same all-time standings today.
+ *     A genuinely season-scoped ladder is a follow-up (a new central table or a
+ *     matches-derived computation), out of scope for this unit.
+ *   - `points` is DERIVED from won/tied/no-result via {@link LADDER_POINTS}.
+ *   - `pos` is DERIVED by ordering (points, wins, net result, played, name).
+ *
+ * `grade` is an app grade (e.g. "A Grade"); it resolves to the central grade
+ * labels that map to it (same free-text space as `matches.grade`). Because
+ * several central labels ("A Grade", "A Grade: Wyllie Cup", …) fold into one
+ * app grade, a club can appear more than once — we keep one row per club (its
+ * fullest / most-played all-time record) so the ladder has no duplicate teams.
+ * An empty ladder (no rows for the grade) returns [] — never throws.
+ */
+export async function centralLadder(
+  clubId: number,
+  season: number | null,
+  grade: string,
+): Promise<CentralLadderCardRow[]> {
+  // season is part of the cache key (and the public contract) even though the
+  // all-time table can't filter on it — see the caveat above.
+  return withCentralCache(cacheKey("centralLadder", [clubId, season, grade]), () =>
+    centralLadderImpl(clubId, grade),
+  );
+}
+
+async function centralLadderImpl(
+  clubId: number,
+  grade: string,
+): Promise<CentralLadderCardRow[]> {
+  const rows = await centralDb
+    .select({
+      grade: centralLadderTable.grade,
+      clubId: centralLadderTable.clubId,
+      club: centralLadderTable.club,
+      played: centralLadderTable.played,
+      won: centralLadderTable.won,
+      lost: centralLadderTable.lost,
+      tied: centralLadderTable.tied,
+      noResult: centralLadderTable.noResult,
+    })
+    .from(centralLadderTable);
+
+  const mapped = rows.filter((r) => appGradeFromCentral(r.grade) === grade);
+  if (mapped.length === 0) return [];
+
+  // Dedupe folded labels: one row per club, keeping its most-played record.
+  const bestByClub = new Map<number | string, (typeof mapped)[number]>();
+  for (const r of mapped) {
+    const key = r.clubId ?? `name:${r.club ?? ""}`;
+    const prev = bestByClub.get(key);
+    if (!prev || (r.played ?? 0) > (prev.played ?? 0)) bestByClub.set(key, r);
+  }
+
+  const ranked = [...bestByClub.values()].map((r) => {
+    const won = r.won ?? 0;
+    const lost = r.lost ?? 0;
+    const tied = r.tied ?? 0;
+    const noResult = r.noResult ?? 0;
+    return {
+      team: r.club ?? "",
+      played: r.played ?? 0,
+      won,
+      lost,
+      points:
+        won * LADDER_POINTS.win +
+        tied * LADDER_POINTS.tie +
+        noResult * LADDER_POINTS.noResult +
+        lost * LADDER_POINTS.loss,
+      isClub: r.clubId != null && r.clubId === clubId,
+    };
+  });
+
+  ranked.sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.won - a.won ||
+      b.won - b.lost - (a.won - a.lost) ||
+      b.played - a.played ||
+      a.team.localeCompare(b.team),
+  );
+
+  return ranked.map((r, i) => ({
+    pos: i + 1,
+    team: r.team,
+    played: r.played,
+    won: r.won,
+    lost: r.lost,
+    points: r.points,
+    isClub: r.isClub,
+  }));
+}
+
+/**
  * Distinct central participants (PlayHQ GUIDs) who appeared for a club, with
  * display name + privacy flag. The source list for minting a tenant's
  * player_id_map. Unions roster, batting and bowling lines so a player who only
@@ -1499,6 +1623,194 @@ async function centralClubMatchesImpl(
       b.id - a.id,
   );
   return rows;
+}
+
+const WRAP_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+/** Format a central "YYYY-MM-DD" date as "D Mon YYYY"; falls back to the raw
+ *  string when it can't be parsed. */
+function formatWrapDate(ymd: string | null): { label: string; sort: string } | null {
+  if (!ymd) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd);
+  if (!m) return { label: ymd, sort: ymd };
+  const [, y, mo, d] = m;
+  const month = WRAP_MONTHS[Number(mo) - 1] ?? mo;
+  return { label: `${Number(d)} ${month} ${y}`, sort: `${y}-${mo}-${d}` };
+}
+
+/** One grade's line in the Weekend Wrap card (A6). */
+export interface CentralWeekendWrapMatch {
+  gradeLabel: string;
+  resultLine: string;
+  performers: string;
+  outcome: "WON" | "LOST" | "";
+}
+
+/** Weekend Wrap card prefill (A6): a round's completed senior results, one per
+ *  grade. Junior grades never reach central data, so this is seniors-only (R20). */
+export interface CentralWeekendWrap {
+  roundLabel: string;
+  dateRange: string;
+  matches: CentralWeekendWrapMatch[];
+}
+
+/**
+ * Weekend Wrap prefill for a round: the club's completed senior matches in that
+ * round, one per grade, with a result line, outcome and a best-effort top
+ * performer line. Built over {@link centralClubMatches} (the existing per-grade
+ * recent-results read) plus a light per-match batting/bowling standout lookup.
+ * Every field is editable in the builder (R14), so the performer line is a
+ * convenience, not authoritative.
+ */
+export async function centralWeekendWrap(
+  clubId: number,
+  season: number,
+  round: number,
+): Promise<CentralWeekendWrap> {
+  return withCentralCache(cacheKey("centralWeekendWrap", [clubId, season, round]), () =>
+    centralWeekendWrapImpl(clubId, season, round),
+  );
+}
+
+async function centralWeekendWrapImpl(
+  clubId: number,
+  season: number,
+  round: number,
+): Promise<CentralWeekendWrap> {
+  const roundLabel = `Round ${round}`;
+  const seasonMatches = await centralClubMatches(clubId, { season });
+  // One completed match per grade for this round (centralClubMatches is already
+  // newest-first, so the first per grade is the most recent).
+  const byGrade = new Map<string, CentralMatchSummary>();
+  for (const m of seasonMatches) {
+    if (m.round !== round) continue;
+    if (m.abandoned) continue;
+    if (!byGrade.has(m.grade)) byGrade.set(m.grade, m);
+  }
+  const picked = [...byGrade.values()];
+  if (picked.length === 0) {
+    return { roundLabel, dateRange: "", matches: [] };
+  }
+
+  const matchIds = picked.map((m) => m.id);
+
+  // Standout batter (max runs) and bowler (max wickets) per match, club side.
+  // Raw lines reduced in JS (small set) — mirrors centralClubRecords' approach.
+  const [battingLines, bowlingLines] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inArray(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+        runs: centralMatchBowlingTable.runs,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inArray(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
+  ]);
+
+  const topBat = new Map<number, { participantId: string; runs: number }>();
+  for (const b of battingLines) {
+    if (!b.participantId || b.matchId == null) continue;
+    const runs = b.runs ?? 0;
+    const prev = topBat.get(b.matchId);
+    if (!prev || runs > prev.runs) topBat.set(b.matchId, { participantId: b.participantId, runs });
+  }
+  const topBowl = new Map<number, { participantId: string; wickets: number; runs: number }>();
+  for (const b of bowlingLines) {
+    if (!b.participantId || b.matchId == null) continue;
+    const wickets = b.wickets ?? 0;
+    const prev = topBowl.get(b.matchId);
+    if (!prev || wickets > prev.wickets) {
+      topBowl.set(b.matchId, { participantId: b.participantId, wickets, runs: b.runs ?? 0 });
+    }
+  }
+
+  // Resolve performer names + privacy in one round trip (private players are
+  // dropped from the performer line, same rule as the leaderboards).
+  const perfIds = new Set<string>();
+  for (const t of topBat.values()) perfIds.add(t.participantId);
+  for (const t of topBowl.values()) perfIds.add(t.participantId);
+  const players = perfIds.size
+    ? await centralDb
+        .select({
+          participantId: centralPlayersTable.participantId,
+          displayName: centralPlayersTable.displayName,
+          isPrivate: centralPlayersTable.isPrivate,
+        })
+        .from(centralPlayersTable)
+        .where(inArray(centralPlayersTable.participantId, [...perfIds]))
+    : [];
+  const playerById = new Map(players.map((p) => [p.participantId, p]));
+  const nameOf = (participantId: string): string | null => {
+    const p = playerById.get(participantId);
+    if ((p?.isPrivate ?? 0) === 1) return null;
+    const name = p?.displayName?.trim();
+    return name && name.length ? name : null;
+  };
+
+  const dates = picked
+    .map((m) => formatWrapDate(m.matchDate))
+    .filter((d): d is { label: string; sort: string } => d != null)
+    .sort((a, b) => (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0));
+  const dateRange =
+    dates.length === 0
+      ? ""
+      : dates[0].label === dates[dates.length - 1].label
+        ? dates[0].label
+        : `${dates[0].label} – ${dates[dates.length - 1].label}`;
+
+  const matches: CentralWeekendWrapMatch[] = picked.map((m) => {
+    const outcome: "WON" | "LOST" | "" =
+      m.result === "Won" ? "WON" : m.result === "Lost" ? "LOST" : "";
+    const connector =
+      outcome === "WON" ? "def" : outcome === "LOST" ? "def by" : "vs";
+    const opp = m.opponent ?? m.opponentClub?.name ?? "Opposition";
+    const clubScore = m.clubScore ?? "—";
+    const oppScore = m.opponentScore ?? "—";
+    const resultLine = `${clubScore} ${connector} ${opp} ${oppScore}`.trim();
+
+    const bat = topBat.get(m.id);
+    const bowl = topBowl.get(m.id);
+    const parts: string[] = [];
+    if (bat) {
+      const n = nameOf(bat.participantId);
+      if (n && bat.runs > 0) parts.push(`${n} ${bat.runs}`);
+    }
+    if (bowl) {
+      const n = nameOf(bowl.participantId);
+      if (n && bowl.wickets > 0) parts.push(`${n} ${bowl.wickets}/${bowl.runs}`);
+    }
+
+    return {
+      gradeLabel: m.grade,
+      resultLine,
+      performers: parts.join(", "),
+      outcome,
+    };
+  });
+
+  return { roundLabel, dateRange, matches };
 }
 
 /** One row of a player's per-(grade, season) breakdown — native
@@ -2358,6 +2670,140 @@ async function centralLeadersImpl(
     if (out.length >= 5) break;
   }
   return out;
+}
+
+/** A grade's season leaders for the Club Runs/Wickets leaderboard card
+ *  (A19/A20). Each of `topRunScorer` / `topWicketTaker` is one card row
+ *  ({gradeLabel, playerName, value}); the card picks the category. */
+export interface CentralClubSeasonGradeLeaders {
+  gradeLabel: string;
+  topRunScorer: { playerName: string; value: number } | null;
+  topWicketTaker: { playerName: string; value: number } | null;
+}
+
+/**
+ * Season-scoped, per-grade version of {@link centralClubTotals} for the Club
+ * Leaderboard card (A19/A20). For each senior grade the club fielded in the
+ * season it returns the top run scorer and top wicket taker (name + value), so
+ * the card can render its four rows for either category.
+ *
+ * Seniors-only by construction: junior grades never exist in central data and
+ * `appGradeFromCentral` returns null for anything it can't map, so junior
+ * grades are excluded from this senior prefill (R20).
+ *
+ * Fill-in exclusion (`playerId >= 90000`) is inherited from upstream: central
+ * identifies players by PlayHQ GUID (no int fill-in sentinel exists), and the
+ * batting/bowling reads already drop null/empty participant ids — so there is
+ * no fill-in floor to apply here, and none is silently introduced. Private
+ * players are excluded from the leader picks (same rule as the leaderboards).
+ */
+export async function centralClubTotalsBySeason(
+  clubId: number,
+  season: number,
+): Promise<CentralClubSeasonGradeLeaders[]> {
+  return withCentralCache(
+    cacheKey("centralClubTotalsBySeason", [clubId, season]),
+    () => centralClubTotalsBySeasonImpl(clubId, season),
+  );
+}
+
+async function centralClubTotalsBySeasonImpl(
+  clubId: number,
+  season: number,
+): Promise<CentralClubSeasonGradeLeaders[]> {
+  const matchRows = await getClubMatchRows(clubId);
+  const gradeMatchIds = new Map<string, number[]>();
+  for (const m of matchRows) {
+    if (parseSeasonStartYear(m.season) !== season) continue;
+    const g = appGradeFromCentral(m.grade);
+    if (!g) continue; // unmapped / junior grades never contribute (R20)
+    const arr = gradeMatchIds.get(g);
+    if (arr) arr.push(m.matchId);
+    else gradeMatchIds.set(g, [m.matchId]);
+  }
+  if (gradeMatchIds.size === 0) return [];
+
+  const grades = [...gradeMatchIds.keys()].sort((a, b) => a.localeCompare(b));
+
+  // Per grade: a few top run scorers + wicket takers, so a private top scorer
+  // can be skipped (mirrors centralLeadersImpl's top-N-then-filter).
+  const perGrade = await Promise.all(
+    grades.map(async (grade) => {
+      const ids = gradeMatchIds.get(grade) ?? [];
+      const [batAgg, bowlAgg] = await Promise.all([
+        centralDb
+          .select({
+            participantId: centralMatchBattingTable.participantId,
+            value: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)`,
+          })
+          .from(centralMatchBattingTable)
+          .where(
+            and(
+              eq(centralMatchBattingTable.clubId, clubId),
+              inArray(centralMatchBattingTable.matchId, ids),
+            ),
+          )
+          .groupBy(centralMatchBattingTable.participantId)
+          .orderBy(desc(sql`coalesce(sum(${centralMatchBattingTable.runs}), 0)`))
+          .limit(5),
+        centralDb
+          .select({
+            participantId: centralMatchBowlingTable.participantId,
+            value: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`,
+          })
+          .from(centralMatchBowlingTable)
+          .where(
+            and(
+              eq(centralMatchBowlingTable.clubId, clubId),
+              inArray(centralMatchBowlingTable.matchId, ids),
+            ),
+          )
+          .groupBy(centralMatchBowlingTable.participantId)
+          .orderBy(desc(sql`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`))
+          .limit(5),
+      ]);
+      return { grade, batAgg, bowlAgg };
+    }),
+  );
+
+  // One round trip resolves display names + privacy for every candidate.
+  const ids = new Set<string>();
+  for (const g of perGrade) {
+    for (const r of g.batAgg) if (r.participantId) ids.add(r.participantId);
+    for (const r of g.bowlAgg) if (r.participantId) ids.add(r.participantId);
+  }
+  const players = ids.size
+    ? await centralDb
+        .select({
+          participantId: centralPlayersTable.participantId,
+          displayName: centralPlayersTable.displayName,
+          isPrivate: centralPlayersTable.isPrivate,
+        })
+        .from(centralPlayersTable)
+        .where(inArray(centralPlayersTable.participantId, [...ids]))
+    : [];
+  const byId = new Map(players.map((p) => [p.participantId, p]));
+
+  const pick = (
+    agg: { participantId: string | null; value: number }[],
+  ): { playerName: string; value: number } | null => {
+    for (const a of agg) {
+      if (!a.participantId) continue;
+      const p = byId.get(a.participantId);
+      if ((p?.isPrivate ?? 0) === 1) continue; // private excluded
+      const value = Number(a.value ?? 0);
+      if (value <= 0) continue;
+      const name = p?.displayName?.trim();
+      return { playerName: name && name.length ? name : a.participantId, value };
+    }
+    return null;
+  };
+
+  return perGrade.map((g) => ({
+    gradeLabel: g.grade,
+    topRunScorer: pick(g.batAgg),
+    topWicketTaker: pick(g.bowlAgg),
+  }));
 }
 
 /** A club-record holder (top player for a counting stat). */

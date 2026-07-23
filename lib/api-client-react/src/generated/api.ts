@@ -80,6 +80,7 @@ import type {
   ClubRole,
   ClubRoleInput,
   ClubRoleUpdate,
+  ClubSeasonGradeLeaders,
   CommitImportInput,
   CommitImportResult,
   CreateFixtureBody,
@@ -94,6 +95,9 @@ import type {
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
   GetSeniorSeasonTopPerformersParams,
+  GetSocialClubSeasonTotalsParams,
+  GetSocialLadderPrefillParams,
+  GetSocialWeekendWrapPrefillParams,
   GradeSummary,
   HealthStatus,
   HonourBoard,
@@ -134,6 +138,7 @@ import type {
   JuniorStatCorrection,
   KioskTokenInput,
   KioskTokenResponse,
+  LadderCardRow,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
@@ -246,7 +251,8 @@ import type {
   UploadPlaycricketCsvBody,
   UploadUrlRequest,
   UploadUrlResponse,
-  VotableAward
+  VotableAward,
+  WeekendWrap
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -18519,4 +18525,259 @@ export const useIssueTenantAdminReset = <TError = ErrorType<void>,
       > => {
       return useMutation(getIssueTenantAdminResetMutationOptions(options));
     }
+
+export const getGetSocialLadderPrefillUrl = (params: GetSocialLadderPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/ladder?${stringifiedParams}` : `/api/social-prefill/ladder`
+}
+
+/**
+ * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
+ * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
+ */
+export const getSocialLadderPrefill = async (params: GetSocialLadderPrefillParams, options?: RequestInit): Promise<LadderCardRow[]> => {
+
+  return customFetch<LadderCardRow[]>(getGetSocialLadderPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialLadderPrefillQueryKey = (params?: GetSocialLadderPrefillParams,) => {
+    return [
+    `/api/social-prefill/ladder`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialLadderPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError = ErrorType<unknown>>(params: GetSocialLadderPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialLadderPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialLadderPrefill>>> = ({ signal }) => getSocialLadderPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialLadderPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialLadderPrefill>>>
+export type GetSocialLadderPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialLadderPrefill<TData = Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialLadderPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialLadderPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialClubSeasonTotalsUrl = (params: GetSocialClubSeasonTotalsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/club-season-totals?${stringifiedParams}` : `/api/social-prefill/club-season-totals`
+}
+
+/**
+ * Season-scoped, per-grade leaders from central. Seniors-only (junior grades never reach central data). Private players excluded; no fill-in sentinel exists in central data.
+ * @summary Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade, the season's top run scorer and top wicket taker for the tenant's club. Admin + socialStudio entitlement.
+ */
+export const getSocialClubSeasonTotals = async (params: GetSocialClubSeasonTotalsParams, options?: RequestInit): Promise<ClubSeasonGradeLeaders[]> => {
+
+  return customFetch<ClubSeasonGradeLeaders[]>(getGetSocialClubSeasonTotalsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialClubSeasonTotalsQueryKey = (params?: GetSocialClubSeasonTotalsParams,) => {
+    return [
+    `/api/social-prefill/club-season-totals`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialClubSeasonTotalsQueryOptions = <TData = Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError = ErrorType<unknown>>(params: GetSocialClubSeasonTotalsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialClubSeasonTotalsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>> = ({ signal }) => getSocialClubSeasonTotals(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialClubSeasonTotalsQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>>
+export type GetSocialClubSeasonTotalsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade, the season's top run scorer and top wicket taker for the tenant's club. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialClubSeasonTotals<TData = Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError = ErrorType<unknown>>(
+ params: GetSocialClubSeasonTotalsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialClubSeasonTotalsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialWeekendWrapPrefillUrl = (params: GetSocialWeekendWrapPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/weekend-wrap?${stringifiedParams}` : `/api/social-prefill/weekend-wrap`
+}
+
+/**
+ * Built over the existing per-grade recent-results read plus a best-effort top-performer line. Seniors-only (R20). Every field is editable in the builder.
+ * @summary Weekend Wrap card (A6) prefill — a round's completed senior results for the tenant's club, one per grade. Admin + socialStudio entitlement.
+ */
+export const getSocialWeekendWrapPrefill = async (params: GetSocialWeekendWrapPrefillParams, options?: RequestInit): Promise<WeekendWrap> => {
+
+  return customFetch<WeekendWrap>(getGetSocialWeekendWrapPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialWeekendWrapPrefillQueryKey = (params?: GetSocialWeekendWrapPrefillParams,) => {
+    return [
+    `/api/social-prefill/weekend-wrap`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialWeekendWrapPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError = ErrorType<unknown>>(params: GetSocialWeekendWrapPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialWeekendWrapPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>> = ({ signal }) => getSocialWeekendWrapPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialWeekendWrapPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>>
+export type GetSocialWeekendWrapPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Weekend Wrap card (A6) prefill — a round's completed senior results for the tenant's club, one per grade. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialWeekendWrapPrefill<TData = Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialWeekendWrapPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialWeekendWrapPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

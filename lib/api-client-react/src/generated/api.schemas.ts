@@ -490,6 +490,64 @@ export interface SeniorOverview {
   topWicketTakers: SeasonLeader[];
 }
 
+/**
+ * One ladder standings row for the Ladder card (A7). `points` and `pos` are derived (the central ladder table stores neither); `isClub` marks the tenant's own club.
+ */
+export interface LadderCardRow {
+  pos: number;
+  team: string;
+  played: number;
+  won: number;
+  lost: number;
+  points: number;
+  isClub: boolean;
+}
+
+/**
+ * A single leader entry for the Club Leaderboard card (name + tally).
+ */
+export interface CardLeader {
+  playerName: string;
+  value: number;
+}
+
+/**
+ * A grade's season leaders for the Club Runs/Wickets leaderboard card (A19/A20). Either leader is null when the grade has no eligible player.
+ */
+export interface ClubSeasonGradeLeaders {
+  gradeLabel: string;
+  topRunScorer: CardLeader | null;
+  topWicketTaker: CardLeader | null;
+}
+
+export type WeekendWrapMatchOutcome = typeof WeekendWrapMatchOutcome[keyof typeof WeekendWrapMatchOutcome];
+
+
+export const WeekendWrapMatchOutcome = {
+  WON: 'WON',
+  LOST: 'LOST',
+  '': '',
+} as const;
+
+/**
+ * One grade's line in the Weekend Wrap card (A6).
+ */
+export interface WeekendWrapMatch {
+  gradeLabel: string;
+  resultLine: string;
+  performers: string;
+  outcome: WeekendWrapMatchOutcome;
+}
+
+/**
+ * Weekend Wrap card (A6) prefill — a round's senior results, one per grade.
+ */
+export interface WeekendWrap {
+  roundLabel: string;
+  dateRange: string;
+  matches: WeekendWrapMatch[];
+}
+
 export interface ImportRecord {
   id: number;
   filename: string;
@@ -5281,5 +5339,34 @@ ageGroup?: string;
 
 export type CheckSlugAvailableParams = {
 slug: string;
+};
+
+export type GetSocialLadderPrefillParams = {
+/**
+ * App grade to fetch standings for (e.g. "A Grade").
+ */
+grade: string;
+/**
+ * Season start year. Accepted for symmetry/forward-compat; the all-time ladder table does not filter on it today.
+ */
+season?: number;
+};
+
+export type GetSocialClubSeasonTotalsParams = {
+/**
+ * Season start year (e.g. 2024 for "2024/25").
+ */
+season: number;
+};
+
+export type GetSocialWeekendWrapPrefillParams = {
+/**
+ * Season start year (e.g. 2024 for "2024/25").
+ */
+season: number;
+/**
+ * Round number to wrap.
+ */
+round: number;
 };
 

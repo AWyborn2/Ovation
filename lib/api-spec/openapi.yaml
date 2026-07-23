@@ -5293,6 +5293,104 @@ paths:
         "404":
           description: No such tenant.
 
+  /social-prefill/ladder:
+    get:
+      operationId: getSocialLadderPrefill
+      tags: [socialCards]
+      summary: >-
+        Ladder card (A7) prefill — grade standings from the central PCA ladder,
+        with the tenant's own club row flagged. Admin + socialStudio entitlement.
+      description: >-
+        Reads the central `ladder` table (all-time cumulative per grade; it has
+        no season/points/position columns, so `points` and `pos` are derived and
+        `season` does not currently filter). One row per club (folded grade
+        labels deduped). Empty grade returns [].
+      parameters:
+        - name: grade
+          in: query
+          required: true
+          schema:
+            type: string
+          description: App grade to fetch standings for (e.g. "A Grade").
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: >-
+            Season start year. Accepted for symmetry/forward-compat; the
+            all-time ladder table does not filter on it today.
+      responses:
+        "200":
+          description: Ladder rows shaped for the card
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LadderCardRow"
+
+  /social-prefill/club-season-totals:
+    get:
+      operationId: getSocialClubSeasonTotals
+      tags: [socialCards]
+      summary: >-
+        Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade,
+        the season's top run scorer and top wicket taker for the tenant's club.
+        Admin + socialStudio entitlement.
+      description: >-
+        Season-scoped, per-grade leaders from central. Seniors-only (junior
+        grades never reach central data). Private players excluded; no fill-in
+        sentinel exists in central data.
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Season start year (e.g. 2024 for "2024/25").
+      responses:
+        "200":
+          description: Per-grade season leaders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubSeasonGradeLeaders"
+
+  /social-prefill/weekend-wrap:
+    get:
+      operationId: getSocialWeekendWrapPrefill
+      tags: [socialCards]
+      summary: >-
+        Weekend Wrap card (A6) prefill — a round's completed senior results for
+        the tenant's club, one per grade. Admin + socialStudio entitlement.
+      description: >-
+        Built over the existing per-grade recent-results read plus a best-effort
+        top-performer line. Seniors-only (R20). Every field is editable in the
+        builder.
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Season start year (e.g. 2024 for "2024/25").
+        - name: round
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Round number to wrap.
+      responses:
+        "200":
+          description: Weekend wrap card prefill
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeekendWrap"
+
 components:
   schemas:
     CardVideoJobInput:
@@ -5924,6 +6022,86 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SeasonLeader"
+
+    LadderCardRow:
+      type: object
+      description: >-
+        One ladder standings row for the Ladder card (A7). `points` and `pos`
+        are derived (the central ladder table stores neither); `isClub` marks
+        the tenant's own club.
+      required: [pos, team, played, won, lost, points, isClub]
+      properties:
+        pos:
+          type: integer
+        team:
+          type: string
+        played:
+          type: integer
+        won:
+          type: integer
+        lost:
+          type: integer
+        points:
+          type: integer
+        isClub:
+          type: boolean
+
+    CardLeader:
+      type: object
+      description: A single leader entry for the Club Leaderboard card (name + tally).
+      required: [playerName, value]
+      properties:
+        playerName:
+          type: string
+        value:
+          type: integer
+
+    ClubSeasonGradeLeaders:
+      type: object
+      description: >-
+        A grade's season leaders for the Club Runs/Wickets leaderboard card
+        (A19/A20). Either leader is null when the grade has no eligible player.
+      required: [gradeLabel, topRunScorer, topWicketTaker]
+      properties:
+        gradeLabel:
+          type: string
+        topRunScorer:
+          oneOf:
+            - $ref: "#/components/schemas/CardLeader"
+            - type: "null"
+        topWicketTaker:
+          oneOf:
+            - $ref: "#/components/schemas/CardLeader"
+            - type: "null"
+
+    WeekendWrapMatch:
+      type: object
+      description: One grade's line in the Weekend Wrap card (A6).
+      required: [gradeLabel, resultLine, performers, outcome]
+      properties:
+        gradeLabel:
+          type: string
+        resultLine:
+          type: string
+        performers:
+          type: string
+        outcome:
+          type: string
+          enum: ["WON", "LOST", ""]
+
+    WeekendWrap:
+      type: object
+      description: Weekend Wrap card (A6) prefill — a round's senior results, one per grade.
+      required: [roundLabel, dateRange, matches]
+      properties:
+        roundLabel:
+          type: string
+        dateRange:
+          type: string
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeekendWrapMatch"
 
     ImportRecord:
       type: object

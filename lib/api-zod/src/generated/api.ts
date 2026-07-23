@@ -7271,3 +7271,67 @@ export const IssueTenantAdminResetBody = zod.object({
 }).describe('Request a reset\/bootstrap link for a club admin. `username` is the admin\'s login (an email); if no such admin exists on the tenant one is created (bootstrap) with the given (or derived) display name.')
 
 
+/**
+ * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
+ * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
+ */
+export const GetSocialLadderPrefillQueryParams = zod.object({
+  "grade": zod.coerce.string().describe('App grade to fetch standings for (e.g. \"A Grade\").'),
+  "season": zod.coerce.number().optional().describe('Season start year. Accepted for symmetry\/forward-compat; the all-time ladder table does not filter on it today.')
+})
+
+export const GetSocialLadderPrefillResponseItem = zod.object({
+  "pos": zod.number(),
+  "team": zod.string(),
+  "played": zod.number(),
+  "won": zod.number(),
+  "lost": zod.number(),
+  "points": zod.number(),
+  "isClub": zod.boolean()
+}).describe('One ladder standings row for the Ladder card (A7). `points` and `pos` are derived (the central ladder table stores neither); `isClub` marks the tenant\'s own club.')
+export const GetSocialLadderPrefillResponse = zod.array(GetSocialLadderPrefillResponseItem)
+
+
+/**
+ * Season-scoped, per-grade leaders from central. Seniors-only (junior grades never reach central data). Private players excluded; no fill-in sentinel exists in central data.
+ * @summary Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade, the season's top run scorer and top wicket taker for the tenant's club. Admin + socialStudio entitlement.
+ */
+export const GetSocialClubSeasonTotalsQueryParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year (e.g. 2024 for \"2024\/25\").')
+})
+
+export const GetSocialClubSeasonTotalsResponseItem = zod.object({
+  "gradeLabel": zod.string(),
+  "topRunScorer": zod.union([zod.object({
+  "playerName": zod.string(),
+  "value": zod.number()
+}).describe('A single leader entry for the Club Leaderboard card (name + tally).'),zod.null()]),
+  "topWicketTaker": zod.union([zod.object({
+  "playerName": zod.string(),
+  "value": zod.number()
+}).describe('A single leader entry for the Club Leaderboard card (name + tally).'),zod.null()])
+}).describe('A grade\'s season leaders for the Club Runs\/Wickets leaderboard card (A19\/A20). Either leader is null when the grade has no eligible player.')
+export const GetSocialClubSeasonTotalsResponse = zod.array(GetSocialClubSeasonTotalsResponseItem)
+
+
+/**
+ * Built over the existing per-grade recent-results read plus a best-effort top-performer line. Seniors-only (R20). Every field is editable in the builder.
+ * @summary Weekend Wrap card (A6) prefill — a round's completed senior results for the tenant's club, one per grade. Admin + socialStudio entitlement.
+ */
+export const GetSocialWeekendWrapPrefillQueryParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year (e.g. 2024 for \"2024\/25\").'),
+  "round": zod.coerce.number().describe('Round number to wrap.')
+})
+
+export const GetSocialWeekendWrapPrefillResponse = zod.object({
+  "roundLabel": zod.string(),
+  "dateRange": zod.string(),
+  "matches": zod.array(zod.object({
+  "gradeLabel": zod.string(),
+  "resultLine": zod.string(),
+  "performers": zod.string(),
+  "outcome": zod.enum(['WON', 'LOST', ''])
+}).describe('One grade\'s line in the Weekend Wrap card (A6).'))
+}).describe('Weekend Wrap card (A6) prefill — a round\'s senior results, one per grade.')
+
+
