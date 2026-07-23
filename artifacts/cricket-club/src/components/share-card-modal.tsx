@@ -35,12 +35,7 @@ import { Loader2, Download, Copy, Check } from "lucide-react";
 import {
   SIZES,
   renderShareCard,
-  renderShareCardVideo,
-  renderShareCardGif,
   isAnimatedCard,
-  canExportVideo,
-  canExportGif,
-  videoFormatLabel,
   DEFAULT_DURATION_MS,
   downloadBlob,
   cardBaseFilename,
@@ -50,6 +45,13 @@ import {
   type MotionPreset,
   type RenderOptions,
 } from "@/lib/share-card";
+import {
+  renderShareCardVideo,
+  renderShareCardGif,
+  canExportVideo,
+  canExportGif,
+  videoFormatLabel,
+} from "@/lib/share-card-animation";
 import { templateAppliesToKind } from "@/lib/card-template";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
