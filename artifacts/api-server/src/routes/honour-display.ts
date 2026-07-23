@@ -1,42 +1,11 @@
 import { Router, type IRouter } from "express";
-import { randomBytes, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, inArray, lt } from "drizzle-orm";
-import {
-  db,
-  honourDisplaySettingsTable,
-  premiershipsTable,
-  premiershipPlayersTable,
-  matchesTable,
-  centuriesTable,
-  fiveWicketHaulsTable,
-  clubRecordsTable,
-  lifeMembersTable,
-  awardsTable,
-  awardWinnersTable,
-  awardPointsConfigTable,
-  clubRolesTable,
-  partnershipRecordsTable,
-  teamOfDecadeBoardsTable,
-  teamOfDecadeMembersTable,
-  playerGradeStatsTable,
-  playersTable,
-  type HonourDisplaySettingsRow,
-  type BoardDisplayConfigJson,
-  type CompositeDefJson,
-  type CustomGridDefJson,
-} from "@workspace/db";
+import { and, eq } from "drizzle-orm";
+import { db, honourDisplaySettingsTable } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
-import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
-import { shouldReadCentral } from "../lib/tenant";
-import { getOrCreateSettings } from "../lib/settings";
 import { loadActiveSponsors } from "../lib/active-sponsors";
-import { linkPremiershipMatch, premiershipSeasons } from "./premierships";
-import { computeLeaderboard } from "../lib/points";
-import { buildMilestonesForRequest } from "./milestones";
-import type { Request } from "express";
 
 import {
   assembleBoards,
