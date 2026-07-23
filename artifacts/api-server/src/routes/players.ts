@@ -36,16 +36,13 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
 import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import {
+  splitCentralName,
+  getPlayerOrderCol,
+  centralParticipantFor,
+} from "../lib/player-helpers";
 
 const router: IRouter = Router();
-
-/** Split a central display name into given/surname (surname = last token). */
-function splitCentralName(displayName: string): { givenName: string; surname: string } {
-  const parts = displayName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { givenName: "", surname: "" };
-  if (parts.length === 1) return { givenName: parts[0], surname: "" };
-  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
-}
 
 router.get("/players", async (req, res): Promise<void> => {
   const query = ListPlayersQueryParams.safeParse(req.query);
@@ -219,21 +216,6 @@ router.get("/players", async (req, res): Promise<void> => {
   });
 });
 
-function getPlayerOrderCol(sortBy: string | undefined, sortOrder: string | undefined) {
-  const dir = sortOrder === "desc" ? desc : asc;
-  switch (sortBy) {
-    case "games":
-      return dir(playersTable.totalGames);
-    case "runs":
-      return dir(playersTable.totalRuns);
-    case "wickets":
-      return dir(playersTable.totalWickets);
-    case "name":
-    default:
-      return dir(playersTable.surname);
-  }
-}
-
 router.post("/players", requireAdmin, async (req, res): Promise<void> => {
   const parsed = CreatePlayerBody.safeParse(req.body);
   if (!parsed.success) {
@@ -398,28 +380,6 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     awards: awardRows,
   });
 });
-
-/**
- * Resolve a central tenant's int player id to the participant GUID, or null
- * when the id isn't in this tenant's crosswalk. Central-tenant int ids overlap
- * the native players.id range, so the native tables must NEVER be queried with
- * a central tenant's id — resolve via player_id_map or 404.
- */
-async function centralParticipantFor(
-  req: Parameters<typeof getTenantId>[0],
-  playerId: number,
-): Promise<string | null> {
-  const [mapRow] = await db
-    .select({ participantId: playerIdMapTable.participantId })
-    .from(playerIdMapTable)
-    .where(
-      and(
-        eq(playerIdMapTable.tenantId, getTenantId(req)),
-        eq(playerIdMapTable.playerId, playerId),
-      ),
-    );
-  return mapRow?.participantId ?? null;
-}
 
 router.get("/players/:id/seasons", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
