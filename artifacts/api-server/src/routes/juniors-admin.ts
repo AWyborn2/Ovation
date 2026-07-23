@@ -11,11 +11,6 @@ import {
   juniorOfficeBearersTable,
   juniorStatCorrectionsTable,
   juniorParticipantMergesTable,
-  type JuniorMatchRow,
-  type JuniorMatchBattingRow,
-  type JuniorMatchBowlingRow,
-  type JuniorMatchRosterRow,
-  type JuniorStatCorrectionRow,
 } from "@workspace/db";
 import {
   UpdateJuniorMatchParams,
@@ -56,7 +51,15 @@ import {
   serializeMatchMeta,
   snakeToCamel,
   MATCH_COLS,
-  type Tx,
+  ADMIN_JUNIOR_LINE_ID_BASE,
+  serializeBattingLine,
+  BATTING_STAT_COLS,
+  serializeBowlingLine,
+  BOWLING_STAT_COLS,
+  serializeRosterEntry,
+  recomputeParticipantMetadata,
+  serializeCorrection,
+  SNAKE_TO_TABLE,
 } from "../lib/junior-admin-helpers";
 import { shouldReadCentral } from "../lib/tenant";
 import {
@@ -83,12 +86,6 @@ import {
  * patch so the SQL re-apply stays dumb.
  */
 const router: IRouter = Router();
-
-/** Admin-created line ids live far above the dump's id range so a future dump
- * can never collide with them; derived from the journal id so ETL re-apply
- * reproduces the same id deterministically. */
-const ADMIN_JUNIOR_LINE_ID_BASE = 100_000_000;
-
 
 router.patch(
   "/juniors/matches/:id",
@@ -157,32 +154,6 @@ router.patch(
 // ---------------------------------------------------------------------------
 // Batting lines
 // ---------------------------------------------------------------------------
-
-function serializeBattingLine(l: JuniorMatchBattingRow) {
-  return {
-    id: l.id,
-    matchId: l.matchId,
-    innings: l.innings,
-    batOrder: l.batOrder,
-    participantId: l.participantId,
-    playerName: l.playerName,
-    runs: l.runs,
-    balls: l.balls,
-    fours: l.fours,
-    sixes: l.sixes,
-    strikeRate: l.strikeRate,
-    dismissal: l.dismissal,
-  };
-}
-
-const BATTING_STAT_COLS = {
-  runs: "runs",
-  balls: "balls",
-  fours: "fours",
-  sixes: "sixes",
-  dismissal: "dismissal",
-  batOrder: "bat_order",
-} as const;
 
 router.post(
   "/juniors/matches/:matchId/batting",
@@ -458,32 +429,6 @@ router.delete(
 // ---------------------------------------------------------------------------
 // Bowling lines
 // ---------------------------------------------------------------------------
-
-function serializeBowlingLine(l: JuniorMatchBowlingRow) {
-  return {
-    id: l.id,
-    matchId: l.matchId,
-    innings: l.innings,
-    participantId: l.participantId,
-    playerName: l.playerName,
-    overs: l.overs,
-    maidens: l.maidens,
-    runs: l.runs,
-    wickets: l.wickets,
-    economy: l.economy,
-    wides: l.wides,
-    noBalls: l.noBalls,
-  };
-}
-
-const BOWLING_STAT_COLS = {
-  overs: "overs",
-  maidens: "maidens",
-  runs: "runs",
-  wickets: "wickets",
-  wides: "wides",
-  noBalls: "no_balls",
-} as const;
 
 router.post(
   "/juniors/matches/:matchId/bowling",
@@ -765,15 +710,6 @@ router.delete(
 // ---------------------------------------------------------------------------
 // Roster entries
 // ---------------------------------------------------------------------------
-
-function serializeRosterEntry(l: JuniorMatchRosterRow) {
-  return {
-    id: l.id,
-    matchId: l.matchId,
-    participantId: l.participantId,
-    playerName: l.playerName,
-  };
-}
 
 router.post(
   "/juniors/matches/:matchId/roster",
@@ -1065,57 +1001,6 @@ router.patch(
 // canonical keeper rather than silently redirecting the merge.
 // ---------------------------------------------------------------------------
 
-/** Recompute a keeper's stored dump-derived metadata from its live lines.
- * The ETL copies these columns verbatim from the dump and never recomputes
- * them, so after a merge they must be refreshed here. The SQL mirrors ETL
- * step 7f (set-based there, single-GUID here) — keep the two in sync. */
-async function recomputeParticipantMetadata(
-  tx: Tx,
-  participantId: string,
-): Promise<void> {
-  await tx.execute(sql`
-    UPDATE junior_participants p SET
-      scorecard_lines =
-        (SELECT count(*) FROM junior_match_batting b
-          WHERE b.participant_id = p.participant_id AND b.is_halls_head)
-      + (SELECT count(*) FROM junior_match_bowling w
-          WHERE w.participant_id = p.participant_id AND w.is_halls_head),
-      roster_appearances =
-        (SELECT count(*) FROM junior_match_rosters r
-          WHERE r.participant_id = p.participant_id AND r.is_halls_head),
-      first_season = (
-        SELECT m.season FROM junior_matches m
-        JOIN (
-          SELECT match_id FROM junior_match_batting
-            WHERE participant_id = p.participant_id AND is_halls_head
-          UNION SELECT match_id FROM junior_match_bowling
-            WHERE participant_id = p.participant_id AND is_halls_head
-          UNION SELECT match_id FROM junior_match_rosters
-            WHERE participant_id = p.participant_id AND is_halls_head
-        ) t ON t.match_id = m.id
-        WHERE m.season IS NOT NULL
-        ORDER BY m.season_start_year ASC NULLS LAST LIMIT 1),
-      last_season = (
-        SELECT m.season FROM junior_matches m
-        JOIN (
-          SELECT match_id FROM junior_match_batting
-            WHERE participant_id = p.participant_id AND is_halls_head
-          UNION SELECT match_id FROM junior_match_bowling
-            WHERE participant_id = p.participant_id AND is_halls_head
-          UNION SELECT match_id FROM junior_match_rosters
-            WHERE participant_id = p.participant_id AND is_halls_head
-        ) t ON t.match_id = m.id
-        WHERE m.season IS NOT NULL
-        ORDER BY m.season_start_year DESC NULLS LAST LIMIT 1),
-      teams = (
-        SELECT string_agg(DISTINCT r.team_name, ', ' ORDER BY r.team_name)
-        FROM junior_match_rosters r
-        WHERE r.participant_id = p.participant_id AND r.is_halls_head
-          AND r.team_name IS NOT NULL)
-    WHERE p.participant_id = ${participantId}
-  `);
-}
-
 router.post(
   "/juniors/participants/:id/merge",
   requireAdmin,
@@ -1381,23 +1266,6 @@ router.post(
 // Corrections journal — list + revert
 // ---------------------------------------------------------------------------
 
-function serializeCorrection(c: JuniorStatCorrectionRow) {
-  return {
-    id: c.id,
-    targetTable: c.targetTable,
-    targetId: c.targetId,
-    op: c.op,
-    patch: c.patch ?? null,
-    prevValues: c.prevValues ?? null,
-    matchId: c.matchId,
-    playhqMatchId: c.playhqMatchId,
-    participantId: c.participantId,
-    note: c.note,
-    createdBy: c.createdBy,
-    createdAt: c.createdAt.toISOString(),
-  };
-}
-
 router.get(
   "/juniors/corrections",
   requireAdmin,
@@ -1425,16 +1293,6 @@ router.get(
     res.json(rows.map(serializeCorrection));
   },
 );
-
-/** Column-name maps for applying a revert's snake_case pre-image back onto the
- * Drizzle camelCase tables. */
-const SNAKE_TO_TABLE = {
-  junior_matches: juniorMatchesTable,
-  junior_match_batting: juniorMatchBattingTable,
-  junior_match_bowling: juniorMatchBowlingTable,
-  junior_match_rosters: juniorMatchRostersTable,
-  junior_participants: juniorParticipantsTable,
-} as const;
 
 router.delete(
   "/juniors/corrections/:id",
