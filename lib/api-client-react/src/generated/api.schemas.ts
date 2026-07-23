@@ -2481,6 +2481,14 @@ export const CardKind = {
   century: 'century',
   fiveFor: 'fiveFor',
   matchSummary: 'matchSummary',
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  weekendWrap: 'weekendWrap',
+  ladder: 'ladder',
+  bigMoment: 'bigMoment',
+  newSigning: 'newSigning',
+  countdown: 'countdown',
+  clubLeaderboard: 'clubLeaderboard',
 } as const;
 
 export interface Sponsor {
@@ -2830,7 +2838,7 @@ export interface CardTemplate {
   cardKinds: string[];
   /** Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack) */
   source: CardTemplateSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;
@@ -2881,7 +2889,7 @@ export interface CardTemplateInput {
   name: string;
   cardKinds?: string[];
   source?: CardTemplateInputSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;
@@ -2932,7 +2940,7 @@ export interface CardTemplateUpdate {
   name?: string;
   cardKinds?: string[];
   source?: CardTemplateUpdateSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;

@@ -15,7 +15,7 @@ export interface CardTemplateInput {
   name: string;
   cardKinds?: string[];
   source?: CardTemplateInputSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;

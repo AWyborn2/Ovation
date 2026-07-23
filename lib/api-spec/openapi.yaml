@@ -8817,7 +8817,7 @@ components:
 
     CardKind:
       type: string
-      enum: [milestone, player, record, gradeLeader, premiership, debut, newCap, century, fiveFor, matchSummary]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, newCap, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard]
 
     Sponsor:
       type: object
@@ -9060,7 +9060,7 @@ components:
         packId:
           type: string
           nullable: true
-          description: "Design pack identifier (e.g. 'matchSummary-v1')"
+          description: "Design pack identifier (e.g. 'broadcast-dark-v1')"
         packVariant:
           type: string
           nullable: true
@@ -9119,7 +9119,7 @@ components:
         packId:
           type: string
           nullable: true
-          description: "Design pack identifier (e.g. 'matchSummary-v1')"
+          description: "Design pack identifier (e.g. 'broadcast-dark-v1')"
         packVariant:
           type: string
           nullable: true
@@ -9177,7 +9177,7 @@ components:
         packId:
           type: string
           nullable: true
-          description: "Design pack identifier (e.g. 'matchSummary-v1')"
+          description: "Design pack identifier (e.g. 'broadcast-dark-v1')"
         packVariant:
           type: string
           nullable: true

@@ -112,9 +112,9 @@ export const cardTemplatesTable = pgTable(
     // data-bound slots (the original BYO templates). "layers" = a design authored
     // in the layer editor (built-in chrome overrides + extra image/text/sticker
     // layers); stored in `layers` and consumed via the renderer's `layout` option.
-    // "pack" = a bundled design pack (e.g. match summary cards).
+    // "pack" = a bundled design pack (the standard "broadcast-dark-v1" catalogue).
     source: text("source").notNull().default("background"),
-    packId: text("pack_id"), // nullable — identifies which design pack (e.g. "matchSummary-v1")
+    packId: text("pack_id"), // nullable — identifies which design pack (e.g. "broadcast-dark-v1")
     packVariant: text("pack_variant"), // nullable — variant within the pack (e.g. "square", "portrait", "story")
     // The card kind a "layers" design was authored against (drives the editor's
     // field/element context + the gallery thumbnail). Null for BYO backgrounds.

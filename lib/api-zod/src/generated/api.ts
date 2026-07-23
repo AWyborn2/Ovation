@@ -3598,7 +3598,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
@@ -3613,7 +3613,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
   "displayOrder": zod.number().optional()
 })
 
@@ -3631,7 +3631,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
   "displayOrder": zod.number().optional()
 })
 
@@ -3642,7 +3642,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })
 
@@ -3797,7 +3797,7 @@ export const ListCardTemplatesResponseItem = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
   "source": zod.enum(['background', 'layers', 'pack']).describe('Design source: \'background\' (BYO image), \'layers\' (layer editor), or \'pack\' (bundled design pack)'),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -3883,7 +3883,7 @@ export const CreateCardTemplateBody = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()).optional(),
   "source": zod.enum(['background', 'layers', 'pack']).optional(),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -3972,7 +3972,7 @@ export const UpdateCardTemplateBody = zod.object({
   "name": zod.string().optional(),
   "cardKinds": zod.array(zod.string()).optional(),
   "source": zod.enum(['background', 'layers', 'pack']).optional(),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -4054,7 +4054,7 @@ export const UpdateCardTemplateResponse = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
   "source": zod.enum(['background', 'layers', 'pack']).describe('Design source: \'background\' (BYO image), \'layers\' (layer editor), or \'pack\' (bundled design pack)'),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -4674,7 +4674,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })),
   "brand": zod.union([zod.object({
@@ -5267,7 +5267,7 @@ export const GetHonourDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
@@ -5486,7 +5486,7 @@ export const GetKioskDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
