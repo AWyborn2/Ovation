@@ -2,7 +2,6 @@ import { Router, type IRouter } from "express";
 import {
   eq,
   and,
-  asc,
   desc,
   ilike,
   inArray,
@@ -23,9 +22,22 @@ import {
   juniorParticipantMergesTable,
   clubsTable,
   playersTable,
-  type JuniorMatchDisplaySettingsRow,
 } from "@workspace/db";
-import { getPrivateIds, splitScores, MASK_NAME } from "../lib/junior-helpers";
+import {
+  getPrivateIds,
+  splitScores,
+  MASK_NAME,
+  opponentClubColumns,
+  toOpponentClub,
+  seasonYear,
+  toMatchSummary,
+  isNotOut,
+  ageGroupsForSeason,
+  JUNIOR_MILESTONE_TIERS,
+  JUNIOR_STAT_SINGULAR,
+  serializeJuniorMatchDisplaySettings,
+  officeBearersOrdered,
+} from "../lib/junior-helpers";
 import {
   ListJuniorMatchesQueryParams,
   GetJuniorMatchParams,
@@ -66,44 +78,6 @@ import {
 
 const router: IRouter = Router();
 
-// Columns selected from the shared clubs register to brand a junior match's
-// opposition. clubs is a neutral reference table (not a senior stat table), so
-// reading it here does not blend junior and senior data.
-const opponentClubColumns = {
-  opponentClubId: clubsTable.id,
-  opponentClubName: clubsTable.name,
-  opponentClubShortName: clubsTable.shortName,
-  opponentClubLogoUrl: clubsTable.logoUrl,
-  opponentClubLogoUrl128: clubsTable.logoUrl128,
-  opponentClubBackgroundColour: clubsTable.backgroundColour,
-  opponentClubPrimaryColour: clubsTable.primaryColour,
-};
-
-type OpponentClubRow = {
-  opponentClubId: number | null;
-  opponentClubName: string | null;
-  opponentClubShortName: string | null;
-  opponentClubLogoUrl: string | null;
-  opponentClubLogoUrl128: string | null;
-  opponentClubBackgroundColour: string | null;
-  opponentClubPrimaryColour: string | null;
-};
-
-// Collapse the joined club columns into a nullable branding object. Null when
-// the junior match has no matched opposition club so renderers fall back.
-function toOpponentClub(row: OpponentClubRow) {
-  if (row.opponentClubId == null || row.opponentClubName == null) return null;
-  return {
-    id: row.opponentClubId,
-    name: row.opponentClubName,
-    shortName: row.opponentClubShortName,
-    logoUrl: row.opponentClubLogoUrl,
-    logoUrl128: row.opponentClubLogoUrl128,
-    backgroundColour: row.opponentClubBackgroundColour,
-    primaryColour: row.opponentClubPrimaryColour,
-  };
-}
-
 /**
  * JUNIORS read API. This data is kept COMPLETELY SEPARATE from the senior
  * records by club decision — no query here ever touches a senior table, and the
@@ -119,50 +93,8 @@ function toOpponentClub(row: OpponentClubRow) {
 
 type MatchRow = typeof juniorMatchesTable.$inferSelect;
 
-/**
- * Leading-year of a "2024/25" style season, for newest-first ordering. Parsed
- * once at load time into season_start_year (see juniors-etl.sql); fall back to
- * parsing the season text inline for any row that predates that column.
- */
-const seasonYear = sql<number>`coalesce(${juniorMatchesTable.seasonStartYear}, nullif(substring(${juniorMatchesTable.season} from 1 for 4), '')::int)`;
-
-function toMatchSummary(
-  m: MatchRow,
-  club: ReturnType<typeof toOpponentClub> = null,
-) {
-  const { hhScore, opponentScore } = splitScores(m);
-  return {
-    id: m.id,
-    season: m.season,
-    grade: m.grade,
-    ageGroup: m.ageGroup,
-    teamName: m.teamName,
-    competition: m.competition,
-    association: m.association,
-    round: m.round,
-    matchDate: m.matchDate,
-    venue: m.venue,
-    status: m.status,
-    opponentName: m.opponentName,
-    hhResult: m.hhResult,
-    hhScore,
-    opponentScore,
-    hhBattedFirst: m.hhBattedFirst,
-    isHallsHead: true,
-    opponentClub: club,
-  };
-}
-
 // Ball-notation helpers live in ../lib/junior-cricket (shared with the
 // juniors admin routes): overs are cricket ball notation, never decimal.
-
-/** A dismissal counts as "not out" when there is no out-dismissal recorded. */
-function isNotOut(dismissal: string | null): boolean {
-  if (!dismissal) return true;
-  const d = dismissal.trim().toLowerCase();
-  if (d === "") return true;
-  return d.includes("not out") || d.startsWith("retired");
-}
 
 // ---------------------------------------------------------------------------
 // GET /juniors/overview
@@ -275,59 +207,6 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   if (await shouldReadCentral(req)) {
     res.json({ season: null, availableAgeGroups: [], topRunScorers: [], topWicketTakers: [] });
     return;
-  }
-
-  // Age groups that actually have leaderboard records in the resolved season
-  // (or every age group ever, for the all-time list) — derived from the SAME
-  // source as the leaders (HH lines + non-private participants) so a chip never
-  // appears for an age group whose matches have no recorded stats. Unions the
-  // batting and bowling sides since a player may only appear in one.
-  async function ageGroupsForSeason(season: string | null): Promise<string[]> {
-    const battingConds = [
-      isNotNull(juniorMatchesTable.ageGroup),
-      eq(juniorMatchBattingTable.isHallsHead, true),
-      eq(juniorParticipantsTable.isPrivate, false),
-    ];
-    const bowlingConds = [
-      isNotNull(juniorMatchesTable.ageGroup),
-      eq(juniorMatchBowlingTable.isHallsHead, true),
-      eq(juniorParticipantsTable.isPrivate, false),
-    ];
-    if (season !== null) {
-      battingConds.push(eq(juniorMatchesTable.season, season));
-      bowlingConds.push(eq(juniorMatchesTable.season, season));
-    }
-    const [batting, bowling] = await Promise.all([
-      db
-        .selectDistinct({ ageGroup: juniorMatchesTable.ageGroup })
-        .from(juniorMatchBattingTable)
-        .innerJoin(
-          juniorParticipantsTable,
-          eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
-        )
-        .innerJoin(
-          juniorMatchesTable,
-          eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-        )
-        .where(and(...battingConds)),
-      db
-        .selectDistinct({ ageGroup: juniorMatchesTable.ageGroup })
-        .from(juniorMatchBowlingTable)
-        .innerJoin(
-          juniorParticipantsTable,
-          eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
-        )
-        .innerJoin(
-          juniorMatchesTable,
-          eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-        )
-        .where(and(...bowlingConds)),
-    ]);
-    const set = new Set<string>();
-    for (const r of [...batting, ...bowling]) {
-      if (r.ageGroup) set.add(r.ageGroup);
-    }
-    return [...set].sort();
   }
 
   // All-time: aggregate across every season.
@@ -1331,14 +1210,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 // participants is_private=false excludes opposition AND private players), so the
 // 6 private juniors never surface. Junior data never touches a senior table.
 // ---------------------------------------------------------------------------
-const JUNIOR_MILESTONE_TIERS = {
-  runs: [250, 500, 1000, 1500, 2000, 2500, 3000],
-  wickets: [25, 50, 75, 100, 150, 200],
-  games: [25, 50, 75, 100, 150],
-} as const;
-
-const JUNIOR_STAT_SINGULAR = { runs: "Run", wickets: "Wicket", games: "Game" } as const;
-
 router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
   // Central tenants have no native junior lines — no milestones, no leak.
   if (await shouldReadCentral(req)) {
@@ -1478,17 +1349,6 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
 // One row per tenant; mirrors the senior match-display-settings pattern but
 // keyed on age group (no roundOrder — junior rounds are free text).
 // ---------------------------------------------------------------------------
-function serializeJuniorMatchDisplaySettings(
-  s: JuniorMatchDisplaySettingsRow,
-) {
-  return {
-    defaultAgeGroup: s.defaultAgeGroup ?? "",
-    defaultSeasonMode: s.defaultSeasonMode ?? "latest",
-    defaultSeason: s.defaultSeason ?? null,
-    ageGroupOrder: s.ageGroupOrder ?? [],
-  };
-}
-
 router.get("/juniors/match-display-settings", async (req, res): Promise<void> => {
   const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, getTenantId(req));
   res.json(serializeJuniorMatchDisplaySettings(settings));
@@ -1677,29 +1537,9 @@ router.patch(
 );
 
 // ---------------------------------------------------------------------------
-// Leaderboard helpers — all inner-join junior_participants and filter
-// is_private, which excludes both opposition players and private participants.
-// ---------------------------------------------------------------------------
-// Optional scope for the leader helpers. season/ageGroup narrow the aggregate to
-// a single junior season and/or age group (used by the home overview's
-// latest-season leaders and the /juniors/top-performers filter); omitting both
-// gives the all-time club-wide list. junior_matches is always joined so these
-// filters are available; the 1:1 join never changes the aggregate when unfiltered.
-
-// ---------------------------------------------------------------------------
 // Junior office bearers — admin-managed, kept COMPLETELY SEPARATE from the
 // senior club_roles table. Public list returns published rows only.
 // ---------------------------------------------------------------------------
-const officeBearersOrdered = () =>
-  db
-    .select()
-    .from(juniorOfficeBearersTable)
-    .orderBy(
-      desc(juniorOfficeBearersTable.season),
-      asc(juniorOfficeBearersTable.displayOrder),
-      asc(juniorOfficeBearersTable.id),
-    );
-
 router.get("/juniors/office-bearers", async (req, res): Promise<void> => {
   // Curated content is tenant-scoped: only this tenant's published rows.
   const rows = await officeBearersOrdered().where(
