@@ -131,6 +131,10 @@ const valueOf = (input: ShareCardInput, key: string): string => {
       };
       return map[key] ?? "";
     }
+    // Pack A kinds get their caption tokens with the builder forms; until then
+    // every token degrades to "".
+    default:
+      return "";
   }
 };
 

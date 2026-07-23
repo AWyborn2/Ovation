@@ -111,6 +111,81 @@ export const CARD_FIELD_CATALOG: Record<CardKind, TemplateFieldDef[]> = {
     { key: "venue", label: "Venue", type: "text" },
     { key: "result", label: "Result", type: "text" },
   ],
+  matchDay: [
+    { key: "roundLabel", label: "Round label", type: "text" },
+    { key: "oppositionName", label: "Opposition name", type: "text" },
+    { key: "homeAway", label: "Home / away", type: "text" },
+    { key: "venue", label: "Venue", type: "text" },
+    { key: "date", label: "Date", type: "text" },
+    { key: "startTime", label: "Start time", type: "text" },
+    { key: "noteTitle", label: "Note title", type: "text" },
+    { key: "noteBody", label: "Note body", type: "text" },
+  ],
+  // Player rows bind via the pack templates' repeat groups, not as single fields.
+  teamList: [
+    { key: "gradeRound", label: "Grade / round", type: "text" },
+    { key: "competitionLine", label: "Competition line", type: "text" },
+    { key: "venueDateTime", label: "Venue, date & time", type: "text" },
+  ],
+  // Match blocks bind via the pack templates' repeat groups, not as single fields.
+  weekendWrap: [
+    { key: "roundLabel", label: "Round label", type: "text" },
+    { key: "dateRange", label: "Date range", type: "text" },
+  ],
+  // Ladder rows bind via the pack templates' repeat groups, not as single fields.
+  ladder: [
+    { key: "competitionName", label: "Competition name", type: "text" },
+    { key: "gradeLabel", label: "Grade label", type: "text" },
+    { key: "asOfLabel", label: "As-of label", type: "text" },
+  ],
+  bigMoment: [
+    { key: "momentLabel", label: "Moment label", type: "text" },
+    { key: "playerName", label: "Player name", type: "text" },
+    { key: "runs", label: "Runs", type: "text" },
+    { key: "balls", label: "Balls", type: "text" },
+    { key: "boundaryDetail", label: "Boundary detail", type: "text" },
+    { key: "oppositionName", label: "Opposition name", type: "text" },
+    { key: "inningsLabel", label: "Innings label", type: "text" },
+    { key: "liveScore", label: "Live score", type: "text" },
+    { key: "oversChaseLine", label: "Overs / chase line", type: "text" },
+    { key: "equation", label: "Equation", type: "text" },
+    PHOTO_FIELD,
+  ],
+  newSigning: [
+    { key: "playerFirstName", label: "Player first name", type: "text" },
+    { key: "playerLastName", label: "Player last name", type: "text" },
+    { key: "role", label: "Role", type: "text" },
+    { key: "formerClub", label: "Former club", type: "text" },
+    { key: "season", label: "Season", type: "text" },
+    PHOTO_FIELD,
+  ],
+  countdown: [
+    { key: "daysToGo", label: "Days to go", type: "text" },
+    { key: "eventLabel", label: "Event label", type: "text" },
+    { key: "hypeLine1", label: "Hype line 1", type: "text" },
+    { key: "hypeLine2", label: "Hype line 2", type: "text" },
+    { key: "dateVenue", label: "Date & venue", type: "text" },
+    { key: "fixtureLine", label: "Fixture line", type: "text" },
+  ],
+  // Leader rows also bind via pack repeat groups; flattened here like player stats.
+  clubLeaderboard: [
+    { key: "title", label: "Title", type: "text" },
+    { key: "subtitle", label: "Subtitle", type: "text" },
+    { key: "season", label: "Season", type: "text" },
+    { key: "category", label: "Category", type: "text" },
+    { key: "leader1Grade", label: "Leader 1 grade", type: "text" },
+    { key: "leader1Name", label: "Leader 1 name", type: "text" },
+    { key: "leader1Value", label: "Leader 1 value", type: "text" },
+    { key: "leader2Grade", label: "Leader 2 grade", type: "text" },
+    { key: "leader2Name", label: "Leader 2 name", type: "text" },
+    { key: "leader2Value", label: "Leader 2 value", type: "text" },
+    { key: "leader3Grade", label: "Leader 3 grade", type: "text" },
+    { key: "leader3Name", label: "Leader 3 name", type: "text" },
+    { key: "leader3Value", label: "Leader 3 value", type: "text" },
+    { key: "leader4Grade", label: "Leader 4 grade", type: "text" },
+    { key: "leader4Name", label: "Leader 4 name", type: "text" },
+    { key: "leader4Value", label: "Leader 4 value", type: "text" },
+  ],
 };
 
 // All bindable fields for a kind, common fields first.
@@ -186,7 +261,7 @@ export const resolveTextField = (
     case "hashtag":
       return ctx.hashtag ?? "";
     case "headline":
-      return input.headline ?? "";
+      return "headline" in input ? input.headline ?? "" : "";
   }
 
   switch (input.kind) {
@@ -293,6 +368,97 @@ export const resolveTextField = (
         result: input.result,
       };
       return map[key] ?? "";
+    }
+    case "matchDay": {
+      const map: Record<string, string> = {
+        roundLabel: input.roundLabel,
+        oppositionName: input.oppositionName,
+        homeAway: input.homeAway,
+        venue: input.venue,
+        date: input.date,
+        startTime: input.startTime,
+        noteTitle: input.noteTitle ?? "",
+        noteBody: input.noteBody ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "teamList": {
+      const map: Record<string, string> = {
+        gradeRound: input.gradeRound,
+        competitionLine: input.competitionLine,
+        venueDateTime: input.venueDateTime,
+      };
+      return map[key] ?? "";
+    }
+    case "weekendWrap": {
+      const map: Record<string, string> = {
+        roundLabel: input.roundLabel,
+        dateRange: input.dateRange,
+      };
+      return map[key] ?? "";
+    }
+    case "ladder": {
+      const map: Record<string, string> = {
+        competitionName: input.competitionName,
+        gradeLabel: input.gradeLabel,
+        asOfLabel: input.asOfLabel,
+      };
+      return map[key] ?? "";
+    }
+    case "bigMoment": {
+      const map: Record<string, string> = {
+        momentLabel: input.momentLabel,
+        playerName: input.playerName,
+        runs: input.runs != null ? str(input.runs) : "",
+        balls: input.balls != null ? str(input.balls) : "",
+        boundaryDetail: input.boundaryDetail ?? "",
+        oppositionName: input.oppositionName ?? "",
+        inningsLabel: input.inningsLabel ?? "",
+        liveScore: input.liveScore ?? "",
+        oversChaseLine: input.oversChaseLine ?? "",
+        equation: input.equation ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "newSigning": {
+      const map: Record<string, string> = {
+        playerFirstName: input.playerFirstName,
+        playerLastName: input.playerLastName,
+        role: input.role ?? "",
+        formerClub: input.formerClub ?? "",
+        season: input.season ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "countdown": {
+      const map: Record<string, string> = {
+        daysToGo: input.daysToGo,
+        eventLabel: input.eventLabel,
+        hypeLine1: input.hypeLine1 ?? "",
+        hypeLine2: input.hypeLine2 ?? "",
+        dateVenue: input.dateVenue ?? "",
+        fixtureLine: input.fixtureLine ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "clubLeaderboard": {
+      const base: Record<string, string> = {
+        title: input.title,
+        subtitle: input.subtitle ?? "",
+        season: input.season,
+        category: input.category,
+      };
+      const m = key.match(/^leader([1-9])(Grade|Name|Value)$/);
+      if (m) {
+        const leader = input.leaders[Number(m[1]) - 1];
+        if (!leader) return "";
+        return m[2] === "Grade"
+          ? leader.gradeLabel
+          : m[2] === "Name"
+            ? leader.playerName
+            : leader.value;
+      }
+      return base[key] ?? "";
     }
   }
 };
