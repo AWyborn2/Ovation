@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardThemeInputDisplayFont } from './cardThemeInputDisplayFont';
 
 export interface CardThemeInput {
   name: string;
@@ -12,6 +13,11 @@ export interface CardThemeInput {
   bgPanel: string;
   accent: string;
   textLight: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeInputDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */

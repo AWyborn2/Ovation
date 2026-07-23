@@ -48,6 +48,77 @@ export interface PackTokens {
 /** The junior brown panel, forced regardless of theme (KTD6 / replit.md). */
 export const JUNIOR_PANEL = "#42342B";
 
+// ---------------------------------------------------------------------------
+// Token resolution (junior force > per-card override > theme > brand default)
+// ---------------------------------------------------------------------------
+
+/** A `card_themes` row (or any theme-shaped object) as the renderer reads it. */
+export interface CardThemeLike {
+  accent?: string | null;
+  bgPanel?: string | null;
+  bgDark?: string | null;
+  textLight?: string | null;
+  displayFont?: string | null;
+}
+
+/**
+ * Map a `card_themes`-shaped object onto the pack token keys, dropping any
+ * null/empty field so it never clobbers a lower-priority source during merge.
+ * (`bgPanel`→`panel`, `bgDark`→`ink`, `accent`→`accent`, `textLight`→`textLight`,
+ * `displayFont`→`displayFont`.)
+ */
+export function tokensFromCardTheme(
+  theme: CardThemeLike | null | undefined,
+): Partial<PackTokens> {
+  const out: Partial<PackTokens> = {};
+  if (!theme) return out;
+  if (theme.accent) out.accent = theme.accent;
+  if (theme.bgPanel) out.panel = theme.bgPanel;
+  if (theme.bgDark) out.ink = theme.bgDark;
+  if (theme.textLight) out.textLight = theme.textLight;
+  if (theme.displayFont) out.displayFont = theme.displayFont;
+  return out;
+}
+
+/** Sources feeding {@link resolvePackTokens}, lowest priority first. */
+export interface PackTokenSources {
+  /** Tenant brand default — the complete baseline (lowest priority). */
+  brand: PackTokens;
+  /** Selected theme's tokens; each present key overrides the brand. */
+  theme?: Partial<PackTokens> | null;
+  /** Explicit per-card overrides; each present key overrides the theme. */
+  override?: Partial<PackTokens> | null;
+  /** Junior force — the brown panel wins over every source (KTD6). */
+  junior?: boolean;
+}
+
+/** Copy only the defined values of a partial onto the target. */
+function assignDefined(target: PackTokens, src?: Partial<PackTokens> | null): void {
+  if (!src) return;
+  for (const k of Object.keys(src) as (keyof PackTokens)[]) {
+    const v = src[k];
+    if (v !== undefined && v !== null && v !== "") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (target as any)[k] = v;
+    }
+  }
+}
+
+/**
+ * Resolve the final pack tokens by priority (highest wins):
+ *   1. junior force (brown panel, regardless of anything)
+ *   2. explicit per-card override tokens
+ *   3. selected theme's tokens (incl. `displayFont` → `--disp`)
+ *   4. tenant brand default
+ */
+export function resolvePackTokens(sources: PackTokenSources): PackTokens {
+  const resolved: PackTokens = { ...sources.brand };
+  assignDefined(resolved, sources.theme);
+  assignDefined(resolved, sources.override);
+  if (sources.junior) resolved.panel = JUNIOR_PANEL;
+  return resolved;
+}
+
 /** Curated display-font families behind the `--disp` token. */
 export const DISPLAY_FONT_FAMILY: Record<string, string> = {
   anton: "'Anton'",

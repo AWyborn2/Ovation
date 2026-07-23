@@ -270,6 +270,7 @@ router.post("/card-themes", requireAdmin, requireEntitlement("socialStudio"), as
         bgPanel: parsed.data.bgPanel,
         accent: parsed.data.accent,
         textLight: parsed.data.textLight,
+        displayFont: parsed.data.displayFont ?? null,
         backgroundImageUrl: parsed.data.backgroundImageUrl ?? null,
         logoUrl: parsed.data.logoUrl ?? null,
         isDefault: parsed.data.isDefault ?? false,

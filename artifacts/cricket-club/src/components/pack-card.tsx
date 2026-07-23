@@ -5,7 +5,8 @@ import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import {
   renderPackCard,
   packNativeSize,
-  JUNIOR_PANEL,
+  resolvePackTokens,
+  tokensFromCardTheme,
   type PackTokens,
 } from "@/lib/pack-render";
 
@@ -16,9 +17,9 @@ import {
  * natively with no cropping.
  */
 
-// Sensible defaults when a tenant theme has not loaded yet — the Broadcast Dark
-// palette (gold on brown/ink).
-const DEFAULT_TOKENS: PackTokens = {
+// The tenant brand default (lowest-priority token source) when no theme has
+// loaded — the Broadcast Dark palette (gold on brown/ink).
+const BRAND_DEFAULT_TOKENS: PackTokens = {
   accent: "#FBAC27",
   panel: "#42342B",
   ink: "#101216",
@@ -26,23 +27,16 @@ const DEFAULT_TOKENS: PackTokens = {
   displayFont: "anton",
 };
 
-function tokensFromTheme(theme: ApiCardTheme | undefined | null): PackTokens {
-  if (!theme) return DEFAULT_TOKENS;
-  return {
-    accent: theme.accent || DEFAULT_TOKENS.accent,
-    panel: theme.bgPanel || DEFAULT_TOKENS.panel,
-    ink: theme.bgDark || DEFAULT_TOKENS.ink,
-    textLight: theme.textLight || DEFAULT_TOKENS.textLight,
-    // `displayFont` arrives with the U9 themes extension; default until then.
-    displayFont:
-      (theme as { displayFont?: string }).displayFont || DEFAULT_TOKENS.displayFont,
-  };
-}
-
 export interface PackCardProps {
   input: ShareCardInput;
   size: CardSize;
   sponsorsOn: boolean;
+  /**
+   * The selected card theme. Per-card style-panel overrides (accent / panel /
+   * display font) are folded onto this object by the caller before it reaches
+   * here, so the same object drives both the live preview and the server still
+   * render (KTD6 token resolution: junior > override > theme > brand).
+   */
   theme?: ApiCardTheme | null;
   junior: boolean;
   /** Explicit display width (px). When omitted the card fills its parent. */
@@ -60,10 +54,19 @@ export function PackCard({
   className,
 }: PackCardProps) {
   const native = packNativeSize(size);
-  const tokens = useMemo(() => {
-    const base = tokensFromTheme(theme);
-    return junior ? { ...base, panel: JUNIOR_PANEL } : base;
-  }, [theme, junior]);
+  // Resolve tokens by priority: junior force > theme (with folded overrides) >
+  // brand default. The explicit override level lives in `resolvePackTokens`;
+  // callers fold per-card overrides into `theme` so the server harness (which
+  // only threads `theme`) stays pixel-identical to this preview.
+  const tokens = useMemo(
+    () =>
+      resolvePackTokens({
+        brand: BRAND_DEFAULT_TOKENS,
+        theme: tokensFromCardTheme(theme),
+        junior,
+      }),
+    [theme, junior],
+  );
 
   const html = useMemo(
     () => renderPackCard(input, size, sponsorsOn, tokens, junior),

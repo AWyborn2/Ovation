@@ -2596,6 +2596,21 @@ export interface SponsorUpdate {
   displayOrder?: number;
 }
 
+/**
+ * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+ * @nullable
+ */
+export type CardThemeDisplayFont = typeof CardThemeDisplayFont[keyof typeof CardThemeDisplayFont] | null;
+
+
+export const CardThemeDisplayFont = {
+  anton: 'anton',
+  bebas: 'bebas',
+  oswald: 'oswald',
+  teko: 'teko',
+  archivo: 'archivo',
+} as const;
+
 export interface CardTheme {
   id: number;
   name: string;
@@ -2603,6 +2618,11 @@ export interface CardTheme {
   bgPanel: string;
   accent: string;
   textLight: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */
@@ -2611,12 +2631,32 @@ export interface CardTheme {
   displayOrder: number;
 }
 
+/**
+ * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+ * @nullable
+ */
+export type CardThemeInputDisplayFont = typeof CardThemeInputDisplayFont[keyof typeof CardThemeInputDisplayFont] | null;
+
+
+export const CardThemeInputDisplayFont = {
+  anton: 'anton',
+  bebas: 'bebas',
+  oswald: 'oswald',
+  teko: 'teko',
+  archivo: 'archivo',
+} as const;
+
 export interface CardThemeInput {
   name: string;
   bgDark: string;
   bgPanel: string;
   accent: string;
   textLight: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeInputDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */
@@ -2625,12 +2665,32 @@ export interface CardThemeInput {
   displayOrder?: number;
 }
 
+/**
+ * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+ * @nullable
+ */
+export type CardThemeUpdateDisplayFont = typeof CardThemeUpdateDisplayFont[keyof typeof CardThemeUpdateDisplayFont] | null;
+
+
+export const CardThemeUpdateDisplayFont = {
+  anton: 'anton',
+  bebas: 'bebas',
+  oswald: 'oswald',
+  teko: 'teko',
+  archivo: 'archivo',
+} as const;
+
 export interface CardThemeUpdate {
   name?: string;
   bgDark?: string;
   bgPanel?: string;
   accent?: string;
   textLight?: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeUpdateDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */

@@ -39,6 +39,10 @@ export const cardThemesTable = pgTable("card_themes", {
   bgPanel: text("bg_panel").notNull().default("#3F3C4C"),
   accent: text("accent").notNull().default("#FBD039"),
   textLight: text("text_light").notNull().default("#F5F2E8"),
+  // Curated display-font key driving the pack renderer's `--disp` token
+  // (anton | bebas | oswald | teko | archivo). Nullable — null resolves to the
+  // default "anton" family in `pack-render.ts` (see KTD6).
+  displayFont: text("display_font"),
   backgroundImageUrl: text("background_image_url"),
   logoUrl: text("logo_url"),
   isDefault: boolean("is_default").notNull().default(false),

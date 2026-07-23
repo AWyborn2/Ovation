@@ -1,7 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { renderPackCard, packSupportsKind, type PackTokens } from "./pack-render";
+import {
+  renderPackCard,
+  packSupportsKind,
+  resolvePackTokens,
+  tokensFromCardTheme,
+  JUNIOR_PANEL,
+  type PackTokens,
+} from "./pack-render";
 import { sampleCardInput } from "./sample-card-inputs";
 import type { ShareCardInput, CardSize, LadderRow } from "./share-card";
+
+// A distinct value per source at each token, so the winning source is
+// unambiguous in the resolution-order assertions below.
+const BRAND: PackTokens = {
+  accent: "#B7A100", // brand
+  panel: "#111111", // brand
+  ink: "#000000",
+  textLight: "#EEEEEE",
+  displayFont: "anton",
+};
 
 const TOKENS: PackTokens = {
   accent: "#FBAC27",
@@ -115,6 +132,12 @@ describe("renderPackCard", () => {
     expect(htmlNoClub).not.toContain('data-repeat-variant="club"');
   });
 
+  it("maps a displayFont key into the --disp font family (bebas → 'Bebas Neue')", () => {
+    const bebasTokens: PackTokens = { ...TOKENS, displayFont: "bebas" };
+    const html = renderPackCard(sampleCardInput("player"), "square", true, bebasTokens, false);
+    expect(html).toMatch(/--disp:\s*'Bebas Neue'/);
+  });
+
   it("falls back sanely for an unknown size", () => {
     const html = renderPackCard(
       sampleCardInput("ladder"),
@@ -125,5 +148,56 @@ describe("renderPackCard", () => {
     );
     expect(html.length).toBeGreaterThan(0);
     expect(hasUnresolved(html)).toBe(false);
+  });
+});
+
+describe("resolvePackTokens (token resolution order)", () => {
+  it("uses the brand default when there is no theme and no override", () => {
+    // Brand-derived default used when no theme rows / null theme.
+    expect(resolvePackTokens({ brand: BRAND, theme: null })).toEqual(BRAND);
+    expect(resolvePackTokens({ brand: BRAND, theme: tokensFromCardTheme(null) })).toEqual(BRAND);
+  });
+
+  it("lets a theme override the brand default", () => {
+    const theme = tokensFromCardTheme({ accent: "#22AA22", bgPanel: "#333333", displayFont: "oswald" });
+    const resolved = resolvePackTokens({ brand: BRAND, theme });
+    expect(resolved.accent).toBe("#22AA22"); // theme wins over brand
+    expect(resolved.panel).toBe("#333333"); // bgPanel → panel
+    expect(resolved.displayFont).toBe("oswald");
+    expect(resolved.ink).toBe(BRAND.ink); // theme carried no ink → brand kept
+  });
+
+  it("applies precedence junior > override > theme > brand for every token", () => {
+    const theme: Partial<PackTokens> = { accent: "#THEME0", panel: "#THEMEP", displayFont: "oswald" };
+    const override: Partial<PackTokens> = { panel: "#OVERRP", displayFont: "teko" };
+
+    // No junior: override beats theme beats brand.
+    const resolved = resolvePackTokens({ brand: BRAND, theme, override });
+    expect(resolved.accent).toBe("#THEME0"); // theme (override silent) beats brand
+    expect(resolved.panel).toBe("#OVERRP"); // override beats theme
+    expect(resolved.displayFont).toBe("teko"); // override beats theme
+    expect(resolved.ink).toBe(BRAND.ink); // brand only
+
+    // Junior forces the brown panel over everything (override/theme/brand).
+    const junior = resolvePackTokens({ brand: BRAND, theme, override, junior: true });
+    expect(junior.panel).toBe(JUNIOR_PANEL);
+    // Non-panel tokens still resolve by the normal order.
+    expect(junior.accent).toBe("#THEME0");
+    expect(junior.displayFont).toBe("teko");
+  });
+
+  it("junior ignores the theme entirely for the panel (brown wins)", () => {
+    const theme = tokensFromCardTheme({ bgPanel: "#ABCDEF", accent: "#123456" });
+    const resolved = resolvePackTokens({ brand: BRAND, theme, junior: true });
+    expect(resolved.panel).toBe(JUNIOR_PANEL);
+  });
+
+  it("tokensFromCardTheme drops null/empty fields so they do not clobber the brand", () => {
+    const partial = tokensFromCardTheme({ accent: "#FF0000", bgPanel: "", bgDark: null, displayFont: null });
+    expect(partial).toEqual({ accent: "#FF0000" });
+    const resolved = resolvePackTokens({ brand: BRAND, theme: partial });
+    expect(resolved.accent).toBe("#FF0000");
+    expect(resolved.panel).toBe(BRAND.panel);
+    expect(resolved.displayFont).toBe(BRAND.displayFont);
   });
 });

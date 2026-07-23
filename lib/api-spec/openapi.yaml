@@ -9126,6 +9126,10 @@ components:
           type: string
         textLight:
           type: string
+        displayFont:
+          type: ["string", "null"]
+          enum: [anton, bebas, oswald, teko, archivo, null]
+          description: "Curated display-font key mapped to the pack renderer's --disp token (null → anton)."
         backgroundImageUrl:
           type: ["string", "null"]
         logoUrl:
@@ -9149,6 +9153,10 @@ components:
           type: string
         textLight:
           type: string
+        displayFont:
+          type: ["string", "null"]
+          enum: [anton, bebas, oswald, teko, archivo, null]
+          description: "Curated display-font key mapped to the pack renderer's --disp token (null → anton)."
         backgroundImageUrl:
           type: ["string", "null"]
         logoUrl:
@@ -9171,6 +9179,10 @@ components:
           type: string
         textLight:
           type: string
+        displayFont:
+          type: ["string", "null"]
+          enum: [anton, bebas, oswald, teko, archivo, null]
+          description: "Curated display-font key mapped to the pack renderer's --disp token (null → anton)."
         backgroundImageUrl:
           type: ["string", "null"]
         logoUrl:
