@@ -3045,6 +3045,11 @@ export interface SocialSettings {
   captionsEnabled: boolean;
   clubHashtag: string;
   clubUrl: string;
+  /**
+     * Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.
+     * @nullable
+     */
+  seasonStartDate?: string | null;
 }
 
 /**
@@ -3070,6 +3075,11 @@ export interface SocialSettingsUpdate {
   captionsEnabled?: boolean;
   clubHashtag?: string;
   clubUrl?: string;
+  /**
+     * Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).
+     * @nullable
+     */
+  seasonStartDate?: string | null;
 }
 
 /**
@@ -4036,6 +4046,115 @@ export interface TrackedLink {
   /** @nullable */
   lastClickedAt?: string | null;
   createdAt: string;
+}
+
+/**
+ * Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest)
+ */
+export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
+
+
+export const FixtureSource = {
+  manual: 'manual',
+  playhq: 'playhq',
+} as const;
+
+export interface Fixture {
+  id: number;
+  grade: string;
+  /** @nullable */
+  roundLabel?: string | null;
+  opponentName: string;
+  /** Optional link into the shared clubs register */
+  opponentClubId?: number | null;
+  /** @nullable */
+  opponentLogoUrl?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  startAt: string;
+  isHome: boolean;
+  /** @nullable */
+  notes?: string | null;
+  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest) */
+  source: FixtureSource;
+  createdAt: string;
+}
+
+export interface CreateFixtureBody {
+  /** @minLength 1 */
+  grade: string;
+  /** @nullable */
+  roundLabel?: string | null;
+  /** @minLength 1 */
+  opponentName: string;
+  /** @nullable */
+  opponentClubId?: number | null;
+  /** @nullable */
+  opponentLogoUrl?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  startAt: string;
+  isHome?: boolean;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface UpdateFixtureBody {
+  /** @minLength 1 */
+  grade?: string;
+  /** @nullable */
+  roundLabel?: string | null;
+  /** @minLength 1 */
+  opponentName?: string;
+  /** @nullable */
+  opponentClubId?: number | null;
+  /** @nullable */
+  opponentLogoUrl?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  startAt?: string;
+  isHome?: boolean;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Captain / wicket-keeper marker
+ */
+export type TeamListPlayerRole = typeof TeamListPlayerRole[keyof typeof TeamListPlayerRole];
+
+
+export const TeamListPlayerRole = {
+  C: 'C',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+} as const;
+
+export interface TeamListPlayer {
+  /**
+     * Batting/selection order position (1-based)
+     * @minimum 1
+     */
+  order: number;
+  /** Register-linked player id; omit/null for a free-typed name. Fill-in ids (>= 90000) are rejected. */
+  playerId?: number | null;
+  /** @minLength 1 */
+  displayName: string;
+  /** Captain / wicket-keeper marker */
+  role?: TeamListPlayerRole;
+}
+
+export interface TeamList {
+  id: number;
+  fixtureId: number;
+  players: TeamListPlayer[];
+  isPublished: boolean;
+  createdAt: string;
+}
+
+export interface PutTeamListBody {
+  players: TeamListPlayer[];
+  isPublished?: boolean;
 }
 
 export interface UploadUrlRequest {
@@ -5045,6 +5164,17 @@ export type UploadMatchScorecardBody = {
 export type UploadMatchBatchBody = {
   /** One or more .xlsx scorecards, and/or a .zip of them */
   files: Blob[];
+};
+
+export type ListFixturesParams = {
+/**
+ * Filter to a single grade
+ */
+grade?: string;
+/**
+ * When true, only fixtures whose start time is in the future
+ */
+upcomingOnly?: boolean;
 };
 
 export type GetKioskDisplayParams = {

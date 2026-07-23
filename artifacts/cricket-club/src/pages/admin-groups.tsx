@@ -8,6 +8,7 @@ import AdminSocialCreate from "@/pages/admin-social-create";
 import AdminSocialSets from "@/pages/admin-social-sets";
 import AdminJuniorSocial from "@/pages/admin-junior-social";
 import AdminSocialQueue from "@/pages/admin-social-queue";
+import AdminFixtures from "@/pages/admin-fixtures";
 import AdminMatchDisplay from "@/pages/admin-match-display";
 import AdminRecordsDisplay from "@/pages/admin-records-display";
 import AdminTradingCards from "@/pages/admin-trading-cards";
@@ -118,6 +119,7 @@ export function AdminSocialGroup() {
         { value: "cards", label: "Cards", path: "/admin/social/cards", element: <AdminSocial />, feature: "socialStudio" },
         { value: "create", label: "Create a card", path: "/admin/social/create", element: <AdminSocialCreate />, feature: "socialStudio" },
         { value: "sets", label: "Carousel sets", path: "/admin/social/sets", element: <AdminSocialSets />, feature: "socialStudio" },
+        { value: "fixtures", label: "Fixtures", path: "/admin/social/fixtures", element: <AdminFixtures />, feature: "socialStudio" },
         { value: "juniors", label: "Junior cards", path: "/admin/social/juniors", element: <AdminJuniorSocial />, feature: "socialStudio" },
         { value: "trading-cards", label: "Trading cards", path: "/admin/social/trading-cards", element: <AdminTradingCards />, feature: "socialStudio" },
         { value: "queue", label: "Queue", path: "/admin/social/queue", element: <AdminSocialQueue />, feature: "socialStudio" },

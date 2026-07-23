@@ -4659,7 +4659,8 @@ export const GetSocialSettingsResponse = zod.object({
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
-  "clubUrl": zod.string()
+  "clubUrl": zod.string(),
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -4706,7 +4707,8 @@ export const UpdateSocialSettingsBody = zod.object({
   "sponsorsEnabled": zod.boolean().optional(),
   "captionsEnabled": zod.boolean().optional(),
   "clubHashtag": zod.string().optional(),
-  "clubUrl": zod.string().optional()
+  "clubUrl": zod.string().optional(),
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).')
 })
 
 export const UpdateSocialSettingsResponse = zod.object({
@@ -4724,7 +4726,164 @@ export const UpdateSocialSettingsResponse = zod.object({
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
-  "clubUrl": zod.string()
+  "clubUrl": zod.string(),
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
+})
+
+
+/**
+ * @summary List fixtures (ordered by start time ascending)
+ */
+export const ListFixturesQueryParams = zod.object({
+  "grade": zod.coerce.string().optional().describe('Filter to a single grade'),
+  "upcomingOnly": zod.coerce.boolean().optional().describe('When true, only fixtures whose start time is in the future')
+})
+
+export const ListFixturesResponseItem = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (reserved for the follow-up PlayHQ ingest)'),
+  "createdAt": zod.coerce.date()
+})
+export const ListFixturesResponse = zod.array(ListFixturesResponseItem)
+
+
+/**
+ * @summary Create a fixture
+ */
+
+
+
+
+export const CreateFixtureBody = zod.object({
+  "grade": zod.string().min(1),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string().min(1),
+  "opponentClubId": zod.number().nullish(),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean().optional(),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a fixture
+ */
+export const UpdateFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateFixtureBody = zod.object({
+  "grade": zod.string().min(1).optional(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string().min(1).optional(),
+  "opponentClubId": zod.number().nullish(),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date().optional(),
+  "isHome": zod.boolean().optional(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdateFixtureResponse = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (reserved for the follow-up PlayHQ ingest)'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a fixture (its team list cascades)
+ */
+export const DeleteFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get the team list (XI) for a fixture
+ */
+export const GetFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const GetFixtureTeamListResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "fixtureId": zod.number(),
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
+  "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "displayName": zod.string().min(1),
+  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+})),
+  "isPublished": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}),zod.null()])
+
+
+/**
+ * @summary Create or replace the team list for a fixture (one XI per fixture)
+ */
+export const PutFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const PutFixtureTeamListBody = zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
+  "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "displayName": zod.string().min(1),
+  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+})),
+  "isPublished": zod.boolean().optional()
+})
+
+
+
+
+
+export const PutFixtureTeamListResponse = zod.object({
+  "id": zod.number(),
+  "fixtureId": zod.number(),
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
+  "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "displayName": zod.string().min(1),
+  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+})),
+  "isPublished": zod.boolean(),
+  "createdAt": zod.coerce.date()
 })
 
 

@@ -46,6 +46,8 @@ tags:
     description: Juniors data (matches, scorecards, players, leaderboards, premierships) — kept completely separate from senior records
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
+  - name: fixtures
+    description: Admin-entered upcoming fixtures and per-fixture team lists (feeds fixture-driven social cards; PlayHQ ingest later)
   - name: navigation
     description: Admin-configurable navigation menus and quick-link/tile cards
   - name: Storage
@@ -3333,6 +3335,139 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SocialSettings"
+
+  /fixtures:
+    get:
+      operationId: listFixtures
+      tags: [fixtures]
+      summary: List fixtures (ordered by start time ascending)
+      parameters:
+        - name: grade
+          in: query
+          schema:
+            type: string
+          description: Filter to a single grade
+        - name: upcomingOnly
+          in: query
+          schema:
+            type: boolean
+          description: When true, only fixtures whose start time is in the future
+      responses:
+        "200":
+          description: Fixture list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fixture"
+    post:
+      operationId: createFixture
+      tags: [fixtures]
+      summary: Create a fixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFixtureBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fixture"
+
+  /fixtures/{id}:
+    patch:
+      operationId: updateFixture
+      tags: [fixtures]
+      summary: Update a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFixtureBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fixture"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteFixture
+      tags: [fixtures]
+      summary: Delete a fixture (its team list cascades)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /fixtures/{id}/team-list:
+    get:
+      operationId: getFixtureTeamList
+      tags: [fixtures]
+      summary: Get the team list (XI) for a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The fixture's team list, or null when none has been saved yet
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TeamList"
+                  - type: "null"
+        "404":
+          description: Fixture not found
+    put:
+      operationId: putFixtureTeamList
+      tags: [fixtures]
+      summary: Create or replace the team list for a fixture (one XI per fixture)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutTeamListBody"
+      responses:
+        "200":
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamList"
+        "404":
+          description: Fixture not found
 
   /milestone-board-settings:
     get:
@@ -9351,6 +9486,10 @@ components:
           type: string
         clubUrl:
           type: string
+        seasonStartDate:
+          type: ["string", "null"]
+          format: date-time
+          description: "Season-start override for countdown cards. Null = derive from the earliest upcoming fixture."
 
     SocialSettingsUpdate:
       type: object
@@ -9389,6 +9528,10 @@ components:
           type: string
         clubUrl:
           type: string
+        seasonStartDate:
+          type: ["string", "null"]
+          format: date-time
+          description: "Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture)."
 
     MilestoneBoardSettings:
       type: object
@@ -10821,6 +10964,107 @@ components:
         clickCount: { type: integer }
         lastClickedAt: { type: ["string", "null"], format: date-time }
         createdAt: { type: string, format: date-time }
+
+    Fixture:
+      type: object
+      required: [id, grade, opponentName, startAt, isHome, source, createdAt]
+      properties:
+        id: { type: integer }
+        grade: { type: string }
+        roundLabel: { type: ["string", "null"] }
+        opponentName: { type: string }
+        opponentClubId:
+          type: integer
+          nullable: true
+          description: "Optional link into the shared clubs register"
+        opponentLogoUrl: { type: ["string", "null"] }
+        venue: { type: ["string", "null"] }
+        startAt: { type: string, format: date-time }
+        isHome: { type: boolean }
+        notes: { type: ["string", "null"] }
+        source:
+          type: string
+          enum: [manual, playhq]
+          description: "Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest)"
+        createdAt: { type: string, format: date-time }
+
+    CreateFixtureBody:
+      type: object
+      required: [grade, opponentName, startAt]
+      properties:
+        grade:
+          type: string
+          minLength: 1
+        roundLabel: { type: ["string", "null"] }
+        opponentName:
+          type: string
+          minLength: 1
+        opponentClubId: { type: ["integer", "null"] }
+        opponentLogoUrl: { type: ["string", "null"] }
+        venue: { type: ["string", "null"] }
+        startAt: { type: string, format: date-time }
+        isHome: { type: boolean }
+        notes: { type: ["string", "null"] }
+
+    UpdateFixtureBody:
+      type: object
+      properties:
+        grade:
+          type: string
+          minLength: 1
+        roundLabel: { type: ["string", "null"] }
+        opponentName:
+          type: string
+          minLength: 1
+        opponentClubId: { type: ["integer", "null"] }
+        opponentLogoUrl: { type: ["string", "null"] }
+        venue: { type: ["string", "null"] }
+        startAt: { type: string, format: date-time }
+        isHome: { type: boolean }
+        notes: { type: ["string", "null"] }
+
+    TeamListPlayer:
+      type: object
+      required: [order, displayName]
+      properties:
+        order:
+          type: integer
+          minimum: 1
+          description: "Batting/selection order position (1-based)"
+        playerId:
+          type: integer
+          nullable: true
+          description: "Register-linked player id; omit/null for a free-typed name. Fill-in ids (>= 90000) are rejected."
+        displayName:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          enum: ["C", "WK", "C/WK"]
+          description: "Captain / wicket-keeper marker"
+
+    TeamList:
+      type: object
+      required: [id, fixtureId, players, isPublished, createdAt]
+      properties:
+        id: { type: integer }
+        fixtureId: { type: integer }
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamListPlayer"
+        isPublished: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    PutTeamListBody:
+      type: object
+      required: [players]
+      properties:
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamListPlayer"
+        isPublished: { type: boolean }
 
     UploadUrlRequest:
       type: object

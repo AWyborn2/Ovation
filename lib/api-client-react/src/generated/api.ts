@@ -82,12 +82,14 @@ import type {
   ClubRoleUpdate,
   CommitImportInput,
   CommitImportResult,
+  CreateFixtureBody,
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
   Dashboard,
   DebutEntry,
   ErrorEnvelope,
   FiveWicketHaul,
+  Fixture,
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
@@ -135,6 +137,7 @@ import type {
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
+  ListFixturesParams,
   ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
@@ -189,6 +192,7 @@ import type {
   PremiershipInput,
   PremiershipUpdate,
   ProvisionTenantBody,
+  PutTeamListBody,
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
@@ -212,6 +216,7 @@ import type {
   StatUpdate,
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
+  TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
   TeamOfDecadeBoardUpdate,
@@ -228,6 +233,7 @@ import type {
   UndoSeasonInput,
   UndoSeasonResult,
   UpdateAdminTenantBrandBody,
+  UpdateFixtureBody,
   UpdateJuniorBattingLineBody,
   UpdateJuniorBowlingLineBody,
   UpdateJuniorMatchBody,
@@ -11942,6 +11948,452 @@ export const useUpdateSocialSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSocialSettingsMutationOptions(options));
+    }
+
+export const getListFixturesUrl = (params?: ListFixturesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fixtures?${stringifiedParams}` : `/api/fixtures`
+}
+
+/**
+ * @summary List fixtures (ordered by start time ascending)
+ */
+export const listFixtures = async (params?: ListFixturesParams, options?: RequestInit): Promise<Fixture[]> => {
+
+  return customFetch<Fixture[]>(getListFixturesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFixturesQueryKey = (params?: ListFixturesParams,) => {
+    return [
+    `/api/fixtures`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFixturesQueryOptions = <TData = Awaited<ReturnType<typeof listFixtures>>, TError = ErrorType<unknown>>(params?: ListFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFixturesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFixtures>>> = ({ signal }) => listFixtures(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFixtures>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFixturesQueryResult = NonNullable<Awaited<ReturnType<typeof listFixtures>>>
+export type ListFixturesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List fixtures (ordered by start time ascending)
+ */
+
+export function useListFixtures<TData = Awaited<ReturnType<typeof listFixtures>>, TError = ErrorType<unknown>>(
+ params?: ListFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFixturesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateFixtureUrl = () => {
+
+
+
+
+  return `/api/fixtures`
+}
+
+/**
+ * @summary Create a fixture
+ */
+export const createFixture = async (createFixtureBody: CreateFixtureBody, options?: RequestInit): Promise<Fixture> => {
+
+  return customFetch<Fixture>(getCreateFixtureUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createFixtureBody,)
+  }
+);}
+
+
+
+
+export const getCreateFixtureMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFixture>>, TError,{data: BodyType<CreateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFixture>>, TError,{data: BodyType<CreateFixtureBody>}, TContext> => {
+
+const mutationKey = ['createFixture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFixture>>, {data: BodyType<CreateFixtureBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFixture(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof createFixture>>>
+    export type CreateFixtureMutationBody = BodyType<CreateFixtureBody>
+    export type CreateFixtureMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a fixture
+ */
+export const useCreateFixture = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFixture>>, TError,{data: BodyType<CreateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFixture>>,
+        TError,
+        {data: BodyType<CreateFixtureBody>},
+        TContext
+      > => {
+      return useMutation(getCreateFixtureMutationOptions(options));
+    }
+
+export const getUpdateFixtureUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}`
+}
+
+/**
+ * @summary Update a fixture
+ */
+export const updateFixture = async (id: number,
+    updateFixtureBody: UpdateFixtureBody, options?: RequestInit): Promise<Fixture> => {
+
+  return customFetch<Fixture>(getUpdateFixtureUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateFixtureBody,)
+  }
+);}
+
+
+
+
+export const getUpdateFixtureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFixture>>, TError,{id: number;data: BodyType<UpdateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFixture>>, TError,{id: number;data: BodyType<UpdateFixtureBody>}, TContext> => {
+
+const mutationKey = ['updateFixture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFixture>>, {id: number;data: BodyType<UpdateFixtureBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFixture(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof updateFixture>>>
+    export type UpdateFixtureMutationBody = BodyType<UpdateFixtureBody>
+    export type UpdateFixtureMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a fixture
+ */
+export const useUpdateFixture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFixture>>, TError,{id: number;data: BodyType<UpdateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFixture>>,
+        TError,
+        {id: number;data: BodyType<UpdateFixtureBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateFixtureMutationOptions(options));
+    }
+
+export const getDeleteFixtureUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}`
+}
+
+/**
+ * @summary Delete a fixture (its team list cascades)
+ */
+export const deleteFixture = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteFixtureUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteFixtureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFixture>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteFixture>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteFixture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFixture>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteFixture(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof deleteFixture>>>
+
+    export type DeleteFixtureMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a fixture (its team list cascades)
+ */
+export const useDeleteFixture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFixture>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteFixture>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteFixtureMutationOptions(options));
+    }
+
+export const getGetFixtureTeamListUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}/team-list`
+}
+
+/**
+ * @summary Get the team list (XI) for a fixture
+ */
+export const getFixtureTeamList = async (id: number, options?: RequestInit): Promise<TeamList | null> => {
+
+  return customFetch<TeamList | null>(getGetFixtureTeamListUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFixtureTeamListQueryKey = (id: number,) => {
+    return [
+    `/api/fixtures/${id}/team-list`
+    ] as const;
+    }
+
+
+export const getGetFixtureTeamListQueryOptions = <TData = Awaited<ReturnType<typeof getFixtureTeamList>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureTeamList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFixtureTeamListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFixtureTeamList>>> = ({ signal }) => getFixtureTeamList(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFixtureTeamList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFixtureTeamListQueryResult = NonNullable<Awaited<ReturnType<typeof getFixtureTeamList>>>
+export type GetFixtureTeamListQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the team list (XI) for a fixture
+ */
+
+export function useGetFixtureTeamList<TData = Awaited<ReturnType<typeof getFixtureTeamList>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureTeamList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFixtureTeamListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPutFixtureTeamListUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}/team-list`
+}
+
+/**
+ * @summary Create or replace the team list for a fixture (one XI per fixture)
+ */
+export const putFixtureTeamList = async (id: number,
+    putTeamListBody: PutTeamListBody, options?: RequestInit): Promise<TeamList> => {
+
+  return customFetch<TeamList>(getPutFixtureTeamListUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putTeamListBody,)
+  }
+);}
+
+
+
+
+export const getPutFixtureTeamListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFixtureTeamList>>, TError,{id: number;data: BodyType<PutTeamListBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putFixtureTeamList>>, TError,{id: number;data: BodyType<PutTeamListBody>}, TContext> => {
+
+const mutationKey = ['putFixtureTeamList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putFixtureTeamList>>, {id: number;data: BodyType<PutTeamListBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  putFixtureTeamList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutFixtureTeamListMutationResult = NonNullable<Awaited<ReturnType<typeof putFixtureTeamList>>>
+    export type PutFixtureTeamListMutationBody = BodyType<PutTeamListBody>
+    export type PutFixtureTeamListMutationError = ErrorType<void>
+
+    /**
+ * @summary Create or replace the team list for a fixture (one XI per fixture)
+ */
+export const usePutFixtureTeamList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFixtureTeamList>>, TError,{id: number;data: BodyType<PutTeamListBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putFixtureTeamList>>,
+        TError,
+        {id: number;data: BodyType<PutTeamListBody>},
+        TContext
+      > => {
+      return useMutation(getPutFixtureTeamListMutationOptions(options));
     }
 
 export const getGetMilestoneBoardSettingsUrl = () => {

@@ -303,6 +303,9 @@ export const socialSettingsTable = pgTable(
     captionsEnabled: boolean("captions_enabled").notNull().default(true),
     clubHashtag: text("club_hashtag").notNull().default(""),
     clubUrl: text("club_url").notNull().default(""),
+    // Admin override for the season start used by countdown cards. Null = derive
+    // from the earliest upcoming fixture (min startAt); set = this date wins.
+    seasonStartDate: timestamp("season_start_date", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
