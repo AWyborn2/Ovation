@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, or, sql } from "drizzle-orm";
+import { and, asc, eq, or } from "drizzle-orm";
 import {
   db,
   sponsorsTable,
@@ -53,92 +53,20 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { ensurePackTemplates } from "../lib/design-packs";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
+import {
+  DEFAULT_TEMPLATES,
+  ensureSettings,
+  ensureThemes,
+  clearDefaultKinds,
+  CARD_SET_MIN_SLIDES,
+  CARD_SET_MAX_SLIDES,
+} from "../lib/social-cards-helpers";
+
+// Re-exported for social-cards-templates.test.ts, which asserts the shipped
+// defaults carry no tenant-specific brand string.
+export { DEFAULT_TEMPLATES };
 
 const router: IRouter = Router();
-
-export const DEFAULT_TEMPLATES: { engine: string; platform: string; template: string }[] = [
-  {
-    engine: "ondemand",
-    platform: "instagram",
-    template:
-      "{player.name} — {stat.label}: {stat.value} 🏏\n\nHonour board form. {app.link}\n\n{hashtag} #ClubCricket",
-  },
-  {
-    engine: "ondemand",
-    platform: "facebook",
-    template:
-      "{player.name} now sits on {stat.value} {stat.label}. Follow the full season at {app.link}\n\n{hashtag}",
-  },
-  {
-    engine: "ondemand",
-    platform: "twitter",
-    template: "{player.name} • {stat.value} {stat.label} {app.link} {hashtag}",
-  },
-  {
-    engine: "milestone",
-    platform: "instagram",
-    template:
-      "🏆 MILESTONE — {player.name}\n{stat.tier}: {stat.value} {stat.label}\n\nCongratulations from everyone at the club. {app.link}\n\n{hashtag}",
-  },
-  {
-    engine: "milestone",
-    platform: "facebook",
-    template:
-      "Milestone alert: {player.name} has joined the {stat.tier} for {stat.label} with {stat.value}. {app.link} {hashtag}",
-  },
-  {
-    engine: "milestone",
-    platform: "twitter",
-    template:
-      "🏆 {player.name} • {stat.tier} • {stat.value} {stat.label} {app.link} {hashtag}",
-  },
-  {
-    engine: "roundup",
-    platform: "instagram",
-    template:
-      "Round-up — top performers this weekend 👇\n\n{app.link}\n\n{hashtag} #ClubCricket",
-  },
-  {
-    engine: "roundup",
-    platform: "facebook",
-    template: "This weekend's top performers across the grades. {app.link} {hashtag}",
-  },
-  {
-    engine: "roundup",
-    platform: "twitter",
-    template: "Round-up: top performers. {app.link} {hashtag}",
-  },
-  {
-    engine: "recap",
-    platform: "instagram",
-    template:
-      "Season recap — {grade.name} 📋\n\nLeading the way this season. {app.link}\n\n{hashtag}",
-  },
-  {
-    engine: "recap",
-    platform: "facebook",
-    template: "Season recap: {grade.name} — the players who led the way. {app.link} {hashtag}",
-  },
-  {
-    engine: "recap",
-    platform: "twitter",
-    template: "Season recap: {grade.name}. {app.link} {hashtag}",
-  },
-];
-
-async function ensureSettings(tenantId: number) {
-  const settings = await getOrCreateSettings(socialSettingsTable, tenantId);
-  // Seed this tenant's default caption templates if missing.
-  for (const t of DEFAULT_TEMPLATES) {
-    await db
-      .insert(captionTemplatesTable)
-      .values({ ...t, tenantId })
-      .onConflictDoNothing({
-        target: [captionTemplatesTable.tenantId, captionTemplatesTable.engine, captionTemplatesTable.platform],
-      });
-  }
-  return settings;
-}
 
 router.get("/sponsors", async (req, res): Promise<void> => {
   const rows = await db
@@ -214,25 +142,6 @@ router.delete("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"),
   }
   res.status(204).end();
 });
-
-async function ensureThemes(tenantId: number) {
-  const [existing] = await db
-    .select()
-    .from(cardThemesTable)
-    .where(eq(cardThemesTable.tenantId, tenantId))
-    .limit(1);
-  if (existing) return;
-  await db.insert(cardThemesTable).values({
-    tenantId,
-    name: "Club Classic",
-    bgDark: "#322F3D",
-    bgPanel: "#3F3C4C",
-    accent: "#FBD039",
-    textLight: "#F5F2E8",
-    isDefault: true,
-    displayOrder: 0,
-  });
-}
 
 router.get("/card-themes", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
@@ -462,34 +371,6 @@ router.delete("/card-audio-tracks/:id", requireAdmin, requireEntitlement("social
 
 // --- Custom "bring your own" card templates -------------------------------
 
-// A card kind may be the default for at most one template. Before a template
-// claims a set of kinds as its defaults, strip those kinds from every other
-// template's `default_for_kinds` array. `exceptId` skips the template being
-// written so it can keep kinds it already owns.
-const clearDefaultKinds = async (
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  tenantId: number,
-  kinds: string[],
-  exceptId?: number,
-): Promise<void> => {
-  await tx
-    .update(cardTemplatesTable)
-    .set({
-      defaultForKinds: sql`COALESCE((
-        SELECT array_agg(k)
-        FROM unnest(${cardTemplatesTable.defaultForKinds}) AS k
-        WHERE k <> ALL(${kinds}::text[])
-      ), '{}')`,
-    })
-    .where(
-      and(
-        eq(cardTemplatesTable.tenantId, tenantId),
-        sql`${cardTemplatesTable.defaultForKinds} && ${kinds}::text[]`,
-        exceptId !== undefined ? sql`${cardTemplatesTable.id} <> ${exceptId}` : undefined,
-      ),
-    );
-};
-
 router.get("/card-templates", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
   try {
@@ -711,12 +592,6 @@ router.delete("/card-effect-presets/:id", requireAdmin, requireEntitlement("soci
 // Reading is public, but the public only ever sees PUBLISHED sets; admins see
 // every set (drafts included) so they can keep editing. Authoring (create /
 // update / delete) is admin-only.
-
-// A publishable / exportable carousel must hold between 2 and 10 slides. The
-// upper bound is also enforced by the generated zod body (maxItems: 10); this
-// guards the 2-slide floor, which only applies once a set is published.
-const CARD_SET_MIN_SLIDES = 2;
-const CARD_SET_MAX_SLIDES = 10;
 
 router.get("/card-sets", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
