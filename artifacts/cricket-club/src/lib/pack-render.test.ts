@@ -142,6 +142,34 @@ describe("renderPackCard", () => {
     expect(html).toMatch(/--disp:\s*'Bebas Neue'/);
   });
 
+  it("binds the premiership teamPhotoUrl into the teamPhoto slot (both formats)", () => {
+    const base = sampleCardInput("premiership");
+    const url = "/api/storage/objects/premiers-2024.jpg";
+    const input = { ...base, teamPhotoUrl: url } as ShareCardInput;
+    for (const size of ["square", "story"] as CardSize[]) {
+      const html = renderPackCard(input, size, true, TOKENS, false);
+      expect(html, size).toContain(`<img src="${url}"`);
+      expect(hasUnresolved(html)).toBe(false);
+    }
+  });
+
+  it("renders a placeholder (never an empty img src) for a premiership with no teamPhotoUrl", () => {
+    const html = renderPackCard(sampleCardInput("premiership"), "story", true, TOKENS, false);
+    expect(html).not.toContain('src=""');
+    expect(html).toContain("pack-slot-placeholder");
+  });
+
+  it("binds the teamList squadPhotoUrl into the squadPhoto slot (both formats)", () => {
+    const base = sampleCardInput("teamList");
+    const url = "/api/storage/objects/squad-a-grade.jpg";
+    const input = { ...base, squadPhotoUrl: url } as ShareCardInput;
+    for (const size of ["square", "story"] as CardSize[]) {
+      const html = renderPackCard(input, size, true, TOKENS, false);
+      expect(html, size).toContain(`<img src="${url}"`);
+      expect(hasUnresolved(html)).toBe(false);
+    }
+  });
+
   it("falls back sanely for an unknown size", () => {
     const html = renderPackCard(
       sampleCardInput("ladder"),

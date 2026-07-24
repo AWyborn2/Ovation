@@ -9,7 +9,16 @@
 
 import type { CardKind } from "@/lib/share-card";
 
-export type ScalarType = "text" | "number" | "textarea" | "switch" | "select";
+export type ScalarType =
+  | "text"
+  | "number"
+  | "textarea"
+  | "switch"
+  | "select"
+  // An image slot: upload (presigned object storage) or paste a URL. The state
+  // value is a plain URL string, exactly like the legacy free-text photo field,
+  // so nothing downstream (input binding, save, server render) changes shape.
+  | "image";
 
 export interface ScalarField {
   key: string;
@@ -163,6 +172,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       { key: "competition", label: "Competition", type: "text" },
       { key: "result", label: "Result", type: "text", placeholder: "Champions" },
       { key: "mom", label: "Player of the final", type: "text" },
+      { key: "teamPhotoUrl", label: "Team photo", type: "image", full: true },
       { key: "headline", label: "Headline", type: "text", full: true },
     ],
   },
@@ -249,7 +259,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       { key: "gradeRound", label: "Grade / round heading", type: "text" },
       { key: "competitionLine", label: "Competition line", type: "text" },
       { key: "venueDateTime", label: "Venue / date / time", type: "text", full: true },
-      { key: "squadPhotoUrl", label: "Squad photo URL", type: "text", placeholder: "https://…", full: true },
+      { key: "squadPhotoUrl", label: "Squad photo", type: "image", full: true },
     ],
     repeat: {
       key: "players",

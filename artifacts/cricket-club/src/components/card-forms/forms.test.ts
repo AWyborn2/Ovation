@@ -1,6 +1,10 @@
+import { createElement } from "react";
 import { describe, expect, it } from "vitest";
+import { render } from "@testing-library/react";
 import { CARD_KINDS } from "@/lib/share-card";
 import { renderPackCard, type PackTokens } from "@/lib/pack-render";
+import { GenericCardForm } from "./fields";
+import { DESCRIPTORS } from "./descriptors";
 import {
   initialCardState,
   buildCardInput,
@@ -78,6 +82,76 @@ describe("card-forms: editing a field flows into the built input + preview", () 
     const input = buildCardInput("ladder", { ...initialCardState("ladder"), ...edited }, false);
     const html = renderPackCard(input, "square", true, TOKENS, false);
     expect(html).toContain("Renamed");
+  });
+});
+
+describe("card-forms: image field type (team/squad photo upload)", () => {
+  it("premiership carries teamPhotoUrl from form state into the built input", () => {
+    const url = "/api/storage/objects/premiers-2024.jpg";
+    const state = { ...initialCardState("premiership"), teamPhotoUrl: url };
+    const input = buildCardInput("premiership", state, false) as Extract<
+      ReturnType<typeof buildCardInput>,
+      { kind: "premiership" }
+    >;
+    expect(input.teamPhotoUrl).toBe(url);
+    // And it renders into the teamPhoto slot as an <img> (not left as a placeholder).
+    const html = renderPackCard(input, "square", true, TOKENS, false);
+    expect(html).toContain(`<img src="${url}"`);
+  });
+
+  it("teamList carries squadPhotoUrl from form state into the built input", () => {
+    const url = "/api/storage/objects/squad-a-grade.jpg";
+    const state = { ...initialCardState("teamList"), squadPhotoUrl: url };
+    const input = buildCardInput("teamList", state, false) as Extract<
+      ReturnType<typeof buildCardInput>,
+      { kind: "teamList" }
+    >;
+    expect(input.squadPhotoUrl).toBe(url);
+  });
+
+  it("descriptors mark the team/squad photo fields as image (not free-text)", () => {
+    const prem = DESCRIPTORS.premiership.fields.find((f) => f.key === "teamPhotoUrl");
+    expect(prem?.type).toBe("image");
+    const squad = DESCRIPTORS.teamList.fields.find((f) => f.key === "squadPhotoUrl");
+    expect(squad?.type).toBe("image");
+  });
+
+  it("ScalarControl routes an image field to the upload control (file input + upload button)", () => {
+    const { container, getByText } = render(
+      createElement(GenericCardForm, {
+        kind: "premiership",
+        descriptor: DESCRIPTORS.premiership,
+        state: initialCardState("premiership"),
+        setState: () => {},
+      }),
+    );
+    // ImageControl renders a hidden image file input — unique to the image type.
+    const fileInput = container.querySelector('input[type="file"][accept="image/*"]');
+    expect(fileInput).not.toBeNull();
+    // …and the upload affordance (no value yet → "Upload image").
+    expect(getByText("Upload image")).toBeTruthy();
+    // The Team photo label is present; a plain text field (Competition) is not a file input.
+    expect(getByText("Team photo")).toBeTruthy();
+  });
+
+  it("with a value set, the URL input stays present (editable in place) and shows Replace/preview", () => {
+    const url = "/api/storage/objects/premiers-2024.jpg";
+    const { container, getByText } = render(
+      createElement(GenericCardForm, {
+        kind: "premiership",
+        descriptor: DESCRIPTORS.premiership,
+        state: { ...initialCardState("premiership"), teamPhotoUrl: url },
+        setState: () => {},
+      }),
+    );
+    // The URL text input remains mounted even with a value → typing/legacy edits
+    // work (the fix for the "unmounts after first keystroke" regression). Match on
+    // the live DOM value property, not the attribute (controlled inputs).
+    const inputs = Array.from(container.querySelectorAll<HTMLInputElement>("input"));
+    expect(inputs.some((el) => el.value === url)).toBe(true);
+    // Preview image (alt = "<label> preview") and the Replace affordance both show.
+    expect(container.querySelector('img[alt="Team photo preview"]')).not.toBeNull();
+    expect(getByText("Replace image")).toBeTruthy();
   });
 });
 
