@@ -4594,6 +4594,86 @@ export const GenerateCardSetResponse = zod.object({
 
 
 /**
+ * Gathers this tenant's APPROVED match-summary social drafts for the given (season, round[, grade]) scope and delegates to the same generate core as POST /card-sets/generate — assembling one carousel card_sets row per (season, round, grade), keyed on the grouping columns so re-running UPDATES the same set rather than double-posting. Junior and senior drafts are scoped separately via `junior` and never blended. Gated by the per-tenant `autoseedCarousels` toggle (default off); when disabled, or when there are no approved drafts in scope, it is a no-op returning an empty list with a `skipped` reason.
+ * @summary Auto-seed carousel(s) from a round's approved match-summary drafts
+ */
+export const autoseedCardSetBodyJuniorDefault = false;
+
+export const AutoseedCardSetBody = zod.object({
+  "season": zod.number(),
+  "round": zod.number(),
+  "grade": zod.string().optional(),
+  "junior": zod.boolean().default(autoseedCardSetBodyJuniorDefault),
+  "platformSize": zod.enum(['square', 'portrait', 'story'])
+})
+
+export const AutoseedCardSetResponse = zod.object({
+  "generated": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "slides": zod.array(zod.object({
+  "id": zod.string(),
+  "input": zod.record(zod.string(), zod.unknown()),
+  "layout": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif', 'oswald', 'cinzel', 'garamond', 'mono', 'inter']).optional(),
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
+})).optional(),
+  "themeId": zod.number().nullish(),
+  "motionPreset": zod.string().optional()
+})),
+  "isPublished": zod.boolean(),
+  "sourceKind": zod.string().nullish(),
+  "sourceRound": zod.number().nullish(),
+  "season": zod.number().nullish(),
+  "grade": zod.string().nullish()
+})),
+  "skipped": zod.string().optional()
+})
+
+
+/**
  * @summary Update a carousel card set (name, size, slides)
  */
 export const UpdateCardSetParams = zod.object({
@@ -4747,6 +4827,7 @@ export const GetSocialSettingsResponse = zod.object({
   "matchSummaryGradeConfig": zod.record(zod.string(), zod.object({
   "enabled": zod.boolean()
 })).optional().describe('Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior)'),
+  "autoseedCarousels": zod.boolean().optional().describe('Whether a round\'s approved match-summary drafts auto-seed a carousel (POST \/card-sets\/autoseed). Default OFF.'),
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
@@ -4797,6 +4878,7 @@ export const UpdateSocialSettingsBody = zod.object({
   "matchSummaryGradeConfig": zod.record(zod.string(), zod.object({
   "enabled": zod.boolean()
 })).optional().describe('Per-grade auto-draft config'),
+  "autoseedCarousels": zod.boolean().optional().describe('Whether a round\'s approved match-summary drafts auto-seed a carousel. Default OFF.'),
   "sizeSquare": zod.boolean().optional(),
   "sizePortrait": zod.boolean().optional(),
   "sizeStory": zod.boolean().optional(),
@@ -4816,6 +4898,7 @@ export const UpdateSocialSettingsResponse = zod.object({
   "matchSummaryGradeConfig": zod.record(zod.string(), zod.object({
   "enabled": zod.boolean()
 })).optional().describe('Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior)'),
+  "autoseedCarousels": zod.boolean().optional().describe('Whether a round\'s approved match-summary drafts auto-seed a carousel (POST \/card-sets\/autoseed). Default OFF.'),
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),

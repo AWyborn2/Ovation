@@ -27,6 +27,8 @@ import type {
   AdminTenant,
   AdminTenantDetail,
   AdminUpdate,
+  AutoseedCardSetBody,
+  AutoseedCardSetResult,
   AvailableClub,
   Award,
   AwardInput,
@@ -11738,6 +11740,78 @@ export const useGenerateCardSet = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getGenerateCardSetMutationOptions(options));
+    }
+
+export const getAutoseedCardSetUrl = () => {
+
+
+
+
+  return `/api/card-sets/autoseed`
+}
+
+/**
+ * Gathers this tenant's APPROVED match-summary social drafts for the given (season, round[, grade]) scope and delegates to the same generate core as POST /card-sets/generate — assembling one carousel card_sets row per (season, round, grade), keyed on the grouping columns so re-running UPDATES the same set rather than double-posting. Junior and senior drafts are scoped separately via `junior` and never blended. Gated by the per-tenant `autoseedCarousels` toggle (default off); when disabled, or when there are no approved drafts in scope, it is a no-op returning an empty list with a `skipped` reason.
+ * @summary Auto-seed carousel(s) from a round's approved match-summary drafts
+ */
+export const autoseedCardSet = async (autoseedCardSetBody: AutoseedCardSetBody, options?: RequestInit): Promise<AutoseedCardSetResult> => {
+
+  return customFetch<AutoseedCardSetResult>(getAutoseedCardSetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      autoseedCardSetBody,)
+  }
+);}
+
+
+
+
+export const getAutoseedCardSetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof autoseedCardSet>>, TError,{data: BodyType<AutoseedCardSetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof autoseedCardSet>>, TError,{data: BodyType<AutoseedCardSetBody>}, TContext> => {
+
+const mutationKey = ['autoseedCardSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof autoseedCardSet>>, {data: BodyType<AutoseedCardSetBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  autoseedCardSet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AutoseedCardSetMutationResult = NonNullable<Awaited<ReturnType<typeof autoseedCardSet>>>
+    export type AutoseedCardSetMutationBody = BodyType<AutoseedCardSetBody>
+    export type AutoseedCardSetMutationError = ErrorType<void>
+
+    /**
+ * @summary Auto-seed carousel(s) from a round's approved match-summary drafts
+ */
+export const useAutoseedCardSet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof autoseedCardSet>>, TError,{data: BodyType<AutoseedCardSetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof autoseedCardSet>>,
+        TError,
+        {data: BodyType<AutoseedCardSetBody>},
+        TContext
+      > => {
+      return useMutation(getAutoseedCardSetMutationOptions(options));
     }
 
 export const getUpdateCardSetUrl = (id: number,) => {

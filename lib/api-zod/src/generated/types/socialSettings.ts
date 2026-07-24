@@ -16,6 +16,8 @@ export interface SocialSettings {
   engineMatchSummary: boolean;
   /** Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior) */
   matchSummaryGradeConfig?: SocialSettingsMatchSummaryGradeConfig;
+  /** Whether a round's approved match-summary drafts auto-seed a carousel (POST /card-sets/autoseed). Default OFF. */
+  autoseedCarousels?: boolean;
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;

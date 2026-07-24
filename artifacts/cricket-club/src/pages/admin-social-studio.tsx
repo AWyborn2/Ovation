@@ -556,6 +556,9 @@ function MatchSummarySettings({
   const [masterEnabled, setMasterEnabled] = useState<boolean>(
     settings.engineMatchSummary === true,
   );
+  const [autoseedEnabled, setAutoseedEnabled] = useState<boolean>(
+    settings.autoseedCarousels === true,
+  );
   const [gradeConfig, setGradeConfig] = useState<MatchSummaryGradeConfig>(
     () => settings.matchSummaryGradeConfig ?? {},
   );
@@ -573,6 +576,7 @@ function MatchSummarySettings({
 
   useEffect(() => {
     setMasterEnabled(settings.engineMatchSummary === true);
+    setAutoseedEnabled(settings.autoseedCarousels === true);
     setGradeConfig(settings.matchSummaryGradeConfig ?? {});
   }, [settings]);
 
@@ -598,6 +602,7 @@ function MatchSummarySettings({
     update.mutate({
       data: {
         engineMatchSummary: masterEnabled,
+        autoseedCarousels: autoseedEnabled,
         matchSummaryGradeConfig: gradeConfig,
       },
     });
@@ -669,6 +674,22 @@ function MatchSummarySettings({
               </div>
             </div>
           )}
+
+          {/* Auto-seed carousels toggle (dormant by default). Turns a round's
+              APPROVED match-summary drafts into a carousel set. */}
+          <div className="flex items-start justify-between gap-3 border rounded p-3">
+            <div>
+              <div className="font-medium">Auto-Seed Round Carousels</div>
+              <div className="text-xs text-muted-foreground">
+                When a round's match-summary drafts are approved, assemble them
+                into one carousel set (re-running updates the same set)
+              </div>
+            </div>
+            <Switch
+              checked={autoseedEnabled}
+              onCheckedChange={setAutoseedEnabled}
+            />
+          </div>
 
           {error && <div className="text-sm text-destructive">{error}</div>}
 

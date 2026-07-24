@@ -363,6 +363,10 @@ export const socialSettingsTable = pgTable(
     engineRecap: boolean("engine_recap").notNull().default(false),
     engineMatchSummary: boolean("engine_match_summary").notNull().default(true), // deliberately defaults ON (convention break — see plan)
     matchSummaryGradeConfig: jsonb("match_summary_grade_config").$type<Record<string, { enabled: boolean }>>().notNull().default({}),
+    // Gates POST /card-sets/autoseed — auto-assembling a round's APPROVED
+    // match-summary drafts into a carousel card_sets row. Default OFF: dormant
+    // like the other social-automation toggles until a tenant opts in.
+    autoseedCarousels: boolean("autoseed_carousels").notNull().default(false),
     sizeSquare: boolean("size_square").notNull().default(true),
     sizePortrait: boolean("size_portrait").notNull().default(true),
     sizeStory: boolean("size_story").notNull().default(true),

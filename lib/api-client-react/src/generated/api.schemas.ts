@@ -3195,6 +3195,28 @@ export interface GenerateCardSetBody {
   platformSize: GenerateCardSetBodyPlatformSize;
 }
 
+export type AutoseedCardSetBodyPlatformSize = typeof AutoseedCardSetBodyPlatformSize[keyof typeof AutoseedCardSetBodyPlatformSize];
+
+
+export const AutoseedCardSetBodyPlatformSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+} as const;
+
+export interface AutoseedCardSetBody {
+  season: number;
+  round: number;
+  grade?: string;
+  junior?: boolean;
+  platformSize: AutoseedCardSetBodyPlatformSize;
+}
+
+export interface AutoseedCardSetResult {
+  generated: CardSet[];
+  skipped?: string;
+}
+
 export type CardSetInputPlatformSize = typeof CardSetInputPlatformSize[keyof typeof CardSetInputPlatformSize];
 
 
@@ -3232,6 +3254,8 @@ export interface SocialSettings {
   engineMatchSummary: boolean;
   /** Per-grade auto-draft config. Missing key = use default (ON senior, OFF junior) */
   matchSummaryGradeConfig?: SocialSettingsMatchSummaryGradeConfig;
+  /** Whether a round's approved match-summary drafts auto-seed a carousel (POST /card-sets/autoseed). Default OFF. */
+  autoseedCarousels?: boolean;
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;
@@ -3262,6 +3286,8 @@ export interface SocialSettingsUpdate {
   engineMatchSummary?: boolean;
   /** Per-grade auto-draft config */
   matchSummaryGradeConfig?: SocialSettingsUpdateMatchSummaryGradeConfig;
+  /** Whether a round's approved match-summary drafts auto-seed a carousel. Default OFF. */
+  autoseedCarousels?: boolean;
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;
