@@ -11,7 +11,7 @@ import {
   prepareAnimation,
 } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
-import { packNativeSize } from "@/lib/pack-render";
+import { packNativeSize, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 
 // Metrics returned by init() so the server knows how many frames to capture.
@@ -23,11 +23,16 @@ type HarnessMeta = {
 };
 
 // Static-mode payload: the same values that drive the live <PackCard> preview.
+// `data` carries the tenant logo / name / hashtags / sponsors / uploaded photo
+// so the server PNG matches the branded preview (options are opaque over the
+// wire — `CardRenderStillInput.options` is `additionalProperties: true`, so no
+// OpenAPI change was needed to add this field).
 type StillOptions = {
   size: CardSize;
   sponsorsOn: boolean;
   junior: boolean;
   theme?: ApiCardTheme | null;
+  data?: PackCardData | null;
 };
 
 // Metrics returned by renderStill() so the server knows what to screenshot.
@@ -151,6 +156,7 @@ export default function CardRenderHarness() {
             sponsorsOn={options.sponsorsOn}
             theme={options.theme ?? null}
             junior={options.junior}
+            data={options.data ?? null}
             width={native.w}
           />,
         );
