@@ -159,11 +159,15 @@ function ImageControl({
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      {value ? (
+      {/* The URL text input is ALWAYS present (even with a value set), so a
+          pasted or hand-typed URL stays editable in place and legacy
+          `squadPhotoUrl` values remain editable — matching the old free-text
+          field. Upload and preview sit alongside it, not instead of it. */}
+      {value && (
         <div className="flex items-start gap-3">
           <img
             src={value}
-            alt=""
+            alt={`${label} preview`}
             className="h-20 w-28 rounded border object-cover bg-muted"
           />
           <Button
@@ -175,39 +179,36 @@ function ImageControl({
             <X className="h-3.5 w-3.5 mr-1" /> Remove
           </Button>
         </div>
-      ) : (
-        <div className="space-y-1.5">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              if (f) void handleFile(f);
-            }}
-          />
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isUploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="h-3.5 w-3.5 mr-1" />
-              {isUploading ? "Uploading…" : "Upload image"}
-            </Button>
-            <span className="text-xs text-muted-foreground">or paste a URL</span>
-          </div>
-          <Input
-            value={value}
-            placeholder="https://…"
-            onChange={(e) => onChange(e.target.value)}
-          />
-        </div>
       )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) void handleFile(f);
+        }}
+      />
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isUploading}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="h-3.5 w-3.5 mr-1" />
+          {isUploading ? "Uploading…" : value ? "Replace image" : "Upload image"}
+        </Button>
+        <span className="text-xs text-muted-foreground">or paste a URL</span>
+      </div>
+      <Input
+        value={value}
+        placeholder="https://…"
+        onChange={(e) => onChange(e.target.value)}
+      />
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
