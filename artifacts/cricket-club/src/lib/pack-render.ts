@@ -129,6 +129,41 @@ export interface PackCardData {
    * Only the `photo` slot honours this; POTM / logos / sponsors ignore it.
    */
   photoPlacement?: PackPhotoPlacement | null;
+  /**
+   * Generic per-slot image overrides (B1), keyed by render slot key
+   * (`clubLogo`, `photo`, `potm.photo`, `club.logo`, `opposition.logo`,
+   * `teamPhoto`, `squadPhoto`, `sponsor1..3`, …). An admin-supplied image for
+   * ANY slot a template exposes wins over both the bound input image and the
+   * brand / sponsor / uploaded-photo overlays above — i.e. resolution is
+   * `override > input > bind` (see {@link applyPackData}). This is the generic
+   * mechanism the descriptor `image` fields stop short of: those cover only the
+   * input-driven slots (player photo / opposition logo / team & squad photo),
+   * whereas this map lets an admin repoint any slot (a logo, a sponsor tile, the
+   * match-result POTM headshot, …). Absent / empty leaves every slot on its
+   * bound or overlaid value, so existing renders are byte-identical.
+   */
+  imagesOverride?: Record<string, string> | null;
+}
+
+/** An image slot (photo/logo) a pack template exposes, for the per-slot editor. */
+export interface PackImageSlot {
+  key: string;
+  label: string;
+  type: "photo" | "logo";
+}
+
+/**
+ * The image slots (photo/logo) a card kind's pack template exposes, each with
+ * the template's own human label — the enumeration that drives the modal's
+ * generic per-slot image-override editor (B1). Text and repeat fields are
+ * skipped; an unsupported kind (no pack design) yields `[]`.
+ */
+export function packImageSlots(input: ShareCardInput): PackImageSlot[] {
+  const template = resolveTemplate(input);
+  if (!template) return [];
+  return template.fields
+    .filter((f) => f.type === "photo" || f.type === "logo")
+    .map((f) => ({ key: f.key, label: f.label, type: f.type as "photo" | "logo" }));
 }
 
 // ---------------------------------------------------------------------------
@@ -996,6 +1031,17 @@ function applyPackData(bound: BoundInput, data: PackCardData, kind: string): voi
     // A5 — match-result's POTM headshot has no dedicated image source on the
     // matchSummary input, so the threaded photo (when present) fills it too.
     if (kind === "matchSummary") images["potm.photo"] = data.photoUrl;
+  }
+
+  // B1 — generic per-slot image overrides. Applied LAST so an admin's explicit
+  // per-slot upload wins over both the bound input image and every overlay above
+  // (brand logo, sponsors, uploaded photo): override > input > bind. Empty
+  // values are ignored so a cleared override falls back rather than blanking the
+  // slot.
+  if (data.imagesOverride) {
+    for (const [slotKey, url] of Object.entries(data.imagesOverride)) {
+      if (url) images[slotKey] = url;
+    }
   }
 }
 

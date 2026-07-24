@@ -91,11 +91,15 @@ const WRAP_OUTCOME = [
   { value: "draw", label: "Draw" },
 ] as const;
 
-const photo = (label = "Photo URL"): ScalarField => ({
+// Player hero photo slot. An `image` field so it gets the upload/pick control
+// (B1) rather than a bare "…URL" text box; ImageControl keeps a paste-URL
+// fallback so existing stored `photoUrl` values still edit in place. The state
+// value is still a plain URL string under `photoUrl`, so binding/save/render are
+// unchanged.
+const photo = (label = "Photo"): ScalarField => ({
   key: "photoUrl",
   label,
-  type: "text",
-  placeholder: "https://…",
+  type: "image",
   full: true,
 });
 
@@ -243,7 +247,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     fields: [
       { key: "roundLabel", label: "Round label", type: "text", placeholder: "ROUND 8" },
       { key: "oppositionName", label: "Opposition", type: "text" },
-      { key: "oppositionLogoUrl", label: "Opposition logo URL", type: "text", placeholder: "https://…", full: true },
+      { key: "oppositionLogoUrl", label: "Opposition logo", type: "image", full: true },
       { key: "homeAway", label: "Home / away", type: "select", options: HOME_AWAY },
       { key: "venue", label: "Venue", type: "text" },
       { key: "date", label: "Date", type: "text", placeholder: "SAT 14 DEC" },

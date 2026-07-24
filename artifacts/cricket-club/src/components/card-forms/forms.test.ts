@@ -116,6 +116,53 @@ describe("card-forms: image field type (team/squad photo upload)", () => {
     expect(squad?.type).toBe("image");
   });
 
+  it("(B1) converts the remaining URL slots — player photo + opposition logo — to image", () => {
+    // Every kind that used the shared `photo()` descriptor now exposes an upload
+    // control, not a free-text "…URL" box.
+    for (const kind of [
+      "milestone",
+      "player",
+      "record",
+      "gradeLeader",
+      "debut",
+      "newCap",
+      "century",
+      "fiveFor",
+      "bigMoment",
+      "newSigning",
+    ] as const) {
+      const f = DESCRIPTORS[kind].fields.find((x) => x.key === "photoUrl");
+      expect(f?.type, kind).toBe("image");
+    }
+    // The match-day opposition logo is likewise an image slot now.
+    const oppLogo = DESCRIPTORS.matchDay.fields.find((f) => f.key === "oppositionLogoUrl");
+    expect(oppLogo?.type).toBe("image");
+    // No descriptor keeps a free-text "...Url" field any more.
+    for (const desc of Object.values(DESCRIPTORS)) {
+      for (const f of desc.fields) {
+        if (f.key.endsWith("Url")) expect(f.type, f.key).toBe("image");
+      }
+    }
+  });
+
+  it("(B1) ScalarControl routes the converted opposition-logo field to the upload control", () => {
+    // matchDay's oppositionLogoUrl was a free-text URL box; it is now an image
+    // slot. (matchDay has no player typeahead, so it renders standalone.)
+    const { container, getByText } = render(
+      createElement(GenericCardForm, {
+        kind: "matchDay",
+        descriptor: DESCRIPTORS.matchDay,
+        state: initialCardState("matchDay"),
+        setState: () => {},
+      }),
+    );
+    // The image field renders ImageControl's hidden file input + upload button.
+    const fileInput = container.querySelector('input[type="file"][accept="image/*"]');
+    expect(fileInput).not.toBeNull();
+    expect(getByText("Upload image")).toBeTruthy();
+    expect(getByText("Opposition logo")).toBeTruthy();
+  });
+
   it("ScalarControl routes an image field to the upload control (file input + upload button)", () => {
     const { container, getByText } = render(
       createElement(GenericCardForm, {
