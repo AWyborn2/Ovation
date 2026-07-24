@@ -474,6 +474,10 @@ export function ShareCardModal({
     presentingSponsorName,
     photoUrl: effectivePhotoUrl,
     photoTransform: transform,
+    // Reuse the existing placement toggle: on a pack card, "feature" promotes
+    // the photo to a full-bleed action shot; "headshot" keeps it contained in
+    // the template's framed region (default). Mirrors the canvas feature path.
+    photoPlacement: photoPlacement === "feature" ? "fullBleed" : "contained",
   });
 
   const { previewUrls, rendering } = useCardPreview({

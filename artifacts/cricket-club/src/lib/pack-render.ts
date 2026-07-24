@@ -48,6 +48,23 @@ export interface PackTokens {
 /** The junior brown panel, forced regardless of theme (KTD6 / replit.md). */
 export const JUNIOR_PANEL = "#42342B";
 
+/**
+ * Placement of the player hero photo on a pack card. Mirrors the canvas
+ * renderer's feature-vs-headshot concept (`PhotoPlacement` in `share-card.ts`):
+ *
+ *   - `"contained"` (default) — the photo stays in the template's own framed
+ *     region (e.g. the right-hand column of Player Spotlight), object-fit:cover.
+ *     Existing cards render byte-identical to before.
+ *   - `"fullBleed"` — the photo's wrapper is promoted to cover the whole card
+ *     (`position:absolute;inset:0`) so an action shot fills the frame edge to
+ *     edge, sitting BEHIND the template's existing scrim/gradient layers and the
+ *     text (DOM order is preserved, so legibility scrims still overlay it).
+ *
+ * Only the player hero slot (`data-slot="photo"`) is affected — the match-result
+ * POTM headshot (`potm.photo`) and every logo/sponsor slot are untouched.
+ */
+export type PackPhotoPlacement = "contained" | "fullBleed";
+
 // ---------------------------------------------------------------------------
 // Tenant data contract
 // ---------------------------------------------------------------------------
@@ -105,6 +122,13 @@ export interface PackCardData {
   /** Focal point + zoom for the photo. Only the focal point is applied (as
    * `object-position`) in the pack path; see {@link resolveSlots}. */
   photoTransform?: { focalX: number; focalY: number; zoom: number } | null;
+  /**
+   * How the player hero photo is placed (see {@link PackPhotoPlacement}).
+   * Absent / `"contained"` keeps the template's framed placement (default,
+   * unchanged); `"fullBleed"` promotes the photo to a full-card action shot.
+   * Only the `photo` slot honours this; POTM / logos / sponsors ignore it.
+   */
+  photoPlacement?: PackPhotoPlacement | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -524,12 +548,106 @@ function photoPositionStyle(
   return `;object-position:${fx}% ${fy}%`;
 }
 
+/** Marker that opens the player hero photo slot placeholder. */
+const PHOTO_SLOT_OPEN = '<div data-slot="photo" data-slot-type="photo"';
+
+/**
+ * Full-card legibility scrim injected behind the text ONLY on a full-bleed
+ * render. The templates' own scrims are column-scoped (e.g. Player Spotlight's
+ * gradients are `width:600px` / `width:56%`), so once the photo covers the whole
+ * 1080 canvas the large `{{playerName}}` — which carries no text-shadow — would
+ * otherwise sit over the RAW photo on the left. These two full-canvas gradients
+ * (top-down for the header, bottom-up for the name/stats/footer) darken the
+ * photo where text lands, mirroring the values the always-full-bleed `debut`
+ * card already uses. Layered directly after the photo (over it) but before the
+ * template's own scrims and text, so text stays fully on top. Marked with
+ * `data-fullbleed-scrim` for testability. `pointer-events:none` so it never
+ * intercepts interaction. Never emitted in contained mode → byte-identical.
+ */
+const FULL_BLEED_SCRIM =
+  `<div data-fullbleed-scrim="1" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(8,10,14,.78) 0%,rgba(8,10,14,.12) 26%,transparent 40%)"></div>` +
+  `<div data-fullbleed-scrim="1" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(6,8,11,.94) 0%,rgba(6,8,11,.45) 30%,transparent 60%)"></div>`;
+
+/**
+ * Promote the player hero photo to a full-bleed action shot by rewriting the
+ * geometry of its immediate wrapper to cover the whole card
+ * (`position:absolute;inset:0`), and inject a full-card legibility scrim
+ * ({@link FULL_BLEED_SCRIM}) right after it. The templates wrap the hero slot in
+ * a single positioned box whose only child is the slot placeholder
+ * (`<div style="position:absolute;…">${slot("photo","photo")}</div>`), so the
+ * wrapper is the `<div …>` directly preceding the placeholder. Rewriting the
+ * wrapper (not the placeholder) keeps the photo in its original DOM position —
+ * after the background base, before the scrim/gradient layers and text — so it
+ * fills the frame while the scrims (the template's column ones plus the injected
+ * full-card one) still overlay it and the text stays legible.
+ *
+ * ASSUMPTION (template-author warning): the `data-slot="photo"` placeholder must
+ * be the DIRECT, sole child of a single positioned wrapper `<div>`. A hero photo
+ * nested inside extra wrapper divs would fail the "nothing between" check and
+ * silently stay contained (no full-bleed) rather than mis-rewrite the wrong box.
+ * Keep new player templates to that one-wrapper shape for full-bleed to work.
+ *
+ * Only `data-slot="photo"` is targeted; the match-result POTM headshot
+ * (`potm.photo`) and logo/sponsor slots are left contained. Returns the html
+ * unchanged when no such wrapper is found (byte-identical to contained).
+ */
+function makePhotoSlotFullBleed(html: string): string {
+  let out = html;
+  let searchFrom = 0;
+  while (true) {
+    const photoIdx = out.indexOf(PHOTO_SLOT_OPEN, searchFrom);
+    if (photoIdx < 0) break;
+    // The wrapper is the `<div …>` immediately before the placeholder. Search
+    // strictly before `photoIdx` so we don't match the placeholder's own tag.
+    const wrapperOpen = out.lastIndexOf("<div ", photoIdx - 1);
+    const wrapperGt = wrapperOpen >= 0 ? out.indexOf(">", wrapperOpen) : -1;
+    // Confirm the wrapper directly wraps the slot (nothing between `>` and the
+    // placeholder). If not, leave this occurrence contained and move on.
+    if (
+      wrapperOpen < 0 ||
+      wrapperGt < 0 ||
+      wrapperGt >= photoIdx ||
+      out.slice(wrapperGt + 1, photoIdx).trim() !== ""
+    ) {
+      searchFrom = photoIdx + PHOTO_SLOT_OPEN.length;
+      continue;
+    }
+    const wrapperTag = out.slice(wrapperOpen, wrapperGt + 1);
+    const newTag = /style="[^"]*"/.test(wrapperTag)
+      ? wrapperTag.replace(/style="[^"]*"/, 'style="position:absolute;inset:0"')
+      : wrapperTag.replace("<div ", '<div style="position:absolute;inset:0" ');
+    // The wrapper contains exactly the flat photo-slot div, so its closing
+    // `</div>` is the second `</div>` after the placeholder (first closes the
+    // slot itself). Inject the full-card scrim as the wrapper's next sibling.
+    const slotClose = out.indexOf("</div>", photoIdx);
+    const wrapperCloseStart =
+      slotClose >= 0 ? out.indexOf("</div>", slotClose + 6) : -1;
+    const wrapperCloseEnd = wrapperCloseStart >= 0 ? wrapperCloseStart + 6 : -1;
+    if (wrapperCloseEnd < 0) {
+      // Malformed wrapper (shouldn't happen) — just rewrite the geometry.
+      out = out.slice(0, wrapperOpen) + newTag + out.slice(wrapperGt + 1);
+      searchFrom = wrapperOpen + newTag.length + PHOTO_SLOT_OPEN.length;
+      continue;
+    }
+    const rebuilt =
+      newTag + out.slice(wrapperGt + 1, wrapperCloseEnd) + FULL_BLEED_SCRIM;
+    out = out.slice(0, wrapperOpen) + rebuilt + out.slice(wrapperCloseEnd);
+    // Advance past the rewritten wrapper AND the injected scrim so neither the
+    // same slot nor the scrim markup is re-scanned (the scrim carries no
+    // photo-slot marker, but advancing keeps the loop strictly progressing).
+    searchFrom = wrapperOpen + rebuilt.length;
+  }
+  return out;
+}
+
 function resolveSlots(
   html: string,
   images: Record<string, string>,
   values: Record<string, string>,
   photoTransform?: { focalX: number; focalY: number } | null,
+  photoFullBleed = false,
 ): string {
+  if (photoFullBleed) html = makePhotoSlotFullBleed(html);
   const slotRe =
     /<div data-slot="([^"]+)" data-slot-type="([^"]+)"([^>]*)><\/div>/g;
   return html.replace(slotRe, (_all, key: string, type: string, rest: string) => {
@@ -989,10 +1107,16 @@ export function renderPackCard(
   if (data) applyPackData(bound, data, input.kind);
   const values = { ...fieldDefaults(template), ...bound.values };
 
+  // Full-bleed only makes sense once there is an actual photo bound to the hero
+  // slot; without one the wrapper would just stretch an initials placeholder
+  // across the whole card. Gate on both the placement flag and a resolved photo.
+  const photoFullBleed =
+    data?.photoPlacement === "fullBleed" && Boolean(bound.images["photo"]);
+
   let html = selectFormatHtml(template.formats, size);
   html = selectSponsorVariant(html, sponsorsOn);
   html = expandRepeats(html, bound.rows, template);
-  html = resolveSlots(html, bound.images, values, data?.photoTransform);
+  html = resolveSlots(html, bound.images, values, data?.photoTransform, photoFullBleed);
   // Drop the "presented by <sponsor>" line entirely when no presenting sponsor
   // resolved (empty value) — must run before substitution while the placeholder
   // is intact. A non-empty sample/tenant value keeps the line.

@@ -590,3 +590,121 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
     expect(html).toContain("--panel-2:#261e19");
   });
 });
+
+describe("renderPackCard full-bleed photo placement (B3)", () => {
+  const PHOTO = "https://cdn.example.com/action.jpg";
+  const withPhoto = (
+    placement?: PackCardData["photoPlacement"],
+    photoUrl: string | null = PHOTO,
+  ): PackCardData => ({
+    brand: { name: "Test Cricket Club", logoUrl: null },
+    hashtag: "#TESTCC",
+    photoUrl,
+    photoPlacement: placement,
+  });
+
+  // The Player Spotlight story format frames the hero photo in a right-hand
+  // column: `<div style="…width:600px;bottom:0">` directly wraps the slot.
+  const CONTAINED_WRAPPER = 'width:600px;bottom:0"><img';
+  const FULLBLEED_WRAPPER = 'style="position:absolute;inset:0"><img';
+
+  it("promotes the hero photo wrapper to full-bleed geometry when chosen", () => {
+    const input = sampleCardInput("player");
+    const html = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
+    // The wrapper directly around the photo <img> is now inset:0 (full card)…
+    expect(html).toContain(`style="position:absolute;inset:0"><img src="${PHOTO}"`);
+    // …and no longer the framed right-hand column.
+    expect(html).not.toContain(CONTAINED_WRAPPER);
+    // object-fit stays cover — only the geometry switched.
+    expect(html).toContain("object-fit:cover");
+  });
+
+  it("keeps the framed (contained) placement by default and when 'contained'", () => {
+    const input = sampleCardInput("player");
+    const omitted = renderPackCard(input, "story", true, TOKENS, false, withPhoto(undefined));
+    const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained"));
+    // Contained keeps the framed wrapper and never the full-bleed geometry.
+    expect(omitted).toContain(CONTAINED_WRAPPER);
+    expect(omitted).not.toContain(FULLBLEED_WRAPPER);
+    // Omitted placement === explicit "contained" (byte-identical, default path).
+    expect(omitted).toBe(contained);
+  });
+
+  it("leaves the contained render byte-identical to the pre-B3 output", () => {
+    // A data-bearing render with a photo but no placement must match exactly
+    // what an explicit "contained" render produces — the default path is inert.
+    const input = sampleCardInput("player");
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      const base = renderPackCard(input, size, true, TOKENS, false, withPhoto(undefined));
+      const contained = renderPackCard(input, size, true, TOKENS, false, withPhoto("contained"));
+      expect(base, size).toBe(contained);
+    }
+  });
+
+  it("does nothing when full-bleed is chosen but no photo is bound", () => {
+    // No photo → the wrapper would otherwise stretch a placeholder chip across
+    // the whole card, so the geometry switch is gated on a resolved photo.
+    const input = sampleCardInput("player");
+    const noPhoto = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed", null));
+    const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained", null));
+    expect(noPhoto).not.toContain(FULLBLEED_WRAPPER);
+    expect(noPhoto).toBe(contained);
+  });
+
+  it("does not full-bleed the match-result POTM headshot", () => {
+    // matchSummary has no hero `photo` slot — only the contained `potm.photo`
+    // headshot — so full-bleed must not touch it.
+    const input = sampleCardInput("matchSummary");
+    const html = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
+    // The POTM wrapper (rounded box) stays; no wrapper is rewritten to inset:0.
+    expect(html).not.toContain(FULLBLEED_WRAPPER);
+    expect(html).toContain(`src="${PHOTO}"`);
+  });
+
+  it("injects a full-card legibility scrim on full-bleed, none on contained", () => {
+    const input = sampleCardInput("player");
+    const fb = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
+    const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained"));
+    // The full-bleed render carries the injected full-card scrim behind the text…
+    expect(fb).toContain('data-fullbleed-scrim="1"');
+    // …and it is a whole-canvas (inset:0) overlay, not a column-scoped one.
+    expect(fb).toContain(
+      '<div data-fullbleed-scrim="1" style="position:absolute;inset:0;pointer-events:none;',
+    );
+    // Contained mode never gets the scrim (byte-identical to pre-B3).
+    expect(contained).not.toContain("data-fullbleed-scrim");
+  });
+
+  it("adds no scrim when full-bleed is chosen but no photo is bound", () => {
+    // The scrim rides with the promoted photo; without a photo neither appears.
+    const input = sampleCardInput("player");
+    const noPhoto = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed", null));
+    expect(noPhoto).not.toContain("data-fullbleed-scrim");
+  });
+
+  it("honours the focal-point object-position on a full-bleed photo", () => {
+    const input = sampleCardInput("player");
+    const data: PackCardData = {
+      ...withPhoto("fullBleed"),
+      photoTransform: { focalX: 0.7, focalY: 0.2, zoom: 1 },
+    };
+    const html = renderPackCard(input, "story", true, TOKENS, false, data);
+    expect(html).toContain("object-position:70% 20%");
+    expect(html).toContain(`style="position:absolute;inset:0"><img src="${PHOTO}"`);
+  });
+
+  it("server still-export parity: same PackCardData yields identical html", () => {
+    // The live <PackCard> preview and the server still harness both call
+    // renderPackCard with the same PackCardData, so a full-bleed render must be
+    // deterministic across call sites for every size.
+    const input = sampleCardInput("player");
+    const data = withPhoto("fullBleed");
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      const a = renderPackCard(input, size, true, TOKENS, false, data);
+      const b = renderPackCard(input, size, true, TOKENS, false, data);
+      expect(a, size).toBe(b);
+      // Every size promotes the hero wrapper to the full-bleed geometry.
+      expect(a, size).toContain(FULLBLEED_WRAPPER);
+    }
+  });
+});
