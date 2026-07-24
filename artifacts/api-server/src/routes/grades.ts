@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { eq, and, desc, sum, count, gt, sql } from "drizzle-orm";
 import {
   db,
@@ -11,6 +11,7 @@ import {
   capRegisterTable,
   recordsDisplaySettingsTable,
   playerIdMapTable,
+  type PlayerGradeStat,
 } from "@workspace/db";
 import {
   UpdateRecordsDisplaySettingsBody,
@@ -69,21 +70,14 @@ router.get("/grades", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
-  const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
-  const grade = decodeURIComponent(rawGrade);
-
-  // Optional and additive: no params means the whole grade, exactly as before,
-  // so existing web and mobile callers are unchanged. Applied to BOTH read
-  // paths — paginating only the native one would make the two branches disagree
-  // about what a page contains.
-  const query = GetGradeLeaderboardQueryParams.safeParse(req.query);
-  if (!query.success) {
-    res.status(400).json({ error: query.error.message });
-    return;
-  }
-  const { limit, offset } = query.data;
-
+// Load one grade's full leaderboard from the correct data source for this
+// request's tenant (central or native), newest/biggest first. Extracted so
+// batch consumers (the carousel-set generator) reuse the exact same rows the
+// route serves. Pagination is applied by the caller.
+export async function loadGradeLeaderboard(
+  req: Request,
+  grade: string,
+): Promise<PlayerGradeStat[]> {
   if (await shouldReadCentral(req)) {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
@@ -99,28 +93,41 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
       resolveCuration(tenantId),
     ]);
     const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
-    const rows = await centralGradeLeaderboard(grade, {
+    return centralGradeLeaderboard(grade, {
       clubId,
       intByGuid,
       nameByGuid: curation.nameByGuid,
     });
-    // Sliced after the cached read rather than pushed into the central query:
-    // centralGradeLeaderboard caches on (grade, clubId, crosswalk), so paging
-    // inside it would need limit/offset in that key and would cache a separate
-    // copy of the club's history per page. The full grade is already in memory.
-    res.json(page(rows, limit, offset));
-    return;
   }
 
-  const stats = await db
+  return db
     .select()
     .from(playerGradeStatsTable)
     .where(eq(playerGradeStatsTable.grade, grade))
-    .orderBy(desc(playerGradeStatsTable.games))
-    .limit(limit ?? Number.MAX_SAFE_INTEGER)
-    .offset(offset ?? 0);
+    .orderBy(desc(playerGradeStatsTable.games));
+}
 
-  res.json(stats);
+router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
+  const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
+  const grade = decodeURIComponent(rawGrade);
+
+  // Optional and additive: no params means the whole grade, exactly as before,
+  // so existing web and mobile callers are unchanged. Applied to BOTH read
+  // paths — paginating only the native one would make the two branches disagree
+  // about what a page contains.
+  const query = GetGradeLeaderboardQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const { limit, offset } = query.data;
+
+  // Sliced after the (possibly cached) read rather than pushed into the query:
+  // centralGradeLeaderboard caches on (grade, clubId, crosswalk), so paging
+  // inside it would cache a separate copy of the club's history per page; the
+  // native path's full grade is already in memory too.
+  const rows = await loadGradeLeaderboard(req, grade);
+  res.json(page(rows, limit, offset));
 });
 
 router.get("/dashboard", async (req, res): Promise<void> => {

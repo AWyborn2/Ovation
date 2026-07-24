@@ -284,19 +284,51 @@ export type CardSetSlide = {
 
 // An ordered set of linked social slides (a carousel). Authored by admins;
 // exported as numbered images / video at a chosen platform size.
-export const cardSetsTable = pgTable("card_sets", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull().default("Untitled set"),
-  // Chosen export platform size: "square" | "portrait" | "story".
-  platformSize: text("platform_size").notNull().default("square"),
-  slides: jsonb("slides").$type<CardSetSlide[]>().notNull().default([]),
-  // Draft/published state. Public reads only see published sets; admins see all.
-  // New sets start as drafts so in-progress carousels stay private.
-  isPublished: boolean("is_published").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+//
+// The `source*`/`season`/`grade` columns are set only for sets BATCH-GENERATED
+// server-side from a group of same-kind cards (see POST /card-sets/generate).
+// They are all null for hand-authored sets. When set, they form the idempotency
+// key (partial unique index below) so re-running a generation UPDATES the same
+// set rather than creating a duplicate — e.g. "all A-Grade Round 5 match
+// summaries" is one row keyed on (tenant, 'matchSummary', season, 5, 'A Grade').
+export const cardSetsTable = pgTable(
+  "card_sets",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull().default("Untitled set"),
+    // Chosen export platform size: "square" | "portrait" | "story".
+    platformSize: text("platform_size").notNull().default("square"),
+    slides: jsonb("slides").$type<CardSetSlide[]>().notNull().default([]),
+    // Draft/published state. Public reads only see published sets; admins see all.
+    // New sets start as drafts so in-progress carousels stay private.
+    isPublished: boolean("is_published").notNull().default(false),
+    // Generation grouping key (null for hand-authored sets). `sourceKind` is the
+    // ShareCardInput kind the set was assembled from ("matchSummary" |
+    // "gradeLeader"); `season`/`sourceRound`/`grade` narrow the source rows. Kept
+    // nullable so a leaderboard set (which spans grades and has no round) can
+    // leave the narrower columns null.
+    sourceKind: text("source_kind"),
+    sourceRound: integer("source_round"),
+    season: integer("season"),
+    grade: text("grade"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Idempotent regeneration: at most one generated set per
+    // (tenant, source_kind, season, source_round, grade). Partial — hand-authored
+    // sets (source_kind IS NULL) are unconstrained. Mirrors the
+    // social_drafts_match_dedupe pattern. NOTE: Postgres treats NULLs as distinct
+    // in a unique index by default, so for kinds whose narrower columns are null
+    // (e.g. gradeLeader) idempotency is additionally guaranteed by the route's
+    // select-then-upsert; this index is the hard guard for the fully-keyed
+    // matchSummary case.
+    sourceDedupe: uniqueIndex("card_sets_source_dedupe")
+      .on(t.tenantId, t.sourceKind, t.season, t.sourceRound, t.grade)
+      .where(sql`source_kind is not null`),
+  }),
+);
 
 export type CardSetRow = typeof cardSetsTable.$inferSelect;
 

@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, or } from "drizzle-orm";
+import { and, asc, eq, isNull, or } from "drizzle-orm";
+import type { MatchDetail } from "@workspace/api-zod";
+import { matchToSummaryInput } from "@workspace/scorecard";
 import {
   db,
   sponsorsTable,
@@ -42,6 +44,7 @@ import {
   UpdateCardSetBody,
   UpdateCardSetParams,
   DeleteCardSetParams,
+  GenerateCardSetBody,
   CreateCardRenderStillBody,
 } from "@workspace/api-zod";
 import type { CardLayoutLayer, CardSetSlide } from "@workspace/db";
@@ -63,6 +66,14 @@ import {
   CARD_SET_MIN_SLIDES,
   CARD_SET_MAX_SLIDES,
 } from "../lib/social-cards-helpers";
+import {
+  GENERATE_GRADES,
+  assembleSlides,
+  gradeLeaderInput,
+  topLeaderRow,
+} from "../lib/social-cards-generate";
+import { listRoundMatchIds, loadMatchDetailForRequest } from "./matches";
+import { loadGradeLeaderboard } from "./grades";
 
 // Re-exported for social-cards-templates.test.ts, which asserts the shipped
 // defaults carry no tenant-specific brand string.
@@ -668,6 +679,143 @@ router.post("/card-sets", requireAdmin, requireEntitlement("socialStudio"), asyn
     .returning();
   res.status(201).json(row);
 });
+
+// Batch-assemble a carousel from a group of same-kind cards, server-side, and
+// UPSERT one set keyed on the grouping columns so regeneration updates the same
+// row. Reuses the shared input builders: `matchToSummaryInput` (@workspace/
+// scorecard) for match summaries and `gradeLeaderInput` (the server twin of the
+// carousel editor's inline builder) for grade leaderboards. New sets are drafts,
+// like the other card-set routes.
+router.post(
+  "/card-sets/generate",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const body = GenerateCardSetBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const { kind, round, season, grades, platformSize } = body.data;
+
+    // Gather the source rows and map each to a ShareCardInput. `group*` are the
+    // idempotency key columns (null where a kind doesn't narrow by that column).
+    let inputs: Array<Record<string, unknown>> = [];
+    let name = "Generated set";
+    let groupSeason: number | null = null;
+    let groupRound: number | null = null;
+    let groupGrade: string | null = null;
+
+    if (kind === "matchSummary") {
+      // A match-summary set is one grade's round, so it needs an unambiguous
+      // (grade, season, round) — the same trio the carousel editor's "add all in
+      // round" action operates on.
+      if (round == null || season == null || !grades || grades.length !== 1) {
+        res.status(400).json({
+          error:
+            "matchSummary generation requires round, season and exactly one grade",
+        });
+        return;
+      }
+      const grade = grades[0];
+      const ids = await listRoundMatchIds(req, { grade, season, round });
+      const details = await Promise.all(
+        ids.map((id) => loadMatchDetailForRequest(req, id)),
+      );
+      inputs = details
+        .filter((d): d is NonNullable<typeof d> => d != null)
+        // `detail as MatchDetail` mirrors match-summary-drafter.ts — the loaded
+        // DTO is the exact shape the /matches/:id route serializes as MatchDetail.
+        .map((d) => matchToSummaryInput(d as MatchDetail) as Record<string, unknown>);
+      groupSeason = season;
+      groupRound = round;
+      groupGrade = grade;
+      name = `${grade} • Round ${round}`;
+    } else {
+      // gradeLeader: one top-player card per grade (all grades unless the request
+      // names a subset). Category isn't in the body contract — default to Runs,
+      // matching the editor's default. Grouping columns stay null (spans grades).
+      const gradeList = grades && grades.length ? grades : [...GENERATE_GRADES];
+      const boards = await Promise.all(
+        gradeList.map((g) => loadGradeLeaderboard(req, g)),
+      );
+      gradeList.forEach((g, i) => {
+        const top = topLeaderRow(boards[i] ?? [], "Runs");
+        if (top) inputs.push(gradeLeaderInput(top, g, "Runs"));
+      });
+      name = "Grade leaderboards";
+    }
+
+    const { slides, truncated } = assembleSlides(inputs, CARD_SET_MAX_SLIDES);
+    if (truncated > 0) {
+      req.log.warn(
+        { kind, gathered: inputs.length, kept: slides.length, truncated },
+        "card-set generate: clamped to max slides",
+      );
+    }
+    if (slides.length === 0) {
+      res.status(400).json({ error: "No source cards found for this selection" });
+      return;
+    }
+
+    // Idempotent upsert on the grouping key. A select-then-write in one
+    // transaction handles the nullable columns (a plain unique index treats NULLs
+    // as distinct); the partial unique index is the DB-level guard for the
+    // fully-keyed matchSummary case + concurrent races.
+    const row = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: cardSetsTable.id, isPublished: cardSetsTable.isPublished })
+        .from(cardSetsTable)
+        .where(
+          and(
+            eq(cardSetsTable.tenantId, tenantId),
+            eq(cardSetsTable.sourceKind, kind),
+            groupSeason == null
+              ? isNull(cardSetsTable.season)
+              : eq(cardSetsTable.season, groupSeason),
+            groupRound == null
+              ? isNull(cardSetsTable.sourceRound)
+              : eq(cardSetsTable.sourceRound, groupRound),
+            groupGrade == null
+              ? isNull(cardSetsTable.grade)
+              : eq(cardSetsTable.grade, groupGrade),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        // Regenerate = refresh the slides + name in place; keep the set's
+        // publish state so a live set isn't silently unpublished.
+        const [updated] = await tx
+          .update(cardSetsTable)
+          .set({ name, platformSize, slides, updatedAt: new Date() })
+          .where(eq(cardSetsTable.id, existing.id))
+          .returning();
+        return updated;
+      }
+
+      const [created] = await tx
+        .insert(cardSetsTable)
+        .values({
+          tenantId,
+          name,
+          platformSize,
+          slides,
+          isPublished: false,
+          sourceKind: kind,
+          season: groupSeason,
+          sourceRound: groupRound,
+          grade: groupGrade,
+          updatedAt: new Date(),
+        })
+        .returning();
+      return created;
+    });
+
+    res.json(row);
+  },
+);
 
 router.put("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
   const params = UpdateCardSetParams.safeParse(req.params);

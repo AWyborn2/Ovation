@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { eq, and, ne, desc, asc, count, sql, type SQL } from "drizzle-orm";
 import {
   db,
@@ -369,88 +369,57 @@ router.get("/matches", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/matches/:id", async (req, res): Promise<void> => {
-  const params = GetMatchParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+// Build the per-request match-detail DTO (the `GET /matches/:id` body) for the
+// central-read path: the two-innings scorecard from the central scorecard tables
+// — own side mapped to int ids via player_id_map (private players masked),
+// opposition side plain text — with the OWN-club brand resolved from THIS tenant.
+// Returns null when the match doesn't exist. Extracted so batch consumers (e.g.
+// the carousel-set generator) can build the same DTO the route serves.
+async function loadCentralMatchDetail(req: Request, matchId: number) {
+  const { centralMatchScorecard } = await import("@workspace/db/central-queries");
+  const tenantId = getTenantId(req);
+  const card = await centralMatchScorecard(
+    await getRequestCentralClubId(req),
+    matchId,
+  );
+  if (!card) return null;
+  const mapRows = await db
+    .select({
+      participantId: playerIdMapTable.participantId,
+      playerId: playerIdMapTable.playerId,
+    })
+    .from(playerIdMapTable)
+    .where(eq(playerIdMapTable.tenantId, tenantId));
+  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
 
-  // Per-tenant data source: central tenants get the two-innings scorecard from
-  // the central scorecard tables — own side mapped to int ids via player_id_map
-  // (private players masked), opposition side plain text — and the OWN-club brand
-  // resolved from THIS tenant (not hardcoded Halls Head).
-  if (await shouldReadCentral(req)) {
-    const { centralMatchScorecard } = await import("@workspace/db/central-queries");
-    const tenantId = getTenantId(req);
-    const card = await centralMatchScorecard(
-      await getRequestCentralClubId(req),
-      params.data.id,
+  const { playerCount, ...summary } = card.summary;
+  void playerCount;
+  // Overlay the opponent's own uploaded brand (crest/colours) if that club is
+  // a tenant — central.clubs carries no logo, so this is where it comes from.
+  if (summary.opponentClub) {
+    const overlays = await getOpponentBrandsByCentralClubId([summary.opponentClub.id]);
+    summary.opponentClub = mergeOpponentBrand(
+      summary.opponentClub,
+      overlays.get(summary.opponentClub.id),
     );
-    if (!card) {
-      res.status(404).json({ error: "Match not found" });
-      return;
-    }
-    const mapRows = await db
-      .select({
-        participantId: playerIdMapTable.participantId,
-        playerId: playerIdMapTable.playerId,
-      })
-      .from(playerIdMapTable)
-      .where(eq(playerIdMapTable.tenantId, tenantId));
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
-
-    const { playerCount, ...summary } = card.summary;
-    void playerCount;
-    // Overlay the opponent's own uploaded brand (crest/colours) if that club is
-    // a tenant — central.clubs carries no logo, so this is where it comes from.
-    if (summary.opponentClub) {
-      const overlays = await getOpponentBrandsByCentralClubId([summary.opponentClub.id]);
-      summary.opponentClub = mergeOpponentBrand(
-        summary.opponentClub,
-        overlays.get(summary.opponentClub.id),
-      );
-    }
-    res.json({
-      ...summary,
-      clubBattedFirst: card.battedFirst,
-      club: await getTenantBrand(tenantId),
-      lines: card.lines.map((l, i) => {
-        const name = l.isPrivate
-          ? { givenName: "Private", surname: "Player" }
-          : splitCentralName(l.displayName);
-        return {
-          id: i,
-          // Private players are masked (no link); otherwise the mapped int id.
-          playerId:
-            l.isPrivate || !l.participantId
-              ? 0
-              : intByGuid.get(l.participantId) ?? 0,
-          surname: name.surname,
-          givenName: name.givenName,
-          batted: l.batted,
-          battingPos: l.battingPos,
-          runs: l.runs,
-          balls: l.balls,
-          fours: l.fours,
-          sixes: l.sixes,
-          notOut: l.notOut,
-          dismissal: l.dismissal,
-          bowled: l.bowled,
-          overs: l.overs,
-          maidens: l.maidens,
-          runsConceded: l.runsConceded,
-          wickets: l.wickets,
-          wides: l.wides,
-          noBalls: l.noBalls,
-          catches: null,
-          stumpings: null,
-          runOuts: null,
-        };
-      }),
-      oppositionLines: card.oppositionLines.map((l, i) => ({
+  }
+  return {
+    ...summary,
+    clubBattedFirst: card.battedFirst,
+    club: await getTenantBrand(tenantId),
+    lines: card.lines.map((l, i) => {
+      const name = l.isPrivate
+        ? { givenName: "Private", surname: "Player" }
+        : splitCentralName(l.displayName);
+      return {
         id: i,
-        name: l.name,
+        // Private players are masked (no link); otherwise the mapped int id.
+        playerId:
+          l.isPrivate || !l.participantId
+            ? 0
+            : intByGuid.get(l.participantId) ?? 0,
+        surname: name.surname,
+        givenName: name.givenName,
         batted: l.batted,
         battingPos: l.battingPos,
         runs: l.runs,
@@ -469,13 +438,82 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
         catches: null,
         stumpings: null,
         runOuts: null,
-      })),
-      hatTrickPlayerIds: [],
+      };
+    }),
+    oppositionLines: card.oppositionLines.map((l, i) => ({
+      id: i,
+      name: l.name,
+      batted: l.batted,
+      battingPos: l.battingPos,
+      runs: l.runs,
+      balls: l.balls,
+      fours: l.fours,
+      sixes: l.sixes,
+      notOut: l.notOut,
+      dismissal: l.dismissal,
+      bowled: l.bowled,
+      overs: l.overs,
+      maidens: l.maidens,
+      runsConceded: l.runsConceded,
+      wickets: l.wickets,
+      wides: l.wides,
+      noBalls: l.noBalls,
+      catches: null,
+      stumpings: null,
+      runOuts: null,
+    })),
+    hatTrickPlayerIds: [] as number[],
+  };
+}
+
+// Resolve one match's full detail DTO from the correct data source for this
+// request's tenant (central or native). Returns null when the match is missing.
+export async function loadMatchDetailForRequest(req: Request, matchId: number) {
+  if (await shouldReadCentral(req)) {
+    return loadCentralMatchDetail(req, matchId);
+  }
+  return loadMatchDetail(matchId, getTenantId(req));
+}
+
+// The match ids in one (grade, season, round) group, from the correct data
+// source for this request's tenant. Used by the carousel-set generator to gather
+// every match in a round. Empty placeholder fixtures are excluded (native path
+// via notEmptyFixture; central rows are always real games).
+export async function listRoundMatchIds(
+  req: Request,
+  opts: { grade: string; season: number; round: number },
+): Promise<number[]> {
+  if (await shouldReadCentral(req)) {
+    const { centralClubMatches } = await import("@workspace/db/central-queries");
+    const rows = await centralClubMatches(await getRequestCentralClubId(req), {
+      grade: opts.grade,
+      season: opts.season,
     });
+    return rows.filter((r) => r.round === opts.round).map((r) => r.id);
+  }
+  const rows = await db
+    .select({ id: matchesTable.id })
+    .from(matchesTable)
+    .where(
+      and(
+        eq(matchesTable.grade, opts.grade),
+        eq(matchesTable.season, opts.season),
+        eq(matchesTable.round, opts.round),
+        notEmptyFixture,
+      ),
+    )
+    .orderBy(asc(matchesTable.id));
+  return rows.map((r) => r.id);
+}
+
+router.get("/matches/:id", async (req, res): Promise<void> => {
+  const params = GetMatchParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const detail = await loadMatchDetail(params.data.id, getTenantId(req));
+  const detail = await loadMatchDetailForRequest(req, params.data.id);
   if (!detail) {
     res.status(404).json({ error: "Match not found" });
     return;

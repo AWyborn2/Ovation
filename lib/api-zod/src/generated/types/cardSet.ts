@@ -14,4 +14,12 @@ export interface CardSet {
   platformSize: CardSetPlatformSize;
   slides: CardSetSlide[];
   isPublished: boolean;
+  /** @nullable */
+  sourceKind?: string | null;
+  /** @nullable */
+  sourceRound?: number | null;
+  /** @nullable */
+  season?: number | null;
+  /** @nullable */
+  grade?: string | null;
 }

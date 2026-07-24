@@ -3264,6 +3264,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/CardSet"
 
+  /card-sets/generate:
+    post:
+      operationId: generateCardSet
+      tags: [socialCards]
+      summary: Batch-assemble a carousel set from a group of same-kind cards
+      description: >-
+        Gathers the matching source rows (every match summary in a round, or
+        every grade's leaderboard), maps each to a ShareCardInput and UPSERTS one
+        card_sets row keyed on the grouping columns, so re-running updates the
+        same set (regenerate = refresh slides + name) rather than duplicating it.
+        Assembles at most 10 slides (extras are dropped). New sets are drafts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateCardSetBody"
+      responses:
+        "200":
+          description: Set created or regenerated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSet"
+        "400":
+          description: Invalid request or no source cards found
+
   /card-sets/{id}:
     put:
       operationId: updateCardSet
@@ -9683,6 +9710,39 @@ components:
             $ref: "#/components/schemas/CardSetSlide"
         isPublished:
           type: boolean
+        # Generation grouping key — populated only for sets built by
+        # POST /card-sets/generate; null for hand-authored sets.
+        sourceKind:
+          type: ["string", "null"]
+        sourceRound:
+          type: ["integer", "null"]
+        season:
+          type: ["integer", "null"]
+        grade:
+          type: ["string", "null"]
+
+    GenerateCardSetBody:
+      type: object
+      required: [kind, platformSize]
+      properties:
+        # Which same-kind cards to batch-assemble. "matchSummary" gathers every
+        # match in a round (requires round, season and exactly one grade);
+        # "gradeLeader" gathers each grade's top player (grades optional — all
+        # grades when omitted).
+        kind:
+          type: string
+          enum: [matchSummary, gradeLeader]
+        round:
+          type: integer
+        season:
+          type: integer
+        grades:
+          type: array
+          items:
+            type: string
+        platformSize:
+          type: string
+          enum: [square, portrait, story]
 
     CardSetInput:
       type: object

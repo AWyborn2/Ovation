@@ -92,6 +92,7 @@ import type {
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
+  GenerateCardSetBody,
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
@@ -11665,6 +11666,78 @@ export const useCreateCardSet = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateCardSetMutationOptions(options));
+    }
+
+export const getGenerateCardSetUrl = () => {
+
+
+
+
+  return `/api/card-sets/generate`
+}
+
+/**
+ * Gathers the matching source rows (every match summary in a round, or every grade's leaderboard), maps each to a ShareCardInput and UPSERTS one card_sets row keyed on the grouping columns, so re-running updates the same set (regenerate = refresh slides + name) rather than duplicating it. Assembles at most 10 slides (extras are dropped). New sets are drafts.
+ * @summary Batch-assemble a carousel set from a group of same-kind cards
+ */
+export const generateCardSet = async (generateCardSetBody: GenerateCardSetBody, options?: RequestInit): Promise<CardSet> => {
+
+  return customFetch<CardSet>(getGenerateCardSetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generateCardSetBody,)
+  }
+);}
+
+
+
+
+export const getGenerateCardSetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCardSet>>, TError,{data: BodyType<GenerateCardSetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateCardSet>>, TError,{data: BodyType<GenerateCardSetBody>}, TContext> => {
+
+const mutationKey = ['generateCardSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCardSet>>, {data: BodyType<GenerateCardSetBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateCardSet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateCardSetMutationResult = NonNullable<Awaited<ReturnType<typeof generateCardSet>>>
+    export type GenerateCardSetMutationBody = BodyType<GenerateCardSetBody>
+    export type GenerateCardSetMutationError = ErrorType<void>
+
+    /**
+ * @summary Batch-assemble a carousel set from a group of same-kind cards
+ */
+export const useGenerateCardSet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCardSet>>, TError,{data: BodyType<GenerateCardSetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateCardSet>>,
+        TError,
+        {data: BodyType<GenerateCardSetBody>},
+        TContext
+      > => {
+      return useMutation(getGenerateCardSetMutationOptions(options));
     }
 
 export const getUpdateCardSetUrl = (id: number,) => {
