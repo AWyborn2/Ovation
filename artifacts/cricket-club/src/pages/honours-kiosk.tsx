@@ -383,7 +383,9 @@ export default function HonoursKiosk() {
   const skin = settings.defaultTemplate;
   const current = frames[index % frames.length]!;
   const isOverlayFrame = current.kind !== "board";
-  const fit = isOverlayFrame ? true : current.fit;
+  // Always render boards (and overlay slides) at full screen width — the
+  // narrow centred preset is no longer used on the kiosk.
+  const fit = true;
   // The persistent strip is redundant on a full-screen sponsor/ad slide, so
   // hide it (and don't reserve its space) while one is showing.
   const showStrip = sponsorStripOn && !isOverlayFrame;
