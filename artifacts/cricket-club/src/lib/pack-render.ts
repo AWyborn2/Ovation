@@ -65,8 +65,21 @@ export const JUNIOR_PANEL = "#42342B";
  * gallery previews and brand-less tenants are unaffected.
  */
 export interface PackCardData {
-  /** Tenant brand → top-left `clubLogo` slot + `clubName` header value. */
-  brand?: { name?: string | null; logoUrl?: string | null } | null;
+  /**
+   * Tenant brand → top-left `clubLogo` slot + `clubName` header value, and the
+   * DEFAULT pack token palette (see {@link brandDefaultTokens}). The colour
+   * fields mirror the resolved `ClubBrand`: `primaryColour` seeds the accent and
+   * `juniorsColour` seeds the panel. `backgroundColour` is carried for
+   * completeness but intentionally NOT mapped onto the fixed deep-ink stage
+   * (see {@link brandDefaultTokens} for why).
+   */
+  brand?: {
+    name?: string | null;
+    logoUrl?: string | null;
+    primaryColour?: string | null;
+    backgroundColour?: string | null;
+    juniorsColour?: string | null;
+  } | null;
   /** Pre-resolved club hashtag (e.g. "#HALLSHEAD") → `clubHashtag` / `hashtags`. */
   hashtag?: string | null;
   /**
@@ -153,6 +166,61 @@ export function resolvePackTokens(sources: PackTokenSources): PackTokens {
   assignDefined(resolved, sources.override);
   if (sources.junior) resolved.panel = JUNIOR_PANEL;
   return resolved;
+}
+
+// ---------------------------------------------------------------------------
+// Brand → default token bridge
+// ---------------------------------------------------------------------------
+
+/**
+ * The pack's built-in default palette — the "Broadcast Dark" look: a gold accent
+ * on the juniors-brown panel over a near-black ink stage. It is the last-resort
+ * fallback for any pack token a tenant's brand leaves unset, and the baseline
+ * {@link brandDefaultTokens} overlays brand colours onto.
+ *
+ * Halls Head (tenant #1) is seeded with exactly the brand colours that reproduce
+ * this palette, so HH pack cards stay pixel-identical to the pre-bridge output
+ * (see {@link brandDefaultTokens}).
+ */
+export const PACK_DEFAULT_TOKENS: PackTokens = {
+  accent: "#FBAC27",
+  panel: "#42342B",
+  ink: "#101216",
+  textLight: "#F5F2E8",
+  displayFont: "anton",
+};
+
+/**
+ * Bridge a tenant's brand colours onto the pack's DEFAULT token baseline. This
+ * is the LOWEST-priority token source: {@link resolvePackTokens} still layers
+ * theme, then per-card override, then the junior force on top, so priority stays
+ * `junior > override > theme > brand-default`.
+ *
+ * Mapping (only the tokens a club brand can meaningfully drive):
+ *   - `primaryColour` → `accent` (`--gold`)  — the brand's headline accent
+ *   - `juniorsColour` → `panel`  (`--panel`) — the pack panel IS the juniors tone
+ *
+ * Any brand colour that is absent (null/undefined/empty) leaves that token on
+ * the hard-coded {@link PACK_DEFAULT_TOKENS} fallback. `ink` and `textLight` have
+ * no brand source and always keep the fallback.
+ *
+ * Halls Head parity (invariant — HH MUST stay visually identical): HH's brand is
+ * `primaryColour #FBAC27` and `juniorsColour #42342B`, which map onto the default
+ * accent/panel unchanged. The brand's `backgroundColour` is deliberately NOT
+ * mapped onto `ink`: the pack `ink` is a fixed deep near-black *stage* colour,
+ * not a club's mid-tone site background, so bridging it would shift the stage per
+ * club — and specifically would push HH's ink from #101216 to its slate
+ * background #333F48, breaking parity. Leaving `ink` fixed keeps HH byte-for-byte
+ * identical while still letting non-HH brands seed their accent + panel.
+ */
+export function brandDefaultTokens(
+  brand?: PackCardData["brand"],
+): PackTokens {
+  const tokens: PackTokens = { ...PACK_DEFAULT_TOKENS };
+  if (!brand) return tokens;
+  if (brand.primaryColour) tokens.accent = brand.primaryColour;
+  if (brand.juniorsColour) tokens.panel = brand.juniorsColour;
+  return tokens;
 }
 
 /** Curated display-font families behind the `--disp` token. */

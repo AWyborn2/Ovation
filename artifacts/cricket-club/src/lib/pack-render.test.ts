@@ -4,6 +4,8 @@ import {
   packSupportsKind,
   resolvePackTokens,
   tokensFromCardTheme,
+  brandDefaultTokens,
+  PACK_DEFAULT_TOKENS,
   JUNIOR_PANEL,
   type PackTokens,
   type PackCardData,
@@ -277,5 +279,98 @@ describe("resolvePackTokens (token resolution order)", () => {
     expect(resolved.accent).toBe("#FF0000");
     expect(resolved.panel).toBe(BRAND.panel);
     expect(resolved.displayFont).toBe(BRAND.displayFont);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Brand → default token bridge (A8): a tenant's brand colours become the pack's
+// lowest-priority default palette, below theme / override / junior force.
+// ---------------------------------------------------------------------------
+
+describe("brandDefaultTokens (brand → pack default palette)", () => {
+  // Halls Head's seeded brand — must reproduce the hard-coded default palette so
+  // HH pack cards stay pixel-identical to the pre-bridge output.
+  const HH_BRAND: PackCardData["brand"] = {
+    name: "Halls Head Cricket Club",
+    logoUrl: null,
+    primaryColour: "#FBAC27",
+    backgroundColour: "#333F48",
+    juniorsColour: "#42342B",
+  };
+
+  it("falls back to the full default palette when no brand / no colours are set", () => {
+    expect(brandDefaultTokens(null)).toEqual(PACK_DEFAULT_TOKENS);
+    expect(brandDefaultTokens(undefined)).toEqual(PACK_DEFAULT_TOKENS);
+    expect(brandDefaultTokens({ name: "Logo Only", logoUrl: "x" })).toEqual(PACK_DEFAULT_TOKENS);
+    // Empty strings are treated as "absent" and keep the fallback.
+    expect(brandDefaultTokens({ primaryColour: "", juniorsColour: "" })).toEqual(PACK_DEFAULT_TOKENS);
+  });
+
+  it("(a) seeds a non-HH brand's colours into the default tokens", () => {
+    const other: PackCardData["brand"] = {
+      name: "Other CC",
+      primaryColour: "#22AA22", // → accent
+      juniorsColour: "#0055FF", // → panel
+      backgroundColour: "#123456", // deliberately NOT mapped onto ink
+    };
+    const tokens = brandDefaultTokens(other);
+    expect(tokens.accent).toBe("#22AA22");
+    expect(tokens.panel).toBe("#0055FF");
+    // ink + textLight have no brand source → keep the hard-coded fallback.
+    expect(tokens.ink).toBe(PACK_DEFAULT_TOKENS.ink);
+    expect(tokens.textLight).toBe(PACK_DEFAULT_TOKENS.textLight);
+
+    // …and those colours reach the rendered root style as --gold / --panel.
+    const input = sampleCardInput("matchSummary");
+    const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: tokens }), false);
+    expect(html).toMatch(/--gold:\s*#22AA22/i);
+    expect(html).toMatch(/--panel:\s*#0055FF/i);
+  });
+
+  it("(b) leaves Halls Head visually identical (HH brand maps to the defaults)", () => {
+    // The bridge maps HH's brand onto exactly the hard-coded default palette.
+    expect(brandDefaultTokens(HH_BRAND)).toEqual(PACK_DEFAULT_TOKENS);
+
+    // End-to-end: rendering HH through the brand bridge is byte-identical to
+    // rendering with the raw default palette (across sizes / sponsor states).
+    const input = sampleCardInput("matchSummary");
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      for (const sponsorsOn of [true, false]) {
+        const viaBrand = renderPackCard(
+          input,
+          size,
+          sponsorsOn,
+          resolvePackTokens({ brand: brandDefaultTokens(HH_BRAND) }),
+          false,
+        );
+        const baseline = renderPackCard(input, size, sponsorsOn, PACK_DEFAULT_TOKENS, false);
+        expect(viaBrand, `${size} sponsors=${sponsorsOn}`).toBe(baseline);
+      }
+    }
+  });
+
+  it("(c) a theme and per-card override still beat the brand default", () => {
+    const other: PackCardData["brand"] = {
+      primaryColour: "#22AA22",
+      juniorsColour: "#0055FF",
+    };
+    const brand = brandDefaultTokens(other);
+
+    // Theme beats the brand default.
+    const theme = tokensFromCardTheme({ accent: "#EE0000", bgPanel: "#EEEEEE" });
+    const themed = resolvePackTokens({ brand, theme });
+    expect(themed.accent).toBe("#EE0000"); // theme > brand
+    expect(themed.panel).toBe("#EEEEEE"); // theme > brand
+
+    // Per-card override beats both theme and brand default.
+    const override: Partial<PackTokens> = { accent: "#FFFFFF" };
+    const overridden = resolvePackTokens({ brand, theme, override });
+    expect(overridden.accent).toBe("#FFFFFF"); // override > theme > brand
+    expect(overridden.panel).toBe("#EEEEEE"); // theme still applies
+
+    // Junior force still wins the panel over the brand default.
+    const junior = resolvePackTokens({ brand, junior: true });
+    expect(junior.panel).toBe(JUNIOR_PANEL);
+    expect(junior.accent).toBe("#22AA22"); // brand default still seeds the accent
   });
 });
