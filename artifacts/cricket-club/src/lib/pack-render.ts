@@ -548,6 +548,7 @@ function bindInput(input: ShareCardInput): BoundInput {
       set(values, "competition", input.competition);
       set(values, "result", input.result);
       set(values, "mom", input.mom);
+      if (input.teamPhotoUrl) images["teamPhoto"] = input.teamPhotoUrl;
       break;
     }
     case "debut": {

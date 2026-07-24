@@ -6,12 +6,14 @@
  * always editable (R14).
  */
 
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload, X } from "lucide-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import type { CardKind } from "@/lib/share-card";
 import { ROW_CAPS, type CardFormState } from "./logic";
@@ -47,6 +49,16 @@ function ScalarControl({
         <Switch checked={Boolean(raw)} onCheckedChange={(v) => set(v)} />
         <Label className="text-sm">{field.label}</Label>
       </div>
+    );
+  }
+
+  if (field.type === "image") {
+    return (
+      <ImageControl
+        label={field.label}
+        value={raw == null ? "" : String(raw)}
+        onChange={(v) => set(v || null)}
+      />
     );
   }
 
@@ -107,6 +119,96 @@ function ScalarControl({
         placeholder={field.placeholder}
         onChange={(e) => set(e.target.value)}
       />
+    </div>
+  );
+}
+
+/**
+ * Team/squad photo control for the card builder.
+ *
+ * Reuses the shared presigned-upload infrastructure (`useUpload` →
+ * `POST /api/storage/uploads/request-url` → direct PUT), the same path player
+ * headshots, sponsor logos and card backgrounds already use. The uploaded object
+ * URL is written straight into the card's form-state field (a plain URL string),
+ * so binding, saving and server-side render are unchanged — this is purely an
+ * upload path for what used to be a free-text URL. Pasting a URL still works as a
+ * fallback. Not a player headshot: these are team/event images (premiership team
+ * photo, team-list squad photo).
+ */
+function ImageControl({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, isUploading } = useUpload({
+    onError: (e) => setError(e.message),
+  });
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    const result = await uploadFile(file);
+    if (result) onChange(`/api/storage${result.objectPath}`);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {value ? (
+        <div className="flex items-start gap-3">
+          <img
+            src={value}
+            alt=""
+            className="h-20 w-28 rounded border object-cover bg-muted"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange("")}
+          >
+            <X className="h-3.5 w-3.5 mr-1" /> Remove
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void handleFile(f);
+            }}
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="h-3.5 w-3.5 mr-1" />
+              {isUploading ? "Uploading…" : "Upload image"}
+            </Button>
+            <span className="text-xs text-muted-foreground">or paste a URL</span>
+          </div>
+          <Input
+            value={value}
+            placeholder="https://…"
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </div>
+      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

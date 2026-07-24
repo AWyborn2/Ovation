@@ -155,6 +155,8 @@ export type ShareCardInput =
       result?: string | null;
       mom?: string | null;
       headline?: string;
+      /** Uploaded/selected premiership team photo → the `teamPhoto` slot. */
+      teamPhotoUrl?: string | null;
     }
   | {
       kind: "debut";
