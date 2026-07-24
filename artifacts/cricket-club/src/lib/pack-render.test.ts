@@ -4,6 +4,9 @@ import {
   packSupportsKind,
   resolvePackTokens,
   tokensFromCardTheme,
+  brandDefaultTokens,
+  normaliseBrandHex,
+  PACK_DEFAULT_TOKENS,
   JUNIOR_PANEL,
   type PackTokens,
   type PackCardData,
@@ -277,5 +280,182 @@ describe("resolvePackTokens (token resolution order)", () => {
     expect(resolved.accent).toBe("#FF0000");
     expect(resolved.panel).toBe(BRAND.panel);
     expect(resolved.displayFont).toBe(BRAND.displayFont);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Brand → default token bridge (A8): a tenant's brand colours become the pack's
+// lowest-priority default palette, below theme / override / junior force.
+// ---------------------------------------------------------------------------
+
+describe("brandDefaultTokens (brand → pack default palette)", () => {
+  // Halls Head's seeded brand — must reproduce the hard-coded default palette so
+  // HH pack cards stay pixel-identical to the pre-bridge output.
+  const HH_BRAND: PackCardData["brand"] = {
+    name: "Halls Head Cricket Club",
+    logoUrl: null,
+    primaryColour: "#FBAC27",
+    backgroundColour: "#333F48",
+    juniorsColour: "#42342B",
+  };
+
+  it("falls back to the full default palette when no brand / no colours are set", () => {
+    expect(brandDefaultTokens(null)).toEqual(PACK_DEFAULT_TOKENS);
+    expect(brandDefaultTokens(undefined)).toEqual(PACK_DEFAULT_TOKENS);
+    expect(brandDefaultTokens({ name: "Logo Only", logoUrl: "x" })).toEqual(PACK_DEFAULT_TOKENS);
+    // Empty strings are treated as "absent" and keep the fallback.
+    expect(brandDefaultTokens({ primaryColour: "", juniorsColour: "" })).toEqual(PACK_DEFAULT_TOKENS);
+  });
+
+  it("(a) seeds a non-HH brand's colours into the default tokens", () => {
+    const other: PackCardData["brand"] = {
+      name: "Other CC",
+      primaryColour: "#22AA22", // → accent
+      juniorsColour: "#0055FF", // → panel
+      backgroundColour: "#123456", // deliberately NOT mapped onto ink
+    };
+    const tokens = brandDefaultTokens(other);
+    expect(tokens.accent).toBe("#22AA22");
+    expect(tokens.panel).toBe("#0055FF");
+    // ink + textLight have no brand source → keep the hard-coded fallback.
+    expect(tokens.ink).toBe(PACK_DEFAULT_TOKENS.ink);
+    expect(tokens.textLight).toBe(PACK_DEFAULT_TOKENS.textLight);
+
+    // …and those colours reach the rendered root style as --gold / --panel.
+    const input = sampleCardInput("matchSummary");
+    const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: tokens }), false);
+    expect(html).toMatch(/--gold:\s*#22AA22/i);
+    expect(html).toMatch(/--panel:\s*#0055FF/i);
+  });
+
+  it("(b) leaves Halls Head visually identical (HH brand maps to the defaults)", () => {
+    // The bridge maps HH's brand onto exactly the hard-coded default palette.
+    expect(brandDefaultTokens(HH_BRAND)).toEqual(PACK_DEFAULT_TOKENS);
+
+    // End-to-end: rendering HH through the brand bridge is byte-identical to
+    // rendering with the raw default palette (across sizes / sponsor states).
+    const input = sampleCardInput("matchSummary");
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      for (const sponsorsOn of [true, false]) {
+        const viaBrand = renderPackCard(
+          input,
+          size,
+          sponsorsOn,
+          resolvePackTokens({ brand: brandDefaultTokens(HH_BRAND) }),
+          false,
+        );
+        const baseline = renderPackCard(input, size, sponsorsOn, PACK_DEFAULT_TOKENS, false);
+        expect(viaBrand, `${size} sponsors=${sponsorsOn}`).toBe(baseline);
+      }
+    }
+  });
+
+  it("(c) a theme and per-card override still beat the brand default", () => {
+    const other: PackCardData["brand"] = {
+      primaryColour: "#22AA22",
+      juniorsColour: "#0055FF",
+    };
+    const brand = brandDefaultTokens(other);
+
+    // Theme beats the brand default.
+    const theme = tokensFromCardTheme({ accent: "#EE0000", bgPanel: "#EEEEEE" });
+    const themed = resolvePackTokens({ brand, theme });
+    expect(themed.accent).toBe("#EE0000"); // theme > brand
+    expect(themed.panel).toBe("#EEEEEE"); // theme > brand
+
+    // Per-card override beats both theme and brand default.
+    const override: Partial<PackTokens> = { accent: "#FFFFFF" };
+    const overridden = resolvePackTokens({ brand, theme, override });
+    expect(overridden.accent).toBe("#FFFFFF"); // override > theme > brand
+    expect(overridden.panel).toBe("#EEEEEE"); // theme still applies
+
+    // Junior force still wins the panel over the brand default.
+    const junior = resolvePackTokens({ brand, junior: true });
+    expect(junior.panel).toBe(JUNIOR_PANEL);
+    expect(junior.accent).toBe("#22AA22"); // brand default still seeds the accent
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Brand colour hardening (A8 review S1 + S2): brand colours are admin-controlled
+// and flow unescaped into the inline style mounted via dangerouslySetInnerHTML,
+// so they are sanitised (hex-only) + normalised to 6-digit hex at the boundary.
+// ---------------------------------------------------------------------------
+
+describe("normaliseBrandHex (brand colour sanitisation + normalisation)", () => {
+  it("passes a clean 6-digit hex through (uppercased), preserving HH parity", () => {
+    expect(normaliseBrandHex("#FBAC27")).toBe("#FBAC27");
+    expect(normaliseBrandHex("#42342B")).toBe("#42342B");
+    expect(normaliseBrandHex("#fbac27")).toBe("#FBAC27"); // case-normalised
+    expect(normaliseBrandHex("FBAC27")).toBe("#FBAC27"); // leading # optional
+  });
+
+  it("expands #RGB and strips the alpha from #RRGGBBAA to a 6-digit hex", () => {
+    expect(normaliseBrandHex("#f00")).toBe("#FF0000");
+    expect(normaliseBrandHex("#0055FFAA")).toBe("#0055FF");
+    expect(normaliseBrandHex("  #0f8  ")).toBe("#00FF88"); // trimmed
+  });
+
+  it("rejects anything that is not a strict hex literal (→ null)", () => {
+    expect(normaliseBrandHex(null)).toBeNull();
+    expect(normaliseBrandHex(undefined)).toBeNull();
+    expect(normaliseBrandHex("")).toBeNull();
+    expect(normaliseBrandHex("red")).toBeNull(); // named colour
+    expect(normaliseBrandHex("rgb(255,0,0)")).toBeNull(); // rgb()
+    expect(normaliseBrandHex("hsl(0,100%,50%)")).toBeNull(); // hsl()
+    expect(normaliseBrandHex("#12345")).toBeNull(); // wrong length
+    expect(normaliseBrandHex('#fff"><img src=x onerror=alert(1)>')).toBeNull(); // injection
+  });
+});
+
+describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)", () => {
+  const input = sampleCardInput("matchSummary");
+
+  it("(a) rejects a malicious / non-colour brand colour → keeps the default token, no injection", () => {
+    const evil: PackCardData["brand"] = {
+      primaryColour: '#fff"><img src=x onerror=alert(1)>',
+      juniorsColour: "javascript:alert(1)",
+    };
+    const tokens = brandDefaultTokens(evil);
+    // Both invalid → fall back to the hard-coded defaults (never the raw string).
+    expect(tokens.accent).toBe(PACK_DEFAULT_TOKENS.accent);
+    expect(tokens.panel).toBe(PACK_DEFAULT_TOKENS.panel);
+
+    const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: tokens }), false);
+    // The attacker markup must not appear anywhere in the rendered style/root.
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain("javascript:");
+    // --gold / --panel carry the safe defaults.
+    expect(html).toMatch(/--gold:\s*#FBAC27/i);
+    expect(html).toMatch(/--panel:\s*#42342B/i);
+  });
+
+  it("(b) normalises short/alpha brand hex so --panel-2 derives (not the HH brown)", () => {
+    // HH brown panel → panel-2 is #261e19; a non-HH club must NOT inherit it.
+    const HH_PANEL2 = "#261e19";
+
+    // #f00 → #FF0000 → darken(0.42) → #940000
+    const shortHex = brandDefaultTokens({ juniorsColour: "#f00" });
+    expect(shortHex.panel).toBe("#FF0000");
+    const htmlShort = renderPackCard(input, "story", true, resolvePackTokens({ brand: shortHex }), false);
+    expect(htmlShort).toMatch(/--panel:\s*#FF0000/i);
+    expect(htmlShort).toContain("--panel-2:#940000");
+    expect(htmlShort).not.toContain(HH_PANEL2);
+
+    // #0055FFAA → #0055FF → darken(0.42) → #003194
+    const alphaHex = brandDefaultTokens({ juniorsColour: "#0055FFAA" });
+    expect(alphaHex.panel).toBe("#0055FF");
+    const htmlAlpha = renderPackCard(input, "story", true, resolvePackTokens({ brand: alphaHex }), false);
+    expect(htmlAlpha).toContain("--panel-2:#003194");
+    expect(htmlAlpha).not.toContain(HH_PANEL2);
+  });
+
+  it("(c) HH's clean 6-digit hex still derives its own brown --panel-2 (parity)", () => {
+    const hh = brandDefaultTokens({ primaryColour: "#FBAC27", juniorsColour: "#42342B" });
+    expect(hh).toEqual(PACK_DEFAULT_TOKENS);
+    const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: hh }), false);
+    expect(html).toContain("--panel:#42342B");
+    expect(html).toContain("--panel-2:#261e19");
   });
 });

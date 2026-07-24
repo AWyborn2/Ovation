@@ -452,7 +452,16 @@ export function ShareCardModal({
   // debounced for the preview), mirroring `buildOpts`.
   const buildPackData = (transform: PhotoTransform): PackCardData => ({
     brand: bundle?.brand
-      ? { name: bundle.brand.name, logoUrl: bundle.brand.logoUrl }
+      ? {
+          name: bundle.brand.name,
+          logoUrl: bundle.brand.logoUrl,
+          // Colours seed the pack's DEFAULT token palette (primary → accent,
+          // juniors → panel) via `brandDefaultTokens`; background is carried but
+          // not mapped onto the fixed deep-ink stage.
+          primaryColour: bundle.brand.primaryColour,
+          backgroundColour: bundle.brand.backgroundColour,
+          juniorsColour: bundle.brand.juniorsColour,
+        }
       : null,
     hashtag,
     sponsors,

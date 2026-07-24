@@ -7,7 +7,7 @@ import {
   packNativeSize,
   resolvePackTokens,
   tokensFromCardTheme,
-  type PackTokens,
+  brandDefaultTokens,
   type PackCardData,
 } from "@/lib/pack-render";
 
@@ -17,16 +17,6 @@ import {
  * (the bundle's own preview technique), so the size toggle switches format
  * natively with no cropping.
  */
-
-// The tenant brand default (lowest-priority token source) when no theme has
-// loaded — the Broadcast Dark palette (gold on brown/ink).
-const BRAND_DEFAULT_TOKENS: PackTokens = {
-  accent: "#FBAC27",
-  panel: "#42342B",
-  ink: "#101216",
-  textLight: "#F5F2E8",
-  displayFont: "anton",
-};
 
 export interface PackCardProps {
   input: ShareCardInput;
@@ -66,14 +56,22 @@ export function PackCard({
   // brand default. The explicit override level lives in `resolvePackTokens`;
   // callers fold per-card overrides into `theme` so the server harness (which
   // only threads `theme`) stays pixel-identical to this preview.
+  //
+  // The brand default baseline is now derived from the tenant brand colours on
+  // `data.brand` (primary → accent, juniors → panel) via `brandDefaultTokens`,
+  // falling back to the hard-coded Broadcast-Dark palette for any colour the
+  // brand omits. Halls Head's seeded brand reproduces that palette exactly, so
+  // HH stays visually identical; other tenants get their own brand colours as
+  // the pack's default look before any theme/override is applied.
+  const brandColour = data?.brand;
   const tokens = useMemo(
     () =>
       resolvePackTokens({
-        brand: BRAND_DEFAULT_TOKENS,
+        brand: brandDefaultTokens(brandColour),
         theme: tokensFromCardTheme(theme),
         junior,
       }),
-    [theme, junior],
+    [theme, junior, brandColour?.primaryColour, brandColour?.juniorsColour],
   );
 
   const html = useMemo(
