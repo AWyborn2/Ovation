@@ -191,6 +191,35 @@ export const PACK_DEFAULT_TOKENS: PackTokens = {
 };
 
 /**
+ * Validate + normalise a tenant-supplied brand colour to a plain 6-digit hex.
+ *
+ * Brand colours are admin-controlled and flow, unescaped, into an inline
+ * `style="…"` string that {@link rootStyle} builds and the preview/still harness
+ * mounts via `dangerouslySetInnerHTML`. So this is a security boundary: a value
+ * like `#fff"><img src=x onerror=alert(1)>` must never reach the tokens. We
+ * therefore accept ONLY a strict hex literal (`#RGB`, `#RRGGBB`, or
+ * `#RRGGBBAA`) — never `rgb()/hsl()/named` strings — and reject anything else by
+ * returning null (the caller then keeps the hard-coded default token). Accepting
+ * only hex keeps the injection surface closed with no escaping to get wrong.
+ *
+ * Normalisation also matters downstream: `--panel-2` is derived by
+ * {@link darkenHex}, which only matches a 6-digit hex. Expanding `#RGB`→`#RRGGBB`
+ * and stripping the alpha from `#RRGGBBAA` here means a valid short/alpha brand
+ * colour still yields a proper darkened panel gradient rather than silently
+ * falling back to the Halls-Head brown. Returns an uppercase `#RRGGBB` string,
+ * or null when the input is absent/invalid.
+ */
+export function normaliseBrandHex(colour?: string | null): string | null {
+  if (!colour) return null;
+  const m = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.exec(colour.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  else if (h.length === 8) h = h.slice(0, 6); // drop the alpha channel
+  return `#${h.toUpperCase()}`;
+}
+
+/**
  * Bridge a tenant's brand colours onto the pack's DEFAULT token baseline. This
  * is the LOWEST-priority token source: {@link resolvePackTokens} still layers
  * theme, then per-card override, then the junior force on top, so priority stays
@@ -218,8 +247,14 @@ export function brandDefaultTokens(
 ): PackTokens {
   const tokens: PackTokens = { ...PACK_DEFAULT_TOKENS };
   if (!brand) return tokens;
-  if (brand.primaryColour) tokens.accent = brand.primaryColour;
-  if (brand.juniorsColour) tokens.panel = brand.juniorsColour;
+  // Sanitise + normalise each brand colour at the boundary: only a strict hex
+  // literal survives (→ default token otherwise), and it is normalised to a
+  // 6-digit hex so `darkenHex` can derive `--panel-2`. HH's clean 6-digit
+  // #FBAC27 / #42342B pass through unchanged, preserving parity.
+  const accent = normaliseBrandHex(brand.primaryColour);
+  const panel = normaliseBrandHex(brand.juniorsColour);
+  if (accent) tokens.accent = accent;
+  if (panel) tokens.panel = panel;
   return tokens;
 }
 

@@ -5,6 +5,7 @@ import {
   resolvePackTokens,
   tokensFromCardTheme,
   brandDefaultTokens,
+  normaliseBrandHex,
   PACK_DEFAULT_TOKENS,
   JUNIOR_PANEL,
   type PackTokens,
@@ -372,5 +373,89 @@ describe("brandDefaultTokens (brand → pack default palette)", () => {
     const junior = resolvePackTokens({ brand, junior: true });
     expect(junior.panel).toBe(JUNIOR_PANEL);
     expect(junior.accent).toBe("#22AA22"); // brand default still seeds the accent
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Brand colour hardening (A8 review S1 + S2): brand colours are admin-controlled
+// and flow unescaped into the inline style mounted via dangerouslySetInnerHTML,
+// so they are sanitised (hex-only) + normalised to 6-digit hex at the boundary.
+// ---------------------------------------------------------------------------
+
+describe("normaliseBrandHex (brand colour sanitisation + normalisation)", () => {
+  it("passes a clean 6-digit hex through (uppercased), preserving HH parity", () => {
+    expect(normaliseBrandHex("#FBAC27")).toBe("#FBAC27");
+    expect(normaliseBrandHex("#42342B")).toBe("#42342B");
+    expect(normaliseBrandHex("#fbac27")).toBe("#FBAC27"); // case-normalised
+    expect(normaliseBrandHex("FBAC27")).toBe("#FBAC27"); // leading # optional
+  });
+
+  it("expands #RGB and strips the alpha from #RRGGBBAA to a 6-digit hex", () => {
+    expect(normaliseBrandHex("#f00")).toBe("#FF0000");
+    expect(normaliseBrandHex("#0055FFAA")).toBe("#0055FF");
+    expect(normaliseBrandHex("  #0f8  ")).toBe("#00FF88"); // trimmed
+  });
+
+  it("rejects anything that is not a strict hex literal (→ null)", () => {
+    expect(normaliseBrandHex(null)).toBeNull();
+    expect(normaliseBrandHex(undefined)).toBeNull();
+    expect(normaliseBrandHex("")).toBeNull();
+    expect(normaliseBrandHex("red")).toBeNull(); // named colour
+    expect(normaliseBrandHex("rgb(255,0,0)")).toBeNull(); // rgb()
+    expect(normaliseBrandHex("hsl(0,100%,50%)")).toBeNull(); // hsl()
+    expect(normaliseBrandHex("#12345")).toBeNull(); // wrong length
+    expect(normaliseBrandHex('#fff"><img src=x onerror=alert(1)>')).toBeNull(); // injection
+  });
+});
+
+describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)", () => {
+  const input = sampleCardInput("matchSummary");
+
+  it("(a) rejects a malicious / non-colour brand colour → keeps the default token, no injection", () => {
+    const evil: PackCardData["brand"] = {
+      primaryColour: '#fff"><img src=x onerror=alert(1)>',
+      juniorsColour: "javascript:alert(1)",
+    };
+    const tokens = brandDefaultTokens(evil);
+    // Both invalid → fall back to the hard-coded defaults (never the raw string).
+    expect(tokens.accent).toBe(PACK_DEFAULT_TOKENS.accent);
+    expect(tokens.panel).toBe(PACK_DEFAULT_TOKENS.panel);
+
+    const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: tokens }), false);
+    // The attacker markup must not appear anywhere in the rendered style/root.
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain("javascript:");
+    // --gold / --panel carry the safe defaults.
+    expect(html).toMatch(/--gold:\s*#FBAC27/i);
+    expect(html).toMatch(/--panel:\s*#42342B/i);
+  });
+
+  it("(b) normalises short/alpha brand hex so --panel-2 derives (not the HH brown)", () => {
+    // HH brown panel → panel-2 is #261e19; a non-HH club must NOT inherit it.
+    const HH_PANEL2 = "#261e19";
+
+    // #f00 → #FF0000 → darken(0.42) → #940000
+    const shortHex = brandDefaultTokens({ juniorsColour: "#f00" });
+    expect(shortHex.panel).toBe("#FF0000");
+    const htmlShort = renderPackCard(input, "story", true, resolvePackTokens({ brand: shortHex }), false);
+    expect(htmlShort).toMatch(/--panel:\s*#FF0000/i);
+    expect(htmlShort).toContain("--panel-2:#940000");
+    expect(htmlShort).not.toContain(HH_PANEL2);
+
+    // #0055FFAA → #0055FF → darken(0.42) → #003194
+    const alphaHex = brandDefaultTokens({ juniorsColour: "#0055FFAA" });
+    expect(alphaHex.panel).toBe("#0055FF");
+    const htmlAlpha = renderPackCard(input, "story", true, resolvePackTokens({ brand: alphaHex }), false);
+    expect(htmlAlpha).toContain("--panel-2:#003194");
+    expect(htmlAlpha).not.toContain(HH_PANEL2);
+  });
+
+  it("(c) HH's clean 6-digit hex still derives its own brown --panel-2 (parity)", () => {
+    const hh = brandDefaultTokens({ primaryColour: "#FBAC27", juniorsColour: "#42342B" });
+    expect(hh).toEqual(PACK_DEFAULT_TOKENS);
+    const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: hh }), false);
+    expect(html).toContain("--panel:#42342B");
+    expect(html).toContain("--panel-2:#261e19");
   });
 });
