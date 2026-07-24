@@ -27,6 +27,12 @@
   --hb-faint: rgba(0, 0, 0, 0.05);
   --hb-accent: var(--club-primary, #c8a951);
   --hb-accent-ink: #1a1a1a;
+  /* Accent is also reused as *text* for column headings and season labels.
+     On some skins the raw accent doesn't contrast the board background (e.g.
+     gold on timber, sky-blue on frosted glass), so these get their own tokens
+     that default to the accent and are overridden per-skin where needed. */
+  --hb-head-ink: var(--hb-accent);
+  --hb-season-ink: var(--hb-accent);
   --hb-head-border: rgba(0, 0, 0, 0.1);
   --hb-crest-bg: var(--club-primary, #c8a951);
   --hb-crest-ink: #1a1a1a;
@@ -160,7 +166,7 @@
   font-family: var(--hb-title-font);
   font-size: clamp(18px, 2vw, 24px);
   font-weight: 800;
-  color: var(--hb-accent);
+  color: var(--hb-season-ink);
   line-height: 1;
 }
 .hb-flag-comp {
@@ -302,7 +308,7 @@
 .hb-season {
   font-family: var(--hb-title-font);
   font-weight: 700;
-  color: var(--hb-accent);
+  color: var(--hb-season-ink);
   font-size: clamp(13px, 1.4vw, 16px);
 }
 .hb-name {
@@ -340,7 +346,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-size: clamp(11px, 1.2vw, 14px);
-  color: var(--hb-accent);
+  color: var(--hb-head-ink);
   padding: 6px 8px;
   border-bottom: 2px solid var(--hb-head-border);
 }
@@ -362,7 +368,7 @@
   font-size: 0.85em;
 }
 .hb-cell-season .hb-season {
-  color: var(--hb-accent);
+  color: var(--hb-season-ink);
   font-weight: 800;
 }
 
@@ -383,7 +389,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--hb-accent);
+  color: var(--hb-head-ink);
   border-bottom: 2px solid var(--hb-head-border);
   white-space: nowrap;
   vertical-align: bottom;
@@ -491,6 +497,10 @@
   --hb-chip-bg: #d9bb6b;
   --hb-chip-ink: #2e2015;
   --hb-title-font: "Georgia", "Times New Roman", serif;
+  /* Mid gold washes out on the timber gradient — lift headings + season
+     labels to a lighter gold so they read against the dark wood. */
+  --hb-head-ink: #f0dca6;
+  --hb-season-ink: #f0dca6;
 }
 .skin-p1 .hb-squad-name {
   background: rgba(0, 0, 0, 0.25);
@@ -540,6 +550,10 @@
   --hb-chip-bg: var(--club-primary, #0ea5e9);
   --hb-chip-ink: #ffffff;
   --hb-title-font: "Helvetica Neue", Arial, sans-serif;
+  /* A bright accent (e.g. sky-blue) has too little contrast as text on the
+     light frosted panel — deepen it for headings + season labels. */
+  --hb-head-ink: color-mix(in srgb, var(--club-primary, #0ea5e9) 55%, #062a3d);
+  --hb-season-ink: color-mix(in srgb, var(--club-primary, #0ea5e9) 55%, #062a3d);
 }
 .skin-p3 .hb-board {
   backdrop-filter: blur(12px);
@@ -737,7 +751,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--hb-accent);
+  color: var(--hb-head-ink);
   vertical-align: middle;
 }
 
@@ -797,6 +811,45 @@
 .hb-kiosk .hb-board::-webkit-scrollbar {
   display: none;
 }
+
+/* Frozen title + column headings during the kiosk credit-scroll.
+   The kiosk scrolls the `.hb-board` frame vertically, so pin the board title
+   and its column-heading row inside that frame — they stay legible while the
+   rows scroll past beneath them. `--hb-head-h` (the title's measured height,
+   published per-frame by the kiosk) offsets the heading row so it sits directly
+   under the pinned title. Backgrounds are opaque so scrolling rows don't bleed
+   through. */
+.hb-kiosk .hb-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--hb-board-bg);
+}
+/* The grid heading row lives inside `.hb-grid-scroll`; its `overflow-x: auto`
+   promotes the block to a vertical scroll container too, which would anchor the
+   sticky heading to the wrapper instead of the scrolling board. Drop it in the
+   kiosk (a clubroom TV never horizontally scrolls) so the heading pins to the
+   board. */
+.hb-kiosk .hb-grid-scroll {
+  overflow: visible;
+}
+.hb-kiosk .hb-grid-table th {
+  position: sticky;
+  top: var(--hb-head-h, 0px);
+  z-index: 3;
+  background: var(--hb-board-bg);
+}
+/* Preserve the printed-board skin's filled colour header row. */
+.hb-kiosk .skin-p9 .hb-grid-table th {
+  background: var(--club-primary, #c1121f);
+}
+.hb-kiosk .hb-col-head {
+  position: sticky;
+  top: var(--hb-head-h, 0px);
+  z-index: 3;
+  background: var(--hb-board-bg);
+}
+
 .hb-kexit {
   position: fixed;
   bottom: calc(16px + var(--kiosk-strip-h, 0px));
