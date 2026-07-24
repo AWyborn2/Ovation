@@ -7,13 +7,18 @@
  */
 
 /**
- * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
  */
 export interface UpdateAdminTenantBrandBody {
   /** @minLength 1 */
   name?: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards.
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */

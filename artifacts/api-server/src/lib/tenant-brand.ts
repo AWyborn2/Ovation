@@ -16,6 +16,9 @@ export type TenantBrand = HallsHeadBrand & {
 interface TenantBrandRow {
   name: string | null;
   shortName: string | null;
+  /** Optional so callers that predate the tagline column still typecheck; the
+   * live `getTenantBrand` select always supplies it. */
+  tagline?: string | null;
   logoUrl: string | null;
   backgroundUrl: string | null;
   faviconUrl: string | null;
@@ -73,6 +76,9 @@ export function buildTenantBrand(
   return {
     name: club?.name ?? tenant?.name ?? DEFAULT_BRAND.name,
     shortName: club?.shortName ?? tenant?.shortName ?? DEFAULT_BRAND.shortName,
+    // Tagline is tenant-row only (no clubs-register equivalent); null when the
+    // tenant has set none, so a brand-less club shows nothing under the name.
+    tagline: tenant?.tagline ?? DEFAULT_BRAND.tagline,
     logoUrl: club?.logoUrl ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl,
     // The tenants row carries no 128px logo: prefer the clubs register's 128px,
     // else the tenant's own logo (better than the default club's), else fallback.
@@ -113,6 +119,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
     .select({
       name: tenantsTable.name,
       shortName: tenantsTable.shortName,
+      tagline: tenantsTable.tagline,
       logoUrl: tenantsTable.logoUrl,
       backgroundUrl: tenantsTable.backgroundUrl,
       faviconUrl: tenantsTable.faviconUrl,

@@ -47,6 +47,10 @@ export const tenantsTable = pgTable("tenants", {
   backgroundColour: text("background_colour"),
   primaryColour: text("primary_colour"),
   juniorsColour: text("juniors_colour"),
+  // Short club tagline shown under the club name on pack cards (e.g.
+  // "CRICKET CLUB · EST 1991"). Null = no tagline; renderers show nothing rather
+  // than leaking another club's founding line.
+  tagline: text("tagline"),
   useNavyBase: boolean("use_navy_base").notNull().default(false),
   customDomain: text("custom_domain"),
   // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature

@@ -1197,6 +1197,11 @@ export interface HallsHeadBrand {
   name: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */
@@ -1216,6 +1221,11 @@ export interface TenantBrand {
   name: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */
@@ -1246,12 +1256,17 @@ export interface TenantBrand {
 }
 
 /**
- * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these nine properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
  */
 export interface UpdateTenantBrandBody {
   name?: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards.
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */
@@ -1272,13 +1287,18 @@ export interface UpdateTenantBrandBody {
 }
 
 /**
- * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
  */
 export interface UpdateAdminTenantBrandBody {
   /** @minLength 1 */
   name?: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards.
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */

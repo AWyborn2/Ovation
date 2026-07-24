@@ -13,6 +13,11 @@ export interface HallsHeadBrand {
   name: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */

@@ -29,6 +29,12 @@ export const ACCENT_HEX: Record<AccentToken, string> = {
 export interface ClubBrand {
   name: string;
   shortName?: string | null;
+  /**
+   * Short club tagline shown under the club name (e.g. "CRICKET CLUB · EST 1991")
+   * on pack cards. Null/absent = no tagline; renderers render nothing rather than
+   * leaking another club's founding line.
+   */
+  tagline?: string | null;
   logoUrl?: string | null;
   logoUrl128?: string | null;
   /**
@@ -72,6 +78,8 @@ export type HallsHeadBrand = ClubBrand;
 export const DEFAULT_BRAND: ClubBrand = {
   name: "Cricket Club",
   shortName: null,
+  // No tagline by default — a brand-less club shows nothing under the name.
+  tagline: null,
   logoUrl: "/ovation-logo.svg",
   logoUrl128: "/ovation-logo.svg",
   accentToken: "amber",
@@ -92,6 +100,9 @@ export const DEFAULT_BRAND: ClubBrand = {
 export const HALLS_HEAD_BRAND: ClubBrand = {
   name: "Halls Head Cricket Club",
   shortName: "HHCC",
+  // Halls Head's own tagline — seeds tenant #1 so it reproduces the historical
+  // pack-card sub-line exactly; other tenants set their own (or none).
+  tagline: "CRICKET CLUB · EST 1991",
   logoUrl:
     "https://res.cloudinary.com/playhq/image/upload/v1/production/ca/5fe82f6b-ee78-4232-9910-f5343547c1c3/1687781014605/logo.png",
   logoUrl128:

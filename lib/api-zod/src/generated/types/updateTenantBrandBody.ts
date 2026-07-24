@@ -7,12 +7,17 @@
  */
 
 /**
- * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these nine properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
  */
 export interface UpdateTenantBrandBody {
   name?: string;
   /** @nullable */
   shortName?: string | null;
+  /**
+     * Short club tagline shown under the club name on pack cards.
+     * @nullable
+     */
+  tagline?: string | null;
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */
