@@ -1716,6 +1716,11 @@ export async function assembleBoards(
     // set by a custom-grid definition.
     if (b.skin == null) b.skin = cfg?.skin ?? null;
     if (b.footnote == null) b.footnote = cfg?.footnote ?? null;
+    // Season row order for grid boards. Builders emit newest-first (desc); an
+    // admin "asc" choice flips it to oldest-first by reversing the rows.
+    if (cfg?.sort === "asc" && b.grid) {
+      b.grid = { ...b.grid, rows: [...b.grid.rows].reverse() };
+    }
   }
   return boards;
 }

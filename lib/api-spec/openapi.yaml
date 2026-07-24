@@ -10275,6 +10275,14 @@ components:
           description: >-
             Ordered column keys for grid-capable boards (offices, award keys,
             grades). Non-empty switches the board into its season-grid layout.
+        sort:
+          type: string
+          enum:
+            - asc
+            - desc
+          description: >-
+            Season row order for season-based (grid) boards. "desc" (default)
+            shows the newest season first; "asc" shows the oldest season first.
 
     BoardColumn:
       type: object

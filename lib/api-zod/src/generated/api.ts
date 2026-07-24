@@ -5210,7 +5210,8 @@ export const GetHonourDisplayResponse = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
-  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.'),
+  "sort": zod.enum(['asc', 'desc']).optional().describe('Season row order for season-based (grid) boards. \"desc\" (default) shows the newest season first; \"asc\" shows the oldest season first.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -5429,7 +5430,8 @@ export const GetKioskDisplayResponse = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
-  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.'),
+  "sort": zod.enum(['asc', 'desc']).optional().describe('Season row order for season-based (grid) boards. \"desc\" (default) shows the newest season first; \"asc\" shows the oldest season first.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -5573,7 +5575,8 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
-  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.'),
+  "sort": zod.enum(['asc', 'desc']).optional().describe('Season row order for season-based (grid) boards. \"desc\" (default) shows the newest season first; \"asc\" shows the oldest season first.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).optional(),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),
@@ -5673,7 +5676,8 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "kind": zod.enum(['none', 'url', 'texture']),
   "value": zod.string().nullish()
 }).describe('A board \/ page background source. kind \"none\" clears any inherited image; \"url\" is an image URL or uploaded object path; \"texture\" is a built-in CSS texture id.').nullish().describe('Per-board background image.'),
-  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.')
+  "gridColumns": zod.array(zod.string()).nullish().describe('Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout.'),
+  "sort": zod.enum(['asc', 'desc']).optional().describe('Season row order for season-based (grid) boards. \"desc\" (default) shows the newest season first; \"asc\" shows the oldest season first.')
 }).describe('Admin per-board override (all fields optional; unset falls back to the board\'s natural default). Stored keyed by board id in settings.boardConfigs.')).describe('Per-board display overrides keyed by board id.'),
   "composites": zod.array(zod.object({
   "id": zod.string().describe('Stable composite id, e.g. \"composite:<uuid>\" (never reused).'),

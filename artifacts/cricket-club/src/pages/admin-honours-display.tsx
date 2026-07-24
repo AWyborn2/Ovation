@@ -1572,6 +1572,7 @@ function BoardConfigEditor({
   const logo = cfg?.logo ?? true;
   const gridColumns = cfg?.gridColumns ?? [];
   const wrapBlocks = cfg?.wrapBlocks ?? board.display.wrapBlocks ?? 2;
+  const sort = cfg?.sort ?? "desc";
 
   const toggleGridCol = (key: string) => {
     const next = gridColumns.includes(key)
@@ -1647,6 +1648,22 @@ function BoardConfigEditor({
               <option value={2}>2</option>
               <option value={3}>3</option>
               <option value={4}>4</option>
+            </select>
+          </label>
+        )}
+        {isGrid && (
+          <label className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground">Season order</span>
+            <select
+              className="px-2 py-1 rounded border bg-background text-sm"
+              value={sort}
+              onChange={(e) =>
+                onPatch({ sort: e.target.value as "asc" | "desc" })
+              }
+              data-testid={`board-sort-${board.id}`}
+            >
+              <option value="desc">Newest first</option>
+              <option value="asc">Oldest first</option>
             </select>
           </label>
         )}

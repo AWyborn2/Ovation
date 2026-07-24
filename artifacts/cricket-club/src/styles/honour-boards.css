@@ -807,6 +807,11 @@
   max-height: calc(100vh - clamp(32px, 6vh, 80px) - var(--kiosk-strip-h, 0px));
   overflow-y: auto;
   scrollbar-width: none;
+  /* The board's top padding would sit *above* the sticky title (the title
+     pins at the scrollport's padding edge), leaving a band the scrolling rows
+     show through. Drop it here and hand it to the pinned title below so the
+     title covers the frame from the very top edge. */
+  padding-top: 0;
 }
 .hb-kiosk .hb-board::-webkit-scrollbar {
   display: none;
@@ -824,6 +829,10 @@
   top: 0;
   z-index: 4;
   background: var(--hb-board-bg);
+  /* Absorb the board's (now-removed) top padding so the title keeps its
+     breathing room while its opaque background reaches the very top edge —
+     no gap for rows to leak through above the banner. */
+  padding-top: clamp(18px, 3vw, 36px);
 }
 /* The grid heading row lives inside `.hb-grid-scroll`; its `overflow-x: auto`
    promotes the block to a vertical scroll container too, which would anchor the
@@ -848,6 +857,20 @@
   top: var(--hb-head-h, 0px);
   z-index: 3;
   background: var(--hb-board-bg);
+}
+
+/* Kiosk premiership layout tweaks (clubroom TV).
+   Stack each premiership squad as a single column (one player per line)
+   instead of wrapping into two, and pack more premiership cards across the
+   wide screen — up to ~5 at the standard kiosk width, still responsive. */
+.hb-kiosk .hb-flags {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+}
+.hb-kiosk .hb-squad {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .hb-kexit {
