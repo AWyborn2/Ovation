@@ -18,4 +18,5 @@ export const DisplayBoardLayout = {
   list: 'list',
   columns: 'columns',
   grid: 'grid',
+  lifeMembers: 'lifeMembers',
 } as const;

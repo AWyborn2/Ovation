@@ -383,3 +383,118 @@ export function GridBoard({ board, brand, kiosk, cfg }: LayoutProps) {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Life Members layout — two-column cards mirroring the app's Life Members page:
+// name + roles + inducted year, career stat tiles, grades played, and a bio.
+// Fed by the board's per-entry `lifeMember` data (career stats + bio).
+// ---------------------------------------------------------------------------
+
+/** A single stat tile: label, big value, optional sub-line(s). */
+function LmStat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: ReactNode;
+  sub?: (string | null | undefined)[];
+}) {
+  const subs = (sub ?? []).filter(Boolean);
+  return (
+    <div className="hb-lm-stat">
+      <div className="hb-lm-stat-k">{label}</div>
+      <div className="hb-lm-stat-v">{value}</div>
+      {subs.length ? <div className="hb-lm-stat-sub">{subs.join(" · ")}</div> : null}
+    </div>
+  );
+}
+
+function LifeMemberCard({ entry, kiosk }: { entry: BoardEntry; kiosk?: boolean }) {
+  const lm = entry.lifeMember;
+  const s = lm?.stats ?? null;
+  const batInns = s ? s.innings - s.notOuts : 0;
+  const battingAvg = s && batInns > 0 ? (s.runs / batInns).toFixed(2) : null;
+  const bowlingAvg = s && s.wickets > 0 ? (s.runsConceded / s.wickets).toFixed(2) : null;
+  const dismissals = s ? s.catches + s.stumpings + s.runOuts : 0;
+
+  return (
+    <article className="hb-lm-card">
+      <header className="hb-lm-head">
+        <div className="hb-lm-namewrap">
+          <div className="hb-lm-name">
+            <NameLink playerId={entry.playerId} kiosk={kiosk}>
+              {entry.primaryText}
+            </NameLink>
+          </div>
+          {lm?.roles ? <div className="hb-lm-roles">{lm.roles}</div> : null}
+        </div>
+        {lm?.inducted != null || entry.season ? (
+          <div className="hb-lm-inducted">
+            <span className="hb-lm-inducted-k">Inducted</span>
+            <b>{lm?.inducted ?? entry.season}</b>
+          </div>
+        ) : null}
+      </header>
+
+      {s ? (
+        <div className="hb-lm-stats">
+          <LmStat label="Games" value={s.games} />
+          <LmStat
+            label="Runs"
+            value={s.runs.toLocaleString()}
+            sub={[battingAvg ? `Avg ${battingAvg}` : null, s.highScore ? `HS ${s.highScore}` : null]}
+          />
+          <LmStat label="50s / 100s" value={`${s.fifties} / ${s.hundreds}`} />
+          <LmStat
+            label="Wickets"
+            value={s.wickets}
+            sub={[bowlingAvg ? `Avg ${bowlingAvg}` : null, s.bestBowling ? `BB ${s.bestBowling}` : null]}
+          />
+          <LmStat label="5-Wkt Hauls" value={s.fiveWickets} />
+          <LmStat
+            label="Dismissals"
+            value={dismissals}
+            sub={[`${s.catches}c / ${s.stumpings}s / ${s.runOuts}ro`]}
+          />
+        </div>
+      ) : null}
+
+      {s && s.gradesPlayed.length ? (
+        <div className="hb-lm-grades">
+          <span className="hb-lm-grades-k">Grades</span>
+          {s.gradesPlayed.map((g, gi) => (
+            <span className="hb-lm-grade" key={gi}>
+              {g}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {lm?.bio ? (
+        <div className="hb-lm-bio">
+          {lm.bio
+            .split(/\n\s*\n/)
+            .map((p) => p.trim())
+            .filter(Boolean)
+            .map((p, pi) => (
+              <p key={pi}>{p}</p>
+            ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+export function LifeMembersBoard({ board, brand, kiosk, cfg }: LayoutProps) {
+  return (
+    <div className="hb-board hb-lifemembers">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <div className="hb-lm-grid">
+        {board.entries.map((e, i) => (
+          <LifeMemberCard key={i} entry={e} kiosk={kiosk} />
+        ))}
+      </div>
+    </div>
+  );
+}

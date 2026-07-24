@@ -56,7 +56,8 @@ export type BoardLayout =
   | "teamOfDecade"
   | "list"
   | "columns"
-  | "grid";
+  | "grid"
+  | "lifeMembers";
 
 /** The built-in skin ids (admin skins use "custom:<uuid>"). */
 export type TemplateId =
@@ -68,7 +69,8 @@ export type TemplateId =
   | "p6"
   | "p7"
   | "p8"
-  | "p9";
+  | "p9"
+  | "p10";
 
 export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p1", label: "P1 · Heritage Timber" },
@@ -80,6 +82,7 @@ export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p7", label: "P7 · App Light" },
   { id: "p8", label: "P8 · App Dark" },
   { id: "p9", label: "P9 · Printed Board" },
+  { id: "p10", label: "P10 · Ovation App" },
 ];
 
 const BUILTIN_IDS = new Set<string>(TEMPLATES.map((t) => t.id));
