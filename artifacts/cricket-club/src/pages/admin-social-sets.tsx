@@ -902,6 +902,7 @@ function MatchSource({
   const [matchId, setMatchId] = useState<number | null>(null);
   const [round, setRound] = useState<number | null>(null);
   const [batching, setBatching] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
 
   const matchesQ = useListMatches({ grade });
   const matches = (matchesQ.data ?? []) as MatchSummaryDto[];
@@ -948,11 +949,17 @@ function MatchSource({
   const addRound = async () => {
     if (roundMatches.length === 0) return;
     setBatching(true);
+    setBatchError(null);
     try {
       const details = await Promise.all(
         roundMatches.map((m) => qc.fetchQuery(getGetMatchQueryOptions(m.id))),
       );
       onAddMany(details.map((d) => matchToSummaryInput(d)));
+    } catch (e) {
+      console.error("Batch add (round) failed", e);
+      setBatchError(
+        e instanceof Error ? e.message : "Could not load every match in this round.",
+      );
     } finally {
       setBatching(false);
     }
@@ -1052,6 +1059,9 @@ function MatchSource({
           Add all in Round {effectiveRound ?? "—"} ({roundMatches.length})
         </Button>
       </div>
+      {batchError && (
+        <p className="text-sm text-destructive">{batchError}</p>
+      )}
     </div>
   );
 }
@@ -1130,6 +1140,7 @@ function GradeLeaderSource({
   const [grade, setGrade] = useState(GRADES[0]);
   const [category, setCategory] = useState<"Runs" | "Wickets">("Runs");
   const [batching, setBatching] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
   const statsQ = useGetGradeLeaderboard(grade, undefined, {
     query: { queryKey: getGetGradeLeaderboardQueryKey(grade) },
   });
@@ -1156,6 +1167,7 @@ function GradeLeaderSource({
   // batch-append. Grades with no stats are skipped.
   const addAllGrades = async () => {
     setBatching(true);
+    setBatchError(null);
     try {
       const boards = await Promise.all(
         GRADES.map((g) =>
@@ -1170,6 +1182,11 @@ function GradeLeaderSource({
         if (top) inputs.push(toInput(top, g));
       });
       onAddMany(inputs);
+    } catch (e) {
+      console.error("Batch add (grade leaderboards) failed", e);
+      setBatchError(
+        e instanceof Error ? e.message : "Could not load every grade leaderboard.",
+      );
     } finally {
       setBatching(false);
     }
@@ -1213,6 +1230,9 @@ function GradeLeaderSource({
           Add all grade leaderboards
         </Button>
       </div>
+      {batchError && (
+        <p className="text-sm text-destructive">{batchError}</p>
+      )}
       {statsQ.isLoading ? (
         <LoadingState label="Loading leaderboard…" />
       ) : ranked.length === 0 ? (

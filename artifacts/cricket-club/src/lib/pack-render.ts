@@ -725,13 +725,17 @@ function applyPackData(bound: BoundInput, data: PackCardData, kind: string): voi
   if (data.brand?.logoUrl) images["clubLogo"] = data.brand.logoUrl;
 
   // A2 — club name + hashtags from the resolved brand / settings, replacing the
-  // hard-coded "HALLS HEAD" / "#HALLSHEAD" sample defaults. (clubTagline has no
-  // data source yet and is intentionally left on its sample.)
+  // hard-coded "HALLS HEAD" / "#HALLSHEAD" sample defaults.
   if (data.brand?.name) set(values, "clubName", data.brand.name);
-  if (data.hashtag) {
-    set(values, "clubHashtag", data.hashtag);
-    set(values, "hashtags", data.hashtag);
-  }
+  // S1: this runs only for a real (data-bearing) render, so the sample hashtag
+  // must NEVER survive — overwrite unconditionally, using "" when the tenant has
+  // no configured hashtag, so another club's "#HALLSHEAD" can't leak through.
+  values["clubHashtag"] = data.hashtag ?? "";
+  values["hashtags"] = data.hashtag ?? "";
+  // S2: the clubTagline sample is "CRICKET CLUB · EST 1991" — Halls Head's
+  // founding year. There is no tenant tagline source yet (follow-up A9), so clear
+  // it rather than render another club's founding year.
+  values["clubTagline"] = "";
 
   // A3 — active sponsors → sponsor1..3 slots (already kind-filtered upstream).
   (data.sponsors ?? []).slice(0, 3).forEach((s, idx) => {

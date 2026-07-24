@@ -6,6 +6,7 @@ import {
   tokensFromCardTheme,
   JUNIOR_PANEL,
   type PackTokens,
+  type PackCardData,
 } from "./pack-render";
 import { sampleCardInput } from "./sample-card-inputs";
 import type { ShareCardInput, CardSize, LadderRow } from "./share-card";
@@ -148,6 +149,83 @@ describe("renderPackCard", () => {
     );
     expect(html.length).toBeGreaterThan(0);
     expect(hasUnresolved(html)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tenant data threading (PackCardData) — the pack path's brand / sponsors /
+// hashtag / photo overlay, plus the S1/S2 no-leak regression guards.
+// ---------------------------------------------------------------------------
+
+describe("renderPackCard with tenant data (PackCardData)", () => {
+  const DATA: PackCardData = {
+    brand: { name: "Test Cricket Club", logoUrl: "https://cdn.example.com/logo.png" },
+    hashtag: "#TESTCC",
+    sponsors: [
+      { name: "Sponsor A", logoUrl: "https://cdn.example.com/spon-a.png" },
+      { name: "Sponsor B", logoUrl: "https://cdn.example.com/spon-b.png" },
+      { name: "Sponsor C", logoUrl: "https://cdn.example.com/spon-c.png" },
+    ],
+    photoUrl: null,
+    photoTransform: null,
+  };
+
+  it("(a) binds tenant logo / name / sponsors over the sample defaults", () => {
+    const input = sampleCardInput("matchSummary");
+    const html = renderPackCard(input, "story", true, TOKENS, false, DATA);
+    // clubLogo slot resolves to the tenant logo image.
+    expect(html).toContain('src="https://cdn.example.com/logo.png"');
+    // clubName header uses the tenant name (not the "HALLS HEAD" sample).
+    expect(html).toContain("Test Cricket Club");
+    // First three sponsor logos fill sponsor1..3.
+    expect(html).toContain('src="https://cdn.example.com/spon-a.png"');
+    expect(html).toContain('src="https://cdn.example.com/spon-b.png"');
+    expect(html).toContain('src="https://cdn.example.com/spon-c.png"');
+  });
+
+  it("(a) uses the tenant hashtag in the sponsors-off footer", () => {
+    const input = sampleCardInput("matchSummary");
+    const off = renderPackCard(input, "story", false, TOKENS, false, DATA);
+    expect(off).toContain("#TESTCC");
+  });
+
+  it("(b) falls back to placeholders for absent brand / sponsors / photo (no crash)", () => {
+    const input = sampleCardInput("matchSummary");
+    const empty: PackCardData = {};
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      const html = renderPackCard(input, size, true, TOKENS, false, empty);
+      expect(html.length).toBeGreaterThan(0);
+      expect(hasUnresolved(html)).toBe(false);
+      // Never an empty <img src> — unresolved logo/sponsor slots stay placeholders.
+      expect(html).not.toContain('src=""');
+      expect(html).toContain("pack-slot-placeholder");
+    }
+  });
+
+  it("(c) never leaks the sample #HALLSHEAD or EST 1991 on a data-bearing render", () => {
+    const input = sampleCardInput("matchSummary");
+    // A branded tenant with NO configured hashtag (empty string) and no tagline
+    // source — the sample must not survive through either the header tagline or
+    // the hashtag footer (S1 + S2 regression guard).
+    const noHashtag: PackCardData = {
+      brand: { name: "Other Club", logoUrl: null },
+      hashtag: "",
+    };
+    for (const sponsorsOn of [true, false]) {
+      for (const size of ["square", "portrait", "story"] as CardSize[]) {
+        const html = renderPackCard(input, size, sponsorsOn, TOKENS, false, noHashtag);
+        expect(html, `${size} sponsors=${sponsorsOn}`).not.toContain("#HALLSHEAD");
+        expect(html, `${size} sponsors=${sponsorsOn}`).not.toContain("EST 1991");
+      }
+    }
+  });
+
+  it("keeps the sample defaults on a no-data render (gallery / brand-less)", () => {
+    // Sanity: without a `data` argument the samples still apply, so the existing
+    // gallery-preview behaviour is unchanged.
+    const input = sampleCardInput("matchSummary");
+    const html = renderPackCard(input, "story", false, TOKENS, false);
+    expect(html).toContain("#HALLSHEAD");
   });
 });
 
