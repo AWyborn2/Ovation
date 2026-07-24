@@ -23,6 +23,206 @@ theme, roughly ordered by value within each group.
 
 ---
 
+## Card dynamic-content, image-upload & carousel review (2026-07-24)
+
+Captured 2026-07-24 from PR #60 feedback. Three investigations (dynamic content
+placeholders, image-placeholder intent + upload gap, template-pack/carousel
+integration). **Prioritised backlog is at the end of this section.**
+
+### Root cause (spans the first two themes)
+
+There are **two card renderers**, and only one is wired to tenant data:
+
+- **Canvas renderer** — `share-card.ts` (`renderShareCard`). Threads tenant brand,
+  logo, sponsors, hashtag, club URL, and the modal's uploaded photo. Used for BYO
+  custom templates and the legacy built-in cards.
+- **Pack renderer** — `pack-render.ts` `renderPackCard()`, mounted by `PackCard`
+  (`components/pack-card.tsx`). This is the **Broadcast Dark pack — all 23 card
+  kinds**. It receives only `{input, size, sponsorsOn, junior, theme}`
+  (`share-card-modal.tsx:678-687`; server harness `card-render-harness.tsx:147-156`)
+  and is **not wired to tenant brand, logo, sponsors, hashtag, or the uploaded
+  photo at all**. `bindInput()` (`pack-render.ts:429-651`) reads images only off the
+  input object, so unbound slots fall back to hard-coded "Halls Head" samples,
+  initials chips, and grey boxes — even though the brand and active-sponsor data are
+  already resolved next to the call site (`share-card-modal.tsx:403-432`) and simply
+  never passed in.
+
+**Implication:** most of the owner's feedback ("logo should come from the tenants
+DB", "sponsors should be dynamic") is fixed by threading existing data into
+`PackCard`/`renderPackCard` — not by new data plumbing.
+
+### Theme A — Wire the pack renderer to tenant data
+
+#### A1. Bind tenant logo into the top-left `clubLogo` slot ⭐ QUICK WIN
+- **What:** Add a `brand` prop to `PackCard`/`renderPackCard`; set
+  `images["clubLogo"] = brand.logoUrl` in `bindInput`; pass `bundle.brand` at the two
+  call sites (`share-card-modal.tsx:681`, `card-render-harness.tsx:147`).
+- **Why:** The `clubLogo` slot (`fragments.ts:28`, on nearly every card via
+  `storyHeader`/`sharedHeader`) is **never bound** and renders an initials chip
+  (`pack-render.ts:378-383`). This is the owner's exact top-left-logo complaint.
+  Data already exists (`getTenantBrand().logoUrl`, `tenant-brand.ts:76`).
+- **Effort:** Quick. Fixes all 23 kinds in one change.
+
+#### A2. Bind club name + hashtags dynamically ⭐ QUICK WIN (same change as A1)
+- **What:** Bind `clubName`, `clubTagline`, `clubHashtag`, `hashtags` from brand/settings.
+- **Why:** Hard-coded "HALLS HEAD" / "#HALLSHEAD" / "#HALLSHEAD · #PEELPREMIERLEAGUE"
+  literals across the pack (`fragments.ts:199`, `big-moment.ts:78-80`, `debut.ts:104-105`,
+  `century.ts:70`, `premiership.ts:64`, many more). The hashtag is **already computed**
+  in the modal (`share-card-modal.tsx:409-411`), just not passed.
+- **Effort:** Quick. (Tagline has no field yet — see A8.)
+
+#### A3. Bind active sponsors into `sponsor1/2/3` slots ⭐ QUICK WIN
+- **What:** Thread the resolved `sponsors[]` (already loaded, `share-card-modal.tsx:403`)
+  into the pack path; map first N `logoUrl`s → `images["sponsor1..3"]`, filtered by
+  `cardKinds` (`sponsorAppliesToKind`, `share-card.ts:336-339`).
+- **Why:** Pack sponsor slots (`fragments.ts:114-133`) are **never bound** and render
+  empty grey boxes (`pack-render.ts:375-377`), despite sponsors being fully configured
+  and uploaded (`admin-social.tsx:496`, `sponsorsTable.logoUrl`). The kiosk already
+  renders these dynamically, proving the pattern.
+- **Effort:** Quick.
+
+#### A4. Feed the modal's uploaded photo into the pack `photo` slot ⭐ QUICK WIN
+- **What:** Pass `effectivePhotoUrl` (and ideally `photoTransform`) from
+  `use-photo-controls.ts` into `PackCard`/`renderPackStill`; prefer it over
+  `input.photoUrl` in `bindInput`/`resolveSlots`.
+- **Why:** The modal has a real working photo uploader/gallery/reposition
+  (`use-photo-controls.ts:77,125-153`) whose output feeds **only the canvas path**
+  (`share-card-modal.tsx:435`) — on pack cards it silently does nothing.
+- **Effort:** Quick–medium (thread focal-point/transform for `cover` slots).
+
+#### A5. Populate `potm.photo` on the match-result card — QUICK
+- **What:** Fill `potm.photo` (`match-result.ts:52`) from the player-image lookup in the
+  `matchSummary` bind (`pack-render.ts:435-459`), currently never set.
+- **Effort:** Quick (reuses `player_images`).
+
+#### A6. Fix the dead `bigMoment` photo binding — QUICK (correctness)
+- **What:** `bindInput` sets `images["photo"]` for `bigMoment` (`pack-render.ts:612`) but
+  `big-moment.ts` has **no `data-slot="photo"`** — the image never shows. Either add the
+  slot (pairs with A12) or drop the dead assignment.
+- **Effort:** Quick.
+
+#### A7. Dynamic "presented by" primary sponsor — MEDIUM (needs data model)
+- **What:** Replace hard-coded `{{sponsorPresentedBy}}` = "eSA Sport"/"PlayHQ"
+  (`big-moment.ts:81`, `century.ts:72`, `premiership.ts:65`, others) with a designated
+  presenting sponsor.
+- **Why/Notes:** Needs a role flag (e.g. `isPresenting`) on the `sponsors` table.
+- **Effort:** Medium.
+
+#### A8. Bridge tenant brand colours into pack tokens — MEDIUM
+- **What:** Map tenant primary/accent → `--gold`/`--panel`/`--ink` as the default token
+  baseline.
+- **Why:** `pack-card.tsx:22-28` hard-codes the Broadcast-Dark palette as
+  `BRAND_DEFAULT_TOKENS`; a non-Halls-Head tenant only gets its colours if a
+  `card_theme` happens to carry them — no brand→token bridge exists.
+- **Effort:** Medium.
+
+#### A9. `clubTagline` + competition hashtags — MEDIUM (no source yet)
+- **What:** "CRICKET CLUB · EST 1991" and "#PEELPREMIERLEAGUE"/"LIVE UPDATES" have no
+  tenant/central source. Needs a new tenant setting (tagline) and competition-name
+  derivation (from central `matches`).
+- **Effort:** Medium.
+
+### Theme B — Image upload for card placeholders
+
+Upload infra is **fully built and unused by the pack**: presigned uploads
+(`POST /api/storage/uploads/request-url`, `routes/storage.ts:63-106`), `objectStorage.ts`,
+`ObjectUploader`/`useUpload`, the `player_images` gallery, and working uploaders for
+player photos, tenant logo, sponsor logos, template backgrounds. The gap is wiring, not
+storage. The manual card-builder exposes image slots as **free-text URL fields**
+(`descriptors.ts:85,236,252`).
+
+#### B1. Per-slot image upload control in the card editor — LARGER (the real fix)
+- **What:** Replace the free-text "…URL" inputs with an upload/pick control bound to each
+  `data-slot` (photo/logo/sponsor) the template exposes via its `fields`
+  (`fragments.ts:184-190` enumerates every slot with label + type). Thread an
+  `imagesOverride` map through `renderPackCard`.
+- **Why:** This is the direct answer to "all image placeholders have no way to upload an
+  image." Covers `squadPhoto`, `teamPhoto`, action shots, and manual overrides uniformly.
+- **Effort:** Larger (new UI + override threading). Depends on A1–A4 landing the plumbing first.
+
+#### B2. Premiership team-photo & team-list squad-photo upload — MEDIUM
+- **What:** Dedicated uploader for `teamPhoto` (`premiership.ts:24`, never bound) and
+  `squadPhoto` (`team-list.ts:40`, text-field only). Store against the match/premiership
+  record or a lightweight card-asset table.
+- **Effort:** Medium.
+
+#### B3. Action-shot / full-bleed background support — MEDIUM
+- **What:** Extend the canvas "feature vs headshot" placement (`use-photo-controls.ts:67`,
+  `share-card.ts` `PhotoPlacement`) to pack cards so an uploaded action shot can go
+  full-bleed (templates already scrim the player photo, e.g. `player-spotlight.ts:30-32`).
+- **Effort:** Medium (pack slot geometry is currently fixed).
+
+### Theme C — Template-pack & carousel integration
+
+Pack model: `broadcast-dark-v1` registered in `design-packs.ts:31`; materialised per
+tenant as `card_templates` rows (`source="pack"`) by `ensurePackTemplates`
+(`design-packs.ts:106`); selected per-kind via `card_templates.defaultForKinds`. Carousel
+= `card_sets` (`social_cards.ts:270`); each slide = `{id, input, layout?, themeId?,
+motionPreset?}`. **`POST /card-sets` already accepts a full multi-slide array in one call**
+(`routes/social-cards.ts:614`) — it is inherently batch-capable; the gap is UI + grouping,
+not the backend.
+
+#### C1. Client-side "batch add" from existing sources ⭐ QUICK WIN
+- **What:** Add "Add all matches in Round X" / "Add all grade leaderboards" buttons to
+  `SlideSourcePicker` (`admin-social-sets.tsx:845`) that loop the existing hooks and append
+  slides (respecting the 2–10 cap, `social-cards-helpers.ts:154-155`).
+- **Why:** Directly satisfies the owner's example (batch all match-summaries into one set,
+  all leaderboards into another). Today slides are added one at a time from 3 manual
+  sources. No schema/endpoint change.
+- **Effort:** Small.
+
+#### C2. Carousel slides render through the selected pack — MEDIUM
+- **What:** Set `opts.template` in `buildSlideOpts` (`admin-social-sets.tsx:351`) to the
+  tenant's default pack template per slide kind, and route slide render/export through the
+  pack path as the modal does.
+- **Why:** Carousel slides currently **bypass the pack** — `buildSlideOpts` never sets
+  `opts.template`, so they render via the legacy built-in canvas (`share-card.ts:4005`),
+  inconsistent with single cards. (This also means A1–A3's logo/sponsor fixes won't reach
+  carousels until this lands.)
+- **Effort:** Medium.
+
+#### C3. `POST /card-sets/generate` + grouping metadata — LARGER
+- **What:** Add grouping columns to `card_sets` (`sourceKind`, `sourceRound`, `season`,
+  `grade`, + partial unique index) and a generate endpoint that server-side gathers matching
+  source rows, maps via existing input builders, and upserts one set. OpenAPI-first change.
+- **Why:** Enables idempotent regeneration ("rebuild the Round 5 set") and dedupe; C1 is the
+  cheap version without this.
+- **Effort:** Larger.
+
+#### C4. Auto-seed carousel sets from the `social_drafts` queue — LARGER
+- **What:** "Make a carousel from this round's approved drafts" — match-summary drafts already
+  carry `sourceKind`/`sourceMatchId` (`social_cards.ts:407-416`).
+- **Why:** Closes detection → carousel loop. Depends on C3.
+- **Effort:** Larger.
+
+### Prioritised backlog (easy/quick wins first)
+
+| # | Task | Theme | Effort | Depends on |
+|---|------|-------|--------|-----------|
+| 1 | **A1** Tenant logo → `clubLogo` top-left | Dynamic content | ⭐ Quick | — |
+| 2 | **A2** Club name + hashtags dynamic | Dynamic content | ⭐ Quick | A1 (same change) |
+| 3 | **A3** Active sponsors → sponsor slots | Dynamic content | ⭐ Quick | — |
+| 4 | **A4** Uploaded photo → pack `photo` slot | Dynamic content | ⭐ Quick–med | — |
+| 5 | **C1** Client-side "batch add" to carousel sets | Carousel | ⭐ Quick | — |
+| 6 | **A5** Populate `potm.photo` | Dynamic content | Quick | A4 |
+| 7 | **A6** Fix dead `bigMoment` photo binding | Correctness | Quick | — |
+| 8 | **A8** Brand colours → pack tokens | Dynamic content | Medium | — |
+| 9 | **C2** Carousel slides render through pack | Carousel | Medium | A1–A3 |
+| 10 | **A7** Dynamic "presented by" sponsor | Dynamic content | Medium | sponsor role flag |
+| 11 | **A9** Club tagline + competition hashtags | Dynamic content | Medium | new tenant field |
+| 12 | **B2** Team/squad photo upload | Image upload | Medium | — |
+| 13 | **B3** Action-shot / full-bleed background | Image upload | Medium | A4 |
+| 14 | **B1** Per-slot image upload in editor | Image upload | Larger | A1–A4 |
+| 15 | **C3** `/card-sets/generate` + grouping cols | Carousel | Larger | C1 |
+| 16 | **C4** Auto-seed sets from `social_drafts` | Carousel | Larger | C3 |
+
+**Recommended first sprint (all quick, high impact, reuse existing infra):** A1 → A2 → A3
+→ A4 (one PR threading brand+sponsors+photo into the pack renderer answers most of the
+feedback), then C1 (batch-add) as a self-contained carousel win. A6 is a trivial
+correctness cleanup to fold in.
+
+---
+
 ## Design packs roadmap
 
 ### Packs B–E (Gold Foil, Bold Type, Neon Night, Sunset)
