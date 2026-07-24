@@ -319,13 +319,27 @@ export const cardSetsTable = pgTable(
     // Idempotent regeneration: at most one generated set per
     // (tenant, source_kind, season, source_round, grade). Partial — hand-authored
     // sets (source_kind IS NULL) are unconstrained. Mirrors the
-    // social_drafts_match_dedupe pattern. NOTE: Postgres treats NULLs as distinct
-    // in a unique index by default, so for kinds whose narrower columns are null
-    // (e.g. gradeLeader) idempotency is additionally guaranteed by the route's
-    // select-then-upsert; this index is the hard guard for the fully-keyed
-    // matchSummary case.
+    // social_drafts_match_dedupe pattern.
+    //
+    // COALESCE-sentinel form (not raw columns + NULLS NOT DISTINCT): Postgres
+    // treats NULLs as distinct in a unique index by default, so a raw-column
+    // index would NOT dedupe the all-null gradeLeader key (season/round/grade all
+    // null) — two concurrent first-time generations could both insert. NULLS NOT
+    // DISTINCT fixes that but drizzle-kit 0.45.2's partial uniqueIndex can't
+    // express it, so `push` would create the looser index and diverge from the
+    // SQL migration. Folding the nullable columns through COALESCE sentinels
+    // (-1 / '') makes the key non-null and dedupes it at the DB level, and is
+    // expressible IDENTICALLY in both this schema and scripts/sql — so both sync
+    // paths produce the same index. The route's select-then-upsert stays as the
+    // in-transaction guard.
     sourceDedupe: uniqueIndex("card_sets_source_dedupe")
-      .on(t.tenantId, t.sourceKind, t.season, t.sourceRound, t.grade)
+      .on(
+        t.tenantId,
+        t.sourceKind,
+        sql`coalesce(${t.season}, -1)`,
+        sql`coalesce(${t.sourceRound}, -1)`,
+        sql`coalesce(${t.grade}, '')`,
+      )
       .where(sql`source_kind is not null`),
   }),
 );

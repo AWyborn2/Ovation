@@ -47,18 +47,25 @@ describe("C3 card_sets generation — schema shape", () => {
     );
     expect(idx, "card_sets_source_dedupe index present").toBeTruthy();
     expect(idx?.config.unique).toBe(true);
-    const cols = (idx?.config.columns ?? []).map((c) =>
+
+    // The key is (tenant_id, source_kind, COALESCE(season,-1),
+    // COALESCE(source_round,-1), COALESCE(grade,'')): two named columns first,
+    // then three COALESCE-sentinel expressions that fold the nullable columns to
+    // non-null so the all-null gradeLeader key dedupes at the DB level (and the
+    // expression is identical in the Drizzle schema + the SQL migration, so both
+    // sync paths build the same index). Named columns expose `.name`; SQL
+    // expressions do not.
+    const entries = idx?.config.columns ?? [];
+    expect(entries).toHaveLength(5);
+    const named = entries.map((c) =>
       typeof c === "object" && c !== null && "name" in c
         ? (c as { name: string }).name
-        : "",
+        : null,
     );
-    expect(cols).toEqual([
-      "tenant_id",
-      "source_kind",
-      "season",
-      "source_round",
-      "grade",
-    ]);
+    expect(named.slice(0, 2)).toEqual(["tenant_id", "source_kind"]);
+    // The last three are COALESCE expressions, not plain named columns.
+    expect(named.slice(2)).toEqual([null, null, null]);
+
     // Partial: only generated rows (source_kind IS NOT NULL) are constrained.
     expect(idx?.config.where, "index is partial (WHERE source_kind is not null)").toBeTruthy();
   });

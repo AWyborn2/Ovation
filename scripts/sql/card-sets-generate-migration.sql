@@ -11,12 +11,15 @@
 --
 -- The partial unique index enforces one generated set per
 -- (tenant_id, source_kind, season, source_round, grade) WHERE source_kind IS NOT
--- NULL — mirroring social_drafts_match_dedupe. It is created NULLS NOT DISTINCT
--- (Postgres 15+) so kinds whose narrower columns are null (e.g. gradeLeader,
--- which spans grades and has no round) are still deduped at the DB level, not
--- only by the route's select-then-upsert. (drizzle-kit's uniqueIndex builder
--- can't express NULLS NOT DISTINCT in this version, so `push` will create the
--- plain variant; this file is the source of truth for the stricter guard.)
+-- NULL — mirroring social_drafts_match_dedupe. Postgres treats NULLs as distinct
+-- in a unique index by default, so a raw-column index would NOT dedupe the
+-- all-null gradeLeader key (season/round/grade all null); NULLS NOT DISTINCT
+-- would, but drizzle-kit 0.45.2's partial uniqueIndex can't express it, so
+-- `push` would create the looser index and diverge from this file. Instead the
+-- nullable columns are folded through COALESCE sentinels (-1 / '') so the key is
+-- non-null and dedupes at the DB level — and this expression is identical in the
+-- Drizzle schema, so BOTH sync paths (`push` and this SQL) produce the same
+-- index. The route's select-then-upsert stays as the in-transaction guard.
 --
 -- The repo's primary schema-sync path is `pnpm --filter @workspace/db run push`
 -- (drizzle-kit push, no migration files); this file mirrors that change for
@@ -32,8 +35,13 @@ ALTER TABLE card_sets
   ADD COLUMN IF NOT EXISTS grade text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS card_sets_source_dedupe
-  ON card_sets (tenant_id, source_kind, season, source_round, grade)
-  NULLS NOT DISTINCT
+  ON card_sets (
+    tenant_id,
+    source_kind,
+    COALESCE(season, -1),
+    COALESCE(source_round, -1),
+    COALESCE(grade, '')
+  )
   WHERE source_kind IS NOT NULL;
 
 COMMIT;
