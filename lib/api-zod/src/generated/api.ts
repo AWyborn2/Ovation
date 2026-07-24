@@ -3598,7 +3598,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
@@ -3613,7 +3613,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
   "displayOrder": zod.number().optional()
 })
 
@@ -3631,7 +3631,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
   "displayOrder": zod.number().optional()
 })
 
@@ -3642,7 +3642,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })
 
@@ -3665,6 +3665,7 @@ export const ListCardThemesResponseItem = zod.object({
   "bgPanel": zod.string(),
   "accent": zod.string(),
   "textLight": zod.string(),
+  "displayFont": zod.union([zod.literal('anton'),zod.literal('bebas'),zod.literal('oswald'),zod.literal('teko'),zod.literal('archivo'),zod.literal(null)]).nullish().describe('Curated display-font key mapped to the pack renderer\'s --disp token (null → anton).'),
   "backgroundImageUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "isDefault": zod.boolean(),
@@ -3682,6 +3683,7 @@ export const CreateCardThemeBody = zod.object({
   "bgPanel": zod.string(),
   "accent": zod.string(),
   "textLight": zod.string(),
+  "displayFont": zod.union([zod.literal('anton'),zod.literal('bebas'),zod.literal('oswald'),zod.literal('teko'),zod.literal('archivo'),zod.literal(null)]).nullish().describe('Curated display-font key mapped to the pack renderer\'s --disp token (null → anton).'),
   "backgroundImageUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "isDefault": zod.boolean().optional(),
@@ -3702,6 +3704,7 @@ export const UpdateCardThemeBody = zod.object({
   "bgPanel": zod.string().optional(),
   "accent": zod.string().optional(),
   "textLight": zod.string().optional(),
+  "displayFont": zod.union([zod.literal('anton'),zod.literal('bebas'),zod.literal('oswald'),zod.literal('teko'),zod.literal('archivo'),zod.literal(null)]).nullish().describe('Curated display-font key mapped to the pack renderer\'s --disp token (null → anton).'),
   "backgroundImageUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "isDefault": zod.boolean().optional(),
@@ -3715,6 +3718,7 @@ export const UpdateCardThemeResponse = zod.object({
   "bgPanel": zod.string(),
   "accent": zod.string(),
   "textLight": zod.string(),
+  "displayFont": zod.union([zod.literal('anton'),zod.literal('bebas'),zod.literal('oswald'),zod.literal('teko'),zod.literal('archivo'),zod.literal(null)]).nullish().describe('Curated display-font key mapped to the pack renderer\'s --disp token (null → anton).'),
   "backgroundImageUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
   "isDefault": zod.boolean(),
@@ -3797,7 +3801,7 @@ export const ListCardTemplatesResponseItem = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
   "source": zod.enum(['background', 'layers', 'pack']).describe('Design source: \'background\' (BYO image), \'layers\' (layer editor), or \'pack\' (bundled design pack)'),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -3883,7 +3887,7 @@ export const CreateCardTemplateBody = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()).optional(),
   "source": zod.enum(['background', 'layers', 'pack']).optional(),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -3972,7 +3976,7 @@ export const UpdateCardTemplateBody = zod.object({
   "name": zod.string().optional(),
   "cardKinds": zod.array(zod.string()).optional(),
   "source": zod.enum(['background', 'layers', 'pack']).optional(),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -4054,7 +4058,7 @@ export const UpdateCardTemplateResponse = zod.object({
   "name": zod.string(),
   "cardKinds": zod.array(zod.string()),
   "source": zod.enum(['background', 'layers', 'pack']).describe('Design source: \'background\' (BYO image), \'layers\' (layer editor), or \'pack\' (bundled design pack)'),
-  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'matchSummary-v1\')'),
+  "packId": zod.string().nullish().describe('Design pack identifier (e.g. \'broadcast-dark-v1\')'),
   "packVariant": zod.string().nullish().describe('Variant within the pack (e.g. \'square\', \'portrait\', \'story\')'),
   "baseKind": zod.string().nullish(),
   "layers": zod.array(zod.object({
@@ -4659,7 +4663,8 @@ export const GetSocialSettingsResponse = zod.object({
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
-  "clubUrl": zod.string()
+  "clubUrl": zod.string(),
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -4673,7 +4678,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })),
   "brand": zod.union([zod.object({
@@ -4706,7 +4711,8 @@ export const UpdateSocialSettingsBody = zod.object({
   "sponsorsEnabled": zod.boolean().optional(),
   "captionsEnabled": zod.boolean().optional(),
   "clubHashtag": zod.string().optional(),
-  "clubUrl": zod.string().optional()
+  "clubUrl": zod.string().optional(),
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).')
 })
 
 export const UpdateSocialSettingsResponse = zod.object({
@@ -4724,7 +4730,164 @@ export const UpdateSocialSettingsResponse = zod.object({
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
-  "clubUrl": zod.string()
+  "clubUrl": zod.string(),
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
+})
+
+
+/**
+ * @summary List fixtures (ordered by start time ascending)
+ */
+export const ListFixturesQueryParams = zod.object({
+  "grade": zod.coerce.string().optional().describe('Filter to a single grade'),
+  "upcomingOnly": zod.coerce.boolean().optional().describe('When true, only fixtures whose start time is in the future')
+})
+
+export const ListFixturesResponseItem = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (reserved for the follow-up PlayHQ ingest)'),
+  "createdAt": zod.coerce.date()
+})
+export const ListFixturesResponse = zod.array(ListFixturesResponseItem)
+
+
+/**
+ * @summary Create a fixture
+ */
+
+
+
+
+export const CreateFixtureBody = zod.object({
+  "grade": zod.string().min(1),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string().min(1),
+  "opponentClubId": zod.number().nullish(),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean().optional(),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a fixture
+ */
+export const UpdateFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateFixtureBody = zod.object({
+  "grade": zod.string().min(1).optional(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string().min(1).optional(),
+  "opponentClubId": zod.number().nullish(),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date().optional(),
+  "isHome": zod.boolean().optional(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdateFixtureResponse = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (reserved for the follow-up PlayHQ ingest)'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a fixture (its team list cascades)
+ */
+export const DeleteFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get the team list (XI) for a fixture
+ */
+export const GetFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const GetFixtureTeamListResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "fixtureId": zod.number(),
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
+  "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "displayName": zod.string().min(1),
+  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+})),
+  "isPublished": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}),zod.null()])
+
+
+/**
+ * @summary Create or replace the team list for a fixture (one XI per fixture)
+ */
+export const PutFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const PutFixtureTeamListBody = zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
+  "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "displayName": zod.string().min(1),
+  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+})),
+  "isPublished": zod.boolean().optional()
+})
+
+
+
+
+
+export const PutFixtureTeamListResponse = zod.object({
+  "id": zod.number(),
+  "fixtureId": zod.number(),
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
+  "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "displayName": zod.string().min(1),
+  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+})),
+  "isPublished": zod.boolean(),
+  "createdAt": zod.coerce.date()
 })
 
 
@@ -5108,7 +5271,7 @@ export const GetHonourDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
@@ -5327,7 +5490,7 @@ export const GetKioskDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
@@ -6752,6 +6915,16 @@ export const DownloadCardVideoJobParams = zod.object({
 
 
 /**
+ * Renders a standard Pack A ("Broadcast Dark") share-card to a PNG through the same headless-Chromium harness the MP4 renderer uses, but in a static mode: the harness mounts the pack card at native size (1080 × 1920/1350/ 1080 by size) and the server screenshots that element. Pack cards are static (no animation pipeline), so this bypasses ffmpeg entirely and streams the image synchronously. `input` is the opaque ShareCardInput JSON the client builds for the preview; `options` carries the size, sponsor toggle, junior flag and theme. Admin-only (enforced by route middleware); BYO (bring-your-own) templates keep the client-side canvas PNG path.
+ * @summary Server-side PNG render of a standard (pack) share-card (admin only)
+ */
+export const CreateCardRenderStillBody = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "options": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
 export const GetTenantBrandResponse = zod.union([zod.object({
@@ -7110,5 +7283,69 @@ export const IssueTenantAdminResetBody = zod.object({
   "username": zod.string(),
   "displayName": zod.string().optional()
 }).describe('Request a reset\/bootstrap link for a club admin. `username` is the admin\'s login (an email); if no such admin exists on the tenant one is created (bootstrap) with the given (or derived) display name.')
+
+
+/**
+ * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
+ * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
+ */
+export const GetSocialLadderPrefillQueryParams = zod.object({
+  "grade": zod.coerce.string().describe('App grade to fetch standings for (e.g. \"A Grade\").'),
+  "season": zod.coerce.number().optional().describe('Season start year. Accepted for symmetry\/forward-compat; the all-time ladder table does not filter on it today.')
+})
+
+export const GetSocialLadderPrefillResponseItem = zod.object({
+  "pos": zod.number(),
+  "team": zod.string(),
+  "played": zod.number(),
+  "won": zod.number(),
+  "lost": zod.number(),
+  "points": zod.number(),
+  "isClub": zod.boolean()
+}).describe('One ladder standings row for the Ladder card (A7). `points` and `pos` are derived (the central ladder table stores neither); `isClub` marks the tenant\'s own club.')
+export const GetSocialLadderPrefillResponse = zod.array(GetSocialLadderPrefillResponseItem)
+
+
+/**
+ * Season-scoped, per-grade leaders from central. Seniors-only (junior grades never reach central data). Private players excluded; no fill-in sentinel exists in central data.
+ * @summary Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade, the season's top run scorer and top wicket taker for the tenant's club. Admin + socialStudio entitlement.
+ */
+export const GetSocialClubSeasonTotalsQueryParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year (e.g. 2024 for \"2024\/25\").')
+})
+
+export const GetSocialClubSeasonTotalsResponseItem = zod.object({
+  "gradeLabel": zod.string(),
+  "topRunScorer": zod.union([zod.object({
+  "playerName": zod.string(),
+  "value": zod.number()
+}).describe('A single leader entry for the Club Leaderboard card (name + tally).'),zod.null()]),
+  "topWicketTaker": zod.union([zod.object({
+  "playerName": zod.string(),
+  "value": zod.number()
+}).describe('A single leader entry for the Club Leaderboard card (name + tally).'),zod.null()])
+}).describe('A grade\'s season leaders for the Club Runs\/Wickets leaderboard card (A19\/A20). Either leader is null when the grade has no eligible player.')
+export const GetSocialClubSeasonTotalsResponse = zod.array(GetSocialClubSeasonTotalsResponseItem)
+
+
+/**
+ * Built over the existing per-grade recent-results read plus a best-effort top-performer line. Seniors-only (R20). Every field is editable in the builder.
+ * @summary Weekend Wrap card (A6) prefill — a round's completed senior results for the tenant's club, one per grade. Admin + socialStudio entitlement.
+ */
+export const GetSocialWeekendWrapPrefillQueryParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year (e.g. 2024 for \"2024\/25\").'),
+  "round": zod.coerce.number().describe('Round number to wrap.')
+})
+
+export const GetSocialWeekendWrapPrefillResponse = zod.object({
+  "roundLabel": zod.string(),
+  "dateRange": zod.string(),
+  "matches": zod.array(zod.object({
+  "gradeLabel": zod.string(),
+  "resultLine": zod.string(),
+  "performers": zod.string(),
+  "outcome": zod.enum(['WON', 'LOST', ''])
+}).describe('One grade\'s line in the Weekend Wrap card (A6).'))
+}).describe('Weekend Wrap card (A6) prefill — a round\'s senior results, one per grade.')
 
 

@@ -53,6 +53,12 @@ import { tenantsTable } from "./tenants";
  *     across tenants; `/go/:slug` resolves the tenant from the request host
  *     via `tenantContext`, now applied to that router in app.ts).
  *
+ * APPLIED (Pack A social templates — fixtures store):
+ *   fixtures, team_lists (unique `(tenant_id, fixture_id)` — one XI per
+ *   fixture). Admin-entered upcoming fixtures + ordered XIs feeding the
+ *   fixture-driven social cards; directly tenant-scoped from day one (reads
+ *   filter, writes set from request context).
+ *
  * STILL STAGED (follow-up, with rationale — column NOT added / not enforced):
  *   - Per-club STATS core (players, player_grade_stats, player_grade_season_stats,
  *     grade_summaries, matches, match_player_lines, match_opposition_lines,

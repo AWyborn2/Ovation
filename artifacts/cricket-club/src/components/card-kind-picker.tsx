@@ -11,6 +11,14 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "century", label: "Century" },
   { value: "fiveFor", label: "Five-for" },
   { value: "matchSummary", label: "Match Summary" },
+  { value: "matchDay", label: "Match Day" },
+  { value: "teamList", label: "Team List" },
+  { value: "weekendWrap", label: "Weekend Wrap" },
+  { value: "ladder", label: "Ladder" },
+  { value: "bigMoment", label: "Big Moment" },
+  { value: "newSigning", label: "New Signing" },
+  { value: "countdown", label: "Countdown" },
+  { value: "clubLeaderboard", label: "Club Leaderboard" },
 ];
 
 // Chip picker for the card types a sponsor or template applies to.

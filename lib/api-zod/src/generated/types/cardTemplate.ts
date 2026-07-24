@@ -17,7 +17,7 @@ export interface CardTemplate {
   cardKinds: string[];
   /** Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack) */
   source: CardTemplateSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;

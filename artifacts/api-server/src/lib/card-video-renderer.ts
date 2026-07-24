@@ -101,6 +101,11 @@ type HarnessMeta = {
 // evaluate callbacks below run in the browser (where globalThis === window); we
 // type them against globalThis so the Node-only api-server tsconfig (no DOM lib)
 // still type-checks.
+type StillMeta = {
+  width: number;
+  height: number;
+  selector: string;
+};
 type HarnessApi = {
   ready: boolean;
   init: (payload: {
@@ -108,6 +113,10 @@ type HarnessApi = {
     options: unknown;
   }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
+  renderStill: (payload: {
+    input: unknown;
+    options: unknown;
+  }) => Promise<StillMeta>;
   dispose: () => void;
 };
 type HarnessGlobal = typeof globalThis & {
@@ -224,6 +233,78 @@ export async function renderCardVideo(
     onProgress?.(1);
 
     return { filePath, contentType: "video/mp4", ext: "mp4" };
+  } finally {
+    try {
+      await page?.evaluate(() =>
+        (globalThis as HarnessGlobal).__cardRenderHarness?.dispose(),
+      );
+    } catch {
+      // page may already be gone
+    }
+    await page?.close().catch(() => {});
+  }
+}
+
+export type StillRenderResult = {
+  buffer: Buffer;
+  contentType: "image/png";
+  ext: "png";
+  width: number;
+  height: number;
+};
+
+// Render a STATIC pack card to a PNG. Reuses the shared browser pool and the
+// same harness page as the MP4 path, but drives its static mode: the harness
+// mounts <PackCard> unscaled at native px and we screenshot that element. No
+// prepareAnimation, no ffmpeg — a single frame straight to a buffer.
+export async function renderCardStill(
+  input: unknown,
+  options: unknown,
+): Promise<StillRenderResult> {
+  const browser = await getBrowser();
+  let page: Page | null = null;
+  try {
+    page = await browser.newPage();
+    page.on("pageerror", (err) =>
+      logger.warn({ err: String(err) }, "card-still harness page error"),
+    );
+
+    const url = harnessUrl();
+    await page.goto(url, { waitUntil: "load", timeout: 30_000 });
+    await page.waitForFunction(
+      () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
+      { timeout: 30_000 },
+    );
+
+    // Mount the pack card at native size in-page (preloads fonts), get its box.
+    const meta = (await page.evaluate(
+      async (payload) =>
+        (globalThis as HarnessGlobal).__cardRenderHarness!.renderStill(payload),
+      { input, options } as { input: unknown; options: unknown },
+    )) as StillMeta;
+
+    // Match the viewport to the native card so the element is fully painted with
+    // no device scaling (1080px element → 1080px PNG).
+    await page.setViewport({
+      width: meta.width,
+      height: meta.height,
+      deviceScaleFactor: 1,
+    });
+
+    const el = await page.$(meta.selector);
+    if (!el) {
+      throw new Error(`Card still element ${meta.selector} not found`);
+    }
+    const shot = await el.screenshot({ type: "png" });
+    const buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
+
+    return {
+      buffer,
+      contentType: "image/png",
+      ext: "png",
+      width: meta.width,
+      height: meta.height,
+    };
   } finally {
     try {
       await page?.evaluate(() =>

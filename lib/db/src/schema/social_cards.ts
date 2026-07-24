@@ -39,6 +39,10 @@ export const cardThemesTable = pgTable("card_themes", {
   bgPanel: text("bg_panel").notNull().default("#3F3C4C"),
   accent: text("accent").notNull().default("#FBD039"),
   textLight: text("text_light").notNull().default("#F5F2E8"),
+  // Curated display-font key driving the pack renderer's `--disp` token
+  // (anton | bebas | oswald | teko | archivo). Nullable — null resolves to the
+  // default "anton" family in `pack-render.ts` (see KTD6).
+  displayFont: text("display_font"),
   backgroundImageUrl: text("background_image_url"),
   logoUrl: text("logo_url"),
   isDefault: boolean("is_default").notNull().default(false),
@@ -112,9 +116,9 @@ export const cardTemplatesTable = pgTable(
     // data-bound slots (the original BYO templates). "layers" = a design authored
     // in the layer editor (built-in chrome overrides + extra image/text/sticker
     // layers); stored in `layers` and consumed via the renderer's `layout` option.
-    // "pack" = a bundled design pack (e.g. match summary cards).
+    // "pack" = a bundled design pack (the standard "broadcast-dark-v1" catalogue).
     source: text("source").notNull().default("background"),
-    packId: text("pack_id"), // nullable — identifies which design pack (e.g. "matchSummary-v1")
+    packId: text("pack_id"), // nullable — identifies which design pack (e.g. "broadcast-dark-v1")
     packVariant: text("pack_variant"), // nullable — variant within the pack (e.g. "square", "portrait", "story")
     // The card kind a "layers" design was authored against (drives the editor's
     // field/element context + the gallery thumbnail). Null for BYO backgrounds.
@@ -303,6 +307,9 @@ export const socialSettingsTable = pgTable(
     captionsEnabled: boolean("captions_enabled").notNull().default(true),
     clubHashtag: text("club_hashtag").notNull().default(""),
     clubUrl: text("club_url").notNull().default(""),
+    // Admin override for the season start used by countdown cards. Null = derive
+    // from the earliest upcoming fixture (min startAt); set = this date wins.
+    seasonStartDate: timestamp("season_start_date", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

@@ -10,7 +10,7 @@
  * to a system family rather than blocking a card export forever).
  */
 const CARD_FONTS_HREF =
-  "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Roboto+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Oswald:wght@400;500;600;700&family=Roboto+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Teko:wght@400;500;600;700&display=swap";
 
 let cardFontsPromise: Promise<void> | null = null;
 

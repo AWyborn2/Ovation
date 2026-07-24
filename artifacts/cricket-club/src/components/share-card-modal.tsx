@@ -5,14 +5,17 @@ import {
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useCreateCardTheme,
   useListCardAudioTracks,
   getListCardAudioTracksQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
   useListCardLayouts,
   getListCardLayoutsQueryKey,
+  useCreateCardRenderStill,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
+  type CardThemeInput,
   type CardAudioTrack as ApiCardAudioTrack,
   type CardTemplate,
   type CardLayout,
@@ -53,6 +56,9 @@ import {
   videoFormatLabel,
 } from "@/lib/share-card-animation";
 import { templateAppliesToKind } from "@/lib/card-template";
+import { PackCard } from "@/components/pack-card";
+import { packSupportsKind } from "@/lib/pack-render";
+import { useQueryClient } from "@tanstack/react-query";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { Wand2 } from "lucide-react";
@@ -67,6 +73,16 @@ import { useCardPreview } from "@/components/share-card-modal/use-card-preview";
 import { useVideoExport } from "@/components/share-card-modal/use-video-export";
 
 export type { EngineKey } from "@/components/share-card-modal/constants";
+
+// Curated display-font choices for the Pack A `--disp` token (U9 / KTD6). The
+// values match `card_themes.displayFont`; "anton" is the default family.
+const DISPLAY_FONT_OPTIONS: { value: string; label: string }[] = [
+  { value: "anton", label: "Anton (default)" },
+  { value: "bebas", label: "Bebas Neue" },
+  { value: "oswald", label: "Oswald" },
+  { value: "teko", label: "Teko" },
+  { value: "archivo", label: "Archivo Black" },
+];
 
 export function ShareCardModal({
   open,
@@ -112,6 +128,81 @@ export function ShareCardModal({
     () => (isJunior ? undefined : themes.find((t) => t.id === selectedThemeId)),
     [isJunior, themes, selectedThemeId],
   );
+
+  // --- Style token panel (U9) ------------------------------------------------
+  // Per-card overrides on top of the selected theme: accent colour, panel
+  // colour and display font. `null` = inherit the theme's value. Reset whenever
+  // the modal opens or the selected theme changes (a new theme is a fresh base).
+  const [styleAccent, setStyleAccent] = useState<string | null>(null);
+  const [stylePanel, setStylePanel] = useState<string | null>(null);
+  const [styleFont, setStyleFont] = useState<string | null>(null);
+  useEffect(() => {
+    setStyleAccent(null);
+    setStylePanel(null);
+    setStyleFont(null);
+  }, [open, selectedThemeId]);
+
+  // The effective accent/panel/font shown in the pickers (override ?? theme).
+  const effAccent = styleAccent ?? selectedTheme?.accent ?? "#FBAC27";
+  const effPanel = stylePanel ?? selectedTheme?.bgPanel ?? "#42342B";
+  const effFont =
+    styleFont ??
+    ((selectedTheme as { displayFont?: string } | undefined)?.displayFont || "anton");
+
+  // Fold the overrides onto the selected theme so BOTH the live PackCard preview
+  // and the server still render (the harness only threads `theme`) resolve to
+  // identical tokens (KTD6: junior > override > theme > brand).
+  const effectiveTheme = useMemo<ApiCardTheme | null | undefined>(() => {
+    if (!selectedTheme) return selectedTheme;
+    if (!styleAccent && !stylePanel && !styleFont) return selectedTheme;
+    return {
+      ...selectedTheme,
+      ...(styleAccent ? { accent: styleAccent } : {}),
+      ...(stylePanel ? { bgPanel: stylePanel } : {}),
+      ...(styleFont ? { displayFont: styleFont } : {}),
+    } as ApiCardTheme;
+  }, [selectedTheme, styleAccent, stylePanel, styleFont]);
+
+  // Save-as-theme affordance.
+  const qc = useQueryClient();
+  const [saveThemeName, setSaveThemeName] = useState("");
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const [saveThemeError, setSaveThemeError] = useState<string | null>(null);
+  const createTheme = useCreateCardTheme();
+  const handleSaveTheme = () => {
+    setSaveThemeError(null);
+    const name = saveThemeName.trim();
+    if (!name) {
+      setSaveThemeError("Theme name required.");
+      return;
+    }
+    createTheme.mutate(
+      {
+        data: {
+          name,
+          bgDark: selectedTheme?.bgDark ?? "#101216",
+          bgPanel: effPanel,
+          accent: effAccent,
+          textLight: selectedTheme?.textLight ?? "#F5F2E8",
+          displayFont: effFont as CardThemeInput["displayFont"],
+          isDefault: saveAsDefault,
+          displayOrder: themes.length,
+        },
+      },
+      {
+        onSuccess: (created: ApiCardTheme) => {
+          setSaveThemeName("");
+          setSaveAsDefault(false);
+          // Refresh the theme list and switch selection to the new theme; its
+          // saved tokens now match, so the per-card overrides reset cleanly.
+          qc.invalidateQueries({ queryKey: getListCardThemesQueryKey() });
+          if (created && typeof created.id === "number") setSelectedThemeId(created.id);
+        },
+        onError: (e: unknown) =>
+          setSaveThemeError(e instanceof Error ? e.message : "Could not save theme."),
+      },
+    );
+  };
 
   // Custom "bring your own" templates that apply to this card kind.
   const templatesQ = useListCardTemplates({
@@ -257,10 +348,40 @@ export function ShareCardModal({
 
   const [activeSize, setActiveSize] = useState<CardSize>("square");
 
+  // A "pack" (standard / built-in) card is one with no BYO template selected
+  // whose kind the Broadcast Dark pack renders. These export as PNG through the
+  // server-side still harness (pixel-true web fonts + un-tainted logos), while
+  // BYO templates keep the client-side canvas path. Junior cards are pack cards
+  // too (the pack renderer forces the brown palette).
+  const isPackCard = useMemo(
+    () => !!input && selectedTemplate === null && packSupportsKind(input.kind),
+    [input, selectedTemplate],
+  );
+
+  const stillMutation = useCreateCardRenderStill();
+
+  // The static-render payload mirrors the props that drive the live <PackCard>
+  // preview, so the server PNG matches what the admin sees.
+  const stillOptions = (size: CardSize) => ({
+    size,
+    sponsorsOn: includeSponsors,
+    junior: isJunior,
+    theme: effectiveTheme ?? null,
+  });
+
+  // Render one pack size to a PNG blob via the server harness.
+  const renderPackStill = (size: CardSize): Promise<Blob> =>
+    stillMutation.mutateAsync({
+      data: { input: input!, options: stillOptions(size) },
+    }) as Promise<Blob>;
+
   // A video/GIF template always animates; otherwise the motion preset decides.
+  // Pack cards are always static (KTD10) — never offer video/GIF for them.
   const animated = useMemo(
-    () => isAnimatedCard({ size: activeSize, template: bgTemplate, motionPreset: motion }),
-    [activeSize, bgTemplate, motion],
+    () =>
+      !isPackCard &&
+      isAnimatedCard({ size: activeSize, template: bgTemplate, motionPreset: motion }),
+    [isPackCard, activeSize, bgTemplate, motion],
   );
   const videoSupported = useMemo(() => canExportVideo(), []);
   const videoFormat = useMemo(() => videoFormatLabel(), []);
@@ -371,7 +492,10 @@ export function ShareCardModal({
     setExportError(null);
     setDownloading(true);
     try {
-      const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+      // Pack cards render server-side (PNG); BYO templates use the client canvas.
+      const blob = isPackCard
+        ? await renderPackStill(size)
+        : await renderShareCard(input, buildOpts(size, photoTransform));
       downloadBlob(blob, `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}.png`);
     } catch (e) {
       console.error("Card download failed", e);
@@ -394,7 +518,10 @@ export function ShareCardModal({
       // below) — skip it and note it, rather than losing every other size too.
       for (const size of enabledSizes) {
         try {
-          const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+          // Pack cards render server-side (PNG); BYO templates use the canvas.
+          const blob = isPackCard
+            ? await renderPackStill(size)
+            : await renderShareCard(input, buildOpts(size, photoTransform));
           zip.file(`${base}-${SIZES[size].code}.png`, blob);
         } catch (e) {
           console.error(`Card PNG export failed for size ${size}`, e);
@@ -548,6 +675,16 @@ export function ShareCardModal({
                         sig={animSig}
                         soundOn={isAdmin && previewSoundOn && !!audioSpec}
                       />
+                    ) : input && selectedTemplate === null && packSupportsKind(input.kind) ? (
+                      // Pack (standard / built-in) cards preview as a live scaled
+                      // DOM subtree; only BYO templates use the canvas path below.
+                      <PackCard
+                        input={input}
+                        size={s}
+                        sponsorsOn={includeSponsors}
+                        theme={effectiveTheme}
+                        junior={isJunior}
+                      />
                     ) : rendering && !previewUrls[s] ? (
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     ) : previewUrls[s] ? (
@@ -585,7 +722,7 @@ export function ShareCardModal({
               </div>
             )}
 
-            {isAdmin && (
+            {isAdmin && !isPackCard && (
               <div className="space-y-1.5 rounded border px-3 py-2">
                 <Label htmlFor="motion-select" className="text-sm">
                   Motion
@@ -763,6 +900,118 @@ export function ShareCardModal({
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {!isJunior && isPackCard && (
+              <div className="space-y-2.5 rounded border px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Style</Label>
+                  {(styleAccent || stylePanel || styleFont) && (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline"
+                      onClick={() => {
+                        setStyleAccent(null);
+                        setStylePanel(null);
+                        setStyleFont(null);
+                      }}
+                    >
+                      Reset to theme
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="style-accent" className="text-xs">
+                      Accent
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="style-accent"
+                        type="color"
+                        value={effAccent}
+                        onChange={(e) => setStyleAccent(e.target.value)}
+                        className="h-8 w-10 rounded border bg-card p-0.5"
+                      />
+                      <span className="text-xs text-muted-foreground">{effAccent}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="style-panel" className="text-xs">
+                      Panel
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="style-panel"
+                        type="color"
+                        value={effPanel}
+                        onChange={(e) => setStylePanel(e.target.value)}
+                        className="h-8 w-10 rounded border bg-card p-0.5"
+                      />
+                      <span className="text-xs text-muted-foreground">{effPanel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="style-font" className="text-xs">
+                    Display font
+                  </Label>
+                  <select
+                    id="style-font"
+                    value={effFont}
+                    onChange={(e) => setStyleFont(e.target.value)}
+                    className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                  >
+                    {DISPLAY_FONT_OPTIONS.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {hashtag && (
+                  <p className="text-xs text-muted-foreground">
+                    Hashtag footer: <span className="font-mono">{hashtag}</span>
+                  </p>
+                )}
+
+                <div className="space-y-1.5 border-t pt-2">
+                  <Label htmlFor="save-theme-name" className="text-xs">
+                    Save these tokens as a theme
+                  </Label>
+                  <input
+                    id="save-theme-name"
+                    type="text"
+                    value={saveThemeName}
+                    placeholder="Theme name"
+                    onChange={(e) => setSaveThemeName(e.target.value)}
+                    className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
+                  />
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={saveAsDefault}
+                      onChange={(e) => setSaveAsDefault(e.target.checked)}
+                    />
+                    Set as tenant default
+                  </label>
+                  {saveThemeError && (
+                    <p className="text-xs text-destructive">{saveThemeError}</p>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={createTheme.isPending}
+                    onClick={handleSaveTheme}
+                  >
+                    {createTheme.isPending ? "Saving…" : "Save as theme"}
+                  </Button>
+                </div>
               </div>
             )}
 

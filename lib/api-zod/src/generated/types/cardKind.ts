@@ -20,4 +20,12 @@ export const CardKind = {
   century: 'century',
   fiveFor: 'fiveFor',
   matchSummary: 'matchSummary',
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  weekendWrap: 'weekendWrap',
+  ladder: 'ladder',
+  bigMoment: 'bigMoment',
+  newSigning: 'newSigning',
+  countdown: 'countdown',
+  clubLeaderboard: 'clubLeaderboard',
 } as const;

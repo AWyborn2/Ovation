@@ -35,6 +35,15 @@ export interface CardVideoJob {
   sizeCode?: string | null;
 }
 
+export type CardRenderStillInputInput = { [key: string]: unknown };
+
+export type CardRenderStillInputOptions = { [key: string]: unknown };
+
+export interface CardRenderStillInput {
+  input: CardRenderStillInputInput;
+  options: CardRenderStillInputOptions;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -488,6 +497,64 @@ export interface SeniorOverview {
   recentMatches: MatchSummary[];
   topRunScorers: SeasonLeader[];
   topWicketTakers: SeasonLeader[];
+}
+
+/**
+ * One ladder standings row for the Ladder card (A7). `points` and `pos` are derived (the central ladder table stores neither); `isClub` marks the tenant's own club.
+ */
+export interface LadderCardRow {
+  pos: number;
+  team: string;
+  played: number;
+  won: number;
+  lost: number;
+  points: number;
+  isClub: boolean;
+}
+
+/**
+ * A single leader entry for the Club Leaderboard card (name + tally).
+ */
+export interface CardLeader {
+  playerName: string;
+  value: number;
+}
+
+/**
+ * A grade's season leaders for the Club Runs/Wickets leaderboard card (A19/A20). Either leader is null when the grade has no eligible player.
+ */
+export interface ClubSeasonGradeLeaders {
+  gradeLabel: string;
+  topRunScorer: CardLeader | null;
+  topWicketTaker: CardLeader | null;
+}
+
+export type WeekendWrapMatchOutcome = typeof WeekendWrapMatchOutcome[keyof typeof WeekendWrapMatchOutcome];
+
+
+export const WeekendWrapMatchOutcome = {
+  WON: 'WON',
+  LOST: 'LOST',
+  '': '',
+} as const;
+
+/**
+ * One grade's line in the Weekend Wrap card (A6).
+ */
+export interface WeekendWrapMatch {
+  gradeLabel: string;
+  resultLine: string;
+  performers: string;
+  outcome: WeekendWrapMatchOutcome;
+}
+
+/**
+ * Weekend Wrap card (A6) prefill — a round's senior results, one per grade.
+ */
+export interface WeekendWrap {
+  roundLabel: string;
+  dateRange: string;
+  matches: WeekendWrapMatch[];
 }
 
 export interface ImportRecord {
@@ -2481,6 +2548,14 @@ export const CardKind = {
   century: 'century',
   fiveFor: 'fiveFor',
   matchSummary: 'matchSummary',
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  weekendWrap: 'weekendWrap',
+  ladder: 'ladder',
+  bigMoment: 'bigMoment',
+  newSigning: 'newSigning',
+  countdown: 'countdown',
+  clubLeaderboard: 'clubLeaderboard',
 } as const;
 
 export interface Sponsor {
@@ -2521,6 +2596,21 @@ export interface SponsorUpdate {
   displayOrder?: number;
 }
 
+/**
+ * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+ * @nullable
+ */
+export type CardThemeDisplayFont = typeof CardThemeDisplayFont[keyof typeof CardThemeDisplayFont] | null;
+
+
+export const CardThemeDisplayFont = {
+  anton: 'anton',
+  bebas: 'bebas',
+  oswald: 'oswald',
+  teko: 'teko',
+  archivo: 'archivo',
+} as const;
+
 export interface CardTheme {
   id: number;
   name: string;
@@ -2528,6 +2618,11 @@ export interface CardTheme {
   bgPanel: string;
   accent: string;
   textLight: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */
@@ -2536,12 +2631,32 @@ export interface CardTheme {
   displayOrder: number;
 }
 
+/**
+ * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+ * @nullable
+ */
+export type CardThemeInputDisplayFont = typeof CardThemeInputDisplayFont[keyof typeof CardThemeInputDisplayFont] | null;
+
+
+export const CardThemeInputDisplayFont = {
+  anton: 'anton',
+  bebas: 'bebas',
+  oswald: 'oswald',
+  teko: 'teko',
+  archivo: 'archivo',
+} as const;
+
 export interface CardThemeInput {
   name: string;
   bgDark: string;
   bgPanel: string;
   accent: string;
   textLight: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeInputDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */
@@ -2550,12 +2665,32 @@ export interface CardThemeInput {
   displayOrder?: number;
 }
 
+/**
+ * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+ * @nullable
+ */
+export type CardThemeUpdateDisplayFont = typeof CardThemeUpdateDisplayFont[keyof typeof CardThemeUpdateDisplayFont] | null;
+
+
+export const CardThemeUpdateDisplayFont = {
+  anton: 'anton',
+  bebas: 'bebas',
+  oswald: 'oswald',
+  teko: 'teko',
+  archivo: 'archivo',
+} as const;
+
 export interface CardThemeUpdate {
   name?: string;
   bgDark?: string;
   bgPanel?: string;
   accent?: string;
   textLight?: string;
+  /**
+     * Curated display-font key mapped to the pack renderer's --disp token (null → anton).
+     * @nullable
+     */
+  displayFont?: CardThemeUpdateDisplayFont;
   /** @nullable */
   backgroundImageUrl?: string | null;
   /** @nullable */
@@ -2830,7 +2965,7 @@ export interface CardTemplate {
   cardKinds: string[];
   /** Design source: 'background' (BYO image), 'layers' (layer editor), or 'pack' (bundled design pack) */
   source: CardTemplateSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;
@@ -2881,7 +3016,7 @@ export interface CardTemplateInput {
   name: string;
   cardKinds?: string[];
   source?: CardTemplateInputSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;
@@ -2932,7 +3067,7 @@ export interface CardTemplateUpdate {
   name?: string;
   cardKinds?: string[];
   source?: CardTemplateUpdateSource;
-  /** Design pack identifier (e.g. 'matchSummary-v1') */
+  /** Design pack identifier (e.g. 'broadcast-dark-v1') */
   packId?: string | null;
   /** Variant within the pack (e.g. 'square', 'portrait', 'story') */
   packVariant?: string | null;
@@ -3045,6 +3180,11 @@ export interface SocialSettings {
   captionsEnabled: boolean;
   clubHashtag: string;
   clubUrl: string;
+  /**
+     * Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.
+     * @nullable
+     */
+  seasonStartDate?: string | null;
 }
 
 /**
@@ -3070,6 +3210,11 @@ export interface SocialSettingsUpdate {
   captionsEnabled?: boolean;
   clubHashtag?: string;
   clubUrl?: string;
+  /**
+     * Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).
+     * @nullable
+     */
+  seasonStartDate?: string | null;
 }
 
 /**
@@ -4036,6 +4181,115 @@ export interface TrackedLink {
   /** @nullable */
   lastClickedAt?: string | null;
   createdAt: string;
+}
+
+/**
+ * Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest)
+ */
+export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
+
+
+export const FixtureSource = {
+  manual: 'manual',
+  playhq: 'playhq',
+} as const;
+
+export interface Fixture {
+  id: number;
+  grade: string;
+  /** @nullable */
+  roundLabel?: string | null;
+  opponentName: string;
+  /** Optional link into the shared clubs register */
+  opponentClubId?: number | null;
+  /** @nullable */
+  opponentLogoUrl?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  startAt: string;
+  isHome: boolean;
+  /** @nullable */
+  notes?: string | null;
+  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest) */
+  source: FixtureSource;
+  createdAt: string;
+}
+
+export interface CreateFixtureBody {
+  /** @minLength 1 */
+  grade: string;
+  /** @nullable */
+  roundLabel?: string | null;
+  /** @minLength 1 */
+  opponentName: string;
+  /** @nullable */
+  opponentClubId?: number | null;
+  /** @nullable */
+  opponentLogoUrl?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  startAt: string;
+  isHome?: boolean;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface UpdateFixtureBody {
+  /** @minLength 1 */
+  grade?: string;
+  /** @nullable */
+  roundLabel?: string | null;
+  /** @minLength 1 */
+  opponentName?: string;
+  /** @nullable */
+  opponentClubId?: number | null;
+  /** @nullable */
+  opponentLogoUrl?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  startAt?: string;
+  isHome?: boolean;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Captain / wicket-keeper marker
+ */
+export type TeamListPlayerRole = typeof TeamListPlayerRole[keyof typeof TeamListPlayerRole];
+
+
+export const TeamListPlayerRole = {
+  C: 'C',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+} as const;
+
+export interface TeamListPlayer {
+  /**
+     * Batting/selection order position (1-based)
+     * @minimum 1
+     */
+  order: number;
+  /** Register-linked player id; omit/null for a free-typed name. Fill-in ids (>= 90000) are rejected. */
+  playerId?: number | null;
+  /** @minLength 1 */
+  displayName: string;
+  /** Captain / wicket-keeper marker */
+  role?: TeamListPlayerRole;
+}
+
+export interface TeamList {
+  id: number;
+  fixtureId: number;
+  players: TeamListPlayer[];
+  isPublished: boolean;
+  createdAt: string;
+}
+
+export interface PutTeamListBody {
+  players: TeamListPlayer[];
+  isPublished?: boolean;
 }
 
 export interface UploadUrlRequest {
@@ -5047,6 +5301,17 @@ export type UploadMatchBatchBody = {
   files: Blob[];
 };
 
+export type ListFixturesParams = {
+/**
+ * Filter to a single grade
+ */
+grade?: string;
+/**
+ * When true, only fixtures whose start time is in the future
+ */
+upcomingOnly?: boolean;
+};
+
 export type GetKioskDisplayParams = {
 /**
  * The kiosk access token issued by an admin.
@@ -5143,5 +5408,34 @@ ageGroup?: string;
 
 export type CheckSlugAvailableParams = {
 slug: string;
+};
+
+export type GetSocialLadderPrefillParams = {
+/**
+ * App grade to fetch standings for (e.g. "A Grade").
+ */
+grade: string;
+/**
+ * Season start year. Accepted for symmetry/forward-compat; the all-time ladder table does not filter on it today.
+ */
+season?: number;
+};
+
+export type GetSocialClubSeasonTotalsParams = {
+/**
+ * Season start year (e.g. 2024 for "2024/25").
+ */
+season: number;
+};
+
+export type GetSocialWeekendWrapPrefillParams = {
+/**
+ * Season start year (e.g. 2024 for "2024/25").
+ */
+season: number;
+/**
+ * Round number to wrap.
+ */
+round: number;
 };
 

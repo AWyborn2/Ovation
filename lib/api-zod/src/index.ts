@@ -47,4 +47,7 @@ export type {
   JuniorInnings,
   JuniorBattingLine,
   JuniorBowlingLine,
+  TeamList,
+  TeamListPlayer,
+  TeamListPlayerRole,
 } from "./generated/types";

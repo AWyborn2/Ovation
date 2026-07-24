@@ -30,18 +30,41 @@ export type DesignPack = {
 
 export const PACKS: DesignPack[] = [
   {
-    id: "matchSummary-v1",
-    name: "Match Summary Pack",
+    id: "broadcast-dark-v1",
+    name: "Broadcast Dark",
     description:
-      "Branded match summary cards in three formats — square feed post, portrait feed post, and animated story.",
-    cardKinds: ["matchSummary"],
+      "The standard Ovation card catalogue — 20 Broadcast Dark designs across all 18 card kinds, in three formats: square feed post, portrait feed post, and story.",
+    // Pack A covers every card kind (A1–A20 collapse onto 18 kinds; gradeLeader
+    // and clubLeaderboard each carry two category-preset designs).
+    cardKinds: [
+      "matchSummary",
+      "player",
+      "milestone",
+      "debut",
+      "record",
+      "gradeLeader",
+      "premiership",
+      "newCap",
+      "century",
+      "fiveFor",
+      "matchDay",
+      "teamList",
+      "weekendWrap",
+      "ladder",
+      "bigMoment",
+      "newSigning",
+      "countdown",
+      "clubLeaderboard",
+    ],
+    // Pack A ships as static (image) cards with no motion this scope, so
+    // `isAnimatedCard` stays false and the MP4/story-video export hides (KTD10).
     variants: [
       {
         key: "square",
         label: "Square (1080×1080)",
         width: 1080,
         height: 1080,
-        motionPreset: null,
+        motionPreset: "none",
         backgroundKind: "image",
       },
       {
@@ -49,16 +72,16 @@ export const PACKS: DesignPack[] = [
         label: "Portrait (1080×1350)",
         width: 1080,
         height: 1350,
-        motionPreset: null,
+        motionPreset: "none",
         backgroundKind: "image",
       },
       {
         key: "story",
-        label: "Animated Story (1080×1920)",
+        label: "Story (1080×1920)",
         width: 1080,
         height: 1920,
-        motionPreset: "matchReveal",
-        backgroundKind: "video",
+        motionPreset: "none",
+        backgroundKind: "image",
       },
     ],
   },

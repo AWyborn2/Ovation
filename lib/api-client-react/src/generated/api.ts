@@ -64,6 +64,7 @@ import type {
   CardEffectPresetInput,
   CardLayout,
   CardLayoutInput,
+  CardRenderStillInput,
   CardSet,
   CardSetInput,
   CardTemplate,
@@ -80,18 +81,24 @@ import type {
   ClubRole,
   ClubRoleInput,
   ClubRoleUpdate,
+  ClubSeasonGradeLeaders,
   CommitImportInput,
   CommitImportResult,
+  CreateFixtureBody,
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
   Dashboard,
   DebutEntry,
   ErrorEnvelope,
   FiveWicketHaul,
+  Fixture,
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
   GetSeniorSeasonTopPerformersParams,
+  GetSocialClubSeasonTotalsParams,
+  GetSocialLadderPrefillParams,
+  GetSocialWeekendWrapPrefillParams,
   GradeSummary,
   HealthStatus,
   HonourBoard,
@@ -132,9 +139,11 @@ import type {
   JuniorStatCorrection,
   KioskTokenInput,
   KioskTokenResponse,
+  LadderCardRow,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
+  ListFixturesParams,
   ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
@@ -189,6 +198,7 @@ import type {
   PremiershipInput,
   PremiershipUpdate,
   ProvisionTenantBody,
+  PutTeamListBody,
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
@@ -212,6 +222,7 @@ import type {
   StatUpdate,
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
+  TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
   TeamOfDecadeBoardUpdate,
@@ -228,6 +239,7 @@ import type {
   UndoSeasonInput,
   UndoSeasonResult,
   UpdateAdminTenantBrandBody,
+  UpdateFixtureBody,
   UpdateJuniorBattingLineBody,
   UpdateJuniorBowlingLineBody,
   UpdateJuniorMatchBody,
@@ -240,7 +252,8 @@ import type {
   UploadPlaycricketCsvBody,
   UploadUrlRequest,
   UploadUrlResponse,
-  VotableAward
+  VotableAward,
+  WeekendWrap
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -11944,6 +11957,452 @@ export const useUpdateSocialSettings = <TError = ErrorType<unknown>,
       return useMutation(getUpdateSocialSettingsMutationOptions(options));
     }
 
+export const getListFixturesUrl = (params?: ListFixturesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fixtures?${stringifiedParams}` : `/api/fixtures`
+}
+
+/**
+ * @summary List fixtures (ordered by start time ascending)
+ */
+export const listFixtures = async (params?: ListFixturesParams, options?: RequestInit): Promise<Fixture[]> => {
+
+  return customFetch<Fixture[]>(getListFixturesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFixturesQueryKey = (params?: ListFixturesParams,) => {
+    return [
+    `/api/fixtures`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFixturesQueryOptions = <TData = Awaited<ReturnType<typeof listFixtures>>, TError = ErrorType<unknown>>(params?: ListFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFixturesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFixtures>>> = ({ signal }) => listFixtures(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFixtures>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFixturesQueryResult = NonNullable<Awaited<ReturnType<typeof listFixtures>>>
+export type ListFixturesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List fixtures (ordered by start time ascending)
+ */
+
+export function useListFixtures<TData = Awaited<ReturnType<typeof listFixtures>>, TError = ErrorType<unknown>>(
+ params?: ListFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFixturesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateFixtureUrl = () => {
+
+
+
+
+  return `/api/fixtures`
+}
+
+/**
+ * @summary Create a fixture
+ */
+export const createFixture = async (createFixtureBody: CreateFixtureBody, options?: RequestInit): Promise<Fixture> => {
+
+  return customFetch<Fixture>(getCreateFixtureUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createFixtureBody,)
+  }
+);}
+
+
+
+
+export const getCreateFixtureMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFixture>>, TError,{data: BodyType<CreateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFixture>>, TError,{data: BodyType<CreateFixtureBody>}, TContext> => {
+
+const mutationKey = ['createFixture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFixture>>, {data: BodyType<CreateFixtureBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFixture(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof createFixture>>>
+    export type CreateFixtureMutationBody = BodyType<CreateFixtureBody>
+    export type CreateFixtureMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a fixture
+ */
+export const useCreateFixture = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFixture>>, TError,{data: BodyType<CreateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFixture>>,
+        TError,
+        {data: BodyType<CreateFixtureBody>},
+        TContext
+      > => {
+      return useMutation(getCreateFixtureMutationOptions(options));
+    }
+
+export const getUpdateFixtureUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}`
+}
+
+/**
+ * @summary Update a fixture
+ */
+export const updateFixture = async (id: number,
+    updateFixtureBody: UpdateFixtureBody, options?: RequestInit): Promise<Fixture> => {
+
+  return customFetch<Fixture>(getUpdateFixtureUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateFixtureBody,)
+  }
+);}
+
+
+
+
+export const getUpdateFixtureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFixture>>, TError,{id: number;data: BodyType<UpdateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFixture>>, TError,{id: number;data: BodyType<UpdateFixtureBody>}, TContext> => {
+
+const mutationKey = ['updateFixture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFixture>>, {id: number;data: BodyType<UpdateFixtureBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFixture(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof updateFixture>>>
+    export type UpdateFixtureMutationBody = BodyType<UpdateFixtureBody>
+    export type UpdateFixtureMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a fixture
+ */
+export const useUpdateFixture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFixture>>, TError,{id: number;data: BodyType<UpdateFixtureBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFixture>>,
+        TError,
+        {id: number;data: BodyType<UpdateFixtureBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateFixtureMutationOptions(options));
+    }
+
+export const getDeleteFixtureUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}`
+}
+
+/**
+ * @summary Delete a fixture (its team list cascades)
+ */
+export const deleteFixture = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteFixtureUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteFixtureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFixture>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteFixture>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteFixture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFixture>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteFixture(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof deleteFixture>>>
+
+    export type DeleteFixtureMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a fixture (its team list cascades)
+ */
+export const useDeleteFixture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFixture>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteFixture>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteFixtureMutationOptions(options));
+    }
+
+export const getGetFixtureTeamListUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}/team-list`
+}
+
+/**
+ * @summary Get the team list (XI) for a fixture
+ */
+export const getFixtureTeamList = async (id: number, options?: RequestInit): Promise<TeamList | null> => {
+
+  return customFetch<TeamList | null>(getGetFixtureTeamListUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFixtureTeamListQueryKey = (id: number,) => {
+    return [
+    `/api/fixtures/${id}/team-list`
+    ] as const;
+    }
+
+
+export const getGetFixtureTeamListQueryOptions = <TData = Awaited<ReturnType<typeof getFixtureTeamList>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureTeamList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFixtureTeamListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFixtureTeamList>>> = ({ signal }) => getFixtureTeamList(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFixtureTeamList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFixtureTeamListQueryResult = NonNullable<Awaited<ReturnType<typeof getFixtureTeamList>>>
+export type GetFixtureTeamListQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the team list (XI) for a fixture
+ */
+
+export function useGetFixtureTeamList<TData = Awaited<ReturnType<typeof getFixtureTeamList>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureTeamList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFixtureTeamListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPutFixtureTeamListUrl = (id: number,) => {
+
+
+
+
+  return `/api/fixtures/${id}/team-list`
+}
+
+/**
+ * @summary Create or replace the team list for a fixture (one XI per fixture)
+ */
+export const putFixtureTeamList = async (id: number,
+    putTeamListBody: PutTeamListBody, options?: RequestInit): Promise<TeamList> => {
+
+  return customFetch<TeamList>(getPutFixtureTeamListUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putTeamListBody,)
+  }
+);}
+
+
+
+
+export const getPutFixtureTeamListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFixtureTeamList>>, TError,{id: number;data: BodyType<PutTeamListBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putFixtureTeamList>>, TError,{id: number;data: BodyType<PutTeamListBody>}, TContext> => {
+
+const mutationKey = ['putFixtureTeamList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putFixtureTeamList>>, {id: number;data: BodyType<PutTeamListBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  putFixtureTeamList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutFixtureTeamListMutationResult = NonNullable<Awaited<ReturnType<typeof putFixtureTeamList>>>
+    export type PutFixtureTeamListMutationBody = BodyType<PutTeamListBody>
+    export type PutFixtureTeamListMutationError = ErrorType<void>
+
+    /**
+ * @summary Create or replace the team list for a fixture (one XI per fixture)
+ */
+export const usePutFixtureTeamList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putFixtureTeamList>>, TError,{id: number;data: BodyType<PutTeamListBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putFixtureTeamList>>,
+        TError,
+        {id: number;data: BodyType<PutTeamListBody>},
+        TContext
+      > => {
+      return useMutation(getPutFixtureTeamListMutationOptions(options));
+    }
+
 export const getGetMilestoneBoardSettingsUrl = () => {
 
 
@@ -16804,6 +17263,78 @@ export function useDownloadCardVideoJob<TData = Awaited<ReturnType<typeof downlo
 
 
 
+export const getCreateCardRenderStillUrl = () => {
+
+
+
+
+  return `/api/card-renders/still`
+}
+
+/**
+ * Renders a standard Pack A ("Broadcast Dark") share-card to a PNG through the same headless-Chromium harness the MP4 renderer uses, but in a static mode: the harness mounts the pack card at native size (1080 × 1920/1350/ 1080 by size) and the server screenshots that element. Pack cards are static (no animation pipeline), so this bypasses ffmpeg entirely and streams the image synchronously. `input` is the opaque ShareCardInput JSON the client builds for the preview; `options` carries the size, sponsor toggle, junior flag and theme. Admin-only (enforced by route middleware); BYO (bring-your-own) templates keep the client-side canvas PNG path.
+ * @summary Server-side PNG render of a standard (pack) share-card (admin only)
+ */
+export const createCardRenderStill = async (cardRenderStillInput: CardRenderStillInput, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getCreateCardRenderStillUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardRenderStillInput,)
+  }
+);}
+
+
+
+
+export const getCreateCardRenderStillMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardRenderStill>>, TError,{data: BodyType<CardRenderStillInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCardRenderStill>>, TError,{data: BodyType<CardRenderStillInput>}, TContext> => {
+
+const mutationKey = ['createCardRenderStill'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCardRenderStill>>, {data: BodyType<CardRenderStillInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCardRenderStill(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardRenderStillMutationResult = NonNullable<Awaited<ReturnType<typeof createCardRenderStill>>>
+    export type CreateCardRenderStillMutationBody = BodyType<CardRenderStillInput>
+    export type CreateCardRenderStillMutationError = ErrorType<void>
+
+    /**
+ * @summary Server-side PNG render of a standard (pack) share-card (admin only)
+ */
+export const useCreateCardRenderStill = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCardRenderStill>>, TError,{data: BodyType<CardRenderStillInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCardRenderStill>>,
+        TError,
+        {data: BodyType<CardRenderStillInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardRenderStillMutationOptions(options));
+    }
+
 export const getGetTenantBrandUrl = () => {
 
 
@@ -18067,4 +18598,259 @@ export const useIssueTenantAdminReset = <TError = ErrorType<void>,
       > => {
       return useMutation(getIssueTenantAdminResetMutationOptions(options));
     }
+
+export const getGetSocialLadderPrefillUrl = (params: GetSocialLadderPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/ladder?${stringifiedParams}` : `/api/social-prefill/ladder`
+}
+
+/**
+ * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
+ * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
+ */
+export const getSocialLadderPrefill = async (params: GetSocialLadderPrefillParams, options?: RequestInit): Promise<LadderCardRow[]> => {
+
+  return customFetch<LadderCardRow[]>(getGetSocialLadderPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialLadderPrefillQueryKey = (params?: GetSocialLadderPrefillParams,) => {
+    return [
+    `/api/social-prefill/ladder`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialLadderPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError = ErrorType<unknown>>(params: GetSocialLadderPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialLadderPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialLadderPrefill>>> = ({ signal }) => getSocialLadderPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialLadderPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialLadderPrefill>>>
+export type GetSocialLadderPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialLadderPrefill<TData = Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialLadderPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialLadderPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialLadderPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialClubSeasonTotalsUrl = (params: GetSocialClubSeasonTotalsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/club-season-totals?${stringifiedParams}` : `/api/social-prefill/club-season-totals`
+}
+
+/**
+ * Season-scoped, per-grade leaders from central. Seniors-only (junior grades never reach central data). Private players excluded; no fill-in sentinel exists in central data.
+ * @summary Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade, the season's top run scorer and top wicket taker for the tenant's club. Admin + socialStudio entitlement.
+ */
+export const getSocialClubSeasonTotals = async (params: GetSocialClubSeasonTotalsParams, options?: RequestInit): Promise<ClubSeasonGradeLeaders[]> => {
+
+  return customFetch<ClubSeasonGradeLeaders[]>(getGetSocialClubSeasonTotalsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialClubSeasonTotalsQueryKey = (params?: GetSocialClubSeasonTotalsParams,) => {
+    return [
+    `/api/social-prefill/club-season-totals`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialClubSeasonTotalsQueryOptions = <TData = Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError = ErrorType<unknown>>(params: GetSocialClubSeasonTotalsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialClubSeasonTotalsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>> = ({ signal }) => getSocialClubSeasonTotals(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialClubSeasonTotalsQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>>
+export type GetSocialClubSeasonTotalsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Club Runs/Wickets leaderboard card (A19/A20) prefill — per senior grade, the season's top run scorer and top wicket taker for the tenant's club. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialClubSeasonTotals<TData = Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError = ErrorType<unknown>>(
+ params: GetSocialClubSeasonTotalsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialClubSeasonTotals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialClubSeasonTotalsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialWeekendWrapPrefillUrl = (params: GetSocialWeekendWrapPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/weekend-wrap?${stringifiedParams}` : `/api/social-prefill/weekend-wrap`
+}
+
+/**
+ * Built over the existing per-grade recent-results read plus a best-effort top-performer line. Seniors-only (R20). Every field is editable in the builder.
+ * @summary Weekend Wrap card (A6) prefill — a round's completed senior results for the tenant's club, one per grade. Admin + socialStudio entitlement.
+ */
+export const getSocialWeekendWrapPrefill = async (params: GetSocialWeekendWrapPrefillParams, options?: RequestInit): Promise<WeekendWrap> => {
+
+  return customFetch<WeekendWrap>(getGetSocialWeekendWrapPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialWeekendWrapPrefillQueryKey = (params?: GetSocialWeekendWrapPrefillParams,) => {
+    return [
+    `/api/social-prefill/weekend-wrap`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialWeekendWrapPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError = ErrorType<unknown>>(params: GetSocialWeekendWrapPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialWeekendWrapPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>> = ({ signal }) => getSocialWeekendWrapPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialWeekendWrapPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>>
+export type GetSocialWeekendWrapPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Weekend Wrap card (A6) prefill — a round's completed senior results for the tenant's club, one per grade. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialWeekendWrapPrefill<TData = Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialWeekendWrapPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialWeekendWrapPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialWeekendWrapPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

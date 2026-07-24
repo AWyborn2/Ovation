@@ -71,7 +71,9 @@ vi.mock("./central", async () => {
 import {
   centralClubMatches,
   centralClubTotals,
+  centralClubTotalsBySeason,
   centralDashboard,
+  centralLadder,
   clearCentralQueriesCache,
   withCentralCache,
 } from "./central-queries";
@@ -278,5 +280,112 @@ describe("centralClubMatches SQL filtering + paging", () => {
       opponentClub: { id: 4, shortName: "TCC" },
     });
     expect(builderCalls).toEqual([{ method: "limit", args: [1] }]);
+  });
+});
+
+describe("centralLadder (Ladder card prefill)", () => {
+  it("filters to the app grade, derives points/pos, and flags the tenant club row", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push([
+      // Two A-Grade rows (one is the tenant's club 5) + a B-Grade row that the
+      // grade filter must drop.
+      { grade: "A Grade", clubId: 6, club: "Them CC", played: 10, won: 5, lost: 5, tied: 0, noResult: 0 },
+      { grade: "A Grade", clubId: 5, club: "Us CC", played: 10, won: 8, lost: 1, tied: 0, noResult: 1 },
+      { grade: "B Grade", clubId: 5, club: "Us CC B", played: 10, won: 9, lost: 1, tied: 0, noResult: 0 },
+    ]);
+    const rows = await centralLadder(5, 2024, "A Grade");
+    expect(rows).toHaveLength(2);
+    // Us CC: 8*6 + 1*3(no result) = 51; Them CC: 5*6 = 30. Higher points first.
+    expect(rows[0]).toEqual({
+      pos: 1,
+      team: "Us CC",
+      played: 10,
+      won: 8,
+      lost: 1,
+      points: 51,
+      isClub: true,
+    });
+    expect(rows[1]).toMatchObject({ pos: 2, team: "Them CC", points: 30, isClub: false });
+  });
+
+  it("dedupes folded grade labels to one row per club (most-played wins)", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push([
+      // "A Grade" and "A Grade: Wyllie Cup" both map to app grade "A Grade";
+      // the same club must not appear twice — keep the most-played record.
+      { grade: "A Grade", clubId: 5, club: "Us CC", played: 200, won: 120, lost: 60, tied: 0, noResult: 20 },
+      { grade: "A Grade: Wyllie Cup", clubId: 5, club: "Us CC", played: 40, won: 25, lost: 15, tied: 0, noResult: 0 },
+    ]);
+    const rows = await centralLadder(5, 2024, "A Grade");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ team: "Us CC", played: 200, isClub: true });
+  });
+
+  it("empty ladder (no rows for the grade) returns [] and never throws", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push([{ grade: "B Grade", clubId: 5, club: "Us CC B", played: 5, won: 3, lost: 2, tied: 0, noResult: 0 }]);
+    await expect(centralLadder(5, 2024, "A Grade")).resolves.toEqual([]);
+  });
+});
+
+describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
+  it("returns per-grade top scorer/taker and excludes junior/unmapped grades (R20)", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push(
+      // Club match rows: one A-Grade (target season), one junior/unmapped grade
+      // (appGradeFromCentral → null, so it never contributes), one wrong season.
+      [
+        { matchId: 1, grade: "A Grade", season: "Summer 2024/25" },
+        { matchId: 2, grade: "Under 14 Blue", season: "Summer 2024/25" },
+        { matchId: 3, grade: "A Grade", season: "Summer 2023/24" },
+      ],
+      [{ participantId: "guid-bat", value: 350 }], // A Grade batting agg
+      [{ participantId: "guid-bowl", value: 18 }], // A Grade bowling agg
+      [
+        { participantId: "guid-bat", displayName: "J Smith", isPrivate: 0 },
+        { participantId: "guid-bowl", displayName: "B Jones", isPrivate: 0 },
+      ],
+    );
+    const out = await centralClubTotalsBySeason(5, 2024);
+    expect(out).toEqual([
+      {
+        gradeLabel: "A Grade",
+        topRunScorer: { playerName: "J Smith", value: 350 },
+        topWicketTaker: { playerName: "B Jones", value: 18 },
+      },
+    ]);
+  });
+
+  it("excludes private players and applies no fill-in floor (passthrough of the central no-fill-in reality)", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push(
+      [{ matchId: 1, grade: "B Grade", season: "Summer 2024/25" }],
+      // Top batting candidate is private → skipped; the next public one is
+      // picked. Both are GUIDs: there is no numeric fill-in sentinel to floor,
+      // so no >= 90000 exclusion is (or can be) applied — only privacy/value.
+      [
+        { participantId: "priv-guid", value: 500 },
+        { participantId: "pub-guid", value: 300 },
+      ],
+      [], // no bowling agg rows
+      [
+        { participantId: "priv-guid", displayName: "Private Star", isPrivate: 1 },
+        { participantId: "pub-guid", displayName: "Public Player", isPrivate: 0 },
+      ],
+    );
+    const out = await centralClubTotalsBySeason(5, 2024);
+    expect(out).toEqual([
+      {
+        gradeLabel: "B Grade",
+        topRunScorer: { playerName: "Public Player", value: 300 },
+        topWicketTaker: null,
+      },
+    ]);
+  });
+
+  it("no matches in the season returns []", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push([{ matchId: 1, grade: "A Grade", season: "Summer 2023/24" }]);
+    await expect(centralClubTotalsBySeason(5, 2024)).resolves.toEqual([]);
   });
 });

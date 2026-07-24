@@ -19,6 +19,7 @@ export * from "./captains";
 export * from "./award_voting";
 export * from "./award_points_config";
 export * from "./social_cards";
+export * from "./fixtures";
 export * from "./match_display_settings";
 export * from "./tour_content";
 export * from "./records_display_settings";

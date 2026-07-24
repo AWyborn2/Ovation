@@ -70,6 +70,39 @@ export type MatchSummaryInnings = {
   topBowlers: MatchSummaryBowler[];
 };
 
+// --- Pack A card shapes ------------------------------------------------------
+// Row shapes for the repeat-driven Pack A kinds (team lists, weekend wrap
+// blocks, ladder rows, club leaderboard rows). These bind into the pack
+// templates' repeat groups rather than as single text fields.
+export type TeamListPlayer = {
+  order: number;
+  surname: string;
+  role?: "C" | "WK" | "C/WK";
+};
+
+export type WeekendWrapMatch = {
+  gradeLabel: string;
+  resultLine: string;
+  performers: string;
+  outcome: "won" | "lost" | "draw";
+};
+
+export type LadderRow = {
+  pos: number;
+  team: string;
+  played: number;
+  won: number;
+  lost: number;
+  points: number | string;
+  isClub?: boolean;
+};
+
+export type ClubLeaderboardLeader = {
+  gradeLabel: string;
+  playerName: string;
+  value: string;
+};
+
 export type ShareCardInput =
   | {
       kind: "milestone";
@@ -185,6 +218,94 @@ export type ShareCardInput =
        * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.
        */
       junior?: boolean;
+    }
+  | {
+      kind: "matchDay";
+      roundLabel: string;
+      oppositionName: string;
+      oppositionLogoUrl?: string | null;
+      /** Which side the club is on for this fixture. */
+      homeAway: "HOME" | "AWAY";
+      venue: string;
+      date: string;
+      startTime: string;
+      noteTitle?: string | null;
+      noteBody?: string | null;
+      /** JUNIOR card: forces the junior brown palette + junior labels. */
+      junior?: boolean;
+    }
+  | {
+      kind: "teamList";
+      gradeRound: string;
+      competitionLine: string;
+      venueDateTime: string;
+      players: TeamListPlayer[];
+      squadPhotoUrl?: string | null;
+      /** JUNIOR card: forces the junior brown palette + junior labels. */
+      junior?: boolean;
+    }
+  | {
+      kind: "weekendWrap";
+      roundLabel: string;
+      dateRange: string;
+      matches: WeekendWrapMatch[];
+      /** JUNIOR card: forces the junior brown palette + junior labels. */
+      junior?: boolean;
+    }
+  | {
+      kind: "ladder";
+      competitionName: string;
+      gradeLabel: string;
+      asOfLabel: string;
+      rows: LadderRow[];
+      /** JUNIOR card: forces the junior brown palette + junior labels. */
+      junior?: boolean;
+    }
+  | {
+      kind: "bigMoment";
+      momentLabel: string;
+      playerName: string;
+      runs?: number | null;
+      balls?: number | null;
+      boundaryDetail?: string | null;
+      oppositionName?: string | null;
+      inningsLabel?: string | null;
+      liveScore?: string | null;
+      oversChaseLine?: string | null;
+      equation?: string | null;
+      photoUrl?: string | null;
+      /** JUNIOR card: forces the junior brown palette + junior labels. */
+      junior?: boolean;
+    }
+  | {
+      kind: "newSigning";
+      playerFirstName: string;
+      playerLastName: string;
+      role?: string | null;
+      formerClub?: string | null;
+      headline?: string;
+      season?: string | null;
+      photoUrl?: string | null;
+    }
+  | {
+      kind: "countdown";
+      /** Admin may set this by hand ("2") or it is computed from the fixture. */
+      daysToGo: string;
+      eventLabel: string;
+      hypeLine1?: string | null;
+      hypeLine2?: string | null;
+      dateVenue?: string | null;
+      fixtureLine?: string | null;
+    }
+  | {
+      kind: "clubLeaderboard";
+      title: string;
+      subtitle?: string | null;
+      season: string;
+      category: "Runs" | "Wickets";
+      leaders: ClubLeaderboardLeader[];
+      /** JUNIOR card: forces the junior brown palette + junior labels. */
+      junior?: boolean;
     };
 
 export type CardKind = ShareCardInput["kind"];
@@ -200,6 +321,14 @@ export const CARD_KINDS: CardKind[] = [
   "century",
   "fiveFor",
   "matchSummary",
+  "matchDay",
+  "teamList",
+  "weekendWrap",
+  "ladder",
+  "bigMoment",
+  "newSigning",
+  "countdown",
+  "clubLeaderboard",
 ];
 
 // A sponsor with an empty cardKinds list applies to every card type; otherwise
@@ -345,7 +474,7 @@ const wrapText = (
 const fmt = (v: string | number) => (typeof v === "number" ? v.toLocaleString() : v);
 
 const headlineFor = (input: ShareCardInput): string => {
-  if (input.headline) return input.headline;
+  if ("headline" in input && input.headline) return input.headline;
   switch (input.kind) {
     case "milestone":
       return input.junior ? "Junior Cricket Milestone" : "Honour Board Milestone";
@@ -367,6 +496,22 @@ const headlineFor = (input: ShareCardInput): string => {
       return `${input.grade} • Five-For`;
     case "matchSummary":
       return input.matchTitle;
+    case "matchDay":
+      return `${input.roundLabel} • Match Day`;
+    case "teamList":
+      return input.gradeRound;
+    case "weekendWrap":
+      return input.roundLabel;
+    case "ladder":
+      return `${input.gradeLabel} • Ladder`;
+    case "bigMoment":
+      return input.momentLabel;
+    case "newSigning":
+      return "New Signing";
+    case "countdown":
+      return input.eventLabel;
+    case "clubLeaderboard":
+      return input.title;
   }
 };
 
@@ -672,6 +817,13 @@ const CARD_FONT_FAMILIES = [
   "EB Garamond",
   "Space Mono",
   "Inter",
+  // Pack A ("Broadcast Dark") display + script families so pack cards render
+  // their headline type in both the DOM preview and the server-side export.
+  "Anton",
+  "Bebas Neue",
+  "Teko",
+  "Archivo Black",
+  "Kaushan Script",
 ];
 
 // Force-load every card font (at light + bold) before drawing. Canvas text does
@@ -4096,6 +4248,22 @@ export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null
       return `${clubSlug}-fivefor-${slugify(input.playerName)}-${input.wickets}`;
     case "matchSummary":
       return `${clubSlug}-${jr}match-${slugify(input.club.name)}-vs-${slugify(input.opposition.name)}`;
+    case "matchDay":
+      return `${clubSlug}-${jr}matchday-${slugify(input.oppositionName)}`;
+    case "teamList":
+      return `${clubSlug}-${jr}teamlist-${slugify(input.gradeRound)}`;
+    case "weekendWrap":
+      return `${clubSlug}-${jr}wrap-${slugify(input.roundLabel)}`;
+    case "ladder":
+      return `${clubSlug}-${jr}ladder-${slugify(input.gradeLabel)}`;
+    case "bigMoment":
+      return `${clubSlug}-${jr}moment-${slugify(input.playerName)}`;
+    case "newSigning":
+      return `${clubSlug}-signing-${slugify(input.playerFirstName)}-${slugify(input.playerLastName)}`;
+    case "countdown":
+      return `${clubSlug}-countdown-${slugify(input.eventLabel)}`;
+    case "clubLeaderboard":
+      return `${clubSlug}-${jr}leaderboard-${slugify(input.category)}`;
   }
 };
 

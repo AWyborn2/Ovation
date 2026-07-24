@@ -23,4 +23,9 @@ export interface SocialSettings {
   captionsEnabled: boolean;
   clubHashtag: string;
   clubUrl: string;
+  /**
+     * Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.
+     * @nullable
+     */
+  seasonStartDate?: Date | null;
 }

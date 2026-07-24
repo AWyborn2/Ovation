@@ -42,6 +42,7 @@ import {
   UpdateCardSetBody,
   UpdateCardSetParams,
   DeleteCardSetParams,
+  CreateCardRenderStillBody,
 } from "@workspace/api-zod";
 import type { CardLayoutLayer, CardSetSlide } from "@workspace/db";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
@@ -53,6 +54,7 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { ensurePackTemplates } from "../lib/design-packs";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
+import { renderCardStill } from "../lib/card-video-renderer";
 import {
   DEFAULT_TEMPLATES,
   ensureSettings,
@@ -177,6 +179,7 @@ router.post("/card-themes", requireAdmin, requireEntitlement("socialStudio"), as
         bgPanel: parsed.data.bgPanel,
         accent: parsed.data.accent,
         textLight: parsed.data.textLight,
+        displayFont: parsed.data.displayFont ?? null,
         backgroundImageUrl: parsed.data.backgroundImageUrl ?? null,
         logoUrl: parsed.data.logoUrl ?? null,
         isDefault: parsed.data.isDefault ?? false,
@@ -790,5 +793,36 @@ router.put("/caption-templates", requireAdmin, requireEntitlement("socialStudio"
     });
   res.json({ engine, platform, template });
 });
+
+// --- Static (pack) PNG render ----------------------------------------------
+// Standard "Broadcast Dark" pack cards are rendered pixel-true through the
+// headless-Chromium harness in its static mode (mount <PackCard> at native px,
+// screenshot the element), rather than the client-side canvas path (which stays
+// for BYO templates). Pack cards are static, so this never touches ffmpeg. The
+// social studio is a paid feature (gated; pass-through while billing is dormant).
+router.post(
+  "/card-renders/still",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateCardRenderStillBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    try {
+      const { buffer, contentType } = await renderCardStill(
+        parsed.data.input,
+        parsed.data.options,
+      );
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Length", String(buffer.length));
+      res.send(buffer);
+    } catch (err) {
+      req.log.error({ err: String(err) }, "card still render failed");
+      res.status(500).json({ error: "Card render failed" });
+    }
+  },
+);
 
 export default router;

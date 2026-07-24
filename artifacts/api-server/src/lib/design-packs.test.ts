@@ -91,14 +91,40 @@ describe("design-packs registry", () => {
     _resetEnsuredTenants();
   });
 
+  // The 18 card kinds Pack A ("broadcast-dark-v1") covers.
+  const ALL_KINDS = [
+    "matchSummary",
+    "player",
+    "milestone",
+    "debut",
+    "record",
+    "gradeLeader",
+    "premiership",
+    "newCap",
+    "century",
+    "fiveFor",
+    "matchDay",
+    "teamList",
+    "weekendWrap",
+    "ladder",
+    "bigMoment",
+    "newSigning",
+    "countdown",
+    "clubLeaderboard",
+  ];
+
   // --- getPackById ----------------------------------------------------------
 
   it("returns the pack definition for a known id", () => {
-    const pack = getPackById("matchSummary-v1");
+    const pack = getPackById("broadcast-dark-v1");
     expect(pack).toBeDefined();
-    expect(pack!.id).toBe("matchSummary-v1");
-    expect(pack!.name).toBe("Match Summary Pack");
-    expect(pack!.cardKinds).toEqual(["matchSummary"]);
+    expect(pack!.id).toBe("broadcast-dark-v1");
+    expect(pack!.name).toBe("Broadcast Dark");
+    expect(pack!.cardKinds).toEqual(ALL_KINDS);
+  });
+
+  it("no longer exposes the retired matchSummary-v1 pack", () => {
+    expect(getPackById("matchSummary-v1")).toBeUndefined();
   });
 
   it("returns undefined for an unknown id", () => {
@@ -107,39 +133,46 @@ describe("design-packs registry", () => {
 
   // --- PACKS static shape ---------------------------------------------------
 
-  it("matchSummary-v1 has three variants with correct dimensions", () => {
-    const pack = PACKS.find((p) => p.id === "matchSummary-v1")!;
+  it("broadcast-dark-v1 covers all 18 card kinds", () => {
+    const pack = PACKS.find((p) => p.id === "broadcast-dark-v1")!;
+    expect(pack.cardKinds).toHaveLength(18);
+    expect(new Set(pack.cardKinds)).toEqual(new Set(ALL_KINDS));
+  });
+
+  it("broadcast-dark-v1 has three static variants with correct dimensions", () => {
+    const pack = PACKS.find((p) => p.id === "broadcast-dark-v1")!;
     expect(pack.variants).toHaveLength(3);
 
     const square = pack.variants.find((v) => v.key === "square")!;
     expect(square.width).toBe(1080);
     expect(square.height).toBe(1080);
-    expect(square.motionPreset).toBeNull();
+    expect(square.motionPreset).toBe("none");
     expect(square.backgroundKind).toBe("image");
 
     const portrait = pack.variants.find((v) => v.key === "portrait")!;
     expect(portrait.width).toBe(1080);
     expect(portrait.height).toBe(1350);
-    expect(portrait.motionPreset).toBeNull();
+    expect(portrait.motionPreset).toBe("none");
     expect(portrait.backgroundKind).toBe("image");
 
     const story = pack.variants.find((v) => v.key === "story")!;
     expect(story.width).toBe(1080);
     expect(story.height).toBe(1920);
-    expect(story.motionPreset).toBe("matchReveal");
-    expect(story.backgroundKind).toBe("video");
+    // Pack A ships static — no motion, image background — so MP4 export hides.
+    expect(story.motionPreset).toBe("none");
+    expect(story.backgroundKind).toBe("image");
   });
 
   // --- ensurePackTemplates --------------------------------------------------
 
-  it("creates 3 template rows for matchSummary-v1 on first call", async () => {
+  it("creates 3 broadcast-dark-v1 template rows on first call", async () => {
     await ensurePackTemplates(42);
 
     expect(insertedRows).toHaveLength(3);
     for (const row of insertedRows) {
       expect(row.tenantId).toBe(42);
       expect(row.source).toBe("pack");
-      expect(row.packId).toBe("matchSummary-v1");
+      expect(row.packId).toBe("broadcast-dark-v1");
     }
 
     const variants = insertedRows.map((r) => r.packVariant);
@@ -154,6 +187,8 @@ describe("design-packs registry", () => {
     const square = insertedRows.find((r) => r.packVariant === "square")!;
     expect(square.bgWidth).toBe(1080);
     expect(square.bgHeight).toBe(1080);
+    expect(square.motionPreset).toBe("none");
+    expect(square.backgroundKind).toBe("image");
 
     const portrait = insertedRows.find((r) => r.packVariant === "portrait")!;
     expect(portrait.bgWidth).toBe(1080);
@@ -162,14 +197,15 @@ describe("design-packs registry", () => {
     const story = insertedRows.find((r) => r.packVariant === "story")!;
     expect(story.bgWidth).toBe(1080);
     expect(story.bgHeight).toBe(1920);
-    expect(story.motionPreset).toBe("matchReveal");
+    expect(story.motionPreset).toBe("none");
+    expect(story.backgroundKind).toBe("image");
   });
 
-  it("sets cardKinds from the pack definition", async () => {
+  it("seeds cardKinds covering all 18 kinds on every row", async () => {
     await ensurePackTemplates(1);
 
     for (const row of insertedRows) {
-      expect(row.cardKinds).toEqual(["matchSummary"]);
+      expect(row.cardKinds).toEqual(ALL_KINDS);
     }
   });
 

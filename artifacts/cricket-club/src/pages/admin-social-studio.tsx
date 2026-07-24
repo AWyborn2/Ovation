@@ -3,14 +3,11 @@ import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetSocialSettings,
-  useListCardLayouts,
   useListCardTemplates,
   useCreateCardTemplate,
   useUpdateCardTemplate,
   useDeleteCardTemplate,
   getListCardTemplatesQueryKey,
-  getListCardLayoutsQueryKey,
-  type CardLayout,
   type CardTemplate,
   type SocialSettingsBundle,
   useUpdateSocialSettings,
@@ -21,12 +18,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Wand2, Pencil, Trash2, Plus, IdCard, Save } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, IdCard, Save } from "lucide-react";
 import {
   CardLayoutEditor,
   type TemplateMode,
 } from "@/components/card-layout-editor";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { PackCard } from "@/components/pack-card";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import {
   renderShareCard,
@@ -54,7 +52,7 @@ function CardThumb({
 }: {
   input: ShareCardInput;
   baseOpts: RenderOptions;
-  layout?: CardLayout["layers"] | null;
+  layout?: CardTemplate["layers"] | null;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -114,7 +112,6 @@ function CardThumb({
 }
 
 type EditorState =
-  | { mode: "builtin"; kind: CardKind }
   | { mode: "template-new"; baseKind: CardKind }
   | { mode: "template-edit"; template: CardTemplate };
 
@@ -124,16 +121,13 @@ export default function AdminSocialStudio() {
 
   const settingsQ = useGetSocialSettings();
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
-  const layoutsQ = useListCardLayouts();
   const templatesQ = useListCardTemplates();
 
   const [editing, setEditing] = useState<EditorState | null>(null);
   const [newBaseKind, setNewBaseKind] = useState<CardKind>("milestone");
   const [error, setError] = useState<string | null>(null);
 
-  const layouts = (layoutsQ.data as CardLayout[] | undefined) ?? [];
   const templates = (templatesQ.data as CardTemplate[] | undefined) ?? [];
-  const layoutByKind = new Map(layouts.map((l) => [l.cardKind, l]));
   // Which template (if any) is the default for each card kind.
   const defaultByKind = new Map<string, CardTemplate>();
   for (const t of templates) {
@@ -147,7 +141,6 @@ export default function AdminSocialStudio() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });
-    qc.invalidateQueries({ queryKey: getListCardLayoutsQueryKey() });
   };
   const onError = (e: unknown) => setError(handleAdminMutationError(e));
 
@@ -210,33 +203,22 @@ export default function AdminSocialStudio() {
     deleteMut.mutate({ id: t.id });
   };
 
-  if (settingsQ.isError || layoutsQ.isError || templatesQ.isError) {
+  if (settingsQ.isError || templatesQ.isError) {
     return (
       <QueryError
         onRetry={() => {
           settingsQ.refetch();
-          layoutsQ.refetch();
           templatesQ.refetch();
         }}
       />
     );
   }
-  if (settingsQ.isLoading || layoutsQ.isLoading || templatesQ.isLoading) {
+  if (settingsQ.isLoading || templatesQ.isLoading) {
     return <LoadingState label="Loading studio…" />;
   }
 
   // Full-screen editor takes over the tab while open.
   if (editing) {
-    if (editing.mode === "builtin") {
-      return (
-        <CardLayoutEditor
-          input={sampleCardInput(editing.kind)}
-          baseOpts={baseOpts}
-          activeSize={THUMB_SIZE}
-          onClose={() => setEditing(null)}
-        />
-      );
-    }
     if (editing.mode === "template-new") {
       return (
         <CardLayoutEditor
@@ -296,23 +278,25 @@ export default function AdminSocialStudio() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {CARD_KIND_OPTIONS.map((o) => {
             const kind = o.value;
-            const layout = layoutByKind.get(kind);
             const def = defaultByKind.get(kind);
             return (
               <Card key={kind} className="overflow-hidden">
-                <CardThumb
-                  input={sampleCardInput(kind)}
-                  baseOpts={baseOpts}
-                  layout={layout?.layers ?? []}
-                />
+                <div
+                  className="overflow-hidden rounded bg-muted"
+                  style={{
+                    aspectRatio: `${SIZES[THUMB_SIZE].w} / ${SIZES[THUMB_SIZE].h}`,
+                  }}
+                >
+                  <PackCard
+                    input={sampleCardInput(kind)}
+                    size={THUMB_SIZE}
+                    sponsorsOn
+                    junior={false}
+                  />
+                </div>
                 <CardContent className="space-y-2 p-3">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-medium">{o.label}</span>
-                    {(layout?.layers?.length ?? 0) > 0 && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Custom
-                      </Badge>
-                    )}
                   </div>
                   {def && (
                     <p className="truncate text-[11px] text-muted-foreground">
@@ -320,14 +304,6 @@ export default function AdminSocialStudio() {
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs"
-                      onClick={() => setEditing({ mode: "builtin", kind })}
-                    >
-                      <Wand2 className="mr-1 h-3 w-3" /> Edit built-in
-                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
