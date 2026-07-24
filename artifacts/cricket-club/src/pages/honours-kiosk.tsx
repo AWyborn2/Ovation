@@ -312,6 +312,17 @@ export default function HonoursKiosk() {
     timerRef.current = setTimeout(() => {
       if (!alive()) return;
       if (!isSlide && fr) {
+        // Re-measure the (now fully settled) title height so the frozen heading
+        // row pins flush beneath it. Fonts and the crest image have loaded by
+        // the time the dwell elapses, so this corrects any early mis-measure
+        // that would otherwise leave a gap the top rows scroll through.
+        const head = fr.querySelector<HTMLElement>(".hb-head");
+        if (head) {
+          fr.style.setProperty(
+            "--hb-head-h",
+            `${Math.round(head.getBoundingClientRect().height)}px`,
+          );
+        }
         const dist = fr.scrollHeight - fr.clientHeight;
         if (dist > 10) {
           const dur = (dist / SPEED) * 1000;
@@ -364,8 +375,14 @@ export default function HonoursKiosk() {
     const board = frameRef.current?.querySelector<HTMLElement>(".hb-board");
     const head = board?.querySelector<HTMLElement>(".hb-head");
     if (!board || !head) return;
+    // getBoundingClientRect() is sub-pixel accurate and reflects the settled
+    // layout; a ResizeObserver keeps it current as fonts/crest load or the
+    // viewport changes the (clamped) title size.
     const measure = () =>
-      board.style.setProperty("--hb-head-h", `${head.offsetHeight}px`);
+      board.style.setProperty(
+        "--hb-head-h",
+        `${Math.round(head.getBoundingClientRect().height)}px`,
+      );
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(head);
