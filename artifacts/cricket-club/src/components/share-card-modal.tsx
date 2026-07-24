@@ -57,7 +57,7 @@ import {
 } from "@/lib/share-card-animation";
 import { templateAppliesToKind } from "@/lib/card-template";
 import { PackCard } from "@/components/pack-card";
-import { packSupportsKind } from "@/lib/pack-render";
+import { packSupportsKind, type PackCardData } from "@/lib/pack-render";
 import { useQueryClient } from "@tanstack/react-query";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
@@ -361,12 +361,15 @@ export function ShareCardModal({
   const stillMutation = useCreateCardRenderStill();
 
   // The static-render payload mirrors the props that drive the live <PackCard>
-  // preview, so the server PNG matches what the admin sees.
+  // preview, so the server PNG matches what the admin sees. `data` carries the
+  // tenant branding (logo/name/hashtags/sponsors/photo) — see `buildPackData`.
+  // Exports use the live `photoTransform` (downloads), matching the canvas path.
   const stillOptions = (size: CardSize) => ({
     size,
     sponsorsOn: includeSponsors,
     junior: isJunior,
     theme: effectiveTheme ?? null,
+    data: buildPackData(photoTransform),
   });
 
   // Render one pack size to a PNG blob via the server harness.
@@ -439,6 +442,22 @@ export function ShareCardModal({
     durationMs,
     speed,
     audio: audioSpec,
+  });
+
+  // Tenant data threaded into the pack (Broadcast Dark) path — the pack
+  // equivalent of the brand/sponsors/photo that `buildOpts` gives the canvas
+  // renderer. Same resolved sources (brand, hashtag, kind-filtered sponsors,
+  // uploaded photo) so pack cards render with real tenant branding instead of
+  // the template sample literals. `transform` varies (live for downloads,
+  // debounced for the preview), mirroring `buildOpts`.
+  const buildPackData = (transform: PhotoTransform): PackCardData => ({
+    brand: bundle?.brand
+      ? { name: bundle.brand.name, logoUrl: bundle.brand.logoUrl }
+      : null,
+    hashtag,
+    sponsors,
+    photoUrl: effectivePhotoUrl,
+    photoTransform: transform,
   });
 
   const { previewUrls, rendering } = useCardPreview({
@@ -684,6 +703,7 @@ export function ShareCardModal({
                         sponsorsOn={includeSponsors}
                         theme={effectiveTheme}
                         junior={isJunior}
+                        data={buildPackData(renderTransform)}
                       />
                     ) : rendering && !previewUrls[s] ? (
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

@@ -8,6 +8,7 @@ import {
   resolvePackTokens,
   tokensFromCardTheme,
   type PackTokens,
+  type PackCardData,
 } from "@/lib/pack-render";
 
 /**
@@ -39,6 +40,12 @@ export interface PackCardProps {
    */
   theme?: ApiCardTheme | null;
   junior: boolean;
+  /**
+   * Per-render tenant data (logo, club name, hashtags, sponsors, uploaded
+   * photo). Threaded verbatim into `renderPackCard` so the pack path carries the
+   * same tenant branding the canvas path already gets. Omitted → sample defaults.
+   */
+  data?: PackCardData | null;
   /** Explicit display width (px). When omitted the card fills its parent. */
   width?: number;
   className?: string;
@@ -50,6 +57,7 @@ export function PackCard({
   sponsorsOn,
   theme,
   junior,
+  data,
   width,
   className,
 }: PackCardProps) {
@@ -69,8 +77,8 @@ export function PackCard({
   );
 
   const html = useMemo(
-    () => renderPackCard(input, size, sponsorsOn, tokens, junior),
-    [input, size, sponsorsOn, tokens, junior],
+    () => renderPackCard(input, size, sponsorsOn, tokens, junior, data),
+    [input, size, sponsorsOn, tokens, junior, data],
   );
 
   // Decorative pack fonts (Anton, Bebas Neue, Teko, Archivo Black, …) load on

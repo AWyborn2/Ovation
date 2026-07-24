@@ -14,10 +14,12 @@ import {
   useListMatches,
   useGetMatch,
   getGetMatchQueryKey,
+  getGetMatchQueryOptions,
   useListPlayers,
   getListPlayersQueryKey,
   useGetGradeLeaderboard,
   getGetGradeLeaderboardQueryKey,
+  getGetGradeLeaderboardQueryOptions,
   type SocialSettingsBundle,
   type CardSet,
   type CardSetSlide,
@@ -430,6 +432,24 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     setSelectedSlideId(slide.id);
   };
 
+  // Batch-append several slides at once (carousel "add all…" actions), clamped
+  // to the 2–10 slide cap. Extra inputs beyond the remaining room are dropped
+  // silently, matching addSlide's single-slot behaviour.
+  const addSlides = (inputs: ShareCardInput[]) => {
+    if (inputs.length === 0) return;
+    setSlides((arr) => {
+      const room = MAX_SLIDES - arr.length;
+      if (room <= 0) return arr;
+      const added: WorkingSlide[] = inputs.slice(0, room).map((input) => ({
+        id: newId(),
+        input,
+        themeId: null,
+        motionPreset: "none",
+      }));
+      return [...arr, ...added];
+    });
+  };
+
   const removeSlide = (sid: string) => {
     setSlides((arr) => arr.filter((s) => s.id !== sid));
     if (selectedSlideId === sid) setSelectedSlideId(null);
@@ -832,7 +852,7 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
             <CardTitle className="text-base">Add a slide</CardTitle>
           </CardHeader>
           <CardContent>
-            <SlideSourcePicker onAdd={addSlide} />
+            <SlideSourcePicker onAdd={addSlide} onAddMany={addSlides} />
           </CardContent>
         </Card>
       )}
@@ -842,7 +862,13 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
 
 /* -------------------------------------------------------- Slide source UI */
 
-function SlideSourcePicker({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
+function SlideSourcePicker({
+  onAdd,
+  onAddMany,
+}: {
+  onAdd: (i: ShareCardInput) => void;
+  onAddMany: (inputs: ShareCardInput[]) => void;
+}) {
   return (
     <Tabs defaultValue="match">
       <TabsList>
@@ -851,22 +877,32 @@ function SlideSourcePicker({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
         <TabsTrigger value="gradeLeader">Grade leader</TabsTrigger>
       </TabsList>
       <TabsContent value="match" className="mt-4">
-        <MatchSource onAdd={onAdd} />
+        <MatchSource onAdd={onAdd} onAddMany={onAddMany} />
       </TabsContent>
       <TabsContent value="player" className="mt-4">
         <PlayerSource onAdd={onAdd} />
       </TabsContent>
       <TabsContent value="gradeLeader" className="mt-4">
-        <GradeLeaderSource onAdd={onAdd} />
+        <GradeLeaderSource onAdd={onAdd} onAddMany={onAddMany} />
       </TabsContent>
     </Tabs>
   );
 }
 
-function MatchSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
+function MatchSource({
+  onAdd,
+  onAddMany,
+}: {
+  onAdd: (i: ShareCardInput) => void;
+  onAddMany: (inputs: ShareCardInput[]) => void;
+}) {
+  const qc = useQueryClient();
   const [grade, setGrade] = useState(GRADES[0]);
   const [season, setSeason] = useState<number | null>(null);
   const [matchId, setMatchId] = useState<number | null>(null);
+  const [round, setRound] = useState<number | null>(null);
+  const [batching, setBatching] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
 
   const matchesQ = useListMatches({ grade });
   const matches = (matchesQ.data ?? []) as MatchSummaryDto[];
@@ -880,6 +916,20 @@ function MatchSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
     () => matches.filter((m) => m.season === effectiveSeason),
     [matches, effectiveSeason],
   );
+  // Distinct rounds in the selected grade/season, for the batch "add all in
+  // round" action.
+  const rounds = useMemo(() => {
+    const set = new Set<number>();
+    filtered.forEach((m) => {
+      if (m.round != null) set.add(m.round);
+    });
+    return [...set].sort((a, b) => a - b);
+  }, [filtered]);
+  const effectiveRound = round ?? rounds[0] ?? null;
+  const roundMatches = useMemo(
+    () => filtered.filter((m) => m.round === effectiveRound),
+    [filtered, effectiveRound],
+  );
   const detailQ = useGetMatch(matchId ?? 0, {
     query: {
       enabled: matchId != null,
@@ -890,6 +940,29 @@ function MatchSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
   const matchLabel = (m: MatchSummaryDto) => {
     const round = m.stage ?? (m.round != null ? `Round ${m.round}` : "Match");
     return `${round} — vs ${m.opponent ?? "Unknown"}${m.result ? ` (${m.result})` : ""}`;
+  };
+
+  // Fetch every match detail in the selected round (via the shared query cache,
+  // so already-viewed matches are free), map each to a summary card, and
+  // batch-append. The `POST /card-sets` endpoint already accepts a full slide
+  // array, so this needs no schema/endpoint change.
+  const addRound = async () => {
+    if (roundMatches.length === 0) return;
+    setBatching(true);
+    setBatchError(null);
+    try {
+      const details = await Promise.all(
+        roundMatches.map((m) => qc.fetchQuery(getGetMatchQueryOptions(m.id))),
+      );
+      onAddMany(details.map((d) => matchToSummaryInput(d)));
+    } catch (e) {
+      console.error("Batch add (round) failed", e);
+      setBatchError(
+        e instanceof Error ? e.message : "Could not load every match in this round.",
+      );
+    } finally {
+      setBatching(false);
+    }
   };
 
   return (
@@ -956,6 +1029,39 @@ function MatchSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
           Add match slide
         </Button>
       </div>
+
+      {/* Batch: add every match in a round at once. */}
+      <div className="flex items-center justify-between gap-3 border-t pt-3">
+        <select
+          className={selectClass}
+          value={effectiveRound ?? ""}
+          disabled={rounds.length === 0}
+          onChange={(e) => setRound(e.target.value ? Number(e.target.value) : null)}
+        >
+          {rounds.length === 0 && <option value="">No rounds</option>}
+          {rounds.map((r) => (
+            <option key={r} value={r}>
+              Round {r}
+            </option>
+          ))}
+        </select>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={addRound}
+          disabled={batching || roundMatches.length === 0}
+        >
+          {batching ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Plus className="h-4 w-4 mr-2" />
+          )}
+          Add all in Round {effectiveRound ?? "—"} ({roundMatches.length})
+        </Button>
+      </div>
+      {batchError && (
+        <p className="text-sm text-destructive">{batchError}</p>
+      )}
     </div>
   );
 }
@@ -1023,28 +1129,68 @@ function PlayerSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
   );
 }
 
-function GradeLeaderSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
+function GradeLeaderSource({
+  onAdd,
+  onAddMany,
+}: {
+  onAdd: (i: ShareCardInput) => void;
+  onAddMany: (inputs: ShareCardInput[]) => void;
+}) {
+  const qc = useQueryClient();
   const [grade, setGrade] = useState(GRADES[0]);
   const [category, setCategory] = useState<"Runs" | "Wickets">("Runs");
+  const [batching, setBatching] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
   const statsQ = useGetGradeLeaderboard(grade, undefined, {
     query: { queryKey: getGetGradeLeaderboardQueryKey(grade) },
   });
   const stats = (statsQ.data ?? []) as Stat[];
+  const statValue = (s: Stat, cat: "Runs" | "Wickets") =>
+    cat === "Runs" ? s.runs ?? 0 : s.wickets ?? 0;
   const ranked = useMemo(() => {
-    const val = (s: Stat) => (category === "Runs" ? s.runs ?? 0 : s.wickets ?? 0);
     return [...stats]
-      .filter((s) => val(s) > 0)
-      .sort((a, b) => val(b) - val(a))
+      .filter((s) => statValue(s, category) > 0)
+      .sort((a, b) => statValue(b, category) - statValue(a, category))
       .slice(0, 12);
   }, [stats, category]);
 
-  const toInput = (s: Stat): ShareCardInput => ({
+  const toInput = (s: Stat, g: string): ShareCardInput => ({
     kind: "gradeLeader",
-    grade,
+    grade: g,
     category,
     playerName: `${s.givenName} ${s.surname}`.trim(),
-    value: category === "Runs" ? s.runs ?? 0 : s.wickets ?? 0,
+    value: statValue(s, category),
   });
+
+  // One leaderboard card per grade: fetch every grade's leaderboard (shared
+  // query cache), take its top-ranked player in the selected category, and
+  // batch-append. Grades with no stats are skipped.
+  const addAllGrades = async () => {
+    setBatching(true);
+    setBatchError(null);
+    try {
+      const boards = await Promise.all(
+        GRADES.map((g) =>
+          qc.fetchQuery(getGetGradeLeaderboardQueryOptions(g)) as Promise<Stat[]>,
+        ),
+      );
+      const inputs: ShareCardInput[] = [];
+      GRADES.forEach((g, i) => {
+        const top = [...(boards[i] ?? [])]
+          .filter((s) => statValue(s, category) > 0)
+          .sort((a, b) => statValue(b, category) - statValue(a, category))[0];
+        if (top) inputs.push(toInput(top, g));
+      });
+      onAddMany(inputs);
+    } catch (e) {
+      console.error("Batch add (grade leaderboards) failed", e);
+      setBatchError(
+        e instanceof Error ? e.message : "Could not load every grade leaderboard.",
+      );
+    } finally {
+      setBatching(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -1069,6 +1215,24 @@ function GradeLeaderSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
           <option value="Wickets">Most wickets</option>
         </select>
       </div>
+      <div className="flex justify-end border-b pb-3">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={addAllGrades}
+          disabled={batching}
+        >
+          {batching ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Plus className="h-4 w-4 mr-2" />
+          )}
+          Add all grade leaderboards
+        </Button>
+      </div>
+      {batchError && (
+        <p className="text-sm text-destructive">{batchError}</p>
+      )}
       {statsQ.isLoading ? (
         <LoadingState label="Loading leaderboard…" />
       ) : ranked.length === 0 ? (
@@ -1079,7 +1243,7 @@ function GradeLeaderSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) {
             <button
               key={s.id}
               type="button"
-              onClick={() => onAdd(toInput(s))}
+              onClick={() => onAdd(toInput(s, grade))}
               className="flex w-full items-center justify-between rounded border px-3 py-2 text-left text-sm hover:border-primary"
             >
               <span>

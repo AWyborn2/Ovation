@@ -49,6 +49,42 @@ export interface PackTokens {
 export const JUNIOR_PANEL = "#42342B";
 
 // ---------------------------------------------------------------------------
+// Tenant data contract
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-render tenant data threaded into the pack path alongside the theme tokens.
+ *
+ * The canvas (BYO) renderer already receives brand / sponsors / uploaded photo
+ * via `RenderOptions`; the pack renderer historically saw only the bound
+ * `ShareCardInput`, so tenant logo / name / hashtags / sponsors / uploaded photo
+ * never reached pack cards and they fell back to the Broadcast-Dark sample
+ * literals ("HALLS HEAD", "#HALLSHEAD", empty sponsor placeholders). This object
+ * carries exactly those values so pack cards render with real tenant data. Every
+ * field is optional — when absent the template sample defaults still apply, so
+ * gallery previews and brand-less tenants are unaffected.
+ */
+export interface PackCardData {
+  /** Tenant brand → top-left `clubLogo` slot + `clubName` header value. */
+  brand?: { name?: string | null; logoUrl?: string | null } | null;
+  /** Pre-resolved club hashtag (e.g. "#HALLSHEAD") → `clubHashtag` / `hashtags`. */
+  hashtag?: string | null;
+  /**
+   * Active sponsors for this card kind (already kind-filtered upstream by
+   * `sponsorAppliesToKind`); the first three `logoUrl`s fill `sponsor1..3`.
+   */
+  sponsors?: Array<{ name: string; logoUrl: string }> | null;
+  /**
+   * Uploaded / gallery-selected photo. Overrides the input's own `photoUrl` in
+   * the `photo` (and match-result `potm.photo`) slots.
+   */
+  photoUrl?: string | null;
+  /** Focal point + zoom for the photo. Only the focal point is applied (as
+   * `object-position`) in the pack path; see {@link resolveSlots}. */
+  photoTransform?: { focalX: number; focalY: number; zoom: number } | null;
+}
+
+// ---------------------------------------------------------------------------
 // Token resolution (junior force > per-card override > theme > brand default)
 // ---------------------------------------------------------------------------
 
@@ -357,19 +393,41 @@ function initialsOf(name: string): string {
   return letters.join("").toUpperCase();
 }
 
+/**
+ * Turn a photo transform's focal point into an `object-position` suffix. Only
+ * the focal point maps cleanly onto an `object-fit:cover` image; `zoom` has no
+ * DOM equivalent that is safe to apply inside the fixed-size slot wrappers, so
+ * it is intentionally ignored here (canvas path still honours it). A centred
+ * focal point yields no override so untransformed renders are byte-identical.
+ */
+function photoPositionStyle(
+  transform?: { focalX: number; focalY: number } | null,
+): string {
+  if (!transform) return "";
+  const clamp = (n: number) => Math.round(Math.max(0, Math.min(1, n)) * 100);
+  const fx = clamp(transform.focalX);
+  const fy = clamp(transform.focalY);
+  if (fx === 50 && fy === 50) return "";
+  return `;object-position:${fx}% ${fy}%`;
+}
+
 function resolveSlots(
   html: string,
   images: Record<string, string>,
   values: Record<string, string>,
+  photoTransform?: { focalX: number; focalY: number } | null,
 ): string {
   const slotRe =
     /<div data-slot="([^"]+)" data-slot-type="([^"]+)"([^>]*)><\/div>/g;
   return html.replace(slotRe, (_all, key: string, type: string, rest: string) => {
     const url = images[key];
-    const contain = /data-fit="contain"/.test(rest);
+    // Sponsor logos are contained (never cropped) even without an explicit
+    // data-fit; club logos already carry data-fit="contain".
+    const contain = type === "sponsor" || /data-fit="contain"/.test(rest);
     const fit = contain ? "contain" : "cover";
     if (url) {
-      return `<img src="${escapeHtml(url)}" alt="" style="width:100%;height:100%;object-fit:${fit};display:block" />`;
+      const pos = type === "photo" ? photoPositionStyle(photoTransform) : "";
+      return `<img src="${escapeHtml(url)}" alt="" style="width:100%;height:100%;object-fit:${fit}${pos};display:block" />`;
     }
     // No URL → placeholder (never an empty <img src>).
     if (type === "sponsor") {
@@ -609,7 +667,9 @@ function bindInput(input: ShareCardInput): BoundInput {
       set(values, "liveScore", input.liveScore);
       set(values, "oversChaseLine", input.oversChaseLine);
       set(values, "equation", input.equation);
-      if (input.photoUrl) images["photo"] = input.photoUrl;
+      // NOTE (A6): big-moment.ts has no `data-slot="photo"`, so binding
+      // images["photo"] here was dead. Dropped — the card renders without a
+      // photo by design.
       break;
     }
     case "newSigning": {
@@ -648,6 +708,47 @@ function bindInput(input: ShareCardInput): BoundInput {
   }
 
   return { values, images, rows };
+}
+
+/**
+ * Overlay per-render tenant data (logo, name, hashtags, sponsors, uploaded
+ * photo) onto an already-bound input. Applied uniformly across every card kind
+ * after {@link bindInput}, so a single seam threads tenant data into the pack
+ * path (mirroring what `RenderOptions` already gives the canvas renderer).
+ * Values set here override the template sample defaults; anything absent leaves
+ * the sample fallback in place (gallery previews / brand-less tenants).
+ */
+function applyPackData(bound: BoundInput, data: PackCardData, kind: string): void {
+  const { values, images } = bound;
+
+  // A1 — tenant logo → top-left clubLogo slot (storyHeader / sharedHeader).
+  if (data.brand?.logoUrl) images["clubLogo"] = data.brand.logoUrl;
+
+  // A2 — club name + hashtags from the resolved brand / settings, replacing the
+  // hard-coded "HALLS HEAD" / "#HALLSHEAD" sample defaults.
+  if (data.brand?.name) set(values, "clubName", data.brand.name);
+  // S1: this runs only for a real (data-bearing) render, so the sample hashtag
+  // must NEVER survive — overwrite unconditionally, using "" when the tenant has
+  // no configured hashtag, so another club's "#HALLSHEAD" can't leak through.
+  values["clubHashtag"] = data.hashtag ?? "";
+  values["hashtags"] = data.hashtag ?? "";
+  // S2: the clubTagline sample is "CRICKET CLUB · EST 1991" — Halls Head's
+  // founding year. There is no tenant tagline source yet (follow-up A9), so clear
+  // it rather than render another club's founding year.
+  values["clubTagline"] = "";
+
+  // A3 — active sponsors → sponsor1..3 slots (already kind-filtered upstream).
+  (data.sponsors ?? []).slice(0, 3).forEach((s, idx) => {
+    if (s.logoUrl) images[`sponsor${idx + 1}`] = s.logoUrl;
+  });
+
+  // A4 — uploaded / selected photo overrides the input's own photoUrl.
+  if (data.photoUrl) {
+    images["photo"] = data.photoUrl;
+    // A5 — match-result's POTM headshot has no dedicated image source on the
+    // matchSummary input, so the threaded photo (when present) fills it too.
+    if (kind === "matchSummary") images["potm.photo"] = data.photoUrl;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -731,17 +832,21 @@ export function renderPackCard(
   sponsorsOn: boolean,
   tokens: PackTokens,
   junior: boolean,
+  data?: PackCardData | null,
 ): string {
   const template = resolveTemplate(input);
   if (!template) return "";
 
   const bound = bindInput(input);
+  // Overlay tenant data (logo, name, hashtags, sponsors, photo) onto the bound
+  // input before defaults are merged, so tenant values win over the samples.
+  if (data) applyPackData(bound, data, input.kind);
   const values = { ...fieldDefaults(template), ...bound.values };
 
   let html = selectFormatHtml(template.formats, size);
   html = selectSponsorVariant(html, sponsorsOn);
   html = expandRepeats(html, bound.rows, template);
-  html = resolveSlots(html, bound.images, values);
+  html = resolveSlots(html, bound.images, values, data?.photoTransform);
   html = substituteFields(html, values);
   html = cleanupEmptyRoles(html);
 
