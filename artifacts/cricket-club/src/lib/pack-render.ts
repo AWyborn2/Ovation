@@ -153,17 +153,66 @@ export interface PackImageSlot {
 }
 
 /**
- * The image slots (photo/logo) a card kind's pack template exposes, each with
- * the template's own human label — the enumeration that drives the modal's
+ * Slot keys the generic per-slot override PANEL hides — the tenant-branding
+ * "moat" (the header club logo + the sponsor tiles). Admins shouldn't repoint
+ * these per-card from a generic editor; they are club-wide branding. Only the UI
+ * list is filtered — the {@link PackCardData.imagesOverride} MECHANISM stays
+ * fully general, so any key (including these) still wins if set programmatically.
+ */
+export const PACK_OVERRIDE_HIDDEN_SLOTS: ReadonlySet<string> = new Set([
+  "clubLogo",
+  "sponsor1",
+  "sponsor2",
+  "sponsor3",
+]);
+
+/**
+ * Friendly, disambiguated display labels per slot key. The raw template labels
+ * are non-unique — match-result exposes two "Logo" fields (`club.logo`,
+ * `opposition.logo`) and three "Sponsor" fields (`sponsor1..3`) — so the panel
+ * would show indistinguishable rows. Unmapped keys fall back to the template
+ * label.
+ */
+const PACK_SLOT_LABELS: Record<string, string> = {
+  clubLogo: "Club logo",
+  "club.logo": "Club logo",
+  "opposition.logo": "Opposition logo",
+  photo: "Photo",
+  "potm.photo": "Player of the match photo",
+  teamPhoto: "Team photo",
+  squadPhoto: "Squad photo",
+  sponsor1: "Sponsor 1",
+  sponsor2: "Sponsor 2",
+  sponsor3: "Sponsor 3",
+};
+
+/**
+ * The image slots (photo/logo) a card kind's pack template exposes, each with a
+ * friendly, unique display label — the enumeration that drives the modal's
  * generic per-slot image-override editor (B1). Text and repeat fields are
  * skipped; an unsupported kind (no pack design) yields `[]`.
+ *
+ * By default the tenant-branding slots ({@link PACK_OVERRIDE_HIDDEN_SLOTS}) are
+ * filtered out so the panel surfaces only content slots (player photo,
+ * opposition logo, POTM headshot, team / squad photo, …). Pass
+ * `includeHidden: true` for the raw enumerator (every image slot). The override
+ * mechanism itself is unaffected — it can target any key regardless of this
+ * filter.
  */
-export function packImageSlots(input: ShareCardInput): PackImageSlot[] {
+export function packImageSlots(
+  input: ShareCardInput,
+  opts?: { includeHidden?: boolean },
+): PackImageSlot[] {
   const template = resolveTemplate(input);
   if (!template) return [];
   return template.fields
     .filter((f) => f.type === "photo" || f.type === "logo")
-    .map((f) => ({ key: f.key, label: f.label, type: f.type as "photo" | "logo" }));
+    .filter((f) => opts?.includeHidden || !PACK_OVERRIDE_HIDDEN_SLOTS.has(f.key))
+    .map((f) => ({
+      key: f.key,
+      label: PACK_SLOT_LABELS[f.key] ?? f.label,
+      type: f.type as "photo" | "logo",
+    }));
 }
 
 // ---------------------------------------------------------------------------

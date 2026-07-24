@@ -647,10 +647,24 @@ describe("renderPackCard per-slot image overrides (B1)", () => {
     }
   });
 
-  it("server still-export parity: identical PackCardData yields identical html", () => {
+  it("mechanism stays general: overrides a UI-hidden branding slot (clubLogo) when set programmatically", () => {
+    // The panel hides clubLogo (see PACK_OVERRIDE_HIDDEN_SLOTS), but the
+    // imagesOverride MECHANISM must still repoint it if a caller sets the key —
+    // only the UI list is filtered, not the renderer.
+    const input = sampleCardInput("player");
+    const CLUBLOGO = "https://cdn.example.com/clublogo-override.png";
+    const html = renderPackCard(input, "story", true, TOKENS, false, {
+      brand: { name: "X", logoUrl: "https://cdn.example.com/brandlogo.png" },
+      imagesOverride: { clubLogo: CLUBLOGO },
+    });
+    expect(html).toContain(`<img src="${CLUBLOGO}"`);
+    expect(html).not.toContain("brandlogo.png");
+  });
+
+  it("renders deterministically across call sites for identical PackCardData (preview/server parity)", () => {
     // The live <PackCard> preview and the server still harness both call
-    // renderPackCard with the same PackCardData, so an override render must be
-    // deterministic across call sites for every size.
+    // renderPackCard with the same PackCardData, so the same input must yield
+    // byte-identical html at every call site (determinism, not a round-trip).
     const input = sampleCardInput("matchSummary");
     const data: PackCardData = {
       imagesOverride: { "opposition.logo": OVERRIDE, "potm.photo": OVERRIDE },
@@ -664,12 +678,13 @@ describe("renderPackCard per-slot image overrides (B1)", () => {
   });
 });
 
-describe("packImageSlots (template image-slot enumeration for the per-slot editor)", () => {
-  it("lists the photo/logo slots a player card exposes (incl. clubLogo + photo)", () => {
+describe("packImageSlots (per-slot override editor enumeration)", () => {
+  it("surfaces a player card's content slot (photo) and hides the club logo", () => {
     const slots = packImageSlots(sampleCardInput("player"));
     const keys = slots.map((s) => s.key);
-    expect(keys).toContain("clubLogo");
     expect(keys).toContain("photo");
+    // clubLogo is tenant branding → filtered out of the panel list.
+    expect(keys).not.toContain("clubLogo");
     // Every entry carries a human label and a photo|logo type (no text/repeat).
     for (const s of slots) {
       expect(s.label.length).toBeGreaterThan(0);
@@ -677,8 +692,30 @@ describe("packImageSlots (template image-slot enumeration for the per-slot edito
     }
   });
 
-  it("lists the match-result logos / POTM headshot / sponsor tiles", () => {
+  it("hides the tenant-branding slots (clubLogo + sponsors) from the match-result panel", () => {
     const keys = packImageSlots(sampleCardInput("matchSummary")).map((s) => s.key);
+    // Content slots are surfaced…
+    for (const k of ["club.logo", "opposition.logo", "potm.photo"]) {
+      expect(keys, k).toContain(k);
+    }
+    // …the branding slots (header logo + sponsor tiles) are hidden.
+    for (const k of ["clubLogo", "sponsor1", "sponsor2", "sponsor3"]) {
+      expect(keys, k).not.toContain(k);
+    }
+  });
+
+  it("gives every surfaced slot a unique, disambiguated label", () => {
+    const labels = packImageSlots(sampleCardInput("matchSummary")).map((s) => s.label);
+    // No raw duplicate "Logo" rows reach the panel — labels are unique.
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels).toContain("Opposition logo");
+    expect(labels).toContain("Club logo");
+  });
+
+  it("includeHidden keeps the raw enumerator (branding slots + sponsors) intact", () => {
+    const keys = packImageSlots(sampleCardInput("matchSummary"), {
+      includeHidden: true,
+    }).map((s) => s.key);
     for (const k of [
       "clubLogo",
       "club.logo",
