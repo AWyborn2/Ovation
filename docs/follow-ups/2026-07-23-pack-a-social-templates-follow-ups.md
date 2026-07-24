@@ -36,19 +36,27 @@ integration). **Prioritised backlog is at the end of this section.**
 >   ✅ **C2** (carousel renders through pack, #76).
 > - **Wave 2:** ✅ **A7** (presenting sponsor, #79), ✅ **A9** (tagline/competition, #80),
 >   ✅ **B3** (full-bleed action-shot, #81). Infra: ✅ `@types/react` dedupe (#78).
-> - **Remaining:** B1 (per-slot image upload), C3 (`/card-sets/generate`),
->   C4 (auto-seed from drafts).
+> - **Wave 3:** ✅ **B1** (per-slot image upload, #83), ✅ **C3** (`/card-sets/generate`, #84),
+>   ✅ **C4** (auto-seed from approved drafts, #86).
+> - **Remaining: none — all shipped.** 🎉
 > - Big-win plans: [docs/plans/2026-07-24-001-card-social-enhancements-plan.md](../plans/2026-07-24-001-card-social-enhancements-plan.md).
 >
-> **Deploy notes** (for the merged Wave 2 DB changes):
-> - Apply `scripts/sql/sponsor-presenting-migration.sql` (A7 — `sponsors.is_presenting`
->   + partial unique index) and `scripts/sql/add-tenant-tagline-migration.sql`
->   (A9 — `tenants.tagline`).
-> - Re-run `scripts/src/seed-tenants.ts` after deploy so Halls Head keeps its
->   "CRICKET CLUB · EST 1991" tagline (its row is `NULL` until re-seeded).
+> **Deploy notes** (for the merged DB changes).
+> - On Replit, `scripts/post-merge.sh` runs `pnpm --filter db push` on pull, which
+>   applies ALL of these schema changes from the Drizzle schema in one shot:
+>   `sponsors.is_presenting` (A7), `tenants.tagline` (A9), the `card_sets` grouping
+>   columns + `card_sets_source_dedupe` index (C3), and `social_settings.autoseed_carousels`
+>   (C4). The `scripts/sql/*.sql` files (`sponsor-presenting`, `add-tenant-tagline`,
+>   `card-sets-generate`, `card-sets-autoseed`) are prod-parity backups for a manual
+>   `psql -f` apply if `db push` ever balks at the partial index.
+> - **Required manual step:** re-run `pnpm --filter @workspace/scripts run seed-tenants`
+>   after deploy so Halls Head keeps its "CRICKET CLUB · EST 1991" tagline (its row is
+>   `NULL` until re-seeded). `post-merge.sh` does not re-seed tenants.
+> - `social_settings.autoseed_carousels` ships **off** (dormant); enable per-tenant when wanted.
 > - **Known follow-ups:** A5 `potm.photo` is wired but inert until match cards carry a
 >   POTM headshot source; A9's competition hashtag (`hashtagsExtra`) is intentionally
->   empty pending a central-match-derived source (`TODO(A9)`).
+>   empty pending a central-match-derived source (`TODO(A9)`); C3 nits N1 (gradeLeader
+>   subset regen clobbers the full set) / N2 (slide order asc-id native vs id-desc central).
 
 ### Root cause (spans the first two themes)
 
