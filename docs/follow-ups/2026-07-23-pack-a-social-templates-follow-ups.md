@@ -34,9 +34,21 @@ integration). **Prioritised backlog is at the end of this section.**
 >   cards carry a POTM headshot source — data-model follow-up)*, ✅ A6, ✅ C1.
 > - **Wave 1:** ✅ **A8** (brand→tokens, #74), ✅ **B2** (team/squad photo upload, #75),
 >   ✅ **C2** (carousel renders through pack, #76).
-> - **Remaining:** B3 (action-shot), A7 (presenting sponsor), A9 (tagline/competition),
->   B1 (per-slot image upload), C3 (`/card-sets/generate`), C4 (auto-seed from drafts).
+> - **Wave 2:** ✅ **A7** (presenting sponsor, #79), ✅ **A9** (tagline/competition, #80),
+>   ✅ **B3** (full-bleed action-shot, #81). Infra: ✅ `@types/react` dedupe (#78).
+> - **Remaining:** B1 (per-slot image upload), C3 (`/card-sets/generate`),
+>   C4 (auto-seed from drafts).
 > - Big-win plans: [docs/plans/2026-07-24-001-card-social-enhancements-plan.md](../plans/2026-07-24-001-card-social-enhancements-plan.md).
+>
+> **Deploy notes** (for the merged Wave 2 DB changes):
+> - Apply `scripts/sql/sponsor-presenting-migration.sql` (A7 — `sponsors.is_presenting`
+>   + partial unique index) and `scripts/sql/add-tenant-tagline-migration.sql`
+>   (A9 — `tenants.tagline`).
+> - Re-run `scripts/src/seed-tenants.ts` after deploy so Halls Head keeps its
+>   "CRICKET CLUB · EST 1991" tagline (its row is `NULL` until re-seeded).
+> - **Known follow-ups:** A5 `potm.photo` is wired but inert until match cards carry a
+>   POTM headshot source; A9's competition hashtag (`hashtagsExtra`) is intentionally
+>   empty pending a central-match-derived source (`TODO(A9)`).
 
 ### Root cause (spans the first two themes)
 
