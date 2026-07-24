@@ -29,6 +29,12 @@ Captured 2026-07-24 from PR #60 feedback. Three investigations (dynamic content
 placeholders, image-placeholder intent + upload gap, template-pack/carousel
 integration). **Prioritised backlog is at the end of this section.**
 
+> **Delivery status.** Easy wins shipped in **#72** (2026-07-24): ✅ A1, ✅ A2,
+> ✅ A3, ✅ A4, ✅ A5 *(wired; inert until match cards carry a POTM headshot source
+> — tracked as a data-model follow-up)*, ✅ A6, ✅ C1. Big-win plans: see
+> [docs/plans/2026-07-24-001-card-social-enhancements-plan.md](../plans/2026-07-24-001-card-social-enhancements-plan.md).
+> Remaining: A7, A8, A9, B1, B2, B3, C2, C3, C4 (in progress by wave).
+
 ### Root cause (spans the first two themes)
 
 There are **two card renderers**, and only one is wired to tenant data:
