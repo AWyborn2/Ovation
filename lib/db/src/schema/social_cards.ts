@@ -284,19 +284,65 @@ export type CardSetSlide = {
 
 // An ordered set of linked social slides (a carousel). Authored by admins;
 // exported as numbered images / video at a chosen platform size.
-export const cardSetsTable = pgTable("card_sets", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull().default("Untitled set"),
-  // Chosen export platform size: "square" | "portrait" | "story".
-  platformSize: text("platform_size").notNull().default("square"),
-  slides: jsonb("slides").$type<CardSetSlide[]>().notNull().default([]),
-  // Draft/published state. Public reads only see published sets; admins see all.
-  // New sets start as drafts so in-progress carousels stay private.
-  isPublished: boolean("is_published").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+//
+// The `source*`/`season`/`grade` columns are set only for sets BATCH-GENERATED
+// server-side from a group of same-kind cards (see POST /card-sets/generate).
+// They are all null for hand-authored sets. When set, they form the idempotency
+// key (partial unique index below) so re-running a generation UPDATES the same
+// set rather than creating a duplicate — e.g. "all A-Grade Round 5 match
+// summaries" is one row keyed on (tenant, 'matchSummary', season, 5, 'A Grade').
+export const cardSetsTable = pgTable(
+  "card_sets",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull().default("Untitled set"),
+    // Chosen export platform size: "square" | "portrait" | "story".
+    platformSize: text("platform_size").notNull().default("square"),
+    slides: jsonb("slides").$type<CardSetSlide[]>().notNull().default([]),
+    // Draft/published state. Public reads only see published sets; admins see all.
+    // New sets start as drafts so in-progress carousels stay private.
+    isPublished: boolean("is_published").notNull().default(false),
+    // Generation grouping key (null for hand-authored sets). `sourceKind` is the
+    // ShareCardInput kind the set was assembled from ("matchSummary" |
+    // "gradeLeader"); `season`/`sourceRound`/`grade` narrow the source rows. Kept
+    // nullable so a leaderboard set (which spans grades and has no round) can
+    // leave the narrower columns null.
+    sourceKind: text("source_kind"),
+    sourceRound: integer("source_round"),
+    season: integer("season"),
+    grade: text("grade"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Idempotent regeneration: at most one generated set per
+    // (tenant, source_kind, season, source_round, grade). Partial — hand-authored
+    // sets (source_kind IS NULL) are unconstrained. Mirrors the
+    // social_drafts_match_dedupe pattern.
+    //
+    // COALESCE-sentinel form (not raw columns + NULLS NOT DISTINCT): Postgres
+    // treats NULLs as distinct in a unique index by default, so a raw-column
+    // index would NOT dedupe the all-null gradeLeader key (season/round/grade all
+    // null) — two concurrent first-time generations could both insert. NULLS NOT
+    // DISTINCT fixes that but drizzle-kit 0.45.2's partial uniqueIndex can't
+    // express it, so `push` would create the looser index and diverge from the
+    // SQL migration. Folding the nullable columns through COALESCE sentinels
+    // (-1 / '') makes the key non-null and dedupes it at the DB level, and is
+    // expressible IDENTICALLY in both this schema and scripts/sql — so both sync
+    // paths produce the same index. The route's select-then-upsert stays as the
+    // in-transaction guard.
+    sourceDedupe: uniqueIndex("card_sets_source_dedupe")
+      .on(
+        t.tenantId,
+        t.sourceKind,
+        sql`coalesce(${t.season}, -1)`,
+        sql`coalesce(${t.sourceRound}, -1)`,
+        sql`coalesce(${t.grade}, '')`,
+      )
+      .where(sql`source_kind is not null`),
+  }),
+);
 
 export type CardSetRow = typeof cardSetsTable.$inferSelect;
 

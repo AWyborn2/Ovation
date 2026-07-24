@@ -3160,6 +3160,39 @@ export interface CardSet {
   platformSize: CardSetPlatformSize;
   slides: CardSetSlide[];
   isPublished: boolean;
+  /** @nullable */
+  sourceKind?: string | null;
+  /** @nullable */
+  sourceRound?: number | null;
+  /** @nullable */
+  season?: number | null;
+  /** @nullable */
+  grade?: string | null;
+}
+
+export type GenerateCardSetBodyKind = typeof GenerateCardSetBodyKind[keyof typeof GenerateCardSetBodyKind];
+
+
+export const GenerateCardSetBodyKind = {
+  matchSummary: 'matchSummary',
+  gradeLeader: 'gradeLeader',
+} as const;
+
+export type GenerateCardSetBodyPlatformSize = typeof GenerateCardSetBodyPlatformSize[keyof typeof GenerateCardSetBodyPlatformSize];
+
+
+export const GenerateCardSetBodyPlatformSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+} as const;
+
+export interface GenerateCardSetBody {
+  kind: GenerateCardSetBodyKind;
+  round?: number;
+  season?: number;
+  grades?: string[];
+  platformSize: GenerateCardSetBodyPlatformSize;
 }
 
 export type CardSetInputPlatformSize = typeof CardSetInputPlatformSize[keyof typeof CardSetInputPlatformSize];

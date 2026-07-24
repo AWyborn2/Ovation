@@ -4442,7 +4442,11 @@ export const ListCardSetsResponseItem = zod.object({
   "themeId": zod.number().nullish(),
   "motionPreset": zod.string().optional()
 })),
-  "isPublished": zod.boolean()
+  "isPublished": zod.boolean(),
+  "sourceKind": zod.string().nullish(),
+  "sourceRound": zod.number().nullish(),
+  "season": zod.number().nullish(),
+  "grade": zod.string().nullish()
 })
 export const ListCardSetsResponse = zod.array(ListCardSetsResponseItem)
 
@@ -4511,6 +4515,81 @@ export const CreateCardSetBody = zod.object({
   "motionPreset": zod.string().optional()
 })).max(createCardSetBodySlidesMax),
   "isPublished": zod.boolean().optional()
+})
+
+
+/**
+ * Gathers the matching source rows (every match summary in a round, or every grade's leaderboard), maps each to a ShareCardInput and UPSERTS one card_sets row keyed on the grouping columns, so re-running updates the same set (regenerate = refresh slides + name) rather than duplicating it. Assembles at most 10 slides (extras are dropped). New sets are drafts.
+ * @summary Batch-assemble a carousel set from a group of same-kind cards
+ */
+export const GenerateCardSetBody = zod.object({
+  "kind": zod.enum(['matchSummary', 'gradeLeader']),
+  "round": zod.number().optional(),
+  "season": zod.number().optional(),
+  "grades": zod.array(zod.string()).optional(),
+  "platformSize": zod.enum(['square', 'portrait', 'story'])
+})
+
+export const GenerateCardSetResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "slides": zod.array(zod.object({
+  "id": zod.string(),
+  "input": zod.record(zod.string(), zod.unknown()),
+  "layout": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['element', 'image', 'sticker', 'text', 'libsticker']),
+  "x": zod.number().optional(),
+  "y": zod.number().optional(),
+  "w": zod.number().optional(),
+  "h": zod.number().optional(),
+  "vAnchor": zod.enum(['top', 'bottom']).optional(),
+  "z": zod.number().optional(),
+  "hidden": zod.boolean().optional(),
+  "url": zod.string().optional(),
+  "shape": zod.enum(['rect', 'circle', 'line']).optional(),
+  "fit": zod.enum(['cover', 'contain']).optional(),
+  "focalX": zod.number().optional(),
+  "focalY": zod.number().optional(),
+  "zoom": zod.number().optional(),
+  "color": zod.string().optional(),
+  "radius": zod.number().optional(),
+  "text": zod.string().optional(),
+  "fontSize": zod.number().optional(),
+  "fontWeight": zod.number().optional(),
+  "align": zod.enum(['left', 'center', 'right']).optional(),
+  "fontFamily": zod.enum(['sans', 'serif', 'oswald', 'cinzel', 'garamond', 'mono', 'inter']).optional(),
+  "uppercase": zod.boolean().optional(),
+  "assetId": zod.string().optional(),
+  "field": zod.string().optional(),
+  "effects": zod.object({
+  "tone": zod.enum(['bw', 'duotone']).optional(),
+  "toneColor": zod.string().optional(),
+  "toneIntensity": zod.number().optional(),
+  "mask": zod.enum(['rounded', 'circle', 'feather']).optional(),
+  "maskRadius": zod.number().optional(),
+  "gradient": zod.boolean().optional(),
+  "gradientColor": zod.string().optional(),
+  "gradientIntensity": zod.number().optional(),
+  "gradientDir": zod.enum(['top', 'bottom', 'left', 'right']).optional(),
+  "shadow": zod.boolean().optional(),
+  "shadowColor": zod.string().optional(),
+  "shadowIntensity": zod.number().optional(),
+  "border": zod.boolean().optional(),
+  "borderColor": zod.string().optional(),
+  "borderWidth": zod.number().optional(),
+  "opacity": zod.number().optional().describe('Whole-layer alpha (0-1). Absent or 1 renders fully opaque (pixel-identical). Below 1 makes the entire layer partly see-through in the preview and all exports.')
+}).optional().describe('Optional per-layer visual treatments authored in the card layout studio. Absent or all-empty means the layer renders untouched (pixel-identical).')
+})).optional(),
+  "themeId": zod.number().nullish(),
+  "motionPreset": zod.string().optional()
+})),
+  "isPublished": zod.boolean(),
+  "sourceKind": zod.string().nullish(),
+  "sourceRound": zod.number().nullish(),
+  "season": zod.number().nullish(),
+  "grade": zod.string().nullish()
 })
 
 
@@ -4639,7 +4718,11 @@ export const UpdateCardSetResponse = zod.object({
   "themeId": zod.number().nullish(),
   "motionPreset": zod.string().optional()
 })),
-  "isPublished": zod.boolean()
+  "isPublished": zod.boolean(),
+  "sourceKind": zod.string().nullish(),
+  "sourceRound": zod.number().nullish(),
+  "season": zod.number().nullish(),
+  "grade": zod.string().nullish()
 })
 
 
