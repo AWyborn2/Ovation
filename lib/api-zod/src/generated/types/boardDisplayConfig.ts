@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BoardDisplayConfigDensity } from './boardDisplayConfigDensity';
+import type { BoardDisplayConfigSort } from './boardDisplayConfigSort';
 import type { BoardDisplayConfigTextSize } from './boardDisplayConfigTextSize';
 import type { BoardDisplayConfigTransition } from './boardDisplayConfigTransition';
 import type { HonourBackground } from './honourBackground';
@@ -47,4 +48,6 @@ export interface BoardDisplayConfig {
   background?: HonourBackground | null;
   /** Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout. */
   gridColumns?: string[] | null;
+  /** Season row order for season-based (grid) boards. "desc" (default) shows the newest season first; "asc" shows the oldest season first. */
+  sort?: BoardDisplayConfigSort;
 }

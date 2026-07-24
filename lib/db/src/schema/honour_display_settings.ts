@@ -32,6 +32,9 @@ export interface BoardDisplayConfigJson {
   // Ordered column keys for grid-capable boards (offices, award keys, grades).
   // Non-empty switches a grid-capable board into its season-grid layout.
   gridColumns?: string[];
+  // Season row order for grid boards: "desc" (default) newest-first, "asc"
+  // oldest-first.
+  sort?: "asc" | "desc";
 }
 
 // One column of an admin-built custom grid board. `source` picks where the

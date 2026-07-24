@@ -49,6 +49,7 @@ export * from './boardColumn';
 export * from './boardDisplay';
 export * from './boardDisplayConfig';
 export * from './boardDisplayConfigDensity';
+export * from './boardDisplayConfigSort';
 export * from './boardDisplayConfigTextSize';
 export * from './boardDisplayConfigTransition';
 export * from './boardDisplayTransition';

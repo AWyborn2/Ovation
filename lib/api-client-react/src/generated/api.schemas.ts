@@ -3565,6 +3565,17 @@ export const BoardDisplayConfigDensity = {
 } as const;
 
 /**
+ * Season row order for season-based (grid) boards. "desc" (default) shows the newest season first; "asc" shows the oldest season first.
+ */
+export type BoardDisplayConfigSort = typeof BoardDisplayConfigSort[keyof typeof BoardDisplayConfigSort];
+
+
+export const BoardDisplayConfigSort = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+/**
  * Admin per-board override (all fields optional; unset falls back to the board's natural default). Stored keyed by board id in settings.boardConfigs.
  */
 export interface BoardDisplayConfig {
@@ -3601,6 +3612,8 @@ export interface BoardDisplayConfig {
   background?: HonourBackground | null;
   /** Ordered column keys for grid-capable boards (offices, award keys, grades). Non-empty switches the board into its season-grid layout. */
   gridColumns?: string[] | null;
+  /** Season row order for season-based (grid) boards. "desc" (default) shows the newest season first; "asc" shows the oldest season first. */
+  sort?: BoardDisplayConfigSort;
 }
 
 /**
