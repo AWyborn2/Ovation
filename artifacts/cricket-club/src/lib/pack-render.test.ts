@@ -6,6 +6,7 @@ import {
   tokensFromCardTheme,
   brandDefaultTokens,
   normaliseBrandHex,
+  packImageSlots,
   PACK_DEFAULT_TOKENS,
   JUNIOR_PANEL,
   type PackTokens,
@@ -588,6 +589,144 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
     const html = renderPackCard(input, "story", true, resolvePackTokens({ brand: hh }), false);
     expect(html).toContain("--panel:#42342B");
     expect(html).toContain("--panel-2:#261e19");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Generic per-slot image overrides (B1): an admin-supplied image for ANY slot a
+// template exposes wins over the bound input image and the brand/sponsor/photo
+// overlays — resolution order override > input > bind.
+// ---------------------------------------------------------------------------
+
+describe("renderPackCard per-slot image overrides (B1)", () => {
+  const BOUND = "https://cdn.example.com/bound.jpg";
+  const OVERRIDE = "https://cdn.example.com/override.jpg";
+
+  it("an override URL wins over the bound input image (override > bind)", () => {
+    // A player card binds its own photoUrl into the `photo` slot; the override
+    // for that slot must replace it.
+    const input = { ...sampleCardInput("player"), photoUrl: BOUND } as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, {
+      imagesOverride: { photo: OVERRIDE },
+    });
+    expect(html).toContain(`<img src="${OVERRIDE}"`);
+    expect(html).not.toContain(`<img src="${BOUND}"`);
+  });
+
+  it("an override URL wins over the tenant photo + brand-logo overlays (override > input)", () => {
+    const input = sampleCardInput("player");
+    const html = renderPackCard(input, "story", true, TOKENS, false, {
+      brand: { name: "X", logoUrl: "https://cdn.example.com/brandlogo.png" },
+      photoUrl: "https://cdn.example.com/uploaded.jpg", // A4 overlay into `photo`
+      imagesOverride: { photo: OVERRIDE, clubLogo: OVERRIDE },
+    });
+    // The override beats both the A4 uploaded photo and the brand clubLogo.
+    expect(html).toContain(`<img src="${OVERRIDE}"`);
+    expect(html).not.toContain("uploaded.jpg");
+    expect(html).not.toContain("brandlogo.png");
+  });
+
+  it("ignores an empty override value (slot falls back, never blanked)", () => {
+    const input = { ...sampleCardInput("player"), photoUrl: BOUND } as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, {
+      imagesOverride: { photo: "" },
+    });
+    expect(html).toContain(`<img src="${BOUND}"`);
+    expect(html).not.toContain('src=""');
+  });
+
+  it("leaves renders byte-identical when no override (or an empty map) is supplied", () => {
+    const input = { ...sampleCardInput("player"), photoUrl: BOUND } as ShareCardInput;
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      const base = renderPackCard(input, size, true, TOKENS, false, { photoTransform: null });
+      const withEmpty = renderPackCard(input, size, true, TOKENS, false, {
+        photoTransform: null,
+        imagesOverride: {},
+      });
+      expect(withEmpty, size).toBe(base);
+    }
+  });
+
+  it("mechanism stays general: overrides a UI-hidden branding slot (clubLogo) when set programmatically", () => {
+    // The panel hides clubLogo (see PACK_OVERRIDE_HIDDEN_SLOTS), but the
+    // imagesOverride MECHANISM must still repoint it if a caller sets the key —
+    // only the UI list is filtered, not the renderer.
+    const input = sampleCardInput("player");
+    const CLUBLOGO = "https://cdn.example.com/clublogo-override.png";
+    const html = renderPackCard(input, "story", true, TOKENS, false, {
+      brand: { name: "X", logoUrl: "https://cdn.example.com/brandlogo.png" },
+      imagesOverride: { clubLogo: CLUBLOGO },
+    });
+    expect(html).toContain(`<img src="${CLUBLOGO}"`);
+    expect(html).not.toContain("brandlogo.png");
+  });
+
+  it("renders deterministically across call sites for identical PackCardData (preview/server parity)", () => {
+    // The live <PackCard> preview and the server still harness both call
+    // renderPackCard with the same PackCardData, so the same input must yield
+    // byte-identical html at every call site (determinism, not a round-trip).
+    const input = sampleCardInput("matchSummary");
+    const data: PackCardData = {
+      imagesOverride: { "opposition.logo": OVERRIDE, "potm.photo": OVERRIDE },
+    };
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      const a = renderPackCard(input, size, true, TOKENS, false, data);
+      const b = renderPackCard(input, size, true, TOKENS, false, data);
+      expect(a, size).toBe(b);
+      expect(a, size).toContain(`<img src="${OVERRIDE}"`);
+    }
+  });
+});
+
+describe("packImageSlots (per-slot override editor enumeration)", () => {
+  it("surfaces a player card's content slot (photo) and hides the club logo", () => {
+    const slots = packImageSlots(sampleCardInput("player"));
+    const keys = slots.map((s) => s.key);
+    expect(keys).toContain("photo");
+    // clubLogo is tenant branding → filtered out of the panel list.
+    expect(keys).not.toContain("clubLogo");
+    // Every entry carries a human label and a photo|logo type (no text/repeat).
+    for (const s of slots) {
+      expect(s.label.length).toBeGreaterThan(0);
+      expect(["photo", "logo"]).toContain(s.type);
+    }
+  });
+
+  it("hides the tenant-branding slots (clubLogo + sponsors) from the match-result panel", () => {
+    const keys = packImageSlots(sampleCardInput("matchSummary")).map((s) => s.key);
+    // Content slots are surfaced…
+    for (const k of ["club.logo", "opposition.logo", "potm.photo"]) {
+      expect(keys, k).toContain(k);
+    }
+    // …the branding slots (header logo + sponsor tiles) are hidden.
+    for (const k of ["clubLogo", "sponsor1", "sponsor2", "sponsor3"]) {
+      expect(keys, k).not.toContain(k);
+    }
+  });
+
+  it("gives every surfaced slot a unique, disambiguated label", () => {
+    const labels = packImageSlots(sampleCardInput("matchSummary")).map((s) => s.label);
+    // No raw duplicate "Logo" rows reach the panel — labels are unique.
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels).toContain("Opposition logo");
+    expect(labels).toContain("Club logo");
+  });
+
+  it("includeHidden keeps the raw enumerator (branding slots + sponsors) intact", () => {
+    const keys = packImageSlots(sampleCardInput("matchSummary"), {
+      includeHidden: true,
+    }).map((s) => s.key);
+    for (const k of [
+      "clubLogo",
+      "club.logo",
+      "opposition.logo",
+      "potm.photo",
+      "sponsor1",
+      "sponsor2",
+      "sponsor3",
+    ]) {
+      expect(keys, k).toContain(k);
+    }
   });
 });
 

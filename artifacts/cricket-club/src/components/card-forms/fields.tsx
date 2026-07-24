@@ -124,18 +124,20 @@ function ScalarControl({
 }
 
 /**
- * Team/squad photo control for the card builder.
+ * Generic image slot control for the card builder (B1/B2).
  *
  * Reuses the shared presigned-upload infrastructure (`useUpload` →
  * `POST /api/storage/uploads/request-url` → direct PUT), the same path player
  * headshots, sponsor logos and card backgrounds already use. The uploaded object
- * URL is written straight into the card's form-state field (a plain URL string),
- * so binding, saving and server-side render are unchanged — this is purely an
+ * URL is written straight into the caller's value (a plain URL string), so
+ * binding, saving and server-side render are unchanged — this is purely an
  * upload path for what used to be a free-text URL. Pasting a URL still works as a
- * fallback. Not a player headshot: these are team/event images (premiership team
- * photo, team-list squad photo).
+ * fallback. Used for every image slot: the descriptor `image` fields (player
+ * photo, opposition logo, premiership team photo, team-list squad photo) AND the
+ * modal's generic per-slot override editor (any template slot: logos, sponsors,
+ * POTM headshot, …).
  */
-function ImageControl({
+export function ImageControl({
   label,
   value,
   onChange,

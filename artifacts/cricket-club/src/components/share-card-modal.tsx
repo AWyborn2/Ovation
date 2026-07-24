@@ -57,7 +57,8 @@ import {
 } from "@/lib/share-card-animation";
 import { templateAppliesToKind } from "@/lib/card-template";
 import { PackCard } from "@/components/pack-card";
-import { packSupportsKind, type PackCardData } from "@/lib/pack-render";
+import { packSupportsKind, packImageSlots, type PackCardData } from "@/lib/pack-render";
+import { ImageControl } from "@/components/card-forms";
 import { useQueryClient } from "@tanstack/react-query";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
@@ -141,6 +142,26 @@ export function ShareCardModal({
     setStylePanel(null);
     setStyleFont(null);
   }, [open, selectedThemeId]);
+
+  // --- Per-slot image overrides (B1) -----------------------------------------
+  // A generic slot-key → url map letting an admin repoint ANY image slot the
+  // pack template exposes (logo, sponsor tile, POTM headshot, …) — the slots the
+  // descriptor `image` fields don't cover. Threaded onto `PackCardData.imagesOverride`
+  // (override > input > bind) so it wins in the renderer and flows to the server
+  // still export via the same `buildPackData`. Reset whenever the card changes.
+  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setImageOverrides({});
+  }, [open, input]);
+  // Image slots (photo/logo) the current card kind's pack template exposes.
+  const imageSlots = useMemo(() => (input ? packImageSlots(input) : []), [input]);
+  const setSlotOverride = (key: string, url: string) =>
+    setImageOverrides((prev) => {
+      const next = { ...prev };
+      if (url) next[key] = url;
+      else delete next[key];
+      return next;
+    });
 
   // The effective accent/panel/font shown in the pickers (override ?? theme).
   const effAccent = styleAccent ?? selectedTheme?.accent ?? "#FBAC27";
@@ -478,6 +499,9 @@ export function ShareCardModal({
     // the photo to a full-bleed action shot; "headshot" keeps it contained in
     // the template's framed region (default). Mirrors the canvas feature path.
     photoPlacement: photoPlacement === "feature" ? "fullBleed" : "contained",
+    // B1 — admin per-slot image overrides (any slot the template exposes). Only
+    // sent when non-empty so a no-override render stays byte-identical.
+    imagesOverride: Object.keys(imageOverrides).length ? imageOverrides : undefined,
   });
 
   const { previewUrls, rendering } = useCardPreview({
@@ -1052,6 +1076,35 @@ export function ShareCardModal({
                     {createTheme.isPending ? "Saving…" : "Save as theme"}
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {isPackCard && imageSlots.length > 0 && (
+              <div className="space-y-2.5 rounded border px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Slot images</Label>
+                  {Object.keys(imageOverrides).length > 0 && (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline"
+                      onClick={() => setImageOverrides({})}
+                    >
+                      Reset images
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upload or paste an image to override any slot on this card. Left
+                  blank, each slot keeps its bound / branded image.
+                </p>
+                {imageSlots.map((slot) => (
+                  <ImageControl
+                    key={slot.key}
+                    label={slot.label}
+                    value={imageOverrides[slot.key] ?? ""}
+                    onChange={(v) => setSlotOverride(slot.key, v)}
+                  />
+                ))}
               </div>
             )}
 

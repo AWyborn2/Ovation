@@ -129,6 +129,90 @@ export interface PackCardData {
    * Only the `photo` slot honours this; POTM / logos / sponsors ignore it.
    */
   photoPlacement?: PackPhotoPlacement | null;
+  /**
+   * Generic per-slot image overrides (B1), keyed by render slot key
+   * (`clubLogo`, `photo`, `potm.photo`, `club.logo`, `opposition.logo`,
+   * `teamPhoto`, `squadPhoto`, `sponsor1..3`, …). An admin-supplied image for
+   * ANY slot a template exposes wins over both the bound input image and the
+   * brand / sponsor / uploaded-photo overlays above — i.e. resolution is
+   * `override > input > bind` (see {@link applyPackData}). This is the generic
+   * mechanism the descriptor `image` fields stop short of: those cover only the
+   * input-driven slots (player photo / opposition logo / team & squad photo),
+   * whereas this map lets an admin repoint any slot (a logo, a sponsor tile, the
+   * match-result POTM headshot, …). Absent / empty leaves every slot on its
+   * bound or overlaid value, so existing renders are byte-identical.
+   */
+  imagesOverride?: Record<string, string> | null;
+}
+
+/** An image slot (photo/logo) a pack template exposes, for the per-slot editor. */
+export interface PackImageSlot {
+  key: string;
+  label: string;
+  type: "photo" | "logo";
+}
+
+/**
+ * Slot keys the generic per-slot override PANEL hides — the tenant-branding
+ * "moat" (the header club logo + the sponsor tiles). Admins shouldn't repoint
+ * these per-card from a generic editor; they are club-wide branding. Only the UI
+ * list is filtered — the {@link PackCardData.imagesOverride} MECHANISM stays
+ * fully general, so any key (including these) still wins if set programmatically.
+ */
+export const PACK_OVERRIDE_HIDDEN_SLOTS: ReadonlySet<string> = new Set([
+  "clubLogo",
+  "sponsor1",
+  "sponsor2",
+  "sponsor3",
+]);
+
+/**
+ * Friendly, disambiguated display labels per slot key. The raw template labels
+ * are non-unique — match-result exposes two "Logo" fields (`club.logo`,
+ * `opposition.logo`) and three "Sponsor" fields (`sponsor1..3`) — so the panel
+ * would show indistinguishable rows. Unmapped keys fall back to the template
+ * label.
+ */
+const PACK_SLOT_LABELS: Record<string, string> = {
+  clubLogo: "Club logo",
+  "club.logo": "Club logo",
+  "opposition.logo": "Opposition logo",
+  photo: "Photo",
+  "potm.photo": "Player of the match photo",
+  teamPhoto: "Team photo",
+  squadPhoto: "Squad photo",
+  sponsor1: "Sponsor 1",
+  sponsor2: "Sponsor 2",
+  sponsor3: "Sponsor 3",
+};
+
+/**
+ * The image slots (photo/logo) a card kind's pack template exposes, each with a
+ * friendly, unique display label — the enumeration that drives the modal's
+ * generic per-slot image-override editor (B1). Text and repeat fields are
+ * skipped; an unsupported kind (no pack design) yields `[]`.
+ *
+ * By default the tenant-branding slots ({@link PACK_OVERRIDE_HIDDEN_SLOTS}) are
+ * filtered out so the panel surfaces only content slots (player photo,
+ * opposition logo, POTM headshot, team / squad photo, …). Pass
+ * `includeHidden: true` for the raw enumerator (every image slot). The override
+ * mechanism itself is unaffected — it can target any key regardless of this
+ * filter.
+ */
+export function packImageSlots(
+  input: ShareCardInput,
+  opts?: { includeHidden?: boolean },
+): PackImageSlot[] {
+  const template = resolveTemplate(input);
+  if (!template) return [];
+  return template.fields
+    .filter((f) => f.type === "photo" || f.type === "logo")
+    .filter((f) => opts?.includeHidden || !PACK_OVERRIDE_HIDDEN_SLOTS.has(f.key))
+    .map((f) => ({
+      key: f.key,
+      label: PACK_SLOT_LABELS[f.key] ?? f.label,
+      type: f.type as "photo" | "logo",
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -996,6 +1080,17 @@ function applyPackData(bound: BoundInput, data: PackCardData, kind: string): voi
     // A5 — match-result's POTM headshot has no dedicated image source on the
     // matchSummary input, so the threaded photo (when present) fills it too.
     if (kind === "matchSummary") images["potm.photo"] = data.photoUrl;
+  }
+
+  // B1 — generic per-slot image overrides. Applied LAST so an admin's explicit
+  // per-slot upload wins over both the bound input image and every overlay above
+  // (brand logo, sponsors, uploaded photo): override > input > bind. Empty
+  // values are ignored so a cleared override falls back rather than blanking the
+  // slot.
+  if (data.imagesOverride) {
+    for (const [slotKey, url] of Object.entries(data.imagesOverride)) {
+      if (url) images[slotKey] = url;
+    }
   }
 }
 
