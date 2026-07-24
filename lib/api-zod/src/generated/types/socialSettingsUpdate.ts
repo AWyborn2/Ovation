@@ -16,6 +16,8 @@ export interface SocialSettingsUpdate {
   engineMatchSummary?: boolean;
   /** Per-grade auto-draft config */
   matchSummaryGradeConfig?: SocialSettingsUpdateMatchSummaryGradeConfig;
+  /** Whether a round's approved match-summary drafts auto-seed a carousel. Default OFF. */
+  autoseedCarousels?: boolean;
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;
