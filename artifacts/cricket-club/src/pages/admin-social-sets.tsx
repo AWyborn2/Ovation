@@ -20,6 +20,7 @@ import {
   useGetGradeLeaderboard,
   getGetGradeLeaderboardQueryKey,
   getGetGradeLeaderboardQueryOptions,
+  useCreateCardRenderStill,
   type SocialSettingsBundle,
   type CardSet,
   type CardSetSlide,
@@ -70,6 +71,9 @@ import {
   renderShareCardVideo,
   canExportVideo,
 } from "@/lib/share-card-animation";
+import { PackCard } from "@/components/pack-card";
+import { type PackCardData } from "@/lib/pack-render";
+import { slideRendersViaPack } from "@/lib/carousel-slide-render";
 
 const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
   { value: "none", label: "No animation (still PNG)" },
@@ -348,32 +352,78 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     bundle?.settings.clubHashtag ??
     (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
 
-  // Render options for one slide at a given size. Junior slides are locked to
-  // the brown palette (no theme); sponsors are filtered per slide kind.
-  const buildSlideOpts = (slide: WorkingSlide, size: CardSize): RenderOptions => {
-    const isJunior =
-      "junior" in slide.input &&
-      (slide.input as { junior?: boolean }).junior === true;
-    const theme = isJunior
-      ? undefined
-      : themes.find((t) => t.id === slide.themeId);
-    const sponsors =
-      bundle?.settings.sponsorsEnabled && bundle?.activeSponsors
-        ? bundle.activeSponsors
-            .filter((sp) => sponsorAppliesToKind(sp.cardKinds, slide.input.kind))
-            .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
-        : [];
-    return {
-      size,
-      sponsors,
-      clubUrl,
-      hashtag,
-      theme,
-      brand: bundle?.brand,
-      layout: slide.layout ?? [],
-      motionPreset: slide.motionPreset ?? "none",
-    };
-  };
+  // Server-side still harness for pack (Broadcast Dark) slides — the same
+  // endpoint the single-card modal uses, so a batched carousel slide exports a
+  // pixel-true branded PNG identical to the single card of that kind.
+  const stillMutation = useCreateCardRenderStill();
+
+  // Sponsor strip is on for the whole set whenever the tenant has it enabled;
+  // the carousel has no per-set toggle (mirrors the modal's default-on state).
+  const sponsorsOn = !!bundle?.settings.sponsorsEnabled;
+
+  const slideIsJunior = (slide: WorkingSlide): boolean =>
+    "junior" in slide.input &&
+    (slide.input as { junior?: boolean }).junior === true;
+
+  // Junior slides are locked to the brown palette (no theme); otherwise the
+  // slide's chosen theme (or the default when unset).
+  const slideTheme = (slide: WorkingSlide) =>
+    slideIsJunior(slide) ? undefined : themes.find((t) => t.id === slide.themeId);
+
+  // Active sponsors filtered to the slide's kind (same predicate the modal uses).
+  const slideSponsors = (slide: WorkingSlide): { name: string; logoUrl: string }[] =>
+    sponsorsOn && bundle?.activeSponsors
+      ? bundle.activeSponsors
+          .filter((sp) => sponsorAppliesToKind(sp.cardKinds, slide.input.kind))
+          .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
+      : [];
+
+  // A slide renders through the pack when the pack supports its kind and it has
+  // no admin custom layout (a canvas-only feature the pack can't reproduce).
+  const slideUsesPack = (slide: WorkingSlide): boolean =>
+    slideRendersViaPack(slide.input.kind, slide.layout);
+
+  // Tenant data threaded into the pack path (logo, club name/hashtag, sponsors,
+  // the input's own photo) — the pack equivalent of the brand/sponsors the
+  // canvas renderer gets via `buildSlideOpts`, mirroring the modal's
+  // `buildPackData` so batched pack slides carry real tenant branding.
+  const buildSlidePackData = (slide: WorkingSlide): PackCardData => ({
+    brand: bundle?.brand
+      ? { name: bundle.brand.name, logoUrl: bundle.brand.logoUrl }
+      : null,
+    hashtag,
+    sponsors: slideSponsors(slide),
+  });
+
+  // Render one pack slide to a PNG blob via the server harness (parity with the
+  // single-card modal's `renderPackStill`; options are opaque over the wire).
+  const renderPackStill = (slide: WorkingSlide, size: CardSize): Promise<Blob> =>
+    stillMutation.mutateAsync({
+      data: {
+        input: slide.input,
+        options: {
+          size,
+          sponsorsOn,
+          junior: slideIsJunior(slide),
+          theme: slideTheme(slide) ?? null,
+          data: buildSlidePackData(slide),
+        },
+      },
+    }) as Promise<Blob>;
+
+  // Render options for one slide at a given size (canvas path — unsupported
+  // kinds and admin-customised slides). Junior slides are locked to the brown
+  // palette (no theme); sponsors are filtered per slide kind.
+  const buildSlideOpts = (slide: WorkingSlide, size: CardSize): RenderOptions => ({
+    size,
+    sponsors: slideSponsors(slide),
+    clubUrl,
+    hashtag,
+    theme: slideTheme(slide),
+    brand: bundle?.brand,
+    layout: slide.layout ?? [],
+    motionPreset: slide.motionPreset ?? "none",
+  });
 
   // Filmstrip previews — one still PNG per slide at the chosen platform size.
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -396,6 +446,9 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     (async () => {
       const next: Record<string, string> = {};
       for (const slide of slides) {
+        // Pack slides preview live via <PackCard> in the filmstrip; only the
+        // canvas (BYO / customised) slides need an offscreen render here.
+        if (slideUsesPack(slide)) continue;
         try {
           const blob = await renderShareCard(
             slide.input,
@@ -528,6 +581,14 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
       for (const slide of slides) {
         const num = String(i).padStart(2, "0");
         const base = `${num}-${slide.input.kind}`;
+        if (slideUsesPack(slide)) {
+          // Pack slide: pixel-true branded PNG via the server harness, matching
+          // the single-card path. Pack cards are static (KTD10) — no video clip.
+          const blob = await renderPackStill(slide, size);
+          zip.file(`${base}.png`, blob);
+          i++;
+          continue;
+        }
         const opts = buildSlideOpts(slide, size);
         const blob = await renderShareCard(slide.input, opts);
         zip.file(`${base}.png`, blob);
@@ -716,7 +777,18 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
                       aspectRatio: `${SIZES[platformSize].w} / ${SIZES[platformSize].h}`,
                     }}
                   >
-                    {previews[slide.id] ? (
+                    {slideUsesPack(slide) ? (
+                      // Pack slides preview live (matching the single-card modal)
+                      // so they carry the tenant logo + sponsors.
+                      <PackCard
+                        input={slide.input}
+                        size={platformSize}
+                        sponsorsOn={sponsorsOn}
+                        theme={slideTheme(slide) ?? null}
+                        junior={slideIsJunior(slide)}
+                        data={buildSlidePackData(slide)}
+                      />
+                    ) : previews[slide.id] ? (
                       <img
                         src={previews[slide.id]}
                         alt=""
@@ -760,24 +832,29 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
               />
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-sm">Motion</Label>
-                  <select
-                    className={selectClass}
-                    value={selectedSlide.motionPreset ?? "none"}
-                    onChange={(e) =>
-                      patchSlide(selectedSlide.id, {
-                        motionPreset: e.target.value as MotionPreset,
-                      })
-                    }
-                  >
-                    {MOTION_OPTIONS.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Pack slides are always static (KTD10), matching the single
+                    card of that kind — the motion picker only applies to the
+                    canvas path, so it's hidden for pack slides. */}
+                {!slideUsesPack(selectedSlide) && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Motion</Label>
+                    <select
+                      className={selectClass}
+                      value={selectedSlide.motionPreset ?? "none"}
+                      onChange={(e) =>
+                        patchSlide(selectedSlide.id, {
+                          motionPreset: e.target.value as MotionPreset,
+                        })
+                      }
+                    >
+                      {MOTION_OPTIONS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {!(
                   "junior" in selectedSlide.input &&
                   (selectedSlide.input as { junior?: boolean }).junior
@@ -824,7 +901,8 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
                     </span>
                   )}
                   <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    {isAnimatedCard({
+                    {!slideUsesPack(selectedSlide) &&
+                    isAnimatedCard({
                       size: platformSize,
                       template: null,
                       motionPreset: selectedSlide.motionPreset ?? "none",
