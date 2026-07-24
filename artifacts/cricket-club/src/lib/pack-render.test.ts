@@ -299,6 +299,68 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     const html = renderPackCard(input, "story", false, TOKENS, false);
     expect(html).toContain("#HALLSHEAD");
   });
+
+  // A7 — dynamic "presented by" primary sponsor -----------------------------
+  it("(A7) stamps the presenting sponsor NAME into the presented-by line", () => {
+    const input = sampleCardInput("century");
+    const data: PackCardData = { presentingSponsorName: "Acme Motors" };
+    for (const size of ["story", "square"] as CardSize[]) {
+      const html = renderPackCard(input, size, true, TOKENS, false, data);
+      expect(html, `${size}`).toContain("presented by");
+      expect(html, `${size}`).toContain("Acme Motors");
+      // The sample literal must never survive a data-bearing render.
+      expect(html, `${size}`).not.toContain("eSA Sport");
+    }
+  });
+
+  it("(A7) hides the presented-by line entirely when no presenting sponsor is set", () => {
+    // A data-bearing render with no presenting sponsor → the whole line drops, so
+    // neither the sample literals nor an orphan "presented by" prose leaks.
+    const data: PackCardData = { presentingSponsorName: null };
+    for (const kind of ["century", "matchSummary", "premiership", "newSigning"] as ShareCardInput["kind"][]) {
+      const input = sampleCardInput(kind);
+      for (const size of ["story", "square"] as CardSize[]) {
+        const html = renderPackCard(input, size, true, TOKENS, false, data);
+        const ctx = `${kind}/${size}`;
+        expect(html, ctx).not.toContain("eSA Sport");
+        expect(html, ctx).not.toContain("PlayHQ");
+        expect(html, ctx).not.toContain("presented by");
+        expect(html, ctx).not.toContain("proudly supported by");
+        expect(html, ctx).not.toContain("recruitment by");
+        // No orphan empty sponsor span left behind.
+        expect(html, ctx).not.toContain('color:#fff;font-weight:700"></span>');
+        expect(hasUnresolved(html), ctx).toBe(false);
+      }
+    }
+  });
+
+  it("(A7) drops only the presented-by line on bespoke flex rows, keeping the clubHashtag sibling", () => {
+    // new-cap / debut put the clubHashtag and the presented-by line in the SAME
+    // flex row. Dropping the empty presented-by line must leave the hashtag
+    // sibling (and its surrounding flex row) intact.
+    const data: PackCardData = { hashtag: "#TESTCC", presentingSponsorName: null };
+    for (const kind of ["newCap", "debut"] as ShareCardInput["kind"][]) {
+      const input = sampleCardInput(kind);
+      for (const size of ["story", "square"] as CardSize[]) {
+        const html = renderPackCard(input, size, true, TOKENS, false, data);
+        const ctx = `${kind}/${size}`;
+        // Hashtag sibling survives the drop.
+        expect(html, ctx).toContain("#TESTCC");
+        // Presented-by line and its sample literal are gone.
+        expect(html, ctx).not.toContain("presented by");
+        expect(html, ctx).not.toContain("eSA Sport");
+        expect(html, ctx).not.toContain('color:#fff;font-weight:700"></span>');
+        expect(hasUnresolved(html), ctx).toBe(false);
+      }
+    }
+  });
+
+  it("(A7) keeps the sample presented-by sponsor on a no-data (gallery) render", () => {
+    // Gallery previews with no `data` still show the sample so the line renders.
+    const html = renderPackCard(sampleCardInput("century"), "story", true, TOKENS, false);
+    expect(html).toContain("presented by");
+    expect(html).toContain("eSA Sport");
+  });
 });
 
 describe("resolvePackTokens (token resolution order)", () => {

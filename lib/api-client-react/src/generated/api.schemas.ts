@@ -2589,6 +2589,8 @@ export interface Sponsor {
   activeTo?: string | null;
   /** Card types this sponsor may appear on. Empty = all cards. */
   cardKinds: CardKind[];
+  /** The tenant's designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards' "presented by <sponsor>" line; none set → that line renders empty. */
+  isPresenting: boolean;
   displayOrder: number;
 }
 
@@ -2601,6 +2603,8 @@ export interface SponsorInput {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
+  isPresenting?: boolean;
   displayOrder?: number;
 }
 
@@ -2613,6 +2617,8 @@ export interface SponsorUpdate {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
+  isPresenting?: boolean;
   displayOrder?: number;
 }
 

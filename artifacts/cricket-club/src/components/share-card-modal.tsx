@@ -403,7 +403,11 @@ export function ShareCardModal({
     }
   }, [open, enabledSizes, activeSize]);
 
-  const { sponsors, sponsorSig } = useSponsors({ bundle, includeSponsors, input });
+  const { sponsors, presentingSponsorName, sponsorSig } = useSponsors({
+    bundle,
+    includeSponsors,
+    input,
+  });
 
   // A tenant with no configured hashtag gets one derived from its short name
   // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
@@ -467,6 +471,7 @@ export function ShareCardModal({
       : null,
     hashtag,
     sponsors,
+    presentingSponsorName,
     photoUrl: effectivePhotoUrl,
     photoTransform: transform,
   });
@@ -478,7 +483,7 @@ export function ShareCardModal({
     activeSize,
     renderTransform,
     buildOpts,
-    renderDeps: [open, input, activeSize, sponsors, clubUrl, hashtag, selectedTheme, selectedTemplate, layoutSig, effectivePhotoUrl, photoPlacement, renderTransform],
+    renderDeps: [open, input, activeSize, sponsors, presentingSponsorName, clubUrl, hashtag, selectedTheme, selectedTemplate, layoutSig, effectivePhotoUrl, photoPlacement, renderTransform],
     invalidateDeps: [includeSponsors, input, selectedThemeId, layoutId, layoutSig, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform],
   });
 
