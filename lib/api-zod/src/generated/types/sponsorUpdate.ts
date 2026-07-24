@@ -16,5 +16,7 @@ export interface SponsorUpdate {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
+  isPresenting?: boolean;
   displayOrder?: number;
 }

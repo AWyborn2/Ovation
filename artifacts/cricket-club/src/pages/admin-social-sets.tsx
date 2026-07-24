@@ -378,6 +378,15 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
           .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
       : [];
 
+  // The tenant's designated presenting (primary) sponsor NAME → the pack cards'
+  // "presented by <sponsor>" line. NOT kind-filtered (headline sponsor shown on
+  // every slide), gated on the same sponsors-on condition the slide uses so the
+  // line stays consistent with the single-card modal (else it drops to "" and
+  // `dropEmptyPresentedBy` removes the line — the carousel regression this fixes).
+  const presentingSponsorName: string | null = sponsorsOn
+    ? bundle?.activeSponsors?.find((sp) => sp.isPresenting)?.name ?? null
+    : null;
+
   // A slide renders through the pack when the pack supports its kind and it has
   // no admin custom layout (a canvas-only feature the pack can't reproduce).
   const slideUsesPack = (slide: WorkingSlide): boolean =>
@@ -393,6 +402,7 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
       : null,
     hashtag,
     sponsors: slideSponsors(slide),
+    presentingSponsorName,
   });
 
   // Render one pack slide to a PNG blob via the server harness (parity with the

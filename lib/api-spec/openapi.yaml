@@ -9063,7 +9063,7 @@ components:
 
     Sponsor:
       type: object
-      required: [id, name, logoUrl, link, displayOrder, cardKinds]
+      required: [id, name, logoUrl, link, displayOrder, cardKinds, isPresenting]
       properties:
         id:
           type: integer
@@ -9082,6 +9082,12 @@ components:
           description: Card types this sponsor may appear on. Empty = all cards.
           items:
             $ref: "#/components/schemas/CardKind"
+        isPresenting:
+          type: boolean
+          description: >-
+            The tenant's designated presenting (primary) sponsor. At most one
+            sponsor per tenant is presenting. Its name fills pack cards'
+            "presented by <sponsor>" line; none set → that line renders empty.
         displayOrder:
           type: integer
 
@@ -9103,6 +9109,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CardKind"
+        isPresenting:
+          type: boolean
+          description: >-
+            Mark this sponsor as the tenant's presenting (primary) sponsor.
+            Setting true unsets any previously presenting sponsor for the tenant.
         displayOrder:
           type: integer
 
@@ -9123,6 +9134,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CardKind"
+        isPresenting:
+          type: boolean
+          description: >-
+            Mark this sponsor as the tenant's presenting (primary) sponsor.
+            Setting true unsets any previously presenting sponsor for the tenant.
         displayOrder:
           type: integer
 

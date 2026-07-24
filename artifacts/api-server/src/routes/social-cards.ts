@@ -85,19 +85,33 @@ router.post("/sponsors", requireAdmin, requireEntitlement("socialStudio"), async
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [row] = await db
-    .insert(sponsorsTable)
-    .values({
-      tenantId: getTenantId(req),
-      name: parsed.data.name,
-      logoUrl: parsed.data.logoUrl,
-      link: parsed.data.link ?? "",
-      activeFrom: parsed.data.activeFrom ?? null,
-      activeTo: parsed.data.activeTo ?? null,
-      cardKinds: parsed.data.cardKinds ?? [],
-      displayOrder: parsed.data.displayOrder ?? 0,
-    })
-    .returning();
+  const tenantId = getTenantId(req);
+  const isPresenting = parsed.data.isPresenting ?? false;
+  const row = await db.transaction(async (tx) => {
+    // At most one presenting sponsor per tenant: clear any prior one first so the
+    // partial unique index never trips (mirrors the card-themes isDefault flow).
+    if (isPresenting) {
+      await tx
+        .update(sponsorsTable)
+        .set({ isPresenting: false })
+        .where(eq(sponsorsTable.tenantId, tenantId));
+    }
+    const [created] = await tx
+      .insert(sponsorsTable)
+      .values({
+        tenantId,
+        name: parsed.data.name,
+        logoUrl: parsed.data.logoUrl,
+        link: parsed.data.link ?? "",
+        activeFrom: parsed.data.activeFrom ?? null,
+        activeTo: parsed.data.activeTo ?? null,
+        cardKinds: parsed.data.cardKinds ?? [],
+        isPresenting,
+        displayOrder: parsed.data.displayOrder ?? 0,
+      })
+      .returning();
+    return created;
+  });
   res.status(201).json(row);
 });
 
@@ -112,15 +126,28 @@ router.patch("/sponsors/:id", requireAdmin, requireEntitlement("socialStudio"), 
     res.status(400).json({ error: body.error.message });
     return;
   }
-  const [row] = await db
-    .update(sponsorsTable)
-    .set({
-      ...body.data,
-      activeFrom: body.data.activeFrom === undefined ? undefined : body.data.activeFrom,
-      activeTo: body.data.activeTo === undefined ? undefined : body.data.activeTo,
-    })
-    .where(and(eq(sponsorsTable.id, params.data.id), eq(sponsorsTable.tenantId, getTenantId(req))))
-    .returning();
+  const tenantId = getTenantId(req);
+  const scoped = and(eq(sponsorsTable.id, params.data.id), eq(sponsorsTable.tenantId, tenantId));
+  const row = await db.transaction(async (tx) => {
+    // Promoting this sponsor to presenting clears any other presenting sponsor
+    // for the tenant first, keeping at most one (partial unique index guard).
+    if (body.data.isPresenting === true) {
+      await tx
+        .update(sponsorsTable)
+        .set({ isPresenting: false })
+        .where(eq(sponsorsTable.tenantId, tenantId));
+    }
+    const [updated] = await tx
+      .update(sponsorsTable)
+      .set({
+        ...body.data,
+        activeFrom: body.data.activeFrom === undefined ? undefined : body.data.activeFrom,
+        activeTo: body.data.activeTo === undefined ? undefined : body.data.activeTo,
+      })
+      .where(scoped)
+      .returning();
+    return updated;
+  });
   if (!row) {
     res.status(404).json({ error: "Sponsor not found" });
     return;

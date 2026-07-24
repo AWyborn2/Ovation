@@ -90,6 +90,14 @@ export interface PackCardData {
    */
   sponsors?: Array<{ name: string; logoUrl: string }> | null;
   /**
+   * The tenant's designated presenting (primary) sponsor NAME → the pack cards'
+   * "presented by <sponsor>" line (`sponsorPresentedBy` value). NOT kind-filtered
+   * — it is the club's headline sponsor, shown on every card's presented-by line.
+   * Null/absent clears the line entirely (see {@link applyPackData}) so the
+   * Broadcast-Dark sample literal ("eSA Sport" / "PlayHQ") never leaks.
+   */
+  presentingSponsorName?: string | null;
+  /**
    * Uploaded / gallery-selected photo. Overrides the input's own `photoUrl` in
    * the `photo` (and match-result `potm.photo`) slots.
    */
@@ -856,6 +864,14 @@ function applyPackData(bound: BoundInput, data: PackCardData, kind: string): voi
     if (s.logoUrl) images[`sponsor${idx + 1}`] = s.logoUrl;
   });
 
+  // A7 — presenting (primary) sponsor → the "presented by <sponsor>" line.
+  // S1-style: this runs only for a real (data-bearing) render, so the sample
+  // literal ("eSA Sport" / "PlayHQ") must NEVER survive — overwrite
+  // unconditionally, using "" when the tenant designated no presenting sponsor.
+  // An empty value makes {@link dropEmptyPresentedBy} drop the whole line so no
+  // orphan "presented by" prose is left behind.
+  values["sponsorPresentedBy"] = data.presentingSponsorName ?? "";
+
   // A4 — uploaded / selected photo overrides the input's own photoUrl.
   if (data.photoUrl) {
     images["photo"] = data.photoUrl;
@@ -931,6 +947,22 @@ function cleanupEmptyRoles(html: string): string {
   return html.replace(/\s*<span[^>]*>\(\)<\/span>/g, "");
 }
 
+/**
+ * Remove the whole "presented by <sponsor>" line when the presenting sponsor is
+ * empty, so no orphan prose ("presented by", "proudly supported by", …) is left
+ * behind. Every such line — via the `presentedBy` fragment or inline — ends with
+ * the sponsor name wrapped in the unique `<span style="color:#fff;font-weight:700">`
+ * marker, so the tightest enclosing `<div>…</div>` is matched and dropped. Called
+ * BEFORE field substitution, while the raw `{{sponsorPresentedBy}}` placeholder is
+ * still present. The clubHashtag sibling in footer rows is untouched.
+ */
+function dropEmptyPresentedBy(html: string): string {
+  return html.replace(
+    /<div[^>]*>[^<]*<span style="color:#fff;font-weight:700">\{\{sponsorPresentedBy\}\}<\/span><\/div>/g,
+    "",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
@@ -961,6 +993,10 @@ export function renderPackCard(
   html = selectSponsorVariant(html, sponsorsOn);
   html = expandRepeats(html, bound.rows, template);
   html = resolveSlots(html, bound.images, values, data?.photoTransform);
+  // Drop the "presented by <sponsor>" line entirely when no presenting sponsor
+  // resolved (empty value) — must run before substitution while the placeholder
+  // is intact. A non-empty sample/tenant value keeps the line.
+  if (!values["sponsorPresentedBy"]) html = dropEmptyPresentedBy(html);
   html = substituteFields(html, values);
   html = cleanupEmptyRoles(html);
 

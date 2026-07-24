@@ -12,20 +12,37 @@ import {
 import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
 
-export const sponsorsTable = pgTable("sponsors", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull(),
-  logoUrl: text("logo_url").notNull(),
-  link: text("link").notNull().default(""),
-  activeFrom: date("active_from"),
-  activeTo: date("active_to"),
-  // Which social card types this sponsor's logo may appear on. Empty = all cards.
-  // Values match ShareCardInput["kind"]: milestone | player | record | gradeLeader | premiership | debut | newCap | century | fiveFor.
-  cardKinds: text("card_kinds").array().notNull().default([]),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const sponsorsTable = pgTable(
+  "sponsors",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull(),
+    logoUrl: text("logo_url").notNull(),
+    link: text("link").notNull().default(""),
+    activeFrom: date("active_from"),
+    activeTo: date("active_to"),
+    // Which social card types this sponsor's logo may appear on. Empty = all cards.
+    // Values match ShareCardInput["kind"]: milestone | player | record | gradeLeader | premiership | debut | newCap | century | fiveFor.
+    cardKinds: text("card_kinds").array().notNull().default([]),
+    // The tenant's designated PRESENTING (primary) sponsor. At most one row per
+    // tenant may be true (enforced by the partial unique index below + the route
+    // transaction that unsets any prior presenting sponsor). Its NAME fills the
+    // pack cards' "presented by <sponsor>" line (see pack-render `applyPackData`);
+    // when no sponsor is presenting, that line renders empty rather than the
+    // Broadcast-Dark sample literal ("eSA Sport" / "PlayHQ").
+    isPresenting: boolean("is_presenting").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // At most one presenting sponsor per tenant. Partial unique index so the many
+    // non-presenting rows are unconstrained.
+    onePresentingPerTenant: uniqueIndex("sponsors_one_presenting_per_tenant")
+      .on(t.tenantId)
+      .where(sql`is_presenting`),
+  }),
+);
 
 export type SponsorRow = typeof sponsorsTable.$inferSelect;
 

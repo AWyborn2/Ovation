@@ -25,10 +25,20 @@ export function useSponsors({
       }));
   }, [bundle, includeSponsors, input]);
 
+  // The tenant's designated presenting (primary) sponsor NAME → the pack cards'
+  // "presented by <sponsor>" line. NOT kind-filtered (it is the headline sponsor
+  // shown on every card), but gated the same as the sponsor strip so the line
+  // only appears when sponsors are enabled and included. Null → line hidden.
+  const presentingSponsorName = useMemo<string | null>(() => {
+    if (!bundle?.settings.sponsorsEnabled || !includeSponsors) return null;
+    const presenting = (bundle?.activeSponsors ?? []).find((s) => s.isPresenting);
+    return presenting?.name ?? null;
+  }, [bundle, includeSponsors]);
+
   const sponsorSig = useMemo(
-    () => sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~"),
-    [sponsors],
+    () => `${sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~")}#${presentingSponsorName ?? ""}`,
+    [sponsors, presentingSponsorName],
   );
 
-  return { sponsors, sponsorSig };
+  return { sponsors, presentingSponsorName, sponsorSig };
 }

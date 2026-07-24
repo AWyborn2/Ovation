@@ -450,11 +450,26 @@ function SponsorsCard({
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
-                <div className="pl-[4.75rem]">
+                <div className="pl-[4.75rem] space-y-2">
                   <CardKindPicker
                     value={s.cardKinds}
                     onChange={(next) => update.mutate({ id: s.id, data: { cardKinds: next } })}
                   />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id={`sp-presenting-${s.id}`}
+                      checked={s.isPresenting}
+                      onCheckedChange={(v) =>
+                        update.mutate({ id: s.id, data: { isPresenting: v } })
+                      }
+                    />
+                    <Label htmlFor={`sp-presenting-${s.id}`} className="text-sm font-normal">
+                      Presenting sponsor
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      Fills the &ldquo;presented by&rdquo; line on cards (one per club).
+                    </span>
+                  </div>
                 </div>
               </div>
             ))
