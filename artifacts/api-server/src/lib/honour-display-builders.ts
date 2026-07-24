@@ -170,6 +170,35 @@ export interface BoardEntryMeta {
   rank?: number | null;
 }
 
+// Aggregated career stats for a life member (mirrors the app's LifeMemberStats,
+// summed across grades from player_grade_stats).
+export interface LifeMemberStatsOut {
+  games: number;
+  innings: number;
+  notOuts: number;
+  runs: number;
+  highScore: string | null;
+  fifties: number;
+  hundreds: number;
+  wickets: number;
+  runsConceded: number;
+  bestBowling: string | null;
+  fiveWickets: number;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+  gradesPlayed: string[];
+}
+
+// Extra per-entry data for the life-members board (stats + bio).
+export interface LifeMemberInfoOut {
+  inducted?: number | null;
+  roles?: string | null;
+  bio?: string | null;
+  playing?: boolean;
+  stats?: LifeMemberStatsOut | null;
+}
+
 export interface BoardEntry {
   season: string;
   primaryText: string;
@@ -178,17 +207,20 @@ export interface BoardEntry {
   matchId?: number | null;
   meta?: BoardEntryMeta;
   squad?: BoardSquadMember[] | null;
+  lifeMember?: LifeMemberInfoOut | null;
 }
 
 // Each board keeps its NATURAL layout; the chosen skin only changes the look.
 // "columns" is a composite layout: several list boards rendered side-by-side.
 // "grid" is the opt-in season-grid matrix (rows × admin-chosen columns).
+// "lifeMembers" is the two-column stat-tile + bio card layout.
 export type BoardLayout =
   | "premiership"
   | "teamOfDecade"
   | "list"
   | "columns"
-  | "grid";
+  | "grid"
+  | "lifeMembers";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 
@@ -530,6 +562,83 @@ export async function buildFiveWicketHauls(tenantId: number): Promise<HonourBoar
   };
 }
 
+// Grade sort order for a life member's "grades played" chips (mirrors the
+// /life-members endpoint so the kiosk lists grades in the same order).
+const LIFE_MEMBER_GRADE_ORDER = [
+  "A Grade", "B Grade", "C Grade", "D Grade", "E Grade", "F Grade",
+  "Female A Grade", "Female B Grade", "PPL", "Colts",
+];
+
+const lmParseHighScore = (hs: string | null | undefined): number => {
+  if (!hs) return 0;
+  const n = parseInt(String(hs).replace(/[^0-9]/g, ""), 10);
+  return isNaN(n) ? 0 : n;
+};
+const lmParseBestBowling = (
+  bb: string | null | undefined,
+): { wkts: number; runs: number } => {
+  if (!bb) return { wkts: 0, runs: 0 };
+  const m = String(bb).match(/(\d+)\s*\/\s*(\d+)/);
+  if (!m) return { wkts: 0, runs: 0 };
+  return { wkts: parseInt(m[1], 10), runs: parseInt(m[2], 10) };
+};
+
+/**
+ * Aggregate each linked player's career stats across grades (skipping the
+ * "CLUB TOTAL" roll-up row), mirroring the /life-members endpoint so the kiosk
+ * board shows the same numbers as the app's Life Members page.
+ */
+async function aggregateLifeMemberStats(
+  playerIds: number[],
+): Promise<Map<number, LifeMemberStatsOut>> {
+  const byPlayer = new Map<number, LifeMemberStatsOut>();
+  if (playerIds.length === 0) return byPlayer;
+  const allStats = await db
+    .select()
+    .from(playerGradeStatsTable)
+    .where(inArray(playerGradeStatsTable.playerId, playerIds));
+  for (const s of allStats) {
+    let agg = byPlayer.get(s.playerId);
+    if (!agg) {
+      agg = {
+        games: 0, innings: 0, notOuts: 0, runs: 0, highScore: null,
+        fifties: 0, hundreds: 0, wickets: 0, runsConceded: 0, bestBowling: null,
+        fiveWickets: 0, catches: 0, stumpings: 0, runOuts: 0, gradesPlayed: [],
+      };
+      byPlayer.set(s.playerId, agg);
+    }
+    if (s.grade === "CLUB TOTAL") continue;
+    agg.games += s.games ?? 0;
+    agg.innings += s.innings ?? 0;
+    agg.notOuts += s.notOuts ?? 0;
+    agg.runs += s.runs ?? 0;
+    agg.fifties += s.fifties ?? 0;
+    agg.hundreds += s.hundreds ?? 0;
+    agg.wickets += s.wickets ?? 0;
+    agg.runsConceded += s.runsConceded ?? 0;
+    agg.fiveWickets += s.fiveWickets ?? 0;
+    agg.catches += s.catches ?? 0;
+    agg.stumpings += s.stumpings ?? 0;
+    agg.runOuts += s.runOuts ?? 0;
+    const hs = lmParseHighScore(s.highScore);
+    if (hs > lmParseHighScore(agg.highScore)) agg.highScore = s.highScore ?? null;
+    const bb = lmParseBestBowling(s.bestBowling);
+    const cur = lmParseBestBowling(agg.bestBowling);
+    if (bb.wkts > cur.wkts || (bb.wkts === cur.wkts && bb.wkts > 0 && bb.runs < cur.runs)) {
+      agg.bestBowling = s.bestBowling ?? null;
+    }
+    if (!agg.gradesPlayed.includes(s.grade)) agg.gradesPlayed.push(s.grade);
+  }
+  for (const agg of byPlayer.values()) {
+    agg.gradesPlayed.sort((a, b) => {
+      const ai = LIFE_MEMBER_GRADE_ORDER.indexOf(a);
+      const bi = LIFE_MEMBER_GRADE_ORDER.indexOf(b);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+  }
+  return byPlayer;
+}
+
 export async function buildLifeMembers(tenantId: number): Promise<HonourBoardOut | null> {
   const rows = await db
     .select()
@@ -537,17 +646,27 @@ export async function buildLifeMembers(tenantId: number): Promise<HonourBoardOut
     .where(eq(lifeMembersTable.tenantId, tenantId))
     .orderBy(asc(lifeMembersTable.inductionYear), asc(lifeMembersTable.name));
   if (rows.length === 0) return null;
+  const statsByPlayer = await aggregateLifeMemberStats(
+    rows.map((r) => r.playerId).filter((id): id is number => id != null),
+  );
   return {
     id: "life_members",
     category: "life_members",
-    layout: "list",
+    layout: "lifeMembers",
     title: "Life Members",
     subtitle: "Honoured for outstanding service",
     entries: rows.map((r) => ({
       season: String(r.inductionYear),
       primaryText: r.name,
-      detail: r.roleLabel || r.blurb || (r.isPlayingMember ? "Playing member" : null),
+      detail: r.roleLabel ?? null,
       playerId: r.playerId ?? null,
+      lifeMember: {
+        inducted: r.inductionYear,
+        roles: r.roleLabel ?? null,
+        bio: r.blurb || null,
+        playing: r.isPlayingMember,
+        stats: r.playerId != null ? statsByPlayer.get(r.playerId) ?? null : null,
+      },
     })),
   };
 }

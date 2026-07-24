@@ -54,6 +54,7 @@ export * from './boardDisplayConfigTextSize';
 export * from './boardDisplayConfigTransition';
 export * from './boardDisplayTransition';
 export * from './boardEntry';
+export * from './boardEntryLifeMember';
 export * from './boardEntryMeta';
 export * from './boardGrid';
 export * from './boardGridCell';

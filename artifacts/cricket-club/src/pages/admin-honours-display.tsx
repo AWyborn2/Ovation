@@ -132,6 +132,7 @@ const TEMPLATE_BLURB: Record<TemplateId, string> = {
   p7: "App-style flags with bright accents (light).",
   p8: "App-style flags with bright accents (dark).",
   p9: "Printed acrylic board with a filled colour header row.",
+  p10: "Matches the Ovation app — dark charcoal, club gold, serif titles.",
 };
 
 function SettingsForm({

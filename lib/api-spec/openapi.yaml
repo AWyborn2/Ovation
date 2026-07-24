@@ -10237,6 +10237,33 @@ components:
           items:
             $ref: "#/components/schemas/BoardSquadMember"
           description: Premiership squad (premiership_players) for P7 "View team".
+        lifeMember:
+          type: object
+          nullable: true
+          description: >-
+            Extra data for the life-members board (career stats + bio),
+            populated only for boards with the "lifeMembers" layout.
+          properties:
+            inducted:
+              type: integer
+              nullable: true
+              description: Induction year.
+            roles:
+              type: string
+              nullable: true
+              description: Roles / service line (e.g. "President 1991/92–1998/99").
+            bio:
+              type: string
+              nullable: true
+              description: Biography text (may contain blank-line-separated paragraphs).
+            playing:
+              type: boolean
+              description: Whether the member is a playing (vs non-playing) member.
+            stats:
+              allOf:
+                - $ref: "#/components/schemas/LifeMemberStats"
+              nullable: true
+              description: Aggregated career stats (null when the member has no linked player).
 
     BoardDisplay:
       type: object
@@ -10467,6 +10494,7 @@ components:
             - list
             - columns
             - grid
+            - lifeMembers
           description: Natural render layout for this board (skin only changes the look).
         title:
           type: string

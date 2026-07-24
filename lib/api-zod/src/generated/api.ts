@@ -5186,7 +5186,7 @@ export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -5209,7 +5209,30 @@ export const GetHonourDisplayResponse = zod.object({
   "name": zod.string(),
   "playerId": zod.number().nullish(),
   "isCaptain": zod.boolean()
-})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".'),
+  "lifeMember": zod.object({
+  "inducted": zod.number().nullish().describe('Induction year.'),
+  "roles": zod.string().nullish().describe('Roles \/ service line (e.g. \"President 1991\/92–1998\/99\").'),
+  "bio": zod.string().nullish().describe('Biography text (may contain blank-line-separated paragraphs).'),
+  "playing": zod.boolean().optional().describe('Whether the member is a playing (vs non-playing) member.'),
+  "stats": zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.string().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bestBowling": zod.string().nullable(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "gradesPlayed": zod.array(zod.string())
+}).nullish().describe('Aggregated career stats (null when the member has no linked player).')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
 })),
   "columns": zod.array(zod.object({
   "heading": zod.string(),
@@ -5233,7 +5256,30 @@ export const GetHonourDisplayResponse = zod.object({
   "name": zod.string(),
   "playerId": zod.number().nullish(),
   "isCaptain": zod.boolean()
-})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".'),
+  "lifeMember": zod.object({
+  "inducted": zod.number().nullish().describe('Induction year.'),
+  "roles": zod.string().nullish().describe('Roles \/ service line (e.g. \"President 1991\/92–1998\/99\").'),
+  "bio": zod.string().nullish().describe('Biography text (may contain blank-line-separated paragraphs).'),
+  "playing": zod.boolean().optional().describe('Whether the member is a playing (vs non-playing) member.'),
+  "stats": zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.string().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bestBowling": zod.string().nullable(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "gradesPlayed": zod.array(zod.string())
+}).nullish().describe('Aggregated career stats (null when the member has no linked player).')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
   "grid": zod.object({
@@ -5407,7 +5453,7 @@ export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers']).describe('Natural render layout for this board (skin only changes the look).'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -5430,7 +5476,30 @@ export const GetKioskDisplayResponse = zod.object({
   "name": zod.string(),
   "playerId": zod.number().nullish(),
   "isCaptain": zod.boolean()
-})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".'),
+  "lifeMember": zod.object({
+  "inducted": zod.number().nullish().describe('Induction year.'),
+  "roles": zod.string().nullish().describe('Roles \/ service line (e.g. \"President 1991\/92–1998\/99\").'),
+  "bio": zod.string().nullish().describe('Biography text (may contain blank-line-separated paragraphs).'),
+  "playing": zod.boolean().optional().describe('Whether the member is a playing (vs non-playing) member.'),
+  "stats": zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.string().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bestBowling": zod.string().nullable(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "gradesPlayed": zod.array(zod.string())
+}).nullish().describe('Aggregated career stats (null when the member has no linked player).')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
 })),
   "columns": zod.array(zod.object({
   "heading": zod.string(),
@@ -5454,7 +5523,30 @@ export const GetKioskDisplayResponse = zod.object({
   "name": zod.string(),
   "playerId": zod.number().nullish(),
   "isCaptain": zod.boolean()
-})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".')
+})).nullish().describe('Premiership squad (premiership_players) for P7 \"View team\".'),
+  "lifeMember": zod.object({
+  "inducted": zod.number().nullish().describe('Induction year.'),
+  "roles": zod.string().nullish().describe('Roles \/ service line (e.g. \"President 1991\/92–1998\/99\").'),
+  "bio": zod.string().nullish().describe('Biography text (may contain blank-line-separated paragraphs).'),
+  "playing": zod.boolean().optional().describe('Whether the member is a playing (vs non-playing) member.'),
+  "stats": zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.string().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "bestBowling": zod.string().nullable(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number(),
+  "gradesPlayed": zod.array(zod.string())
+}).nullish().describe('Aggregated career stats (null when the member has no linked player).')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
   "grid": zod.object({

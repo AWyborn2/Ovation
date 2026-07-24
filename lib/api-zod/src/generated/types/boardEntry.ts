@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BoardEntryLifeMember } from './boardEntryLifeMember';
 import type { BoardEntryMeta } from './boardEntryMeta';
 import type { BoardSquadMember } from './boardSquadMember';
 
@@ -22,4 +23,6 @@ export interface BoardEntry {
   meta?: BoardEntryMeta;
   /** Premiership squad (premiership_players) for P7 "View team". */
   squad?: BoardSquadMember[] | null;
+  /** Extra data for the life-members board (career stats + bio), populated only for boards with the "lifeMembers" layout. */
+  lifeMember?: BoardEntryLifeMember;
 }

@@ -14,6 +14,7 @@ import {
   ListBoard,
   ColumnsBoard,
   GridBoard,
+  LifeMembersBoard,
 } from "./templates";
 
 interface BoardRendererProps {
@@ -94,6 +95,11 @@ export function BoardRenderer({
   if (board.layout === "grid") {
     return wrap(
       <GridBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
+    );
+  }
+  if (board.layout === "lifeMembers") {
+    return wrap(
+      <LifeMembersBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
     );
   }
 

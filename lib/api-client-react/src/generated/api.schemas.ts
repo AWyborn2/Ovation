@@ -3524,6 +3524,22 @@ export interface BoardEntryMeta {
   rank?: number | null;
 }
 
+/**
+ * Extra data for the life-members board (career stats + bio), populated only for boards with the "lifeMembers" layout.
+ */
+export type BoardEntryLifeMember = {
+  /** Induction year. */
+  inducted?: number | null;
+  /** Roles / service line (e.g. "President 1991/92–1998/99"). */
+  roles?: string | null;
+  /** Biography text (may contain blank-line-separated paragraphs). */
+  bio?: string | null;
+  /** Whether the member is a playing (vs non-playing) member. */
+  playing?: boolean;
+  /** Aggregated career stats (null when the member has no linked player). */
+  stats?: LifeMemberStats | null;
+} | null;
+
 export interface BoardEntry {
   /** Season / year label, e.g. "2024/25" (may be empty). */
   season: string;
@@ -3538,6 +3554,8 @@ export interface BoardEntry {
   meta?: BoardEntryMeta;
   /** Premiership squad (premiership_players) for P7 "View team". */
   squad?: BoardSquadMember[] | null;
+  /** Extra data for the life-members board (career stats + bio), populated only for boards with the "lifeMembers" layout. */
+  lifeMember?: BoardEntryLifeMember;
 }
 
 /**
@@ -3728,6 +3746,7 @@ export const DisplayBoardLayout = {
   list: 'list',
   columns: 'columns',
   grid: 'grid',
+  lifeMembers: 'lifeMembers',
 } as const;
 
 /**
