@@ -62,6 +62,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   const hhTenantRow = {
     name: HALLS_HEAD_BRAND.name,
     shortName: HALLS_HEAD_BRAND.shortName ?? null,
+    tagline: HALLS_HEAD_BRAND.tagline ?? null,
     logoUrl: HALLS_HEAD_BRAND.logoUrl ?? null,
     backgroundUrl: HALLS_HEAD_BRAND.backgroundUrl ?? null,
     faviconUrl: HALLS_HEAD_BRAND.faviconUrl ?? null,
@@ -157,6 +158,31 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     );
     expect(withoutFavicon.faviconUrl).toBe(DEFAULT_BRAND.faviconUrl);
     expect(withoutFavicon.faviconUrl).toBeNull();
+  });
+
+  it("carries the tenant's tagline through, and null when unset (no cross-tenant leak) (A9)", () => {
+    // Halls Head's seeded tagline survives the merge.
+    expect(buildTenantBrand(hhTenantRow, hhClubRow).tagline).toBe(
+      "CRICKET CLUB · EST 1991",
+    );
+    // A tenant that has set no tagline resolves to null — never another club's.
+    const noTagline = buildTenantBrand(
+      {
+        name: "Tagline-less Club",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        backgroundColour: null,
+        primaryColour: null,
+        juniorsColour: null,
+        useNavyBase: false,
+        badgeStyle: null,
+      },
+      null,
+    );
+    expect(noTagline.tagline).toBeNull();
+    expect(noTagline.tagline).not.toBe(HALLS_HEAD_BRAND.tagline);
   });
 
   it("derives missing accents from the tenant's OWN backgroundColour, not the default", () => {

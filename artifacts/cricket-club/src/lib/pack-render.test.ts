@@ -251,6 +251,47 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     }
   });
 
+  it("(A9) renders the tenant tagline when set, over the EST 1991 sample", () => {
+    const input = sampleCardInput("matchSummary");
+    const withTagline: PackCardData = {
+      brand: { name: "Other Club", logoUrl: null, tagline: "PROUDLY LOCAL · EST 2010" },
+      hashtag: "",
+    };
+    for (const size of ["square", "portrait", "story"] as CardSize[]) {
+      const html = renderPackCard(input, size, false, TOKENS, false, withTagline);
+      expect(html, `${size}`).toContain("PROUDLY LOCAL · EST 2010");
+      expect(html, `${size}`).not.toContain("EST 1991");
+    }
+  });
+
+  it("(A9) leaves the tagline empty (no EST 1991) when the tenant has none", () => {
+    const input = sampleCardInput("matchSummary");
+    const noTagline: PackCardData = {
+      brand: { name: "Other Club", logoUrl: null },
+      hashtag: "",
+    };
+    const html = renderPackCard(input, "story", false, TOKENS, false, noTagline);
+    expect(html).not.toContain("EST 1991");
+    expect(html).not.toContain("CRICKET CLUB · EST");
+  });
+
+  it("(A9/S3) never leaks the sample competition hashtag (#PEELPREMIERLEAGUE) on a data-bearing render", () => {
+    // weekendWrap/ladder headers carry the {{hashtagsExtra}} competition line,
+    // whose sample is the hard-coded Peel literal — it must be cleared.
+    const noExtra: PackCardData = {
+      brand: { name: "Other Club", logoUrl: null },
+      hashtag: "",
+    };
+    for (const kind of ["weekendWrap", "ladder"] as ShareCardInput["kind"][]) {
+      const input = sampleCardInput(kind);
+      for (const size of ["square", "portrait", "story"] as CardSize[]) {
+        const html = renderPackCard(input, size, true, TOKENS, false, noExtra);
+        expect(html, `${kind} ${size}`).not.toContain("PEELPREMIERLEAGUE");
+        expect(html, `${kind} ${size}`).not.toContain("LIVE UPDATES");
+      }
+    }
+  });
+
   it("keeps the sample defaults on a no-data render (gallery / brand-less)", () => {
     // Sanity: without a `data` argument the samples still apply, so the existing
     // gallery-preview behaviour is unchanged.

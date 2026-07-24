@@ -379,6 +379,7 @@ export const GetMatchResponse = zod.object({
   "club": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).'),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
@@ -485,6 +486,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "club": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).'),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
@@ -587,6 +589,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "club": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).'),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
@@ -4684,6 +4687,7 @@ export const GetSocialSettingsResponse = zod.object({
   "brand": zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).'),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
   "backgroundColour": zod.string().nullish(),
@@ -6934,6 +6938,7 @@ export const CreateCardRenderStillBody = zod.object({
 export const GetTenantBrandResponse = zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).'),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
@@ -6958,6 +6963,7 @@ export const GetTenantBrandResponse = zod.union([zod.object({
 export const UpdateTenantBrandBody = zod.object({
   "name": zod.string().optional(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards.'),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
   "backgroundColour": zod.string().nullish(),
@@ -6965,11 +6971,12 @@ export const UpdateTenantBrandBody = zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
-}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these eight properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
+}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these nine properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
 
 export const UpdateTenantBrandResponse = zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards. Null = no tagline (renderers show nothing).'),
   "logoUrl": zod.string().nullish(),
   "logoUrl128": zod.string().nullish(),
   "backgroundUrl": zod.string().nullish().describe('Optional site background image URL. Null = neutral (no image).'),
@@ -7201,6 +7208,7 @@ export const updateAdminTenantBrandBodyJuniorsColourRegExp = new RegExp('^#[0-9a
 export const UpdateAdminTenantBrandBody = zod.object({
   "name": zod.string().min(1).optional(),
   "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards.'),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
   "backgroundColour": zod.string().regex(updateAdminTenantBrandBodyBackgroundColourRegExp).nullish(),
@@ -7208,7 +7216,7 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "juniorsColour": zod.string().regex(updateAdminTenantBrandBodyJuniorsColourRegExp).nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
-}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these eight properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
+}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
 
 export const UpdateAdminTenantBrandResponse = zod.object({
   "tenant": zod.object({

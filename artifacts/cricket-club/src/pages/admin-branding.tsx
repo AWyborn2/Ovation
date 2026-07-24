@@ -80,6 +80,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const { mode } = useThemeMode();
 
   const [name, setName] = useState(brand.name);
+  const [tagline, setTagline] = useState(brand.tagline ?? "");
   const [logoUrl, setLogoUrl] = useState(brand.logoUrl ?? "");
   const [faviconUrl, setFaviconUrl] = useState(brand.faviconUrl ?? "");
 
@@ -106,6 +107,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
 
   useEffect(() => {
     setName(brand.name);
+    setTagline(brand.tagline ?? "");
     setLogoUrl(brand.logoUrl ?? "");
     setFaviconUrl(brand.faviconUrl ?? "");
     const snapped = snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour);
@@ -185,6 +187,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
         data: {
           name: name.trim(),
           shortName: brand.shortName,
+          tagline: tagline.trim() || null,
           logoUrl: logoUrl || null,
           faviconUrl: faviconUrl || null,
           backgroundColour: brand.backgroundColour,
@@ -199,6 +202,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
         data: {
           name: name.trim(),
           shortName: brand.shortName,
+          tagline: tagline.trim() || null,
           logoUrl: logoUrl || null,
           faviconUrl: faviconUrl || null,
           backgroundColour: customPrimary || null,
@@ -239,14 +243,29 @@ function Editor({ brand }: { brand: TenantBrand }) {
           <CardHeader>
             <CardTitle>Club name</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5">
-            <Label htmlFor="brand-name">Name</Label>
-            <Input
-              id="brand-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              data-testid="input-brand-name"
-            />
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="brand-name">Name</Label>
+              <Input
+                id="brand-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="input-brand-name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="brand-tagline">Tagline</Label>
+              <Input
+                id="brand-tagline"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder="e.g. CRICKET CLUB · EST 1991"
+                data-testid="input-brand-tagline"
+              />
+              <p className="text-xs text-muted-foreground">
+                Shown under your club name on share cards. Leave blank for none.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

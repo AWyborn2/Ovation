@@ -75,6 +75,8 @@ export interface PackCardData {
    */
   brand?: {
     name?: string | null;
+    /** Short club tagline → the `clubTagline` header sub-line. Empty when unset. */
+    tagline?: string | null;
     logoUrl?: string | null;
     primaryColour?: string | null;
     backgroundColour?: string | null;
@@ -837,9 +839,17 @@ function applyPackData(bound: BoundInput, data: PackCardData, kind: string): voi
   values["clubHashtag"] = data.hashtag ?? "";
   values["hashtags"] = data.hashtag ?? "";
   // S2: the clubTagline sample is "CRICKET CLUB · EST 1991" — Halls Head's
-  // founding year. There is no tenant tagline source yet (follow-up A9), so clear
-  // it rather than render another club's founding year.
-  values["clubTagline"] = "";
+  // founding year. Bind the tenant's own tagline (A9) where set, else "" so
+  // another club's founding line never leaks through the sample default.
+  values["clubTagline"] = data.brand?.tagline ?? "";
+  // S3: the `hashtagsExtra` sample is a hard-coded competition line
+  // ("#PEELPREMIERLEAGUE" / "LIVE UPDATES"). There is no clean per-tenant
+  // competition source threaded onto PackCardData yet — deriving it would mean
+  // inventing an association name — so clear it on every data-bearing render
+  // rather than leak the Peel literal.
+  // TODO(A9): thread a real competition hashtag from central match context
+  // (central.matches grade/competition) once cards carry that on PackCardData.
+  values["hashtagsExtra"] = "";
 
   // A3 — active sponsors → sponsor1..3 slots (already kind-filtered upstream).
   (data.sponsors ?? []).slice(0, 3).forEach((s, idx) => {

@@ -49,6 +49,7 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
       TenantRow,
       | "name"
       | "shortName"
+      | "tagline"
       | "logoUrl"
       | "faviconUrl"
       | "backgroundColour"
@@ -60,6 +61,7 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
   > = {};
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
   if (parsed.data.shortName !== undefined) updates.shortName = parsed.data.shortName;
+  if (parsed.data.tagline !== undefined) updates.tagline = parsed.data.tagline;
   if (parsed.data.logoUrl !== undefined) updates.logoUrl = parsed.data.logoUrl;
   if (parsed.data.faviconUrl !== undefined) updates.faviconUrl = parsed.data.faviconUrl;
   if (parsed.data.backgroundColour !== undefined) updates.backgroundColour = parsed.data.backgroundColour;

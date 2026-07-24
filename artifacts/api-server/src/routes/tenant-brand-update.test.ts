@@ -91,6 +91,31 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
     expect(row.backgroundColour).toBe("#112233");
   });
 
+  it("round-trips the tagline through PATCH and GET (A9)", async () => {
+    const res = await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ tagline: "PROUDLY LOCAL · EST 2010" })
+      .expect(200);
+    expect(res.body.tagline).toBe("PROUDLY LOCAL · EST 2010");
+
+    const [row] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, tenantAId));
+    expect(row.tagline).toBe("PROUDLY LOCAL · EST 2010");
+
+    // Clearing it (explicit null) is honoured, not left at the old value.
+    const cleared = await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ tagline: null })
+      .expect(200);
+    expect(cleared.body.tagline).toBeNull();
+  });
+
   it("a partial update (only logoUrl) leaves other fields untouched", async () => {
     await request(app)
       .patch("/api/tenant-brand")

@@ -454,6 +454,8 @@ export function ShareCardModal({
     brand: bundle?.brand
       ? {
           name: bundle.brand.name,
+          // Club tagline (A9) → the pack header sub-line; empty when unset.
+          tagline: bundle.brand.tagline,
           logoUrl: bundle.brand.logoUrl,
           // Colours seed the pack's DEFAULT token palette (primary → accent,
           // juniors → panel) via `brandDefaultTokens`; background is carried but

@@ -38,6 +38,7 @@ async function main(): Promise<void> {
     appClubId: HALLS_HEAD_APP_CLUB_ID,
     name: club?.name ?? HALLS_HEAD_BRAND.name,
     shortName: club?.shortName ?? HALLS_HEAD_BRAND.shortName ?? null,
+    tagline: HALLS_HEAD_BRAND.tagline ?? null,
     logoUrl: club?.logoUrl ?? HALLS_HEAD_BRAND.logoUrl ?? null,
     faviconUrl: null,
     backgroundUrl: HALLS_HEAD_BRAND.backgroundUrl ?? null,
