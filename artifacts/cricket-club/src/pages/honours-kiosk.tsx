@@ -355,6 +355,23 @@ export default function HonoursKiosk() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, frames, DWELL, ENDHOLD, SPEED]);
 
+  // The board title and its column-heading row are pinned (CSS `position:
+  // sticky`) so they stay legible while a board credit-scrolls. The heading row
+  // sticks *below* the title, so publish the title's live height as
+  // `--hb-head-h` for the sticky heading's `top` offset — re-measured per frame
+  // and on any resize of the (viewport-scaled) title.
+  useEffect(() => {
+    const board = frameRef.current?.querySelector<HTMLElement>(".hb-board");
+    const head = board?.querySelector<HTMLElement>(".hb-head");
+    if (!board || !head) return;
+    const measure = () =>
+      board.style.setProperty("--hb-head-h", `${head.offsetHeight}px`);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(head);
+    return () => ro.disconnect();
+  }, [index, frames]);
+
   if (!data || !settings || !brand || !frames.length) {
     return (
       <div className="hb-kiosk flex items-center justify-center text-white">
