@@ -862,10 +862,13 @@
   background: var(--club-primary, #c1121f);
 }
 
-/* P10 · Ovation App — matches the main web app: charcoal surfaces, hairline
-   borders, club-gold accents on dark ink, serif display titles. Themes every
-   board (premierships + life members included) to the app's own look. Gold is
-   pulled from the tenant brand (--club-primary), so it tracks each club. */
+/* P10 · Ovation App — matches the main web app: neutral charcoal surfaces,
+   hairline borders, the tenant's PRIMARY accent on dark ink, serif display
+   titles. Themes every board (premierships + life members included).
+   NB: the kiosk maps the brand's primary accent (brand.primaryColour — the
+   app's --primary/gold) to --club-secondary (theme.ts). --club-primary holds
+   the club's dark *background* colour, so the accent must read --club-secondary
+   to actually track each tenant's primary, like the app does. */
 .skin-p10 {
   --hb-bg: #0e131b;
   --hb-board-bg: #151c27;
@@ -876,12 +879,12 @@
   --hb-muted: #8b95a6;
   --hb-faint: rgba(255, 255, 255, 0.05);
   --hb-row-stripe: rgba(255, 255, 255, 0.035);
-  --hb-accent: var(--club-primary, #c8a951);
+  --hb-accent: var(--club-secondary, #c8a951);
   --hb-accent-ink: #12161d;
   --hb-head-border: rgba(255, 255, 255, 0.1);
-  --hb-crest-bg: var(--club-primary, #c8a951);
+  --hb-crest-bg: var(--club-secondary, #c8a951);
   --hb-crest-ink: #12161d;
-  --hb-chip-bg: var(--club-primary, #c8a951);
+  --hb-chip-bg: var(--club-secondary, #c8a951);
   --hb-chip-ink: #12161d;
   --hb-title-font: "Bricolage Grotesque", "Georgia", serif;
 }
