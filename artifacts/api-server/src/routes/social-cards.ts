@@ -1111,8 +1111,14 @@ router.post(
       res.setHeader("Content-Length", String(buffer.length));
       res.send(buffer);
     } catch (err) {
-      req.log.error({ err: String(err) }, "card still render failed");
-      res.status(500).json({ error: "Card render failed" });
+      // This endpoint is admin + entitlement gated, so surfacing the underlying
+      // cause to the caller is safe — and it turns an otherwise-opaque
+      // production 500 into a self-diagnosing message in the Studio modal.
+      // Log the full error object (pino serialises the stack) rather than a
+      // pre-flattened string so server logs keep the trace too.
+      req.log.error({ err }, "card still render failed");
+      const detail = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: `Card render failed: ${detail}` });
     }
   },
 );
