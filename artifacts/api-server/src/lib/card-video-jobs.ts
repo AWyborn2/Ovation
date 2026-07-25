@@ -76,6 +76,7 @@ export function createJob(
   input: unknown,
   options: unknown,
   fps?: number,
+  harnessOrigin?: string | null,
 ): CardVideoJob {
   prune();
   const id = randomUUID();
@@ -106,6 +107,7 @@ export function createJob(
           input,
           options,
           fps: fps ?? undefined,
+          harnessOrigin,
           onProgress: (p) => {
             const j = jobs.get(id);
             if (!j) return;

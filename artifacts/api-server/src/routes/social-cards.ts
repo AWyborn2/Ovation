@@ -61,7 +61,10 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { ensurePackTemplates } from "../lib/design-packs";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
-import { renderCardStill } from "../lib/card-video-renderer";
+import {
+  renderCardStill,
+  harnessOriginFromHeaders,
+} from "../lib/card-video-renderer";
 import {
   DEFAULT_TEMPLATES,
   ensureSettings,
@@ -1106,6 +1109,7 @@ router.post(
       const { buffer, contentType } = await renderCardStill(
         parsed.data.input,
         parsed.data.options,
+        harnessOriginFromHeaders(req.headers),
       );
       res.setHeader("Content-Type", contentType);
       res.setHeader("Content-Length", String(buffer.length));
