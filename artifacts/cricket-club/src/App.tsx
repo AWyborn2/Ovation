@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useRoute } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
@@ -250,11 +250,28 @@ function KioskGate() {
   );
 }
 
-function Router() {
+// Exported for tests (the harness-before-platform-gate regression). Not used by
+// name elsewhere — App mounts it directly.
+export function Router() {
   // On the apex/marketing host the brand request returns the platform marker; mount
   // the landing tree instead of any club app. Render nothing until the mode is known
   // so the club chrome never flashes on the apex.
   const platform = usePlatform();
+
+  // The server-side render harness (/__card-render) is driven entirely by the
+  // payload the renderer injects — it needs no platform/tenant brand data. Match
+  // it BEFORE the platform-loading gate below: gating it behind usePlatform()'s
+  // loading state let the headless renderer hang until the 30s waitForFunction
+  // timeout whenever the brand request was slow in that (cookieless) context.
+  const [isCardRenderHarness] = useRoute("/__card-render");
+  if (isCardRenderHarness) {
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <CardRenderHarness />
+      </Suspense>
+    );
+  }
+
   if (platform.isLoading) return null;
   if (platform.isPlatform) return <LandingRoutes />;
   return (
