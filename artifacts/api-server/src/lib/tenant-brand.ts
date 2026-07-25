@@ -56,7 +56,14 @@ const cache = new Map<number, { value: TenantBrand; at: number }>();
  * overridden by the clubs-register row.  The clubs register becomes the
  * default/fallback (used when the tenant has explicitly set nothing).
  *
- * Non-colour fields (name, logo) keep the clubs-register row as primary source
+ * `logoUrl` follows the same tenant-wins rule as colours: the Branding PATCH
+ * writes the admin-uploaded logo to the `tenants` row, so a non-empty tenant
+ * logo must win — otherwise every uploaded club crest is silently overridden by
+ * the (often stale/seeded) clubs-register URL and the card renders a blank logo.
+ * The clubs register is the seed/default, used only when the tenant uploaded
+ * nothing.  (Empty strings count as "unset" — a cleared upload falls back too.)
+ *
+ * Other non-colour fields (name) keep the clubs-register row as primary source
  * because those come from the authoritative central registry.  Halls Head's own
  * brand comes from its clubs/tenant record (seeded), so the neutral fallback
  * only applies to tenants that have set no brand — it never leaks Halls Head.
@@ -79,10 +86,18 @@ export function buildTenantBrand(
     // Tagline is tenant-row only (no clubs-register equivalent); null when the
     // tenant has set none, so a brand-less club shows nothing under the name.
     tagline: tenant?.tagline ?? DEFAULT_BRAND.tagline,
-    logoUrl: club?.logoUrl ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl,
-    // The tenants row carries no 128px logo: prefer the clubs register's 128px,
-    // else the tenant's own logo (better than the default club's), else fallback.
-    logoUrl128: club?.logoUrl128 ?? tenant?.logoUrl ?? DEFAULT_BRAND.logoUrl128,
+    // Admin-uploaded tenant logo wins (empty string = unset); clubs register is
+    // the seed fallback, then the neutral default. See the precedence note above.
+    logoUrl: tenant?.logoUrl || club?.logoUrl || DEFAULT_BRAND.logoUrl,
+    // The tenants row carries no dedicated 128px logo. When the tenant uploaded a
+    // logo that genuinely overrides the register (differs from it), use that for
+    // the 128px slot too so the upload shows everywhere. Otherwise prefer the
+    // clubs register's optimised 128px, then the tenant logo, then the fallback.
+    logoUrl128:
+      (tenant?.logoUrl && tenant.logoUrl !== club?.logoUrl ? tenant.logoUrl : "") ||
+      club?.logoUrl128 ||
+      tenant?.logoUrl ||
+      DEFAULT_BRAND.logoUrl128,
     // No clubs-register equivalent for backgroundUrl — tenant row only, else the
     // neutral default (no image).
     backgroundUrl: tenant?.backgroundUrl ?? DEFAULT_BRAND.backgroundUrl,
