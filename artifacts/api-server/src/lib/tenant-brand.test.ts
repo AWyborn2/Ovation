@@ -123,6 +123,31 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     );
   });
 
+  it("the admin-uploaded tenant logo wins over the clubs-register seed (blank-crest bug)", () => {
+    // Repro: a club whose register row still points at the seeded (often
+    // hotlink-blocked / stale) URL, but whose admin uploaded a real logo via
+    // Branding — which the PATCH writes to the tenants row. The upload must win,
+    // otherwise the card renders the blank register logo.
+    const UPLOADED = "https://cdn.example.com/tenant/uploaded-logo.png";
+    const brand = buildTenantBrand(
+      { ...hhTenantRow, logoUrl: UPLOADED },
+      hhClubRow, // register still carries the seeded Cloudinary URL
+    );
+    expect(brand.logoUrl).toBe(UPLOADED);
+    expect(brand.logoUrl).not.toBe(HALLS_HEAD_BRAND.logoUrl);
+    // A genuine override also flows to the 128px slot so the upload shows everywhere.
+    expect(brand.logoUrl128).toBe(UPLOADED);
+  });
+
+  it("an empty-string tenant logo falls back to the register seed, never blank", () => {
+    const brand = buildTenantBrand(
+      { ...hhTenantRow, logoUrl: "" },
+      hhClubRow,
+    );
+    expect(brand.logoUrl).toBe(HALLS_HEAD_BRAND.logoUrl);
+    expect(brand.logoUrl128).toBe(HALLS_HEAD_BRAND.logoUrl128);
+  });
+
   it("uses the tenant's own faviconUrl (Phase 2 R8: per-tenant, no cross-tenant leak)", () => {
     const withFavicon = buildTenantBrand(
       {
