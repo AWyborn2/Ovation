@@ -10,15 +10,40 @@ import { logger } from "./logger";
 // preview (single source of truth — no node-canvas port to drift out of sync).
 const HARNESS_PATH = "/__card-render";
 
-// The harness lives in the cricket-club web app. In dev and prod alike, every
-// artifact is reachable through the shared reverse proxy on localhost:80, so we
-// default there and allow an explicit override for non-standard topologies.
-function harnessUrl(): string {
-  const explicit = process.env["RENDER_HARNESS_URL"];
-  if (explicit) return explicit;
+// The harness lives in the cricket-club web app, so the api-server must drive
+// Chromium to an origin that actually serves it. In the autoscale deployment the
+// api-server sits behind the application router and NOTHING listens on
+// localhost:80, so we prefer the origin the request itself arrived on (the same
+// public host that serves the web app's routes). Precedence: explicit
+// RENDER_HARNESS_URL / RENDER_HARNESS_ORIGIN env overrides, then the per-request
+// origin, then localhost:80 as a last resort for request-less contexts (the
+// render smoke test / internal callers).
+function harnessUrl(originOverride?: string | null): string {
+  const explicitUrl = process.env["RENDER_HARNESS_URL"];
+  if (explicitUrl) return explicitUrl;
   const origin =
-    process.env["RENDER_HARNESS_ORIGIN"] ?? "http://localhost:80";
+    process.env["RENDER_HARNESS_ORIGIN"] ??
+    (originOverride || undefined) ??
+    "http://localhost:80";
   return `${origin.replace(/\/$/, "")}${HARNESS_PATH}`;
+}
+
+// Derive a reachable harness origin from an inbound request's (forwarded)
+// headers — the same public host the client used to reach the API also serves
+// the web app's `/__card-render` route. Returns null when host headers are
+// absent (e.g. an internal job with no originating request), letting
+// harnessUrl() fall back to the env override or localhost.
+export function harnessOriginFromHeaders(
+  headers: Record<string, string | string[] | undefined>,
+): string | null {
+  const first = (v: string | string[] | undefined): string | undefined =>
+    (Array.isArray(v) ? v[0] : v)?.split(",")[0]?.trim() || undefined;
+  const host = first(headers["x-forwarded-host"]) ?? first(headers["host"]);
+  if (!host) return null;
+  const proto =
+    first(headers["x-forwarded-proto"]) ??
+    (/^(localhost|127\.|\[?::1)/.test(host) ? "http" : "https");
+  return `${proto}://${host}`;
 }
 
 // Resolve the Chromium binary. The Nix store path changes across rebuilds, so we
@@ -88,6 +113,9 @@ export type RenderParams = {
   options: unknown;
   fps?: number;
   onProgress?: (progress: number) => void;
+  // Per-request harness origin (see harnessOriginFromHeaders). Optional: falls
+  // back to the env override / localhost when absent.
+  harnessOrigin?: string | null;
 };
 
 type HarnessMeta = {
@@ -154,7 +182,7 @@ export async function renderCardVideo(
       logger.warn({ err: String(err) }, "card-video harness page error"),
     );
 
-    const url = harnessUrl();
+    const url = harnessUrl(params.harnessOrigin);
     await page.goto(url, { waitUntil: "load", timeout: 30_000 });
     await page.waitForFunction(
       () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
@@ -260,6 +288,7 @@ export type StillRenderResult = {
 export async function renderCardStill(
   input: unknown,
   options: unknown,
+  harnessOrigin?: string | null,
 ): Promise<StillRenderResult> {
   const browser = await getBrowser();
   let page: Page | null = null;
@@ -269,7 +298,7 @@ export async function renderCardStill(
       logger.warn({ err: String(err) }, "card-still harness page error"),
     );
 
-    const url = harnessUrl();
+    const url = harnessUrl(harnessOrigin);
     await page.goto(url, { waitUntil: "load", timeout: 30_000 });
     await page.waitForFunction(
       () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),

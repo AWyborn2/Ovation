@@ -6,6 +6,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { createJob, getJob, publicJob } from "../lib/card-video-jobs";
+import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 
 const router: IRouter = Router();
 
@@ -23,7 +24,13 @@ router.post(
       return;
     }
     const { input, options, fps } = parsed.data;
-    const job = createJob(getTenantId(req), input, options, fps ?? undefined);
+    const job = createJob(
+      getTenantId(req),
+      input,
+      options,
+      fps ?? undefined,
+      harnessOriginFromHeaders(req.headers),
+    );
     res.status(201).json(publicJob(job));
   },
 );
