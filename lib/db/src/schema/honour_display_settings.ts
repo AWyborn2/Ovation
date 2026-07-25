@@ -92,6 +92,8 @@ export interface HonourColourOverridesJson {
   background?: string | null;
   text?: string | null;
   accent?: string | null;
+  heading?: string | null;
+  season?: string | null;
 }
 
 // Admin-defined composite "columns" board (several existing list boards placed

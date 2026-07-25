@@ -124,6 +124,10 @@ export function rootStyle(
       vars["--hb-crest-bg"] = ov.accent;
       vars["--hb-chip-bg"] = ov.accent;
     }
+    // Heading + season text colours default to the accent; let admins override
+    // them independently (e.g. keep gold names but white column headings).
+    if (ov?.heading) vars["--hb-head-ink"] = ov.heading;
+    if (ov?.season) vars["--hb-season-ink"] = ov.season;
 
     if (settings.defaultFont) vars["--hb-title-font"] = settings.defaultFont;
   }

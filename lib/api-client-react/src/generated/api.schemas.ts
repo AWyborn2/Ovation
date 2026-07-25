@@ -3960,6 +3960,10 @@ export interface HonourColourOverrides {
   background?: string | null;
   text?: string | null;
   accent?: string | null;
+  /** Column-heading text colour (grid/columns boards). */
+  heading?: string | null;
+  /** Season / leading-column text colour. */
+  season?: string | null;
 }
 
 /**
