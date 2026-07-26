@@ -5482,7 +5482,9 @@ export const GetHonourDisplayResponse = zod.object({
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),
-  "accent": zod.string().nullish()
+  "accent": zod.string().nullish(),
+  "heading": zod.string().nullish().describe('Column-heading text colour (grid\/columns boards).'),
+  "season": zod.string().nullish().describe('Season \/ leading-column text colour.')
 }).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
   "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
 }),
@@ -5749,7 +5751,9 @@ export const GetKioskDisplayResponse = zod.object({
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),
-  "accent": zod.string().nullish()
+  "accent": zod.string().nullish(),
+  "heading": zod.string().nullish().describe('Column-heading text colour (grid\/columns boards).'),
+  "season": zod.string().nullish().describe('Season \/ leading-column text colour.')
 }).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
   "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
 }),
@@ -5895,7 +5899,9 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),
-  "accent": zod.string().nullish()
+  "accent": zod.string().nullish(),
+  "heading": zod.string().nullish().describe('Column-heading text colour (grid\/columns boards).'),
+  "season": zod.string().nullish().describe('Season \/ leading-column text colour.')
 }).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
   "defaultFont": zod.string().nullish()
 })
@@ -5996,7 +6002,9 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "colourOverrides": zod.object({
   "background": zod.string().nullish(),
   "text": zod.string().nullish(),
-  "accent": zod.string().nullish()
+  "accent": zod.string().nullish(),
+  "heading": zod.string().nullish().describe('Column-heading text colour (grid\/columns boards).'),
+  "season": zod.string().nullish().describe('Season \/ leading-column text colour.')
 }).optional().describe('Club-wide colour overrides layered on top of the active skin. Each is optional; an unset\/empty value restores the skin\'s own colour.'),
   "defaultFont": zod.string().nullish().describe('Club-wide default title font stack (null = the skin\'s font).')
 })

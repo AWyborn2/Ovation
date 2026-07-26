@@ -330,6 +330,8 @@ function SettingsForm({
         background: colourOverrides.background || null,
         text: colourOverrides.text || null,
         accent: colourOverrides.accent || null,
+        heading: colourOverrides.heading || null,
+        season: colourOverrides.season || null,
       },
       defaultFont: defaultFont || null,
     };
@@ -600,6 +602,18 @@ function SettingsForm({
               value={colourOverrides.accent ?? ""}
               onChange={(v) => setColourOverrides((p) => ({ ...p, accent: v }))}
               testId="override-accent"
+            />
+            <ColourField
+              label="Column headings"
+              value={colourOverrides.heading ?? ""}
+              onChange={(v) => setColourOverrides((p) => ({ ...p, heading: v }))}
+              testId="override-heading"
+            />
+            <ColourField
+              label="Season column"
+              value={colourOverrides.season ?? ""}
+              onChange={(v) => setColourOverrides((p) => ({ ...p, season: v }))}
+              testId="override-season"
             />
           </div>
           <label className="space-y-1 block max-w-sm">

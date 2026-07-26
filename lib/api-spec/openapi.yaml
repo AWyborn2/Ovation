@@ -10873,6 +10873,14 @@ components:
         accent:
           type: string
           nullable: true
+        heading:
+          type: string
+          nullable: true
+          description: Column-heading text colour (grid/columns boards).
+        season:
+          type: string
+          nullable: true
+          description: Season / leading-column text colour.
 
     HonourDisplaySettings:
       type: object
