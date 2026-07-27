@@ -186,6 +186,38 @@ export function isOverrideColourKey(key: string): key is OverrideColourKey {
 }
 
 /**
+ * On-surface reading-text tokens whose lightness follows the light/dark mode.
+ * These sit on surfaces that themselves invert between modes (page, cards,
+ * popovers, muted/secondary panels), so a club picks a single text colour and the
+ * engine flips its lightness — keeping hue and saturation — to stay legible in
+ * whichever mode it wasn't picked in.
+ *
+ * Text on a fixed accent chip (`--primary-foreground`, `--accent-foreground`,
+ * `--destructive-foreground`) is deliberately excluded: those chips are the same
+ * colour in both modes, so their text must NOT invert with the mode.
+ */
+const MODE_INK_KEYS: ReadonlySet<string> = new Set([
+  "--foreground",
+  "--card-foreground",
+  "--popover-foreground",
+  "--muted-foreground",
+  "--secondary-foreground",
+]);
+
+/**
+ * Flip an ink override's lightness to match the mode's polarity — dark mode wants
+ * light ink, light mode wants dark ink — while preserving hue and saturation. A
+ * colour already on the correct side of mid-grey is returned untouched, so a club
+ * that picks a deliberately-tuned ink for the current mode keeps it exactly.
+ */
+function adaptInkToMode(hsl: Hsl, mode: ThemeMode): Hsl {
+  const wantLight = mode === "dark";
+  const isLight = hsl.l > 50;
+  if (wantLight === isLight) return hsl;
+  return { ...hsl, l: 100 - hsl.l };
+}
+
+/**
  * Overlay a brand's `themeOverrides` onto an already-derived token map, mutating
  * and returning it. Colour keys are converted hex→triplet (unparseable values are
  * skipped, so a bad override degrades to the derived value rather than breaking
@@ -193,16 +225,24 @@ export function isOverrideColourKey(key: string): key is OverrideColourKey {
  * ignored. A null/absent map is a no-op — the derived theme is returned unchanged,
  * which is what keeps `deriveThemeTokens(DEFAULT_BRAND, …)` byte-identical to the
  * static index.css fallback.
+ *
+ * On-surface text overrides ({@link MODE_INK_KEYS}) are adapted to `mode` so they
+ * invert with the light/dark toggle and stay readable; every other colour is
+ * applied as-picked.
  */
 export function applyThemeOverrides(
   tokens: Record<string, string>,
   overrides: Record<string, string> | null | undefined,
+  mode: ThemeMode,
 ): Record<string, string> {
   if (!overrides) return tokens;
   for (const [key, value] of Object.entries(overrides)) {
     if (isOverrideColourKey(key)) {
-      const triplet = hexToHslTriplet(value);
-      if (triplet) tokens[key] = triplet;
+      const hsl = hexToHsl(value);
+      if (hsl) {
+        const adapted = MODE_INK_KEYS.has(key) ? adaptInkToMode(hsl, mode) : hsl;
+        tokens[key] = hslString(adapted);
+      }
     } else if (OVERRIDE_RAW_SET.has(key)) {
       tokens[key] = value;
     }
@@ -349,6 +389,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
       "--destructive-border": ACCENT_TOKENS.red,
       },
       brand.themeOverrides,
+      mode,
     );
   }
 
@@ -382,6 +423,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
     "--destructive-border": "6 78% 40%",
     },
     brand.themeOverrides,
+    mode,
   );
 }
 

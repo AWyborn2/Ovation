@@ -88,6 +88,24 @@ export const CURATED_COLOUR_CONTROLS: readonly CuratedColourControl[] = [
     description: "Delete buttons and error states.",
     keys: ["--destructive", "--destructive-border"],
   },
+  {
+    id: "text",
+    label: "Body text",
+    description: "The main reading text on your pages, cards and popovers.",
+    keys: ["--foreground", "--card-foreground", "--popover-foreground"],
+  },
+  {
+    id: "mutedText",
+    label: "Muted text",
+    description: "Secondary, dimmer text — captions, labels and subtitles.",
+    keys: ["--muted-foreground", "--secondary-foreground"],
+  },
+  {
+    id: "buttonText",
+    label: "Button text",
+    description: "Text and icons that sit on your accent buttons and chips.",
+    keys: ["--primary-foreground", "--accent-foreground"],
+  },
 ] as const;
 
 /** Corner-radius presets for the `--radius` token. */
