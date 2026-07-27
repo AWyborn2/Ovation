@@ -58,6 +58,13 @@ export interface CuratedColourControl {
 
 export const CURATED_COLOUR_CONTROLS: readonly CuratedColourControl[] = [
   {
+    id: "background",
+    label: "Page background",
+    description:
+      "The outermost page colour behind your content. Overrides the app-look base, so you can recolour it without leaving the Broadcast look.",
+    keys: ["--background"],
+  },
+  {
     id: "surface",
     label: "Card surface",
     description: "Cards, panels and popovers your content sits on.",
