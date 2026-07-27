@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { TenantBrandThemeOverrides } from './tenantBrandThemeOverrides';
 
 /**
  * A tenant's brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web/mobile theme and document title.
@@ -45,4 +46,9 @@ export interface TenantBrand {
      * @nullable
      */
   badgeStyle?: string | null;
+  /**
+     * Optional per-token theme overrides keyed by CSS custom property (e.g. {"--card": "#101826", "--radius": "0.75rem"}). Colour tokens carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value. Null = a fully-derived theme (the default).
+     * @nullable
+     */
+  themeOverrides?: TenantBrandThemeOverrides;
 }

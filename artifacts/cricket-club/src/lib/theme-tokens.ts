@@ -58,6 +58,38 @@ export function hexToHslTriplet(hex?: string | null): string | null {
 }
 
 /**
+ * "H S% L%" (the triplet a CSS HSL custom property stores) → "#rrggbb", or null
+ * when the triplet is malformed. The inverse of {@link hexToHslTriplet}; used to
+ * seed `<input type="color">` swatches in the override editors from the derived
+ * auto value so a picker opens on the colour it is actually replacing.
+ */
+export function hslTripletToHex(triplet?: string | null): string | null {
+  if (!triplet) return null;
+  const m = /^\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*$/.exec(triplet);
+  if (!m) return null;
+  const h = parseFloat(m[1]);
+  const s = parseFloat(m[2]) / 100;
+  const l = parseFloat(m[3]) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const toHex = (v: number) =>
+    Math.max(0, Math.min(255, Math.round((v + mm) * 255)))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
  * The design system's fixed navy surface scales — the Ovation fallback when no
  * club backgroundColour is available, it is too light, or `useNavyBase` is set.
  * Dark mode: #0B0F1A page → #131826 card → #1B2236 elevated → #232B3D border.
@@ -93,6 +125,90 @@ export const ACCENT_TOKENS: Record<AccentToken, string> = {
   red: "9 85% 62%",
 };
 export type { AccentToken };
+
+/**
+ * The colour CSS custom properties a tenant/concierge theme override may target.
+ * These are exactly the keys {@link deriveThemeTokens} emits, so an override for
+ * any of them replaces the derived value. Override values for these keys are
+ * stored as 6-digit hex and converted to the "H S% L%" triplet at apply time.
+ */
+export const OVERRIDE_COLOUR_KEYS = [
+  "--background",
+  "--foreground",
+  "--border",
+  "--input",
+  "--ring",
+  "--card",
+  "--card-foreground",
+  "--card-border",
+  "--popover",
+  "--popover-foreground",
+  "--popover-border",
+  "--primary",
+  "--primary-foreground",
+  "--primary-border",
+  "--secondary",
+  "--secondary-foreground",
+  "--secondary-border",
+  "--muted",
+  "--muted-foreground",
+  "--muted-border",
+  "--accent",
+  "--accent-foreground",
+  "--accent-border",
+  "--destructive",
+  "--destructive-foreground",
+  "--destructive-border",
+] as const;
+
+/**
+ * Non-colour theme tokens an override may target. Their values are raw CSS
+ * strings (a length for `--radius`, a font stack for the `--app-font-*` keys)
+ * applied verbatim rather than hex-converted.
+ */
+export const OVERRIDE_RAW_KEYS = [
+  "--radius",
+  "--app-font-sans",
+  "--app-font-serif",
+  "--app-font-mono",
+] as const;
+
+export type OverrideColourKey = (typeof OVERRIDE_COLOUR_KEYS)[number];
+export type OverrideRawKey = (typeof OVERRIDE_RAW_KEYS)[number];
+export type ThemeOverrideKey = OverrideColourKey | OverrideRawKey;
+
+const OVERRIDE_COLOUR_SET: ReadonlySet<string> = new Set(OVERRIDE_COLOUR_KEYS);
+const OVERRIDE_RAW_SET: ReadonlySet<string> = new Set(OVERRIDE_RAW_KEYS);
+
+/** True when `key` is a colour token an override may target (hex-valued). */
+export function isOverrideColourKey(key: string): key is OverrideColourKey {
+  return OVERRIDE_COLOUR_SET.has(key);
+}
+
+/**
+ * Overlay a brand's `themeOverrides` onto an already-derived token map, mutating
+ * and returning it. Colour keys are converted hex→triplet (unparseable values are
+ * skipped, so a bad override degrades to the derived value rather than breaking
+ * the theme); raw keys (`--radius`, fonts) are applied verbatim. Unknown keys are
+ * ignored. A null/absent map is a no-op — the derived theme is returned unchanged,
+ * which is what keeps `deriveThemeTokens(DEFAULT_BRAND, …)` byte-identical to the
+ * static index.css fallback.
+ */
+export function applyThemeOverrides(
+  tokens: Record<string, string>,
+  overrides: Record<string, string> | null | undefined,
+): Record<string, string> {
+  if (!overrides) return tokens;
+  for (const [key, value] of Object.entries(overrides)) {
+    if (isOverrideColourKey(key)) {
+      const triplet = hexToHslTriplet(value);
+      if (triplet) tokens[key] = triplet;
+    } else if (OVERRIDE_RAW_SET.has(key)) {
+      tokens[key] = value;
+    }
+  }
+  return tokens;
+}
 
 /**
  * Maximum saturation (integer percent) applied to derived dark-mode surface
@@ -203,7 +319,8 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
   const accentForeground = hsl && hsl.l > 55 ? NAVY_DARK[950] : INK_DARK[0];
 
   if (mode === "dark") {
-    return {
+    return applyThemeOverrides(
+      {
       "--background": surf.page,
       "--foreground": INK_DARK[0],
       "--border": surf.border,
@@ -230,10 +347,13 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
       "--destructive": ACCENT_TOKENS.red,
       "--destructive-foreground": "0 0% 100%",
       "--destructive-border": ACCENT_TOKENS.red,
-    };
+      },
+      brand.themeOverrides,
+    );
   }
 
-  return {
+  return applyThemeOverrides(
+    {
     "--background": surf.page,
     "--foreground": INK_LIGHT[0],
     "--border": surf.border,
@@ -260,7 +380,9 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
     "--destructive": "6 78% 46%",
     "--destructive-foreground": "0 0% 100%",
     "--destructive-border": "6 78% 40%",
-  };
+    },
+    brand.themeOverrides,
+  );
 }
 
 /** Re-export for callers that need the default brand's tokens statically. */

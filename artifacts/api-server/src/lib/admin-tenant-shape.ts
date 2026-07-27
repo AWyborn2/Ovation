@@ -31,6 +31,7 @@ export function toAdminTenant(
     primaryColour: t.primaryColour,
     juniorsColour: t.juniorsColour,
     badgeStyle: t.badgeStyle,
+    themeOverrides: t.themeOverrides,
     lastActiveAt:
       t.lastActiveAt instanceof Date
         ? t.lastActiveAt.toISOString()

@@ -9,10 +9,14 @@ import {
 } from "@workspace/scorecard";
 import {
   ACCENT_TOKENS,
+  applyThemeOverrides,
   deriveThemeTokens,
   hexToHsl,
   hexToHslTriplet,
   hslString,
+  hslTripletToHex,
+  isOverrideColourKey,
+  OVERRIDE_COLOUR_KEYS,
 } from "./theme-tokens";
 
 // Halls Head's real legacy brand values (mirrors lib/scorecard/src/brand.ts's
@@ -254,6 +258,94 @@ describe("deriveThemeTokens: every preset accent hex is valid and distinct in bo
   it("no primaryColour falls back to amber", () => {
     const tokens = deriveThemeTokens({ name: "Bare Club" }, "dark");
     expect(tokens["--primary"]).toBe(ACCENT_TOKENS.amber);
+  });
+});
+
+describe("hslTripletToHex", () => {
+  it("round-trips hexToHslTriplet for a representative set of hexes", () => {
+    for (const hex of ["#334155", "#0b0f1a", "#ffb238", "#f0654b", "#4c8cf5"]) {
+      const triplet = hexToHslTriplet(hex)!;
+      const back = hslTripletToHex(triplet)!.toLowerCase();
+      // Allow ±1 per channel for the HSL↔RGB rounding, comparing numerically.
+      const toRgb = (h: string) => [
+        parseInt(h.slice(1, 3), 16),
+        parseInt(h.slice(3, 5), 16),
+        parseInt(h.slice(5, 7), 16),
+      ];
+      const [r1, g1, b1] = toRgb(hex);
+      const [r2, g2, b2] = toRgb(back);
+      expect(Math.abs(r1 - r2), `${hex} r`).toBeLessThanOrEqual(2);
+      expect(Math.abs(g1 - g2), `${hex} g`).toBeLessThanOrEqual(2);
+      expect(Math.abs(b1 - b2), `${hex} b`).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it("returns null for a malformed triplet", () => {
+    expect(hslTripletToHex(null)).toBeNull();
+    expect(hslTripletToHex("nonsense")).toBeNull();
+  });
+});
+
+describe("theme overrides", () => {
+  it("isOverrideColourKey recognises colour tokens and rejects raw/unknown keys", () => {
+    expect(isOverrideColourKey("--card")).toBe(true);
+    expect(isOverrideColourKey("--destructive")).toBe(true);
+    expect(isOverrideColourKey("--radius")).toBe(false);
+    expect(isOverrideColourKey("--app-font-sans")).toBe(false);
+    expect(isOverrideColourKey("--nope")).toBe(false);
+  });
+
+  it("a null/empty override map leaves the derived tokens untouched", () => {
+    const base = deriveThemeTokens(DEFAULT_BRAND, "dark");
+    const withNull = deriveThemeTokens({ ...DEFAULT_BRAND, themeOverrides: null }, "dark");
+    const withEmpty = deriveThemeTokens({ ...DEFAULT_BRAND, themeOverrides: {} }, "dark");
+    expect(withNull).toEqual(base);
+    expect(withEmpty).toEqual(base);
+    // And the key set is unchanged — the css-sync contract depends on this.
+    expect(Object.keys(withEmpty).sort()).toEqual(Object.keys(base).sort());
+  });
+
+  it("colour overrides are converted hex→triplet and replace the derived value", () => {
+    const tokens = deriveThemeTokens(
+      { ...DEFAULT_BRAND, themeOverrides: { "--card": "#123456" } },
+      "dark",
+    );
+    expect(tokens["--card"]).toBe(hexToHslTriplet("#123456"));
+    // A sibling surface the override didn't touch keeps its derived value.
+    expect(tokens["--background"]).toBe(deriveThemeTokens(DEFAULT_BRAND, "dark")["--background"]);
+  });
+
+  it("raw overrides (--radius, fonts) are applied verbatim and add keys only when set", () => {
+    const base = deriveThemeTokens(DEFAULT_BRAND, "dark");
+    expect(base["--radius"]).toBeUndefined();
+    const tokens = deriveThemeTokens(
+      { ...DEFAULT_BRAND, themeOverrides: { "--radius": "0.75rem", "--app-font-sans": "Georgia, serif" } },
+      "dark",
+    );
+    expect(tokens["--radius"]).toBe("0.75rem");
+    expect(tokens["--app-font-sans"]).toBe("Georgia, serif");
+  });
+
+  it("an unparseable colour override is skipped (degrades to the derived value)", () => {
+    const base = deriveThemeTokens(DEFAULT_BRAND, "dark");
+    const tokens = deriveThemeTokens(
+      { ...DEFAULT_BRAND, themeOverrides: { "--card": "not-a-colour" } },
+      "dark",
+    );
+    expect(tokens["--card"]).toBe(base["--card"]);
+  });
+
+  it("unknown override keys are ignored", () => {
+    const out = applyThemeOverrides({ "--card": "220 30% 11%" }, { "--totally-made-up": "#fff" });
+    expect(out["--totally-made-up"]).toBeUndefined();
+    expect(out["--card"]).toBe("220 30% 11%");
+  });
+
+  it("every OVERRIDE_COLOUR_KEY is one deriveThemeTokens actually emits", () => {
+    const emitted = new Set(Object.keys(deriveThemeTokens(DEFAULT_BRAND, "dark")));
+    for (const key of OVERRIDE_COLOUR_KEYS) {
+      expect(emitted.has(key), key).toBe(true);
+    }
   });
 });
 

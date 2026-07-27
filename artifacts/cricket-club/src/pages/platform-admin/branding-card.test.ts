@@ -59,6 +59,7 @@ describe("buildBrandSavePayload", () => {
       juniorsColour: "#42342B",
       badgeStyle: null,
       useNavyBase: false,
+      themeOverrides: null,
     });
   });
 
@@ -78,6 +79,29 @@ describe("buildBrandSavePayload", () => {
     expect(payload.primaryColour).toBe("#C8102E");
     expect(payload.juniorsColour).toBe("#F5F7FA");
     expect(payload.name).toBe("Pinjarra CC");
+  });
+
+  it("carries non-empty themeOverrides, and normalises an empty map to null", () => {
+    const withOverrides = buildBrandSavePayload({
+      persisted: PERSISTED,
+      ...FIELD_EDITS,
+      colourMode: "token",
+      colours: seedColourState(PERSISTED),
+      themeOverrides: { "--card": "#101826", "--radius": "0.75rem" },
+    });
+    expect(withOverrides.themeOverrides).toEqual({
+      "--card": "#101826",
+      "--radius": "0.75rem",
+    });
+
+    const cleared = buildBrandSavePayload({
+      persisted: PERSISTED,
+      ...FIELD_EDITS,
+      colourMode: "token",
+      colours: seedColourState(PERSISTED),
+      themeOverrides: {},
+    });
+    expect(cleared.themeOverrides).toBeNull();
   });
 });
 
@@ -119,6 +143,7 @@ describe("mode switching (KTD4 — mode at save time wins)", () => {
       juniorsColour: null,
       badgeStyle: null,
       useNavyBase: false,
+      themeOverrides: null,
     });
     const colours = seedColourState(persisted);
     expect(colours.accent).toBe("amber"); // platform default

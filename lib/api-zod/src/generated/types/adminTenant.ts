@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminTenantPlan } from './adminTenantPlan';
+import type { AdminTenantThemeOverrides } from './adminTenantThemeOverrides';
 
 /**
  * A tenant as listed in the platform-admin console.
@@ -43,6 +44,11 @@ export interface AdminTenant {
   badgeStyle?: string | null;
   /** When true the tenant's structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour. */
   useNavyBase?: boolean;
+  /**
+     * Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant's saved overrides.
+     * @nullable
+     */
+  themeOverrides?: AdminTenantThemeOverrides;
   /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable

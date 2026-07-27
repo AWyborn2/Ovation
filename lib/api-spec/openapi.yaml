@@ -7039,14 +7039,23 @@ components:
           description: >-
             The grade-badge SVG shape (diamond | shield | hexagon | oval | crest).
             Null = the default "diamond" style.
+        themeOverrides:
+          type: ["object", "null"]
+          additionalProperties:
+            type: string
+          description: >-
+            Optional per-token theme overrides keyed by CSS custom property
+            (e.g. {"--card": "#101826", "--radius": "0.75rem"}). Colour tokens
+            carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value.
+            Null = a fully-derived theme (the default).
 
     UpdateTenantBrandBody:
       type: object
       description: >-
         Partial self-service update of a tenant's own cosmetic branding fields.
-        Deliberately closed to exactly these nine properties — plan and
-        customDomain are not valid properties on this schema at all, so they
-        cannot be set through this endpoint regardless of handler changes.
+        Deliberately closed to exactly this property set — plan and customDomain
+        are not valid properties on this schema at all, so they cannot be set
+        through this endpoint regardless of handler changes.
       additionalProperties: false
       properties:
         name:
@@ -7060,6 +7069,11 @@ components:
           type: ["string", "null"]
         faviconUrl:
           type: ["string", "null"]
+        backgroundUrl:
+          type: ["string", "null"]
+          description: >-
+            Optional site background image URL, shown behind the app in the
+            "Club look". Null = neutral (no image).
         backgroundColour:
           type: ["string", "null"]
         primaryColour:
@@ -7068,10 +7082,20 @@ components:
           type: ["string", "null"]
         useNavyBase:
           type: boolean
-          description: When true the tenant UI uses the navy base (dark-only mode).
+          description: >-
+            The "App look" selector: true = Ovation Broadcast (fixed navy base),
+            false = Club look (surfaces derived from backgroundColour).
         badgeStyle:
           type: ["string", "null"]
           description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+        themeOverrides:
+          type: ["object", "null"]
+          additionalProperties:
+            type: string
+          description: >-
+            Curated per-token theme overrides (surface/panel/border/alert colours,
+            corner radius, font) keyed by CSS custom property. Null clears all
+            overrides back to the fully-derived theme.
 
     UpdateAdminTenantBrandBody:
       type: object
@@ -7110,6 +7134,15 @@ components:
         badgeStyle:
           type: ["string", "null"]
           description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+        themeOverrides:
+          type: ["object", "null"]
+          additionalProperties:
+            type: string
+          description: >-
+            Full per-token theme overrides (the premium concierge "custom design"
+            offering) keyed by CSS custom property. Colour tokens carry a 6-digit
+            hex; --radius / --app-font-* carry a raw CSS value. Null clears all
+            overrides back to the fully-derived theme.
 
     PlatformBrand:
       type: object
@@ -7311,6 +7344,14 @@ components:
           description: >-
             When true the tenant's structural surfaces use the fixed Ovation navy
             scale instead of being derived from backgroundColour.
+        themeOverrides:
+          type: ["object", "null"]
+          additionalProperties:
+            type: string
+          description: >-
+            Per-token theme overrides keyed by CSS custom property, or null when
+            the theme is fully derived. Surfaced so the concierge editor can seed
+            its custom-design controls from the tenant's saved overrides.
         lastActiveAt:
           type: ["string", "null"]
           description: >-

@@ -5,9 +5,10 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateTenantBrandBodyThemeOverrides } from './updateTenantBrandBodyThemeOverrides';
 
 /**
- * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these nine properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly this property set — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
  */
 export interface UpdateTenantBrandBody {
   name?: string;
@@ -22,17 +23,27 @@ export interface UpdateTenantBrandBody {
   logoUrl?: string | null;
   /** @nullable */
   faviconUrl?: string | null;
+  /**
+     * Optional site background image URL, shown behind the app in the "Club look". Null = neutral (no image).
+     * @nullable
+     */
+  backgroundUrl?: string | null;
   /** @nullable */
   backgroundColour?: string | null;
   /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
   juniorsColour?: string | null;
-  /** When true the tenant UI uses the navy base (dark-only mode). */
+  /** The "App look" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour). */
   useNavyBase?: boolean;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable
      */
   badgeStyle?: string | null;
+  /**
+     * Curated per-token theme overrides (surface/panel/border/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.
+     * @nullable
+     */
+  themeOverrides?: UpdateTenantBrandBodyThemeOverrides;
 }

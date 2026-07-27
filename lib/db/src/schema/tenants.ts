@@ -5,6 +5,7 @@ import {
   text,
   boolean,
   timestamp,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -25,7 +26,18 @@ import {
  *   brand resolver prefers the `appClubId` clubs-register row where set, then
  *   these, then the built-in fallback.
  * - `useNavyBase` → when true the tenant's UI uses the full navy base (dark-only
- *   design mode), overriding any light-mode surfaces. Defaults false.
+ *   design mode), overriding any light-mode surfaces. Defaults false. This is the
+ *   low-level flag behind the "App look" selector: Ovation Broadcast = true (fixed
+ *   navy broadcast surfaces, the house style), Club look = false (surfaces derived
+ *   from the club's own `backgroundColour`).
+ * - `themeOverrides` → optional per-token theme overrides, a JSON map keyed by CSS
+ *   custom property (e.g. `{ "--card": "#101826", "--radius": "0.75rem" }`). Null =
+ *   the theme is fully derived from the colour columns above (the default). Colour
+ *   tokens store a 6-digit hex; `--radius`/`--app-font-*` store the raw CSS value.
+ *   The engine (`deriveThemeTokens`) overlays these on top of the derived scale, so
+ *   an absent map reproduces the pre-override theme byte-for-byte. Club admins write
+ *   a curated subset; the platform-admin concierge editor can write any token (the
+ *   premium "custom design" offering).
  * - `lastActiveAt` → when a club admin last acted on this tenant (advanced,
  *   throttled, from the club-admin auth path). Null = never active — the
  *   onboarding-stall signal the platform health dashboard surfaces.
@@ -52,6 +64,10 @@ export const tenantsTable = pgTable("tenants", {
   // than leaking another club's founding line.
   tagline: text("tagline"),
   useNavyBase: boolean("use_navy_base").notNull().default(false),
+  // Per-token theme overrides keyed by CSS custom property (see the doc block
+  // above). Null = fully-derived theme (default). Stored as JSONB so the shape
+  // can grow without a column-per-token migration.
+  themeOverrides: jsonb("theme_overrides").$type<Record<string, string>>(),
   customDomain: text("custom_domain"),
   // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
   // entitlements; enforcement is dormant until BILLING_ENABLED=true.
