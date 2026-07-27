@@ -66,6 +66,37 @@ declare global {
 // The offscreen container id the server screenshots in static (pack) mode.
 const STILL_CONTAINER_ID = "pack-still-root";
 
+// Wait for every <img> under `root` to finish loading AND decoding before the
+// server screenshots the card. Pack image slots (club logo, player photo,
+// sponsors) render as real <img> elements (pack-render), and the first card in
+// a batch hits a cold image cache — without this the screenshot captures a
+// half-loaded (blank) photo while later cards, with the image now cached, look
+// fine. A per-image timeout keeps a slow/broken image from hanging the render;
+// a genuinely broken image simply paints blank.
+async function waitForImages(root: HTMLElement, timeoutMs = 8000): Promise<void> {
+  const imgs = Array.from(root.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map(async (img) => {
+      const timeout = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
+      if (!(img.complete && img.naturalWidth > 0)) {
+        await Promise.race([
+          new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+          }),
+          timeout,
+        ]);
+      }
+      try {
+        // decode() guarantees the pixels are ready to paint (not just fetched).
+        await Promise.race([img.decode(), timeout]);
+      } catch {
+        // decode() rejects on a broken/undecodable image — paint what we have.
+      }
+    }),
+  );
+}
+
 // Hidden route (`/__card-render`) used ONLY by the server-side renderers. It has
 // two modes over one page:
 //  - ANIMATED (init/drawFrame): Puppeteer drives the EXACT same `prepareAnimation`
@@ -161,7 +192,8 @@ export default function CardRenderHarness() {
           />,
         );
 
-        // Settle web fonts + two animation frames so the screenshot is stable.
+        // Settle web fonts, then wait for slot images, then two animation frames
+        // so the screenshot is stable and fully painted.
         await ensureCardFontsLoaded();
         try {
           const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
@@ -169,6 +201,12 @@ export default function CardRenderHarness() {
         } catch {
           // Font Loading API unavailable — proceed with system fallback.
         }
+        // Let React commit so the <img> slots exist, then wait for every slot
+        // image to finish loading/decoding before we screenshot (see
+        // waitForImages) — otherwise the first card in a batch exports a blank
+        // photo while the image is still fetching.
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        await waitForImages(stillContainer);
         await new Promise<void>((resolve) =>
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         );
