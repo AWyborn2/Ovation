@@ -11,6 +11,8 @@ import {
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useListCardTemplates,
+  getListCardTemplatesQueryKey,
   useListMatches,
   useGetMatch,
   getGetMatchQueryKey,
@@ -25,6 +27,7 @@ import {
   type CardSet,
   type CardSetSlide,
   type CardTheme as ApiCardTheme,
+  type CardTemplate,
   type CardLayoutLayer,
   type Stat,
   type Player,
@@ -80,6 +83,7 @@ import {
   presentingSponsorName,
 } from "@/lib/pack-card-data";
 import { slideRendersViaPack } from "@/lib/carousel-slide-render";
+import { resolvePackIdForKind } from "@/lib/card-template";
 
 const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
   { value: "none", label: "No animation (still PNG)" },
@@ -310,6 +314,10 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     query: { queryKey: getListCardThemesQueryKey() },
   });
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
+  // Pack template rows — which design pack each slide's kind renders through.
+  const templatesQ = useListCardTemplates({
+    query: { queryKey: getListCardTemplatesQueryKey() },
+  });
 
   const update = useUpdateCardSet({
     mutation: {
@@ -385,8 +393,12 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
 
   // A slide renders through the pack when the pack supports its kind and it has
   // no admin custom layout (a canvas-only feature the pack can't reproduce).
+  /** The pack this slide's kind renders through (null = default pack). */
+  const slidePackId = (slide: WorkingSlide): string | null =>
+    resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, slide.input.kind);
+
   const slideUsesPack = (slide: WorkingSlide): boolean =>
-    slideRendersViaPack(slide.input.kind, slide.layout);
+    slideRendersViaPack(slide.input.kind, slide.layout, slidePackId(slide));
 
   // Tenant data threaded into the pack path (logo, club name/hashtag, sponsors,
   // the input's own photo) — the pack equivalent of the brand/sponsors the
@@ -417,6 +429,9 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
           junior: slideIsJunior(slide),
           theme: slideTheme(slide) ?? null,
           data: buildSlidePackData(slide),
+          // Must match the filmstrip preview's pack or the exported PNG is a
+          // different design from what the admin approved.
+          packId: slidePackId(slide),
         },
       },
     }) as Promise<Blob>;
@@ -791,6 +806,7 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
                       // Pack slides preview live (matching the single-card modal)
                       // so they carry the tenant logo + sponsors.
                       <PackCard
+                        packId={slidePackId(slide)}
                         input={slide.input}
                         size={platformSize}
                         sponsorsOn={sponsorsOn}

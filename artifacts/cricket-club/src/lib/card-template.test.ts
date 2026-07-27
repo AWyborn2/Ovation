@@ -5,6 +5,8 @@ import {
   CARD_FIELD_CATALOG,
   COMMON_FIELDS,
   resolveTextField,
+  resolvePackIdForKind,
+  type CardTemplate,
   type TemplateContext,
 } from "./card-template";
 
@@ -173,5 +175,64 @@ describe("resolveTextField", () => {
     const input = sampleCardInput("countdown");
     expect(resolveTextField(input, "playerName", CTX)).toBe("");
     expect(resolveTextField(input, "rows", CTX)).toBe("");
+  });
+});
+
+describe("resolvePackIdForKind", () => {
+  const row = (over: Partial<CardTemplate>): CardTemplate =>
+    ({
+      id: 1,
+      name: "row",
+      cardKinds: [],
+      isActive: true,
+      isDefault: false,
+      source: "pack",
+      packId: null,
+      defaultForKinds: [],
+      ...over,
+    }) as CardTemplate;
+
+  it("returns null when there are no templates (caller uses the default pack)", () => {
+    expect(resolvePackIdForKind([], "milestone")).toBeNull();
+    expect(resolvePackIdForKind(undefined, "milestone")).toBeNull();
+    expect(resolvePackIdForKind(null, "milestone")).toBeNull();
+  });
+
+  it("picks the pack row marked default for that kind", () => {
+    const templates = [
+      row({ id: 1, packId: "broadcast-dark-v1" }),
+      row({ id: 2, packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
+    ];
+    expect(resolvePackIdForKind(templates, "milestone")).toBe("gold-foil-v1");
+    // Another kind has no default → null → renderer's default pack.
+    expect(resolvePackIdForKind(templates, "century")).toBeNull();
+  });
+
+  it("falls back to the legacy global isDefault flag", () => {
+    const templates = [row({ id: 1, packId: "gold-foil-v1", isDefault: true })];
+    expect(resolvePackIdForKind(templates, "milestone")).toBe("gold-foil-v1");
+  });
+
+  it("ignores non-pack templates — a BYO default must not select a pack", () => {
+    const templates = [
+      row({ id: 1, source: "background", packId: null, defaultForKinds: ["milestone"] }),
+      row({ id: 2, source: "layers", packId: null, isDefault: true }),
+    ];
+    expect(resolvePackIdForKind(templates, "milestone")).toBeNull();
+  });
+
+  it("ignores inactive pack rows and rows scoped to other kinds", () => {
+    expect(
+      resolvePackIdForKind(
+        [row({ packId: "gold-foil-v1", isActive: false, defaultForKinds: ["milestone"] })],
+        "milestone",
+      ),
+    ).toBeNull();
+    expect(
+      resolvePackIdForKind(
+        [row({ packId: "gold-foil-v1", cardKinds: ["century"], isDefault: true })],
+        "milestone",
+      ),
+    ).toBeNull();
   });
 });

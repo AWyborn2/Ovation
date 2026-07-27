@@ -27,7 +27,8 @@ import type { CardLayoutLayer } from "@workspace/api-client-react";
 export function slideRendersViaPack(
   kind: string,
   layout?: CardLayoutLayer[] | null,
+  packId?: string | null,
 ): boolean {
   if (layout && layout.length > 0) return false;
-  return packSupportsKind(kind);
+  return packSupportsKind(kind, packId);
 }

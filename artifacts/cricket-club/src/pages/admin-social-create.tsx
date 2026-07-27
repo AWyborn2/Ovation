@@ -20,9 +20,13 @@ import {
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useListCardTemplates,
+  getListCardTemplatesQueryKey,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
+  type CardTemplate,
 } from "@workspace/api-client-react";
+import { resolvePackIdForKind } from "@/lib/card-template";
 import { useBrand } from "@/lib/brand-context";
 import {
   buildPackData,
@@ -105,6 +109,16 @@ export default function AdminSocialCreate() {
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
 
   const isJunior = junior && juniorCapable;
+
+  // Preview through whichever pack the tenant has made default for this kind,
+  // so the composer shows the design the export will actually produce.
+  const templatesQ = useListCardTemplates({
+    query: { queryKey: getListCardTemplatesQueryKey() },
+  });
+  const previewPackId = useMemo(
+    () => resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, kind),
+    [templatesQ.data, kind],
+  );
 
   // Junior cards are locked to the brown junior palette (no admin theme);
   // otherwise the tenant's default theme, matching the modal's initial pick.
@@ -213,6 +227,7 @@ export default function AdminSocialCreate() {
                   junior={isJunior}
                   theme={previewTheme}
                   data={packData}
+                  packId={previewPackId}
                 />
               </div>
 

@@ -27,6 +27,7 @@ import {
   type TemplateMode,
 } from "@/components/card-layout-editor";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { resolvePackIdForKind } from "@/lib/card-template";
 import { PackCard } from "@/components/pack-card";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import {
@@ -337,6 +338,7 @@ export default function AdminSocialStudio() {
                     junior={false}
                     theme={galleryTheme}
                     data={galleryDataByKind.get(kind) ?? null}
+                    packId={resolvePackIdForKind(templates, kind)}
                   />
                 </div>
                 <CardContent className="space-y-2 p-3">
