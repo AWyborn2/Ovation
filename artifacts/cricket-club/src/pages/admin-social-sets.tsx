@@ -73,6 +73,7 @@ import {
 } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { type PackCardData } from "@/lib/pack-render";
+import { buildPackData } from "@/lib/pack-card-data";
 import { slideRendersViaPack } from "@/lib/carousel-slide-render";
 
 const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
@@ -394,16 +395,20 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
 
   // Tenant data threaded into the pack path (logo, club name/hashtag, sponsors,
   // the input's own photo) — the pack equivalent of the brand/sponsors the
-  // canvas renderer gets via `buildSlideOpts`, mirroring the modal's
-  // `buildPackData` so batched pack slides carry real tenant branding.
-  const buildSlidePackData = (slide: WorkingSlide): PackCardData => ({
-    brand: bundle?.brand
-      ? { name: bundle.brand.name, logoUrl: bundle.brand.logoUrl }
-      : null,
-    hashtag,
-    sponsors: slideSponsors(slide),
-    presentingSponsorName,
-  });
+  // canvas renderer gets via `buildSlideOpts`.
+  //
+  // Built through the shared `buildPackData` so slides carry the tenant's FULL
+  // brand. This used to narrow `brand` to `{ name, logoUrl }`, which dropped
+  // `primaryColour` / `juniorsColour` / `tagline` — so `brandDefaultTokens`
+  // fell back to the Broadcast-Dark palette and every carousel slide rendered
+  // in Halls Head gold regardless of tenant.
+  const buildSlidePackData = (slide: WorkingSlide): PackCardData =>
+    buildPackData({
+      brand: bundle?.brand,
+      hashtag,
+      sponsors: slideSponsors(slide),
+      presentingSponsorName,
+    });
 
   // Render one pack slide to a PNG blob via the server harness (parity with the
   // single-card modal's `renderPackStill`; options are opaque over the wire).

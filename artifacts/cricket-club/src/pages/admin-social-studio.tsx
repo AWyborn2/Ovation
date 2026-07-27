@@ -12,7 +12,10 @@ import {
   type SocialSettingsBundle,
   useUpdateSocialSettings,
   getGetSocialSettingsQueryKey,
+  useListCardThemes,
+  getListCardThemesQueryKey,
   type SocialSettings,
+  type CardTheme as ApiCardTheme,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,10 +32,13 @@ import { sampleCardInput } from "@/lib/sample-card-inputs";
 import {
   renderShareCard,
   SIZES,
+  sponsorAppliesToKind,
   type CardSize,
   type RenderOptions,
   type ShareCardInput,
 } from "@/lib/share-card";
+import { buildPackData } from "@/lib/pack-card-data";
+import { type PackCardData } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState, QueryError } from "@/components/data-states";
@@ -138,6 +144,51 @@ export default function AdminSocialStudio() {
     size: THUMB_SIZE,
     brand: bundle?.brand ?? null,
   };
+
+  // --- Tenant branding for the card-type gallery -----------------------------
+  // The gallery answers "what does a Match Result card look like FOR US", so
+  // thumbnails render the tenant's own logo, name, hashtag, sponsors and
+  // colours. Only the card *content* stays sample data (`sampleCardInput`) — a
+  // thumbnail is a style preview, not a real card.
+  //
+  // Without this the thumbnails fall through to the Broadcast-Dark sample
+  // literals, so every tenant browsed a gallery branded "HALLS HEAD".
+  const themesQ = useListCardThemes({
+    query: { queryKey: getListCardThemesQueryKey() },
+  });
+  const themes = (themesQ.data ?? []) as ApiCardTheme[];
+  const galleryTheme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
+
+  const galleryHashtag =
+    bundle?.settings.clubHashtag ??
+    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
+  const gallerySponsorsOn = !!bundle?.settings.sponsorsEnabled;
+  const galleryPresentingSponsor = gallerySponsorsOn
+    ? bundle?.activeSponsors?.find((sp) => sp.isPresenting)?.name ?? null
+    : null;
+
+  // One payload per card kind, memoised so <PackCard>'s html memo (keyed on
+  // `data` identity) is not defeated on every parent re-render.
+  const galleryDataByKind = useMemo(() => {
+    const out = new Map<string, PackCardData>();
+    for (const o of CARD_KIND_OPTIONS) {
+      out.set(
+        o.value,
+        buildPackData({
+          brand: bundle?.brand,
+          hashtag: galleryHashtag,
+          sponsors:
+            gallerySponsorsOn && bundle?.activeSponsors
+              ? bundle.activeSponsors
+                  .filter((sp) => sponsorAppliesToKind(sp.cardKinds, o.value))
+                  .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
+              : [],
+          presentingSponsorName: galleryPresentingSponsor,
+        }),
+      );
+    }
+    return out;
+  }, [bundle, galleryHashtag, gallerySponsorsOn, galleryPresentingSponsor]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });
@@ -292,6 +343,8 @@ export default function AdminSocialStudio() {
                     size={THUMB_SIZE}
                     sponsorsOn
                     junior={false}
+                    theme={galleryTheme}
+                    data={galleryDataByKind.get(kind) ?? null}
                   />
                 </div>
                 <CardContent className="space-y-2 p-3">
