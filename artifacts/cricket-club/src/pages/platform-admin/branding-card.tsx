@@ -18,8 +18,16 @@ import {
   type AccentToken,
   type ClubBrand,
 } from "@workspace/scorecard";
-import { deriveThemeTokens } from "@/lib/theme-tokens";
+import { deriveThemeTokens, hslTripletToHex } from "@/lib/theme-tokens";
 import { useThemeMode } from "@/lib/theme-context";
+import {
+  FULL_TOKEN_GROUPS,
+  TOKEN_LABELS,
+  RADIUS_OPTIONS,
+  FONT_OPTIONS,
+  DEFAULT_RADIUS,
+  DEFAULT_FONT_SANS,
+} from "@/lib/branding-controls";
 import { extractBrandPalette, type ExtractedPalette } from "@/lib/color-extraction";
 import { ColourSlotPicker } from "@/components/colour-slot-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,6 +66,7 @@ export interface PersistedBrandFields {
   juniorsColour: string | null;
   badgeStyle: string | null;
   useNavyBase: boolean;
+  themeOverrides: Record<string, string> | null;
 }
 
 /** The colour inputs' current values (both modes' state lives together; only the active mode's is saved). */
@@ -85,6 +94,7 @@ export function seedPersistedFromTenant(
     | "juniorsColour"
     | "badgeStyle"
     | "useNavyBase"
+    | "themeOverrides"
   >,
 ): PersistedBrandFields {
   return {
@@ -97,6 +107,7 @@ export function seedPersistedFromTenant(
     juniorsColour: tenant.juniorsColour ?? null,
     badgeStyle: tenant.badgeStyle ?? null,
     useNavyBase: tenant.useNavyBase ?? false,
+    themeOverrides: tenant.themeOverrides ?? null,
   };
 }
 
@@ -135,6 +146,7 @@ export function buildBrandSavePayload(args: {
   colours: ColourEdits;
   badgeStyle: string | null;
   useNavyBase: boolean;
+  themeOverrides?: Record<string, string> | null;
 }): UpdateAdminTenantBrandBody {
   const { persisted, colours } = args;
   const base = {
@@ -144,6 +156,11 @@ export function buildBrandSavePayload(args: {
     faviconUrl: args.faviconUrl || null,
     badgeStyle: args.badgeStyle,
     useNavyBase: args.useNavyBase,
+    // Empty map clears the column back to a fully-derived theme.
+    themeOverrides:
+      args.themeOverrides && Object.keys(args.themeOverrides).length > 0
+        ? args.themeOverrides
+        : null,
   };
   if (args.colourMode === "token") {
     return {
@@ -260,9 +277,27 @@ export function BrandingCard({
   const [colours, setColours] = useState<ColourEdits>(() =>
     seedColourState(seedPersistedFromTenant(tenant)),
   );
+  // Full per-token overrides — the premium "custom design" offering. Only
+  // customised keys are present; an empty map saves as null (fully-derived theme).
+  const [overrides, setOverrides] = useState<Record<string, string>>(
+    { ...(tenant.themeOverrides ?? {}) },
+  );
+  const [customDesignOpen, setCustomDesignOpen] = useState<boolean>(
+    Object.keys(tenant.themeOverrides ?? {}).length > 0,
+  );
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  /** Set (value) or clear (null) one override token key. */
+  const setOverrideKey = (key: string, value: string | null): void => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      if (value == null) delete next[key];
+      else next[key] = value;
+      return next;
+    });
+  };
 
   const update = useUpdateAdminTenantBrand({
     mutation: {
@@ -280,6 +315,7 @@ export function BrandingCard({
           juniorsColour: body.juniorsColour ?? null,
           badgeStyle: body.badgeStyle ?? null,
           useNavyBase: body.useNavyBase ?? false,
+          themeOverrides: body.themeOverrides ?? null,
         }));
         qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
         qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
@@ -371,6 +407,7 @@ export function BrandingCard({
         colours,
         badgeStyle,
         useNavyBase,
+        themeOverrides: overrides,
       }),
     });
   };
@@ -387,14 +424,26 @@ export function BrandingCard({
           primaryColour: colours.hexSecondary,
           juniorsColour: colours.hexTertiary,
         };
+  const overridesPayload =
+    Object.keys(overrides).length > 0 ? overrides : null;
   const previewBrand: ClubBrand = {
     name: name || tenant.name,
     shortName: shortName || null,
     logoUrl: logoUrl || null,
     ...previewColours,
     useNavyBase,
+    themeOverrides: overridesPayload,
   };
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
+
+  // Derived scale WITHOUT overrides — seeds each token picker with the value it
+  // replaces so "custom" starts from the current auto colour.
+  const autoTokens = deriveThemeTokens(
+    { ...previewBrand, themeOverrides: undefined },
+    mode,
+  );
+  const autoHex = (key: string): string =>
+    hslTripletToHex(autoTokens[key]) ?? "#334155";
 
   const warning = contrastWarningMessage(
     colourMode === "token"
@@ -609,6 +658,141 @@ export function BrandingCard({
                 <p className="text-sm text-amber-600 dark:text-amber-500" data-testid="text-contrast-warning">
                   {warning}
                 </p>
+              )}
+            </div>
+
+            <div className="space-y-3 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={() => setCustomDesignOpen((v) => !v)}
+                className="flex w-full items-center justify-between text-left"
+                aria-expanded={customDesignOpen}
+                data-testid="toggle-custom-design"
+              >
+                <span>
+                  <span className="block text-sm font-medium">
+                    Custom design (full token control)
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Premium concierge offering — override any of the theme's tokens
+                    individually. Each stays on its derived value until set.
+                  </span>
+                </span>
+                <span className="shrink-0 text-sm text-muted-foreground">
+                  {customDesignOpen ? "Hide" : "Show"}
+                </span>
+              </button>
+
+              {customDesignOpen && (
+                <div className="space-y-4">
+                  {FULL_TOKEN_GROUPS.map((group) => (
+                    <div key={group.label} className="space-y-2">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {group.label}
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {group.keys.map((key) => {
+                          const isCustom = key in overrides;
+                          const value = overrides[key] ?? autoHex(key);
+                          return (
+                            <div
+                              key={key}
+                              className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5"
+                            >
+                              <span className="truncate text-xs">
+                                {TOKEN_LABELS[key]}
+                              </span>
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <input
+                                  type="color"
+                                  value={value}
+                                  onChange={(e) => setOverrideKey(key, e.target.value)}
+                                  disabled={busy}
+                                  data-testid={`token${key}`}
+                                  aria-label={TOKEN_LABELS[key]}
+                                  className="h-7 w-8 cursor-pointer rounded border border-border bg-transparent"
+                                />
+                                {isCustom ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setOverrideKey(key, null)}
+                                    disabled={busy}
+                                    className="text-[10px] font-medium text-primary hover:underline"
+                                  >
+                                    Auto
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Auto
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
+                    <label className="flex items-center justify-between gap-2 text-sm">
+                      <span>Corner radius</span>
+                      <select
+                        value={overrides["--radius"] ?? DEFAULT_RADIUS}
+                        onChange={(e) =>
+                          setOverrideKey(
+                            "--radius",
+                            e.target.value === DEFAULT_RADIUS ? null : e.target.value,
+                          )
+                        }
+                        disabled={busy}
+                        data-testid="token-radius"
+                        className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                      >
+                        {RADIUS_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex items-center justify-between gap-2 text-sm">
+                      <span>Body font</span>
+                      <select
+                        value={overrides["--app-font-sans"] ?? DEFAULT_FONT_SANS}
+                        onChange={(e) =>
+                          setOverrideKey(
+                            "--app-font-sans",
+                            e.target.value === DEFAULT_FONT_SANS
+                              ? null
+                              : e.target.value,
+                          )
+                        }
+                        disabled={busy}
+                        data-testid="token-font"
+                        className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                      >
+                        {FONT_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  {Object.keys(overrides).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setOverrides({})}
+                      disabled={busy}
+                      data-testid="token-reset-all"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Reset all tokens to auto
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 

@@ -43,9 +43,19 @@ describe("tenant-context: resolveTenantId (header > env > default)", () => {
 // The wire brand carries no accentToken (client-side only), always has
 // badgeStyle: null and useNavyBase: false from buildTenantBrand's return shape.
 const { accentToken: _hhAccent, ...hhBrandBase } = HALLS_HEAD_BRAND;
-const HALLS_HEAD_WIRE_BRAND = { ...hhBrandBase, badgeStyle: null, useNavyBase: false };
+const HALLS_HEAD_WIRE_BRAND = {
+  ...hhBrandBase,
+  badgeStyle: null,
+  useNavyBase: false,
+  themeOverrides: null,
+};
 const { accentToken: _defaultAccent, ...defaultBrandBase } = DEFAULT_BRAND;
-const DEFAULT_WIRE_BRAND = { ...defaultBrandBase, badgeStyle: null, useNavyBase: false };
+const DEFAULT_WIRE_BRAND = {
+  ...defaultBrandBase,
+  badgeStyle: null,
+  useNavyBase: false,
+  themeOverrides: null,
+};
 
 describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", () => {
   // The Halls Head clubs-register row (id 2) mirrors HALLS_HEAD_BRAND — this is
@@ -93,6 +103,29 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(brand.backgroundUrl).toBeNull();
     expect(brand.faviconUrl).toBeNull();
     expect(brand.useNavyBase).toBe(false);
+  });
+
+  it("passes tenant themeOverrides through, defaulting to null when unset", () => {
+    const overrides = { "--card": "#123456", "--radius": "0.75rem" };
+    const withOverrides = buildTenantBrand(
+      {
+        name: "Custom Design FC",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        backgroundColour: null,
+        primaryColour: null,
+        juniorsColour: null,
+        useNavyBase: false,
+        badgeStyle: null,
+        themeOverrides: overrides,
+      },
+      null,
+    );
+    expect(withOverrides.themeOverrides).toEqual(overrides);
+    // No override column → null (clubs register has no override concept).
+    expect(buildTenantBrand(null, null).themeOverrides).toBeNull();
   });
 
   it("resolves logoUrl to the Ovation placeholder asset for a tenant with no brand data (U5, AE4)", () => {

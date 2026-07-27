@@ -53,9 +53,21 @@ export interface ClubBrand {
   /**
    * When true, the app's structural surfaces (page, card, panels, borders) use
    * Ovation's fixed navy scale regardless of `backgroundColour`. Lets a club opt
-   * back into the standard look even when a backgroundColour is stored.
+   * back into the standard look even when a backgroundColour is stored. This is
+   * the flag behind the "App look" selector — true = Ovation Broadcast, false =
+   * Club look (surfaces derived from `backgroundColour`).
    */
   useNavyBase?: boolean;
+  /**
+   * Optional per-token theme overrides, keyed by CSS custom property name
+   * (e.g. `{ "--card": "#101826", "--radius": "0.75rem" }`). Colour tokens carry
+   * a 6-digit hex; `--radius`/`--app-font-*` carry the raw CSS value. Null/absent
+   * = a fully-derived theme (the default). Consumed by `deriveThemeTokens`, which
+   * overlays these on top of the derived scale — so an absent map reproduces the
+   * pre-override theme exactly. See the web app's `theme-tokens.ts` for the set of
+   * override-able keys.
+   */
+  themeOverrides?: Record<string, string> | null;
 }
 
 /** @deprecated Use {@link ClubBrand}. Kept so downstream imports compile. */

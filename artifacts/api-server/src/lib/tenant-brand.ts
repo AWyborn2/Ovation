@@ -27,6 +27,9 @@ interface TenantBrandRow {
   juniorsColour: string | null;
   useNavyBase: boolean;
   badgeStyle: string | null;
+  /** Optional so pre-existing test fixtures compile; the live `getTenantBrand`
+   * select always supplies it. */
+  themeOverrides?: Record<string, string> | null;
 }
 
 /** Minimal brand columns read from the `clubs` register row (`appClubId`). */
@@ -117,6 +120,9 @@ export function buildTenantBrand(
     badgeStyle: tenant?.badgeStyle ?? null,
     // Navy-base flag — tenant row only, defaults false when unset.
     useNavyBase: tenant?.useNavyBase ?? false,
+    // Per-token theme overrides — tenant row only, null when the tenant has set
+    // none (the fully-derived theme). The clubs register has no override concept.
+    themeOverrides: tenant?.themeOverrides ?? null,
   };
 }
 
@@ -143,6 +149,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       juniorsColour: tenantsTable.juniorsColour,
       useNavyBase: tenantsTable.useNavyBase,
       badgeStyle: tenantsTable.badgeStyle,
+      themeOverrides: tenantsTable.themeOverrides,
       appClubId: tenantsTable.appClubId,
     })
     .from(tenantsTable)

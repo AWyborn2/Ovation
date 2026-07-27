@@ -388,7 +388,8 @@ export const GetMatchResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -495,7 +496,8 @@ export const UpdateMatchRoundResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -598,7 +600,8 @@ export const SetMatchHatTrickResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -7220,7 +7223,8 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
   "platform": zod.literal(true),
   "name": zod.string().nullish().describe('Platform name (e.g. \"Ovation\"). Null = DEFAULT_BRAND fallback.'),
@@ -7239,12 +7243,14 @@ export const UpdateTenantBrandBody = zod.object({
   "tagline": zod.string().nullish().describe('Short club tagline shown under the club name on pack cards.'),
   "logoUrl": zod.string().nullish(),
   "faviconUrl": zod.string().nullish(),
+  "backgroundUrl": zod.string().nullish().describe('Optional site background image URL, shown behind the app in the \"Club look\". Null = neutral (no image).'),
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
-}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly these nine properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
+  "useNavyBase": zod.boolean().optional().describe('The \"App look\" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Curated per-token theme overrides (surface\/panel\/border\/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.')
+}).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly this property set — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
 
 export const UpdateTenantBrandResponse = zod.object({
   "name": zod.string(),
@@ -7258,7 +7264,8 @@ export const UpdateTenantBrandResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.')
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
 
 
@@ -7365,6 +7372,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7416,6 +7424,7 @@ export const GetAdminTenantResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7459,6 +7468,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7488,7 +7498,8 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "primaryColour": zod.string().regex(updateAdminTenantBrandBodyPrimaryColourRegExp).nullish(),
   "juniorsColour": zod.string().regex(updateAdminTenantBrandBodyJuniorsColourRegExp).nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).')
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Full per-token theme overrides (the premium concierge \"custom design\" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.')
 }).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
 
 export const UpdateAdminTenantBrandResponse = zod.object({
@@ -7511,6 +7522,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')

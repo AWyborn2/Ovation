@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateAdminTenantBrandBodyThemeOverrides } from './updateAdminTenantBrandBodyThemeOverrides';
 
 /**
  * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
@@ -45,4 +46,9 @@ export interface UpdateAdminTenantBrandBody {
      * @nullable
      */
   badgeStyle?: string | null;
+  /**
+     * Full per-token theme overrides (the premium concierge "custom design" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.
+     * @nullable
+     */
+  themeOverrides?: UpdateAdminTenantBrandBodyThemeOverrides;
 }

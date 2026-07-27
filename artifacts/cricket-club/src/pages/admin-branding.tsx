@@ -13,8 +13,16 @@ import {
   snapHexToAccentToken,
   type AccentToken,
 } from "@workspace/scorecard";
-import { deriveThemeTokens } from "@/lib/theme-tokens";
+import { deriveThemeTokens, hslTripletToHex } from "@/lib/theme-tokens";
 import { useThemeMode } from "@/lib/theme-context";
+import {
+  APP_LOOKS,
+  CURATED_COLOUR_CONTROLS,
+  RADIUS_OPTIONS,
+  FONT_OPTIONS,
+  DEFAULT_RADIUS,
+  DEFAULT_FONT_SANS,
+} from "@/lib/branding-controls";
 import { extractBrandPalette } from "@/lib/color-extraction";
 import { ColourSlotPicker } from "@/components/colour-slot-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,6 +110,15 @@ function Editor({ brand }: { brand: TenantBrand }) {
     (brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
   );
   const [useNavyBase, setUseNavyBase] = useState<boolean>(brand.useNavyBase ?? false);
+  const [backgroundUrl, setBackgroundUrl] = useState(brand.backgroundUrl ?? "");
+  // Per-token overrides (curated subset). Only customised keys are present; an
+  // empty map = a fully-derived theme, saved as null.
+  const [overrides, setOverrides] = useState<Record<string, string>>(
+    { ...(brand.themeOverrides ?? {}) },
+  );
+  const [advancedOpen, setAdvancedOpen] = useState<boolean>(
+    Object.keys(brand.themeOverrides ?? {}).length > 0,
+  );
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +134,21 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setCustomTertiary(brand.juniorsColour ?? "#2A4060");
     setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond");
     setUseNavyBase(brand.useNavyBase ?? false);
+    setBackgroundUrl(brand.backgroundUrl ?? "");
+    setOverrides({ ...(brand.themeOverrides ?? {}) });
   }, [brand]);
+
+  /** Set (value) or clear (null) a group of override keys together. */
+  const setOverrideKeys = (keys: string[], value: string | null): void => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      for (const k of keys) {
+        if (value == null) delete next[k];
+        else next[k] = value;
+      }
+      return next;
+    });
+  };
 
   const update = useUpdateTenantBrand({
     mutation: {
@@ -133,6 +164,9 @@ function Editor({ brand }: { brand: TenantBrand }) {
     onError: (e) => setError(e.message),
   });
   const { uploadFile: uploadFavicon, isUploading: isUploadingFavicon } = useUpload({
+    onError: (e) => setError(e.message),
+  });
+  const { uploadFile: uploadBackground, isUploading: isUploadingBackground } = useUpload({
     onError: (e) => setError(e.message),
   });
 
@@ -180,36 +214,48 @@ function Editor({ brand }: { brand: TenantBrand }) {
     if (result) setFaviconUrl(`/api/storage${result.objectPath}`);
   };
 
+  const handleBackgroundFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    const result = await uploadBackground(file);
+    if (result) setBackgroundUrl(`/api/storage${result.objectPath}`);
+  };
+
+  // An empty override map clears the column back to a fully-derived theme.
+  const themeOverridesPayload =
+    Object.keys(overrides).length > 0 ? overrides : null;
+
   const save = () => {
     setError(null);
+    const shared = {
+      name: name.trim(),
+      shortName: brand.shortName,
+      tagline: tagline.trim() || null,
+      logoUrl: logoUrl || null,
+      faviconUrl: faviconUrl || null,
+      backgroundUrl: backgroundUrl || null,
+      badgeStyle: badgeStyle,
+      useNavyBase: useNavyBase,
+      themeOverrides: themeOverridesPayload,
+    };
     if (colourTab === "preset") {
       update.mutate({
         data: {
-          name: name.trim(),
-          shortName: brand.shortName,
-          tagline: tagline.trim() || null,
-          logoUrl: logoUrl || null,
-          faviconUrl: faviconUrl || null,
+          ...shared,
           backgroundColour: brand.backgroundColour,
           primaryColour: ACCENT_HEX[accent],
           juniorsColour: brand.juniorsColour,
-          badgeStyle: badgeStyle,
-          useNavyBase: useNavyBase,
         },
       });
     } else {
       update.mutate({
         data: {
-          name: name.trim(),
-          shortName: brand.shortName,
-          tagline: tagline.trim() || null,
-          logoUrl: logoUrl || null,
-          faviconUrl: faviconUrl || null,
+          ...shared,
           backgroundColour: customPrimary || null,
           primaryColour: customSecondary || null,
           juniorsColour: customTertiary || null,
-          badgeStyle: badgeStyle,
-          useNavyBase: useNavyBase,
         },
       });
     }
@@ -225,20 +271,145 @@ function Editor({ brand }: { brand: TenantBrand }) {
     backgroundColour: colourTab === "preset" ? brand.backgroundColour : customPrimary,
     primaryColour: previewSecondary,
     juniorsColour: colourTab === "preset" ? brand.juniorsColour : customTertiary,
+    backgroundUrl: backgroundUrl || null,
     useNavyBase,
+    themeOverrides: themeOverridesPayload,
   };
   const previewStyle = deriveThemeTokens(previewBrand, mode) as CSSProperties;
+
+  // The derived scale WITHOUT overrides — used to seed each override control's
+  // picker with the value it is replacing, so "custom" starts from the auto colour.
+  const autoTokens = deriveThemeTokens(
+    { ...previewBrand, themeOverrides: undefined },
+    mode,
+  );
+  const autoHex = (key: string): string =>
+    hslTripletToHex(autoTokens[key]) ?? "#334155";
 
   const contrastWarning =
     colourTab === "custom"
       ? contrastWarningMessage([customPrimary, customSecondary, customTertiary], mode)
       : null;
 
-  const busy = isUploadingLogo || isUploadingFavicon || update.isPending;
+  const busy =
+    isUploadingLogo ||
+    isUploadingFavicon ||
+    isUploadingBackground ||
+    update.isPending;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>App look</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Choose the overall look of your site. You can still set your accent
+              colour and fine-tune below either way.
+            </p>
+            <div
+              className="grid gap-3 sm:grid-cols-2"
+              role="radiogroup"
+              aria-label="App look"
+            >
+              {APP_LOOKS.map((look) => {
+                const selected = useNavyBase === look.useNavyBase;
+                return (
+                  <button
+                    key={look.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setUseNavyBase(look.useNavyBase)}
+                    disabled={busy}
+                    data-testid={`app-look-${look.id}`}
+                    className={`flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors ${
+                      selected
+                        ? "border-ring ring-1 ring-ring"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className="flex h-12 w-full items-center gap-1 overflow-hidden rounded-md border"
+                      style={{
+                        backgroundColor:
+                          look.id === "broadcast"
+                            ? "#0B0F1A"
+                            : (colourTab === "preset"
+                                ? brand.backgroundColour
+                                : customPrimary) ?? "#334155",
+                      }}
+                    >
+                      <span
+                        className="ml-2 h-5 w-10 rounded"
+                        style={{
+                          backgroundColor:
+                            colourTab === "preset"
+                              ? ACCENT_HEX[accent]
+                              : customSecondary,
+                        }}
+                      />
+                    </span>
+                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                      {selected && <Check className="h-4 w-4 text-primary" />}
+                      {look.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {look.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {!useNavyBase && (
+              <div className="space-y-1.5 border-t border-border pt-4">
+                <Label>Background image (optional)</Label>
+                <div className="flex items-center gap-3">
+                  {backgroundUrl && (
+                    <img
+                      src={backgroundUrl}
+                      alt="Background"
+                      className="h-12 w-20 rounded object-cover border"
+                    />
+                  )}
+                  <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                    {isUploadingBackground
+                      ? "Uploading…"
+                      : backgroundUrl
+                        ? "Change image"
+                        : "Upload image"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={handleBackgroundFile}
+                      disabled={busy}
+                      data-testid="input-background-upload"
+                    />
+                  </label>
+                  {backgroundUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setBackgroundUrl("")}
+                      disabled={busy}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sits subtly behind your pages. Leave empty for a flat colour.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Club name</CardTitle>
@@ -327,22 +498,6 @@ function Editor({ brand }: { brand: TenantBrand }) {
               Your club's colours — used for buttons, highlights, and every number
               that matters.
             </p>
-
-            {/* useNavyBase toggle */}
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={useNavyBase}
-                onChange={(e) => setUseNavyBase(e.target.checked)}
-                disabled={busy}
-                data-testid="toggle-navy-base"
-                className="rounded"
-              />
-              <span className="font-medium">Use standard navy background</span>
-              <span className="text-muted-foreground">
-                — keeps Ovation's built-in page colour
-              </span>
-            </label>
 
             {/* Preset / Custom tab bar */}
             <div className="flex gap-1 rounded-md border border-border bg-muted p-0.5 w-fit">
@@ -466,6 +621,142 @@ function Editor({ brand }: { brand: TenantBrand }) {
               ))}
             </div>
           </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((v) => !v)}
+              className="flex w-full items-center justify-between text-left"
+              data-testid="toggle-advanced-panel"
+              aria-expanded={advancedOpen}
+            >
+              <CardTitle>Advanced colours &amp; style</CardTitle>
+              <span className="text-sm text-muted-foreground">
+                {advancedOpen ? "Hide" : "Show"}
+              </span>
+            </button>
+          </CardHeader>
+          {advancedOpen && (
+            <CardContent className="space-y-5">
+              <p className="text-sm text-muted-foreground">
+                Fine-tune individual surfaces. Each is derived automatically from
+                your colours until you set it — leave on <em>Auto</em> for the
+                guardrailed default.
+              </p>
+
+              <div className="space-y-3">
+                {CURATED_COLOUR_CONTROLS.map((c) => {
+                  const isCustom = c.keys.every((k) => k in overrides);
+                  const value = overrides[c.keys[0]] ?? autoHex(c.keys[0]);
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">{c.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {c.description}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <input
+                          type="color"
+                          value={value}
+                          onChange={(e) => setOverrideKeys(c.keys, e.target.value)}
+                          disabled={busy}
+                          data-testid={`override-${c.id}`}
+                          aria-label={`${c.label} colour`}
+                          className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent"
+                        />
+                        {isCustom ? (
+                          <button
+                            type="button"
+                            onClick={() => setOverrideKeys(c.keys, null)}
+                            disabled={busy}
+                            data-testid={`override-${c.id}-reset`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Reset
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Auto</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+                <div>
+                  <div className="text-sm font-medium">Corner radius</div>
+                  <div className="text-xs text-muted-foreground">
+                    Roundness of cards, buttons and inputs.
+                  </div>
+                </div>
+                <select
+                  value={overrides["--radius"] ?? DEFAULT_RADIUS}
+                  onChange={(e) =>
+                    setOverrideKeys(
+                      ["--radius"],
+                      e.target.value === DEFAULT_RADIUS ? null : e.target.value,
+                    )
+                  }
+                  disabled={busy}
+                  data-testid="override-radius"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                >
+                  {RADIUS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">Body font</div>
+                  <div className="text-xs text-muted-foreground">
+                    Typeface for body text across your site.
+                  </div>
+                </div>
+                <select
+                  value={overrides["--app-font-sans"] ?? DEFAULT_FONT_SANS}
+                  onChange={(e) =>
+                    setOverrideKeys(
+                      ["--app-font-sans"],
+                      e.target.value === DEFAULT_FONT_SANS ? null : e.target.value,
+                    )
+                  }
+                  disabled={busy}
+                  data-testid="override-font"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                >
+                  {FONT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {Object.keys(overrides).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOverrides({})}
+                  disabled={busy}
+                  data-testid="override-reset-all"
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Reset all to auto
+                </button>
+              )}
+            </CardContent>
+          )}
         </Card>
 
         {error && <div className="text-sm text-destructive">{error}</div>}

@@ -1215,6 +1215,12 @@ export interface HallsHeadBrand {
 }
 
 /**
+ * Optional per-token theme overrides keyed by CSS custom property (e.g. {"--card": "#101826", "--radius": "0.75rem"}). Colour tokens carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value. Null = a fully-derived theme (the default).
+ * @nullable
+ */
+export type TenantBrandThemeOverrides = {[key: string]: string} | null;
+
+/**
  * A tenant's brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web/mobile theme and document title.
  */
 export interface TenantBrand {
@@ -1253,10 +1259,21 @@ export interface TenantBrand {
      * @nullable
      */
   badgeStyle?: string | null;
+  /**
+     * Optional per-token theme overrides keyed by CSS custom property (e.g. {"--card": "#101826", "--radius": "0.75rem"}). Colour tokens carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value. Null = a fully-derived theme (the default).
+     * @nullable
+     */
+  themeOverrides?: TenantBrandThemeOverrides;
 }
 
 /**
- * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly these nine properties — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
+ * Curated per-token theme overrides (surface/panel/border/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.
+ * @nullable
+ */
+export type UpdateTenantBrandBodyThemeOverrides = {[key: string]: string} | null;
+
+/**
+ * Partial self-service update of a tenant's own cosmetic branding fields. Deliberately closed to exactly this property set — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.
  */
 export interface UpdateTenantBrandBody {
   name?: string;
@@ -1271,20 +1288,36 @@ export interface UpdateTenantBrandBody {
   logoUrl?: string | null;
   /** @nullable */
   faviconUrl?: string | null;
+  /**
+     * Optional site background image URL, shown behind the app in the "Club look". Null = neutral (no image).
+     * @nullable
+     */
+  backgroundUrl?: string | null;
   /** @nullable */
   backgroundColour?: string | null;
   /** @nullable */
   primaryColour?: string | null;
   /** @nullable */
   juniorsColour?: string | null;
-  /** When true the tenant UI uses the navy base (dark-only mode). */
+  /** The "App look" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour). */
   useNavyBase?: boolean;
   /**
      * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
      * @nullable
      */
   badgeStyle?: string | null;
+  /**
+     * Curated per-token theme overrides (surface/panel/border/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.
+     * @nullable
+     */
+  themeOverrides?: UpdateTenantBrandBodyThemeOverrides;
 }
+
+/**
+ * Full per-token theme overrides (the premium concierge "custom design" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.
+ * @nullable
+ */
+export type UpdateAdminTenantBrandBodyThemeOverrides = {[key: string]: string} | null;
 
 /**
  * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
@@ -1325,6 +1358,11 @@ export interface UpdateAdminTenantBrandBody {
      * @nullable
      */
   badgeStyle?: string | null;
+  /**
+     * Full per-token theme overrides (the premium concierge "custom design" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.
+     * @nullable
+     */
+  themeOverrides?: UpdateAdminTenantBrandBodyThemeOverrides;
 }
 
 /**
@@ -1469,6 +1507,12 @@ export const AdminTenantPlan = {
 } as const;
 
 /**
+ * Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant's saved overrides.
+ * @nullable
+ */
+export type AdminTenantThemeOverrides = {[key: string]: string} | null;
+
+/**
  * A tenant as listed in the platform-admin console.
  */
 export interface AdminTenant {
@@ -1504,6 +1548,11 @@ export interface AdminTenant {
   badgeStyle?: string | null;
   /** When true the tenant's structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour. */
   useNavyBase?: boolean;
+  /**
+     * Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant's saved overrides.
+     * @nullable
+     */
+  themeOverrides?: AdminTenantThemeOverrides;
   /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable
