@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildPackData } from "./pack-card-data";
+import {
+  buildPackData,
+  tenantHashtag,
+  kindSponsors,
+  presentingSponsorName,
+} from "./pack-card-data";
+import type { CardKind } from "./share-card";
 
 /**
  * U1 — the shared builder is the single source of `PackCardData`. These tests
@@ -93,5 +99,88 @@ describe("buildPackData", () => {
   it("is deterministic — the same options yield an equal payload", () => {
     const opts = { brand: BRAND, hashtag: "#MANDURAH", sponsors: [] };
     expect(buildPackData(opts)).toEqual(buildPackData(opts));
+  });
+});
+
+/**
+ * The derived inputs were re-computed at every call site before these helpers
+ * existed — the same drift risk that made the carousel lose its brand colours.
+ */
+describe("tenantHashtag", () => {
+  it("prefers the configured club hashtag", () => {
+    expect(
+      tenantHashtag({ settings: { clubHashtag: "#MCC" }, brand: { shortName: "MAND" } }),
+    ).toBe("#MCC");
+  });
+
+  it("derives one from the short name when none is configured", () => {
+    expect(tenantHashtag({ settings: {}, brand: { shortName: "MAND" } })).toBe("#MAND");
+  });
+
+  it("strips whitespace out of a multi-word short name", () => {
+    expect(tenantHashtag({ brand: { shortName: "Halls Head" } })).toBe("#HallsHead");
+  });
+
+  it("(R5) returns empty for a brand-less tenant rather than another club's", () => {
+    expect(tenantHashtag(undefined)).toBe("");
+    expect(tenantHashtag(null)).toBe("");
+    expect(tenantHashtag({})).toBe("");
+    expect(tenantHashtag({ settings: {}, brand: {} })).toBe("");
+  });
+});
+
+describe("kindSponsors", () => {
+  const bundle = {
+    activeSponsors: [
+      { name: "All", logoUrl: "a.png", cardKinds: null },
+      { name: "MatchOnly", logoUrl: "m.png", cardKinds: ["matchSummary"] },
+      { name: "PlayerOnly", logoUrl: "p.png", cardKinds: ["player"] },
+    ],
+  };
+
+  it("keeps sponsors scoped to the kind, plus unscoped ones", () => {
+    const names = kindSponsors(bundle, "matchSummary" as CardKind, true).map((s) => s.name);
+    expect(names).toEqual(["All", "MatchOnly"]);
+  });
+
+  it("excludes sponsors scoped to other kinds", () => {
+    const names = kindSponsors(bundle, "player" as CardKind, true).map((s) => s.name);
+    expect(names).toEqual(["All", "PlayerOnly"]);
+  });
+
+  it("returns nothing when the sponsor strip is off", () => {
+    expect(kindSponsors(bundle, "matchSummary" as CardKind, false)).toEqual([]);
+  });
+
+  it("returns nothing for a tenant with no sponsors", () => {
+    expect(kindSponsors(undefined, "matchSummary" as CardKind, true)).toEqual([]);
+    expect(kindSponsors({}, "matchSummary" as CardKind, true)).toEqual([]);
+  });
+});
+
+describe("presentingSponsorName", () => {
+  const bundle = {
+    activeSponsors: [
+      { name: "Minor", logoUrl: "a.png", isPresenting: false },
+      { name: "Headline", logoUrl: "b.png", isPresenting: true },
+    ],
+  };
+
+  it("returns the designated presenting sponsor", () => {
+    expect(presentingSponsorName(bundle, true)).toBe("Headline");
+  });
+
+  it("is not kind-filtered — it is the club's headline sponsor", () => {
+    // No kind argument exists; this documents that by contract.
+    expect(presentingSponsorName(bundle, true)).toBe("Headline");
+  });
+
+  it("returns null when the sponsor strip is off, so the line drops entirely", () => {
+    expect(presentingSponsorName(bundle, false)).toBeNull();
+  });
+
+  it("(R5) returns null when none is designated", () => {
+    expect(presentingSponsorName({ activeSponsors: [] }, true)).toBeNull();
+    expect(presentingSponsorName(undefined, true)).toBeNull();
   });
 });

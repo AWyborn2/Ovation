@@ -58,7 +58,7 @@ import {
 import { templateAppliesToKind } from "@/lib/card-template";
 import { PackCard } from "@/components/pack-card";
 import { packSupportsKind, packImageSlots, type PackCardData } from "@/lib/pack-render";
-import { buildPackData as buildSharedPackData } from "@/lib/pack-card-data";
+import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
 import { ImageControl } from "@/components/card-forms";
 import { useQueryClient } from "@tanstack/react-query";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
@@ -431,13 +431,9 @@ export function ShareCardModal({
     input,
   });
 
-  // A tenant with no configured hashtag gets one derived from its short name
-  // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
-  // a brand-less tenant gets no clubUrl/hashtag rather than Halls Head's.
+  // A brand-less tenant gets no clubUrl/hashtag rather than another club's.
   const clubUrl = bundle?.settings.clubUrl ?? "";
-  const hashtag =
-    bundle?.settings.clubHashtag ??
-    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
+  const hashtag = tenantHashtag(bundle);
 
   const {
     platform,

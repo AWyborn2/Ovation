@@ -18,7 +18,12 @@
  */
 
 import type { PackCardData } from "./pack-render";
-import type { PhotoPlacement, PhotoTransform } from "./share-card";
+import {
+  sponsorAppliesToKind,
+  type CardKind,
+  type PhotoPlacement,
+  type PhotoTransform,
+} from "./share-card";
 
 /**
  * Structural brand shape accepted by the builder.
@@ -104,4 +109,60 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     imagesOverride:
       imageOverrides && Object.keys(imageOverrides).length ? imageOverrides : undefined,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Bundle resolution helpers
+// ---------------------------------------------------------------------------
+//
+// The three inputs above that are derived (rather than passed straight through)
+// were each re-derived at every call site. Same drift risk as the payload
+// itself, so they live here too. Structurally typed so `SocialSettingsBundle`
+// satisfies them without this module depending on the generated API client.
+
+export interface PackSettingsSource {
+  settings?: { clubHashtag?: string | null } | null;
+  brand?: { shortName?: string | null } | null;
+  activeSponsors?: Array<{
+    name: string;
+    logoUrl: string;
+    cardKinds?: string[] | null;
+    isPresenting?: boolean | null;
+  }> | null;
+}
+
+/**
+ * The tenant's club hashtag: its configured value, else one derived from its
+ * short name, else empty. Never another club's — a brand-less tenant gets "".
+ */
+export function tenantHashtag(bundle?: PackSettingsSource | null): string {
+  return (
+    bundle?.settings?.clubHashtag ??
+    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "")
+  );
+}
+
+/** Active sponsors that apply to `kind`. Empty when the sponsor strip is off. */
+export function kindSponsors(
+  bundle: PackSettingsSource | null | undefined,
+  kind: CardKind,
+  enabled: boolean,
+): Array<{ name: string; logoUrl: string }> {
+  if (!enabled || !bundle?.activeSponsors) return [];
+  return bundle.activeSponsors
+    .filter((sp) => sponsorAppliesToKind(sp.cardKinds, kind))
+    .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }));
+}
+
+/**
+ * The club's designated headline sponsor NAME → the "presented by" line. Not
+ * kind-filtered. Null when sponsors are off, so the line drops entirely rather
+ * than leaving orphan "presented by" prose.
+ */
+export function presentingSponsorName(
+  bundle: PackSettingsSource | null | undefined,
+  enabled: boolean,
+): string | null {
+  if (!enabled) return null;
+  return bundle?.activeSponsors?.find((sp) => sp.isPresenting)?.name ?? null;
 }

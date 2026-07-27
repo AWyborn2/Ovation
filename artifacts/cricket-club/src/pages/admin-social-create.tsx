@@ -24,14 +24,14 @@ import {
   type CardTheme as ApiCardTheme,
 } from "@workspace/api-client-react";
 import { useBrand } from "@/lib/brand-context";
-import { buildPackData } from "@/lib/pack-card-data";
-import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 import {
-  sponsorAppliesToKind,
-  type CardKind,
-  type CardSize,
-  type MatchSummaryTeam,
-} from "@/lib/share-card";
+  buildPackData,
+  tenantHashtag,
+  kindSponsors,
+  presentingSponsorName,
+} from "@/lib/pack-card-data";
+import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
+import type { CardKind, CardSize, MatchSummaryTeam } from "@/lib/share-card";
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -113,30 +113,6 @@ export default function AdminSocialCreate() {
     [isJunior, themes],
   );
 
-  // A tenant with no configured hashtag gets one derived from its short name;
-  // a brand-less tenant gets none rather than another club's.
-  const hashtag =
-    bundle?.settings.clubHashtag ??
-    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
-
-  // Active sponsors filtered to the current kind (same predicate the modal and
-  // carousel use), gated on the preview's own sponsor toggle.
-  const previewSponsors = useMemo(
-    () =>
-      sponsorsOn && bundle?.activeSponsors
-        ? bundle.activeSponsors
-            .filter((sp) => sponsorAppliesToKind(sp.cardKinds, kind))
-            .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
-        : [],
-    [sponsorsOn, bundle, kind],
-  );
-
-  // The club's headline sponsor → the "presented by <sponsor>" line. Not
-  // kind-filtered; cleared when sponsors are off so the line drops entirely.
-  const presentingSponsorName = sponsorsOn
-    ? bundle?.activeSponsors?.find((sp) => sp.isPresenting)?.name ?? null
-    : null;
-
   // Memoised: <PackCard> memoises its rendered html on `data` identity, so a
   // fresh object every render would defeat it and re-render on every keystroke.
   //
@@ -146,11 +122,11 @@ export default function AdminSocialCreate() {
     () =>
       buildPackData({
         brand: bundle?.brand ?? brand,
-        hashtag,
-        sponsors: previewSponsors,
-        presentingSponsorName,
+        hashtag: tenantHashtag(bundle),
+        sponsors: kindSponsors(bundle, kind, sponsorsOn),
+        presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
       }),
-    [bundle, brand, hashtag, previewSponsors, presentingSponsorName],
+    [bundle, brand, kind, sponsorsOn],
   );
 
   return (

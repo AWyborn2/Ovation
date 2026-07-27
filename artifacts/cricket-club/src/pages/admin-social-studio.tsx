@@ -32,12 +32,16 @@ import { sampleCardInput } from "@/lib/sample-card-inputs";
 import {
   renderShareCard,
   SIZES,
-  sponsorAppliesToKind,
   type CardSize,
   type RenderOptions,
   type ShareCardInput,
 } from "@/lib/share-card";
-import { buildPackData } from "@/lib/pack-card-data";
+import {
+  buildPackData,
+  tenantHashtag,
+  kindSponsors,
+  presentingSponsorName,
+} from "@/lib/pack-card-data";
 import { type PackCardData } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -159,36 +163,24 @@ export default function AdminSocialStudio() {
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
   const galleryTheme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
 
-  const galleryHashtag =
-    bundle?.settings.clubHashtag ??
-    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
-  const gallerySponsorsOn = !!bundle?.settings.sponsorsEnabled;
-  const galleryPresentingSponsor = gallerySponsorsOn
-    ? bundle?.activeSponsors?.find((sp) => sp.isPresenting)?.name ?? null
-    : null;
-
   // One payload per card kind, memoised so <PackCard>'s html memo (keyed on
   // `data` identity) is not defeated on every parent re-render.
   const galleryDataByKind = useMemo(() => {
+    const sponsorsOn = !!bundle?.settings.sponsorsEnabled;
     const out = new Map<string, PackCardData>();
     for (const o of CARD_KIND_OPTIONS) {
       out.set(
         o.value,
         buildPackData({
           brand: bundle?.brand,
-          hashtag: galleryHashtag,
-          sponsors:
-            gallerySponsorsOn && bundle?.activeSponsors
-              ? bundle.activeSponsors
-                  .filter((sp) => sponsorAppliesToKind(sp.cardKinds, o.value))
-                  .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
-              : [],
-          presentingSponsorName: galleryPresentingSponsor,
+          hashtag: tenantHashtag(bundle),
+          sponsors: kindSponsors(bundle, o.value, sponsorsOn),
+          presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
         }),
       );
     }
     return out;
-  }, [bundle, galleryHashtag, gallerySponsorsOn, galleryPresentingSponsor]);
+  }, [bundle]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });
