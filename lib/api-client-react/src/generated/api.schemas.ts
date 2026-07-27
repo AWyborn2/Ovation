@@ -1458,6 +1458,27 @@ export interface AvailableClub {
   suggestedSlug: string;
 }
 
+/**
+ * A club listed in the public Ovation directory. Only public branding and the club's own site URL are exposed — no plan, data source, or health.
+ */
+export interface DirectoryClub {
+  /** The club's subdomain label. */
+  slug: string;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  tagline?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  backgroundColour?: string | null;
+  /** @nullable */
+  primaryColour?: string | null;
+  /** The club's canonical public site (its custom domain, else slug.<apex>), as an absolute https URL. */
+  url: string;
+}
+
 export interface SlugAvailability {
   available: boolean;
   /**

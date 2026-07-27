@@ -7298,6 +7298,22 @@ export const GetAvailableClubsResponse = zod.array(GetAvailableClubsResponseItem
 
 
 /**
+ * @summary Public club directory: every active (non-suspended) club running Ovation, with its public branding and a link to its site. Independent of SIGNUP_MODE — the directory is always browsable.
+ */
+export const ListDirectoryClubsResponseItem = zod.object({
+  "slug": zod.string().describe('The club\'s subdomain label.'),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "tagline": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "url": zod.string().describe('The club\'s canonical public site (its custom domain, else slug.<apex>), as an absolute https URL.')
+}).describe('A club listed in the public Ovation directory. Only public branding and the club\'s own site URL are exposed — no plan, data source, or health.')
+export const ListDirectoryClubsResponse = zod.array(ListDirectoryClubsResponseItem)
+
+
+/**
  * @summary Whether a subdomain slug is valid and free to claim.
  */
 export const CheckSlugAvailableQueryParams = zod.object({

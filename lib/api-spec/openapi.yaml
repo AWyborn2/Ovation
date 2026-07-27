@@ -5084,6 +5084,24 @@ paths:
         "403":
           description: Signup is disabled (SIGNUP_MODE=off).
 
+  /platform/directory-clubs:
+    get:
+      operationId: listDirectoryClubs
+      tags: [platform]
+      summary: >-
+        Public club directory: every active (non-suspended) club running Ovation,
+        with its public branding and a link to its site. Independent of SIGNUP_MODE
+        — the directory is always browsable.
+      responses:
+        "200":
+          description: Active clubs on the platform, sorted by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DirectoryClub"
+
   /platform/slug-available:
     get:
       operationId: checkSlugAvailable
@@ -7238,6 +7256,34 @@ components:
         suggestedSlug:
           type: string
           description: A pre-validated slug derived from the club name.
+
+    DirectoryClub:
+      type: object
+      description: >-
+        A club listed in the public Ovation directory. Only public branding and
+        the club's own site URL are exposed — no plan, data source, or health.
+      required: [slug, name, url]
+      properties:
+        slug:
+          type: string
+          description: The club's subdomain label.
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        tagline:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        backgroundColour:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        url:
+          type: string
+          description: >-
+            The club's canonical public site (its custom domain, else
+            slug.<apex>), as an absolute https URL.
 
     SlugAvailability:
       type: object

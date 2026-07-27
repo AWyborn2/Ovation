@@ -91,6 +91,7 @@ import type {
   CreateJuniorBowlingLineBody,
   Dashboard,
   DebutEntry,
+  DirectoryClub,
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
@@ -17772,6 +17773,83 @@ export function useGetAvailableClubs<TData = Awaited<ReturnType<typeof getAvaila
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAvailableClubsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListDirectoryClubsUrl = () => {
+
+
+
+
+  return `/api/platform/directory-clubs`
+}
+
+/**
+ * @summary Public club directory: every active (non-suspended) club running Ovation, with its public branding and a link to its site. Independent of SIGNUP_MODE — the directory is always browsable.
+ */
+export const listDirectoryClubs = async ( options?: RequestInit): Promise<DirectoryClub[]> => {
+
+  return customFetch<DirectoryClub[]>(getListDirectoryClubsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDirectoryClubsQueryKey = () => {
+    return [
+    `/api/platform/directory-clubs`
+    ] as const;
+    }
+
+
+export const getListDirectoryClubsQueryOptions = <TData = Awaited<ReturnType<typeof listDirectoryClubs>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDirectoryClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDirectoryClubsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDirectoryClubs>>> = ({ signal }) => listDirectoryClubs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDirectoryClubs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDirectoryClubsQueryResult = NonNullable<Awaited<ReturnType<typeof listDirectoryClubs>>>
+export type ListDirectoryClubsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public club directory: every active (non-suspended) club running Ovation, with its public branding and a link to its site. Independent of SIGNUP_MODE — the directory is always browsable.
+ */
+
+export function useListDirectoryClubs<TData = Awaited<ReturnType<typeof listDirectoryClubs>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDirectoryClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDirectoryClubsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

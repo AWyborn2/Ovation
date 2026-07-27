@@ -160,6 +160,7 @@ export * from './customGridDef';
 export * from './customGridDefFillMode';
 export * from './dashboard';
 export * from './debutEntry';
+export * from './directoryClub';
 export * from './displayBoard';
 export * from './displayBoardLayout';
 export * from './entitlements';
