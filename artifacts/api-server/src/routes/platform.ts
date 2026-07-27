@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { db, tenantsTable, adminsTable } from "@workspace/db";
 import { PlatformSignupBody } from "@workspace/api-zod";
 import {
@@ -14,7 +14,7 @@ import {
   signupSessionCookieOpts,
   SESSION_COOKIE,
 } from "../lib/auth";
-import { platformBaseDomain } from "../lib/tenant-url";
+import { platformBaseDomain, tenantHost } from "../lib/tenant-url";
 import { invalidateTenantDirectoryCache } from "../middlewares/tenant-context";
 import {
   signupRateLimiter,
@@ -81,6 +81,51 @@ router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req,
 
   res.json(available);
 });
+
+// --- Public club directory --------------------------------------------------
+
+/**
+ * The public directory: every active club running Ovation, so a visitor on the
+ * apex can browse the platform and click through to any club's site. Unlike
+ * `/platform/available-clubs` (central clubs still to claim), this lists the
+ * *existing tenants*, and is independent of SIGNUP_MODE — the directory stays
+ * browsable even when onboarding is paused. Only public branding is exposed
+ * (no plan, data source, or health), and suspended tenants are omitted.
+ */
+router.get(
+  "/platform/directory-clubs",
+  signupDiscoveryRateLimiter,
+  async (req, res): Promise<void> => {
+    const rows = await db
+      .select({
+        slug: tenantsTable.slug,
+        name: tenantsTable.name,
+        shortName: tenantsTable.shortName,
+        tagline: tenantsTable.tagline,
+        logoUrl: tenantsTable.logoUrl,
+        backgroundColour: tenantsTable.backgroundColour,
+        primaryColour: tenantsTable.primaryColour,
+        customDomain: tenantsTable.customDomain,
+      })
+      .from(tenantsTable)
+      .where(isNull(tenantsTable.suspendedAt));
+
+    const clubs = rows
+      .map((r) => ({
+        slug: r.slug,
+        name: r.name,
+        shortName: r.shortName ?? null,
+        tagline: r.tagline ?? null,
+        logoUrl: r.logoUrl ?? null,
+        backgroundColour: r.backgroundColour ?? null,
+        primaryColour: r.primaryColour ?? null,
+        url: `https://${tenantHost(req, { slug: r.slug, customDomain: r.customDomain })}`,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    res.json(clubs);
+  },
+);
 
 // --- Slug availability (live check in the wizard) ---------------------------
 

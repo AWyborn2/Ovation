@@ -54,6 +54,11 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <span className="text-lg font-semibold tracking-tight">Ovation</span>
           <div className="flex items-center gap-2">
+            <Link href="/directory">
+              <Button size="sm" variant="ghost">
+                Browse clubs
+              </Button>
+            </Link>
             <Link href="/platform-admin">
               <Button size="sm" variant="ghost">
                 Log in
@@ -76,10 +81,15 @@ export default function LandingPage() {
             boards and milestones — on a branded site that stays current on its
             own. Pick your club and it's populated in seconds.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link href="/signup">
               <Button size="lg" className="gap-2">
                 Find your club <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/directory">
+              <Button size="lg" variant="outline">
+                Browse clubs
               </Button>
             </Link>
           </div>
