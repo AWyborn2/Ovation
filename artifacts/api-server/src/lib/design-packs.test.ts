@@ -165,17 +165,32 @@ describe("design-packs registry", () => {
 
   // --- ensurePackTemplates --------------------------------------------------
 
-  it("creates 3 broadcast-dark-v1 template rows on first call", async () => {
+  it("creates one row per variant of every registered pack on first call", async () => {
     await ensurePackTemplates(42);
 
-    expect(insertedRows).toHaveLength(3);
+    const expectedRows = PACKS.reduce((n, p) => n + p.variants.length, 0);
+    expect(insertedRows).toHaveLength(expectedRows);
     for (const row of insertedRows) {
       expect(row.tenantId).toBe(42);
       expect(row.source).toBe("pack");
-      expect(row.packId).toBe("broadcast-dark-v1");
     }
 
-    const variants = insertedRows.map((r) => r.packVariant);
+    // Every registered pack gets its full variant set — a pack whose rows were
+    // never materialised can never be selected by a tenant.
+    for (const pack of PACKS) {
+      const rows = insertedRows.filter((r) => r.packId === pack.id);
+      expect(rows, pack.id).toHaveLength(pack.variants.length);
+      const variants = rows.map((r) => r.packVariant);
+      for (const v of pack.variants) expect(variants, pack.id).toContain(v.key);
+    }
+  });
+
+  it("materialises broadcast-dark-v1 with all three variants", async () => {
+    await ensurePackTemplates(42);
+
+    const rows = insertedRows.filter((r) => r.packId === "broadcast-dark-v1");
+    expect(rows).toHaveLength(3);
+    const variants = rows.map((r) => r.packVariant);
     expect(variants).toContain("square");
     expect(variants).toContain("portrait");
     expect(variants).toContain("story");
@@ -201,10 +216,23 @@ describe("design-packs registry", () => {
     expect(story.backgroundKind).toBe("image");
   });
 
-  it("seeds cardKinds covering all 18 kinds on every row", async () => {
+  it("seeds each row with its OWN pack's declared cardKinds", async () => {
     await ensurePackTemplates(1);
 
+    // cardKinds is the coverage contract: a row must only offer the kinds its
+    // pack can actually render, so a partially-transcribed pack (Gold Foil) is
+    // never offered for a kind that would fall back to another pack's design.
     for (const row of insertedRows) {
+      const pack = PACKS.find((p) => p.id === row.packId);
+      expect(pack, `unknown packId ${row.packId}`).toBeDefined();
+      expect(row.cardKinds, `${row.packId}`).toEqual(pack!.cardKinds);
+    }
+  });
+
+  it("gives Broadcast Dark full coverage of all 18 kinds", async () => {
+    await ensurePackTemplates(1);
+
+    for (const row of insertedRows.filter((r) => r.packId === "broadcast-dark-v1")) {
       expect(row.cardKinds).toEqual(ALL_KINDS);
     }
   });

@@ -85,6 +85,45 @@ export const PACKS: DesignPack[] = [
       },
     ],
   },
+  {
+    id: "gold-foil-v1",
+    name: "Gold Foil",
+    description:
+      "Grand-final prestige — metallic foil display type on black, concentric gold grooves and gold ribbon callouts.",
+    // COVERAGE CONTRACT: this list must match the kinds in the client manifest
+    // (`pack-templates/gold-foil/index.ts`). The two registries live in
+    // separate packages and are not cross-checked automatically. Declaring a
+    // kind here that the client cannot render offers a tenant a pack that falls
+    // back to Broadcast Dark; omitting one the client CAN render just hides it.
+    // Gold Foil is being transcribed card by card — grow both lists together.
+    cardKinds: ["matchSummary"],
+    variants: [
+      {
+        key: "square",
+        label: "Square (1080×1080)",
+        width: 1080,
+        height: 1080,
+        motionPreset: "none",
+        backgroundKind: "image",
+      },
+      {
+        key: "portrait",
+        label: "Portrait (1080×1350)",
+        width: 1080,
+        height: 1350,
+        motionPreset: "none",
+        backgroundKind: "image",
+      },
+      {
+        key: "story",
+        label: "Story (1080×1920)",
+        width: 1080,
+        height: 1920,
+        motionPreset: "none",
+        backgroundKind: "image",
+      },
+    ],
+  },
 ];
 
 export function getPackById(id: string): DesignPack | undefined {

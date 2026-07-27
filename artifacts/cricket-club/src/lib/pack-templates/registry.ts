@@ -18,6 +18,7 @@
 
 import type { PackManifest } from "./types";
 import { BROADCAST_DARK_PACK } from "./broadcast-dark";
+import { GOLD_FOIL_PACK } from "./gold-foil";
 
 /**
  * The pack used when a caller supplies no `packId`, or supplies one that is not
@@ -27,7 +28,7 @@ import { BROADCAST_DARK_PACK } from "./broadcast-dark";
  */
 export const DEFAULT_PACK_ID = BROADCAST_DARK_PACK.packId;
 
-const MANIFESTS: readonly PackManifest[] = [BROADCAST_DARK_PACK];
+const MANIFESTS: readonly PackManifest[] = [BROADCAST_DARK_PACK, GOLD_FOIL_PACK];
 
 const BY_ID: ReadonlyMap<string, PackManifest> = new Map(
   MANIFESTS.map((p) => [p.packId, p]),
