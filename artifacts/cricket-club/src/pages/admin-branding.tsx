@@ -298,8 +298,11 @@ function Editor({ brand }: { brand: TenantBrand }) {
     update.isPending;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-6">
+    <div className="grid gap-6 xl:grid-cols-3">
+      <div className="space-y-6 xl:col-span-2">
+        {/* Setting cards flow across two columns (masonry) to fill the width;
+            break-inside-avoid keeps each card intact. */}
+        <div className="gap-6 sm:columns-2 [&>*]:mb-6 [&>*]:break-inside-avoid">
         <Card>
           <CardHeader>
             <CardTitle>App look</CardTitle>
@@ -758,6 +761,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
             </CardContent>
           )}
         </Card>
+        </div>
 
         {error && <div className="text-sm text-destructive">{error}</div>}
         <Button onClick={save} disabled={busy} data-testid="button-save-branding">
@@ -770,11 +774,12 @@ function Editor({ brand }: { brand: TenantBrand }) {
         </Button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 xl:sticky xl:top-6 xl:self-start">
         <Label>Live preview</Label>
         <div
           style={previewStyle}
-          className="rounded-lg border bg-background text-foreground p-6 space-y-4"
+          className="rounded-lg border bg-background font-sans text-foreground p-6 space-y-4"
+          data-testid="branding-live-preview"
         >
           <div className="flex items-center gap-3">
             {previewBrand.logoUrl && (
@@ -782,12 +787,26 @@ function Editor({ brand }: { brand: TenantBrand }) {
             )}
             <span className="font-serif text-xl font-bold">{previewBrand.name}</span>
           </div>
-          <div className="rounded-md border bg-card text-card-foreground p-4">
-            <div className="rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium inline-block">
-              Primary button
+          <div className="rounded-md border bg-card text-card-foreground p-4 space-y-3">
+            <p className="text-sm">
+              Body text on a card surface — this is how a paragraph reads.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium">
+                Primary button
+              </span>
+              <span className="rounded-md bg-secondary text-secondary-foreground px-3 py-2 text-sm font-medium">
+                Secondary
+              </span>
+              <span className="rounded-md bg-destructive text-destructive-foreground px-3 py-2 text-sm font-medium">
+                Delete
+              </span>
             </div>
-            <div className="mt-2 rounded-md bg-secondary text-secondary-foreground px-3 py-2 text-sm font-medium inline-block ml-2">
-              Secondary
+            <div className="rounded-md bg-muted text-muted-foreground px-3 py-2 text-sm">
+              Muted panel
+            </div>
+            <div className="rounded-md border border-input px-3 py-2 text-sm text-muted-foreground">
+              Input field
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -798,8 +817,8 @@ function Editor({ brand }: { brand: TenantBrand }) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          This preview is scoped to this card only — it doesn't change the rest of the
-          admin dashboard while you're editing.
+          Updates live as you edit — background, surfaces, buttons, borders, radius
+          and fonts all reflect your changes here before you save.
         </p>
       </div>
     </div>
