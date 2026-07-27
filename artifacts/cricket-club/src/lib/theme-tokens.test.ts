@@ -336,9 +336,44 @@ describe("theme overrides", () => {
   });
 
   it("unknown override keys are ignored", () => {
-    const out = applyThemeOverrides({ "--card": "220 30% 11%" }, { "--totally-made-up": "#fff" });
+    const out = applyThemeOverrides(
+      { "--card": "220 30% 11%" },
+      { "--totally-made-up": "#fff" },
+      "dark",
+    );
     expect(out["--totally-made-up"]).toBeUndefined();
     expect(out["--card"]).toBe("220 30% 11%");
+  });
+
+  it("an on-surface text override inverts its lightness between light and dark", () => {
+    // A club picks a near-black body text (a colour tuned for light mode).
+    const light = deriveThemeTokens(
+      { ...DEFAULT_BRAND, themeOverrides: { "--foreground": "#1a1a1a" } },
+      "light",
+    );
+    const dark = deriveThemeTokens(
+      { ...DEFAULT_BRAND, themeOverrides: { "--foreground": "#1a1a1a" } },
+      "dark",
+    );
+    // Light mode keeps the dark ink as-picked; dark mode flips its lightness so
+    // the same choice stays legible (hue/saturation preserved, L mirrored).
+    expect(light["--foreground"]).toBe(hexToHslTriplet("#1a1a1a"));
+    const picked = hexToHsl("#1a1a1a")!;
+    const [h, s, l] = dark["--foreground"].split(" ");
+    expect(h).toBe(String(picked.h));
+    expect(s).toBe(`${picked.s}%`);
+    expect(l).toBe(`${100 - picked.l}%`);
+    expect(picked.l).toBeLessThan(50); // sanity: it really did need flipping
+  });
+
+  it("text on fixed accent chips does NOT invert with the mode", () => {
+    // --primary-foreground sits on the accent button, which is the same colour in
+    // both modes, so a picked value must apply verbatim regardless of mode.
+    const overrides = { "--primary-foreground": "#ffffff" };
+    const light = deriveThemeTokens({ ...DEFAULT_BRAND, themeOverrides: overrides }, "light");
+    const dark = deriveThemeTokens({ ...DEFAULT_BRAND, themeOverrides: overrides }, "dark");
+    expect(light["--primary-foreground"]).toBe(hexToHslTriplet("#ffffff"));
+    expect(dark["--primary-foreground"]).toBe(hexToHslTriplet("#ffffff"));
   });
 
   it("every OVERRIDE_COLOUR_KEY is one deriveThemeTokens actually emits", () => {

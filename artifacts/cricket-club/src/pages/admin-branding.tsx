@@ -644,9 +644,10 @@ function Editor({ brand }: { brand: TenantBrand }) {
           {advancedOpen && (
             <CardContent className="space-y-5">
               <p className="text-sm text-muted-foreground">
-                Fine-tune individual surfaces. Each is derived automatically from
-                your colours until you set it — leave on <em>Auto</em> for the
-                guardrailed default.
+                Fine-tune individual surfaces and text colours. Each is derived
+                automatically from your colours until you set it — leave on{" "}
+                <em>Auto</em> for the guardrailed default. Text colours invert
+                automatically between light and dark mode so they stay readable.
               </p>
 
               <div className="space-y-3">
