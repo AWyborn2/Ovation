@@ -74,11 +74,11 @@ export const newSigning: PackCardTemplate = {
     textField(
       "headline",
       "Headline",
-      "The black & gold gets a serious top-order boost for 2025/26. Let's go, Sam!",
+      "The club gets a serious top-order boost for 2025/26. Let's go, Sam!",
     ),
     photoField("photo", "Player photo", "New player photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("sponsorPresentedBy", "Recruitment sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("sponsorPresentedBy", "Recruitment sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

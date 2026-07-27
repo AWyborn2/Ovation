@@ -196,8 +196,8 @@ export function repeatField(key: string, label: string, sample: string): PackTem
 /** Fields present on every card's header. */
 export function clubHeaderFields(): PackTemplateField[] {
   return [
-    textField("clubName", "Club name", "HALLS HEAD"),
-    textField("clubTagline", "Club tagline", "CRICKET CLUB · EST 1991"),
+    textField("clubName", "Club name", "YOUR CLUB"),
+    textField("clubTagline", "Club tagline", "CRICKET CLUB · EST. YYYY"),
     logoField("clubLogo", "Club logo", "Club logo"),
   ];
 }

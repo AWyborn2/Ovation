@@ -84,8 +84,8 @@ export const playerSpotlight: PackCardTemplate = {
       "A mainstay of the top order — 428 runs across the 2025/26 season so far.",
     ),
     photoField("photo", "Player photo", "Player photo / cutout"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("sponsorPresentedBy", "Presented-by sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

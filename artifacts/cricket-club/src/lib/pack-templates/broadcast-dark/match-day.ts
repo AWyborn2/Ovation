@@ -93,7 +93,7 @@ export const matchDay: PackCardTemplate = {
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),
     logoField("sponsor2", "Sponsor logo 2", "Sponsor"),
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
   ],
   formats: {
     story: storyHtml,

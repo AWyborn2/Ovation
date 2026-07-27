@@ -208,7 +208,7 @@ const SAMPLES: { [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: 
     gradeLabel: "A GRADE",
     asOfLabel: "AFTER ROUND 8",
     rows: [
-      { pos: 1, team: "Halls Head", played: 8, won: 7, lost: 1, points: 42, isClub: true },
+      { pos: 1, team: "Your Club", played: 8, won: 7, lost: 1, points: 42, isClub: true },
       { pos: 2, team: "Baldivis", played: 8, won: 6, lost: 2, points: 38 },
       { pos: 3, team: "Rockingham", played: 8, won: 5, lost: 3, points: 33 },
       { pos: 4, team: "Mandurah", played: 8, won: 4, lost: 4, points: 28 },

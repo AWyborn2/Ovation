@@ -223,4 +223,56 @@ describe("broadcast-dark binding contract", () => {
       expect(entry!.template.sponsorVariants, designKey).toEqual(["on"]);
     }
   });
+
+  // U3 / R6 — the pack ships to every tenant, so no sample default may carry
+  // one club's identity. This is the guard that stops a future template (or a
+  // Pack B–E transcription) reintroducing the literals the bundle was drawn
+  // from. Opposition club names are deliberately NOT covered: they are the
+  // other side of the fixture, not the tenant's own identity.
+  const CLUB_IDENTITY_LITERALS = [
+    "Halls Head",
+    "HALLS HEAD",
+    "HALLSHEAD",
+    "EST 1991",
+    "eSA Sport",
+    "PEELPREMIERLEAGUE",
+    "black & gold",
+  ];
+
+  it("(R6) no template sample default carries a club's identity", () => {
+    for (const entry of designs) {
+      for (const field of entry.template.fields) {
+        for (const literal of CLUB_IDENTITY_LITERALS) {
+          expect(
+            field.sample,
+            `${entry.designKey}.${field.key} sample must not contain "${literal}"`,
+          ).not.toContain(literal);
+        }
+      }
+      // Repeat-row fields carry samples too (ladder team, weekend-wrap result).
+      for (const repeat of entry.template.repeats ?? []) {
+        for (const field of repeat.fields) {
+          for (const literal of CLUB_IDENTITY_LITERALS) {
+            expect(
+              field.sample,
+              `${entry.designKey}.${repeat.key}.${field.key} sample must not contain "${literal}"`,
+            ).not.toContain(literal);
+          }
+        }
+      }
+    }
+  });
+
+  it("(R6) no template HTML hard-codes a club's identity", () => {
+    for (const entry of designs) {
+      for (const [format, html] of formatEntries(entry)) {
+        for (const literal of CLUB_IDENTITY_LITERALS) {
+          expect(
+            html,
+            `${entry.designKey}/${format} html must not contain "${literal}"`,
+          ).not.toContain(literal);
+        }
+      }
+    }
+  });
 });
