@@ -5,6 +5,9 @@ import { countdown } from "./countdown";
 import { newSigning } from "./new-signing";
 import { newCap } from "./new-cap";
 import { premiership } from "./premiership";
+import { teamList } from "./team-list";
+import { weekendWrap } from "./weekend-wrap";
+import { ladder } from "./ladder";
 
 /**
  * Pack B — Gold Foil. Grand-final prestige: metallic foil display type on
@@ -34,5 +37,8 @@ export const GOLD_FOIL_PACK: PackManifest = {
     { designKey: "new-signing", kind: "newSigning", template: newSigning },
     { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "premiership", kind: "premiership", template: premiership },
+    { designKey: "team-list", kind: "teamList", template: teamList },
+    { designKey: "weekend-wrap", kind: "weekendWrap", template: weekendWrap },
+    { designKey: "ladder", kind: "ladder", template: ladder },
   ],
 };

@@ -103,6 +103,9 @@ export const PACKS: DesignPack[] = [
       "newSigning",
       "newCap",
       "premiership",
+      "teamList",
+      "weekendWrap",
+      "ladder",
     ],
     variants: [
       {
