@@ -54,11 +54,10 @@ const storyHtml = formatRoot(
     `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:78px;line-height:1;margin-top:12px;color:var(--gold,#F5B21A)">{{club.score}}</div>` +
     `<div style="font:500 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:color-mix(in srgb, var(--gold,#FBAC27) 72%, transparent);margin-top:8px">{{club.oversLabel}}</div></div>` +
     `</div>` +
-    // Gold ribbon: the pack's hero callout.
-    `<div style="position:absolute;bottom:118px;left:80px;right:80px;background:linear-gradient(90deg,#C8860A,var(--gold,#F5B21A) 42%,#FFDE8A 66%,var(--gold,#F5B21A));border-radius:12px;padding:24px 30px;display:flex;align-items:center;justify-content:center;gap:20px;box-shadow:0 20px 50px -22px color-mix(in srgb, var(--gold,#FBAC27) 70%, transparent)">` +
-    `<span style="font:700 22px/1 ui-monospace,Menlo,monospace;letter-spacing:.15em;color:#3a2600">PLAYER OF THE MATCH</span>` +
-    `<span style="width:8px;height:8px;border-radius:50%;background:#3a2600"></span>` +
-    `<span style="font-weight:800;font-size:30px;line-height:1;color:#241700">{{potm.name}} — {{potm.figures}}</span></div>` +
+    // The gold Player-of-the-Match ribbon sat here. Removed: `potm.*` is not on
+    // `ShareCardInput` and nothing populates it, so the ribbon always announced
+    // the template's sample literal — a fabricated player and figures — as
+    // though it were that week's result.
     sponsorsOn(PRESENTED_BY_STORY) +
     sponsorsOff(HASHTAG_FOOTER_STORY),
 );
@@ -99,29 +98,8 @@ function tallTeamRow(side: "opposition" | "club", mine: boolean): string {
   );
 }
 
-/** Cyan POTM panel — the one non-gold accent, shared by both non-story sizes. */
-function potmPanel(opts: {
-  gap: number;
-  padding: string;
-  radius: number;
-  photo: string;
-  photoRadius: number;
-  labelSize: number;
-  nameStyle: string;
-  figuresSize: number;
-  figuresMarginTop: number;
-  detailSize: number;
-}): string {
-  return (
-    `<div style="flex:none;display:flex;align-items:center;gap:${opts.gap}px;background:linear-gradient(90deg,rgba(55,207,230,.14),rgba(255,255,255,.03));border:1px solid rgba(55,207,230,.34);border-radius:${opts.radius}px;padding:${opts.padding}">` +
-    `<div style="width:${opts.photo};height:${opts.photo};border-radius:${opts.photoRadius}px;overflow:hidden;flex:none;box-shadow:0 0 0 2px rgba(55,207,230,.4)">${slot("potm.photo", "photo", "rounded", opts.photoRadius)}</div>` +
-    `<div style="flex:1;min-width:0">` +
-    `<div style="font:700 ${opts.labelSize}px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#37CFE6">PLAYER OF THE MATCH</div>` +
-    `<div style="${opts.nameStyle}">{{potm.name}}</div>` +
-    `<div style="font-weight:700;font-size:${opts.figuresSize}px;line-height:1;margin-top:${opts.figuresMarginTop}px">{{potm.figures}} <span style="font-weight:500;color:rgba(255,255,255,.6);font-size:${opts.detailSize}px">{{potm.detail}}</span></div>` +
-    `</div></div>`
-  );
-}
+// The cyan Player-of-the-Match panel lived here (both non-story sizes).
+// Removed for the same reason as the story ribbon: nothing populates `potm.*`.
 
 // ---------------------------------------------------------------------------
 // Portrait / tall (1080×1350)
@@ -142,19 +120,6 @@ const tallMiddle =
   `<div style="flex:1;height:1px;background:rgba(255,255,255,.15)"></div></div>` +
   tallTeamRow("club", true) +
   `</div>` +
-  potmPanel({
-    gap: 26,
-    padding: "24px 26px",
-    radius: 18,
-    photo: "calc(var(--k,1.4)*128px)",
-    photoRadius: 14,
-    labelSize: 20,
-    nameStyle:
-      "font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*56px);line-height:.92;color:var(--gold,#FBAC27);margin-top:12px",
-    figuresSize: 32,
-    figuresMarginTop: 10,
-    detailSize: 24,
-  }) +
   `</div>`;
 
 const portraitHtml = sharedColumnRoot(nonStoryHeader + tallMiddle + nonStoryFooters);
@@ -198,19 +163,6 @@ const squareMiddle =
   `<div style="flex:none;align-self:center;font:700 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--gold,#FBAC27);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:14px 12px;writing-mode:vertical-rl;text-orientation:upright">{{resultVerbShort}}</div>` +
   squareTeamCol("club", true) +
   `</div>` +
-  potmPanel({
-    gap: 22,
-    padding: "20px 24px",
-    radius: 16,
-    photo: "118px",
-    photoRadius: 12,
-    labelSize: 17,
-    nameStyle:
-      "font-family:var(--disp,'Anton'),sans-serif;font-size:54px;line-height:.92;color:var(--gold,#FBAC27);margin-top:9px",
-    figuresSize: 26,
-    figuresMarginTop: 7,
-    detailSize: 20,
-  }) +
   `</div>`;
 
 const squareHtml = sharedColumnRoot(nonStoryHeader + squareMiddle + nonStoryFooters);
@@ -240,10 +192,6 @@ export const matchResult: PackCardTemplate = {
       "E. Smith 33 (28) · A. Beattie 2/9 (4)",
     ),
     logoField("opposition.logo", "Opposition logo", "Logo"),
-    textField("potm.name", "Player of the match", "ALEX OSBORNE"),
-    textField("potm.figures", "POTM figures", "3/13"),
-    textField("potm.detail", "POTM detail", "(4 overs)"),
-    photoField("potm.photo", "POTM photo", "Player photo"),
     photoField("photo", "Hero photo", "Celebration / action photo"),
     textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
     textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),

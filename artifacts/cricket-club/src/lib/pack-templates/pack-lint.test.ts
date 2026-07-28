@@ -230,6 +230,33 @@ for (const pack of listPackManifests()) {
       }
     });
 
+    it("declares no unbindable potm.* field", () => {
+      // `potm.name` / `potm.figures` / `potm.detail` are not on ShareCardInput
+      // and nothing in the input pipeline ever set them, so match-result's POTM
+      // panel published the template's sample literal — a fabricated player and
+      // fabricated figures — as though it were that week's result. Removed from
+      // every pack; this stops a transcription of Packs C/D/E reintroducing it
+      // straight from the bundle, where the panel is still present.
+      //
+      // Scoped to the `potm.*` family on purpose. Premiership's "PLAYER OF THE
+      // MATCH · {{mom}}" line stays: `mom` IS on ShareCardInput, IS bound by
+      // bindInput, and has an admin-editable "Player of the final" form field —
+      // a one-off historical fact, not weekly match data. Asserting on the
+      // words "PLAYER OF THE MATCH" would wrongly condemn it.
+      for (const entry of designs) {
+        const keys = entry.template.fields
+          .map((f) => f.key)
+          .filter((k) => k === "potm" || k.startsWith("potm."));
+        expect(keys, `${entry.designKey} declares POTM fields: ${keys.join(", ")}`).toEqual([]);
+        for (const [format, html] of formatEntries(entry)) {
+          expect(
+            /\{\{potm\b/.test(html),
+            `${entry.designKey}/${format} still renders a potm.* placeholder`,
+          ).toBe(false);
+        }
+      }
+    });
+
     it("(R6) no template html hard-codes a club's identity", () => {
       for (const entry of designs) {
         for (const [format, html] of formatEntries(entry)) {

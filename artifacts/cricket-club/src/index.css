@@ -262,3 +262,57 @@
 .driver-popover.hhcc-tour .driver-popover-arrow {
   border-color: hsl(var(--card)) !important;
 }
+
+/* ---------------------------------------------------------------------------
+ * Design-pack card animations
+ * ---------------------------------------------------------------------------
+ * Transcribed verbatim from the Claude Design bundles' own <style> block. The
+ * pack templates reference these by name in inline `animation:` declarations
+ * (see lib/pack-templates/), but the conversion originally took only the card
+ * markup and left the keyframes behind — so every animation silently did
+ * nothing: Gold Foil's foil sweep sat frozen at its default background
+ * position, and Broadcast Dark's "LIVE"/"FULL TIME" dot never pulsed.
+ *
+ * They live in the global stylesheet rather than inside the rendered card
+ * because every surface that mounts a pack card does so inside the app —
+ * the Studio gallery, the composer preview, the export modal, the carousel
+ * filmstrip, and the headless /__card-render harness the server screenshots.
+ *
+ * `pack-animations.test.ts` fails if a pack template uses an animation name
+ * that is not defined here.
+ * ------------------------------------------------------------------------- */
+
+/* Pulsing status dot — Broadcast Dark "LIVE" chip and both packs' "FULL TIME". */
+@keyframes hhPulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 16px currentColor;
+  }
+  50% {
+    opacity: 0.45;
+    box-shadow: 0 0 4px currentColor;
+  }
+}
+
+/* Metallic foil sweep — moves the clipped gradient across the glyphs (Gold Foil). */
+@keyframes hhShine {
+  0%,
+  100% {
+    background-position: 50% 0;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+}
+
+/* Slow ambient glow — used by Bold Type / Neon Night / Sunset accents. */
+@keyframes hhGlow {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}

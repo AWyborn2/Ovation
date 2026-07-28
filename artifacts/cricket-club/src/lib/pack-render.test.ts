@@ -671,7 +671,7 @@ describe("renderPackCard per-slot image overrides (B1)", () => {
     // byte-identical html at every call site (determinism, not a round-trip).
     const input = sampleCardInput("matchSummary");
     const data: PackCardData = {
-      imagesOverride: { "opposition.logo": OVERRIDE, "potm.photo": OVERRIDE },
+      imagesOverride: { "opposition.logo": OVERRIDE, "club.logo": OVERRIDE },
     };
     for (const size of ["square", "portrait", "story"] as CardSize[]) {
       const a = renderPackCard(input, size, true, TOKENS, false, data);
@@ -699,7 +699,7 @@ describe("packImageSlots (per-slot override editor enumeration)", () => {
   it("hides the tenant-branding slots (clubLogo + sponsors) from the match-result panel", () => {
     const keys = packImageSlots(sampleCardInput("matchSummary")).map((s) => s.key);
     // Content slots are surfaced…
-    for (const k of ["club.logo", "opposition.logo", "potm.photo"]) {
+    for (const k of ["club.logo", "opposition.logo"]) {
       expect(keys, k).toContain(k);
     }
     // …the branding slots (header logo + sponsor tiles) are hidden.
@@ -724,7 +724,6 @@ describe("packImageSlots (per-slot override editor enumeration)", () => {
       "clubLogo",
       "club.logo",
       "opposition.logo",
-      "potm.photo",
       "sponsor1",
       "sponsor2",
       "sponsor3",
@@ -794,14 +793,17 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
     expect(noPhoto).toBe(contained);
   });
 
-  it("does not full-bleed the match-result POTM headshot", () => {
-    // matchSummary has no hero `photo` slot — only the contained `potm.photo`
-    // headshot — so full-bleed must not touch it.
+  it("is a no-op on a kind with no hero photo slot (match-result)", () => {
+    // Broadcast Dark's match-result exposes no `data-slot="photo"` at all — it
+    // has team logos only, and the POTM headshot that used to be its one photo
+    // slot was removed with the Player-of-the-Match section. Requesting
+    // full-bleed must therefore change nothing rather than rewriting some other
+    // slot's wrapper.
     const input = sampleCardInput("matchSummary");
-    const html = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
-    // The POTM wrapper (rounded box) stays; no wrapper is rewritten to inset:0.
-    expect(html).not.toContain(FULLBLEED_WRAPPER);
-    expect(html).toContain(`src="${PHOTO}"`);
+    const fullBleed = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
+    const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained"));
+    expect(fullBleed).not.toContain(FULLBLEED_WRAPPER);
+    expect(fullBleed).toBe(contained);
   });
 
   it("injects a full-card legibility scrim on full-bleed, none on contained", () => {

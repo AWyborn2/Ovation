@@ -62,7 +62,7 @@ export const JUNIOR_PANEL = "#42342B";
  *     text (DOM order is preserved, so legibility scrims still overlay it).
  *
  * Only the player hero slot (`data-slot="photo"`) is affected — the match-result
- * POTM headshot (`potm.photo`) and every logo/sponsor slot are untouched.
+ * and every logo/sponsor slot are untouched.
  */
 export type PackPhotoPlacement = "contained" | "fullBleed";
 
@@ -117,7 +117,7 @@ export interface PackCardData {
   presentingSponsorName?: string | null;
   /**
    * Uploaded / gallery-selected photo. Overrides the input's own `photoUrl` in
-   * the `photo` (and match-result `potm.photo`) slots.
+   * the `photo` slot.
    */
   photoUrl?: string | null;
   /** Focal point + zoom for the photo. Only the focal point is applied (as
@@ -127,12 +127,12 @@ export interface PackCardData {
    * How the player hero photo is placed (see {@link PackPhotoPlacement}).
    * Absent / `"contained"` keeps the template's framed placement (default,
    * unchanged); `"fullBleed"` promotes the photo to a full-card action shot.
-   * Only the `photo` slot honours this; POTM / logos / sponsors ignore it.
+   * Only the `photo` slot honours this; logos and sponsors ignore it.
    */
   photoPlacement?: PackPhotoPlacement | null;
   /**
    * Generic per-slot image overrides (B1), keyed by render slot key
-   * (`clubLogo`, `photo`, `potm.photo`, `club.logo`, `opposition.logo`,
+   * (`clubLogo`, `photo`, `club.logo`, `opposition.logo`,
    * `teamPhoto`, `squadPhoto`, `sponsor1..3`, …). An admin-supplied image for
    * ANY slot a template exposes wins over both the bound input image and the
    * brand / sponsor / uploaded-photo overlays above — i.e. resolution is
@@ -140,7 +140,7 @@ export interface PackCardData {
    * mechanism the descriptor `image` fields stop short of: those cover only the
    * input-driven slots (player photo / opposition logo / team & squad photo),
    * whereas this map lets an admin repoint any slot (a logo, a sponsor tile, the
-   * match-result POTM headshot, …). Absent / empty leaves every slot on its
+   * team or squad photo, …). Absent / empty leaves every slot on its
    * bound or overlaid value, so existing renders are byte-identical.
    */
   imagesOverride?: Record<string, string> | null;
@@ -179,7 +179,6 @@ const PACK_SLOT_LABELS: Record<string, string> = {
   "club.logo": "Club logo",
   "opposition.logo": "Opposition logo",
   photo: "Photo",
-  "potm.photo": "Player of the match photo",
   teamPhoto: "Team photo",
   squadPhoto: "Squad photo",
   sponsor1: "Sponsor 1",
@@ -195,7 +194,7 @@ const PACK_SLOT_LABELS: Record<string, string> = {
  *
  * By default the tenant-branding slots ({@link PACK_OVERRIDE_HIDDEN_SLOTS}) are
  * filtered out so the panel surfaces only content slots (player photo,
- * opposition logo, POTM headshot, team / squad photo, …). Pass
+ * opposition logo, team / squad photo, …). Pass
  * `includeHidden: true` for the raw enumerator (every image slot). The override
  * mechanism itself is unaffected — it can target any key regardless of this
  * filter.
@@ -629,7 +628,6 @@ const SLOT_NAME_SOURCE: Record<string, string> = {
   "club.logo": "club.name",
   "opposition.logo": "opposition.name",
   photo: "playerName",
-  "potm.photo": "potm.name",
 };
 
 function initialsOf(name: string): string {
@@ -696,8 +694,8 @@ const FULL_BLEED_SCRIM =
  * silently stay contained (no full-bleed) rather than mis-rewrite the wrong box.
  * Keep new player templates to that one-wrapper shape for full-bleed to work.
  *
- * Only `data-slot="photo"` is targeted; the match-result POTM headshot
- * (`potm.photo`) and logo/sponsor slots are left contained. Returns the html
+ * Only `data-slot="photo"` is targeted; logo and sponsor slots are left
+ * contained. Returns the html
  * unchanged when no such wrapper is found (byte-identical to contained).
  */
 function makePhotoSlotFullBleed(html: string): string {
@@ -1107,12 +1105,13 @@ function applyPackData(bound: BoundInput, data: PackCardData, kind: string): voi
   values["sponsorPresentedBy"] = data.presentingSponsorName ?? "";
 
   // A4 — uploaded / selected photo overrides the input's own photoUrl.
-  if (data.photoUrl) {
-    images["photo"] = data.photoUrl;
-    // A5 — match-result's POTM headshot has no dedicated image source on the
-    // matchSummary input, so the threaded photo (when present) fills it too.
-    if (kind === "matchSummary") images["potm.photo"] = data.photoUrl;
-  }
+  //
+  // This used to also fill match-result's `potm.photo` (A5). That slot is gone:
+  // the Player-of-the-Match section was removed from every pack because
+  // `potm.name` / `potm.figures` / `potm.detail` are not on `ShareCardInput` and
+  // nothing ever populated them, so the panel published a fabricated player as
+  // though it were that week's result.
+  if (data.photoUrl) images["photo"] = data.photoUrl;
 
   // B1 — generic per-slot image overrides. Applied LAST so an admin's explicit
   // per-slot upload wins over both the bound input image and every overlay above

@@ -48,17 +48,15 @@ const storyHtml = formatRoot(
     `<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:37px;line-height:1.05">{{club.name}}</div><div style="font-weight:500;font-size:21px;line-height:1.5;color:rgba(255,255,255,.72);margin-top:6px">{{club.performers}}</div></div>` +
     `<div style="text-align:right;flex:none"><div style="font-family:var(--disp,'Anton',sans-serif);font-size:86px;line-height:.9;color:var(--gold,#F5B21A)">{{club.score}}</div><div style="font:500 16px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:color-mix(in srgb, var(--gold,#FBAC27) 75%, transparent);margin-top:5px">{{club.oversLabel}}</div></div>` +
     `</div>` +
-    `<div style="position:absolute;top:1308px;left:70px;right:70px;display:flex;align-items:center;gap:28px;background:linear-gradient(90deg,rgba(55,207,230,.14),rgba(255,255,255,.03));border:1px solid rgba(55,207,230,.34);border-radius:18px;padding:26px">` +
-    `<div style="width:212px;height:212px;border-radius:14px;overflow:hidden;flex:none;box-shadow:0 0 0 2px rgba(55,207,230,.4)">${slot("potm.photo", "photo", "rounded", 14)}</div>` +
-    `<div style="flex:1;min-width:0">` +
-    `<div style="font:700 21px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#37CFE6">PLAYER OF THE MATCH</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:80px;line-height:.92;color:var(--gold,#F5B21A);margin-top:12px">{{potm.name}}</div>` +
-    `<div style="font-weight:700;font-size:34px;line-height:1;margin-top:11px">{{potm.figures}} <span style="font-weight:500;color:rgba(255,255,255,.6);font-size:25px">{{potm.detail}}</span></div>` +
+    // The Player of the Match panel used to sit here. Removed: `potm.name` /
+    // `potm.figures` / `potm.detail` are not on `ShareCardInput` and nothing in
+    // the input pipeline ever set them, so every card rendered the template's
+    // sample literal — a fabricated player and fabricated figures — for every
+    // tenant. The presented-by line was nested inside that panel and IS real
+    // tenant data, so it moves out to sit above the sponsor strip.
     sponsorsOn(
-      `<div style="font-weight:500;font-size:20px;line-height:1;color:rgba(255,255,255,.5);margin-top:12px">presented by <span style="color:#fff;font-weight:700">{{sponsorPresentedBy}}</span></div>`,
+      `<div style="position:absolute;bottom:212px;left:70px;right:70px;text-align:center;font-weight:500;font-size:20px;line-height:1;color:rgba(255,255,255,.5)">presented by <span style="color:#fff;font-weight:700">{{sponsorPresentedBy}}</span></div>`,
     ) +
-    `</div>` +
-    `</div>` +
     SPONSOR_STRIP_STORY +
     hashtagFooterStory(66),
 );
@@ -84,7 +82,6 @@ const tallMiddle =
   `<div style="display:flex;align-items:center;gap:20px"><div style="flex:1;height:1px;background:rgba(255,255,255,.15)"></div><span style="font:700 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#FBAC27)">{{resultVerb}}</span><div style="flex:1;height:1px;background:rgba(255,255,255,.15)"></div></div>` +
   `<div style="display:flex;align-items:center;gap:24px;background:linear-gradient(90deg,color-mix(in srgb, var(--gold,#FBAC27) 17%, transparent),color-mix(in srgb, var(--gold,#FBAC27) 4%, transparent));border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 42%, transparent);border-radius:16px;padding:24px 28px"><div style="width:104px;height:104px;border-radius:13px;overflow:hidden;flex:none;background:var(--surface-2,#2a2410)">${slot("club.logo", "logo", "rounded", 13)}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:36px;line-height:1.05">{{club.name}}</div><div style="font-weight:500;font-size:20px;line-height:1.5;color:rgba(255,255,255,.72);margin-top:6px">{{club.performers}}</div></div><div style="text-align:right;flex:none"><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:80px;line-height:.9;color:var(--gold,#FBAC27)">{{club.score}}</div><div style="font:500 16px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:color-mix(in srgb, var(--gold,#FBAC27) 75%, transparent);margin-top:5px">{{club.oversLabel}}</div></div></div>` +
   `</div>` +
-  `<div style="flex:none;display:flex;align-items:center;gap:26px;background:linear-gradient(90deg,rgba(55,207,230,.14),rgba(255,255,255,.03));border:1px solid rgba(55,207,230,.34);border-radius:18px;padding:24px 26px"><div style="width:calc(var(--k,1.4)*128px);height:calc(var(--k,1.4)*128px);border-radius:14px;overflow:hidden;flex:none;box-shadow:0 0 0 2px rgba(55,207,230,.4)">${slot("potm.photo", "photo", "rounded", 14)}</div><div style="flex:1;min-width:0"><div style="font:700 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#37CFE6">PLAYER OF THE MATCH</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*56px);line-height:.92;color:var(--gold,#FBAC27);margin-top:12px">{{potm.name}}</div><div style="font-weight:700;font-size:32px;line-height:1;margin-top:10px">{{potm.figures}} <span style="font-weight:500;color:rgba(255,255,255,.6);font-size:24px">{{potm.detail}}</span></div></div></div>` +
   `</div>`;
 
 const squareMiddle =
@@ -95,7 +92,6 @@ const squareMiddle =
   `<div style="flex:none;align-self:center;font:700 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--gold,#FBAC27);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:14px 12px;writing-mode:vertical-rl;text-orientation:upright">{{resultVerbShort}}</div>` +
   `<div style="flex:1;display:flex;flex-direction:column;background:linear-gradient(160deg,color-mix(in srgb, var(--gold,#FBAC27) 17%, transparent),color-mix(in srgb, var(--gold,#FBAC27) 4%, transparent));border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 42%, transparent);border-radius:16px;padding:26px 28px"><div style="display:flex;align-items:center;gap:15px"><div style="width:70px;height:70px;border-radius:11px;overflow:hidden;flex:none;background:var(--surface-2,#2a2410)">${slot("club.logo", "logo", "rounded", 11)}</div><div style="font-weight:700;font-size:27px;line-height:1.08">{{club.name}}</div></div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:104px;line-height:.86;margin-top:auto;padding-top:18px;color:var(--gold,#FBAC27)">{{club.score}}</div><div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:color-mix(in srgb, var(--gold,#FBAC27) 75%, transparent);margin-top:8px">{{club.oversLabel}}</div><div style="font-weight:500;font-size:19px;line-height:1.5;color:rgba(255,255,255,.72);margin-top:12px">{{club.performers}}</div></div>` +
   `</div>` +
-  `<div style="flex:none;display:flex;align-items:center;gap:22px;background:linear-gradient(90deg,rgba(55,207,230,.14),rgba(255,255,255,.03));border:1px solid rgba(55,207,230,.34);border-radius:16px;padding:20px 24px"><div style="width:118px;height:118px;border-radius:12px;overflow:hidden;flex:none;box-shadow:0 0 0 2px rgba(55,207,230,.4)">${slot("potm.photo", "photo", "rounded", 12)}</div><div style="flex:1;min-width:0"><div style="font:700 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#37CFE6">PLAYER OF THE MATCH</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:54px;line-height:.92;color:var(--gold,#FBAC27);margin-top:9px">{{potm.name}}</div><div style="font-weight:700;font-size:26px;line-height:1;margin-top:7px">{{potm.figures}} <span style="font-weight:500;color:rgba(255,255,255,.6);font-size:20px">{{potm.detail}}</span></div></div></div>` +
   `</div>`;
 
 const portraitHtml = sharedColumnRoot(
@@ -129,14 +125,10 @@ export const matchResult: PackCardTemplate = {
     textField("opposition.oversLabel", "Opposition overs label", "20 OVERS"),
     textField("opposition.performers", "Opposition top performers", "E. Smith 33 (28) · A. Beattie 2/9 (4)"),
     logoField("opposition.logo", "Opposition logo", "Logo"),
-    textField("potm.name", "Player of the match", "ALEX OSBORNE"),
-    textField("potm.figures", "POTM figures", "3/13"),
-    textField("potm.detail", "POTM detail", "(4 overs)"),
     textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),
     logoField("sponsor2", "Sponsor logo 2", "Sponsor"),
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),
-    photoField("potm.photo", "POTM photo", "Player photo"),
     textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
   ],
   formats: {
