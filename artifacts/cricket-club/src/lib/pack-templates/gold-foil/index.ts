@@ -1,5 +1,10 @@
 import type { PackManifest } from "../types";
 import { matchResult } from "./match-result";
+import { matchDay } from "./match-day";
+import { countdown } from "./countdown";
+import { newSigning } from "./new-signing";
+import { newCap } from "./new-cap";
+import { premiership } from "./premiership";
 
 /**
  * Pack B — Gold Foil. Grand-final prestige: metallic foil display type on
@@ -22,5 +27,12 @@ import { matchResult } from "./match-result";
 export const GOLD_FOIL_PACK: PackManifest = {
   packId: "gold-foil-v1",
   name: "Gold Foil",
-  designs: [{ designKey: "match-result", kind: "matchSummary", template: matchResult }],
+  designs: [
+    { designKey: "match-result", kind: "matchSummary", template: matchResult },
+    { designKey: "match-day", kind: "matchDay", template: matchDay },
+    { designKey: "countdown", kind: "countdown", template: countdown },
+    { designKey: "new-signing", kind: "newSigning", template: newSigning },
+    { designKey: "new-cap", kind: "newCap", template: newCap },
+    { designKey: "premiership", kind: "premiership", template: premiership },
+  ],
 };
