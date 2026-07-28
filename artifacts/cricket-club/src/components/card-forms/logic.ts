@@ -54,8 +54,11 @@ export const ROW_CAPS: Partial<Record<CardKind, { key: string; cap: number; min:
  * `kind` tag. Seeding from the sample guarantees a valid, immediately-previewed
  * card that the admin then edits or prefills over.
  */
-export function initialCardState(kind: CardKind): CardFormState {
-  const sample = sampleCardInput(kind) as Record<string, unknown>;
+export function initialCardState(kind: CardKind, clubName?: string | null): CardFormState {
+  // `clubName` makes the seed speak as the tenant ("Mandurah won by …") rather
+  // than a generic club — see `sampleCardInput`. The admin edits over it either
+  // way; this just makes the starting point theirs.
+  const sample = sampleCardInput(kind, clubName) as Record<string, unknown>;
   const clone = JSON.parse(JSON.stringify(sample)) as Record<string, unknown>;
   delete clone.kind;
   return clone;

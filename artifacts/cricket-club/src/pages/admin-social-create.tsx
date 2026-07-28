@@ -33,6 +33,7 @@ import {
   tenantHashtag,
   kindSponsors,
   presentingSponsorName,
+  shortClubName,
 } from "@/lib/pack-card-data";
 import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 import type { CardKind, CardSize, MatchSummaryTeam } from "@/lib/share-card";
@@ -47,9 +48,6 @@ const SIZE_OPTIONS: { value: CardSize; label: string }[] = [
 ];
 
 /** A short club label without a trailing "Cricket Club" suffix. */
-const shortClubName = (name: string): string =>
-  name.replace(/\s+Cricket Club$/i, "").trim() || name;
-
 /** The current tenant's brand as the Match Summary club-team default. */
 function teamFromBrand(brand: ClubBrand): MatchSummaryTeam {
   const accent = brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#94A3B8";
@@ -63,9 +61,11 @@ function teamFromBrand(brand: ClubBrand): MatchSummaryTeam {
   };
 }
 
-/** Seed a kind's editable state, tailoring Match Summary to the tenant brand. */
+/** Seed a kind's editable state as the tenant: club-name tokens in the sample
+ * become the tenant's short name, and Match Summary's club side carries the
+ * full brand (colours + logo). */
 function seedState(kind: CardKind, brand: ClubBrand): CardFormState {
-  const state = initialCardState(kind);
+  const state = initialCardState(kind, shortClubName(brand.name ?? DEFAULT_BRAND.name));
   if (kind === "matchSummary") state.club = teamFromBrand(brand);
   return state;
 }

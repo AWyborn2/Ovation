@@ -602,6 +602,44 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
 // overlays — resolution order override > input > bind.
 // ---------------------------------------------------------------------------
 
+describe("tenant-named sample defaults", () => {
+  // A template SAMPLE that surfaces on a data-bearing render (a field the input
+  // did not bind) speaks as the tenant, not as a generic club. Input-bound
+  // values are never rewritten.
+  const DATA: PackCardData = { brand: { name: "Mandurah Cricket Club" } };
+
+  it("substitutes club tokens in a surfacing default, matching token case", () => {
+    // bigMoment's inningsLabel default is "YOUR CLUB · 2ND INNINGS"; omit it
+    // from the input so the default surfaces.
+    const input = {
+      ...sampleCardInput("bigMoment"),
+      inningsLabel: undefined,
+    } as unknown as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, DATA);
+    expect(html).toContain("MANDURAH · 2ND INNINGS");
+    expect(html).not.toContain("YOUR CLUB");
+  });
+
+  it("does not rewrite input-bound values", () => {
+    const input = {
+      ...sampleCardInput("bigMoment"),
+      inningsLabel: "Your Club on top",
+    } as unknown as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, DATA);
+    // The admin typed it; it stays verbatim.
+    expect(html).toContain("Your Club on top");
+  });
+
+  it("leaves defaults neutral on a no-data render", () => {
+    const input = {
+      ...sampleCardInput("bigMoment"),
+      inningsLabel: undefined,
+    } as unknown as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false);
+    expect(html).toContain("YOUR CLUB · 2ND INNINGS");
+  });
+});
+
 describe("optional image blocks (data-drop-if-empty)", () => {
   // Match Result's weekly team photo is optional. Rendering an empty framed box
   // when nobody uploaded one is what made the card look broken, so the whole

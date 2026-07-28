@@ -31,6 +31,15 @@
         ],
         "createdAt": "2026-07-28T06:52:07.075Z",
         "reason": "Rule matches <img> inside comments and test-assertion strings, never real markup (9 false positives this session); pack-render.ts's flagged line is a comment documenting the empty-src PREVENTION, enforced by pack-render.test.ts"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "artifacts/cricket-club/src/pages/admin-social-studio.tsx"
+        ],
+        "createdAt": "2026-07-28T07:07:31.149Z",
+        "reason": "Same comment-matching false positive class the user approved: line 58 is a doc comment describing CardThumb rendering to an <img>; the real <img> at ~108 is guarded by url ? : with spinner/retry states"
       }
     ]
   }

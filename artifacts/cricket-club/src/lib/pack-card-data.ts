@@ -120,6 +120,15 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
 // itself, so they live here too. Structurally typed so `SocialSettingsBundle`
 // satisfies them without this module depending on the generated API client.
 
+/**
+ * A club name shortened for card COPY: "Mandurah Cricket Club" → "Mandurah".
+ * Sample content reads as prose ("Mandurah won by 5 wickets"), where the full
+ * legal name is noise. Falls back to the input when stripping would empty it.
+ */
+export function shortClubName(name: string): string {
+  return name.replace(/\s+Cricket Club$/i, "").trim() || name;
+}
+
 export interface PackSettingsSource {
   settings?: { clubHashtag?: string | null } | null;
   brand?: { shortName?: string | null } | null;
