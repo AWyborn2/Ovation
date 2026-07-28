@@ -9,6 +9,7 @@ import {
   slot,
   sponsorsOff,
   sponsorsOn,
+  storyColumnRoot,
   textField,
 } from "./fragments";
 
@@ -28,10 +29,10 @@ import {
 //
 // The bundle is a single reflow markup (`--k`/`--ch`, no isStoryFmt branch);
 // its default-token rendering is the story, transcribed with the 1.4 scale
-// baked in and normalised onto storyColumnRoot's margins. The header keeps
-// the bundle's logo + label shape but binds {{grade}}. The shared layout is
-// authored from Pack A's shared structure (grade header, name + cap column,
-// photo right) in Bold Type's language.
+// baked in and normalised onto storyColumnRoot's margins. The story header
+// keeps the bundle's logo + mono-label shape but binds {{grade}}. The shared
+// layout is authored from Pack A's shared structure (grade header, name + cap
+// column, photo right) in Bold Type's language.
 
 const STORY_PHOTO =
   `<div data-drop-if-empty="photo" style="flex:1;min-height:0">` +
@@ -87,20 +88,7 @@ const storyHeaderDebut =
   `<div style="font:700 22px/1.3 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:var(--gold,#F5B21A);text-transform:uppercase">{{grade}} DEBUT</div></div>` +
   `<div style="font:700 22px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:rgba(255,255,255,.55)">{{season}}</div></div>`;
 
-const storyHtml = sharedColumnRootStory();
-
-function sharedColumnRootStory(): string {
-  // Local composition kept in a function only to keep the concatenation
-  // readable; this is the pack's standard story column.
-  return (
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    storyColumn
-  );
-}
-
-import { storyColumnRoot } from "./fragments";
-
-const storyColumn = storyColumnRoot(
+const storyHtml = storyColumnRoot(
   storyHeaderDebut +
     `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:20px;margin-top:22px">` +
     STORY_PHOTO +

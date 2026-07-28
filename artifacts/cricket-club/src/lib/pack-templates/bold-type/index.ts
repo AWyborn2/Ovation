@@ -9,6 +9,12 @@ import { record } from "./record";
 import { teamList } from "./team-list";
 import { weekendWrap } from "./weekend-wrap";
 import { ladder } from "./ladder";
+import { playerSpotlight } from "./player-spotlight";
+import { milestone } from "./milestone";
+import { debut } from "./debut";
+import { century } from "./century";
+import { fiveFor } from "./five-for";
+import { bigMoment } from "./big-moment";
 import { gradeLeaderRuns } from "./grade-leader-runs";
 import { gradeLeaderWickets } from "./grade-leader-wickets";
 import { clubLeaderboardRuns } from "./club-leaderboard-runs";
@@ -39,6 +45,12 @@ export const BOLD_TYPE_PACK: PackManifest = {
     { designKey: "team-list", kind: "teamList", template: teamList },
     { designKey: "weekend-wrap", kind: "weekendWrap", template: weekendWrap },
     { designKey: "ladder", kind: "ladder", template: ladder },
+    { designKey: "player-spotlight", kind: "player", template: playerSpotlight },
+    { designKey: "milestone", kind: "milestone", template: milestone },
+    { designKey: "debut", kind: "debut", template: debut },
+    { designKey: "century", kind: "century", template: century },
+    { designKey: "five-for", kind: "fiveFor", template: fiveFor },
+    { designKey: "big-moment", kind: "bigMoment", template: bigMoment },
     { designKey: "grade-leader-runs", kind: "gradeLeader", categoryPreset: "Runs", template: gradeLeaderRuns },
     { designKey: "grade-leader-wickets", kind: "gradeLeader", categoryPreset: "Wickets", template: gradeLeaderWickets },
     { designKey: "club-leaderboard-runs", kind: "clubLeaderboard", categoryPreset: "Runs", template: clubLeaderboardRuns },
