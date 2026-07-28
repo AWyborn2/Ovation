@@ -998,15 +998,26 @@ function bindInput(input: ShareCardInput): BoundInput {
     case "weekendWrap": {
       set(values, "roundLabel", input.roundLabel);
       set(values, "dateRange", input.dateRange);
-      rows["matches"] = (input.matches ?? []).map((mt: WeekendWrapMatch) => ({
-        variant: mt.outcome === "lost" ? "lost" : undefined,
-        values: {
-          gradeLabel: mt.gradeLabel,
-          resultLine: mt.resultLine,
-          performers: mt.performers,
-          outcome: mt.outcome.toUpperCase(),
-        },
-      }));
+      rows["matches"] = (input.matches ?? []).map((mt: WeekendWrapMatch) => {
+        // The input carries one grade string ("A GRADE", "U15s") but the
+        // templates render a stacked block: a large {{row.gradeLabel}} letter
+        // over a small {{row.gradeSub}}. Binding the whole string into the
+        // large slot made "A GRADE" wrap/clip at display size while the sub
+        // fell back to its sample — every row read "A GRADE / GRADE". Split:
+        // first token → the big letter, remainder → the sub (empty when the
+        // grade is a single token like "U15s", which renders alone).
+        const [gradeHead, ...gradeRest] = (mt.gradeLabel ?? "").trim().split(/\s+/);
+        return {
+          variant: mt.outcome === "lost" ? "lost" : undefined,
+          values: {
+            gradeLabel: gradeHead ?? "",
+            gradeSub: gradeRest.join(" "),
+            resultLine: mt.resultLine,
+            performers: mt.performers,
+            outcome: mt.outcome.toUpperCase(),
+          },
+        };
+      });
       break;
     }
     case "ladder": {

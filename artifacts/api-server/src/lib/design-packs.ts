@@ -106,6 +106,15 @@ export const PACKS: DesignPack[] = [
       "teamList",
       "weekendWrap",
       "ladder",
+      "player",
+      "milestone",
+      "debut",
+      "century",
+      "fiveFor",
+      "bigMoment",
+      "record",
+      "gradeLeader",
+      "clubLeaderboard",
     ],
     variants: [
       {
