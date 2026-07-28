@@ -1,5 +1,8 @@
 import type { PackManifest } from "../types";
 import { matchResult } from "./match-result";
+import { teamList } from "./team-list";
+import { weekendWrap } from "./weekend-wrap";
+import { ladder } from "./ladder";
 
 /**
  * Pack E — Sunset. Golden-hour warmth: a photo-first story format over a
@@ -17,5 +20,8 @@ export const SUNSET_PACK: PackManifest = {
   name: "Sunset",
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
+    { designKey: "team-list", kind: "teamList", template: teamList },
+    { designKey: "weekend-wrap", kind: "weekendWrap", template: weekendWrap },
+    { designKey: "ladder", kind: "ladder", template: ladder },
   ],
 };

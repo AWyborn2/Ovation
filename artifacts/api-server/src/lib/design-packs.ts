@@ -239,7 +239,7 @@ export const PACKS: DesignPack[] = [
       "Golden-hour warmth — photo-first stories over a sunset wash, frosted glass panels and script accent type. Club-social warmth where Broadcast Dark is TV graphics.",
     // COVERAGE CONTRACT: must match pack-templates/sunset/index.ts (enforced
     // by pack-coverage-parity.test.ts). Grows card by card.
-    cardKinds: ["matchSummary"],
+    cardKinds: ["matchSummary", "teamList", "weekendWrap", "ladder"],
     variants: STANDARD_PACK_VARIANTS,
   },
 ];
