@@ -58,6 +58,7 @@ import {
 import { templateAppliesToKind } from "@/lib/card-template";
 import { PackCard } from "@/components/pack-card";
 import { packSupportsKind, packImageSlots, type PackCardData } from "@/lib/pack-render";
+import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
 import { ImageControl } from "@/components/card-forms";
 import { useQueryClient } from "@tanstack/react-query";
 import { CardLayoutEditor } from "@/components/card-layout-editor";
@@ -430,13 +431,9 @@ export function ShareCardModal({
     input,
   });
 
-  // A tenant with no configured hashtag gets one derived from its short name
-  // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
-  // a brand-less tenant gets no clubUrl/hashtag rather than Halls Head's.
+  // A brand-less tenant gets no clubUrl/hashtag rather than another club's.
   const clubUrl = bundle?.settings.clubUrl ?? "";
-  const hashtag =
-    bundle?.settings.clubHashtag ??
-    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
+  const hashtag = tenantHashtag(bundle);
 
   const {
     platform,
@@ -475,34 +472,20 @@ export function ShareCardModal({
   // uploaded photo) so pack cards render with real tenant branding instead of
   // the template sample literals. `transform` varies (live for downloads,
   // debounced for the preview), mirroring `buildOpts`.
-  const buildPackData = (transform: PhotoTransform): PackCardData => ({
-    brand: bundle?.brand
-      ? {
-          name: bundle.brand.name,
-          // Club tagline (A9) → the pack header sub-line; empty when unset.
-          tagline: bundle.brand.tagline,
-          logoUrl: bundle.brand.logoUrl,
-          // Colours seed the pack's DEFAULT token palette (primary → accent,
-          // juniors → panel) via `brandDefaultTokens`; background is carried but
-          // not mapped onto the fixed deep-ink stage.
-          primaryColour: bundle.brand.primaryColour,
-          backgroundColour: bundle.brand.backgroundColour,
-          juniorsColour: bundle.brand.juniorsColour,
-        }
-      : null,
-    hashtag,
-    sponsors,
-    presentingSponsorName,
-    photoUrl: effectivePhotoUrl,
-    photoTransform: transform,
-    // Reuse the existing placement toggle: on a pack card, "feature" promotes
-    // the photo to a full-bleed action shot; "headshot" keeps it contained in
-    // the template's framed region (default). Mirrors the canvas feature path.
-    photoPlacement: photoPlacement === "feature" ? "fullBleed" : "contained",
-    // B1 — admin per-slot image overrides (any slot the template exposes). Only
-    // sent when non-empty so a no-override render stays byte-identical.
-    imagesOverride: Object.keys(imageOverrides).length ? imageOverrides : undefined,
-  });
+  const buildPackData = (transform: PhotoTransform): PackCardData =>
+    buildSharedPackData({
+      brand: bundle?.brand,
+      hashtag,
+      sponsors,
+      presentingSponsorName,
+      photoUrl: effectivePhotoUrl,
+      photoTransform: transform,
+      // Reuse the existing placement toggle — the shared builder maps the
+      // canvas vocabulary ("feature"/"headshot") onto the pack's own.
+      photoPlacement,
+      // B1 — admin per-slot image overrides (any slot the template exposes).
+      imageOverrides,
+    });
 
   const { previewUrls, rendering } = useCardPreview({
     open,

@@ -75,9 +75,9 @@ export const newCap: PackCardTemplate = {
     textField("capNumber", "Cap number", "247"),
     textField("season", "Season", "2025/26"),
     photoField("photo", "Player photo", "Player photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Presented-by sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

@@ -101,9 +101,9 @@ export const debut: PackCardTemplate = {
     textField("tributeLine", "Tribute line", "welcome to the top grade, Oscar."),
     textField("capNumber", "Cap number", "246"),
     photoField("photo", "Debut photo", "Cap presentation / debut photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Presented-by sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

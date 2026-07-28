@@ -72,11 +72,11 @@ export const milestone: PackCardTemplate = {
     textField(
       "headline",
       "Tribute line",
-      "100 Premier League games in the black & gold. A true Halls Head great — thanks for every one, Milesy.",
+      "100 Premier League games for the club. A true club great — thanks for every one, Milesy.",
     ),
     photoField("photo", "Player photo", "Player photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("sponsorPresentedBy", "Presented-by sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

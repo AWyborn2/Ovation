@@ -61,8 +61,8 @@ export const premiership: PackCardTemplate = {
     textField("result", "Result", "Defeated Rockingham Hornets by 8 wickets"),
     textField("mom", "Player of the match", "ALEX OSBORNE"),
     photoField("teamPhoto", "Team photo", "Premiership team photo"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PREMIERS"),
-    textField("sponsorPresentedBy", "Season sponsor", "eSA Sport"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #PREMIERS"),
+    textField("sponsorPresentedBy", "Season sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

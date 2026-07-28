@@ -1032,7 +1032,14 @@ function bindInput(input: ShareCardInput): BoundInput {
  * after {@link bindInput}, so a single seam threads tenant data into the pack
  * path (mirroring what `RenderOptions` already gives the canvas renderer).
  * Values set here override the template sample defaults; anything absent leaves
- * the sample fallback in place (gallery previews / brand-less tenants).
+ * the sample fallback in place.
+ *
+ * Every in-app `PackCard` mount now passes `data` — including the Studio's
+ * card-type gallery, which used to be treated as a deliberate sample-default
+ * case and consequently showed Halls Head's branding to every tenant. The
+ * sample fallback therefore only applies to brand-less tenants and to direct
+ * `renderPackCard` calls in tests. A source-level guard
+ * (`pack-card-mounts.test.ts`) keeps it that way.
  */
 function applyPackData(bound: BoundInput, data: PackCardData, kind: string): void {
   const { values, images } = bound;

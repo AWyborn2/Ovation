@@ -67,9 +67,9 @@ export const gradeLeaderRuns: PackCardTemplate = {
     textField("playerName", "Leader", "Jack Manuel"),
     textField("season", "Season", "2025/26"),
     photoField("photo", "Player photo", "Player photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Stats source", "PlayHQ"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Stats source", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

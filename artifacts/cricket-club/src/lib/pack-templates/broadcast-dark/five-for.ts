@@ -70,9 +70,9 @@ export const fiveFor: PackCardTemplate = {
     textField("opponent", "Opponent", "MANDURAH"),
     textField("round", "Round", "5"),
     photoField("photo", "Bowler photo", "Bowler photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Presented-by sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

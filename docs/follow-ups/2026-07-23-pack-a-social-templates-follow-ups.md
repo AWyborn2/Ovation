@@ -39,6 +39,17 @@ integration). **Prioritised backlog is at the end of this section.**
 > - **Wave 3:** ✅ **B1** (per-slot image upload, #83), ✅ **C3** (`/card-sets/generate`, #84),
 >   ✅ **C4** (auto-seed from approved drafts, #86).
 > - **Remaining: none — all shipped.** 🎉
+> - **⚠️ Reopened 2026-07-27 — A1/A2/A3/A7/A8 shipped the renderer seam but missed
+>   three call sites**, so tenants still saw Halls Head branding. `applyPackData`
+>   only runs when `renderPackCard` is given its optional `data` argument, and the
+>   Studio composer preview (`admin-social-create.tsx`) and card-type gallery
+>   (`admin-social-studio.tsx`) passed none, while the carousel
+>   (`admin-social-sets.tsx`) narrowed `brand` to `{name, logoUrl}` and so dropped
+>   the tenant's accent colour. Fixed by
+>   [docs/plans/2026-07-27-001-fix-social-studio-tenant-branding-plan.md](../plans/2026-07-27-001-fix-social-studio-tenant-branding-plan.md):
+>   one shared `buildPackData` builder, all mounts wired, template samples
+>   neutralised, plus a source-level guard (`pack-card-mounts.test.ts`) that fails
+>   the build if any `<PackCard>` mount omits `data`.
 > - Big-win plans: [docs/plans/2026-07-24-001-card-social-enhancements-plan.md](../plans/2026-07-24-001-card-social-enhancements-plan.md).
 >
 > **Deploy notes** (for the merged DB changes).
@@ -257,11 +268,30 @@ correctness cleanup to fold in.
 ### Packs B–E (Gold Foil, Bold Type, Neon Night, Sunset)
 - **What:** Ship the remaining four packs from the same Claude Design bundle using
   the HTML-template pipeline established for Pack A.
-- **Why cheap now:** The infrastructure is pack-agnostic — a new pack is template
-  assets under `artifacts/cricket-club/src/lib/pack-templates/<pack>/` plus a
-  `design-packs.ts` registration entry. No renderer or plumbing changes.
-- **Effort:** Mostly transcription (~20 cards × 3 formats each), the same shape as
-  U1. The bundle sibling files (`Pack B - Gold Foil.dc.html`, etc.) are the source.
+- **⚠️ Corrected 2026-07-27 — this is NOT cheap, and the renderer is NOT pack-agnostic.**
+  The original estimate below was wrong on two counts, both verified against the code
+  and the bundle:
+  1. **The renderer is hard-wired to Pack A.** `pack-render.ts` imports
+     `BROADCAST_DARK_PACK` directly and builds a module-level `DESIGN_BY_KIND` map
+     from that single pack; `renderPackCard()` has no `packId` parameter. A second
+     pack requires a real refactor: a pack registry keyed by `packId`, and `packId`
+     threaded from the tenant's selected `card_templates` row (`source="pack"`,
+     `packId`/`packVariant`, materialised by `ensurePackTemplates` in
+     `artifacts/api-server/src/lib/design-packs.ts`) through `PackCard` →
+     `renderPackCard` → `stillOptions` → carousel slides → the render harness.
+  2. **The bundles ship the story format only** (1080×1920). Pack A's portrait/square
+     `shared` layouts were *authored in-repo* during U1, not imported. So each of
+     B–E needs ~20 story transcriptions **plus** ~20 authored reflow layouts.
+  All four bundles do contain exactly the same 20 designs and the same
+  `data-card-kind` mapping as Pack A, so the per-card scope is at least predictable.
+  (`Pack A - Broadcastlight.dc.html`, a light-mode Pack A variant, is also in the
+  bundle and is not yet scoped.)
+- **Effort:** Renderer refactor + ~40 layouts per pack. Recommended sequencing:
+  refactor and prove with Pack B end-to-end, then C/D/E.
+- **Note:** when transcribing, the pack-wide guards added in
+  `broadcast-dark.test.ts` (R6) must be extended to the new pack — the bundles were
+  authored with real Halls Head data, so their samples carry the same club-identity
+  literals Pack A's did.
 
 ### Animated card variants
 - **What:** Story-format reveal animations per card kind (score reveal, staggered

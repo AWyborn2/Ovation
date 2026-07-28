@@ -20,7 +20,7 @@ import {
 
 // A7 — Ladder. Standings table (≤7 rows) with the club's row highlighted.
 // The highlighted row ships as a data-repeat-variant="club" alternate row
-// template (the bundle styles the Halls Head row with the gold gradient).
+// template (the bundle styles the club's own row with the gold gradient).
 
 function storyRow(variant: "base" | "club"): string {
   if (variant === "club") {
@@ -91,10 +91,10 @@ export const ladder: PackCardTemplate = {
     textField("gradeLabel", "Grade label", "A GRADE"),
     textField("asOfLabel", "As-of label", "AFTER RD 3"),
     repeatField("rows", "Ladder rows", "Up to 7 teams"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("hashtagsExtra", "Secondary hashtag", "#PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Ladder source", "PlayHQ"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("hashtagsExtra", "Secondary hashtag", "#YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Ladder source", "Your Sponsor"),
   ],
   repeats: [
     {
@@ -103,7 +103,7 @@ export const ladder: PackCardTemplate = {
       variants: ["club"],
       fields: [
         textField("pos", "Position", "1"),
-        textField("team", "Team", "Halls Head"),
+        textField("team", "Team", "Your Club"),
         textField("played", "Played", "3"),
         textField("won", "Won", "3"),
         textField("lost", "Lost", "0"),

@@ -73,6 +73,12 @@ import {
 } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { type PackCardData } from "@/lib/pack-render";
+import {
+  buildPackData,
+  tenantHashtag,
+  kindSponsors,
+  presentingSponsorName,
+} from "@/lib/pack-card-data";
 import { slideRendersViaPack } from "@/lib/carousel-slide-render";
 
 const MOTION_OPTIONS: { value: MotionPreset; label: string }[] = [
@@ -344,13 +350,9 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     return out.length ? out : ["square"];
   }, [bundle]);
 
-  // A tenant with no configured hashtag gets one derived from its short name
-  // (Halls Head's seeded shortName "HHCC" reproduces the old literal exactly);
-  // a brand-less tenant gets no clubUrl/hashtag rather than Halls Head's.
+  // A brand-less tenant gets no clubUrl/hashtag rather than another club's.
   const clubUrl = bundle?.settings.clubUrl ?? "";
-  const hashtag =
-    bundle?.settings.clubHashtag ??
-    (bundle?.brand?.shortName ? `#${bundle.brand.shortName.replace(/\s+/g, "")}` : "");
+  const hashtag = tenantHashtag(bundle);
 
   // Server-side still harness for pack (Broadcast Dark) slides — the same
   // endpoint the single-card modal uses, so a batched carousel slide exports a
@@ -372,20 +374,14 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
 
   // Active sponsors filtered to the slide's kind (same predicate the modal uses).
   const slideSponsors = (slide: WorkingSlide): { name: string; logoUrl: string }[] =>
-    sponsorsOn && bundle?.activeSponsors
-      ? bundle.activeSponsors
-          .filter((sp) => sponsorAppliesToKind(sp.cardKinds, slide.input.kind))
-          .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }))
-      : [];
+    kindSponsors(bundle, slide.input.kind, sponsorsOn);
 
   // The tenant's designated presenting (primary) sponsor NAME → the pack cards'
   // "presented by <sponsor>" line. NOT kind-filtered (headline sponsor shown on
   // every slide), gated on the same sponsors-on condition the slide uses so the
   // line stays consistent with the single-card modal (else it drops to "" and
   // `dropEmptyPresentedBy` removes the line — the carousel regression this fixes).
-  const presentingSponsorName: string | null = sponsorsOn
-    ? bundle?.activeSponsors?.find((sp) => sp.isPresenting)?.name ?? null
-    : null;
+  const presentingSponsor = presentingSponsorName(bundle, sponsorsOn);
 
   // A slide renders through the pack when the pack supports its kind and it has
   // no admin custom layout (a canvas-only feature the pack can't reproduce).
@@ -394,16 +390,20 @@ function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
 
   // Tenant data threaded into the pack path (logo, club name/hashtag, sponsors,
   // the input's own photo) — the pack equivalent of the brand/sponsors the
-  // canvas renderer gets via `buildSlideOpts`, mirroring the modal's
-  // `buildPackData` so batched pack slides carry real tenant branding.
-  const buildSlidePackData = (slide: WorkingSlide): PackCardData => ({
-    brand: bundle?.brand
-      ? { name: bundle.brand.name, logoUrl: bundle.brand.logoUrl }
-      : null,
-    hashtag,
-    sponsors: slideSponsors(slide),
-    presentingSponsorName,
-  });
+  // canvas renderer gets via `buildSlideOpts`.
+  //
+  // Built through the shared `buildPackData` so slides carry the tenant's FULL
+  // brand. This used to narrow `brand` to `{ name, logoUrl }`, which dropped
+  // `primaryColour` / `juniorsColour` / `tagline` — so `brandDefaultTokens`
+  // fell back to the Broadcast-Dark palette and every carousel slide rendered
+  // in Halls Head gold regardless of tenant.
+  const buildSlidePackData = (slide: WorkingSlide): PackCardData =>
+    buildPackData({
+      brand: bundle?.brand,
+      hashtag,
+      sponsors: slideSponsors(slide),
+      presentingSponsorName: presentingSponsor,
+    });
 
   // Render one pack slide to a PNG blob via the server harness (parity with the
   // single-card modal's `renderPackStill`; options are opaque over the wire).

@@ -66,7 +66,7 @@ describe("renderPackCard", () => {
     const off = renderPackCard(input, "story", false, TOKENS, false);
     expect(off).not.toContain("PROUDLY SUPPORTED BY");
     // The story sponsors-off branch is the centered hashtag footer.
-    expect(off).toContain("#HALLSHEAD");
+    expect(off).toContain("#YOURCLUB");
 
     const on = renderPackCard(input, "story", true, TOKENS, false);
     expect(on).toContain("PROUDLY SUPPORTED BY");
@@ -111,7 +111,7 @@ describe("renderPackCard", () => {
     // The seven-row sample.
     const html7 = renderPackCard(base, "story", true, TOKENS, false);
     expect((html7.match(rowCell) ?? []).length).toBe(7);
-    for (const team of ["Halls Head", "Dawesville"]) expect(html7).toContain(team);
+    for (const team of ["Your Club", "Dawesville"]) expect(html7).toContain(team);
   });
 
   it("applies the club-highlight row variant to the isClub ladder row", () => {
@@ -293,12 +293,14 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     }
   });
 
-  it("keeps the sample defaults on a no-data render (gallery / brand-less)", () => {
-    // Sanity: without a `data` argument the samples still apply, so the existing
-    // gallery-preview behaviour is unchanged.
+  it("falls back to NEUTRAL samples on a no-data render (brand-less tenant)", () => {
+    // Without a `data` argument the template samples apply. Those samples are
+    // deliberately club-agnostic (U3) so a brand-less render can never present
+    // one tenant's identity to another.
     const input = sampleCardInput("matchSummary");
     const html = renderPackCard(input, "story", false, TOKENS, false);
-    expect(html).toContain("#HALLSHEAD");
+    expect(html).toContain("#YOURCLUB");
+    expect(html).not.toContain("#HALLSHEAD");
   });
 
   // A7 — dynamic "presented by" primary sponsor -----------------------------
@@ -356,11 +358,13 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     }
   });
 
-  it("(A7) keeps the sample presented-by sponsor on a no-data (gallery) render", () => {
-    // Gallery previews with no `data` still show the sample so the line renders.
+  it("(A7) keeps a NEUTRAL sample presented-by sponsor on a no-data render", () => {
+    // The line must still render (so the layout is representative), but with a
+    // placeholder rather than Halls Head's actual sponsor.
     const html = renderPackCard(sampleCardInput("century"), "story", true, TOKENS, false);
     expect(html).toContain("presented by");
-    expect(html).toContain("eSA Sport");
+    expect(html).toContain("Your Sponsor");
+    expect(html).not.toContain("eSA Sport");
   });
 });
 

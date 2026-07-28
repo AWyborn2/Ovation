@@ -70,10 +70,10 @@ export const clubLeaderboardWickets: PackCardTemplate = {
     textField("subtitle", "Subtitle", "LEADING WICKET-TAKERS · BY GRADE"),
     textField("title", "Title", "CLUB WICKETS"),
     repeatField("leaders", "Per-grade leader rows", "4 grade leaders"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("hashtagsExtra", "Secondary hashtag", "#PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Stats source", "PlayHQ"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("hashtagsExtra", "Secondary hashtag", "#YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Stats source", "Your Sponsor"),
   ],
   repeats: [
     {

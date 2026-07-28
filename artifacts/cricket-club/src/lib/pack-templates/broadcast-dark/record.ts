@@ -65,9 +65,9 @@ export const record: PackCardTemplate = {
     textField("playerName", "Record holder", "Tim Miles"),
     textField("grade", "Grade", "A GRADE"),
     photoField("photo", "Record holder photo", "Record holder photo"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Records sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Records sponsor", "Your Sponsor"),
   ],
   formats: {
     story: storyHtml,

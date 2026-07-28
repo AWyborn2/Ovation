@@ -15,7 +15,21 @@ import {
   JUNIOR_CAPABLE,
   type CardFormState,
 } from "@/components/card-forms";
+import {
+  useGetSocialSettings,
+  getGetSocialSettingsQueryKey,
+  useListCardThemes,
+  getListCardThemesQueryKey,
+  type SocialSettingsBundle,
+  type CardTheme as ApiCardTheme,
+} from "@workspace/api-client-react";
 import { useBrand } from "@/lib/brand-context";
+import {
+  buildPackData,
+  tenantHashtag,
+  kindSponsors,
+  presentingSponsorName,
+} from "@/lib/pack-card-data";
 import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 import type { CardKind, CardSize, MatchSummaryTeam } from "@/lib/share-card";
 
@@ -74,6 +88,45 @@ export default function AdminSocialCreate() {
   const input = useMemo(
     () => buildCardInput(kind, state, junior && juniorCapable),
     [kind, state, junior, juniorCapable],
+  );
+
+  // --- Tenant branding for the live preview ----------------------------------
+  // The preview mounts the same <PackCard> the export modal does, so it must be
+  // handed the same tenant payload. Without it `applyPackData` never runs and
+  // the Broadcast-Dark sample literals ("HALLS HEAD", "#HALLSHEAD", "eSA Sport")
+  // render for every tenant, in the sample palette rather than the club's.
+  const settingsQ = useGetSocialSettings({
+    query: { queryKey: getGetSocialSettingsQueryKey() },
+  });
+  const bundle = settingsQ.data as SocialSettingsBundle | undefined;
+  const themesQ = useListCardThemes({
+    query: { queryKey: getListCardThemesQueryKey() },
+  });
+  const themes = (themesQ.data ?? []) as ApiCardTheme[];
+
+  const isJunior = junior && juniorCapable;
+
+  // Junior cards are locked to the brown junior palette (no admin theme);
+  // otherwise the tenant's default theme, matching the modal's initial pick.
+  const previewTheme = useMemo(
+    () => (isJunior ? null : themes.find((t) => t.isDefault) ?? themes[0] ?? null),
+    [isJunior, themes],
+  );
+
+  // Memoised: <PackCard> memoises its rendered html on `data` identity, so a
+  // fresh object every render would defeat it and re-render on every keystroke.
+  //
+  // Falls back to the synchronously-available `useBrand()` value until the
+  // settings bundle resolves, so the preview never flashes the sample literals.
+  const packData = useMemo(
+    () =>
+      buildPackData({
+        brand: bundle?.brand ?? brand,
+        hashtag: tenantHashtag(bundle),
+        sponsors: kindSponsors(bundle, kind, sponsorsOn),
+        presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
+      }),
+    [bundle, brand, kind, sponsorsOn],
   );
 
   return (
@@ -157,8 +210,9 @@ export default function AdminSocialCreate() {
                   input={input}
                   size={size}
                   sponsorsOn={sponsorsOn}
-                  junior={junior && juniorCapable}
-                  theme={null}
+                  junior={isJunior}
+                  theme={previewTheme}
+                  data={packData}
                 />
               </div>
 

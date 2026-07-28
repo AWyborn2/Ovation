@@ -88,10 +88,10 @@ export const weekendWrap: PackCardTemplate = {
     textField("roundLabel", "Round label", "ROUND 3"),
     textField("dateRange", "Date range", "8–9 NOVEMBER"),
     repeatField("matches", "Per-grade result rows", "4 grade results"),
-    textField("clubHashtag", "Club hashtag", "#HALLSHEAD"),
-    textField("hashtags", "Hashtag footer", "#HALLSHEAD · #PEELPREMIERLEAGUE"),
-    textField("hashtagsExtra", "Secondary hashtag", "#PEELPREMIERLEAGUE"),
-    textField("sponsorPresentedBy", "Presented-by sponsor", "eSA Sport"),
+    textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+    textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
+    textField("hashtagsExtra", "Secondary hashtag", "#YOURLEAGUE"),
+    textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   ],
   repeats: [
     {
@@ -101,7 +101,7 @@ export const weekendWrap: PackCardTemplate = {
       fields: [
         textField("gradeLabel", "Grade", "A"),
         textField("gradeSub", "Grade sub-label", "GRADE"),
-        textField("resultLine", "Result line", "Halls Head 2/102 d. R'ham Hornets 9/97"),
+        textField("resultLine", "Result line", "Your Club 2/102 d. R'ham Hornets 9/97"),
         textField("performers", "Top performers", "J. Manuel 39* · A. Osborne 3/13"),
         textField("outcome", "Outcome", "WON"),
       ],
