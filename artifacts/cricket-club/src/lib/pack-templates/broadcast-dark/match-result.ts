@@ -1,12 +1,10 @@
 import type { PackCardTemplate } from "../types";
+import { columnRoot } from "../shared";
 import {
-  SPONSOR_STRIP_STORY,
   bgLayers,
   clubHeaderFields,
-  formatRoot,
   goldChip,
   hashtagFooterShared,
-  hashtagFooterStory,
   headerTag,
   logoField,
   photoField,
@@ -15,35 +13,44 @@ import {
   slot,
   sponsorStripShared,
   sponsorsOn,
-  storyHeader,
   textField,
 } from "./fragments";
 
 // A1 — Match Result. The only card with three distinct layouts in the bundle
 // (isStoryFmt / isTallFmt / isSquareFmt).
 
-const storyHtml = formatRoot(
-  bgLayers() +
-    storyHeader(goldChip("RESULT", "story") + headerTag("{{matchTitle}}")) +
-    `<div style="position:absolute;top:248px;left:70px;right:70px">` +
+// Laid out as a flex column rather than the bundle's absolute `top:` pins.
+// Removing the Player-of-the-Match panel left ~500px of dead space between the
+// club score row and the footer; a column closes that automatically and means
+// future edits to this card don't need coordinates re-tuned by hand. The
+// story's own type scale (188px title, 86px scores) is unchanged — only the
+// positioning model differs.
+const storyHtml = columnRoot(
+  bgLayers(),
+  sharedHeader(goldChip("RESULT", "story") + headerTag("{{matchTitle}}")) +
+    // Middle group: flex:1 and centred, so the card stays composed whether the
+    // optional team photo is present (it absorbs the slack) or dropped (the
+    // group centres instead of stacking at the top over dead space).
+    `<div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;margin:44px 0 30px">` +
+    `<div style="flex:none">` +
     `<div style="display:flex;align-items:center;gap:13px;font:600 22px/1 ui-monospace,Menlo,monospace;letter-spacing:.28em;color:var(--gold,#F5B21A)"><span style="width:14px;height:14px;border-radius:50%;background:var(--gold,#F5B21A);box-shadow:0 0 18px var(--gold,#F5B21A)"></span>FULL TIME</div>` +
     `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:188px;line-height:.94;letter-spacing:.005em;margin-top:22px;text-transform:uppercase">MATCH<br><span style="color:var(--gold,#F5B21A)">RESULT</span></div>` +
     `</div>` +
-    `<div style="position:absolute;top:672px;left:70px;right:70px;background:linear-gradient(90deg,var(--panel,var(--panel,#6E1C2B)),var(--panel-2,var(--panel-2,#4a121e)));border-left:9px solid var(--gold,#F5B21A);border-radius:9px;padding:26px 30px;display:flex;align-items:center;gap:20px;box-shadow:0 22px 44px -22px color-mix(in srgb, var(--panel,#42342B) 90%, transparent)">` +
+    `<div style="flex:none;margin-top:62px;background:linear-gradient(90deg,var(--panel,var(--panel,#6E1C2B)),var(--panel-2,var(--panel-2,#4a121e)));border-left:9px solid var(--gold,#F5B21A);border-radius:9px;padding:26px 30px;display:flex;align-items:center;gap:20px;box-shadow:0 22px 44px -22px color-mix(in srgb, var(--panel,#42342B) 90%, transparent)">` +
     `<span style="font-size:38px;line-height:1;color:var(--gold,#F5B21A)">★</span>` +
     `<span style="font-weight:800;font-size:42px;line-height:1;letter-spacing:.01em">{{result}}</span>` +
     `</div>` +
-    `<div style="position:absolute;top:806px;left:70px;right:70px;display:flex;align-items:center;gap:24px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:26px 28px">` +
+    `<div style="flex:none;margin-top:30px;display:flex;align-items:center;gap:24px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:26px 28px">` +
     `<div style="width:112px;height:112px;border-radius:13px;overflow:hidden;flex:none;background:var(--surface-2,#1f2530)">${slot("opposition.logo", "logo", "rounded", 13)}</div>` +
     `<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:37px;line-height:1.05">{{opposition.name}}</div><div style="font-weight:500;font-size:21px;line-height:1.5;color:rgba(255,255,255,.62);margin-top:6px">{{opposition.performers}}</div></div>` +
     `<div style="text-align:right;flex:none"><div style="font-family:var(--disp,'Anton',sans-serif);font-size:86px;line-height:.9">{{opposition.score}}</div><div style="font:500 16px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-top:5px">{{opposition.oversLabel}}</div></div>` +
     `</div>` +
-    `<div style="position:absolute;top:990px;left:70px;right:70px;display:flex;align-items:center;gap:20px">` +
+    `<div style="flex:none;margin-top:26px;display:flex;align-items:center;gap:20px">` +
     `<div style="flex:1;height:1px;background:rgba(255,255,255,.15)"></div>` +
     `<span style="font:700 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#F5B21A)">{{resultVerb}}</span>` +
     `<div style="flex:1;height:1px;background:rgba(255,255,255,.15)"></div>` +
     `</div>` +
-    `<div style="position:absolute;top:1048px;left:70px;right:70px;display:flex;align-items:center;gap:24px;background:linear-gradient(90deg,color-mix(in srgb, var(--gold,#FBAC27) 17%, transparent),color-mix(in srgb, var(--gold,#FBAC27) 4%, transparent));border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 42%, transparent);border-radius:16px;padding:26px 28px">` +
+    `<div style="flex:none;margin-top:26px;display:flex;align-items:center;gap:24px;background:linear-gradient(90deg,color-mix(in srgb, var(--gold,#FBAC27) 17%, transparent),color-mix(in srgb, var(--gold,#FBAC27) 4%, transparent));border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 42%, transparent);border-radius:16px;padding:26px 28px">` +
     `<div style="width:112px;height:112px;border-radius:13px;overflow:hidden;flex:none;background:var(--surface-2,#2a2410)">${slot("club.logo", "logo", "rounded", 13)}</div>` +
     `<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:37px;line-height:1.05">{{club.name}}</div><div style="font-weight:500;font-size:21px;line-height:1.5;color:rgba(255,255,255,.72);margin-top:6px">{{club.performers}}</div></div>` +
     `<div style="text-align:right;flex:none"><div style="font-family:var(--disp,'Anton',sans-serif);font-size:86px;line-height:.9;color:var(--gold,#F5B21A)">{{club.score}}</div><div style="font:500 16px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:color-mix(in srgb, var(--gold,#FBAC27) 75%, transparent);margin-top:5px">{{club.oversLabel}}</div></div>` +
@@ -52,13 +59,28 @@ const storyHtml = formatRoot(
     // `potm.figures` / `potm.detail` are not on `ShareCardInput` and nothing in
     // the input pipeline ever set them, so every card rendered the template's
     // sample literal — a fabricated player and fabricated figures — for every
-    // tenant. The presented-by line was nested inside that panel and IS real
-    // tenant data, so it moves out to sit above the sponsor strip.
+    // tenant.
+    //
+    // In its place, an OPTIONAL team photo. Match Result is the card clubs post
+    // weekly, and `photo` is already wired end to end (the modal's uploader and
+    // the per-slot override panel both feed it), so this gives that upload a
+    // home. `data-drop-if-empty` removes the block entirely when no photo is
+    // set, and `flex:1` means it absorbs the slack when present — so the card
+    // is well-composed either way rather than showing an empty frame.
+    `<div data-drop-if-empty="photo" style="flex:1;min-height:0;margin-top:30px;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 0 0 2px color-mix(in srgb, var(--gold,#FBAC27) 38%, transparent)">` +
+    slot("photo", "photo", "rect") +
+    `<div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -90px 90px -50px rgba(8,9,12,.9)"></div></div>` +
+    `</div>` +
+    // The presented-by line was nested inside the POTM panel and IS real tenant
+    // data, so it survives as its own footer row.
     sponsorsOn(
-      `<div style="position:absolute;bottom:212px;left:70px;right:70px;text-align:center;font-weight:500;font-size:20px;line-height:1;color:rgba(255,255,255,.5)">presented by <span style="color:#fff;font-weight:700">{{sponsorPresentedBy}}</span></div>`,
+      `<div style="flex:none;margin-top:26px;text-align:center;font-weight:500;font-size:20px;line-height:1;color:rgba(255,255,255,.5)">presented by <span style="color:#fff;font-weight:700">{{sponsorPresentedBy}}</span></div>`,
     ) +
-    SPONSOR_STRIP_STORY +
-    hashtagFooterStory(66),
+    sponsorStripShared(";margin-top:26px") +
+    hashtagFooterShared(";margin-top:26px"),
+  "70px 70px 56px",
+  "",
+  "",
 );
 
 // Shared pieces for the two non-story layouts (header + footers are common).
@@ -129,6 +151,9 @@ export const matchResult: PackCardTemplate = {
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),
     logoField("sponsor2", "Sponsor logo 2", "Sponsor"),
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),
+    // Optional weekly team / action shot (story format). Dropped entirely when
+    // unset — see the `data-drop-if-empty` block above.
+    photoField("photo", "Team or action photo", "Team photo"),
     textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
   ],
   formats: {

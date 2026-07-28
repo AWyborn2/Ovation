@@ -56,9 +56,14 @@ export function columnRoot(
   columnInner: string,
   padding: string,
   rootStyle = "",
+  /**
+   * Extra declarations for the COLUMN element (not the root) — e.g.
+   * `;justify-content:space-between`. Must start with `;`.
+   */
+  columnStyle = "",
 ): string {
   return formatRoot(
-    `${layers}<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:${padding}">${columnInner}</div>`,
+    `${layers}<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:${padding}${columnStyle}">${columnInner}</div>`,
     rootStyle,
   );
 }

@@ -7,7 +7,6 @@ import {
   STORY_BG,
   clubHeaderFields,
   foilText,
-  formatRoot,
   logoField,
   photoField,
   sharedColumnRoot,
@@ -15,6 +14,7 @@ import {
   slot,
   sponsorsOff,
   sponsorsOn,
+  storyColumnRoot,
   storyHeader,
   textField,
 } from "./fragments";
@@ -30,20 +30,31 @@ import {
 // Story (1080×1920) — centred foil composition with a photo hero
 // ---------------------------------------------------------------------------
 
-const storyHtml = formatRoot(
-  STORY_BG +
-    storyHeader("{{matchTitle}}") +
-    `<div style="position:absolute;top:206px;left:40px;right:40px;text-align:center">` +
+// Laid out as a flex column (see `storyColumnRoot`) rather than the bundle's
+// absolute `top:` pins, so the two conditional blocks — the optional hero photo
+// and the removed Player-of-the-Match ribbon — collapse instead of leaving
+// holes. `justify-content:space-between` keeps the composition balanced whether
+// or not the hero is present.
+const storyHtml = storyColumnRoot(
+  storyHeader("{{matchTitle}}") +
+    // Middle group: centred as a block between the fixed header and footer, so
+    // the composition stays balanced whether or not the hero photo is present.
+    // (Distributing the slack across every block instead left the card looking
+    // thin and unanchored when the photo was absent.)
+    `<div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:40px;margin:40px 0 36px">` +
+    `<div style="flex:none;text-align:center">` +
     foilText("MATCH<br>RESULT", 150) +
     `</div>` +
     // Photo hero: gold ring + an inner bottom scrim so the result line below
-    // stays legible over a bright celebration shot.
-    `<div style="position:absolute;top:560px;left:90px;right:90px;height:632px;border-radius:14px;overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb, var(--gold,#FBAC27) 55%, transparent),0 30px 70px -30px rgba(0,0,0,.95)">` +
+    // stays legible over a bright celebration shot. `data-drop-if-empty`
+    // removes the whole block when no photo is bound — otherwise a Match Result
+    // posted without one showed a large empty framed box.
+    `<div data-drop-if-empty="photo" style="flex:1;min-height:0;margin:0 20px;border-radius:14px;overflow:hidden;position:relative;box-shadow:0 0 0 3px color-mix(in srgb, var(--gold,#FBAC27) 55%, transparent),0 30px 70px -30px rgba(0,0,0,.95)">` +
     slot("photo", "photo", "rect") +
     `<div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -120px 130px -60px rgba(8,9,11,.92)"></div></div>` +
-    `<div style="position:absolute;top:1244px;left:40px;right:40px;text-align:center;font-family:'Bricolage Grotesque','IBM Plex Sans',sans-serif;font-weight:800;font-size:62px;line-height:1;letter-spacing:-.01em;color:#fff">{{result}}</div>` +
+    `<div style="flex:none;text-align:center;font-family:'Bricolage Grotesque','IBM Plex Sans',sans-serif;font-weight:800;font-size:62px;line-height:1;letter-spacing:-.01em;color:#fff">{{result}}</div>` +
     // Two score columns split by a gold hairline.
-    `<div style="position:absolute;top:1392px;left:80px;right:80px;display:flex;align-items:stretch">` +
+    `<div style="flex:none;display:flex;align-items:stretch;padding:0 10px">` +
     `<div style="flex:1;text-align:center;padding:0 18px">` +
     `<div style="font-weight:600;font-size:22px;line-height:1.2;color:rgba(255,255,255,.6)">{{opposition.name}}</div>` +
     `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:78px;line-height:1;margin-top:12px">{{opposition.score}}</div>` +
@@ -53,6 +64,7 @@ const storyHtml = formatRoot(
     `<div style="font-weight:700;font-size:22px;line-height:1.2;color:var(--gold,#F5B21A)">{{club.name}}</div>` +
     `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:78px;line-height:1;margin-top:12px;color:var(--gold,#F5B21A)">{{club.score}}</div>` +
     `<div style="font:500 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:color-mix(in srgb, var(--gold,#FBAC27) 72%, transparent);margin-top:8px">{{club.oversLabel}}</div></div>` +
+    `</div>` +
     `</div>` +
     // The gold Player-of-the-Match ribbon sat here. Removed: `potm.*` is not on
     // `ShareCardInput` and nothing populates it, so the ribbon always announced

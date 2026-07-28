@@ -65,6 +65,19 @@ export function sharedColumnRoot(columnInner: string, rootStyle = ""): string {
   return columnRoot(SHARED_BG, columnInner, "58px 66px 52px", rootStyle);
 }
 
+/**
+ * Story root — a flex column, not the bundle's absolute positioning.
+ *
+ * The bundle pins every block to a fixed `top`, which is fine for a fixed
+ * composition but brittle the moment a block is conditional: removing the
+ * Player-of-the-Match panel left ~300px of dead space, and an unset hero photo
+ * left a large empty framed box. A column reflows instead, so both collapse
+ * cleanly and future edits do not need coordinates re-tuned by hand.
+ */
+export function storyColumnRoot(columnInner: string, columnStyle = ""): string {
+  return columnRoot(STORY_BG, columnInner, "96px 70px 66px", "", columnStyle);
+}
+
 // ---------------------------------------------------------------------------
 // Type treatments
 // ---------------------------------------------------------------------------
@@ -98,7 +111,7 @@ export function foilText(content: string, fontSize: number, extraStyle = ""): st
  */
 export function storyHeader(tag: string): string {
   return (
-    `<div style="position:absolute;top:96px;left:0;right:0;text-align:center">` +
+    `<div style="flex:none;text-align:center">` +
     `<div style="font:600 22px/1 ui-monospace,Menlo,monospace;letter-spacing:.38em;color:rgba(255,255,255,.62)">{{clubName}}</div>` +
     `<div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-top:24px">` +
     `<span style="width:118px;height:1px;background:linear-gradient(90deg,transparent,var(--gold,#F5B21A))"></span>` +
@@ -132,11 +145,11 @@ export function sharedHeader(chipLabel: string, tag: string): string {
 // Footers
 // ---------------------------------------------------------------------------
 
-/** Story "presented by <sponsor>" line (absolute bottom). */
-export const PRESENTED_BY_STORY = `<div style="position:absolute;bottom:66px;left:0;right:0;text-align:center;font-weight:500;font-size:20px;line-height:1;color:rgba(255,255,255,.5)">presented by <span style="color:var(--gold,#F5B21A);font-weight:700">{{sponsorPresentedBy}}</span></div>`;
+/** Story "presented by <sponsor>" line (column footer). */
+export const PRESENTED_BY_STORY = `<div style="flex:none;text-align:center;font-weight:500;font-size:20px;line-height:1;color:rgba(255,255,255,.5)">presented by <span style="color:var(--gold,#F5B21A);font-weight:700">{{sponsorPresentedBy}}</span></div>`;
 
 /** Story sponsors-off hashtag line (same slot as the presented-by line). */
-export const HASHTAG_FOOTER_STORY = `<div style="position:absolute;bottom:66px;left:0;right:0;text-align:center;font-weight:600;font-size:20px;line-height:1;letter-spacing:.14em;color:rgba(255,255,255,.4)">{{clubHashtag}}</div>`;
+export const HASHTAG_FOOTER_STORY = `<div style="flex:none;text-align:center;font-weight:600;font-size:20px;line-height:1;letter-spacing:.14em;color:rgba(255,255,255,.4)">{{clubHashtag}}</div>`;
 
 function sponsorSlots(height: number): string {
   return [1, 2, 3]

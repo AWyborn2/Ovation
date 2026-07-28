@@ -536,6 +536,37 @@ function splitTopLevelDivs(inner: string): string[] {
 // ---------------------------------------------------------------------------
 
 /** Remove every `<div data-sponsors="loser">…</div>` block, keeping the winner. */
+/**
+ * Remove any element marked `data-drop-if-empty="<slotKey>"` when that image
+ * slot resolved to nothing.
+ *
+ * An optional hero photo would otherwise render as a large empty framed box —
+ * technically the placeholder working as designed, but on a Match Result posted
+ * without a photo it reads as a broken card. Dropping the whole block lets a
+ * flex-column layout close the space instead.
+ *
+ * Strips the marker attribute when the slot IS filled so the emitted html
+ * carries no leftover authoring hooks.
+ */
+function dropEmptyImageBlocks(html: string, images: Record<string, string>): string {
+  const re = /<div[^>]*?\sdata-drop-if-empty="([^"]+)"/;
+  let out = html;
+  let m = re.exec(out);
+  while (m) {
+    const key = m[1];
+    if (images[key]) {
+      // Keep the block; remove the marker so the next exec moves past it.
+      out =
+        out.slice(0, m.index) +
+        out.slice(m.index).replace(` data-drop-if-empty="${key}"`, "");
+    } else {
+      out = out.slice(0, m.index) + out.slice(divBounds(out, m.index).end);
+    }
+    m = re.exec(out);
+  }
+  return out;
+}
+
 function selectSponsorVariant(html: string, sponsorsOn: boolean): string {
   const loser = sponsorsOn ? "off" : "on";
   const needle = `<div data-sponsors="${loser}"`;
@@ -1248,6 +1279,9 @@ export function renderPackCard(
   let html = selectFormatHtml(template.formats, size);
   html = selectSponsorVariant(html, sponsorsOn);
   html = expandRepeats(html, bound.rows, template);
+  // Before slots resolve: an optional block whose image never arrived is removed
+  // outright rather than rendering an empty framed placeholder.
+  html = dropEmptyImageBlocks(html, bound.images);
   html = resolveSlots(html, bound.images, values, data?.photoTransform, photoFullBleed);
   // Drop the "presented by <sponsor>" line entirely when no presenting sponsor
   // resolved (empty value) — must run before substitution while the placeholder

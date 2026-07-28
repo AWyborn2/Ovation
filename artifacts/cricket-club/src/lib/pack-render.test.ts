@@ -602,6 +602,62 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
 // overlays — resolution order override > input > bind.
 // ---------------------------------------------------------------------------
 
+describe("optional image blocks (data-drop-if-empty)", () => {
+  // Match Result's weekly team photo is optional. Rendering an empty framed box
+  // when nobody uploaded one is what made the card look broken, so the whole
+  // block is removed instead and the flex column closes the space.
+  const PHOTO = "https://cdn.example/team.jpg";
+
+  it("drops the block entirely when the slot has no image", () => {
+    const html = renderPackCard(sampleCardInput("matchSummary"), "story", true, TOKENS, false);
+    expect(html).not.toContain("data-drop-if-empty");
+    // No leftover placeholder for the dropped hero.
+    expect(html).not.toContain('data-slot-type="photo"');
+  });
+
+  it("keeps the block and strips the marker when the slot is filled", () => {
+    const html = renderPackCard(sampleCardInput("matchSummary"), "story", true, TOKENS, false, {
+      photoUrl: PHOTO,
+    });
+    expect(html).toContain(`<img src="${PHOTO}"`);
+    // The authoring hook must not survive into the emitted card.
+    expect(html).not.toContain("data-drop-if-empty");
+  });
+
+  it("makes the card shorter in content but still complete without a photo", () => {
+    const withPhoto = renderPackCard(
+      sampleCardInput("matchSummary"),
+      "story",
+      true,
+      TOKENS,
+      false,
+      { photoUrl: PHOTO },
+    );
+    const without = renderPackCard(sampleCardInput("matchSummary"), "story", true, TOKENS, false);
+    expect(without).not.toBe(withPhoto);
+    // Both still carry the card's actual content, fully substituted.
+    for (const html of [withPhoto, without]) {
+      expect(hasUnresolved(html)).toBe(false);
+      expect(html).toContain("Sample Club won by 5 wickets");
+    }
+  });
+
+  it("applies to every pack that marks an optional block", () => {
+    for (const packId of ["broadcast-dark-v1", "gold-foil-v1"]) {
+      const html = renderPackCard(
+        sampleCardInput("matchSummary"),
+        "story",
+        true,
+        TOKENS,
+        false,
+        undefined,
+        packId,
+      );
+      expect(html, packId).not.toContain("data-drop-if-empty");
+    }
+  });
+});
+
 describe("renderPackCard per-slot image overrides (B1)", () => {
   const BOUND = "https://cdn.example.com/bound.jpg";
   const OVERRIDE = "https://cdn.example.com/override.jpg";
@@ -793,17 +849,14 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
     expect(noPhoto).toBe(contained);
   });
 
-  it("is a no-op on a kind with no hero photo slot (match-result)", () => {
-    // Broadcast Dark's match-result exposes no `data-slot="photo"` at all — it
-    // has team logos only, and the POTM headshot that used to be its one photo
-    // slot was removed with the Player-of-the-Match section. Requesting
-    // full-bleed must therefore change nothing rather than rewriting some other
-    // slot's wrapper.
+  it("promotes match-result's optional team photo to full bleed", () => {
+    // Match Result gained an optional weekly team/action photo when the POTM
+    // panel was removed, so full-bleed now applies to it like any hero slot.
     const input = sampleCardInput("matchSummary");
     const fullBleed = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
     const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained"));
-    expect(fullBleed).not.toContain(FULLBLEED_WRAPPER);
-    expect(fullBleed).toBe(contained);
+    expect(fullBleed).toContain(FULLBLEED_WRAPPER);
+    expect(fullBleed).not.toBe(contained);
   });
 
   it("injects a full-card legibility scrim on full-bleed, none on contained", () => {
