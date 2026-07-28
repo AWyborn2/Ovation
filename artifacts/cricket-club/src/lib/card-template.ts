@@ -235,6 +235,32 @@ export const templateAppliesToKind = (
   template.isActive &&
   (template.cardKinds.length === 0 || template.cardKinds.includes(kind));
 
+/**
+ * The design pack a tenant has chosen for `kind`, or `null` for the default.
+ *
+ * A tenant selects a pack by marking one of its `source: "pack"` template rows
+ * (materialised per tenant by `ensurePackTemplates`) as the default for a kind.
+ * This is the single place that decision is read, so the composer preview, the
+ * Studio gallery, the carousel and the export modal cannot disagree about which
+ * pack a card belongs to.
+ *
+ * Returns `null` rather than the default pack id so callers pass through the
+ * renderer's own fallback — one definition of "the default", not two.
+ */
+export const resolvePackIdForKind = (
+  templates: readonly CardTemplate[] | undefined | null,
+  kind: CardKind,
+): string | null => {
+  if (!templates?.length) return null;
+  const packRows = templates.filter(
+    (t) => t.source === "pack" && templateAppliesToKind(t, kind),
+  );
+  const chosen =
+    packRows.find((t) => t.defaultForKinds?.includes(kind)) ??
+    packRows.find((t) => t.isDefault);
+  return chosen?.packId ?? null;
+};
+
 export type TemplateContext = {
   clubName?: string;
   clubUrl?: string;

@@ -36,6 +36,11 @@ export interface PackCardProps {
    * same tenant branding the canvas path already gets. Omitted → sample defaults.
    */
   data?: PackCardData | null;
+  /**
+   * Which registered design pack supplies the layout. Omitted (or unknown)
+   * resolves to the default pack, so existing callers are unchanged.
+   */
+  packId?: string | null;
   /** Explicit display width (px). When omitted the card fills its parent. */
   width?: number;
   className?: string;
@@ -48,6 +53,7 @@ export function PackCard({
   theme,
   junior,
   data,
+  packId,
   width,
   className,
 }: PackCardProps) {
@@ -75,8 +81,8 @@ export function PackCard({
   );
 
   const html = useMemo(
-    () => renderPackCard(input, size, sponsorsOn, tokens, junior, data),
-    [input, size, sponsorsOn, tokens, junior, data],
+    () => renderPackCard(input, size, sponsorsOn, tokens, junior, data, packId),
+    [input, size, sponsorsOn, tokens, junior, data, packId],
   );
 
   // Decorative pack fonts (Anton, Bebas Neue, Teko, Archivo Black, …) load on

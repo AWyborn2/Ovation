@@ -12,9 +12,10 @@
  * value is HTML-escaped (security invariant — do not remove).
  */
 
-import { BROADCAST_DARK_PACK } from "./pack-templates/broadcast-dark";
+import { getPackManifest } from "./pack-templates/registry";
 import type {
   PackCardTemplate,
+  PackDesignEntry,
   PackTemplateFormats,
   PackTemplateField,
 } from "./pack-templates/types";
@@ -201,9 +202,9 @@ const PACK_SLOT_LABELS: Record<string, string> = {
  */
 export function packImageSlots(
   input: ShareCardInput,
-  opts?: { includeHidden?: boolean },
+  opts?: { includeHidden?: boolean; packId?: string | null },
 ): PackImageSlot[] {
-  const template = resolveTemplate(input);
+  const template = resolveTemplate(input, opts?.packId);
   if (!template) return [];
   return template.fields
     .filter((f) => f.type === "photo" || f.type === "logo")
@@ -403,20 +404,44 @@ const SHARED_K: Record<CardSize, number> = {
 // Template resolution
 // ---------------------------------------------------------------------------
 
-const DESIGN_BY_KIND = new Map<string, typeof BROADCAST_DARK_PACK.designs>();
-for (const d of BROADCAST_DARK_PACK.designs) {
-  const list = DESIGN_BY_KIND.get(d.kind) ?? [];
-  list.push(d);
-  DESIGN_BY_KIND.set(d.kind, list);
+/**
+ * kind → designs, per pack. Built lazily on first use of a pack and cached, so
+ * registering a pack costs nothing until something renders it.
+ *
+ * This was a single module-level map built from Pack A, which is what made the
+ * renderer single-pack: template lookup had no way to ask for a different pack.
+ */
+const DESIGN_INDEX = new Map<string, Map<string, PackDesignEntry[]>>();
+
+function designsByKind(packId?: string | null): Map<string, PackDesignEntry[]> {
+  const manifest = getPackManifest(packId);
+  let index = DESIGN_INDEX.get(manifest.packId);
+  if (!index) {
+    index = new Map<string, PackDesignEntry[]>();
+    for (const d of manifest.designs) {
+      const list = index.get(d.kind) ?? [];
+      list.push(d);
+      index.set(d.kind, list);
+    }
+    DESIGN_INDEX.set(manifest.packId, index);
+  }
+  return index;
 }
 
-export function packSupportsKind(kind: string): boolean {
-  return DESIGN_BY_KIND.has(kind);
+/**
+ * True when `packId` (default pack when omitted) has a design for `kind`.
+ * Packs are not required to cover the same kinds, so this is per-pack.
+ */
+export function packSupportsKind(kind: string, packId?: string | null): boolean {
+  return designsByKind(packId).has(kind);
 }
 
 /** Pick the design for an input; the two two-design kinds split on category. */
-function resolveTemplate(input: ShareCardInput): PackCardTemplate | null {
-  const designs = DESIGN_BY_KIND.get(input.kind);
+function resolveTemplate(
+  input: ShareCardInput,
+  packId?: string | null,
+): PackCardTemplate | null {
+  const designs = designsByKind(packId).get(input.kind);
   if (!designs || designs.length === 0) return null;
   if (designs.length === 1) return designs[0].template;
   // gradeLeader / clubLeaderboard: choose Runs vs Wickets by category.
@@ -1191,6 +1216,11 @@ function dropEmptyPresentedBy(html: string): string {
  * Bind an input into its pack template and return native-size, self-contained
  * card HTML. Falls back to the story/shared layout for an unknown size, and to
  * template samples for any field the input does not supply.
+ *
+ * `packId` selects which registered pack supplies the design; omitted or
+ * unknown resolves to {@link DEFAULT_PACK_ID}. Returns `""` when the resolved
+ * pack has no design for the input's kind — packs need not cover every kind, so
+ * check {@link packSupportsKind} with the same `packId` before routing here.
  */
 export function renderPackCard(
   input: ShareCardInput,
@@ -1199,8 +1229,9 @@ export function renderPackCard(
   tokens: PackTokens,
   junior: boolean,
   data?: PackCardData | null,
+  packId?: string | null,
 ): string {
-  const template = resolveTemplate(input);
+  const template = resolveTemplate(input, packId);
   if (!template) return "";
 
   const bound = bindInput(input);

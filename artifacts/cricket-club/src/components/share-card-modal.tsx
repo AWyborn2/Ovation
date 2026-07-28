@@ -154,8 +154,6 @@ export function ShareCardModal({
   useEffect(() => {
     setImageOverrides({});
   }, [open, input]);
-  // Image slots (photo/logo) the current card kind's pack template exposes.
-  const imageSlots = useMemo(() => (input ? packImageSlots(input) : []), [input]);
   const setSlotOverride = (key: string, url: string) =>
     setImageOverrides((prev) => {
       const next = { ...prev };
@@ -270,7 +268,22 @@ export function ShareCardModal({
   // background template drives opts.template. Splitting them here keeps the rest
   // of the modal (animation, dropdown) using the single `selectedTemplate` pick.
   const isLayerTemplate = selectedTemplate?.source === "layers";
-  const bgTemplate = isLayerTemplate ? null : selectedTemplate;
+  // A pack-source row selects a DESIGN PACK, not a background image. It has no
+  // bgImageUrl and no layers, so it must not reach the canvas renderer — it
+  // routes to the pack path via `packId` below. `ensurePackTemplates`
+  // (api-server lib/design-packs.ts) materialises these rows per tenant, and
+  // until Phase 2 the renderer ignored them: selecting one produced a blank
+  // canvas card rather than that pack's design.
+  const isPackTemplate = selectedTemplate?.source === "pack";
+  const bgTemplate = isLayerTemplate || isPackTemplate ? null : selectedTemplate;
+  /** The pack supplying the design: the selected pack row's, else the default. */
+  const packId = isPackTemplate ? selectedTemplate?.packId ?? null : null;
+  // Image slots (photo/logo) the resolved pack's design for this kind exposes.
+  // Declared after `packId` because packs differ in which slots they offer.
+  const imageSlots = useMemo(
+    () => (input ? packImageSlots(input, { packId }) : []),
+    [input, packId],
+  );
   const templateLayers = useMemo<CardLayoutLayer[] | null>(
     () => (isLayerTemplate ? selectedTemplate?.layers ?? [] : null),
     [isLayerTemplate, selectedTemplate],
@@ -375,9 +388,15 @@ export function ShareCardModal({
   // server-side still harness (pixel-true web fonts + un-tainted logos), while
   // BYO templates keep the client-side canvas path. Junior cards are pack cards
   // too (the pack renderer forces the brown palette).
+  // A card renders through the pack when no BYO template is selected (default
+  // pack) or the selection IS a pack row (that pack) — and the resolved pack
+  // has a design for the kind.
   const isPackCard = useMemo(
-    () => !!input && selectedTemplate === null && packSupportsKind(input.kind),
-    [input, selectedTemplate],
+    () =>
+      !!input &&
+      (selectedTemplate === null || isPackTemplate) &&
+      packSupportsKind(input.kind, packId),
+    [input, selectedTemplate, isPackTemplate, packId],
   );
 
   const stillMutation = useCreateCardRenderStill();
@@ -392,6 +411,8 @@ export function ShareCardModal({
     junior: isJunior,
     theme: effectiveTheme ?? null,
     data: buildPackData(photoTransform),
+    // Must match the preview's pack or the exported PNG is a different design.
+    packId,
   });
 
   // Render one pack size to a PNG blob via the server harness.
@@ -721,9 +742,12 @@ export function ShareCardModal({
                         sig={animSig}
                         soundOn={isAdmin && previewSoundOn && !!audioSpec}
                       />
-                    ) : input && selectedTemplate === null && packSupportsKind(input.kind) ? (
-                      // Pack (standard / built-in) cards preview as a live scaled
-                      // DOM subtree; only BYO templates use the canvas path below.
+                    ) : input && isPackCard ? (
+                      // Pack cards preview as a live scaled DOM subtree; only BYO
+                      // templates use the canvas path below. Reuses `isPackCard`
+                      // rather than re-deriving the condition, so the preview and
+                      // the export path can never disagree about which renderer
+                      // owns this card.
                       <PackCard
                         input={input}
                         size={s}
@@ -731,6 +755,7 @@ export function ShareCardModal({
                         theme={effectiveTheme}
                         junior={isJunior}
                         data={buildPackData(renderTransform)}
+                        packId={packId}
                       />
                     ) : rendering && !previewUrls[s] ? (
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

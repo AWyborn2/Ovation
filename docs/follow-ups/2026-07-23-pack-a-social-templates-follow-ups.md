@@ -279,9 +279,23 @@ correctness cleanup to fold in.
      `packId`/`packVariant`, materialised by `ensurePackTemplates` in
      `artifacts/api-server/src/lib/design-packs.ts`) through `PackCard` →
      `renderPackCard` → `stillOptions` → carousel slides → the render harness.
-  2. **The bundles ship the story format only** (1080×1920). Pack A's portrait/square
-     `shared` layouts were *authored in-repo* during U1, not imported. So each of
-     B–E needs ~20 story transcriptions **plus** ~20 authored reflow layouts.
+  2. **The bundles are nearly story-only.** *(Corrected again 2026-07-27 — the first
+     version of this note said "story format only", which was measured wrong: it
+     counted literal `1350px`/`1920px` strings, but the non-story layouts are gated on
+     `<sc-if value="{{ isNotStory }}">` and sized with `--ch`/`--k` variables.)* The
+     accurate count, per card wrapper:
+
+     | Pack | Cards | With a non-story branch |
+     |---|---|---|
+     | A (Broadcast Dark) | 20 | **20** |
+     | B (Gold Foil) | 20 | **2** — Match Result, Club Leaderboard·Wickets |
+     | C (Bold Type) | 20 | **2** — same two |
+     | D (Neon Night) | 20 | **2** — same two |
+     | E (Sunset) | 20 | **2** — same two |
+
+     So each of B–E needs ~20 story transcriptions **plus ~18 authored portrait/square
+     reflows** (not 20). Pack A had all 40 in the bundle, which is why its
+     transcription was "mostly transcription" and B–E's will not be.
   All four bundles do contain exactly the same 20 designs and the same
   `data-card-kind` mapping as Pack A, so the per-card scope is at least predictable.
   (`Pack A - Broadcastlight.dc.html`, a light-mode Pack A variant, is also in the

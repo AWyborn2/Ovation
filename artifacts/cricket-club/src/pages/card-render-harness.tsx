@@ -33,6 +33,8 @@ type StillOptions = {
   junior: boolean;
   theme?: ApiCardTheme | null;
   data?: PackCardData | null;
+  /** Which design pack to render; omitted resolves to the default pack. */
+  packId?: string | null;
 };
 
 // Metrics returned by renderStill() so the server knows what to screenshot.
@@ -188,6 +190,7 @@ export default function CardRenderHarness() {
             theme={options.theme ?? null}
             junior={options.junior}
             data={options.data ?? null}
+            packId={options.packId ?? null}
             width={native.w}
           />,
         );

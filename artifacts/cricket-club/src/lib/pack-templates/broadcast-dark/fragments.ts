@@ -1,4 +1,10 @@
-import type { PackTemplateField } from "../types";
+import {
+  CLUB_LOGO_SLOT,
+  columnRoot,
+  slot,
+  sponsorsOff,
+  sponsorsOn,
+} from "../shared";
 
 /**
  * Shared markup fragments for the Broadcast Dark pack, transcribed verbatim
@@ -7,25 +13,25 @@ import type { PackTemplateField } from "../types";
  * byte-identical across the 20 design modules (fidelity comes from not
  * rewriting the CSS). Anything that differs per card is passed in as a
  * parameter or written inline in the card module.
+ *
+ * Pack-agnostic mechanics (slots, sponsor wrappers, format roots, field
+ * descriptors) now live in `../shared` and are re-exported here so the 20 card
+ * modules keep importing from one place. What remains below is Broadcast Dark's
+ * own visual language.
  */
 
-// ---------------------------------------------------------------------------
-// Image slots
-// ---------------------------------------------------------------------------
-
-/** Generic image slot; fills its wrapper (the wrapper keeps size/radius). */
-export function slot(
-  key: string,
-  type: "photo" | "logo" | "sponsor",
-  shape: "rect" | "rounded" | "circle" = "rect",
-  radius?: number,
-): string {
-  const r = radius != null ? ` data-radius="${radius}"` : "";
-  return `<div data-slot="${key}" data-slot-type="${type}" data-shape="${shape}"${r} style="width:100%;height:100%"></div>`;
-}
-
-/** Tenant club logo slot (bundle: `fit="contain" shape="rect"`). */
-export const CLUB_LOGO_SLOT = `<div data-slot="clubLogo" data-slot-type="logo" data-shape="rect" data-fit="contain" style="width:100%;height:100%"></div>`;
+export {
+  CLUB_LOGO_SLOT,
+  clubHeaderFields,
+  formatRoot,
+  logoField,
+  photoField,
+  repeatField,
+  slot,
+  sponsorsOff,
+  sponsorsOn,
+  textField,
+} from "../shared";
 
 // ---------------------------------------------------------------------------
 // Background layers
@@ -50,26 +56,13 @@ export function bgLayers(beamPct = 13): string {
 // Format roots
 // ---------------------------------------------------------------------------
 
-/**
- * Template root: the 1080-wide card inner content at native size. The bundle's
- * preview scaling wrappers (width:var(--pw), transform:scale(var(--cscale)))
- * are stripped — the renderer owns sizing via the format's canvas dimensions
- * and the `--ch` / `--k` tokens.
- */
-export function formatRoot(inner: string, rootStyle = ""): string {
-  return `<div style="position:absolute;inset:0${rootStyle}">${inner}</div>`;
-}
-
 /** Shared (non-story) root: background layers + fluid flex column. */
 export function sharedColumnRoot(
   layers: string,
   columnInner: string,
   rootStyle = "",
 ): string {
-  return formatRoot(
-    `${layers}<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:58px 66px 52px">${columnInner}</div>`,
-    rootStyle,
-  );
+  return columnRoot(layers, columnInner, "58px 66px 52px", rootStyle);
 }
 
 // ---------------------------------------------------------------------------
@@ -100,16 +93,6 @@ export function sharedHeader(rightHtml: string): string {
 // ---------------------------------------------------------------------------
 // Sponsor variant blocks
 // ---------------------------------------------------------------------------
-
-/** Sponsors-on wrapper (layout-neutral; renderer removes the losing variant). */
-export function sponsorsOn(inner: string): string {
-  return `<div data-sponsors="on" style="display:contents">${inner}</div>`;
-}
-
-/** Sponsors-off wrapper. */
-export function sponsorsOff(inner: string): string {
-  return `<div data-sponsors="off" style="display:contents">${inner}</div>`;
-}
 
 function sponsorSlots(height: number): string {
   return [1, 2, 3]
@@ -173,31 +156,5 @@ export function footerRowShared(
   return `<div style="flex:none;display:flex;align-items:center;justify-content:space-between${marginTop}"><div style="font-weight:700;font-size:24px;letter-spacing:.1em;color:var(--gold,#FBAC27)${hashtagExtraStyle}">{{clubHashtag}}</div>${rightHtml}</div>`;
 }
 
-// ---------------------------------------------------------------------------
-// Field helpers
-// ---------------------------------------------------------------------------
-
-export function textField(key: string, label: string, sample: string): PackTemplateField {
-  return { key, type: "text", label, sample };
-}
-
-export function photoField(key: string, label: string, sample: string): PackTemplateField {
-  return { key, type: "photo", label, sample };
-}
-
-export function logoField(key: string, label: string, sample: string): PackTemplateField {
-  return { key, type: "logo", label, sample };
-}
-
-export function repeatField(key: string, label: string, sample: string): PackTemplateField {
-  return { key, type: "repeat", label, sample };
-}
-
-/** Fields present on every card's header. */
-export function clubHeaderFields(): PackTemplateField[] {
-  return [
-    textField("clubName", "Club name", "YOUR CLUB"),
-    textField("clubTagline", "Club tagline", "CRICKET CLUB · EST. YYYY"),
-    logoField("clubLogo", "Club logo", "Club logo"),
-  ];
-}
+// Field helpers (textField / photoField / logoField / repeatField /
+// clubHeaderFields) are pack-agnostic and re-exported from `../shared` above.
