@@ -176,6 +176,35 @@ export const PACKS: DesignPack[] = [
       "fiveFor",
       "bigMoment",
     ],
+    variants: STANDARD_PACK_VARIANTS,
+  },
+  {
+    id: "neon-night-v1",
+    name: "Neon Night",
+    description:
+      "Night-sky navy with blurred neon orbs, glassmorphism panels and layered neon-glow display type — floodlit cricket after dark.",
+    // COVERAGE CONTRACT: must match pack-templates/neon-night/index.ts
+    // (enforced by pack-coverage-parity.test.ts). Grows card by card.
+    cardKinds: [
+      "matchSummary",
+      "record",
+      "gradeLeader",
+      "clubLeaderboard",
+      "matchDay",
+      "countdown",
+      "newSigning",
+      "newCap",
+      "premiership",
+      "teamList",
+      "weekendWrap",
+      "ladder",
+      "player",
+      "milestone",
+      "debut",
+      "century",
+      "fiveFor",
+      "bigMoment",
+    ],
     variants: [
       {
         key: "square",
