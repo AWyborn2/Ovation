@@ -79,7 +79,7 @@ function statChipStory(valueKey: string, labelKey: string, hero: boolean): strin
 
 const storyHtml = storyColumnRoot(
   storyHeader("PLAYER SPOTLIGHT") +
-    `<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:25px;margin:17px 0 22px">` +
+    `<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:25px;margin:17px 0 22px">` +
     STORY_PHOTO +
     neonText("{{playerName}}", 101, "gold", ";line-height:.9") +
     `<div style="display:flex;gap:16px;width:100%;max-width:620px">` +
