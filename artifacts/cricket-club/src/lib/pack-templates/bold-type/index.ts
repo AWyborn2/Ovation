@@ -1,5 +1,10 @@
 import type { PackManifest } from "../types";
 import { matchResult } from "./match-result";
+import { matchDay } from "./match-day";
+import { countdown } from "./countdown";
+import { newSigning } from "./new-signing";
+import { newCap } from "./new-cap";
+import { premiership } from "./premiership";
 
 /**
  * Pack C — Bold Type. Oversized condensed type as the hero: 200px+ scores,
@@ -15,5 +20,12 @@ import { matchResult } from "./match-result";
 export const BOLD_TYPE_PACK: PackManifest = {
   packId: "bold-type-v1",
   name: "Bold Type",
-  designs: [{ designKey: "match-result", kind: "matchSummary", template: matchResult }],
+  designs: [
+    { designKey: "match-result", kind: "matchSummary", template: matchResult },
+    { designKey: "match-day", kind: "matchDay", template: matchDay },
+    { designKey: "countdown", kind: "countdown", template: countdown },
+    { designKey: "new-signing", kind: "newSigning", template: newSigning },
+    { designKey: "new-cap", kind: "newCap", template: newCap },
+    { designKey: "premiership", kind: "premiership", template: premiership },
+  ],
 };

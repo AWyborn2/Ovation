@@ -156,7 +156,14 @@ export const PACKS: DesignPack[] = [
       "Oversized condensed type as the hero — massive scores, gold outline display faces, flat colour-block compositions. No photography; the type is the design.",
     // COVERAGE CONTRACT: must match pack-templates/bold-type/index.ts (enforced
     // by pack-coverage-parity.test.ts). Grows card by card.
-    cardKinds: ["matchSummary"],
+    cardKinds: [
+      "matchSummary",
+      "matchDay",
+      "countdown",
+      "newSigning",
+      "newCap",
+      "premiership",
+    ],
     variants: [
       {
         key: "square",
