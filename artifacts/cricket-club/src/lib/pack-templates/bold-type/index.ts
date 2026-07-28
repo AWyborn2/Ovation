@@ -5,6 +5,14 @@ import { countdown } from "./countdown";
 import { newSigning } from "./new-signing";
 import { newCap } from "./new-cap";
 import { premiership } from "./premiership";
+import { record } from "./record";
+import { teamList } from "./team-list";
+import { weekendWrap } from "./weekend-wrap";
+import { ladder } from "./ladder";
+import { gradeLeaderRuns } from "./grade-leader-runs";
+import { gradeLeaderWickets } from "./grade-leader-wickets";
+import { clubLeaderboardRuns } from "./club-leaderboard-runs";
+import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
 
 /**
  * Pack C — Bold Type. Oversized condensed type as the hero: 200px+ scores,
@@ -27,5 +35,13 @@ export const BOLD_TYPE_PACK: PackManifest = {
     { designKey: "new-signing", kind: "newSigning", template: newSigning },
     { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "premiership", kind: "premiership", template: premiership },
+    { designKey: "record", kind: "record", template: record },
+    { designKey: "team-list", kind: "teamList", template: teamList },
+    { designKey: "weekend-wrap", kind: "weekendWrap", template: weekendWrap },
+    { designKey: "ladder", kind: "ladder", template: ladder },
+    { designKey: "grade-leader-runs", kind: "gradeLeader", categoryPreset: "Runs", template: gradeLeaderRuns },
+    { designKey: "grade-leader-wickets", kind: "gradeLeader", categoryPreset: "Wickets", template: gradeLeaderWickets },
+    { designKey: "club-leaderboard-runs", kind: "clubLeaderboard", categoryPreset: "Runs", template: clubLeaderboardRuns },
+    { designKey: "club-leaderboard-wickets", kind: "clubLeaderboard", categoryPreset: "Wickets", template: clubLeaderboardWickets },
   ],
 };

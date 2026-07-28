@@ -163,6 +163,12 @@ export const PACKS: DesignPack[] = [
       "newSigning",
       "newCap",
       "premiership",
+      "record",
+      "gradeLeader",
+      "clubLeaderboard",
+      "teamList",
+      "weekendWrap",
+      "ladder",
     ],
     variants: [
       {
