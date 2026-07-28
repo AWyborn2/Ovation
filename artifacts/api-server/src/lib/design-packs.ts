@@ -28,6 +28,37 @@ export type DesignPack = {
   variants: DesignPackVariant[];
 };
 
+/**
+ * The standard three static formats every current pack ships. Shared so a new
+ * pack's entry is its identity + cardKinds, not another copy of this block.
+ */
+const STANDARD_PACK_VARIANTS: DesignPackVariant[] = [
+  {
+    key: "square",
+    label: "Square (1080×1080)",
+    width: 1080,
+    height: 1080,
+    motionPreset: "none",
+    backgroundKind: "image",
+  },
+  {
+    key: "portrait",
+    label: "Portrait (1080×1350)",
+    width: 1080,
+    height: 1350,
+    motionPreset: "none",
+    backgroundKind: "image",
+  },
+  {
+    key: "story",
+    label: "Story (1080×1920)",
+    width: 1080,
+    height: 1920,
+    motionPreset: "none",
+    backgroundKind: "image",
+  },
+];
+
 export const PACKS: DesignPack[] = [
   {
     id: "broadcast-dark-v1",
@@ -115,6 +146,35 @@ export const PACKS: DesignPack[] = [
       "record",
       "gradeLeader",
       "clubLeaderboard",
+    ],
+    variants: STANDARD_PACK_VARIANTS,
+  },
+  {
+    id: "bold-type-v1",
+    name: "Bold Type",
+    description:
+      "Oversized condensed type as the hero — massive scores, gold outline display faces, flat colour-block compositions. No photography; the type is the design.",
+    // COVERAGE CONTRACT: must match pack-templates/bold-type/index.ts (enforced
+    // by pack-coverage-parity.test.ts). Grows card by card.
+    cardKinds: [
+      "matchSummary",
+      "matchDay",
+      "countdown",
+      "newSigning",
+      "newCap",
+      "premiership",
+      "record",
+      "gradeLeader",
+      "clubLeaderboard",
+      "teamList",
+      "weekendWrap",
+      "ladder",
+      "player",
+      "milestone",
+      "debut",
+      "century",
+      "fiveFor",
+      "bigMoment",
     ],
     variants: [
       {

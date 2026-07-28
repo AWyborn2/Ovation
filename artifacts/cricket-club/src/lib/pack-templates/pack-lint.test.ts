@@ -58,6 +58,9 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   // Gold Foil's story format has a full-bleed hero photo and its own centred
   // hashtag line; Broadcast Dark's match-result has neither.
   "gold-foil-v1/matchSummary": ["photo", "clubHashtag"],
+  // Sunset's story is photo-first (full-bleed background) with its own story
+  // hashtag footer — same two extras as Gold Foil.
+  "sunset-v1/matchSummary": ["photo", "clubHashtag"],
 };
 
 /** The reference design for a kind, matched on category preset when present. */
