@@ -42,6 +42,7 @@ import {
   tenantHashtag,
   kindSponsors,
   presentingSponsorName,
+  shortClubName,
 } from "@/lib/pack-card-data";
 import { type PackCardData } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
@@ -163,6 +164,11 @@ export default function AdminSocialStudio() {
   });
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
   const galleryTheme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
+
+  // Sample CONTENT speaks as the tenant too: "Mandurah won by 5 wickets", the
+  // ladder's highlighted row is Mandurah's — not a generic "Sample Club". The
+  // thumbnails then read as "our cards", not a stranger's.
+  const galleryClubName = shortClubName(bundle?.brand?.name ?? "") || undefined;
 
   // One payload per card kind, memoised so <PackCard>'s html memo (keyed on
   // `data` identity) is not defeated on every parent re-render.
@@ -332,7 +338,7 @@ export default function AdminSocialStudio() {
                   }}
                 >
                   <PackCard
-                    input={sampleCardInput(kind)}
+                    input={sampleCardInput(kind, galleryClubName)}
                     size={THUMB_SIZE}
                     sponsorsOn
                     junior={false}

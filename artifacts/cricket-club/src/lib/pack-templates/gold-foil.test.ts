@@ -110,10 +110,25 @@ describe("gold-foil rendering", () => {
       .formats as Record<string, string>;
     expect(formats.story).toContain('data-slot="photo"');
     for (const size of ["portrait", "square"]) {
-      expect(formats[size], size).toContain('data-slot="potm.photo"');
       expect(formats[size], size).toContain('data-slot="club.logo"');
       expect(formats[size], size).toContain('data-slot="opposition.logo"');
     }
+  });
+
+  it("exposes no Player-of-the-Match slot or field in any format", () => {
+    // `potm.*` is not on ShareCardInput and nothing populates it, so the panel
+    // published the template's sample literal — a fabricated player and figures
+    // — as that week's result. Removed from every pack; this keeps it gone.
+    const design = GOLD_FOIL_PACK.designs.find((d) => d.kind === "matchSummary")!;
+    for (const [format, html] of Object.entries(
+      design.template.formats as Record<string, string>,
+    )) {
+      expect(html, format).not.toContain("potm");
+      expect(html, format).not.toContain("PLAYER OF THE MATCH");
+    }
+    expect(design.template.fields.map((f) => f.key).filter((k) => k.startsWith("potm"))).toEqual(
+      [],
+    );
   });
 
   it("renders a bound photo into the story hero slot", () => {

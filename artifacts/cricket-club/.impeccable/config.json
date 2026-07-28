@@ -1,0 +1,46 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/lib/pack-templates/**"
+        ],
+        "createdAt": "2026-07-28T07:06:47.435Z",
+        "reason": "Mirror of root ignore: hook sometimes resolves from artifacts/cricket-club; designer's banner from approved bundles"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/lib/pack-templates/**"
+        ],
+        "createdAt": "2026-07-28T07:06:47.564Z",
+        "reason": "Mirror of root ignore: Gold Foil's named identity"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "**/*.test.ts",
+          "**/*.test.tsx",
+          "src/lib/pack-render.ts"
+        ],
+        "createdAt": "2026-07-28T07:06:47.679Z",
+        "reason": "Mirror of root ignore: rule matches comments/assertion strings, never markup"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/pages/admin-social-studio.tsx"
+        ],
+        "createdAt": "2026-07-28T07:07:31.291Z",
+        "reason": "Mirror of root ignore (hook sometimes resolves from artifacts/cricket-club)"
+      }
+    ]
+  }
+}

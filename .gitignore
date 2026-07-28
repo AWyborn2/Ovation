@@ -61,3 +61,9 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# Impeccable design-hook local state (the shared .impeccable/config.json IS committed)
+.impeccable/hook.cache.json
+.impeccable/config.local.json
+artifacts/*/.impeccable/hook.cache.json
+artifacts/*/.impeccable/config.local.json

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listPackManifests } from "./registry";
+import { listPackManifests, DEFAULT_PACK_ID, getPackManifest } from "./registry";
 import type { PackDesignEntry, PackTemplateField } from "./types";
 import { renderPackCard, PACK_DEFAULT_TOKENS, packSupportsKind } from "../pack-render";
 import { sampleCardInput } from "../sample-card-inputs";
@@ -47,6 +47,79 @@ const CLUB_IDENTITY_LITERALS = [
   "PEELPREMIERLEAGUE",
   "black & gold",
 ];
+
+/**
+ * Field keys a non-default pack may declare that the reference pack does not,
+ * keyed `<packId>/<kind>`. Keep this small — each entry is a deliberate review
+ * decision that a pack's design genuinely exposes something Broadcast Dark's
+ * does not, rather than a rename slipping through.
+ */
+const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
+  // Gold Foil's story format has a full-bleed hero photo and its own centred
+  // hashtag line; Broadcast Dark's match-result has neither.
+  "gold-foil-v1/matchSummary": ["photo", "clubHashtag"],
+};
+
+/** The reference design for a kind, matched on category preset when present. */
+function referenceDesign(kind: string, categoryPreset?: string) {
+  return getPackManifest(DEFAULT_PACK_ID).designs.find(
+    (d) => d.kind === kind && (categoryPreset ? d.categoryPreset === categoryPreset : true),
+  );
+}
+
+/**
+ * Field-key parity (R4).
+ *
+ * `bindInput` maps a ShareCardInput onto placeholder keys per card KIND, not per
+ * pack. A pack that renames a key — `potmName` for `potm.name` — renders sample
+ * defaults instead of real data, for that pack's tenants only. Nothing else
+ * catches it: the markup is valid, the lint passes, and a gallery preview looks
+ * correct because previews render samples by definition.
+ *
+ * Direction matters. Requiring every reference key to appear in every pack would
+ * be wrong: a design that genuinely has no POTM photo would have to declare an
+ * unused field, which the "every declared field appears in html" check above
+ * would then fail. So the assertion is the other way round — a pack may declare
+ * FEWER keys, never DIFFERENT ones.
+ */
+describe("field-key parity across packs (R4)", () => {
+  const reference = getPackManifest(DEFAULT_PACK_ID);
+
+  it("uses Broadcast Dark as the reference pack", () => {
+    expect(reference.packId).toBe(DEFAULT_PACK_ID);
+  });
+
+  for (const pack of listPackManifests()) {
+    if (pack.packId === DEFAULT_PACK_ID) continue;
+
+    it(`${pack.name} declares no key the reference pack lacks`, () => {
+      const problems: string[] = [];
+      for (const entry of pack.designs) {
+        const ref = referenceDesign(entry.kind, entry.categoryPreset);
+        if (!ref) {
+          problems.push(
+            `${entry.designKey}: kind "${entry.kind}" has no reference design — ` +
+              `bindInput has no mapping for it`,
+          );
+          continue;
+        }
+        const refKeys = new Set(ref.template.fields.map((f) => f.key));
+        const allowed = new Set(EXTRA_KEY_ALLOWLIST[`${pack.packId}/${entry.kind}`] ?? []);
+        for (const field of entry.template.fields) {
+          if (refKeys.has(field.key) || allowed.has(field.key)) continue;
+          problems.push(
+            `${entry.designKey} declares "${field.key}", which is neither in the ` +
+              `reference design for "${entry.kind}" nor allowlisted — if this is a ` +
+              `rename it will silently render samples on real data`,
+          );
+        }
+      }
+      expect(problems, `${pack.packId} field-key drift:\n${problems.join("\n")}`).toEqual(
+        [],
+      );
+    });
+  }
+});
 
 for (const pack of listPackManifests()) {
   describe(`pack contract: ${pack.name} (${pack.packId})`, () => {
@@ -153,6 +226,33 @@ for (const pack of listPackManifests()) {
               `${entry.designKey}.${field.key} sample contains "${literal}"`,
             ).not.toContain(literal);
           }
+        }
+      }
+    });
+
+    it("declares no unbindable potm.* field", () => {
+      // `potm.name` / `potm.figures` / `potm.detail` are not on ShareCardInput
+      // and nothing in the input pipeline ever set them, so match-result's POTM
+      // panel published the template's sample literal — a fabricated player and
+      // fabricated figures — as though it were that week's result. Removed from
+      // every pack; this stops a transcription of Packs C/D/E reintroducing it
+      // straight from the bundle, where the panel is still present.
+      //
+      // Scoped to the `potm.*` family on purpose. Premiership's "PLAYER OF THE
+      // MATCH · {{mom}}" line stays: `mom` IS on ShareCardInput, IS bound by
+      // bindInput, and has an admin-editable "Player of the final" form field —
+      // a one-off historical fact, not weekly match data. Asserting on the
+      // words "PLAYER OF THE MATCH" would wrongly condemn it.
+      for (const entry of designs) {
+        const keys = entry.template.fields
+          .map((f) => f.key)
+          .filter((k) => k === "potm" || k.startsWith("potm."));
+        expect(keys, `${entry.designKey} declares POTM fields: ${keys.join(", ")}`).toEqual([]);
+        for (const [format, html] of formatEntries(entry)) {
+          expect(
+            /\{\{potm\b/.test(html),
+            `${entry.designKey}/${format} still renders a potm.* placeholder`,
+          ).toBe(false);
         }
       }
     });

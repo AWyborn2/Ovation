@@ -602,6 +602,100 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
 // overlays — resolution order override > input > bind.
 // ---------------------------------------------------------------------------
 
+describe("tenant-named sample defaults", () => {
+  // A template SAMPLE that surfaces on a data-bearing render (a field the input
+  // did not bind) speaks as the tenant, not as a generic club. Input-bound
+  // values are never rewritten.
+  const DATA: PackCardData = { brand: { name: "Mandurah Cricket Club" } };
+
+  it("substitutes club tokens in a surfacing default, matching token case", () => {
+    // bigMoment's inningsLabel default is "YOUR CLUB · 2ND INNINGS"; omit it
+    // from the input so the default surfaces.
+    const input = {
+      ...sampleCardInput("bigMoment"),
+      inningsLabel: undefined,
+    } as unknown as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, DATA);
+    expect(html).toContain("MANDURAH · 2ND INNINGS");
+    expect(html).not.toContain("YOUR CLUB");
+  });
+
+  it("does not rewrite input-bound values", () => {
+    const input = {
+      ...sampleCardInput("bigMoment"),
+      inningsLabel: "Your Club on top",
+    } as unknown as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, DATA);
+    // The admin typed it; it stays verbatim.
+    expect(html).toContain("Your Club on top");
+  });
+
+  it("leaves defaults neutral on a no-data render", () => {
+    const input = {
+      ...sampleCardInput("bigMoment"),
+      inningsLabel: undefined,
+    } as unknown as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false);
+    expect(html).toContain("YOUR CLUB · 2ND INNINGS");
+  });
+});
+
+describe("optional image blocks (data-drop-if-empty)", () => {
+  // Match Result's weekly team photo is optional. Rendering an empty framed box
+  // when nobody uploaded one is what made the card look broken, so the whole
+  // block is removed instead and the flex column closes the space.
+  const PHOTO = "https://cdn.example/team.jpg";
+
+  it("drops the block entirely when the slot has no image", () => {
+    const html = renderPackCard(sampleCardInput("matchSummary"), "story", true, TOKENS, false);
+    expect(html).not.toContain("data-drop-if-empty");
+    // No leftover placeholder for the dropped hero.
+    expect(html).not.toContain('data-slot-type="photo"');
+  });
+
+  it("keeps the block and strips the marker when the slot is filled", () => {
+    const html = renderPackCard(sampleCardInput("matchSummary"), "story", true, TOKENS, false, {
+      photoUrl: PHOTO,
+    });
+    expect(html).toContain(`<img src="${PHOTO}"`);
+    // The authoring hook must not survive into the emitted card.
+    expect(html).not.toContain("data-drop-if-empty");
+  });
+
+  it("makes the card shorter in content but still complete without a photo", () => {
+    const withPhoto = renderPackCard(
+      sampleCardInput("matchSummary"),
+      "story",
+      true,
+      TOKENS,
+      false,
+      { photoUrl: PHOTO },
+    );
+    const without = renderPackCard(sampleCardInput("matchSummary"), "story", true, TOKENS, false);
+    expect(without).not.toBe(withPhoto);
+    // Both still carry the card's actual content, fully substituted.
+    for (const html of [withPhoto, without]) {
+      expect(hasUnresolved(html)).toBe(false);
+      expect(html).toContain("Sample Club won by 5 wickets");
+    }
+  });
+
+  it("applies to every pack that marks an optional block", () => {
+    for (const packId of ["broadcast-dark-v1", "gold-foil-v1"]) {
+      const html = renderPackCard(
+        sampleCardInput("matchSummary"),
+        "story",
+        true,
+        TOKENS,
+        false,
+        undefined,
+        packId,
+      );
+      expect(html, packId).not.toContain("data-drop-if-empty");
+    }
+  });
+});
+
 describe("renderPackCard per-slot image overrides (B1)", () => {
   const BOUND = "https://cdn.example.com/bound.jpg";
   const OVERRIDE = "https://cdn.example.com/override.jpg";
@@ -671,7 +765,7 @@ describe("renderPackCard per-slot image overrides (B1)", () => {
     // byte-identical html at every call site (determinism, not a round-trip).
     const input = sampleCardInput("matchSummary");
     const data: PackCardData = {
-      imagesOverride: { "opposition.logo": OVERRIDE, "potm.photo": OVERRIDE },
+      imagesOverride: { "opposition.logo": OVERRIDE, "club.logo": OVERRIDE },
     };
     for (const size of ["square", "portrait", "story"] as CardSize[]) {
       const a = renderPackCard(input, size, true, TOKENS, false, data);
@@ -699,7 +793,7 @@ describe("packImageSlots (per-slot override editor enumeration)", () => {
   it("hides the tenant-branding slots (clubLogo + sponsors) from the match-result panel", () => {
     const keys = packImageSlots(sampleCardInput("matchSummary")).map((s) => s.key);
     // Content slots are surfaced…
-    for (const k of ["club.logo", "opposition.logo", "potm.photo"]) {
+    for (const k of ["club.logo", "opposition.logo"]) {
       expect(keys, k).toContain(k);
     }
     // …the branding slots (header logo + sponsor tiles) are hidden.
@@ -724,7 +818,6 @@ describe("packImageSlots (per-slot override editor enumeration)", () => {
       "clubLogo",
       "club.logo",
       "opposition.logo",
-      "potm.photo",
       "sponsor1",
       "sponsor2",
       "sponsor3",
@@ -794,14 +887,14 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
     expect(noPhoto).toBe(contained);
   });
 
-  it("does not full-bleed the match-result POTM headshot", () => {
-    // matchSummary has no hero `photo` slot — only the contained `potm.photo`
-    // headshot — so full-bleed must not touch it.
+  it("promotes match-result's optional team photo to full bleed", () => {
+    // Match Result gained an optional weekly team/action photo when the POTM
+    // panel was removed, so full-bleed now applies to it like any hero slot.
     const input = sampleCardInput("matchSummary");
-    const html = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
-    // The POTM wrapper (rounded box) stays; no wrapper is rewritten to inset:0.
-    expect(html).not.toContain(FULLBLEED_WRAPPER);
-    expect(html).toContain(`src="${PHOTO}"`);
+    const fullBleed = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed"));
+    const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained"));
+    expect(fullBleed).toContain(FULLBLEED_WRAPPER);
+    expect(fullBleed).not.toBe(contained);
   });
 
   it("injects a full-card legibility scrim on full-bleed, none on contained", () => {

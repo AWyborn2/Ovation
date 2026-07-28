@@ -263,6 +263,47 @@ const SAMPLES: { [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: 
   },
 };
 
-export function sampleCardInput(kind: ShareCardInput["kind"]): ShareCardInput {
-  return SAMPLES[kind];
+/**
+ * The generic club tokens sample data uses for the tenant's own side.
+ * Opposition names ("Rival Club", "Baldivis", …) are deliberately NOT tokens —
+ * they are the other side of the fixture, not the tenant.
+ */
+const CLUB_TOKEN_RE = /SAMPLE CLUB|YOUR CLUB|Sample Club|Your Club/g;
+
+function replaceClubTokens<T>(value: T, club: string): T {
+  if (typeof value === "string") {
+    return value.replace(CLUB_TOKEN_RE, (token) =>
+      token === token.toUpperCase() ? club.toUpperCase() : club,
+    ) as unknown as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => replaceClubTokens(v, club)) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = replaceClubTokens(v, club);
+    return out as T;
+  }
+  return value;
+}
+
+/**
+ * A representative input for `kind`, for previews and form seeding.
+ *
+ * Pass `clubName` (already shortened — see `shortClubName`) to have the sample
+ * speak as the tenant: "Sample Club won by 5 wickets" → "Mandurah won by 5
+ * wickets", the ladder's highlighted row becomes the tenant's, and so on. The
+ * Studio gallery and the composer seed both do this, so a club browsing card
+ * designs sees ITS results, not a generic club's. Omitted → the neutral sample,
+ * unchanged (tests, brand-less contexts).
+ *
+ * Substitution deep-clones; the shared sample objects are never mutated.
+ */
+export function sampleCardInput(
+  kind: ShareCardInput["kind"],
+  clubName?: string | null,
+): ShareCardInput {
+  const sample = SAMPLES[kind];
+  if (!clubName?.trim()) return sample;
+  return replaceClubTokens(sample, clubName.trim());
 }
