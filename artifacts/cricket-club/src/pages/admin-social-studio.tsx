@@ -10,40 +10,37 @@ import {
   getListCardTemplatesQueryKey,
   type CardTemplate,
   type SocialSettingsBundle,
-  useUpdateSocialSettings,
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
-  type SocialSettings,
   type CardTheme as ApiCardTheme,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Loader2, Pencil, Trash2, Plus, IdCard, Save } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, IdCard } from "lucide-react";
 import {
   CardLayoutEditor,
   type TemplateMode,
 } from "@/components/card-layout-editor";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
+import { usePackSelection } from "@/lib/use-pack-selection";
+import { PackPreviewTile } from "@/components/social-studio/pack-preview-tile";
+import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
+import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
 import {
-  resolvePackIdForKind,
-  listSelectablePacksForKind,
-  canonicalPackRowFor,
-  nextDefaultForKinds,
-  byoDefaultsClearedBy,
-} from "@/lib/card-template";
-import {
-  listPackManifests,
-  DEFAULT_PACK_ID,
-} from "@/lib/pack-templates/registry";
-import { PackCard } from "@/components/pack-card";
+  ALL_CARD_KINDS,
+  DEFAULT_PACK_NAME,
+  THUMB_SIZE,
+  kindLabel,
+  packName,
+  type CardKind,
+} from "@/lib/social-studio";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import {
   renderShareCard,
   SIZES,
-  type CardSize,
   type RenderOptions,
   type ShareCardInput,
 } from "@/lib/share-card";
@@ -58,21 +55,6 @@ import { type PackCardData } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState, QueryError } from "@/components/data-states";
-
-const THUMB_SIZE: CardSize = "square";
-
-type CardKind = ShareCardInput["kind"];
-
-const kindLabel = (k: string) =>
-  CARD_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k;
-
-const ALL_CARD_KINDS: CardKind[] = CARD_KIND_OPTIONS.map((o) => o.value);
-
-/** A pack's catalogue name, falling back to its id for a withdrawn pack. */
-const packName = (packId: string): string =>
-  listPackManifests().find((m) => m.packId === packId)?.name ?? packId;
-
-const DEFAULT_PACK_NAME = packName(DEFAULT_PACK_ID);
 
 // Renders a card preview (built-in body + optional saved layout) to an <img>.
 function CardThumb({
@@ -156,13 +138,12 @@ export default function AdminSocialStudio() {
   const [editing, setEditing] = useState<EditorState | null>(null);
   const [newBaseKind, setNewBaseKind] = useState<CardKind>("milestone");
   const [error, setError] = useState<string | null>(null);
-  // Which card kind has a pack write in flight, and which pack a bulk apply is
-  // running for. Tracked per kind (not from `updateMut.isPending`) so only the
-  // control the admin touched goes busy.
-  const [pendingKind, setPendingKind] = useState<CardKind | null>(null);
-  const [bulkPackId, setBulkPackId] = useState<string | null>(null);
 
   const templates = (templatesQ.data as CardTemplate[] | undefined) ?? [];
+
+  // Everything about the tenant's design-pack choice — what each kind resolves
+  // to, what it could resolve to, and the two write paths that change it.
+  const packs = usePackSelection({ templates, confirm });
   // Which of the TENANT'S OWN templates (if any) is the default for each card
   // kind. Pack rows share the `defaultForKinds` column but are deliberately
   // excluded: a pack claim is reported by the pack selector below, and only
@@ -172,27 +153,6 @@ export default function AdminSocialStudio() {
     if (t.source === "pack") continue;
     for (const k of t.defaultForKinds ?? []) defaultByKind.set(k, t);
   }
-
-  // The pack each kind resolves to today, read once through the single reader
-  // so the selectors, the thumbnails and the pack cards' counts cannot disagree.
-  // Memoised on `templates` alongside the selectable-pack options: both are
-  // rebuilt only when the template list actually changes, not on every
-  // pending/error state toggle.
-  const packIdByKind = useMemo(
-    () =>
-      new Map<CardKind, string | null>(
-        ALL_CARD_KINDS.map((k) => [k, resolvePackIdForKind(templates, k)] as const),
-      ),
-    [templates],
-  );
-
-  const selectablePacksByKind = useMemo(
-    () =>
-      new Map<CardKind, string[]>(
-        ALL_CARD_KINDS.map((k) => [k, listSelectablePacksForKind(templates, k)] as const),
-      ),
-    [templates],
-  );
 
   const baseOpts: RenderOptions = {
     size: THUMB_SIZE,
@@ -307,103 +267,6 @@ export default function AdminSocialStudio() {
   // kinds from every other row in the tenant, so a second write would undo the
   // first — three sequential writes across a pack's square/portrait/story rows
   // would leave only the last one claiming anything.
-  const claimKindsForPack = (
-    packId: string,
-    kinds: CardKind[],
-    onSettled?: () => void,
-  ) => {
-    setError(null);
-    const row = canonicalPackRowFor(templates, packId);
-    if (!row || kinds.length === 0) {
-      if (!row) {
-        setError(`"${packName(packId)}" isn't available for this club yet.`);
-      }
-      onSettled?.();
-      return;
-    }
-    let next = row.defaultForKinds ?? [];
-    for (const k of kinds) next = nextDefaultForKinds({ defaultForKinds: next }, k);
-    updateMut.mutate(
-      { id: row.id, data: { defaultForKinds: next } },
-      { onSettled: () => onSettled?.() },
-    );
-  };
-
-  const handleSelectPack = async (kind: CardKind, value: string) => {
-    // Claiming ONE kind clears it from the tenant's own templates just as the
-    // bulk path does — `clearDefaultKinds` is source-agnostic. Confirm on the
-    // same terms, or this surface quietly destroys the very template the card's
-    // "Overridden by template" caption is pointing at.
-    const cleared = byoDefaultsClearedBy(templates, [kind]);
-    if (cleared.length > 0) {
-      const ok = await confirm({
-        title: `Use ${packName(value || DEFAULT_PACK_ID)} for ${kindLabel(kind)}?`,
-        description: `"${cleared[0].name}" is currently the default for ${kindLabel(
-          kind,
-        )} and will lose it. That template overrides the pack, so this changes which design ships.`,
-        confirmText: "Use this pack",
-        destructive: true,
-      });
-      if (!ok) return;
-    }
-    // "" is the leading option: the default pack, written as an explicit claim
-    // rather than an empty body, so the choice is stored rather than inferred.
-    setPendingKind(kind);
-    claimKindsForPack(value || DEFAULT_PACK_ID, [kind], () => setPendingKind(null));
-  };
-
-  /** The kinds a pack can actually render for this tenant, in gallery order. */
-  const kindsCoveredByPack = (packId: string): CardKind[] =>
-    ALL_CARD_KINDS.filter((k) =>
-      listSelectablePacksForKind(templates, k).includes(packId),
-    );
-
-  const handleUsePackEverywhere = async (packId: string) => {
-    const name = packName(packId);
-    const covered = kindsCoveredByPack(packId);
-    if (covered.length === 0) return;
-    const uncovered = ALL_CARD_KINDS.filter((k) => !covered.includes(k));
-    // `defaultForKinds` is one namespace: claiming these kinds for the pack also
-    // clears them from the tenant's OWN templates, and a cleared `layers`
-    // default changes which renderer the card ships through. Name the cost.
-    const cleared = byoDefaultsClearedBy(templates, covered);
-    const clearedNames = cleared
-      .slice(0, 4)
-      .map((t) => `"${t.name}"`)
-      .join(", ");
-    const ok = await confirm({
-      title: `Use ${name} for all card types?`,
-      description: (
-        <>
-          <span className="block">
-            {name} will be used for {covered.length} card{" "}
-            {covered.length === 1 ? "type" : "types"}.
-          </span>
-          {uncovered.length > 0 && (
-            <span className="block pt-2">
-              {uncovered.length} card {uncovered.length === 1 ? "type" : "types"}{" "}
-              this pack doesn't cover stay as they are:{" "}
-              {uncovered.map(kindLabel).join(", ")}.
-            </span>
-          )}
-          <span className="block pt-2">
-            {cleared.length === 0
-              ? "None of your own templates lose their per-card-type default."
-              : `${cleared.length} of your own ${
-                  cleared.length === 1 ? "template" : "templates"
-                } will lose their per-card-type default: ${clearedNames}${
-                  cleared.length > 4 ? `, and ${cleared.length - 4} more` : ""
-                }.`}
-          </span>
-        </>
-      ),
-      confirmText: "Apply to all card types",
-      destructive: cleared.length > 0,
-    });
-    if (!ok) return;
-    setBulkPackId(packId);
-    claimKindsForPack(packId, covered, () => setBulkPackId(null));
-  };
 
   const handleDelete = async (t: CardTemplate) => {
     if (
@@ -475,11 +338,6 @@ export default function AdminSocialStudio() {
   // and Delete on one isn't durable (the server re-creates it on next start).
   const bgTemplates = templates.filter((t) => t.source === "background");
 
-  // The packs this tenant can choose from — a registered pack with an active
-  // row, in catalogue order.
-  const availablePacks = listPackManifests().filter((m) =>
-    canonicalPackRowFor(templates, m.packId),
-  );
 
   return (
     <div className="space-y-8">
@@ -497,72 +355,15 @@ export default function AdminSocialStudio() {
       </p>
 
       {/* Design packs — the bulk path, met before the 18 per-kind selectors */}
-      {availablePacks.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Design packs</h2>
-          <p className="text-sm text-muted-foreground">
-            A pack is a complete set of card designs. Apply one to every card
-            type at once, or pick a different pack for a single card type below.
-          </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {availablePacks.map((m) => {
-              // An unclaimed kind resolves to `null`, which RENDERS as the
-              // default pack — so count it toward that pack, or a fresh tenant
-              // reads "Not used by any card type" on Broadcast Dark while every
-              // selector below simultaneously reports it as "(default)".
-              const owned = ALL_CARD_KINDS.filter(
-                (k) => (packIdByKind.get(k) ?? DEFAULT_PACK_ID) === m.packId,
-              ).length;
-              return (
-                <Card key={m.packId} className="overflow-hidden">
-                  <div
-                    className="overflow-hidden rounded bg-muted"
-                    style={{
-                      aspectRatio: `${SIZES[THUMB_SIZE].w} / ${SIZES[THUMB_SIZE].h}`,
-                    }}
-                  >
-                    <PackCard
-                      input={
-        galleryInputByKind.get("matchSummary") ??
-        sampleCardInput("matchSummary", galleryClubName)
-      }
-                      size={THUMB_SIZE}
-                      sponsorsOn
-                      junior={false}
-                      theme={galleryTheme}
-                      data={galleryDataByKind.get("matchSummary") ?? null}
-                      packId={m.packId}
-                    />
-                  </div>
-                  <CardContent className="space-y-2 p-3">
-                    <span className="block truncate text-sm font-medium">
-                      {m.name}
-                    </span>
-                    <p className="text-[11px] text-muted-foreground">
-                      {owned === 0
-                        ? "Not used by any card type"
-                        : `Used by ${owned} of ${ALL_CARD_KINDS.length} card types`}
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 w-full text-xs"
-                      aria-label={`Use ${m.name} for all card types`}
-                      disabled={bulkPackId !== null}
-                      onClick={() => handleUsePackEverywhere(m.packId)}
-                    >
-                      {bulkPackId === m.packId && (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      )}
-                      Use for all card types
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      <DesignPacksSection
+        selection={packs}
+        previewInput={
+          galleryInputByKind.get("matchSummary") ??
+          sampleCardInput("matchSummary", galleryClubName)
+        }
+        previewData={galleryDataByKind.get("matchSummary") ?? null}
+        theme={galleryTheme}
+      />
 
       {/* Card types gallery */}
       <section className="space-y-3">
@@ -572,24 +373,16 @@ export default function AdminSocialStudio() {
             const kind = o.value;
             const def = defaultByKind.get(kind);
             return (
-              <Card key={kind} className="overflow-hidden">
-                <div
-                  className="overflow-hidden rounded bg-muted"
-                  style={{
-                    aspectRatio: `${SIZES[THUMB_SIZE].w} / ${SIZES[THUMB_SIZE].h}`,
-                  }}
-                >
-                  <PackCard
-                    input={galleryInputByKind.get(kind) ?? sampleCardInput(kind, galleryClubName)}
-                    size={THUMB_SIZE}
-                    sponsorsOn
-                    junior={false}
-                    theme={galleryTheme}
-                    data={galleryDataByKind.get(kind) ?? null}
-                    packId={packIdByKind.get(kind) ?? null}
-                  />
-                </div>
-                <CardContent className="space-y-2 p-3">
+              <PackPreviewTile
+                key={kind}
+                input={
+                  galleryInputByKind.get(kind) ??
+                  sampleCardInput(kind, galleryClubName)
+                }
+                theme={galleryTheme}
+                data={galleryDataByKind.get(kind) ?? null}
+                packId={packs.packIdByKind.get(kind) ?? null}
+              >
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-medium">{o.label}</span>
                   </div>
@@ -603,17 +396,18 @@ export default function AdminSocialStudio() {
                       // the filtered option list no longer contains and the
                       // control goes blank.
                       value={
-                        (packIdByKind.get(kind) ?? DEFAULT_PACK_ID) === DEFAULT_PACK_ID
+                        (packs.packIdByKind.get(kind) ?? DEFAULT_PACK_ID) ===
+                        DEFAULT_PACK_ID
                           ? ""
-                          : packIdByKind.get(kind)!
+                          : packs.packIdByKind.get(kind)!
                       }
                       // Gate on ANY in-flight pack write, not just this kind's.
                       // Every kind of a pack claims through the same canonical
                       // row and the PATCH replaces the whole array, so a second
                       // selection made against the pre-write cache would drop
                       // the first claim.
-                      disabled={pendingKind !== null || bulkPackId !== null}
-                      onChange={(e) => handleSelectPack(kind, e.target.value)}
+                      disabled={packs.busy}
+                      onChange={(e) => packs.selectPack(kind, e.target.value)}
                     >
                       {/* Explicit leading option: without it a kind with no
                           claim holds a value absent from the option list and
@@ -623,15 +417,15 @@ export default function AdminSocialStudio() {
                           it is also registered and covers every kind, so mapping
                           it again would list it twice under two values that
                           apply the same pack. */}
-                      {(selectablePacksByKind.get(kind) ?? [])
+                      {(packs.selectablePacksByKind.get(kind) ?? [])
                         .filter((p) => p !== DEFAULT_PACK_ID)
                         .map((p) => (
-                        <option key={p} value={p}>
-                          {packName(p)}
-                        </option>
-                      ))}
+                          <option key={p} value={p}>
+                            {packName(p)}
+                          </option>
+                        ))}
                     </select>
-                    {pendingKind === kind && (
+                    {packs.pendingKind === kind && (
                       <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
                     )}
                   </div>
@@ -657,8 +451,7 @@ export default function AdminSocialStudio() {
                       <Plus className="mr-1 h-3 w-3" /> Template
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+              </PackPreviewTile>
             );
           })}
         </div>
@@ -866,187 +659,3 @@ export default function AdminSocialStudio() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Match summary auto-draft settings
-// ---------------------------------------------------------------------------
-
-/** Per-grade match summary config shape (matches the OpenAPI schema). */
-type MatchSummaryGradeConfig = Record<string, { enabled: boolean }>;
-
-const SENIOR_GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "One Day",
-  "T20",
-];
-const JUNIOR_GRADES = ["Under 10", "Under 12", "Under 14", "Under 16"];
-const ALL_DEFAULT_GRADES = [...SENIOR_GRADES, ...JUNIOR_GRADES];
-
-function isJuniorGrade(grade: string): boolean {
-  return JUNIOR_GRADES.includes(grade) || /^under\s/i.test(grade);
-}
-
-function MatchSummarySettings({
-  settings,
-  onSaved,
-}: {
-  settings: SocialSettings;
-  onSaved: () => void;
-}) {
-  const [masterEnabled, setMasterEnabled] = useState<boolean>(
-    settings.engineMatchSummary === true,
-  );
-  const [autoseedEnabled, setAutoseedEnabled] = useState<boolean>(
-    settings.autoseedCarousels === true,
-  );
-  const [gradeConfig, setGradeConfig] = useState<MatchSummaryGradeConfig>(
-    () => settings.matchSummaryGradeConfig ?? {},
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  const update = useUpdateSocialSettings({
-    mutation: {
-      onSuccess: () => {
-        setError(null);
-        onSaved();
-      },
-      onError: (e) => setError(handleAdminMutationError(e)),
-    },
-  });
-
-  useEffect(() => {
-    setMasterEnabled(settings.engineMatchSummary === true);
-    setAutoseedEnabled(settings.autoseedCarousels === true);
-    setGradeConfig(settings.matchSummaryGradeConfig ?? {});
-  }, [settings]);
-
-  // Merge default grades with any extra grades stored in the config.
-  const allGrades = useMemo(() => {
-    const set = new Set(ALL_DEFAULT_GRADES);
-    for (const g of Object.keys(gradeConfig)) set.add(g);
-    return Array.from(set);
-  }, [gradeConfig]);
-
-  const isGradeEnabled = (grade: string): boolean => {
-    if (gradeConfig[grade] !== undefined) return gradeConfig[grade].enabled;
-    // Default: senior grades ON, junior grades OFF.
-    return !isJuniorGrade(grade);
-  };
-
-  const toggleGrade = (grade: string, enabled: boolean) => {
-    setGradeConfig((prev) => ({ ...prev, [grade]: { enabled } }));
-  };
-
-  const save = () => {
-    setError(null);
-    update.mutate({
-      data: {
-        engineMatchSummary: masterEnabled,
-        autoseedCarousels: autoseedEnabled,
-        matchSummaryGradeConfig: gradeConfig,
-      },
-    });
-  };
-
-  return (
-    <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Match summary auto-draft</h2>
-      <Card>
-        <CardContent className="space-y-6 pt-6">
-          {/* Master toggle */}
-          <div className="flex items-start justify-between gap-3 border rounded p-3">
-            <div>
-              <div className="font-medium">Match Summary Auto-Draft</div>
-              <div className="text-xs text-muted-foreground">
-                Automatically draft match summary cards when results are
-                committed
-              </div>
-            </div>
-            <Switch
-              checked={masterEnabled}
-              onCheckedChange={setMasterEnabled}
-            />
-          </div>
-
-          {/* Per-grade config — visible only when master switch is on */}
-          {masterEnabled && (
-            <div className="space-y-3">
-              <div>
-                <h3 className="font-semibold mb-1 text-sm uppercase tracking-wide text-muted-foreground">
-                  Grade Configuration
-                </h3>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Control which grades auto-draft match summary cards. Senior
-                  grades default to ON, junior grades default to OFF.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                {allGrades.map((grade) => {
-                  const junior = isJuniorGrade(grade);
-                  return (
-                    <div
-                      key={grade}
-                      className="flex items-center justify-between gap-3 border rounded p-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        {junior && (
-                          <span
-                            className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: "#42342B" }}
-                            title="Junior grade"
-                          />
-                        )}
-                        <span className="font-medium text-sm">{grade}</span>
-                        {junior && (
-                          <span className="text-[10px] text-muted-foreground">
-                            Junior
-                          </span>
-                        )}
-                      </div>
-                      <Switch
-                        checked={isGradeEnabled(grade)}
-                        onCheckedChange={(v) => toggleGrade(grade, v)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Auto-seed carousels toggle (dormant by default). Turns a round's
-              APPROVED match-summary drafts into a carousel set. */}
-          <div className="flex items-start justify-between gap-3 border rounded p-3">
-            <div>
-              <div className="font-medium">Auto-Seed Round Carousels</div>
-              <div className="text-xs text-muted-foreground">
-                When a round's match-summary drafts are approved, assemble them
-                into one carousel set (re-running updates the same set)
-              </div>
-            </div>
-            <Switch
-              checked={autoseedEnabled}
-              onCheckedChange={setAutoseedEnabled}
-            />
-          </div>
-
-          {error && <div className="text-sm text-destructive">{error}</div>}
-
-          <div className="flex justify-end">
-            <Button onClick={save} disabled={update.isPending}>
-              {update.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Save settings
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
