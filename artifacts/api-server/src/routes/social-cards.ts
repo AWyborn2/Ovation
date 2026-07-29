@@ -425,7 +425,15 @@ router.get("/card-templates", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
   try {
     await ensurePackTemplates(tenantId);
-  } catch { /* pack provisioning is best-effort; listing proceeds without */ }
+  } catch (err) {
+    // Provisioning is best-effort — listing proceeds without it. But it must
+    // not be SILENT: the reconciling upsert names a partial-index arbiter, so a
+    // schema that predates `card_templates_pack_unique` raises 42P10 here, and
+    // an unlogged throw is indistinguishable from the stale-row bug the upsert
+    // exists to fix. `ensuredTenants` is only marked after a successful write,
+    // so a failure retries on the next request rather than sticking.
+    req.log.error({ err }, "pack template provisioning failed");
+  }
   const rows = await db
     .select()
     .from(cardTemplatesTable)

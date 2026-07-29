@@ -229,8 +229,11 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    // `matchSummary` is currently claimed by Broadcast Dark.
-    expect(selectorFor("Match Summary").value).toBe("broadcast-dark-v1");
+    // `matchSummary` is currently claimed by Broadcast Dark. A default-pack
+    // claim presents as the leading "" option — the same option an unclaimed
+    // kind sits on, because both render that pack. The list carries the default
+    // pack once, not twice under two values that do the same thing.
+    expect(selectorFor("Match Summary").value).toBe("");
     fireEvent.change(selectorFor("Match Summary"), {
       target: { value: "gold-foil-v1" },
     });
@@ -297,9 +300,14 @@ describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
 
-    // The tenant's own default still reads as one…
-    expect(screen.getByText("Default template: My Player Layout")).toBeInTheDocument();
-    // …but pack claims never surface as a "Default template" caption.
+    // The tenant's own default still gets a caption — a "layers" template
+    // overrides the pack outright, so it reads as the override rather than a
+    // plain default, and it is captioned exactly once (not once per phrasing).
+    expect(
+      screen.getByText("Overridden by template: My Player Layout"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Default template: My Player Layout/)).toBeNull();
+    // Pack claims never surface as a "Default template" caption at all.
     expect(screen.queryByText(/Default template: Gold Foil/)).toBeNull();
     expect(screen.queryByText(/Default template: Broadcast Dark/)).toBeNull();
   });

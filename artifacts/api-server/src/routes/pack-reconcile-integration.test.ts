@@ -43,6 +43,8 @@ const STAMP = Date.now();
 
 describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the registry", () => {
   let tenantId: number;
+  /** A second tenant that no test acts on — the isolation control. */
+  let otherTenantId: number;
 
   /** Every pack row currently stored for the synthetic tenant. */
   async function packRows() {
@@ -111,6 +113,18 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
       })
       .returning();
     tenantId = tenant.id;
+
+    const [other] = await D.db
+      .insert(D.tenantsTable)
+      .values({
+        slug: `pack-reconcile-other-${STAMP}`,
+        centralClubId: 997,
+        appClubId: null,
+        name: "Pack Reconcile Bystander Tenant",
+        plan: "pilot",
+      })
+      .returning();
+    otherTenantId = other.id;
   });
 
   beforeEach(async () => {
@@ -118,12 +132,54 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
   });
 
   afterAll(async () => {
-    if (!tenantId) return;
-    await D.db
-      .delete(D.cardTemplatesTable)
-      .where(eq(D.cardTemplatesTable.tenantId, tenantId));
-    await D.db.delete(D.tenantsTable).where(eq(D.tenantsTable.id, tenantId));
+    for (const id of [tenantId, otherTenantId]) {
+      if (!id) continue;
+      await D.db
+        .delete(D.cardTemplatesTable)
+        .where(eq(D.cardTemplatesTable.tenantId, id));
+      await D.db.delete(D.tenantsTable).where(eq(D.tenantsTable.id, id));
+    }
     P._resetEnsuredTenants();
+  });
+
+  // --- tenant isolation -----------------------------------------------------
+  // CONTRIBUTING.md requires extending the isolation suites whenever a
+  // tenant-scoped table's write path changes, and this upsert is the first
+  // write-path change to `card_templates` since that policy was written. The
+  // conflict target carries `tenantId`, so a mis-specified arbiter is the one
+  // way reconciliation could reach across tenants — assert it cannot.
+
+  it("reconciling one tenant neither creates nor mutates another tenant's rows", async () => {
+    // A bystander tenant with a deliberately stale row and its own selection.
+    await D.db.insert(D.cardTemplatesTable).values({
+      tenantId: otherTenantId,
+      name: "Sunset — Square (bystander, stale)",
+      cardKinds: ["matchSummary"],
+      source: "pack",
+      packId: "sunset-v1",
+      packVariant: "square",
+      backgroundKind: "image",
+      motionPreset: "none",
+      bgWidth: 999,
+      bgHeight: 999,
+      slots: [],
+      isActive: true,
+      isDefault: false,
+      displayOrder: 0,
+      defaultForKinds: ["matchSummary"],
+    });
+
+    await P.ensurePackTemplates(tenantId);
+
+    const bystander = await D.db
+      .select()
+      .from(D.cardTemplatesTable)
+      .where(eq(D.cardTemplatesTable.tenantId, otherTenantId));
+
+    // Untouched: still exactly one row, still stale, still holding its claim.
+    expect(bystander).toHaveLength(1);
+    expect(bystander[0].cardKinds).toEqual(["matchSummary"]);
+    expect(bystander[0].defaultForKinds).toEqual(["matchSummary"]);
   });
 
   // --- materialisation ------------------------------------------------------

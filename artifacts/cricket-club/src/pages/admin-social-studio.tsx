@@ -175,8 +175,23 @@ export default function AdminSocialStudio() {
 
   // The pack each kind resolves to today, read once through the single reader
   // so the selectors, the thumbnails and the pack cards' counts cannot disagree.
-  const packIdByKind = new Map<CardKind, string | null>(
-    ALL_CARD_KINDS.map((k) => [k, resolvePackIdForKind(templates, k)] as const),
+  // Memoised on `templates` alongside the selectable-pack options: both are
+  // rebuilt only when the template list actually changes, not on every
+  // pending/error state toggle.
+  const packIdByKind = useMemo(
+    () =>
+      new Map<CardKind, string | null>(
+        ALL_CARD_KINDS.map((k) => [k, resolvePackIdForKind(templates, k)] as const),
+      ),
+    [templates],
+  );
+
+  const selectablePacksByKind = useMemo(
+    () =>
+      new Map<CardKind, string[]>(
+        ALL_CARD_KINDS.map((k) => [k, listSelectablePacksForKind(templates, k)] as const),
+      ),
+    [templates],
   );
 
   const baseOpts: RenderOptions = {
@@ -202,6 +217,19 @@ export default function AdminSocialStudio() {
   // ladder's highlighted row is Mandurah's — not a generic "Sample Club". The
   // thumbnails then read as "our cards", not a stranger's.
   const galleryClubName = shortClubName(bundle?.brand?.name ?? "") || undefined;
+
+  // One sample input per card kind, memoised for the same reason as the payload
+  // below: `sampleCardInput` deep-clones whenever a club name is supplied, so
+  // calling it inline in JSX handed <PackCard> a fresh `input` identity on every
+  // render. `input` is one of that component's html-memo keys, so all 23 mounts
+  // re-ran the expensive renderPackCard on any unrelated state change.
+  const galleryInputByKind = useMemo(() => {
+    const out = new Map<CardKind, ShareCardInput>();
+    for (const o of CARD_KIND_OPTIONS) {
+      out.set(o.value, sampleCardInput(o.value, galleryClubName));
+    }
+    return out;
+  }, [galleryClubName]);
 
   // One payload per card kind, memoised so <PackCard>'s html memo (keyed on
   // `data` identity) is not defeated on every parent re-render.
@@ -301,7 +329,23 @@ export default function AdminSocialStudio() {
     );
   };
 
-  const handleSelectPack = (kind: CardKind, value: string) => {
+  const handleSelectPack = async (kind: CardKind, value: string) => {
+    // Claiming ONE kind clears it from the tenant's own templates just as the
+    // bulk path does — `clearDefaultKinds` is source-agnostic. Confirm on the
+    // same terms, or this surface quietly destroys the very template the card's
+    // "Overridden by template" caption is pointing at.
+    const cleared = byoDefaultsClearedBy(templates, [kind]);
+    if (cleared.length > 0) {
+      const ok = await confirm({
+        title: `Use ${packName(value || DEFAULT_PACK_ID)} for ${kindLabel(kind)}?`,
+        description: `"${cleared[0].name}" is currently the default for ${kindLabel(
+          kind,
+        )} and will lose it. That template overrides the pack, so this changes which design ships.`,
+        confirmText: "Use this pack",
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     // "" is the leading option: the default pack, written as an explicit claim
     // rather than an empty body, so the choice is stored rather than inferred.
     setPendingKind(kind);
@@ -462,8 +506,12 @@ export default function AdminSocialStudio() {
           </p>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {availablePacks.map((m) => {
+              // An unclaimed kind resolves to `null`, which RENDERS as the
+              // default pack — so count it toward that pack, or a fresh tenant
+              // reads "Not used by any card type" on Broadcast Dark while every
+              // selector below simultaneously reports it as "(default)".
               const owned = ALL_CARD_KINDS.filter(
-                (k) => packIdByKind.get(k) === m.packId,
+                (k) => (packIdByKind.get(k) ?? DEFAULT_PACK_ID) === m.packId,
               ).length;
               return (
                 <Card key={m.packId} className="overflow-hidden">
@@ -474,7 +522,10 @@ export default function AdminSocialStudio() {
                     }}
                   >
                     <PackCard
-                      input={sampleCardInput("matchSummary", galleryClubName)}
+                      input={
+        galleryInputByKind.get("matchSummary") ??
+        sampleCardInput("matchSummary", galleryClubName)
+      }
                       size={THUMB_SIZE}
                       sponsorsOn
                       junior={false}
@@ -529,7 +580,7 @@ export default function AdminSocialStudio() {
                   }}
                 >
                   <PackCard
-                    input={sampleCardInput(kind, galleryClubName)}
+                    input={galleryInputByKind.get(kind) ?? sampleCardInput(kind, galleryClubName)}
                     size={THUMB_SIZE}
                     sponsorsOn
                     junior={false}
@@ -546,15 +597,35 @@ export default function AdminSocialStudio() {
                     <select
                       aria-label={`Design pack for ${o.label}`}
                       className="h-7 w-full min-w-0 rounded-md border bg-background px-1 text-[11px]"
-                      value={packIdByKind.get(kind) ?? ""}
-                      disabled={pendingKind === kind}
+                      // No claim and an explicit default-pack claim render the
+                      // same card, so both present as the leading "" option —
+                      // otherwise an explicit default claim holds a value that
+                      // the filtered option list no longer contains and the
+                      // control goes blank.
+                      value={
+                        (packIdByKind.get(kind) ?? DEFAULT_PACK_ID) === DEFAULT_PACK_ID
+                          ? ""
+                          : packIdByKind.get(kind)!
+                      }
+                      // Gate on ANY in-flight pack write, not just this kind's.
+                      // Every kind of a pack claims through the same canonical
+                      // row and the PATCH replaces the whole array, so a second
+                      // selection made against the pre-write cache would drop
+                      // the first claim.
+                      disabled={pendingKind !== null || bulkPackId !== null}
                       onChange={(e) => handleSelectPack(kind, e.target.value)}
                     >
                       {/* Explicit leading option: without it a kind with no
                           claim holds a value absent from the option list and
                           the control renders blank. */}
                       <option value="">{DEFAULT_PACK_NAME} (default)</option>
-                      {listSelectablePacksForKind(templates, kind).map((p) => (
+                      {/* The default pack already has the leading option above;
+                          it is also registered and covers every kind, so mapping
+                          it again would list it twice under two values that
+                          apply the same pack. */}
+                      {(selectablePacksByKind.get(kind) ?? [])
+                        .filter((p) => p !== DEFAULT_PACK_ID)
+                        .map((p) => (
                         <option key={p} value={p}>
                           {packName(p)}
                         </option>
@@ -564,14 +635,14 @@ export default function AdminSocialStudio() {
                       <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
                     )}
                   </div>
-                  {def?.source === "layers" && (
-                    <p className="truncate text-[11px] text-muted-foreground">
-                      Overridden by template: {def.name}
-                    </p>
-                  )}
                   {def && (
+                    // A "layers" template makes the card bypass the pack
+                    // entirely, so the selector above it is not what ships —
+                    // say so, rather than captioning it as a plain default.
                     <p className="truncate text-[11px] text-muted-foreground">
-                      Default template: {def.name}
+                      {def.source === "layers"
+                        ? `Overridden by template: ${def.name}`
+                        : `Default template: ${def.name}`}
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1.5">

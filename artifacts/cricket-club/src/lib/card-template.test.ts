@@ -185,18 +185,9 @@ describe("resolveTextField", () => {
 });
 
 describe("resolvePackIdForKind", () => {
-  const row = (over: Partial<CardTemplate>): CardTemplate =>
-    ({
-      id: 1,
-      name: "row",
-      cardKinds: [],
-      isActive: true,
-      isDefault: false,
-      source: "pack",
-      packId: null,
-      defaultForKinds: [],
-      ...over,
-    }) as CardTemplate;
+  // Shares the module-level `tpl` builder with the helper suites below — the
+  // two were byte-identical.
+  const row = tpl;
 
   it("returns null when there are no templates (caller uses the default pack)", () => {
     expect(resolvePackIdForKind([], "milestone")).toBeNull();

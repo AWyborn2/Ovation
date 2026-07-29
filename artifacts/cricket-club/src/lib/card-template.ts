@@ -236,6 +236,31 @@ export const templateAppliesToKind = (
   template.isActive &&
   (template.cardKinds.length === 0 || template.cardKinds.includes(kind));
 
+const isPackRow = (t: CardTemplate): boolean => t.source === "pack";
+
+/**
+ * The row that is the default for `kind` among templates matching `matchesSource`,
+ * honouring the per-kind claim first and the legacy global `isDefault` flag second.
+ *
+ * Shared by the two resolvers below, which differ only in which side of the
+ * `source: "pack"` split they read and what they pull off the winning row.
+ */
+const findDefaultRow = (
+  templates: readonly CardTemplate[] | undefined | null,
+  kind: CardKind,
+  matchesSource: (t: CardTemplate) => boolean,
+): CardTemplate | null => {
+  if (!templates?.length) return null;
+  const rows = templates.filter(
+    (t) => matchesSource(t) && templateAppliesToKind(t, kind),
+  );
+  return (
+    rows.find((t) => t.defaultForKinds?.includes(kind)) ??
+    rows.find((t) => t.isDefault) ??
+    null
+  );
+};
+
 /**
  * The design pack a tenant has chosen for `kind`, or `null` for the default.
  *
@@ -251,16 +276,7 @@ export const templateAppliesToKind = (
 export const resolvePackIdForKind = (
   templates: readonly CardTemplate[] | undefined | null,
   kind: CardKind,
-): string | null => {
-  if (!templates?.length) return null;
-  const packRows = templates.filter(
-    (t) => t.source === "pack" && templateAppliesToKind(t, kind),
-  );
-  const chosen =
-    packRows.find((t) => t.defaultForKinds?.includes(kind)) ??
-    packRows.find((t) => t.isDefault);
-  return chosen?.packId ?? null;
-};
+): string | null => findDefaultRow(templates, kind, isPackRow)?.packId ?? null;
 
 /**
  * The design packs a tenant may choose for `kind` — the distinct `packId`s that
@@ -381,17 +397,7 @@ export const byoDefaultsClearedBy = (
 export const resolveDefaultLayoutTemplate = (
   templates: readonly CardTemplate[] | undefined | null,
   kind: CardKind,
-): CardTemplate | null => {
-  if (!templates?.length) return null;
-  const byoRows = templates.filter(
-    (t) => t.source !== "pack" && templateAppliesToKind(t, kind),
-  );
-  return (
-    byoRows.find((t) => t.defaultForKinds?.includes(kind)) ??
-    byoRows.find((t) => t.isDefault) ??
-    null
-  );
-};
+): CardTemplate | null => findDefaultRow(templates, kind, (t) => !isPackRow(t));
 
 export type TemplateContext = {
   clubName?: string;
