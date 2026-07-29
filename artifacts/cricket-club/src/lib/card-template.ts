@@ -1,6 +1,7 @@
 import type { CardTemplate, CardTemplateSlot } from "@workspace/api-client-react";
 import { DEFAULT_BRAND } from "@workspace/scorecard";
 import type { CardKind, ShareCardInput } from "./share-card";
+import { listPackManifests } from "./pack-templates/registry";
 
 export type { CardTemplate, CardTemplateSlot };
 
@@ -259,6 +260,137 @@ export const resolvePackIdForKind = (
     packRows.find((t) => t.defaultForKinds?.includes(kind)) ??
     packRows.find((t) => t.isDefault);
   return chosen?.packId ?? null;
+};
+
+/**
+ * The design packs a tenant may choose for `kind` — the distinct `packId`s that
+ * have an active `source: "pack"` row applying to that kind.
+ *
+ * Filtering goes through {@link templateAppliesToKind} so "applies to this
+ * kind" means exactly what {@link resolvePackIdForKind} means by it: a pack the
+ * switcher offers is always a pack the resolver can then return.
+ *
+ * Ordered by `listPackManifests()` (registration order) so the switcher's
+ * option list matches the catalogue rather than the row ids the rows happened
+ * to be materialised with. A row whose `packId` is not registered — a pack
+ * withdrawn from the code but still present in the tenant's rows — is appended
+ * after the registered packs, lowest row id first, so it stays selectable
+ * (`getPackManifest` falls back for it) without displacing the catalogue.
+ */
+export const listSelectablePacksForKind = (
+  templates: readonly CardTemplate[] | undefined | null,
+  kind: CardKind,
+): string[] => {
+  if (!templates?.length) return [];
+  const lowestIdByPack = new Map<string, number>();
+  for (const t of templates) {
+    if (t.source !== "pack" || !t.packId) continue;
+    if (!templateAppliesToKind(t, kind)) continue;
+    const seen = lowestIdByPack.get(t.packId);
+    if (seen === undefined || t.id < seen) lowestIdByPack.set(t.packId, t.id);
+  }
+  if (lowestIdByPack.size === 0) return [];
+
+  const registered = listPackManifests()
+    .map((m) => m.packId)
+    .filter((packId) => lowestIdByPack.has(packId));
+  const unregistered = [...lowestIdByPack.entries()]
+    .filter(([packId]) => !registered.includes(packId))
+    .sort((a, b) => a[1] - b[1])
+    .map(([packId]) => packId);
+  return [...registered, ...unregistered];
+};
+
+/**
+ * The one row a pack's default-for-kind claim is written to: the lowest-id
+ * active `source: "pack"` row for `packId`, or `null` when the pack has none.
+ *
+ * A pack materialises three rows (square / portrait / story) and
+ * {@link resolvePackIdForKind} reads only `packId`, so any of them would
+ * resolve — but writing to more than one is wrong. The server's
+ * `clearDefaultKinds` strips the claimed kinds from every *other* row on each
+ * PATCH, so sequential writes across the variants would leave only the last.
+ * Every caller claims through this helper so they all agree on which row that
+ * is. Kind scope is deliberately not considered: the variants of a pack share
+ * the pack's `cardKinds`, and the claim belongs to the pack, not a format.
+ */
+export const canonicalPackRowFor = (
+  templates: readonly CardTemplate[] | undefined | null,
+  packId: string,
+): CardTemplate | null => {
+  if (!templates?.length || !packId) return null;
+  let chosen: CardTemplate | null = null;
+  for (const t of templates) {
+    if (t.source !== "pack" || t.packId !== packId || !t.isActive) continue;
+    if (!chosen || t.id < chosen.id) chosen = t;
+  }
+  return chosen;
+};
+
+/**
+ * The `defaultForKinds` value to PATCH so `row` claims `kind`, added
+ * idempotently — re-claiming a kind the row already owns is a no-op rather than
+ * a duplicate entry. Returns a new array; the row is never mutated.
+ */
+export const nextDefaultForKinds = (
+  row: Pick<CardTemplate, "defaultForKinds"> | undefined | null,
+  kind: CardKind,
+): string[] => {
+  const current = row?.defaultForKinds ?? [];
+  return current.includes(kind) ? [...current] : [...current, kind];
+};
+
+/**
+ * The tenant's own (non-pack) templates that currently hold a default for any
+ * of `kinds` — i.e. exactly what a pack claim over those kinds will strip.
+ *
+ * `defaultForKinds` is one namespace shared by pack rows and tenant-authored
+ * templates, and the server's `clearDefaultKinds` filters on tenant and array
+ * overlap only — it is source-agnostic and does not look at `isActive`. So
+ * claiming a kind for a pack silently clears that kind's default from the
+ * tenant's own `layers` / `background` templates, which changes which renderer
+ * runs for the card. This mirrors that predicate (minus the source, which is
+ * inverted here) so the UI can state the cost before the write lands.
+ */
+export const byoDefaultsClearedBy = (
+  templates: readonly CardTemplate[] | undefined | null,
+  kinds: readonly CardKind[],
+): CardTemplate[] => {
+  if (!templates?.length || !kinds.length) return [];
+  return templates.filter(
+    (t) =>
+      t.source !== "pack" && (t.defaultForKinds ?? []).some((k) => kinds.includes(k as CardKind)),
+  );
+};
+
+/**
+ * The tenant-authored template the export modal pre-selects for `kind`, or
+ * `null` to keep the built-in layout.
+ *
+ * `source: "pack"` rows are deliberately excluded. A pack row records *which
+ * design pack* a kind uses; that decision is read in exactly one place,
+ * {@link resolvePackIdForKind}, and the modal takes its pack from there like
+ * the gallery, composer and carousel do. A pack row is not a BYO layout choice,
+ * so treating one as the modal's pre-selected template would show a pack
+ * variant row (always the canonical square one, whatever size is being
+ * exported) in the layout control as though an admin had picked it — and route
+ * the card down the selected-template path instead of the pack path. The
+ * exclusion covers the legacy global `isDefault` fallback too, since nothing
+ * stops a pack row carrying that flag.
+ */
+export const resolveDefaultLayoutTemplate = (
+  templates: readonly CardTemplate[] | undefined | null,
+  kind: CardKind,
+): CardTemplate | null => {
+  if (!templates?.length) return null;
+  const byoRows = templates.filter(
+    (t) => t.source !== "pack" && templateAppliesToKind(t, kind),
+  );
+  return (
+    byoRows.find((t) => t.defaultForKinds?.includes(kind)) ??
+    byoRows.find((t) => t.isDefault) ??
+    null
+  );
 };
 
 export type TemplateContext = {

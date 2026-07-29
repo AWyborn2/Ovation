@@ -55,7 +55,7 @@ import {
   canExportGif,
   videoFormatLabel,
 } from "@/lib/share-card-animation";
-import { templateAppliesToKind } from "@/lib/card-template";
+import { templateAppliesToKind, resolveDefaultLayoutTemplate } from "@/lib/card-template";
 import { PackCard } from "@/components/pack-card";
 import { packSupportsKind, packImageSlots, type PackCardData } from "@/lib/pack-render";
 import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
@@ -240,12 +240,12 @@ export function ShareCardModal({
   // Pre-select the per-kind default template when one applies; otherwise keep
   // built-in. A template is the default for kind K iff K ∈ defaultForKinds;
   // fall back to the legacy global `isDefault` flag for older templates.
+  // `source: "pack"` rows are excluded (see `resolveDefaultLayoutTemplate`):
+  // the pack-per-kind decision is read only via `resolvePackIdForKind`, and a
+  // pack row claiming a kind is not the admin choosing a BYO layout.
   useEffect(() => {
     if (!open || layoutTouched || !input) return;
-    const def =
-      applicableTemplates.find((t) =>
-        t.defaultForKinds?.includes(input.kind),
-      ) ?? applicableTemplates.find((t) => t.isDefault);
+    const def = resolveDefaultLayoutTemplate(applicableTemplates, input.kind);
     if (def) setLayoutId(def.id);
   }, [open, layoutTouched, applicableTemplates, input]);
   // Reset the layout choice each time the modal opens or the card changes.
