@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { db, cardTemplatesTable } from "@workspace/db";
 
 // ---------------------------------------------------------------------------
@@ -271,12 +272,20 @@ export function _resetEnsuredTenants(): void {
   ensuredTenants.clear();
 }
 
+// Cached per-tenant for the lifetime of the process. This cannot hide a
+// coverage change: `PACKS` is compile-time data, so a pack gaining a card kind
+// always arrives with a new process, which starts with an empty cache.
+// Reconciliation on first-touch-per-process is therefore sufficient.
 const ensuredTenants = new Set<number>();
 
 /**
  * Ensure every registered design-pack variant has a corresponding
- * `card_templates` row for `tenantId`. Idempotent — skips variants that
- * already have a row (matched on tenantId + source + packId + packVariant).
+ * `card_templates` row for `tenantId`, and RECONCILE any row that already
+ * exists back to the registry (matched on tenantId + source + packId +
+ * packVariant). Without the reconcile half, a pack whose `cardKinds` grew after
+ * a tenant's rows were first materialised stays frozen at its old coverage and
+ * is never offered for the kinds it now renders.
+ *
  * Results are cached per-tenant for the lifetime of the process.
  */
 export async function ensurePackTemplates(tenantId: number): Promise<void> {
@@ -300,7 +309,46 @@ export async function ensurePackTemplates(tenantId: number): Promise<void> {
     })),
   );
   if (rows.length > 0) {
-    await db.insert(cardTemplatesTable).values(rows).onConflictDoNothing();
+    await db
+      .insert(cardTemplatesTable)
+      .values(rows)
+      .onConflictDoUpdate({
+        target: [
+          cardTemplatesTable.tenantId,
+          cardTemplatesTable.source,
+          cardTemplatesTable.packId,
+          cardTemplatesTable.packVariant,
+        ],
+        // `card_templates_pack_unique` is a PARTIAL unique index
+        // (`.where(sql`source = 'pack'`)`, lib/db/src/schema/social_cards.ts).
+        // Postgres will NOT infer a partial index as an ON CONFLICT arbiter
+        // from a bare column list — it raises 42P10. The previous
+        // `onConflictDoNothing()` got away with a bare target because DO
+        // NOTHING needs no arbiter; DO UPDATE does. Repeating the index
+        // predicate here is mandatory, and getting it wrong fails SILENTLY:
+        // the caller (routes/social-cards.ts:426-428) wraps this in a
+        // best-effort catch, so a 42P10 produces no error, no log, and
+        // symptoms identical to the stale-row defect this fixes.
+        targetWhere: sql`source = 'pack'`,
+        // REGISTRY-OWNED COLUMNS ONLY. The exclusion list below is
+        // load-bearing, not an oversight:
+        //   defaultForKinds — which kinds the tenant pointed at this pack
+        //   isActive        — a pack the tenant switched off
+        //   displayOrder    — the tenant's ordering
+        //   isDefault       — legacy global default, still read as a fallback
+        //                     by the client's resolvePackIdForKind
+        // All four are TENANT selection state. Including any of them here
+        // would reset every tenant's pack choice on every server restart —
+        // the reconcile would become the bug.
+        set: {
+          cardKinds: sql`excluded.card_kinds`,
+          name: sql`excluded.name`,
+          bgWidth: sql`excluded.bg_width`,
+          bgHeight: sql`excluded.bg_height`,
+          backgroundKind: sql`excluded.background_kind`,
+          motionPreset: sql`excluded.motion_preset`,
+        },
+      });
   }
   ensuredTenants.add(tenantId);
 }
