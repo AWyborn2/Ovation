@@ -265,10 +265,24 @@ correctness cleanup to fold in.
 
 ## Design packs roadmap
 
-### Packs B–E (Gold Foil, Bold Type, Neon Night, Sunset)
+### Packs B–E (Gold Foil, Bold Type, Neon Night, Sunset) — ✅ SHIPPED (2026-07-29)
 - **What:** Ship the remaining four packs from the same Claude Design bundle using
   the HTML-template pipeline established for Pack A.
-- **⚠️ Corrected 2026-07-27 — this is NOT cheap, and the renderer is NOT pack-agnostic.**
+- **✅ Done.** The four remaining packs shipped across PRs **#103–#108**
+  (`git log --oneline --merges`: #103 `feat/pack-b-gold-foil`, #104
+  `feat/pack-catalogue-guardrails`, #105 `feat/pack-b-remaining-cards`, #106
+  `feat/pack-c-bold-type`, #107 `feat/pack-d-neon-night`, #108
+  `feat/pack-e-sunset`), completing the **five-pack catalogue** alongside the
+  pre-existing Pack A. All five are registered in
+  `artifacts/cricket-club/src/lib/pack-templates/registry.ts:34-40`, and each
+  ships **20 designs over 18 card kinds** (`<pack>/index.ts`, e.g.
+  `gold-foil/index.ts:27-28,38-79`). The renderer refactor the correction note
+  below called for landed with them: `getPackManifest(packId)` (`registry.ts:61`)
+  is the seam, and `renderPackCard` now takes a `packId`.
+- **Both 2026-07-27 corrections below are historical**, kept because they record
+  why the original estimate was wrong — not because anything is outstanding. One
+  of them is itself wrong; see the ⚠️ under the table.
+- **⚠️ Corrected 2026-07-27 (historical) — this is NOT cheap, and the renderer is NOT pack-agnostic.**
   The original estimate below was wrong on two counts, both verified against the code
   and the bundle:
   1. **The renderer is hard-wired to Pack A.** `pack-render.ts` imports
@@ -296,6 +310,38 @@ correctness cleanup to fold in.
      So each of B–E needs ~20 story transcriptions **plus ~18 authored portrait/square
      reflows** (not 20). Pack A had all 40 in the bundle, which is why its
      transcription was "mostly transcription" and B–E's will not be.
+
+     > **⚠️ Corrected 2026-07-29 — the "2" in the B–E rows is wrong; it is 1, and
+     > the arithmetic beside the table is ~19, not ~18.** Transcription found that
+     > only **Match Result** carries per-format *markup* branches. Club
+     > Leaderboard · Wickets' apparent branch is **script-side**: the `isNotStory`
+     > flag lives in the Claude Design runtime script, not the card markup, and the
+     > layout is one fluid column in every format — recorded in the transcription
+     > notes at `artifacts/cricket-club/src/lib/pack-templates/gold-foil/club-leaderboard-wickets.ts:23-26`
+     > ("its markup carries NO isNotStory branch"), with the same finding for the
+     > other script-only flags at `bold-type/club-leaderboard-runs.ts:22`,
+     > `bold-type/record.ts:22`, `neon-night/grade-leader-runs.ts:23` and
+     > `neon-night/record.ts:23`.
+     >
+     > What shipped bears this out. In **every** pack, exactly one design file
+     > declares a distinct `portrait:` format (`match-result.ts`) and the other 19
+     > declare a single `shared:` html serving both portrait and square:
+     >
+     > | Pack | Designs | `shared:` (one reflow) | distinct `portrait:` |
+     > |---|---|---|---|
+     > | A (Broadcast Dark) | 20 | 19 | 1 |
+     > | B (Gold Foil) | 20 | 19 | 1 |
+     > | C (Bold Type) | 20 | 19 | 1 |
+     > | D (Neon Night) | 20 | 19 | 1 |
+     > | E (Sunset) | 20 | 19 | 1 |
+     >
+     > So the per-pack cost for B–E was ~20 story transcriptions **plus ~19
+     > authored portrait/square reflows**. The original table's Pack A row (20/20)
+     > describes the *bundle*, which did supply all 40 — but Pack A's own shipped
+     > transcription collapses to the same 19-`shared`-plus-1 shape, so the
+     > shipped structure is identical across all five packs. The direction of the
+     > 2026-07-27 correction still stands (B–E were not cheap); only the count in
+     > the right-hand column was off.
   All four bundles do contain exactly the same 20 designs and the same
   `data-card-kind` mapping as Pack A, so the per-card scope is at least predictable.
   (`Pack A - Broadcastlight.dc.html`, a light-mode Pack A variant, is also in the
@@ -306,6 +352,15 @@ correctness cleanup to fold in.
   `broadcast-dark.test.ts` (R6) must be extended to the new pack — the bundles were
   authored with real Halls Head data, so their samples carry the same club-identity
   literals Pack A's did.
+  - ✅ **Resolved 2026-07-29 (#104).** Rather than copying the guards per pack, the
+    pack-agnostic contract lives in
+    `artifacts/cricket-club/src/lib/pack-templates/pack-lint.test.ts`, which runs
+    over every registered pack: field-key parity against the reference pack
+    (`:88-126`), every `{{field}}` declared and every declared field used
+    (`:171-202`), no surviving Claude Design runtime constructs (`:157`), no
+    club-identity literal in samples or markup (`:219,263`), and a render of every
+    declared kind at every size with no leftover placeholders (`:276`).
+    `broadcast-dark.test.ts` keeps only the Pack A-specific counts.
 
 ### Animated card variants
 - **What:** Story-format reveal animations per card kind (score reveal, staggered
@@ -318,6 +373,159 @@ correctness cleanup to fold in.
   video path) is intact and untouched — reactivating means giving pack templates a
   motion preset and authoring the per-phase reveals. Revisit the MP4/story-video
   export UI (hidden for pack cards today) when this lands.
+
+---
+
+## Pack-template editing review (2026-07-29)
+
+Written for U5 of
+[docs/plans/2026-07-29-001-feat-pack-switcher-plan.md](../plans/2026-07-29-001-feat-pack-switcher-plan.md)
+(design-pack switcher). The question put: **should the existing "edit card" /
+"create new template" surfaces be replaced by editing the pack templates?**
+Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
+
+### R1. Appearance of a pack card is already editable; structure is not editable at all
+- **What:** This doc's only entry on the topic is
+  [Per-element style overrides ("C later")](#per-element-style-overrides-c-later)
+  under *Deferred product features* — deferred, "needs its own scoping". That
+  entry's "B now" half **did** ship: the curated token themes, `card_themes`
+  (`lib/db/src/schema/social_cards.ts:51-68` — `bgDark`, `bgPanel`, `accent`,
+  `textLight`, `displayFont`, `backgroundImageUrl`, `logoUrl`), edited in the
+  admin **Cards** tab (`/admin/social/cards`, `admin-groups.tsx:119` →
+  `artifacts/cricket-club/src/pages/admin-social.tsx:99,564` — the "Card themes"
+  card).
+- **Why it matters:** Those tokens reach the pack renderer — the Studio gallery
+  passes `theme={galleryTheme}` straight into `<PackCard>`
+  (`admin-social-studio.tsx:345`). So an admin can already re-colour and re-font
+  every pack card. What they cannot do is move, add, remove or resize anything in
+  a pack design: no surface writes to a pack's markup, and no per-element override
+  path exists.
+- **Notes:** Stated plainly — **appearance: editable. Structure: not editable at
+  all.** That asymmetry is the actual current position, and it is not what the
+  deferred entry's wording implies.
+
+### R2. The existing edit/create surfaces do not edit packs — they replace them
+- **What:** Both Studio entry points — the per-card **"+ Template"**
+  (`admin-social-studio.tsx:359-370`, label at :368) and the **"New template"**
+  button (`admin-social-studio.tsx:395-401`, label at :400) — set
+  `editing = { mode: "template-new", baseKind }`, which opens `CardLayoutEditor`
+  in template mode. Its save handler (`components/card-layout-editor.tsx:526-549`,
+  `onSaveTemplate` call at :533) hands the payload
+  back via `onSaveTemplate`, and the page stamps the source on it:
+  `const body = { ...data, source: "layers" as const, baseKind }`
+  (`admin-social-studio.tsx:234`). That is the only writer of `source: "layers"`
+  in the app.
+- **Why it matters — this is the core finding.** A `layers` template does not
+  customise the pack; it **bypasses** it:
+  - `slideRendersViaPack` returns false the moment a layout exists —
+    `if (layout && layout.length > 0) return false;`
+    (`artifacts/cricket-club/src/lib/carousel-slide-render.ts:27-34`, gate at :32).
+  - `isPackCard` is false when a BYO template is selected —
+    `(selectedTemplate === null || isPackTemplate) && packSupportsKind(...)`
+    (`components/share-card-modal.tsx:394-400`), with
+    `isLayerTemplate` routing to the canvas `layout` pipeline instead
+    (`share-card-modal.tsx:270,278,287-290`).
+
+  So "edit this card" today means *author a competing card on the legacy canvas
+  renderer*. The two entry points build a parallel design system alongside the
+  catalogue rather than a way to customise it: the editor is one click away, but
+  nothing it produces reaches a pack design.
+- **Notes:** The schema comment says the same thing in different words
+  (`lib/db/src/schema/social_cards.ts:132-137`): `"layers"` is consumed "via the renderer's `layout`
+  option", `"pack"` is a bundled design pack. They are alternatives, not layers of
+  one thing.
+
+### R3. `source: "layers"` usage across live tenants — NOT VERIFIED
+- **What:** The recommendation in R4 is gated on how many `layers` templates
+  tenants have actually saved. **That number was not obtained, and is
+  deliberately not estimated here.**
+- **Why:** No app database is reachable from this environment. `DATABASE_URL` is
+  unset and the repo carries no `.env`; the only Supabase project available is
+  `ovation-central` (`sbsrjlozgjoavtmdyqit`), which holds the read-only PCA
+  central dataset — `card_templates` is a tenant-app table
+  (`lib/db/src/schema/social_cards.ts:123-174`), not a central one. An enumeration
+  attempt against that project was blocked, and it would have been the wrong
+  database regardless.
+- **Notes:** An operator should run this against the **app** database
+  (`DATABASE_URL`), not `CENTRAL_DATABASE_URL`:
+
+  ```sql
+  -- Per-tenant count of layer-editor templates.
+  SELECT tenant_id,
+         count(*)                                                   AS layer_templates,
+         count(*) FILTER (WHERE is_active)                           AS active,
+         count(*) FILTER (WHERE cardinality(default_for_kinds) > 0)  AS holding_a_kind_default
+  FROM card_templates
+  WHERE source = 'layers'
+  GROUP BY tenant_id
+  ORDER BY layer_templates DESC;
+
+  -- What they were authored for (the "and why" half of the question).
+  -- `layers` is jsonb, not a text[] — jsonb_array_length, not cardinality.
+  SELECT tenant_id, id, name, base_kind, card_kinds, default_for_kinds,
+         is_active, jsonb_array_length(layers) AS layer_count, created_at
+  FROM card_templates
+  WHERE source = 'layers'
+  ORDER BY tenant_id, created_at;
+  ```
+
+  Until that runs, **R4's removal recommendation is conditional**: it is
+  low-risk cleanup only if the count is ~0 outside the Halls Head demo tenant. If
+  tenants hold live layer templates — particularly any with a non-empty
+  `default_for_kinds`, which are actively winning over the pack on those kinds —
+  retiring the entry points is a **capability withdrawal**, not a tidy-up, and has
+  to be scoped and communicated as one.
+
+### R4. Recommendation — replace the layer-editor entry points with pack-template editing, in two layers
+- **What:** Retire "+ Template" / "New template" as the answer to "edit this card",
+  and make pack editing the answer instead, in two layers:
+  - **(a) Pack selection.** Shipping now in
+    [docs/plans/2026-07-29-001-feat-pack-switcher-plan.md](../plans/2026-07-29-001-feat-pack-switcher-plan.md)
+    — a per-kind selector plus "use this pack for all card types", writing the
+    `card_templates.defaultForKinds` claim that `resolvePackIdForKind`
+    (`artifacts/cricket-club/src/lib/card-template.ts:251`) already reads but
+    nothing writes.
+  - **(b) Pack customisation.** Promote the existing **token-theme surface**
+    (`admin-social.tsx` "Card themes", R1) out of the Cards tab and into the
+    Studio, beside the switcher. No new capability — a relocation plus copy — but
+    it is what turns "edit this card" into **"re-token this pack"** rather than
+    "author a competing layout".
+- **Why:** (a) and (b) together cover the real intent behind both entry points
+  (a club wants its cards to look like its club) using surfaces that are already
+  built, tested and pack-aware, while the layer editor answers it with a renderer
+  that discards the catalogue.
+- **Notes — per-element structural overrides stay deferred, with a stronger
+  rationale than in 2026-07-23:**
+  - The blast radius grew by 5×. The deferred entry was written when the surface
+    was one pack. It is now **five packs × 20 designs × 3 formats** — a far larger
+    surface for a free-form editor to break, and every break is silent (a
+    misplaced element renders, it just renders wrong).
+  - There is **no equivalent of `pack-lint` for user-authored layouts.**
+    `artifacts/cricket-club/src/lib/pack-templates/pack-lint.test.ts` holds every
+    registered pack to field-key parity (`:88-126`), no unresolved placeholders
+    (`:171-202,276`), and no club-identity literals (`:219,263`). Nothing checks a
+    `source: "layers"` template at all — grepping `layers` across
+    `artifacts/**/*.test.*` returns only selection-logic fixtures
+    (`card-template.test.ts`) and empty-array assertions
+    (`share-card-pack.test.ts`), no contract over what such a template renders.
+    Whatever an admin saves ships.
+- **Open, deliberately not decided here:** whether (b) should also expose the
+  per-kind theme assignment, and whether the token set (7 fields) is enough to
+  make five packs feel like one club's cards.
+
+### R5. Open question — migration of saved `source: "layers"` templates
+- **What:** If the entry points are retired, what happens to `layers` templates a
+  tenant has already saved? Options seen but **not chosen**: leave them rendering
+  and only remove the authoring entry points (read-only legacy); migrate their
+  colour/font choices into a `card_theme` and drop the geometry; or delete with
+  notice.
+- **Why it stays open:** It cannot be answered before R3's count exists, and the
+  three options differ in whether a tenant loses work.
+- **Notes:** Related precedent is in
+  [Migration / cleanup verification](#migration--cleanup-verification) — the U5
+  retirement migration already deleted all `card_layouts` (slide-level overrides)
+  and that check on real tenant data is still outstanding. Whatever is decided
+  here should be decided together with it, not separately.
 
 ---
 
@@ -357,6 +565,15 @@ correctness cleanup to fold in.
   editing is a possible later upgrade. Carries real risk (users can break the
   compositions) and rebuilds much of the retired layout-editor complexity, so it
   needs its own scoping.
+- **⚠️ Updated 2026-07-29 — still deferred, with a stronger rationale, and the
+  "B now" half is now the recommended replacement for the layer editor.** See
+  [Pack-template editing review (2026-07-29)](#pack-template-editing-review-2026-07-29):
+  R1 records that the curated token themes shipped (`card_themes`) so pack
+  *appearance* is editable while *structure* is not; R4 recommends promoting that
+  same token surface into the Studio as the answer to "edit this card", and gives
+  the two reasons per-element overrides should stay deferred — the surface is now
+  five packs × 20 designs × 3 formats, and `pack-lint.test.ts` has no equivalent
+  for user-authored layouts.
 
 ### Auto-draft engines for the 8 new card kinds
 - **What:** Extend the auto-draft engine (currently `matchSummary` only) to
