@@ -21,6 +21,7 @@ import { BROADCAST_DARK_PACK } from "./broadcast-dark";
 import { GOLD_FOIL_PACK } from "./gold-foil";
 import { BOLD_TYPE_PACK } from "./bold-type";
 import { NEON_NIGHT_PACK } from "./neon-night";
+import { SUNSET_PACK } from "./sunset";
 
 /**
  * The pack used when a caller supplies no `packId`, or supplies one that is not
@@ -35,6 +36,7 @@ const MANIFESTS: readonly PackManifest[] = [
   GOLD_FOIL_PACK,
   BOLD_TYPE_PACK,
   NEON_NIGHT_PACK,
+  SUNSET_PACK,
 ];
 
 const BY_ID: ReadonlyMap<string, PackManifest> = new Map(

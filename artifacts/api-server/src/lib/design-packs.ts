@@ -232,6 +232,35 @@ export const PACKS: DesignPack[] = [
       },
     ],
   },
+  {
+    id: "sunset-v1",
+    name: "Sunset",
+    description:
+      "Golden-hour warmth — photo-first stories over a sunset wash, frosted glass panels and script accent type. Club-social warmth where Broadcast Dark is TV graphics.",
+    // COVERAGE CONTRACT: must match pack-templates/sunset/index.ts (enforced
+    // by pack-coverage-parity.test.ts). Grows card by card.
+    cardKinds: [
+      "matchSummary",
+      "teamList",
+      "weekendWrap",
+      "ladder",
+      "player",
+      "milestone",
+      "debut",
+      "century",
+      "fiveFor",
+      "bigMoment",
+      "matchDay",
+      "countdown",
+      "newSigning",
+      "newCap",
+      "premiership",
+      "record",
+      "gradeLeader",
+      "clubLeaderboard",
+    ],
+    variants: STANDARD_PACK_VARIANTS,
+  },
 ];
 
 export function getPackById(id: string): DesignPack | undefined {
