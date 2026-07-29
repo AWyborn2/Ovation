@@ -15,8 +15,18 @@ type MockRow = {
   [key: string]: unknown;
 };
 
+/** Shape of the `onConflictDoUpdate` config the insert chain receives. */
+type OnConflictConfig = {
+  target?: unknown;
+  targetWhere?: unknown;
+  setWhere?: unknown;
+  set?: Record<string, unknown>;
+};
+
 let insertedRows: MockRow[] = [];
 let existingRows: MockRow[] = [];
+let onConflictDoUpdateCalls: OnConflictConfig[] = [];
+let onConflictDoNothingCalls = 0;
 
 // Drizzle-like chained builder stubs for SELECT.
 function makeSelectChain() {
@@ -50,7 +60,19 @@ function makeInsertChain() {
       insertedRows.push(...arr);
       return {
         returning: () => arr,
-        onConflictDoNothing: () => ({ returning: () => arr }),
+        onConflictDoNothing: () => {
+          onConflictDoNothingCalls += 1;
+          return { returning: () => arr };
+        },
+        // NOTE: this stub records the emitted call shape only. It has no notion
+        // of a pre-existing row and no conflict semantics, so it CANNOT prove
+        // reconciliation — asserting upsert behaviour here would be asserting
+        // the mock. The reconciliation semantics live in
+        // `src/routes/pack-reconcile-integration.test.ts` against a real DB.
+        onConflictDoUpdate: (cfg: OnConflictConfig) => {
+          onConflictDoUpdateCalls.push(cfg);
+          return { returning: () => arr };
+        },
       };
     },
   };
@@ -88,6 +110,8 @@ describe("design-packs registry", () => {
   beforeEach(() => {
     insertedRows = [];
     existingRows = [];
+    onConflictDoUpdateCalls = [];
+    onConflictDoNothingCalls = 0;
     _resetEnsuredTenants();
   });
 
@@ -234,6 +258,71 @@ describe("design-packs registry", () => {
 
     for (const row of insertedRows.filter((r) => r.packId === "broadcast-dark-v1")) {
       expect(row.cardKinds).toEqual(ALL_KINDS);
+    }
+  });
+
+  // --- upsert call shape ----------------------------------------------------
+  // These assert only what the statement LOOKS like. Whether the upsert
+  // actually reconciles a pre-existing row is proven in
+  // `src/routes/pack-reconcile-integration.test.ts` against a real database —
+  // only a real Postgres exercises partial-index arbiter inference.
+
+  it("reconciles via onConflictDoUpdate, not onConflictDoNothing", async () => {
+    await ensurePackTemplates(7);
+
+    expect(onConflictDoUpdateCalls).toHaveLength(1);
+    // DO NOTHING would leave a pack row frozen at first materialisation — the
+    // exact defect this upsert exists to fix.
+    expect(onConflictDoNothingCalls).toBe(0);
+  });
+
+  it("names the four-column conflict target", async () => {
+    await ensurePackTemplates(7);
+
+    const { cardTemplatesTable } = await import("@workspace/db");
+    const cfg = onConflictDoUpdateCalls[0];
+    expect(Array.isArray(cfg.target)).toBe(true);
+    expect(cfg.target).toEqual([
+      cardTemplatesTable.tenantId,
+      cardTemplatesTable.source,
+      cardTemplatesTable.packId,
+      cardTemplatesTable.packVariant,
+    ]);
+  });
+
+  it("repeats the partial index predicate as targetWhere", async () => {
+    await ensurePackTemplates(7);
+
+    // `card_templates_pack_unique` is PARTIAL (`.where(sql`source = 'pack'`)`).
+    // Postgres will not infer a partial index as an ON CONFLICT arbiter from a
+    // bare column list — it raises 42P10, which the caller
+    // (`routes/social-cards.ts:426-428`) swallows, producing symptoms identical
+    // to the stale-row bug. The predicate is mandatory, not polish.
+    const cfg = onConflictDoUpdateCalls[0];
+    expect(cfg.targetWhere).toBeDefined();
+
+    const chunks =
+      (cfg.targetWhere as { queryChunks?: Array<{ value?: string[] }> }).queryChunks ?? [];
+    const rendered = chunks.map((c) => (c.value ?? []).join("")).join("");
+    expect(rendered).toContain("source = 'pack'");
+  });
+
+  it("updates registry-owned columns ONLY — no tenant-owned column in `set`", async () => {
+    await ensurePackTemplates(7);
+
+    const cfg = onConflictDoUpdateCalls[0];
+    const keys = Object.keys(cfg.set ?? {}).sort();
+    expect(keys).toEqual(
+      ["backgroundKind", "bgHeight", "bgWidth", "cardKinds", "motionPreset", "name"].sort(),
+    );
+
+    // Stated separately from the exact-keys assertion so a future widening of
+    // `set` fails with the reason attached: these four are TENANT state. A
+    // blanket update would reset every tenant's pack choice on every restart.
+    for (const tenantOwned of ["defaultForKinds", "isActive", "displayOrder", "isDefault"]) {
+      expect(keys, `${tenantOwned} is tenant-owned and must never be reconciled`).not.toContain(
+        tenantOwned,
+      );
     }
   });
 
