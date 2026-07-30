@@ -341,9 +341,18 @@ export default function AdminSocialStudio() {
 
   return (
     <div className="space-y-8">
-      {error && (
+      {/* Two independent error sources, one banner. `packs.error` was
+          unreachable for a release: the #110 split gave the pack hook its own
+          mutation and its own error state, and nothing was ever wired to read
+          it. There is no toast and no MutationCache handler, so a failing pack
+          write showed as a spinner that changed nothing — which is exactly how
+          a 100%-reproducible 500 from `clearDefaultKinds` stayed invisible.
+          The selector is controlled off server state and always snaps back on
+          the render `setPendingKind` forces, so without this banner a failure
+          is indistinguishable from success. */}
+      {(error || packs.error) && (
         <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
+          {error ?? packs.error}
         </p>
       )}
 

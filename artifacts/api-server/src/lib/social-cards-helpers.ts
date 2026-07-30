@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, arrayOverlaps, eq, sql } from "drizzle-orm";
 import {
   db,
   socialSettingsTable,
@@ -153,6 +153,25 @@ export async function ensureThemes(tenantId: number) {
   });
 }
 
+/**
+ * A `text[]` SQL literal with each element bound as its own parameter:
+ * `ARRAY[$1, $2]::text[]`.
+ *
+ * Interpolating the JS array straight into a template — `${kinds}::text[]` —
+ * does NOT do this, and that is what broke every pack selection. Drizzle's
+ * `buildQueryFromSourceParams` has an `Array.isArray` branch that expands an
+ * array into a parenthesised parameter LIST for `IN (…)` use, so `${kinds}`
+ * renders as `($1)` / `($1, $2)`. Postgres then saw `($1)::text[]` and refused
+ * it — `cannot cast type text to text[]` for a single kind, and a plain syntax
+ * error for two or more. The route has no try/catch, so it surfaced as a bare
+ * 500 with the reason only in the server log.
+ */
+const textArray = (values: string[]) =>
+  sql`ARRAY[${sql.join(
+    values.map((v) => sql`${v}`),
+    sql`, `,
+  )}]::text[]`;
+
 // A card kind may be the default for at most one template. Before a template
 // claims a set of kinds as its defaults, strip those kinds from every other
 // template's `default_for_kinds` array. `exceptId` skips the template being
@@ -163,19 +182,26 @@ export const clearDefaultKinds = async (
   kinds: string[],
   exceptId?: number,
 ): Promise<void> => {
+  // `arrayOverlaps` throws on an empty array, and there is nothing to strip
+  // anyway. Callers already guard this; belt and braces because the throw would
+  // again present as an opaque 500.
+  if (kinds.length === 0) return;
   await tx
     .update(cardTemplatesTable)
     .set({
       defaultForKinds: sql`COALESCE((
         SELECT array_agg(k)
         FROM unnest(${cardTemplatesTable.defaultForKinds}) AS k
-        WHERE k <> ALL(${kinds}::text[])
+        WHERE k <> ALL(${textArray(kinds)})
       ), '{}')`,
     })
     .where(
       and(
         eq(cardTemplatesTable.tenantId, tenantId),
-        sql`${cardTemplatesTable.defaultForKinds} && ${kinds}::text[]`,
+        // Drizzle's own `&&` operator: it binds the array as ONE parameter
+        // encoded by the column, which is exactly what the hand-written
+        // fragment failed to do.
+        arrayOverlaps(cardTemplatesTable.defaultForKinds, kinds),
         exceptId !== undefined ? sql`${cardTemplatesTable.id} <> ${exceptId}` : undefined,
       ),
     );
