@@ -215,7 +215,10 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
 
     const row = await packRow("sunset-v1", "square");
     expect(row!.cardKinds).toEqual(sunsetPack().cardKinds);
-    expect(row!.cardKinds).toHaveLength(18);
+    // Deliberately no absolute count here. The catalogue's size is pinned once,
+    // registry-side, by pack-coverage-parity.test.ts; asserting a literal again
+    // in this file only adds a place to forget. Retiring `newCap` took coverage
+    // from 18 kinds to 17 and this suite was the last thing still claiming 18.
     // The other registry-owned columns reconcile too.
     expect(row!.bgWidth).toBe(1080);
     expect(row!.bgHeight).toBe(1080);
@@ -240,8 +243,9 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
 
     const row = await packRow("sunset-v1", "square");
     expect(row!.defaultForKinds).toEqual(["matchSummary"]);
-    // ...while the registry-owned column beside it still reconciled.
-    expect(row!.cardKinds).toHaveLength(18);
+    // ...while the registry-owned column beside it still reconciled. Seeded
+    // stale as a single kind, so equality with the registry IS the reconcile.
+    expect(row!.cardKinds).toEqual(sunsetPack().cardKinds);
   });
 
   it("preserves isActive: false — a pack row the tenant deactivated", async () => {
@@ -250,7 +254,7 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
 
     const row = await packRow("sunset-v1", "square");
     expect(row!.isActive).toBe(false);
-    expect(row!.cardKinds).toHaveLength(18);
+    expect(row!.cardKinds).toEqual(sunsetPack().cardKinds);
   });
 
   it("preserves a non-default displayOrder", async () => {
@@ -259,7 +263,7 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
 
     const row = await packRow("sunset-v1", "square");
     expect(row!.displayOrder).toBe(7);
-    expect(row!.cardKinds).toHaveLength(18);
+    expect(row!.cardKinds).toEqual(sunsetPack().cardKinds);
   });
 
   it("preserves isDefault: true — still read as a fallback by resolvePackIdForKind", async () => {
@@ -268,7 +272,7 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
 
     const row = await packRow("sunset-v1", "square");
     expect(row!.isDefault).toBe(true);
-    expect(row!.cardKinds).toHaveLength(18);
+    expect(row!.cardKinds).toEqual(sunsetPack().cardKinds);
   });
 
   // --- idempotence: the arbiter actually resolved ---------------------------

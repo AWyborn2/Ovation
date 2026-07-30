@@ -11,6 +11,8 @@ import {
   juniorParticipantsTable,
   adminsTable,
   cardThemesTable,
+  socialSettingsTable,
+  captionTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -131,6 +133,17 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     await db
       .delete(juniorParticipantsTable)
       .where(eq(juniorParticipantsTable.tenantId, tenant2Id));
+    // Rows this suite never inserts but a READ creates: GET /social-settings
+    // calls ensureSettings, which lazily provisions the tenant's settings
+    // singleton and seeds its default caption templates. Both FK to tenants, so
+    // leaving them behind makes the tenant delete below fail — and the failure
+    // surfaces as an opaque teardown error, not as a named test.
+    await db
+      .delete(captionTemplatesTable)
+      .where(eq(captionTemplatesTable.tenantId, tenant2Id));
+    await db
+      .delete(socialSettingsTable)
+      .where(eq(socialSettingsTable.tenantId, tenant2Id));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminT1Id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant2Id));
