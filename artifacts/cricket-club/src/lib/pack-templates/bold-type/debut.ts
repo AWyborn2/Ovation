@@ -122,6 +122,11 @@ const sharedHtml = sharedColumnRoot(
     SHARED_PHOTO +
     `</div>` +
     SHARED_FOOTERS,
+  // Debut's reference design is deliberately logo-only — it declares no
+  // `clubName`, and field-key parity forbids adding one — so the spine keeps
+  // the logo and the gold rule without the vertical name.
+  "",
+  { spineName: false },
 );
 
 export const debut: PackCardTemplate = {
