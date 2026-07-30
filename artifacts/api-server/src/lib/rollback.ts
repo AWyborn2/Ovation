@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { capRegisterTable, playerGradeStatsTable } from "@workspace/db";
 import { GRADE_TO_CAP_CATEGORY, type CapSyncTx } from "./cap-sync";
 
@@ -12,9 +12,14 @@ import { GRADE_TO_CAP_CATEGORY, type CapSyncTx } from "./cap-sync";
  *  - Players no longer in the stats:
  *      • auto-created caps are deleted (the import that issued them was undone);
  *      • manually-entered caps are kept but flagged `inStats = false`, games 0.
+ *
+ * @param tenantId only this club's register is touched. This routine DELETES
+ *        caps, so an unfiltered read here would let one club's rollback erase
+ *        another club's honour roll.
  */
 export async function reverseCapsAfterRollback(
   tx: CapSyncTx,
+  tenantId: number,
   grades: string[],
 ): Promise<void> {
   for (const grade of grades) {
@@ -34,7 +39,15 @@ export async function reverseCapsAfterRollback(
     const caps = await tx
       .select()
       .from(capRegisterTable)
-      .where(eq(capRegisterTable.category, category));
+      .where(
+        and(
+          eq(capRegisterTable.tenantId, tenantId),
+          eq(capRegisterTable.category, category),
+        ),
+      );
+
+    const ownRow = (id: number) =>
+      and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.id, id));
 
     for (const cap of caps) {
       if (cap.playerId == null) continue;
@@ -43,14 +56,14 @@ export async function reverseCapsAfterRollback(
         await tx
           .update(capRegisterTable)
           .set({ inStats: true, gamesAGrade: games })
-          .where(eq(capRegisterTable.id, cap.id));
+          .where(ownRow(cap.id));
       } else if (cap.autoCreated) {
-        await tx.delete(capRegisterTable).where(eq(capRegisterTable.id, cap.id));
+        await tx.delete(capRegisterTable).where(ownRow(cap.id));
       } else {
         await tx
           .update(capRegisterTable)
           .set({ inStats: false, gamesAGrade: 0 })
-          .where(eq(capRegisterTable.id, cap.id));
+          .where(ownRow(cap.id));
       }
     }
   }

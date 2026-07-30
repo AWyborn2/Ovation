@@ -862,7 +862,12 @@ router.post("/players/:id/merge", requireAdmin, async (req, res): Promise<void> 
         .from(playerGradeSeasonStatsTable)
         .where(eq(playerGradeSeasonStatsTable.playerId, duplicateId));
 
-      // Reassign every reference from duplicate → keeper.
+      // Reassign every reference from duplicate → keeper. Deliberately NOT
+      // tenant-filtered, unlike every other cap_register write: merging two
+      // player rows is a change to shared player identity, and the duplicate id
+      // is about to be deleted. Any tenant holding a cap linked to it must
+      // follow the keeper, or the FK's `on delete set null` would quietly
+      // unlink that club's cap.
       await tx
         .update(playerGradeSeasonStatsTable)
         .set({ playerId: keeperId })

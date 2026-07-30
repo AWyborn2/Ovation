@@ -589,6 +589,8 @@ export interface CapSyncSummary {
   category: CapCategory;
   updated: number;
   created: number;
+  /** Players this import would have capped but deliberately did not, because auto-minting was refused for the batch. Non-zero means the cap register is not linked to the roster (a club onboarding with existing history, or seeded caps still carrying player_id = NULL): capping these players automatically would stamp new numbers over a real honour roll, so they must be capped by hand. */
+  skipped: number;
 }
 
 /**

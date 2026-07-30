@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   capRegisterTable,
@@ -24,6 +24,34 @@ export const CAP_CATEGORY_TO_GRADE: Record<"male" | "female", string> = {
   male: "A Grade",
   female: "Female A Grade",
 };
+
+/**
+ * Fill-ins are excluded from every stats derivation (match-aggregate.ts,
+ * points.ts, roundup.ts, stats.ts), so they never accumulate grade games and
+ * would read as permanently uncapped. They are borrowed players, not club
+ * members, and must never be issued a cap. Declared locally, as in
+ * match-milestone-detector.ts / roundup.ts / fixtures.ts / stats.ts.
+ */
+const FILL_IN_FLOOR = 90000;
+
+/**
+ * Circuit breaker on auto-minting. A single import that would cap more than
+ * this many players — AND more than half the squad it fielded — is not a round
+ * of debuts; it is a cap register that has not been linked to the roster yet
+ * (a club onboarding with a century of history, or a seeded register whose rows
+ * still carry `player_id = NULL`). Minting there stamps bogus numbers over a
+ * real honour roll, which is unrecoverable without hand-editing.
+ *
+ * Both conditions are needed. The absolute floor alone would block a small
+ * import where every player genuinely is a debutant; the ratio alone would
+ * block a single-player import. Together they only trip on the shape that
+ * actually signals an unlinked register: a large fraction of a full squad.
+ *
+ * A club that trips this caps its players by hand (the import preview already
+ * flags who is uncapped), after which the register is linked and later imports
+ * mint normally.
+ */
+const MAX_AUTO_DEBUTS = 3;
 
 export type CapRecomputeResult = {
   category: "male" | "female";
@@ -52,9 +80,13 @@ export type CapRecomputeResult = {
  *    their hand-entered state.
  *
  * Safe to run inside or outside an import transaction.
+ *
+ * @param tenantId only this tenant's caps are read and written. `cap_register`
+ *        is curated club content; see the module note on `syncCapsFromStats`.
  */
 export async function recomputeCapsFromStats(
   tx: CapSyncTx,
+  tenantId: number,
   categories: ("male" | "female")[] = ["male", "female"],
 ): Promise<CapRecomputeResult[]> {
   const results: CapRecomputeResult[] = [];
@@ -75,7 +107,12 @@ export async function recomputeCapsFromStats(
     const caps = await tx
       .select()
       .from(capRegisterTable)
-      .where(eq(capRegisterTable.category, category));
+      .where(
+        and(
+          eq(capRegisterTable.tenantId, tenantId),
+          eq(capRegisterTable.category, category),
+        ),
+      );
 
     let updated = 0;
     for (const cap of caps) {
@@ -86,7 +123,12 @@ export async function recomputeCapsFromStats(
         await tx
           .update(capRegisterTable)
           .set({ gamesAGrade: games, inStats })
-          .where(eq(capRegisterTable.id, cap.id));
+          .where(
+            and(
+              eq(capRegisterTable.tenantId, tenantId),
+              eq(capRegisterTable.id, cap.id),
+            ),
+          );
         updated++;
       }
     }
@@ -98,18 +140,26 @@ export async function recomputeCapsFromStats(
 }
 
 /**
- * Player ids that already hold a cap in the given category. Used by the import
- * preview to flag debuts: a player appearing in a cap-eligible grade who is NOT
- * in this set will be issued their first cap on commit. Mirrors the
- * `playerId`-based rule `syncCapsFromStats` uses to decide who needs a new cap.
+ * Player ids that already hold a cap in the given category, for this tenant.
+ * Used by the import preview to flag debuts: a player appearing in a
+ * cap-eligible grade who is NOT in this set is a candidate for their first cap
+ * on commit. Mirrors the `playerId`-based rule `syncCapsFromStats` uses to
+ * decide who needs a new cap — but note the preview cannot know whether the
+ * commit's minting guard will actually issue those caps.
  */
 export async function getCappedPlayerIds(
+  tenantId: number,
   category: "male" | "female",
 ): Promise<Set<number>> {
   const rows = await db
     .select({ playerId: capRegisterTable.playerId })
     .from(capRegisterTable)
-    .where(eq(capRegisterTable.category, category));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        eq(capRegisterTable.category, category),
+      ),
+    );
   const ids = new Set<number>();
   for (const r of rows) if (r.playerId != null) ids.add(r.playerId);
   return ids;
@@ -120,6 +170,12 @@ export type CapSyncResult = {
   category: "male" | "female";
   updated: number;
   created: number;
+  /**
+   * Players this run would have capped but deliberately did not, because the
+   * minting guard tripped (see `MAX_AUTO_DEBUTS`). Non-zero means the club
+   * should link or seed its cap register and cap these players by hand.
+   */
+  skipped: number;
   /** Caps freshly issued by this sync run (numbers the per-match debut card). */
   createdCaps: { capNumber: number; playerId: number; name: string }[];
 };
@@ -134,30 +190,41 @@ export type CapSyncResult = {
  * Behaviour for the grade's cap category:
  *  - Existing caps linked to a player present in the recomputed stats get their
  *    `inStats` flipped on and `gamesAGrade` refreshed from the per-grade total.
- *  - Players in the stats who are not yet capped (matched by linked `playerId`)
- *    are issued new caps with the next available cap numbers in sequence.
+ *    This covers EVERY player on record in the grade, not just this import's.
+ *  - Players THIS IMPORT fielded who are not yet capped are issued new caps with
+ *    the next available cap numbers in sequence — subject to the minting guard
+ *    below.
+ *
+ * Minting is deliberately narrower than refreshing. A cap marks a debut, and
+ * the only evidence of a debut is the player turning up in the import being
+ * committed. An uncapped player who merely appears in the grade's aggregate is
+ * NOT a debutant — they are someone whose cap is unlinked or missing, which is
+ * a curation problem, not an event. (Before this rule the routine minted for
+ * every uncapped player in the aggregate, so one per-match import of round 5
+ * would cap the club's entire A Grade history.) On top of that, fill-ins can
+ * never be capped, and `MAX_AUTO_DEBUTS` refuses to mint at all when the batch
+ * looks like an unlinked register rather than a round of debuts.
  *
  * Idempotent: re-importing the same grade+season matches existing caps on
  * `playerId` first, so no duplicate caps are created and numbers are not bumped.
  *
+ * @param tenantId the club whose register this is. Cap numbering is a
+ *        per-tenant sequence enforced by
+ *        `cap_register_tenant_category_cap_number_unique`, so both the reads
+ *        (the high-water mark, the existing links) and the write are scoped to
+ *        this tenant. Reading unfiltered would carry one club's numbering into
+ *        another's — the same leak that put one club's cap numbers on another's
+ *        public debut board (see routes/milestones.ts).
  * @param orderedPlayerIds player ids for this grade in the order new caps should
- *        be numbered (batting order, falling back to CSV row order). Players not
- *        in this list but present in the stats are still updated/created using
- *        the stats ordering as a fallback.
- * @param tenantId tenant stamped on newly minted caps. Only the INSERT is
- *        tenant-aware: the SELECTs stay unfiltered on purpose, so `maxCapNumber`
- *        remains a global high-water mark and the `(category, cap_number)`
- *        unique constraint can never be violated. Filtering the reads (and
- *        re-keying that constraint per tenant) is a data migration that belongs
- *        with the central-read refactor the stats core is still waiting on —
- *        see lib/db/src/schema/_tenant.ts. Stamping alone is what lets the
- *        debut detector read a cap back by tenant.
+ *        be numbered (batting order, falling back to CSV row order). This is
+ *        also the set eligible for a new cap — a player absent from it is
+ *        refreshed but never minted.
  */
 export async function syncCapsFromStats(
   tx: CapSyncTx,
+  tenantId: number,
   grade: string,
   orderedPlayerIds: number[],
-  tenantId: number,
 ): Promise<CapSyncResult | null> {
   const category = GRADE_TO_CAP_CATEGORY[grade];
   if (!category) return null;
@@ -176,14 +243,19 @@ export async function syncCapsFromStats(
     gamesByPlayer.set(r.playerId, r.games ?? 0);
   }
   if (gamesByPlayer.size === 0) {
-    return { grade, category, updated: 0, created: 0, createdCaps: [] };
+    return { grade, category, updated: 0, created: 0, skipped: 0, createdCaps: [] };
   }
 
-  // Existing caps in this category.
+  // Existing caps in this category, for this tenant only.
   const existingCaps = await tx
     .select()
     .from(capRegisterTable)
-    .where(eq(capRegisterTable.category, category));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        eq(capRegisterTable.category, category),
+      ),
+    );
 
   const capByPlayer = new Map<number, (typeof existingCaps)[number]>();
   let maxCapNumber = 0;
@@ -196,27 +268,36 @@ export async function syncCapsFromStats(
   let created = 0;
   const createdCaps: { capNumber: number; playerId: number; name: string }[] = [];
 
-  // Build the deterministic ordering of players in the stats: caller-provided
-  // order first (batting / CSV row order), then any stats-only players by id.
-  const orderedUnique: number[] = [];
-  const seen = new Set<number>();
+  // Players THIS import fielded in this grade, in the order new caps should be
+  // numbered. Fill-ins are dropped outright; players the import names but who
+  // carry no games in the grade's aggregate are not on record at all.
+  const fielded: number[] = [];
+  const isFielded = new Set<number>();
   for (const id of orderedPlayerIds) {
-    if (gamesByPlayer.has(id) && !seen.has(id)) {
-      seen.add(id);
-      orderedUnique.push(id);
-    }
-  }
-  for (const id of [...gamesByPlayer.keys()].sort((a, b) => a - b)) {
-    if (!seen.has(id)) {
-      seen.add(id);
-      orderedUnique.push(id);
+    if (id >= FILL_IN_FLOOR) continue;
+    if (gamesByPlayer.has(id) && !isFielded.has(id)) {
+      isFielded.add(id);
+      fielded.push(id);
     }
   }
 
+  // Everyone on record in the grade — this import's players first (so cap
+  // numbers follow batting order), then the rest by id. Refresh visits all of
+  // them; only the `fielded` prefix is eligible for a new cap.
+  const refreshOrder = [
+    ...fielded,
+    ...[...gamesByPlayer.keys()].sort((a, b) => a - b).filter((id) => !isFielded.has(id)),
+  ];
+
+  // Would-be debutants, and the guard against minting over an unlinked register.
+  const debutants = fielded.filter((id) => !capByPlayer.has(id));
+  const mintingBlocked =
+    debutants.length > MAX_AUTO_DEBUTS && debutants.length * 2 > fielded.length;
+  const toMint = mintingBlocked ? new Set<number>() : new Set(debutants);
+
   // Names for players that need a brand-new cap entry.
-  const newPlayerIds = orderedUnique.filter((id) => !capByPlayer.has(id));
   const nameByPlayer = new Map<number, string>();
-  if (newPlayerIds.length > 0) {
+  if (toMint.size > 0) {
     const playerRows = await tx
       .select({
         id: playersTable.id,
@@ -224,7 +305,7 @@ export async function syncCapsFromStats(
         givenName: playersTable.givenName,
       })
       .from(playersTable)
-      .where(inArray(playersTable.id, newPlayerIds));
+      .where(inArray(playersTable.id, [...toMint]));
     for (const p of playerRows) {
       nameByPlayer.set(
         p.id,
@@ -234,32 +315,45 @@ export async function syncCapsFromStats(
   }
 
   let nextCapNumber = maxCapNumber + 1;
-  for (const playerId of orderedUnique) {
+  for (const playerId of refreshOrder) {
     const games = gamesByPlayer.get(playerId) ?? 0;
     const existing = capByPlayer.get(playerId);
     if (existing) {
       await tx
         .update(capRegisterTable)
         .set({ inStats: true, gamesAGrade: games })
-        .where(eq(capRegisterTable.id, existing.id));
+        .where(
+          and(
+            eq(capRegisterTable.tenantId, tenantId),
+            eq(capRegisterTable.id, existing.id),
+          ),
+        );
       updated++;
-    } else {
-      const name = nameByPlayer.get(playerId) ?? `Player #${playerId}`;
-      await tx.insert(capRegisterTable).values({
-        tenantId,
-        capNumber: nextCapNumber,
-        category,
-        name,
-        inStats: true,
-        gamesAGrade: games,
-        autoCreated: true,
-        playerId,
-      });
-      createdCaps.push({ capNumber: nextCapNumber, playerId, name });
-      nextCapNumber++;
-      created++;
+      continue;
     }
+    if (!toMint.has(playerId)) continue;
+    const name = nameByPlayer.get(playerId) ?? `Player #${playerId}`;
+    await tx.insert(capRegisterTable).values({
+      tenantId,
+      capNumber: nextCapNumber,
+      category,
+      name,
+      inStats: true,
+      gamesAGrade: games,
+      autoCreated: true,
+      playerId,
+    });
+    createdCaps.push({ capNumber: nextCapNumber, playerId, name });
+    nextCapNumber++;
+    created++;
   }
 
-  return { grade, category, updated, created, createdCaps };
+  return {
+    grade,
+    category,
+    updated,
+    created,
+    skipped: mintingBlocked ? debutants.length : 0,
+    createdCaps,
+  };
 }

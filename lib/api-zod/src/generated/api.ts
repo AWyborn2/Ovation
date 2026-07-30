@@ -1194,7 +1194,8 @@ export const CommitImportResponse = zod.object({
   "grade": zod.string(),
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "updated": zod.number(),
-  "created": zod.number()
+  "created": zod.number(),
+  "skipped": zod.number().describe('Players this import would have capped but deliberately did not, because auto-minting was refused for the batch. Non-zero means the cap register is not linked to the roster (a club onboarding with existing history, or seeded caps still carrying player_id = NULL): capping these players automatically would stamp new numbers over a real honour roll, so they must be capped by hand.')
 })),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Echoes the backfill reconcile mode applied, or null for a normal import.'),
   "negativeWarnings": zod.array(zod.object({
@@ -1413,7 +1414,8 @@ export const CommitMatchBatchResponse = zod.object({
   "grade": zod.string(),
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "updated": zod.number(),
-  "created": zod.number()
+  "created": zod.number(),
+  "skipped": zod.number().describe('Players this import would have capped but deliberately did not, because auto-minting was refused for the batch. Non-zero means the cap register is not linked to the roster (a club onboarding with existing history, or seeded caps still carrying player_id = NULL): capping these players automatically would stamp new numbers over a real honour roll, so they must be capped by hand.')
 })),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Echoes the backfill reconcile mode applied, or null for a normal batch.'),
   "negativeWarnings": zod.array(zod.object({

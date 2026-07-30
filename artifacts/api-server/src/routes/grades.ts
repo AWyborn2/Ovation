@@ -55,10 +55,18 @@ router.get("/grades", async (req, res): Promise<void> => {
     .select()
     .from(gradeSummariesTable)
     .orderBy(gradeSummariesTable.grade);
+  // The A Grade card reports "players" as the size of the club's cap list, so
+  // this count must be tenant-scoped — unfiltered it showed every club's caps
+  // added together.
   const [aGradeCapCount] = await db
     .select({ value: count() })
     .from(capRegisterTable)
-    .where(eq(capRegisterTable.category, "male"));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, getTenantId(req)),
+        eq(capRegisterTable.category, "male"),
+      ),
+    );
   res.json(
     grades
       .filter((g) => g.grade !== "CLUB TOTAL")

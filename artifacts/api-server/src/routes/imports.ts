@@ -89,6 +89,26 @@ const uploadBatch = multer({
 type MulterRequest = Request & { file?: Express.Multer.File };
 type MulterArrayRequest = Request & { files?: Express.Multer.File[] };
 
+/**
+ * Surface a refused auto-mint. `capsSync[].skipped` carries this to the client
+ * too, but a club that imports and finds nobody capped needs a trail on the
+ * server as well — the refusal is deliberate (see `MAX_AUTO_DEBUTS` in
+ * cap-sync.ts) and nothing else records that it happened.
+ */
+function logSkippedCapMints(
+  logger: import("pino").Logger,
+  tenantId: number,
+  capsSync: CapSyncResult[],
+): void {
+  for (const r of capsSync) {
+    if (r.skipped === 0) continue;
+    logger.warn(
+      { tenantId, grade: r.grade, category: r.category, skipped: r.skipped },
+      `Declined to auto-issue ${r.skipped} ${r.grade} caps: too much of the squad is uncapped, which reads as an unlinked cap register rather than a round of debuts. Cap these players by hand.`,
+    );
+  }
+}
+
 router.get("/imports", async (_req, res): Promise<void> => {
   const rows = await db
     .select({
@@ -154,7 +174,7 @@ router.post(
       ? (GRADE_TO_CAP_CATEGORY[importGrade] ?? null)
       : null;
     const cappedIds = capCategory
-      ? await getCappedPlayerIds(capCategory)
+      ? await getCappedPlayerIds(getTenantId(req), capCategory)
       : new Set<number>();
 
     // Match parsed names against the roster: exact, fuzzy suggestion, or new.
@@ -442,21 +462,23 @@ router.post("/imports/:id/commit", requireAdmin, adminWriteRateLimiter, async (r
     for (const grade of affectedGrades) {
       if (isBackfill) {
         const category = GRADE_TO_CAP_CATEGORY[grade];
-        if (category) await recomputeCapsFromStats(tx, [category]);
+        if (category) await recomputeCapsFromStats(tx, getTenantId(req), [category]);
       } else {
         const orderedPlayerIds = resolved
           .filter((r) => r.grade === grade)
           .map((r) => r.playerId);
         const result = await syncCapsFromStats(
           tx,
+          getTenantId(req),
           grade,
           orderedPlayerIds,
-          getTenantId(req),
         );
         if (result) capsSync.push(result);
       }
     }
   });
+
+  logSkippedCapMints(req.log, getTenantId(req), capsSync);
 
   // Milestone detection + round-up drafts (shared with the per-match import path).
   // Suppressed for backfills — previous-season imports must not trigger social.
@@ -557,7 +579,7 @@ router.delete("/imports/:id", requireAdmin, adminWriteRateLimiter, async (req, r
         }
       }
       await recomputeAggregates(tx, affectedGrades);
-      await reverseCapsAfterRollback(tx, affectedGrades);
+      await reverseCapsAfterRollback(tx, getTenantId(req), affectedGrades);
       await cleanupOrphanPlayers(tx, candidatePlayerIds);
     }
   });
@@ -605,7 +627,7 @@ router.post(
       ? (GRADE_TO_CAP_CATEGORY[parsed.grade] ?? null)
       : null;
     const cappedIds = capCategory
-      ? await getCappedPlayerIds(capCategory)
+      ? await getCappedPlayerIds(getTenantId(req), capCategory)
       : new Set<number>();
 
     // Match parsed players against the roster: exact, fuzzy suggestion, or new.
@@ -809,10 +831,10 @@ router.post(
       }
     }
     const cappedMale = usedCategories.has("male")
-      ? await getCappedPlayerIds("male")
+      ? await getCappedPlayerIds(getTenantId(req), "male")
       : new Set<number>();
     const cappedFemale = usedCategories.has("female")
-      ? await getCappedPlayerIds("female")
+      ? await getCappedPlayerIds(getTenantId(req), "female")
       : new Set<number>();
 
     const capCategoryFor = (grades: Set<string>): "male" | "female" | null => {
@@ -1132,13 +1154,13 @@ async function commitMatchImport(
     if (isBackfill) {
       // Never mint out-of-order caps for a previous season; refresh only.
       const category = GRADE_TO_CAP_CATEGORY[grade];
-      if (category) await recomputeCapsFromStats(tx, [category]);
+      if (category) await recomputeCapsFromStats(tx, getTenantId(req), [category]);
     } else {
       const result = await syncCapsFromStats(
         tx,
+        getTenantId(req),
         grade,
         orderedPlayerIds,
-        getTenantId(req),
       );
       if (result) capsSync.push(result);
     }
@@ -1151,6 +1173,8 @@ async function commitMatchImport(
       playerId: c.playerId,
     })),
   );
+
+  logSkippedCapMints(req.log, getTenantId(req), capsSync);
 
   // Suppressed for backfills — previous-season match imports must not trigger
   // milestone detection or social drafts.
@@ -1565,13 +1589,13 @@ router.post(
       for (const grade of affectedGrades) {
         if (isBackfill) {
           const category = GRADE_TO_CAP_CATEGORY[grade];
-          if (category) await recomputeCapsFromStats(tx, [category]);
+          if (category) await recomputeCapsFromStats(tx, getTenantId(req), [category]);
         } else {
           const result = await syncCapsFromStats(
             tx,
+            getTenantId(req),
             grade,
             orderedByGrade.get(grade) ?? [],
-            getTenantId(req),
           );
           if (result) capsSync.push(result);
         }
@@ -1585,6 +1609,8 @@ router.post(
         playerId: c.playerId,
       })),
     );
+
+    logSkippedCapMints(req.log, getTenantId(req), capsSync);
 
     // Attach created caps to the earliest-round match per grade only; the match
     // milestone detector's fire-once de-dup handles the rest.
@@ -1649,7 +1675,7 @@ router.post(
  * caps / orphan players that no longer have a basis.
  */
 async function deleteMatchImport(
-  _req: Request,
+  req: Request,
   res: Parameters<Parameters<typeof router.delete>[1]>[1],
   id: number,
 ): Promise<void> {
@@ -1687,7 +1713,7 @@ async function deleteMatchImport(
     }
     if (affectedGrades.length > 0) {
       await recomputeAggregates(tx, affectedGrades);
-      await reverseCapsAfterRollback(tx, affectedGrades);
+      await reverseCapsAfterRollback(tx, getTenantId(req), affectedGrades);
       await cleanupOrphanPlayers(tx, candidatePlayerIds);
     }
   });
@@ -1745,7 +1771,7 @@ router.post(
       // empty, so reconcile (no mode) just adds the stored deltas back.
       await reconcileBaseline(tx, grade, season);
       await recomputeAggregates(tx, [grade]);
-      await reverseCapsAfterRollback(tx, [grade]);
+      await reverseCapsAfterRollback(tx, getTenantId(req), [grade]);
       playersRemoved = await cleanupOrphanPlayers(tx, candidatePlayerIds);
     });
 

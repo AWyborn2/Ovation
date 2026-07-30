@@ -6254,7 +6254,7 @@ components:
 
     CapSyncSummary:
       type: object
-      required: [grade, category, updated, created]
+      required: [grade, category, updated, created, skipped]
       properties:
         grade:
           type: string
@@ -6264,6 +6264,15 @@ components:
           type: integer
         created:
           type: integer
+        skipped:
+          type: integer
+          description: >-
+            Players this import would have capped but deliberately did not,
+            because auto-minting was refused for the batch. Non-zero means the
+            cap register is not linked to the roster (a club onboarding with
+            existing history, or seeded caps still carrying player_id = NULL):
+            capping these players automatically would stamp new numbers over a
+            real honour roll, so they must be capped by hand.
 
     CommitImportResult:
       type: object
