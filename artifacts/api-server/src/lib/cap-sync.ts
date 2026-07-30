@@ -144,11 +144,20 @@ export type CapSyncResult = {
  *        be numbered (batting order, falling back to CSV row order). Players not
  *        in this list but present in the stats are still updated/created using
  *        the stats ordering as a fallback.
+ * @param tenantId tenant stamped on newly minted caps. Only the INSERT is
+ *        tenant-aware: the SELECTs stay unfiltered on purpose, so `maxCapNumber`
+ *        remains a global high-water mark and the `(category, cap_number)`
+ *        unique constraint can never be violated. Filtering the reads (and
+ *        re-keying that constraint per tenant) is a data migration that belongs
+ *        with the central-read refactor the stats core is still waiting on —
+ *        see lib/db/src/schema/_tenant.ts. Stamping alone is what lets the
+ *        debut detector read a cap back by tenant.
  */
 export async function syncCapsFromStats(
   tx: CapSyncTx,
   grade: string,
   orderedPlayerIds: number[],
+  tenantId: number,
 ): Promise<CapSyncResult | null> {
   const category = GRADE_TO_CAP_CATEGORY[grade];
   if (!category) return null;
@@ -237,6 +246,7 @@ export async function syncCapsFromStats(
     } else {
       const name = nameByPlayer.get(playerId) ?? `Player #${playerId}`;
       await tx.insert(capRegisterTable).values({
+        tenantId,
         capNumber: nextCapNumber,
         category,
         name,

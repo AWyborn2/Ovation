@@ -12,8 +12,8 @@ import { CLUB_LOGO_SLOT, columnRoot, slot } from "../shared";
  *
  * Sunset's identity vs the other packs:
  *  - a **sunset-horizon radial wash** — the tenant accent burning at the
- *    bottom edge, melting up through burnt umber (`#1a0f08` / `#2a160b`) to
- *    near-black, with a rotated warm beam falling across the frame,
+ *    bottom edge, melting up through its own dusk ramp to near-black, with a
+ *    rotated warm beam falling across the frame,
  *  - a **cursive script headline** (Kaushan Script in the accent colour) as
  *    the signature display type (`scriptText`),
  *  - **glass panels** — translucent dark cards with `backdrop-filter:blur`
@@ -21,9 +21,12 @@ import { CLUB_LOGO_SLOT, columnRoot, slot } from "../shared";
  *  - a **photo-first story format**: full-bleed hero photo under a cinematic
  *    scrim plus an accent horizon glow, with a circular club logo up top.
  *
- * Accents read `var(--gold)` / `var(--panel)` / `var(--ink)` so tenant theming
- * drives the palette; the burnt-umber ramp literals stay fixed because the
- * warm dusk material IS the pack, the way Gold Foil keeps its metal ramp.
+ * The whole dusk palette is DERIVED from `var(--gold)` — see the palette
+ * derivation block below. "Golden hour" is the pack's light, not its hue: a
+ * green club gets a green dusk and a navy club a navy one, at the same depths.
+ * `var(--ink)` still anchors the deepest stop; genuinely neutral material (the
+ * `glassPanel` fill, sponsor plates, drop shadows, semantic win/loss colour in
+ * the card modules) stays fixed on purpose.
  *
  * Feed (portrait/square) composition — a DEPARTURE from the bundle.
  *
@@ -78,17 +81,73 @@ export {
 } from "../shared";
 
 // ---------------------------------------------------------------------------
+// Palette derivation
+// ---------------------------------------------------------------------------
+
+/**
+ * The tenant's accent. Everything warm on a Sunset card is mixed FROM this.
+ *
+ * The pack used to burn its accent into a set of fixed burnt-umber literals
+ * (`#33170a`, `#26120a`, `#2a160b`, `#1a0f08`, `#0a0503`, `rgba(24,11,5,…)`,
+ * `rgba(24,14,9,…)`) plus a warm cream family (`#FFF3E2`,
+ * `rgba(255,238,214,…)`, `rgba(255,243,226,…)`). Those literals ARE a colour —
+ * a golden hour — so a green or navy club got an amber card with brown corners
+ * and a brown panel fighting their branding, on the pack whose whole identity is
+ * the light. Same defect, and the same fix, as Metallic Foil's `FOIL_RAMP`.
+ *
+ * Two of the old stops were worse than fixed: they were dressed as tokens
+ * (`var(--block,#2a160b)`, `var(--surface-deep,#0a0503)`) but neither `--block`
+ * nor `--surface-deep` is ever set by `pack-render.ts`'s `rootStyle`, so they
+ * always resolved to their umber fallbacks while reading as tenant-driven.
+ * They are now derived like the rest. `--ink` IS set, so it stays a token.
+ */
+const G = "var(--gold,#FBAC27)";
+
+/**
+ * The dusk ramp: the accent burnt down toward black.
+ *
+ * This is the deep end of the sunset — the sky falling away from the sun. The
+ * percentages below were solved so that each stop reproduces the umber it
+ * replaces almost exactly at Halls Head's `#FBAC27` (every one of those umbers
+ * was, in effect, the HH accent already scaled toward black), so HH cards are
+ * unchanged while another club's sky is burnt down from THEIR colour.
+ */
+const dusk = (pct: number) => `color-mix(in srgb, ${G} ${pct}%, #000)`;
+
+/**
+ * The light end: the accent lifted toward white. Sunset's warm creams — the
+ * script club name, the tagline, the glass sheen on the frosted panel — were
+ * `#FFF3E2` / `rgba(255,238,214,…)`, i.e. white with a squeeze of Halls Head's
+ * amber in it. Mixing toward white keeps that lightness for ANY accent (a navy
+ * club gets a cool white, a green club a pale green-white) rather than tinting
+ * every club's highlights amber.
+ */
+const cream = (pct: number) => `color-mix(in srgb, ${G} ${pct}%, #fff)`;
+
+/** `colour` carried at `a`% opacity — the translucent form of a derived tone. */
+const fade = (colour: string, a: number) => `color-mix(in srgb, ${colour} ${a}%, transparent)`;
+
+/** The pack's cream (was `#FFF3E2` / `rgba(255,243,226,…)`). */
+const CREAM = cream(14);
+/** The glass sheen on the frosted panel (was `rgba(255,238,214,…)`). */
+const SHEEN = cream(19);
+
+// ---------------------------------------------------------------------------
 // Background layers
 // ---------------------------------------------------------------------------
 
 /**
  * Story background: the sunset wash — accent glowing at the bottom horizon,
- * rising through burnt umber to near-black — plus a rotated warm beam. Two
+ * rising through the dusk ramp to near-black — plus a rotated warm beam. Two
  * stacked layers in the bundle (E20 Club Wickets is the canonical story bg;
  * the Match Result story instead lays a full-bleed photo over this).
+ *
+ * Ramp stops, and the umber each replaces at `--gold: #FBAC27`:
+ * `dusk(41)` ≈ the old `mix(gold 34%, #1a0f08)` horizon, `dusk(16)` ≈ `#2a160b`,
+ * `dusk(4)` ≈ `#0a0503`. `--ink` is a real token, so it stays one.
  */
 export const STORY_BG =
-  `<div style="position:absolute;inset:0;background:radial-gradient(135% 108% at 50% 122%, color-mix(in srgb, var(--gold,#FBAC27) 34%, #1a0f08) 0%, var(--block,#2a160b) 30%, var(--ink,#120a07) 64%, var(--surface-deep,#0a0503) 100%)"></div>` +
+  `<div style="position:absolute;inset:0;background:radial-gradient(135% 108% at 50% 122%, ${dusk(41)} 0%, ${dusk(16)} 30%, var(--ink,#120a07) 64%, ${dusk(4)} 100%)"></div>` +
   `<div style="position:absolute;top:-160px;right:-150px;width:740px;height:900px;background:linear-gradient(180deg,color-mix(in srgb, var(--gold,#FBAC27) 12%, transparent),transparent);transform:rotate(18deg)"></div>`;
 
 /**
@@ -102,8 +161,12 @@ export const STORY_BG =
  * ember along the bottom edge — so the strip of sky left visible around the
  * panel glows on all four sides.
  *
- * Every warm value mixes `var(--gold)`, so a tenant's accent IS its dusk; the
- * umber literals it mixes into stay fixed, like Gold Foil's metal ramp.
+ * EVERY value here is derived from `var(--gold)` — the ramp stops as well as
+ * the glow layers. A tenant's accent is not merely lit against a fixed golden
+ * hour; it IS the golden hour. What stays fixed is the DIRECTION and the depth
+ * of the ramp (bright at the sun, falling away, ember at the foot); only the
+ * hue follows the club, so a green club gets a green dusk and a navy club a
+ * navy one instead of amber corners over their branding.
  *
  * The six photo-hero cards (Debut, both grade leaders, New Cap, New Signing,
  * Record) build their own layer stacks on this, so it has to survive having a
@@ -114,11 +177,18 @@ export const SHARED_BG =
   // Diagonal so the light has a direction — brightest at the top left, falling
   // away across and down. A flat vertical ramp read as "a gold gradient"; the
   // 168° tilt is what makes it read as a sky with a sun in it.
-  `<div style="position:absolute;inset:0;background:linear-gradient(168deg, color-mix(in srgb, var(--gold,#FBAC27) 44%, #33170a) 0%, color-mix(in srgb, var(--gold,#FBAC27) 26%, #26120a) 13%, var(--block,#2a160b) 27%, var(--ink,#120a07) 60%, color-mix(in srgb, var(--gold,#FBAC27) 26%, #1a0f08) 100%)"></div>` +
+  //
+  // At `--gold: #FBAC27` these four dusk stops land within a couple of levels
+  // of the umbers they replace: dusk(55) ≈ the old `mix(gold 44%, #33170a)`,
+  // dusk(37) ≈ `mix(gold 26%, #26120a)`, dusk(16) ≈ `#2a160b`, dusk(33) ≈
+  // `mix(gold 26%, #1a0f08)`.
+  `<div style="position:absolute;inset:0;background:linear-gradient(168deg, ${dusk(55)} 0%, ${dusk(37)} 13%, ${dusk(16)} 27%, var(--ink,#120a07) 60%, ${dusk(33)} 100%)"></div>` +
   // The sun itself, low and soft behind the club signature at the top left.
   `<div style="position:absolute;top:-340px;left:-230px;width:1000px;height:820px;background:radial-gradient(50% 50% at 50% 50%, color-mix(in srgb, var(--gold,#FBAC27) 58%, transparent), transparent 66%)"></div>` +
-  // Deepen the top-right corner so the sun has somewhere to fall away to.
-  `<div style="position:absolute;inset:0;background:radial-gradient(70% 46% at 108% -8%, rgba(24,11,5,.62), transparent 62%)"></div>` +
+  // Deepen the top-right corner so the sun has somewhere to fall away to. A
+  // veil of the club's own dusk, not the old fixed `rgba(24,11,5,.62)` umber —
+  // that literal was what put a brown corner on a green club's card.
+  `<div style="position:absolute;inset:0;background:radial-gradient(70% 46% at 108% -8%, ${fade(dusk(8), 62)}, transparent 62%)"></div>` +
   // The bundle's rotated warm beam, kept — it rakes down through the sky.
   `<div style="position:absolute;top:-180px;right:-160px;width:820px;height:1300px;background:linear-gradient(180deg,color-mix(in srgb, var(--gold,#FBAC27) 13%, transparent),transparent);transform:rotate(20deg)"></div>` +
   // Ember along the bottom edge, so the sky closes the postcard border.
@@ -159,14 +229,20 @@ const PANEL_TOP = HEADER_TOP + HEADER_H + HEADER_GAP - PANEL_PAD_TOP;
  * hairline and its own ember glow inside the foot — that glow is what keeps a
  * sparsely-filled card (most of them bind no feed photo) reading as deliberate
  * space rather than a blank frame.
+ *
+ * The panel covers four fifths of the card, so its fill is the single biggest
+ * colour on it: the old `rgba(24,14,9,.74)` base and `rgba(255,238,214,…)`
+ * sheen were what made a navy club's card read brown no matter what their
+ * accent was. Both are now derived — the base is the club's dusk, the sheen
+ * their cream — while the composition, the blur and the ember are untouched.
  */
 const FROSTED_PANEL =
   `<div style="position:absolute;left:${PANEL_INSET}px;right:${PANEL_INSET}px;top:${PANEL_TOP}px;bottom:${PANEL_INSET}px;border-radius:46px;` +
-  `background:linear-gradient(180deg, rgba(255,238,214,.10), rgba(255,238,214,.015) 38%), ` +
+  `background:linear-gradient(180deg, ${fade(SHEEN, 10)}, ${fade(SHEEN, 1.5)} 38%), ` +
   `radial-gradient(112% 58% at 50% 116%, color-mix(in srgb, var(--gold,#FBAC27) 34%, transparent), transparent 74%), ` +
-  `color-mix(in srgb, var(--gold,#FBAC27) 9%, rgba(24,14,9,.74));` +
+  `color-mix(in srgb, var(--gold,#FBAC27) 9%, ${fade(dusk(9), 74)});` +
   `border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 34%, rgba(255,255,255,.14));backdrop-filter:blur(14px);` +
-  `box-shadow:0 26px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,240,220,.12)"></div>`;
+  `box-shadow:0 26px 70px rgba(0,0,0,.5), inset 0 1px 0 ${fade(SHEEN, 12)}"></div>`;
 
 /**
  * Feed root: the sunset sky, the inset frosted panel, and a column padded so
@@ -218,6 +294,12 @@ export function scriptText(content: string, fontSize: number, extraStyle = ""): 
  * Glass panel: the translucent dark card with a hairline border and backdrop
  * blur that Sunset floats over its photo / sky fields. Padding and layout are
  * the caller's via `extraStyle` (must start with `;`).
+ *
+ * Deliberately NOT derived from `--gold`, unlike {@link FROSTED_PANEL}. This is
+ * the small panel the pack drops over PHOTOS, and it is already neutral — a
+ * cool dark that matches `--ink`, not a warm umber. Tinting it with the accent
+ * would put a colour cast over a player's photo for the sake of a scrim that
+ * nobody reads as a colour; the accent it sits under is doing that job.
  */
 export function glassPanel(inner: string, extraStyle = ""): string {
   return `<div style="background:rgba(10,12,16,.62);border:1px solid rgba(255,255,255,.14);border-radius:20px;backdrop-filter:blur(9px)${extraStyle}">${inner}</div>`;
@@ -259,7 +341,7 @@ export function storyHeader(tag: string): string {
  */
 export function goldChip(label: string): string {
   return (
-    `<div style="display:inline-block;background:rgba(20,11,6,.72);color:var(--gold,#FBAC27);border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 52%, transparent);` +
+    `<div style="display:inline-block;background:${fade(dusk(8), 72)};color:var(--gold,#FBAC27);border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 52%, transparent);` +
     `backdrop-filter:blur(8px);font-weight:800;font-size:20px;line-height:1;letter-spacing:.09em;padding:13px 22px;border-radius:999px;box-shadow:0 8px 22px rgba(0,0,0,.4)">${label}</div>`
   );
 }
@@ -290,12 +372,12 @@ export function sharedHeader(chipLabel: string, tag: string): string {
     `<div style="display:flex;align-items:center;gap:22px;min-width:0">` +
     `<div style="width:92px;height:92px;flex:none;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.10);box-shadow:0 0 0 2px color-mix(in srgb, var(--gold,#FBAC27) 55%, transparent), 0 10px 26px rgba(0,0,0,.45)">${CLUB_LOGO_SLOT}</div>` +
     `<div style="min-width:0">` +
-    `<div style="font-family:'Kaushan Script',cursive;font-size:42px;line-height:1.18;color:#FFF3E2;text-shadow:0 3px 16px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{clubName}}</div>` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:rgba(255,243,226,.74);margin-top:10px;text-shadow:0 2px 10px rgba(0,0,0,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{clubTagline}}</div>` +
+    `<div style="font-family:'Kaushan Script',cursive;font-size:42px;line-height:1.18;color:${CREAM};text-shadow:0 3px 16px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{clubName}}</div>` +
+    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:${fade(CREAM, 74)};margin-top:10px;text-shadow:0 2px 10px rgba(0,0,0,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{clubTagline}}</div>` +
     `</div>` +
     `</div>` +
     `<div style="text-align:right;flex:none">${goldChip(chipLabel)}` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:rgba(255,243,226,.74);margin-top:13px;text-shadow:0 2px 10px rgba(0,0,0,.45)">${tag}</div></div>` +
+    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:${fade(CREAM, 74)};margin-top:13px;text-shadow:0 2px 10px rgba(0,0,0,.45)">${tag}</div></div>` +
     `</div>`
   );
 }

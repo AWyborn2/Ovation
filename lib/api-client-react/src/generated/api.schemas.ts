@@ -2634,7 +2634,6 @@ export const CardKind = {
   gradeLeader: 'gradeLeader',
   premiership: 'premiership',
   debut: 'debut',
-  newCap: 'newCap',
   century: 'century',
   fiveFor: 'fiveFor',
   matchSummary: 'matchSummary',

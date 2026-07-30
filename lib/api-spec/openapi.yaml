@@ -9203,8 +9203,11 @@ components:
           type: ["string", "null"]
 
     CardKind:
+      # `newCap` ("New Cap") was retired from the catalogue in favour of `debut`,
+      # which covers the same moment with a superset of its fields. Nothing in
+      # the app emits or renders it any more, so it is gone from this enum too.
       type: string
-      enum: [milestone, player, record, gradeLeader, premiership, debut, newCap, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard]
 
     Sponsor:
       type: object

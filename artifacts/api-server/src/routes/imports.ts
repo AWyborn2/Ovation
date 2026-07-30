@@ -447,7 +447,12 @@ router.post("/imports/:id/commit", requireAdmin, adminWriteRateLimiter, async (r
         const orderedPlayerIds = resolved
           .filter((r) => r.grade === grade)
           .map((r) => r.playerId);
-        const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
+        const result = await syncCapsFromStats(
+          tx,
+          grade,
+          orderedPlayerIds,
+          getTenantId(req),
+        );
         if (result) capsSync.push(result);
       }
     }
@@ -1129,7 +1134,12 @@ async function commitMatchImport(
       const category = GRADE_TO_CAP_CATEGORY[grade];
       if (category) await recomputeCapsFromStats(tx, [category]);
     } else {
-      const result = await syncCapsFromStats(tx, grade, orderedPlayerIds);
+      const result = await syncCapsFromStats(
+        tx,
+        grade,
+        orderedPlayerIds,
+        getTenantId(req),
+      );
       if (result) capsSync.push(result);
     }
   });
@@ -1139,7 +1149,6 @@ async function commitMatchImport(
       capNumber: c.capNumber,
       category: r.category,
       playerId: c.playerId,
-      name: c.name,
     })),
   );
 
@@ -1154,11 +1163,13 @@ async function commitMatchImport(
       beforeMap,
       logger: req.log,
       matchContext: {
+        tenantId: getTenantId(req),
         importId: imp.id,
         grade,
         season,
         round,
         opponent: parsed.opponent ?? null,
+        abandoned: parsed.abandoned,
         lines: resolvedLines.map((l) => ({
           playerId: l.playerId,
           runs: l.runs ?? null,
@@ -1560,6 +1571,7 @@ router.post(
             tx,
             grade,
             orderedByGrade.get(grade) ?? [],
+            getTenantId(req),
           );
           if (result) capsSync.push(result);
         }
@@ -1571,7 +1583,6 @@ router.post(
         capNumber: c.capNumber,
         category: r.category,
         playerId: c.playerId,
-        name: c.name,
       })),
     );
 
@@ -1586,11 +1597,13 @@ router.post(
       const cat = GRADE_TO_CAP_CATEGORY[pm.grade];
       const isEarliest = earliestImportIdByGrade.get(pm.grade) === pm.importId;
       return {
+        tenantId: getTenantId(req),
         importId: pm.importId,
         grade: pm.grade,
         season: pm.season,
         round: pm.round,
         opponent: pm.parsed.opponent ?? null,
+        abandoned: pm.parsed.abandoned,
         lines: pm.resolvedLines.map((l) => ({
           playerId: l.playerId,
           runs: l.runs ?? null,

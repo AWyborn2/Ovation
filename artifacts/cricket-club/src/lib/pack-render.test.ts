@@ -839,6 +839,83 @@ describe("packImageSlots (per-slot override editor enumeration)", () => {
   });
 });
 
+describe("renderPackCard debut cap number", () => {
+  // Every pack ships the debut design with the literal prefix OUTSIDE the
+  // placeholder — `CAP {{capNumber}}` — and a sample of "246". An unbound
+  // capNumber used to fall through to that sample, so a debut card for a player
+  // whose cap number never resolved rendered a FABRICATED "CAP 246" on a club
+  // honour card. It must degrade instead.
+  const PACK_IDS = [
+    "broadcast-dark-v1",
+    "gold-foil-v1",
+    "bold-type-v1",
+    "neon-night-v1",
+    "sunset-v1",
+  ];
+  const SIZES: CardSize[] = ["square", "portrait", "story"];
+
+  const debutInput = (capNumber: number | null): ShareCardInput => ({
+    ...(sampleCardInput("debut") as Extract<ShareCardInput, { kind: "debut" }>),
+    capNumber,
+  });
+
+  it("renders the real cap number for every pack and size", () => {
+    for (const packId of PACK_IDS) {
+      for (const size of SIZES) {
+        const html = renderPackCard(
+          debutInput(87),
+          size,
+          true,
+          TOKENS,
+          false,
+          null,
+          packId,
+        );
+        // Every pack ships a debut design, so an empty render would mean the
+        // assertions below silently stopped covering that pack.
+        expect(html, `${packId}/${size}`).not.toBe("");
+        expect(html, `${packId}/${size}`).toContain("CAP 87");
+        expect(html, `${packId}/${size}`).not.toContain("246");
+      }
+    }
+  });
+
+  it("never fabricates the sample cap number when none resolved", () => {
+    for (const packId of PACK_IDS) {
+      for (const size of SIZES) {
+        const html = renderPackCard(
+          debutInput(null),
+          size,
+          true,
+          TOKENS,
+          false,
+          null,
+          packId,
+        );
+        expect(html, `${packId}/${size}`).not.toBe("");
+        expect(html, `${packId}/${size}`).not.toContain("246");
+        // The whole line is dropped rather than leaving an orphan "CAP" label.
+        expect(html, `${packId}/${size}`).not.toMatch(/CAP\s*</);
+        expect(hasUnresolved(html), `${packId}/${size}`).toBe(false);
+      }
+    }
+  });
+
+  it("keeps the rest of the debut card intact when the cap number is dropped", () => {
+    const html = renderPackCard(
+      debutInput(null),
+      "story",
+      true,
+      TOKENS,
+      false,
+      null,
+      "broadcast-dark-v1",
+    );
+    expect(html).toContain("Sample Player");
+    expect(html).not.toBe("");
+  });
+});
+
 describe("renderPackCard full-bleed photo placement (B3)", () => {
   const PHOTO = "https://cdn.example.com/action.jpg";
   const withPhoto = (
