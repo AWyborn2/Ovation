@@ -26,6 +26,35 @@ import { CLUB_LOGO_SLOT, columnRoot, slot } from "../shared";
  * Gold Foil keeps its metal ramp: it is part of the design's identity, not the
  * tenant's. Every other accent reads `var(--gold)` / `var(--panel)` /
  * `var(--ink)` so tenant theming still owns the card.
+ *
+ * Feed (portrait/square) composition — a DEPARTURE from the bundle.
+ *
+ * The bundle authored every pack's non-story branch as Broadcast Dark's layout
+ * with a different background swapped in, so all five packs rendered
+ * near-identically in the feed formats and in the Studio's pack picker — you
+ * could not tell Neon Night from Gold Foil at thumbnail size, which defeats the
+ * point of a catalogue.
+ *
+ * Neon Night's feed layout therefore stops being a header/body/footer stack
+ * bled to the card edge and becomes a **lit glass slab hovering in the dark**:
+ *
+ *  - the orb field runs full-bleed ({@link SHARED_BG}, now a pure night/orb
+ *    stage rather than Broadcast Dark's rotated accent beam),
+ *  - every card's content sits on an inset, blurred, cyan-hairline-framed panel
+ *    ({@link GLASS_SLAB}) with a visible dark margin on all four sides and a
+ *    44px corner radius — that inset rounded rectangle is the silhouette that
+ *    identifies the pack at thumbnail size, where Bold Type reads as a left
+ *    spine and Broadcast Dark / Gold Foil read as full-bleed stacks,
+ *  - a cyan floodlight cone falls on the slab's top edge from off-card, and
+ *  - club identity is a **centred glowing circular badge** with the name and
+ *    tagline stacked under it over a glowing cyan hairline ({@link sharedHeader})
+ *    — a crest, not the logo-and-name row every other pack shares. The chip and
+ *    the eyebrow tag are pinned out to the slab's top corners so the crest costs
+ *    only the height it actually needs.
+ *
+ * The glass reads as glass without `backdrop-filter`: the translucent gradient
+ * fill, the cyan hairline, the inset top highlight and the outer bloom carry it,
+ * and the blur is additive on renderers that honour it.
  */
 
 export {
@@ -56,22 +85,76 @@ export const STORY_BG =
   `<div style="position:absolute;bottom:-160px;right:-140px;width:720px;height:720px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb, var(--gold,#FBAC27) 28%, transparent),transparent 62%);filter:blur(46px);animation:hhGlow 4.4s ease-in-out infinite"></div>`;
 
 /**
- * Non-story background: the night radial with static cyan / accent corner
- * washes composited into one layer, plus the rotated accent beam and the
- * bottom panel glow (the non-story chassis the bundles share across packs).
+ * Non-story background: the ORB FIELD, full-bleed.
+ *
+ * This used to be the chassis every pack's bundle shared — a night radial plus
+ * Broadcast Dark's rotated accent beam and bottom panel glow — which is exactly
+ * why the feed formats all looked alike. It is now the pack's own story stage
+ * translated to the feed: the night radial with three blurred neon orbs — cyan
+ * top-left, tenant accent well off the bottom-right corner, a smaller cyan orb
+ * bottom-left. The accent orb is held back and pushed further out than the
+ * story's: at feed proportions a strong accent wash over the cyan field mixes to
+ * olive, which is why this reads cool with one warm corner rather than both.
+ * The orbs are static rather than on `hhGlow` — the feed card is a still, and a
+ * mid-pulse frame renders non-deterministically.
+ *
+ * Held deliberately brighter than the story's, because {@link GLASS_SLAB} sits
+ * over most of it: the orbs have to read in the ~46px margin band and diffuse
+ * through the panel.
  */
 export const SHARED_BG =
-  `<div style="position:absolute;inset:0;background:radial-gradient(90% 62% at 16% 10%, color-mix(in srgb, #37CFE6 22%, transparent), transparent 60%), radial-gradient(90% 62% at 88% 96%, color-mix(in srgb, var(--gold,#FBAC27) 20%, transparent), transparent 60%), radial-gradient(120% 90% at 50% 28%, var(--surface-top,#0d2138) 0%, var(--ink,#081426) 45%, var(--surface-deep,#04070d) 100%)"></div>` +
-  `<div style="position:absolute;top:-180px;right:-160px;width:820px;height:1300px;background:linear-gradient(180deg,color-mix(in srgb, var(--gold,#FBAC27) 13%, transparent),transparent);transform:rotate(20deg)"></div>` +
-  `<div style="position:absolute;inset:0;background:radial-gradient(120% 66% at 50% 122%, color-mix(in srgb, var(--panel,#42342B) 40%, transparent), transparent 60%)"></div>`;
+  `<div style="position:absolute;inset:0;background:radial-gradient(120% 92% at 50% 20%, var(--surface-top,#0d2138) 0%, var(--ink,#081426) 46%, var(--surface-deep,#04070d) 100%)"></div>` +
+  `<div style="position:absolute;top:-190px;left:-170px;width:720px;height:720px;border-radius:50%;background:radial-gradient(circle,rgba(55,207,230,.46),transparent 62%);filter:blur(48px)"></div>` +
+  `<div style="position:absolute;bottom:-260px;right:-240px;width:820px;height:820px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb, var(--gold,#FBAC27) 30%, transparent),transparent 60%);filter:blur(54px)"></div>` +
+  `<div style="position:absolute;bottom:-190px;left:-150px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,rgba(55,207,230,.30),transparent 60%);filter:blur(44px)"></div>`;
 
 // ---------------------------------------------------------------------------
 // Format roots
 // ---------------------------------------------------------------------------
 
-/** Non-story root: Neon Night background + the standard padded flex column. */
+/** Margin between the card edge and the glass slab, on all four sides. */
+const SLAB_INSET = 46;
+/** The slab's corner radius — the pack's feed silhouette. */
+const SLAB_RADIUS = 44;
+
+/**
+ * The inset glass slab, plus the floodlight cone that falls on its top edge.
+ *
+ * Two layers, painted in order under the content column:
+ *  1. a cyan spotlight hanging off the top of the card, so the slab's top edge
+ *     and the club crest sit in a pool of floodlight rather than flat dark;
+ *  2. the slab itself — a translucent gradient fill, a cyan hairline frame, an
+ *     inset top highlight (the lit rim of a glass sheet), an outer cyan bloom,
+ *     and a tenant-accent wash pooling in the bottom edge.
+ *
+ * `backdrop-filter` is additive, not load-bearing: the fill, hairline, rim and
+ * bloom already read as glass on a renderer that drops the blur.
+ */
+const GLASS_SLAB =
+  `<div style="position:absolute;top:-70px;left:50%;transform:translateX(-50%);width:860px;height:600px;background:radial-gradient(56% 60% at 50% 0%, rgba(55,207,230,.30), transparent 72%);filter:blur(28px)"></div>` +
+  `<div style="position:absolute;inset:${SLAB_INSET}px;border-radius:${SLAB_RADIUS}px;background:linear-gradient(162deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 46%, rgba(4,9,18,.34));border:1px solid rgba(55,207,230,.42);backdrop-filter:blur(18px);box-shadow:0 0 70px -14px rgba(55,207,230,.6),inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 90px -30px rgba(55,207,230,.55),inset 0 -110px 120px -110px color-mix(in srgb, var(--gold,#FBAC27) 30%, transparent)"></div>`;
+
+/**
+ * Non-story root: the orb field full-bleed, the glass slab inset over it, and
+ * the content column clipped to the slab's bounds.
+ *
+ * The column is normally `inset:0`; the longhand override in `columnStyle`
+ * re-seats it on the slab so every card's content lands inside the panel with
+ * no per-card change. It stays a positioned ancestor, which is what lets
+ * {@link sharedHeader} pin its chip and tag out to the slab's top corners.
+ *
+ * Note the three cards that build their own root (`record`,
+ * `grade-leader-runs`, `grade-leader-wickets`) compose `SHARED_BG` directly and
+ * so get the orb field but no slab — the same split Bold Type's spine leaves.
+ */
 export function sharedColumnRoot(columnInner: string, rootStyle = ""): string {
-  return columnRoot(SHARED_BG, columnInner, "58px 66px 52px", rootStyle);
+  return columnRoot(
+    SHARED_BG + GLASS_SLAB,
+    columnInner,
+    "40px 48px 42px",
+    rootStyle,
+    `;top:${SLAB_INSET}px;left:${SLAB_INSET}px;right:${SLAB_INSET}px;bottom:${SLAB_INSET}px`,
+  );
 }
 
 /**
@@ -152,17 +235,41 @@ export function accentChip(label: string): string {
   return `<div style="display:inline-block;background:var(--gold,#FBAC27);color:var(--accent-ink,#151515);font-weight:800;font-size:20px;line-height:1;letter-spacing:.03em;padding:11px 15px;border-radius:7px">${label}</div>`;
 }
 
-/** Non-story header: club logo + name/tagline on the left, chip + tag right. */
+/**
+ * The club crest: the logo inside a glowing cyan ring, on a dark lens.
+ *
+ * The bundle's story wordmark already IS a circular logo in a cyan glow ring —
+ * this is that motif promoted to the feed formats' club identity, in place of
+ * the square-logo-plus-name row the packs shared. The logo slot is the
+ * `contain` variant so a wordmark-shaped file is letterboxed inside the ring
+ * rather than cropped by it.
+ */
+const CLUB_BADGE =
+  `<div style="width:92px;height:92px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;` +
+  `background:radial-gradient(circle at 50% 28%, rgba(55,207,230,.20), rgba(4,10,20,.92) 72%);` +
+  `box-shadow:0 0 0 2px rgba(55,207,230,.72),0 0 30px rgba(55,207,230,.62),0 0 78px -12px rgba(55,207,230,.5)">` +
+  `<div style="width:58px;height:58px">${CLUB_LOGO_SLOT}</div></div>`;
+
+/**
+ * Non-story header: the club crest centred on the slab, name and tagline
+ * stacked under it over a glowing cyan hairline; the chip and the eyebrow tag
+ * pinned out to the slab's top corners.
+ *
+ * Pinning the chip and tag absolutely (the column re-seated on the slab in
+ * {@link sharedColumnRoot} is their positioning context) means the centred
+ * crest costs only its own height — the header is barely taller than the
+ * logo-and-name row it replaces, so the dense cards (ladder, team list,
+ * leaderboards) keep their table area.
+ */
 export function sharedHeader(chipLabel: string, tag: string): string {
   return (
-    `<div style="flex:none;display:flex;align-items:center;justify-content:space-between">` +
-    `<div style="display:flex;align-items:center;gap:20px">` +
-    `<div style="width:100px;height:100px;flex:none">${slot("clubLogo", "logo", "rect")}</div>` +
-    `<div><div style="font-weight:800;font-size:34px;line-height:1;letter-spacing:.01em">{{clubName}}</div>` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-top:8px">{{clubTagline}}</div></div>` +
-    `</div>` +
-    `<div style="text-align:right">${accentChip(chipLabel)}` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.15em;color:rgba(255,255,255,.6);margin-top:11px">${tag}</div></div>` +
+    `<div style="flex:none;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center">` +
+    `<div style="position:absolute;top:14px;left:0;font:700 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:#37CFE6;text-shadow:0 0 16px rgba(55,207,230,.85)">◍ ${tag}</div>` +
+    `<div style="position:absolute;top:0;right:0">${accentChip(chipLabel)}</div>` +
+    CLUB_BADGE +
+    `<div style="font-weight:800;font-size:28px;line-height:1;letter-spacing:.05em;text-transform:uppercase;margin-top:15px;text-shadow:0 0 26px rgba(55,207,230,.55)">{{clubName}}</div>` +
+    `<div style="font:500 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.26em;color:rgba(255,255,255,.5);margin-top:9px">{{clubTagline}}</div>` +
+    `<div style="width:210px;height:1px;margin-top:16px;background:linear-gradient(90deg,transparent,rgba(55,207,230,.9),transparent);box-shadow:0 0 14px rgba(55,207,230,.85)"></div>` +
     `</div>`
   );
 }

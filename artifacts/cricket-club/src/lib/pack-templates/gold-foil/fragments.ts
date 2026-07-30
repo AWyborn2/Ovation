@@ -1,4 +1,4 @@
-import { columnRoot, slot } from "../shared";
+import { CLUB_LOGO_SLOT, columnRoot, slot } from "../shared";
 
 /**
  * Shared markup fragments for the Gold Foil pack, transcribed verbatim from
@@ -16,9 +16,33 @@ import { columnRoot, slot } from "../shared";
  *  - a **gold ribbon** for the hero callout,
  *  - a centred story composition rather than left-aligned.
  *
- * The non-story (portrait/square) branch is deliberately much closer to
- * Broadcast Dark's shared layout — that is how the bundle authored it, so the
- * packs diverge mainly in the story format.
+ * Feed (portrait/square) composition — a DEPARTURE from the bundle.
+ *
+ * The bundle authored every pack's non-story branch as Broadcast Dark's layout
+ * with a different background swapped in, so all five packs rendered
+ * near-identically in the feed formats and in the Studio's pack picker — you
+ * could not tell Gold Foil from Bold Type at a glance, which defeats the point
+ * of a catalogue.
+ *
+ * Gold Foil's feed layout is therefore rebuilt around the pack's own
+ * grand-final/awards language, as a **presentation certificate**:
+ *
+ *  - {@link sharedHeader} is no longer a header row but a full-bleed **gold
+ *    foil RIBBON** across the top — a milled metal band (pale sheen → gold →
+ *    bronze shadow) carrying a dark **seal medallion** with the club logo, the
+ *    club name debossed in the accent's ink, and an inverted ink pill for the
+ *    card's label. Two darker **folds hang below its ends**, so it reads as a
+ *    ribbon pinned across the card rather than a broadcast band.
+ *  - {@link sharedColumnRoot} sets the content in an **honour-board frame** —
+ *    a double gold hairline with diamond corner marks, starting *below* the
+ *    ribbon so the ribbon caps it.
+ *  - {@link SHARED_BG} re-anchors the concentric grooves from the centre of the
+ *    card (where they read as Broadcast Dark's stage glow) to a **bottom-right
+ *    corner arc**, leaving the top clean for the ribbon.
+ *
+ * Bold Type answers the same problem with a vertical type spine at the left
+ * edge; Gold Foil answers it with a horizontal ribbon and a framed board. The
+ * two silhouettes are opposites, which is the point at thumbnail size.
  */
 
 export {
@@ -48,21 +72,82 @@ export const STORY_BG =
   `<div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 40%, transparent 38%, var(--surface-deep,#050403) 80%)"></div>`;
 
 /**
- * Non-story background: the same groove field composited into one layer, plus
- * the rotated gold beam and the bottom panel glow (shared with Broadcast Dark).
+ * Non-story background: the groove field re-anchored to the BOTTOM-RIGHT corner
+ * as an arc ornament, under a warm gold wash from the top edge.
+ *
+ * The bundle centred the grooves at `50% 40%` and stacked Broadcast Dark's
+ * rotated beam and panel glow on top — which is exactly why the two packs' feed
+ * cards were indistinguishable. Anchoring the arcs in one corner turns them
+ * into an ornament instead of a stage, and leaves the top of the card clear for
+ * the ribbon ({@link sharedHeader}).
+ *
+ * Exported because record / grade-leader compose their own photo layers onto
+ * this field directly rather than through {@link sharedColumnRoot}.
  */
 export const SHARED_BG =
-  `<div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 42%, transparent 40%, var(--surface-deep,#050403) 82%), repeating-radial-gradient(circle at 50% 40%, transparent 0 58px, color-mix(in srgb, var(--gold,#FBAC27) 9%, transparent) 58px 60px), var(--ink,#070603)"></div>` +
-  `<div style="position:absolute;top:-180px;right:-160px;width:820px;height:1300px;background:linear-gradient(180deg,color-mix(in srgb, var(--gold,#FBAC27) 13%, transparent),transparent);transform:rotate(20deg)"></div>` +
-  `<div style="position:absolute;inset:0;background:radial-gradient(120% 66% at 50% 122%, color-mix(in srgb, var(--panel,#42342B) 40%, transparent), transparent 60%)"></div>`;
+  `<div style="position:absolute;inset:0;background:var(--ink,#070603)"></div>` +
+  `<div style="position:absolute;inset:0;background:repeating-radial-gradient(circle at 100% 100%, transparent 0 68px, color-mix(in srgb, var(--gold,#FBAC27) 20%, transparent) 68px 70px)"></div>` +
+  `<div style="position:absolute;inset:0;background:radial-gradient(circle at 100% 100%, transparent 0 22%, var(--surface-deep,#050403) 72%)"></div>` +
+  `<div style="position:absolute;inset:0;background:linear-gradient(180deg, color-mix(in srgb, var(--gold,#FBAC27) 16%, transparent), transparent 26%)"></div>`;
 
 // ---------------------------------------------------------------------------
 // Format roots
 // ---------------------------------------------------------------------------
 
-/** Non-story root: Gold Foil background + the standard padded flex column. */
+/** Column padding shared by every non-story root (record / grade-leader repeat
+ * these literals because they call `columnRoot` directly). */
+const PAD_T = 58;
+const PAD_X = 66;
+const PAD_B = 52;
+
+/** Height of the folds hanging below the ribbon's two ends. */
+const RIBBON_FOLD = 32;
+
+/**
+ * Where the honour-board frame starts: clear of the ribbon band and its folds
+ * (see {@link sharedHeader} — band 142px, folds another {@link RIBBON_FOLD}).
+ */
+const FRAME_TOP = 184;
+
+/**
+ * The honour-board frame: a double gold hairline with diamond corner marks,
+ * inset from the card edge and starting below the ribbon so the ribbon caps it.
+ *
+ * This is the certificate/awards device the pack's story format already implies
+ * (foil type, gold ribbon callout, premiership honours) applied to the frame of
+ * the card itself.
+ */
+function honourFrame(): string {
+  const outer = `color-mix(in srgb, var(--gold,#FBAC27) 30%, transparent)`;
+  const inner = `color-mix(in srgb, var(--gold,#FBAC27) 13%, transparent)`;
+  const mark = (pos: string) =>
+    `<div style="position:absolute;${pos};width:12px;height:12px;transform:rotate(45deg);background:var(--gold,#FBAC27);opacity:.62"></div>`;
+  return (
+    `<div style="position:absolute;top:${FRAME_TOP + 9}px;left:35px;right:35px;bottom:35px;border:1px solid ${inner}"></div>` +
+    `<div style="position:absolute;top:${FRAME_TOP}px;left:26px;right:26px;bottom:26px;border:1px solid ${outer}">` +
+    mark("left:-6px;top:-6px") +
+    mark("right:-6px;top:-6px") +
+    mark("left:-6px;bottom:-6px") +
+    mark("right:-6px;bottom:-6px") +
+    `</div>`
+  );
+}
+
+/**
+ * Non-story root: the corner-arc groove field, the honour-board frame, and the
+ * standard padded flex column.
+ *
+ * The column's first child is normally {@link sharedHeader}'s ribbon, which
+ * cancels this padding with negative margins to bleed to the card edge — change
+ * one and you must change the other.
+ */
 export function sharedColumnRoot(columnInner: string, rootStyle = ""): string {
-  return columnRoot(SHARED_BG, columnInner, "58px 66px 52px", rootStyle);
+  return columnRoot(
+    SHARED_BG + honourFrame(),
+    columnInner,
+    `${PAD_T}px ${PAD_X}px ${PAD_B}px`,
+    rootStyle,
+  );
 }
 
 /**
@@ -126,18 +211,112 @@ export function goldChip(label: string): string {
   return `<div style="display:inline-block;background:var(--gold,#FBAC27);color:var(--accent-ink,#151515);font-weight:800;font-size:20px;line-height:1;letter-spacing:.03em;padding:11px 15px;border-radius:7px">${label}</div>`;
 }
 
-/** Non-story header: club logo + name/tagline on the left, chip + tag right. */
-export function sharedHeader(chipLabel: string, tag: string): string {
+/**
+ * The milled-foil face of the ribbon: pale sheen at the top edge, full accent
+ * through the middle, bronze shadow at the fold.
+ *
+ * Unlike {@link foilText}'s fixed specular ramp, every stop is mixed FROM
+ * `var(--gold)`, so a band this large stays the tenant's colour rather than
+ * imposing one club's brass on everyone.
+ */
+const RIBBON_FACE =
+  `linear-gradient(180deg,` +
+  `color-mix(in srgb, var(--gold,#FBAC27) 44%, #FFFFFF) 0%,` +
+  `color-mix(in srgb, var(--gold,#FBAC27) 88%, #FFFFFF) 15%,` +
+  `var(--gold,#FBAC27) 46%,` +
+  `color-mix(in srgb, var(--gold,#FBAC27) 72%, #000000) 82%,` +
+  `color-mix(in srgb, var(--gold,#FBAC27) 88%, #000000) 100%)`;
+
+/** One of the darker folds hanging below the ribbon's ends. */
+function ribbonFold(side: "left" | "right"): string {
+  const edge =
+    side === "left"
+      ? `left:0;border-right:48px solid transparent`
+      : `right:0;border-left:48px solid transparent`;
   return (
-    `<div style="flex:none;display:flex;align-items:center;justify-content:space-between">` +
-    `<div style="display:flex;align-items:center;gap:20px">` +
-    `<div style="width:100px;height:100px;flex:none">${slot("clubLogo", "logo", "rect")}</div>` +
-    `<div><div style="font-weight:800;font-size:34px;line-height:1;letter-spacing:.01em">{{clubName}}</div>` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-top:8px">{{clubTagline}}</div></div>` +
-    `</div>` +
-    `<div style="text-align:right">${goldChip(chipLabel)}` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.15em;color:rgba(255,255,255,.6);margin-top:11px">${tag}</div></div>` +
-    `</div>`
+    `<div style="position:absolute;top:100%;${edge};width:0;height:0;` +
+    `border-top:${RIBBON_FOLD}px solid color-mix(in srgb, var(--gold,#FBAC27) 68%, #000000)"></div>`
+  );
+}
+
+/** The seal: the club logo in a dark medallion ringed in gold, struck into the
+ * ribbon. Uses the contain-fit slot so a wordmark logo is not cropped by the
+ * circle. */
+const RIBBON_SEAL =
+  `<div style="position:relative;width:96px;height:96px;flex:none;border-radius:50%;background:var(--ink,#070603);` +
+  `box-shadow:0 0 0 3px color-mix(in srgb, var(--gold,#FBAC27) 58%, #000000),inset 0 0 0 2px color-mix(in srgb, var(--gold,#FBAC27) 34%, transparent),0 6px 18px -8px rgba(0,0,0,.8)">` +
+  `<div style="position:absolute;inset:16px">${CLUB_LOGO_SLOT}</div></div>`;
+
+/** Ink at `pct` opacity — for type set ON the ribbon, where white would blow out. */
+export function ribbonInk(pct: number): string {
+  return `color-mix(in srgb, var(--accent-ink,#151515) ${pct}%, transparent)`;
+}
+
+/**
+ * Inverted chip for the ribbon: a dark seal-pill with gold type. {@link goldChip}
+ * is invisible on the band, so the label flips instead.
+ */
+export function ribbonChip(label: string): string {
+  return (
+    `<div style="display:inline-block;background:var(--ink,#070603);color:var(--gold,#FBAC27);font-weight:800;font-size:19px;` +
+    `line-height:1;letter-spacing:.16em;padding:13px 21px;border-radius:999px;box-shadow:0 4px 12px -4px rgba(0,0,0,.7)">${label}</div>`
+  );
+}
+
+/** Small tracked line under a ribbon chip (season / as-of / "CLUB BEST"). */
+export function ribbonTag(tag: string): string {
+  return `<div style="font:700 14px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;margin-top:13px;color:${ribbonInk(82)}">${tag}</div>`;
+}
+
+/**
+ * The gold foil RIBBON — Gold Foil's feed signature.
+ *
+ * A full-bleed milled-metal band across the top of the card: the seal on the
+ * left with `left` beside it, `right` set opposite. It cancels
+ * {@link sharedColumnRoot}'s padding with negative margins so it bleeds to the
+ * card edge, and hangs a fold below each end so the silhouette reads as a
+ * ribbon pinned across the card rather than a header row above it. That
+ * silhouette — a bright horizontal bar over a framed dark board — is what
+ * separates Gold Foil from the other packs at thumbnail size.
+ *
+ * The negative margins assume the shared `58px 66px 52px` column padding, which
+ * record / grade-leader also pass to `columnRoot` directly. Type set into
+ * `left`/`right` sits on gold, so it must be inked ({@link ribbonInk}) rather
+ * than white, and {@link FRAME_TOP} must clear the band plus its folds.
+ *
+ * Exported (rather than inlined into {@link sharedHeader}) for the one card
+ * whose reference design declares no `clubName`: see debut.ts.
+ */
+export function ribbonBand(left: string, right: string): string {
+  return (
+    `<div style="flex:none;position:relative;margin:-${PAD_T}px -${PAD_X}px 56px;padding:25px ${PAD_X}px 24px;` +
+    `background:${RIBBON_FACE};box-shadow:0 24px 50px -28px rgba(0,0,0,.95)">` +
+    `<div style="position:absolute;left:0;right:0;top:0;height:2px;background:rgba(255,255,255,.55)"></div>` +
+    `<div style="position:absolute;left:0;right:0;bottom:0;height:5px;background:color-mix(in srgb, var(--gold,#FBAC27) 44%, #000000)"></div>` +
+    ribbonFold("left") +
+    ribbonFold("right") +
+    `<div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px">` +
+    `<div style="display:flex;align-items:center;gap:24px;min-width:0">${RIBBON_SEAL}${left}</div>` +
+    `<div style="text-align:right;flex:none">${right}</div>` +
+    `</div></div>`
+  );
+}
+
+/**
+ * Feed header: the ribbon carrying the club identity — name debossed in the
+ * accent's ink over the tagline, with the card's label as an inverted chip.
+ *
+ * Every card that shows the club identity in its feed header routes through
+ * here, so this one function is the pack's feed voice.
+ */
+export function sharedHeader(chipLabel: string, tag: string): string {
+  return ribbonBand(
+    `<div style="min-width:0">` +
+      `<div style="font-weight:800;font-size:37px;line-height:1;letter-spacing:.02em;text-transform:uppercase;` +
+      `color:var(--accent-ink,#151515);text-shadow:0 1px 0 rgba(255,255,255,.4)">{{clubName}}</div>` +
+      `<div style="font:600 14px/1 ui-monospace,Menlo,monospace;letter-spacing:.26em;text-transform:uppercase;margin-top:13px;color:${ribbonInk(72)}">{{clubTagline}}</div>` +
+      `</div>`,
+    ribbonChip(chipLabel) + ribbonTag(tag),
   );
 }
 
