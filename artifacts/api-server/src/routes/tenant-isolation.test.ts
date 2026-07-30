@@ -180,6 +180,34 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     expect(asT2.body.some((r: { name: string }) => r.name === T2_SPONSOR_NAME)).toBe(true);
   });
 
+  /**
+   * Regression: `/social-settings` carries `activeSponsors`, which every share
+   * card and the honour-board kiosk render from. `loadActiveSponsors` filtered
+   * on the sponsor's active-date window ALONE — no tenant predicate — so every
+   * tenant received the union of every tenant's sponsors: another club's logos
+   * on your cards, and another club's name on the "presented by" line.
+   *
+   * The `/api/sponsors` case above did not catch it because that endpoint was
+   * correctly scoped; the leak was only on the bundle's read path.
+   */
+  it("social settings: activeSponsors never carries another tenant's sponsor", async () => {
+    const asT1 = await request(app)
+      .get("/api/social-settings")
+      .set("x-tenant-id", "1")
+      .expect(200);
+    expect(
+      asT1.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME),
+    ).toBe(false);
+
+    const asT2 = await request(app)
+      .get("/api/social-settings")
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(
+      asT2.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME),
+    ).toBe(true);
+  });
+
   // Phase 3 U2 regression: PATCH/DELETE on sponsors/card-themes previously had
   // NO tenant filter at all (only GET/POST were scoped) — tenant 1's admin
   // could edit or delete tenant 2's rows just by knowing/guessing an id.

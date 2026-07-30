@@ -1016,7 +1016,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       platform: t.platform,
       template: t.template,
     })),
-    activeSponsors: await loadActiveSponsors(req.log),
+    activeSponsors: await loadActiveSponsors(tenantId, req.log),
     brand: await getTenantBrand(tenantId),
   });
 });
