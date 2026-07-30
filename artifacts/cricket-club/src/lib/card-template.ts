@@ -80,12 +80,6 @@ export const CARD_FIELD_CATALOG: Record<CardKind, TemplateFieldDef[]> = {
     { key: "round", label: "Round", type: "text" },
     PHOTO_FIELD,
   ],
-  newCap: [
-    { key: "playerName", label: "Player name", type: "text" },
-    { key: "grade", label: "Grade", type: "text" },
-    { key: "capNumber", label: "Cap number", type: "text" },
-    PHOTO_FIELD,
-  ],
   century: [
     { key: "playerName", label: "Player name", type: "text" },
     { key: "grade", label: "Grade", type: "text" },
@@ -489,14 +483,6 @@ export const resolveTextField = (
         season: input.season ?? "",
         opponent: input.opponent ?? "",
         round: input.round != null ? str(input.round) : "",
-      };
-      return map[key] ?? "";
-    }
-    case "newCap": {
-      const map: Record<string, string> = {
-        playerName: input.playerName,
-        grade: input.grade,
-        capNumber: str(input.capNumber),
       };
       return map[key] ?? "";
     }

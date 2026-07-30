@@ -1,10 +1,10 @@
 ---
 name: Per-match milestone fire-once strategy
-description: How debut/newCap/century/5-for per-match milestone cards avoid duplicates across re-import and undo/re-import cycles.
+description: How debut/century/5-for per-match milestone cards avoid duplicates across re-import and undo/re-import cycles.
 ---
 
-Per-match milestone detection (after an xlsx match commit) emits four kinds:
-debut, newCap, century, fiveFor. Each becomes a `milestone_events` row + a
+Per-match milestone detection (after an xlsx match commit) emits three kinds:
+debut, century, fiveFor. Each becomes a `milestone_events` row + a
 `social_drafts` row (engine "milestone"), gated on `socialSettings.engineMilestone`
 (default OFF). It runs from `runPostCommitSocial` only when a `matchContext` is
 passed (per-match path only; CSV path never passes it).
@@ -15,10 +15,13 @@ passed (per-match path only; CSV path never passes it).
   per-grade game-count snapshot (`snapshotGradeGames(grade)`, captured BEFORE the
   transaction) against who appears in the match. After commit the player shows
   ≥1 game, so a re-import never re-fires. Only fires for cap-register grades
-  (A Grade / Female A Grade).
-- **newCap** — idempotent via cap-sync: only caps freshly issued by THIS commit's
-  `syncCapsFromStats` (now returned in `CapSyncResult.createdCaps`) are eligible.
-  Re-running cap-sync on already-capped players issues nothing.
+  (A Grade / Female A Grade). Its card carries the cap number issued by this
+  commit's `syncCapsFromStats` (`CapSyncResult.createdCaps`).
+- **newCap** — REMOVED (30 Jul 2026). It was a fourth kind, idempotent via
+  cap-sync (only caps freshly issued by THIS commit were eligible). The card
+  kind was retired from the catalogue in favour of `debut`, which describes the
+  same moment with a superset of its fields, so nothing emits a `newCap`
+  milestone event or social draft any more.
 - **century / fiveFor** — NOT structurally idempotent (the same innings re-appears
   on re-import), so they need an **explicit existence check** against
   `milestone_events` keyed by `${boardKey}|${playerId}|${grade}|${season}|${round}`.

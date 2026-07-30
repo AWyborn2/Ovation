@@ -73,11 +73,6 @@ const HOME_AWAY = [
   { value: "AWAY", label: "Away" },
 ] as const;
 
-const CAP_CATEGORY = [
-  { value: "male", label: "Male (A Grade)" },
-  { value: "female", label: "Female (Female A Grade)" },
-] as const;
-
 const TEAM_ROLE = [
   { value: "", label: "—" },
   { value: "C", label: "Captain" },
@@ -192,19 +187,6 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       { key: "opponent", label: "Opponent", type: "text" },
       { key: "round", label: "Round", type: "number" },
       { key: "headline", label: "Tribute line", type: "text", full: true },
-      photo(),
-    ],
-  },
-
-  newCap: {
-    prefill: "match",
-    playerField: { key: "playerName" },
-    fields: [
-      { key: "playerName", label: "Player name", type: "text" },
-      { key: "grade", label: "Grade", type: "text" },
-      { key: "category", label: "Cap list", type: "select", options: CAP_CATEGORY },
-      { key: "capNumber", label: "Cap number", type: "number" },
-      { key: "headline", label: "Headline", type: "text", full: true },
       photo(),
     ],
   },

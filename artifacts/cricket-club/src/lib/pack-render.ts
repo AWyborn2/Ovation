@@ -931,13 +931,6 @@ function bindInput(input: ShareCardInput): BoundInput {
       if (input.photoUrl) images["photo"] = input.photoUrl;
       break;
     }
-    case "newCap": {
-      set(values, "playerName", input.playerName);
-      set(values, "grade", input.grade);
-      set(values, "capNumber", input.capNumber);
-      if (input.photoUrl) images["photo"] = input.photoUrl;
-      break;
-    }
     case "century": {
       set(values, "playerName", input.playerName);
       set(values, "grade", input.grade);

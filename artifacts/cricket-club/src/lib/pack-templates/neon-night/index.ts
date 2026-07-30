@@ -8,7 +8,6 @@ import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
 import { matchDay } from "./match-day";
 import { countdown } from "./countdown";
 import { newSigning } from "./new-signing";
-import { newCap } from "./new-cap";
 import { premiership } from "./premiership";
 import { teamList } from "./team-list";
 import { weekendWrap } from "./weekend-wrap";
@@ -62,7 +61,6 @@ export const NEON_NIGHT_PACK: PackManifest = {
     { designKey: "match-day", kind: "matchDay", template: matchDay },
     { designKey: "countdown", kind: "countdown", template: countdown },
     { designKey: "new-signing", kind: "newSigning", template: newSigning },
-    { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "premiership", kind: "premiership", template: premiership },
     { designKey: "team-list", kind: "teamList", template: teamList },
     { designKey: "weekend-wrap", kind: "weekendWrap", template: weekendWrap },

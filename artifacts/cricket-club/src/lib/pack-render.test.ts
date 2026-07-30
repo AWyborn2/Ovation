@@ -48,9 +48,11 @@ describe("renderPackCard", () => {
   });
 
   it("supports every card kind in the pack", () => {
+    // `newCap` is absent on purpose: retired from the catalogue in favour of
+    // `debut`, whose fields are a superset of its own.
     const kinds: ShareCardInput["kind"][] = [
       "milestone", "player", "record", "gradeLeader", "premiership",
-      "debut", "newCap", "century", "fiveFor", "matchSummary", "matchDay",
+      "debut", "century", "fiveFor", "matchSummary", "matchDay",
       "teamList", "weekendWrap", "ladder", "bigMoment", "newSigning",
       "countdown", "clubLeaderboard",
     ];
@@ -58,6 +60,15 @@ describe("renderPackCard", () => {
       expect(packSupportsKind(kind)).toBe(true);
       const html = renderPackCard(sampleCardInput(kind), "square", true, TOKENS, false);
       expect(hasUnresolved(html)).toBe(false);
+    }
+  });
+
+  it("no pack offers a design for the retired newCap kind", () => {
+    // `packSupportsKind` takes a plain string, so a pack could reintroduce a
+    // `newCap` design without the removed union member ever being restored.
+    expect(packSupportsKind("newCap")).toBe(false);
+    for (const packId of ["gold-foil-v1", "bold-type-v1", "neon-night-v1", "sunset-v1"]) {
+      expect(packSupportsKind("newCap", packId), packId).toBe(false);
     }
   });
 
@@ -338,11 +349,12 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
   });
 
   it("(A7) drops only the presented-by line on bespoke flex rows, keeping the clubHashtag sibling", () => {
-    // new-cap / debut put the clubHashtag and the presented-by line in the SAME
-    // flex row. Dropping the empty presented-by line must leave the hashtag
-    // sibling (and its surrounding flex row) intact.
+    // debut puts the clubHashtag and the presented-by line in the SAME flex
+    // row. Dropping the empty presented-by line must leave the hashtag sibling
+    // (and its surrounding flex row) intact. new-cap shared this shape and was
+    // covered here until the `newCap` kind was retired from every pack.
     const data: PackCardData = { hashtag: "#TESTCC", presentingSponsorName: null };
-    for (const kind of ["newCap", "debut"] as ShareCardInput["kind"][]) {
+    for (const kind of ["debut"] as ShareCardInput["kind"][]) {
       const input = sampleCardInput(kind);
       for (const size of ["story", "square"] as CardSize[]) {
         const html = renderPackCard(input, size, true, TOKENS, false, data);

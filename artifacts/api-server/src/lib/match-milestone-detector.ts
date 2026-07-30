@@ -18,7 +18,7 @@ export type MatchMilestoneLine = {
   overs: string | null;
 };
 
-/** A cap freshly issued by this commit's cap-sync (drives new-cap milestones). */
+/** A cap freshly issued by this commit's cap-sync (supplies the debut card's cap number). */
 export type CreatedCap = {
   capNumber: number;
   category: "male" | "female";
@@ -43,7 +43,11 @@ export type MatchMilestoneContext = {
   gradeGamesBefore: Map<number, number>;
 };
 
-const MATCH_BOARD_KEYS = ["debut", "newCap", "century", "fiveFor"] as const;
+// `newCap` was a fourth key here. The New Cap card kind was retired in favour
+// of `debut` — the same moment, and Debut's fields are a superset (the debut
+// card already carries the cap number issued by this commit's cap-sync) — so
+// nothing emits a newCap milestone or draft any more.
+const MATCH_BOARD_KEYS = ["debut", "century", "fiveFor"] as const;
 type MatchBoardKey = (typeof MATCH_BOARD_KEYS)[number];
 
 type Detected = {
@@ -63,9 +67,10 @@ type Detected = {
  * `milestone_events` row plus a `social_drafts` row (engine "milestone"), so it
  * runs through the same admin queue and posted/dismissed lifecycle.
  *
- * Detects: A Grade / Female A Grade debut, new cap #N, century (≥100 in an
- * innings), and five-wicket haul. Century / five-for apply to ANY grade; debut +
- * cap are cap-register scoped. Caller gates on `socialSettings.engineMilestone`.
+ * Detects: A Grade / Female A Grade debut (carrying the cap number issued by
+ * this commit's cap-sync), century (≥100 in an innings), and five-wicket haul.
+ * Century / five-for apply to ANY grade; debut is cap-register scoped. Caller
+ * gates on `socialSettings.engineMilestone`.
  *
  * Fire-once: existing match-milestone events for the involved players are loaded
  * and used to de-duplicate, so re-imports and undo→re-import cycles (which leave
@@ -129,7 +134,6 @@ export async function detectAndQueueMatchMilestones(
     );
 
   const seenDebut = new Set<string>(); // `${playerId}|${grade}`
-  const seenNewCap = new Set<string>(); // `${category}|${capNumber}`
   const seenInnings = new Set<string>(); // `${kind}|${playerId}|${grade}|${season}|${round}`
   for (const e of existing) {
     const pl = (e.payload ?? {}) as Record<string, unknown>;
@@ -137,8 +141,6 @@ export async function detectAndQueueMatchMilestones(
     const s = String(pl.season ?? "");
     const r = pl.round == null ? "null" : String(pl.round);
     if (e.boardKey === "debut") seenDebut.add(`${e.playerId}|${g}`);
-    else if (e.boardKey === "newCap")
-      seenNewCap.add(`${String(pl.category ?? "")}|${e.value}`);
     else if (e.boardKey === "century" || e.boardKey === "fiveFor")
       seenInnings.add(`${e.boardKey}|${e.playerId}|${g}|${s}|${r}`);
   }
@@ -181,39 +183,6 @@ export async function detectAndQueueMatchMilestones(
         },
       });
     }
-  }
-
-  // --- New cap: caps freshly issued by this commit's cap-sync.
-  for (const c of createdCaps) {
-    const key = `${c.category}|${c.capNumber}`;
-    if (seenNewCap.has(key)) continue;
-    seenNewCap.add(key);
-    const name = nameById.get(c.playerId) ?? c.name;
-    detected.push({
-      playerId: c.playerId,
-      boardKey: "newCap",
-      tierIndex: 0,
-      tierLabel: `${grade} Cap #${c.capNumber}`,
-      value: c.capNumber,
-      threshold: 0,
-      payload: {
-        name,
-        grade,
-        season,
-        round,
-        opponent,
-        category: c.category,
-        capNumber: c.capNumber,
-      },
-      cardInput: {
-        kind: "newCap",
-        playerName: name,
-        grade,
-        category: c.category,
-        capNumber: c.capNumber,
-        photoUrl: photoFor(c.playerId),
-      },
-    });
   }
 
   // --- Century / five-wicket haul: per innings/spell in this match.

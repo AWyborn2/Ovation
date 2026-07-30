@@ -120,7 +120,7 @@ export type CapSyncResult = {
   category: "male" | "female";
   updated: number;
   created: number;
-  /** Caps freshly issued by this sync run (for per-match new-cap milestones). */
+  /** Caps freshly issued by this sync run (numbers the per-match debut card). */
   createdCaps: { capNumber: number; playerId: number; name: string }[];
 };
 

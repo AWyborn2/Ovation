@@ -12,7 +12,6 @@ import { ladder } from "./ladder";
 import { matchDay } from "./match-day";
 import { matchResult } from "./match-result";
 import { milestone } from "./milestone";
-import { newCap } from "./new-cap";
 import { newSigning } from "./new-signing";
 import { playerSpotlight } from "./player-spotlight";
 import { premiership } from "./premiership";
@@ -21,9 +20,13 @@ import { teamList } from "./team-list";
 import { weekendWrap } from "./weekend-wrap";
 
 /**
- * Pack A — Broadcast Dark. 20 designs (A1–A20 in the bundle) mapping onto 18
- * card kinds: gradeLeader (A13/A18) and clubLeaderboard (A19/A20) each carry
- * two category-preset designs.
+ * Pack A — Broadcast Dark. 19 designs mapping onto 17 card kinds: gradeLeader
+ * and clubLeaderboard each carry two category-preset designs.
+ *
+ * The bundle shipped 20 designs / 18 kinds (A1–A20). A15 "new-cap" was retired
+ * with the `newCap` card kind — Debut covers the same moment with a superset of
+ * its fields — so it is absent here and from every other pack. See the note on
+ * `CARD_KIND_OPTIONS` in components/card-kind-picker.tsx.
  */
 export const BROADCAST_DARK_PACK: PackManifest = {
   packId: "broadcast-dark-v1",
@@ -48,7 +51,6 @@ export const BROADCAST_DARK_PACK: PackManifest = {
       template: gradeLeaderRuns,
     },
     { designKey: "premiership", kind: "premiership", template: premiership },
-    { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "century", kind: "century", template: century },
     { designKey: "five-for", kind: "fiveFor", template: fiveFor },
     {

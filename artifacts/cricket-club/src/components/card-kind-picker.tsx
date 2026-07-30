@@ -1,5 +1,13 @@
 import type { CardKind } from "@/lib/share-card";
 
+/**
+ * The card catalogue — every kind a tenant can create, and the source of
+ * `ALL_CARD_KINDS` (lib/social-studio.ts).
+ *
+ * `newCap` ("New Cap") was retired in favour of `debut` ("A Grade Debut"): the
+ * same moment (a player's first-grade debut IS when they receive their cap),
+ * and Debut's fields are a superset of New Cap's.
+ */
 export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "milestone", label: "Milestone" },
   { value: "player", label: "Player" },
@@ -7,7 +15,6 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "gradeLeader", label: "Leaderboard" },
   { value: "premiership", label: "Premiership" },
   { value: "debut", label: "Debut" },
-  { value: "newCap", label: "New Cap" },
   { value: "century", label: "Century" },
   { value: "fiveFor", label: "Five-for" },
   { value: "matchSummary", label: "Match Summary" },

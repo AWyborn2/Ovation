@@ -31,7 +31,7 @@ const render = (packId: string | undefined, size: CardSize, sponsorsOn = true) =
 describe("gold-foil manifest", () => {
   it("is registered as gold-foil-v1", () => {
     expect(GOLD_FOIL_PACK.packId).toBe("gold-foil-v1");
-    expect(GOLD_FOIL_PACK.name).toBe("Gold Foil");
+    expect(GOLD_FOIL_PACK.name).toBe("Metallic Foil");
   });
 
   it("covers only the kinds it has actually transcribed", () => {

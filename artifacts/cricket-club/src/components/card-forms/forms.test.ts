@@ -125,7 +125,6 @@ describe("card-forms: image field type (team/squad photo upload)", () => {
       "record",
       "gradeLeader",
       "debut",
-      "newCap",
       "century",
       "fiveFor",
       "bigMoment",

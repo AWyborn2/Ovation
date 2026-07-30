@@ -87,17 +87,6 @@ const valueOf = (input: ShareCardInput, key: string): string => {
       };
       return map[key] ?? "";
     }
-    case "newCap": {
-      const map: Record<string, string> = {
-        "player.name": input.playerName,
-        "stat.value": String(input.capNumber),
-        "stat.label": "cap",
-        "stat.tier": `${input.grade} Cap #${input.capNumber}`,
-        "stat.threshold": "",
-        "grade.name": input.grade,
-      };
-      return map[key] ?? "";
-    }
     case "century": {
       const map: Record<string, string> = {
         "player.name": input.playerName,

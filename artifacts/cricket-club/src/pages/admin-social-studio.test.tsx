@@ -318,7 +318,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.click(screen.getByLabelText("Use Gold Foil for all card types"));
+    fireEvent.click(screen.getByLabelText("Use Metallic Foil for all card types"));
     const cancel = await screen.findByRole("button", { name: /cancel/i });
     fireEvent.click(cancel);
 
@@ -332,7 +332,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.click(screen.getByLabelText("Use Gold Foil for all card types"));
+    fireEvent.click(screen.getByLabelText("Use Metallic Foil for all card types"));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog.textContent).toContain("My Player Layout");

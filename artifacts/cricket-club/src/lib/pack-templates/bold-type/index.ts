@@ -3,7 +3,6 @@ import { matchResult } from "./match-result";
 import { matchDay } from "./match-day";
 import { countdown } from "./countdown";
 import { newSigning } from "./new-signing";
-import { newCap } from "./new-cap";
 import { premiership } from "./premiership";
 import { record } from "./record";
 import { teamList } from "./team-list";
@@ -39,7 +38,6 @@ export const BOLD_TYPE_PACK: PackManifest = {
     { designKey: "match-day", kind: "matchDay", template: matchDay },
     { designKey: "countdown", kind: "countdown", template: countdown },
     { designKey: "new-signing", kind: "newSigning", template: newSigning },
-    { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "premiership", kind: "premiership", template: premiership },
     { designKey: "record", kind: "record", template: record },
     { designKey: "team-list", kind: "teamList", template: teamList },

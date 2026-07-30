@@ -223,7 +223,7 @@ export async function runPostCommitSocial(opts: {
  * together. Career-tier crossings are detected ONCE for the entire batch (the
  * `beforeMap` is captured before any match is written), stamped with the first
  * committed match's import id. Per-match milestone detection runs once per match
- * (ordered by round) — its fire-once de-dup means debut/new-cap moments only
+ * (ordered by round) — its fire-once de-dup means debut moments only
  * emit a single card across the batch. Round-up drafts run once per affected
  * (grade, season). All gated on the social settings engines.
  */
