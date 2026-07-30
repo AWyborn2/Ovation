@@ -176,10 +176,33 @@ export function storyColumnRoot(columnInner: string, columnStyle = ""): string {
  * cannot express. A tenant's accent still drives every `var(--gold)` around it,
  * so the card reads as theirs while the foil keeps its material look.
  */
+/**
+ * The metal ramp, DERIVED from the tenant's accent rather than fixed gold.
+ *
+ * A foil gradient needs a highlight and a shadow stop, and those were hard-coded
+ * warm golds. So even when `--gold` shifted to a navy or green club's colour,
+ * the foil still read gold — the one thing in the pack that ignored the
+ * tenant's branding, on the pack whose whole identity is the metal.
+ *
+ * Each stop is now `--gold` mixed toward white (highlights) or black (shadows).
+ * The percentages are chosen to reproduce the original ramp almost exactly at
+ * Halls Head's `#FBAC27`, so their cards are unchanged, while a silver/navy club
+ * gets steel and a green club gets green — the material stays foil, the metal
+ * becomes theirs.
+ */
+const G = "var(--gold,#FBAC27)";
+export const FOIL_RAMP =
+  `linear-gradient(180deg,` +
+  `color-mix(in srgb, ${G} 22%, #fff) 4%,` +
+  `color-mix(in srgb, ${G} 62%, #fff) 32%,` +
+  `color-mix(in srgb, ${G} 78%, #000) 60%,` +
+  `color-mix(in srgb, ${G} 54%, #000) 78%,` +
+  `color-mix(in srgb, ${G} 38%, #fff) 100%)`;
+
 export function foilText(content: string, fontSize: number, extraStyle = ""): string {
   return (
     `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:${fontSize}px;line-height:.84;text-transform:uppercase;letter-spacing:.01em;` +
-    `background:linear-gradient(180deg,#FFF3CC 4%,#F7CE6C 32%,#C8860A 60%,#8A5B06 78%,#FFE59C 100%);background-size:100% 220%;` +
+    `background:${FOIL_RAMP};background-size:100% 220%;` +
     `-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;` +
     `animation:hhShine 5.5s ease-in-out infinite;filter:drop-shadow(0 3px 14px rgba(0,0,0,.6))${extraStyle}">${content}</div>`
   );

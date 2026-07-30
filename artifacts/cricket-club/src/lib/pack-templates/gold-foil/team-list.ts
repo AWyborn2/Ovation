@@ -16,6 +16,7 @@ import {
   sponsorsOff,
   sponsorsOn,
   textField,
+  FOIL_RAMP,
 } from "./fragments";
 
 // B4 — Team List. Starting XI (≤12 names) with captain & keeper marked.
@@ -38,7 +39,7 @@ import {
  */
 const FOIL_SPAN =
   `font-family:var(--disp,'Anton'),sans-serif;` +
-  `background:linear-gradient(180deg,#FFF3CC 4%,#F7CE6C 32%,#C8860A 60%,#8A5B06 78%,#FFE59C 100%);` +
+  `background:${FOIL_RAMP};` +
   `-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;` +
   `filter:drop-shadow(0 3px 12px rgba(0,0,0,.55))`;
 

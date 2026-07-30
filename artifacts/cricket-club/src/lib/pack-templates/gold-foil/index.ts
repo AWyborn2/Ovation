@@ -34,7 +34,10 @@ import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
  */
 export const GOLD_FOIL_PACK: PackManifest = {
   packId: "gold-foil-v1",
-  name: "Gold Foil",
+  // `packId` stays `gold-foil-v1`: it is stored on every tenant's
+  // `card_templates` row, so renaming it would orphan their pack selection.
+  // Only the display name changes.
+  name: "Metallic Foil",
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "match-day", kind: "matchDay", template: matchDay },

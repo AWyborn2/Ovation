@@ -119,9 +119,11 @@ export const PACKS: DesignPack[] = [
   },
   {
     id: "gold-foil-v1",
-    name: "Gold Foil",
+    // `id` stays `gold-foil-v1` — it is stored on every tenant's card_templates
+    // row, so renaming it would orphan their pack selection. Display name only.
+    name: "Metallic Foil",
     description:
-      "Grand-final prestige — metallic foil display type on black, concentric gold grooves and gold ribbon callouts.",
+      "Grand-final prestige — a milled metal ramp derived from your club's own accent, a foil ribbon with a seal medallion, and an honour-board frame. Your colour, in metal.",
     // COVERAGE CONTRACT: this list must match the kinds in the client manifest
     // (`pack-templates/gold-foil/index.ts`). The two registries live in
     // separate packages and are not cross-checked automatically. Declaring a
