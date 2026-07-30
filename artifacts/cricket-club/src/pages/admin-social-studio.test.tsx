@@ -206,6 +206,83 @@ async function renderStudio(templates: CardTemplate[]) {
   return writes;
 }
 
+/**
+ * A STATEFUL card-templates API: the PATCH actually lands, and the next GET
+ * serves the mutated store.
+ *
+ * `setupApi` above freezes the template list, so it can only ever assert what
+ * the client SENDS. The selector's displayed value comes from
+ * `resolvePackIdForKind(templates, kind)` — i.e. from what the refetch brings
+ * BACK — so a frozen list makes the round trip unobservable and the control
+ * appears to revert no matter what the server did. That gap is why a silent
+ * no-op reached production.
+ *
+ * The PATCH handler mirrors routes/social-cards.ts:499-514 in the order that
+ * matters: `clearDefaultKinds` strips the claimed kinds from every OTHER row of
+ * the tenant first, then the target row is updated.
+ */
+function setupStatefulApi(initial: CardTemplate[]) {
+  const store: CardTemplate[] = initial.map((t) => ({ ...t }));
+  installApiMock({ "/social-settings": BUNDLE, "/card-themes": [] });
+  const base = globalThis.fetch as unknown as (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Promise<Response>;
+
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      const method = (init?.method ?? "GET").toUpperCase();
+
+      if (url.includes("/card-templates")) {
+        if (method === "GET") return json(store);
+        const id = Number(url.split("/card-templates/")[1]);
+        const patch = init?.body
+          ? (JSON.parse(String(init.body)) as { defaultForKinds?: string[] })
+          : {};
+        const target = store.find((t) => t.id === id);
+        if (!target) return new Response("{}", { status: 404 });
+        const claimed = patch.defaultForKinds ?? [];
+        if (claimed.length > 0) {
+          for (const t of store) {
+            if (t.id === id) continue;
+            t.defaultForKinds = (t.defaultForKinds ?? []).filter(
+              (k) => !claimed.includes(k),
+            );
+          }
+        }
+        Object.assign(target, patch);
+        return json(target);
+      }
+      return base(input, init);
+    }),
+  );
+  return store;
+}
+
+async function renderStatefulStudio(templates: CardTemplate[]) {
+  const store = setupStatefulApi(templates);
+  renderAt(
+    <ConfirmProvider>
+      <AdminSocialStudio />
+    </ConfirmProvider>,
+  );
+  await screen.findByText("Card types");
+  return store;
+}
+
 const selectorFor = (label: string) =>
   screen.getByLabelText(`Design pack for ${label}`) as HTMLSelectElement;
 
@@ -281,6 +358,107 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     expect(
       screen.getByText("Overridden by template: My Player Layout"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("admin social studio — the selection survives the round trip", () => {
+  /**
+   * The reported bug: pick a pack, a spinner flashes, the control goes back to
+   * "Broadcast Dark (default)". The write is asserted elsewhere in this file;
+   * what was never asserted is that the choice is still there once the refetch
+   * lands. The selector is controlled off `packIdByKind`, so it ALWAYS snaps
+   * back on the render `setPendingKind` forces — success and failure look
+   * identical until new data arrives. Only this assertion tells them apart.
+   */
+  it("shows the newly chosen pack after the refetch, not the default", async () => {
+    const f = fixtureTemplates();
+    await renderStatefulStudio(f.all);
+
+    expect(selectorFor("Century").value).toBe("");
+    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+
+    await waitFor(() =>
+      expect(selectorFor("Century").value).toBe("gold-foil-v1"),
+    );
+  });
+
+  it("persists the claim server-side on the pack's canonical row", async () => {
+    const f = fixtureTemplates();
+    const store = await renderStatefulStudio(f.all);
+
+    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+
+    await waitFor(() =>
+      expect(store.find((t) => t.id === f.goldSquare.id)?.defaultForKinds).toContain(
+        "century",
+      ),
+    );
+  });
+
+  it("shows the admin why a pack write failed instead of silently reverting", async () => {
+    // The regression this guards: `usePackSelection` sets an error and returns
+    // it, and for a release nothing rendered it. A 500 from the server looked
+    // identical to success — spinner, then the selector back on the default —
+    // because the control is driven by server state either way. Silence is the
+    // bug; the assertion is that SOMETHING legible reaches the screen.
+    const f = fixtureTemplates();
+    installApiMock({ "/social-settings": BUNDLE, "/card-themes": [] });
+    const base = globalThis.fetch as unknown as (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => Promise<Response>;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url;
+        const method = (init?.method ?? "GET").toUpperCase();
+        if (url.includes("/card-templates")) {
+          if (method === "GET")
+            return new Response(JSON.stringify(f.all), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            });
+          return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return base(input, init);
+      }),
+    );
+    renderAt(
+      <ConfirmProvider>
+        <AdminSocialStudio />
+      </ConfirmProvider>,
+    );
+    await screen.findByText("Card types");
+
+    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+
+    const banner = await screen.findByText(/internal server error/i);
+    expect(banner).toBeInTheDocument();
+    // ...and the control is honest about not having changed.
+    expect(selectorFor("Century").value).toBe("");
+  });
+
+  it("moving a claimed kind to another pack leaves it claimed exactly once", async () => {
+    // `record` starts on Gold Foil. Moving it to the default pack must not end
+    // with both rows holding it, nor with neither — the server clears the old
+    // owner, and the control must end up reading the new one back.
+    const f = fixtureTemplates();
+    const store = await renderStatefulStudio(f.all);
+
+    expect(selectorFor("Record").value).toBe("gold-foil-v1");
+    fireEvent.change(selectorFor("Record"), { target: { value: "" } });
+
+    await waitFor(() => expect(selectorFor("Record").value).toBe(""));
+    const holders = store.filter((t) => (t.defaultForKinds ?? []).includes("record"));
+    expect(holders.map((t) => t.id)).toEqual([f.broadcastSquare.id]);
   });
 });
 
