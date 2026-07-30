@@ -34,7 +34,7 @@ router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
     assembleBoards(settingsRow, req),
     buildBrand(tenantId),
     buildGridCatalog(tenantId),
-    loadActiveSponsors(req.log),
+    loadActiveSponsors(tenantId, req.log),
   ]);
   res.json({
     boards,
@@ -58,7 +58,7 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
   const [boards, brand, activeSponsors] = await Promise.all([
     assembleBoards(settingsRow, req),
     buildBrand(tenantId),
-    loadActiveSponsors(req.log),
+    loadActiveSponsors(tenantId, req.log),
   ]);
   res.json({ boards, brand, settings: serializeSettings(settingsRow), activeSponsors });
 });

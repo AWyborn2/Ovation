@@ -14,12 +14,28 @@
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { eq } from "drizzle-orm";
 import {
   db,
   capRegisterTable,
   lifeMembersTable,
   playersTable,
 } from "@workspace/db";
+
+/**
+ * The club being seeded. Both tables are tenant-scoped curated content and this
+ * script REPLACES their contents, so every statement is filtered to (and every
+ * row stamped with) one tenant — an unfiltered delete here would wipe every
+ * other club's honour boards. The handover data is Halls Head's, hence the
+ * default of tenant 1.
+ *
+ * Deliberately its own env var rather than the deployment's `DEFAULT_TENANT_ID`:
+ * this script destroys data, so the target must be stated on purpose and not
+ * inherited from whatever the running environment happens to be configured for.
+ */
+const TENANT_ID = process.env.SEED_TENANT_ID
+  ? Number(process.env.SEED_TENANT_ID)
+  : 1;
 
 interface CapJson {
   capNo: number;
@@ -143,8 +159,12 @@ async function main() {
   const players = await db.select().from(playersTable);
   const find = buildFinder(players);
 
-  await db.delete(capRegisterTable);
-  await db.delete(lifeMembersTable);
+  if (!Number.isInteger(TENANT_ID)) {
+    throw new Error(`SEED_TENANT_ID must be an integer, got "${process.env.SEED_TENANT_ID}"`);
+  }
+
+  await db.delete(capRegisterTable).where(eq(capRegisterTable.tenantId, TENANT_ID));
+  await db.delete(lifeMembersTable).where(eq(lifeMembersTable.tenantId, TENANT_ID));
 
   const capRows = caps.map((c) => {
     const parts = c.name.split(/\s+/);
@@ -152,6 +172,7 @@ async function main() {
     const given = parts.slice(0, -1).join(" ");
     const p = find(given, surname);
     return {
+      tenantId: TENANT_ID,
       capNumber: c.capNo,
       name: c.name,
       deceased: c.deceased,
@@ -170,6 +191,7 @@ async function main() {
       playerId = p ? p.id : null;
     }
     return {
+      tenantId: TENANT_ID,
       name: m.name,
       inductionYear: m.year,
       isPlayingMember: m.isPlayingMember,

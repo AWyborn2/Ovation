@@ -60,14 +60,6 @@ const SAMPLES: { [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: 
     round: 5,
     headline: "DEBUT",
   },
-  newCap: {
-    kind: "newCap",
-    playerName: "Sample Player",
-    grade: "A Grade",
-    category: "male",
-    capNumber: 123,
-    headline: "NEW CAP",
-  },
   century: {
     kind: "century",
     playerName: "Sample Player",

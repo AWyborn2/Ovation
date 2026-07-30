@@ -23,7 +23,7 @@ export const sponsorsTable = pgTable(
     activeFrom: date("active_from"),
     activeTo: date("active_to"),
     // Which social card types this sponsor's logo may appear on. Empty = all cards.
-    // Values match ShareCardInput["kind"]: milestone | player | record | gradeLeader | premiership | debut | newCap | century | fiveFor.
+    // Values match ShareCardInput["kind"]: milestone | player | record | gradeLeader | premiership | debut | century | fiveFor.
     cardKinds: text("card_kinds").array().notNull().default([]),
     // The tenant's designated PRESENTING (primary) sponsor. At most one row per
     // tenant may be true (enforced by the partial unique index below + the route

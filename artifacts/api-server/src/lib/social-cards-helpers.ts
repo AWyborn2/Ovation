@@ -7,6 +7,7 @@ import {
   cardTemplatesTable,
 } from "@workspace/db";
 import { getOrCreateSettings } from "./settings";
+import { getTenantBrand } from "./tenant-brand";
 
 /**
  * Shared helpers for the social-cards routes: default caption templates and
@@ -101,6 +102,35 @@ export async function ensureSettings(tenantId: number) {
   return settings;
 }
 
+/**
+ * Fallback palette for a tenant whose brand carries no colours. These were the
+ * hard-coded seed values for every tenant — they are Halls Head's palette, and
+ * because token priority is theme > brand, seeding them made the default theme
+ * OVERRIDE each tenant's real brand colours on every card. They are now only a
+ * last resort for a brand with nothing set.
+ */
+const FALLBACK_THEME = {
+  bgDark: "#322F3D",
+  bgPanel: "#3F3C4C",
+  accent: "#FBD039",
+  textLight: "#F5F2E8",
+} as const;
+
+/** Accept only a strict hex literal; anything else falls back. */
+function hexOr(value: string | null | undefined, fallback: string): string {
+  return value && /^#[0-9a-fA-F]{6}$/.test(value.trim()) ? value.trim() : fallback;
+}
+
+/**
+ * Seed the tenant's default card theme FROM ITS OWN BRAND.
+ *
+ * The seeded theme is what the Studio gallery and every share card resolve
+ * tokens through (`resolvePackTokens` priority: junior > override > theme >
+ * brand), so a theme seeded from literals silently outranks the tenant's brand
+ * colours and every club's cards render in the seed palette. Deriving it from
+ * the brand means a new tenant's cards look like that club from the first load,
+ * and an admin can still edit or add themes afterwards.
+ */
 export async function ensureThemes(tenantId: number) {
   const [existing] = await db
     .select()
@@ -108,13 +138,16 @@ export async function ensureThemes(tenantId: number) {
     .where(eq(cardThemesTable.tenantId, tenantId))
     .limit(1);
   if (existing) return;
+  const brand = await getTenantBrand(tenantId);
   await db.insert(cardThemesTable).values({
     tenantId,
     name: "Club Classic",
-    bgDark: "#322F3D",
-    bgPanel: "#3F3C4C",
-    accent: "#FBD039",
-    textLight: "#F5F2E8",
+    // `primaryColour` is the club's accent (same mapping the renderer's
+    // `brandDefaultTokens` uses); `juniorsColour` is its panel.
+    bgDark: FALLBACK_THEME.bgDark,
+    bgPanel: hexOr(brand.juniorsColour, FALLBACK_THEME.bgPanel),
+    accent: hexOr(brand.primaryColour, FALLBACK_THEME.accent),
+    textLight: FALLBACK_THEME.textLight,
     isDefault: true,
     displayOrder: 0,
   });

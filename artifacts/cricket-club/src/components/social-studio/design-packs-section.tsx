@@ -12,8 +12,9 @@ import type { PackSelection } from "@/lib/use-pack-selection";
  * pack to every card type it covers.
  *
  * Rendered ABOVE the card-type gallery on purpose. Below it, an admin reading
- * top-down meets 18 per-kind selectors first and works through them one at a
- * time, never finding the control built for the common case.
+ * top-down meets one per-kind selector for every card type first and works
+ * through them one at a time, never finding the control built for the common
+ * case.
  */
 export function DesignPacksSection({
   selection,

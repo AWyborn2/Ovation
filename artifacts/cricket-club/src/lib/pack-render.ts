@@ -926,15 +926,13 @@ function bindInput(input: ShareCardInput): BoundInput {
       set(values, "playerName", input.playerName);
       set(values, "round", input.round);
       set(values, "opponent", input.opponent);
-      set(values, "capNumber", input.capNumber);
+      // Bound EXPLICITLY, empty string and all — never via set(), which returns
+      // early on null and leaves the key absent. An absent key falls through to
+      // the template's sample ("246" in every pack), so a debut card for a
+      // player with no cap number rendered a FABRICATED one on a club honour
+      // card. Matches card-template.ts, which already degrades to "".
+      values["capNumber"] = input.capNumber != null ? String(input.capNumber) : "";
       set(values, "tributeLine", input.headline);
-      if (input.photoUrl) images["photo"] = input.photoUrl;
-      break;
-    }
-    case "newCap": {
-      set(values, "playerName", input.playerName);
-      set(values, "grade", input.grade);
-      set(values, "capNumber", input.capNumber);
       if (input.photoUrl) images["photo"] = input.photoUrl;
       break;
     }
@@ -1249,6 +1247,18 @@ function dropEmptyPresentedBy(html: string): string {
   );
 }
 
+/**
+ * Remove the whole "CAP <n>" line from a debut card when no cap number resolved,
+ * so no orphan "CAP" label is left behind. Every pack puts the literal prefix
+ * OUTSIDE the placeholder — `<div style="…">CAP {{capNumber}}</div>` — in each
+ * of its formats, so the enclosing `<div>` is matched and dropped. Called BEFORE
+ * field substitution, while the raw placeholder is still present. A bound number
+ * (the normal case, and every sample/preview) keeps the line.
+ */
+function dropEmptyCapNumber(html: string): string {
+  return html.replace(/<div[^>]*>CAP \{\{capNumber\}\}<\/div>/g, "");
+}
+
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
@@ -1312,6 +1322,11 @@ export function renderPackCard(
   // resolved (empty value) — must run before substitution while the placeholder
   // is intact. A non-empty sample/tenant value keeps the line.
   if (!values["sponsorPresentedBy"]) html = dropEmptyPresentedBy(html);
+  // Same treatment for a debut card that resolved no cap number: drop the line
+  // rather than render a bare "CAP" label. Must also run before substitution.
+  if (input.kind === "debut" && !values["capNumber"]) {
+    html = dropEmptyCapNumber(html);
+  }
   html = substituteFields(html, values);
   html = cleanupEmptyRoles(html);
 

@@ -354,7 +354,7 @@ export default function AdminSocialStudio() {
         automatically everywhere that card is shared.
       </p>
 
-      {/* Design packs — the bulk path, met before the 18 per-kind selectors */}
+      {/* Design packs — the bulk path, met before the per-kind selectors */}
       <DesignPacksSection
         selection={packs}
         previewInput={

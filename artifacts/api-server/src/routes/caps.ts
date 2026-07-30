@@ -179,7 +179,9 @@ router.post("/caps", requireAdmin, requireEntitlement("curation"), async (req, r
       // player's real grade games / on-record status from the existing stats,
       // rather than the (often 0) hand-entered values.
       if (playerId != null) {
-        await recomputeCapsFromStats(tx, [category === "female" ? "female" : "male"]);
+        await recomputeCapsFromStats(tx, getTenantId(req), [
+          category === "female" ? "female" : "male",
+        ]);
         const [fresh] = await tx
           .select()
           .from(capRegisterTable)
@@ -239,7 +241,7 @@ router.patch("/caps/:id", requireAdmin, requireEntitlement("curation"), async (r
         } else {
           const category =
             updatedRow.category === "female" ? "female" : "male";
-          await recomputeCapsFromStats(tx, [category]);
+          await recomputeCapsFromStats(tx, getTenantId(req), [category]);
         }
         const [fresh] = await tx
           .select()
@@ -271,8 +273,10 @@ router.patch("/caps/:id", requireAdmin, requireEntitlement("curation"), async (r
  * stats, across both A Grade lists. Import-independent reconciliation so manual
  * cap additions/links can be refreshed in one click.
  */
-router.post("/caps/recompute", requireAdmin, requireEntitlement("curation"), async (_req, res): Promise<void> => {
-  const categories = await db.transaction((tx) => recomputeCapsFromStats(tx));
+router.post("/caps/recompute", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
+  const categories = await db.transaction((tx) =>
+    recomputeCapsFromStats(tx, getTenantId(req)),
+  );
   const updated = categories.reduce((sum, c) => sum + c.updated, 0);
   res.json({ updated, categories });
 });

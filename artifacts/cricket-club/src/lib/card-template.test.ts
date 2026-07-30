@@ -23,7 +23,8 @@ const CTX: TemplateContext = {
 };
 
 /**
- * Pack A U2: the card-input model spans 18 kinds — the original 10 plus the
+ * Pack A U2: the card-input model spans 17 kinds — the original 10 (less
+ * `newCap`, retired in favour of `debut`, whose fields are a superset) plus the
  * 8 new Pack A kinds — and every kind has a sample input and a field-catalog
  * entry whose scalar text fields all resolve against that sample.
  */
@@ -45,18 +46,21 @@ const EXISTING_KINDS = [
   "gradeLeader",
   "premiership",
   "debut",
-  "newCap",
   "century",
   "fiveFor",
   "matchSummary",
 ] as const;
 
 describe("card kind coverage", () => {
-  it("CARD_KINDS covers all 18 kinds", () => {
-    expect(CARD_KINDS).toHaveLength(18);
+  it("CARD_KINDS covers all 17 kinds", () => {
+    expect(CARD_KINDS).toHaveLength(17);
     for (const kind of [...EXISTING_KINDS, ...NEW_KINDS]) {
       expect(CARD_KINDS).toContain(kind);
     }
+  });
+
+  it("no longer carries the retired newCap kind", () => {
+    expect(CARD_KINDS as string[]).not.toContain("newCap");
   });
 
   it("has a sample input for every kind", () => {
@@ -101,7 +105,6 @@ describe("card kind coverage", () => {
         "round",
         "season",
       ],
-      newCap: ["capNumber", "category", "grade", "headline", "kind", "playerName"],
       century: [
         "balls",
         "grade",

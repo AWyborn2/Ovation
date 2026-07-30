@@ -31,7 +31,8 @@
     "seed-mandurah-tenant": "tsx ./src/seed-mandurah-tenant.ts",
     "seed-mandurah-premierships": "tsx ./src/seed-mandurah-premierships.ts",
     "topup-clubs": "tsx ./src/topup-clubs.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "rebrand-seeded-card-themes": "tsx ./src/rebrand-seeded-card-themes.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

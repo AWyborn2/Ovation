@@ -6254,7 +6254,7 @@ components:
 
     CapSyncSummary:
       type: object
-      required: [grade, category, updated, created]
+      required: [grade, category, updated, created, skipped]
       properties:
         grade:
           type: string
@@ -6264,6 +6264,15 @@ components:
           type: integer
         created:
           type: integer
+        skipped:
+          type: integer
+          description: >-
+            Players this import would have capped but deliberately did not,
+            because auto-minting was refused for the batch. Non-zero means the
+            cap register is not linked to the roster (a club onboarding with
+            existing history, or seeded caps still carrying player_id = NULL):
+            capping these players automatically would stamp new numbers over a
+            real honour roll, so they must be capped by hand.
 
     CommitImportResult:
       type: object
@@ -9203,8 +9212,11 @@ components:
           type: ["string", "null"]
 
     CardKind:
+      # `newCap` ("New Cap") was retired from the catalogue in favour of `debut`,
+      # which covers the same moment with a superset of its fields. Nothing in
+      # the app emits or renders it any more, so it is gone from this enum too.
       type: string
-      enum: [milestone, player, record, gradeLeader, premiership, debut, newCap, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard]
 
     Sponsor:
       type: object

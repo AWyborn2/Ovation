@@ -65,9 +65,12 @@ export const PACKS: DesignPack[] = [
     id: "broadcast-dark-v1",
     name: "Broadcast Dark",
     description:
-      "The standard Ovation card catalogue — 20 Broadcast Dark designs across all 18 card kinds, in three formats: square feed post, portrait feed post, and story.",
-    // Pack A covers every card kind (A1–A20 collapse onto 18 kinds; gradeLeader
-    // and clubLeaderboard each carry two category-preset designs).
+      "The standard Ovation card catalogue — 19 Broadcast Dark designs across all 17 card kinds, in three formats: square feed post, portrait feed post, and story.",
+    // Pack A covers every card kind (19 designs collapse onto 17 kinds;
+    // gradeLeader and clubLeaderboard each carry two category-preset designs).
+    // `newCap` is deliberately absent from every pack: the kind was retired
+    // from the catalogue in favour of `debut`, whose fields are a superset of
+    // its own. See components/card-kind-picker.tsx in the client.
     cardKinds: [
       "matchSummary",
       "player",
@@ -76,7 +79,6 @@ export const PACKS: DesignPack[] = [
       "record",
       "gradeLeader",
       "premiership",
-      "newCap",
       "century",
       "fiveFor",
       "matchDay",
@@ -119,9 +121,11 @@ export const PACKS: DesignPack[] = [
   },
   {
     id: "gold-foil-v1",
-    name: "Gold Foil",
+    // `id` stays `gold-foil-v1` — it is stored on every tenant's card_templates
+    // row, so renaming it would orphan their pack selection. Display name only.
+    name: "Metallic Foil",
     description:
-      "Grand-final prestige — metallic foil display type on black, concentric gold grooves and gold ribbon callouts.",
+      "Grand-final prestige — a milled metal ramp derived from your club's own accent, a foil ribbon with a seal medallion, and an honour-board frame. Your colour, in metal.",
     // COVERAGE CONTRACT: this list must match the kinds in the client manifest
     // (`pack-templates/gold-foil/index.ts`). The two registries live in
     // separate packages and are not cross-checked automatically. Declaring a
@@ -133,7 +137,6 @@ export const PACKS: DesignPack[] = [
       "matchDay",
       "countdown",
       "newSigning",
-      "newCap",
       "premiership",
       "teamList",
       "weekendWrap",
@@ -162,7 +165,6 @@ export const PACKS: DesignPack[] = [
       "matchDay",
       "countdown",
       "newSigning",
-      "newCap",
       "premiership",
       "record",
       "gradeLeader",
@@ -194,7 +196,6 @@ export const PACKS: DesignPack[] = [
       "matchDay",
       "countdown",
       "newSigning",
-      "newCap",
       "premiership",
       "teamList",
       "weekendWrap",
@@ -254,7 +255,6 @@ export const PACKS: DesignPack[] = [
       "matchDay",
       "countdown",
       "newSigning",
-      "newCap",
       "premiership",
       "record",
       "gradeLeader",

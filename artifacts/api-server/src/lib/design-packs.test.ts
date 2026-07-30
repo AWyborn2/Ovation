@@ -115,7 +115,9 @@ describe("design-packs registry", () => {
     _resetEnsuredTenants();
   });
 
-  // The 18 card kinds Pack A ("broadcast-dark-v1") covers.
+  // The 17 card kinds Pack A ("broadcast-dark-v1") covers. `newCap` used to sit
+  // between premiership and century; the kind was retired from the catalogue in
+  // favour of `debut` (a superset of its fields), so no pack declares it.
   const ALL_KINDS = [
     "matchSummary",
     "player",
@@ -124,7 +126,6 @@ describe("design-packs registry", () => {
     "record",
     "gradeLeader",
     "premiership",
-    "newCap",
     "century",
     "fiveFor",
     "matchDay",
@@ -157,10 +158,19 @@ describe("design-packs registry", () => {
 
   // --- PACKS static shape ---------------------------------------------------
 
-  it("broadcast-dark-v1 covers all 18 card kinds", () => {
+  it("broadcast-dark-v1 covers all 17 card kinds", () => {
     const pack = PACKS.find((p) => p.id === "broadcast-dark-v1")!;
-    expect(pack.cardKinds).toHaveLength(18);
+    expect(pack.cardKinds).toHaveLength(17);
     expect(new Set(pack.cardKinds)).toEqual(new Set(ALL_KINDS));
+  });
+
+  it("no pack declares the retired newCap kind", () => {
+    // Declaring it server-side would materialise a selectable card_templates
+    // row for a kind no client pack can render — the exact silent fallback
+    // pack-coverage-parity.test.ts exists to catch.
+    for (const pack of PACKS) {
+      expect(pack.cardKinds, pack.id).not.toContain("newCap");
+    }
   });
 
   it("broadcast-dark-v1 has three static variants with correct dimensions", () => {
@@ -253,7 +263,7 @@ describe("design-packs registry", () => {
     }
   });
 
-  it("gives Broadcast Dark full coverage of all 18 kinds", async () => {
+  it("gives Broadcast Dark full coverage of all 17 kinds", async () => {
     await ensurePackTemplates(1);
 
     for (const row of insertedRows.filter((r) => r.packId === "broadcast-dark-v1")) {

@@ -12,7 +12,6 @@ import { bigMoment } from "./big-moment";
 import { matchDay } from "./match-day";
 import { countdown } from "./countdown";
 import { newSigning } from "./new-signing";
-import { newCap } from "./new-cap";
 import { premiership } from "./premiership";
 import { record } from "./record";
 import { gradeLeaderRuns } from "./grade-leader-runs";
@@ -48,7 +47,6 @@ export const SUNSET_PACK: PackManifest = {
     { designKey: "match-day", kind: "matchDay", template: matchDay },
     { designKey: "countdown", kind: "countdown", template: countdown },
     { designKey: "new-signing", kind: "newSigning", template: newSigning },
-    { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "premiership", kind: "premiership", template: premiership },
     { designKey: "record", kind: "record", template: record },
     {

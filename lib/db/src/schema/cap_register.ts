@@ -9,8 +9,13 @@ import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
 // NOTE: Postgres enforces a composite UNIQUE constraint
-// `cap_register_category_cap_number_unique` on (category, cap_number) — one cap
-// number per category. It is intentionally NOT declared in this Drizzle schema.
+// `cap_register_tenant_category_cap_number_unique` on
+// (tenant_id, category, cap_number) — one cap number per category PER TENANT.
+// Cap numbering is a per-club sequence: every club's A Grade list starts at #1,
+// so tenant_id is part of the identity, and `cap-sync.ts` derives its next cap
+// number from the tenant's own high-water mark. (This superseded a
+// `(category, cap_number)` unique that made cap #1 global across all clubs.)
+// It is intentionally NOT declared in this Drizzle schema.
 //
 // drizzle-kit 0.31's `push` fails to detect existing multi-column unique
 // constraints, so it re-proposes adding this one on every run. That renders an

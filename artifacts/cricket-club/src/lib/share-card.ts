@@ -169,15 +169,9 @@ export type ShareCardInput =
       headline?: string;
       photoUrl?: string | null;
     }
-  | {
-      kind: "newCap";
-      playerName: string;
-      grade: string;
-      category: string; // "male" | "female"
-      capNumber: number;
-      headline?: string;
-      photoUrl?: string | null;
-    }
+  // `newCap` ("New Cap") used to sit here. Retired in favour of `debut` above —
+  // the same moment (a player's first-grade debut IS when they receive their
+  // cap) with a superset of its fields (round, opponent, tributeLine).
   | {
       kind: "century";
       playerName: string;
@@ -319,7 +313,6 @@ export const CARD_KINDS: CardKind[] = [
   "gradeLeader",
   "premiership",
   "debut",
-  "newCap",
   "century",
   "fiveFor",
   "matchSummary",
@@ -490,8 +483,6 @@ const headlineFor = (input: ShareCardInput): string => {
       return `${input.grade} • Premiers`;
     case "debut":
       return `${input.grade} • Debut`;
-    case "newCap":
-      return `${input.grade} • Cap #${input.capNumber}`;
     case "century":
       return `${input.grade} • Century`;
     case "fiveFor":
@@ -3263,7 +3254,6 @@ const buildLayers = (
     }
   } else if (
     input.kind === "debut" ||
-    input.kind === "newCap" ||
     input.kind === "century" ||
     input.kind === "fiveFor"
   ) {
@@ -3292,13 +3282,6 @@ const buildLayers = (
       subtitle = debutParts.join(" • ");
       tileLabel = input.grade;
       iconIndex = 4;
-    } else if (input.kind === "newCap") {
-      badgeLabel = `${input.grade} Cap`;
-      bigValue = `#${input.capNumber}`;
-      caption = `${input.grade} cap number ${input.capNumber}`;
-      subtitle = input.category === "female" ? "Female A Grade" : "A Grade";
-      tileLabel = "Cap Number";
-      iconIndex = 0;
     } else if (input.kind === "century") {
       badgeLabel = "Century";
       bigValue = `${input.runs}${input.notOut ? "*" : ""}`;
@@ -4242,8 +4225,6 @@ export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null
       return `${clubSlug}-premiership-${slugify(input.grade)}-${input.year}`;
     case "debut":
       return `${clubSlug}-debut-${slugify(input.grade)}-${slugify(input.playerName)}`;
-    case "newCap":
-      return `${clubSlug}-cap-${slugify(input.grade)}-${input.capNumber}-${slugify(input.playerName)}`;
     case "century":
       return `${clubSlug}-century-${slugify(input.playerName)}-${input.runs}`;
     case "fiveFor":

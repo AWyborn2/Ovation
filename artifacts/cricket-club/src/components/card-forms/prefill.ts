@@ -112,7 +112,6 @@ export function matchContextPatch(
       return { grade, opponent, round };
     case "debut":
       return { grade, opponent, round, season };
-    case "newCap":
     case "gradeLeader":
     case "record":
       return { grade };

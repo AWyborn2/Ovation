@@ -5,9 +5,11 @@ import {
   HASHTAG_FOOTER_STORY,
   PRESENTED_BY_STORY,
   foilText,
-  goldChip,
   logoField,
   photoField,
+  ribbonBand,
+  ribbonChip,
+  ribbonTag,
   sharedColumnRoot,
   slot,
   sponsorsOff,
@@ -72,15 +74,17 @@ const storyHtml = storyColumnRoot(
 // right
 // ---------------------------------------------------------------------------
 
-const sharedHeaderDebut =
-  `<div style="flex:none;display:flex;align-items:center;justify-content:space-between">` +
-  `<div style="display:flex;align-items:center;gap:20px">` +
-  `<div style="width:100px;height:100px;flex:none">${CLUB_LOGO_SLOT}</div>` +
-  `<div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*40px);line-height:.92;text-transform:uppercase;color:var(--gold,#F5B21A)">{{grade}}</div>` +
-  `</div>` +
-  `<div style="text-align:right">${goldChip("DEBUT")}` +
-  `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.15em;color:rgba(255,255,255,.6);margin-top:11px">{{season}}</div></div>` +
-  `</div>`;
+// The pack's feed ribbon, minus the club name. `sharedHeader` sets {{clubName}}
+// / {{clubTagline}}, and field-key parity forbids this card declaring keys the
+// reference design lacks (its header carries the grade block instead), so it
+// composes the SAME band via `ribbonBand` with the grade in the name position.
+// The seal, folds and geometry are the pack fragment's, so the silhouette — and
+// therefore `FRAME_TOP` in the root — still lines up.
+const sharedHeaderDebut = ribbonBand(
+  `<div style="font-family:var(--disp,'Anton'),sans-serif;font-size:46px;line-height:1;text-transform:uppercase;` +
+    `color:var(--accent-ink,#151515);text-shadow:0 1px 0 rgba(255,255,255,.4)">{{grade}}</div>`,
+  ribbonChip("DEBUT") + ribbonTag("{{season}}"),
+);
 
 const sharedHtml = sharedColumnRoot(
   sharedHeaderDebut +

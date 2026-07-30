@@ -11,6 +11,8 @@ import {
   juniorParticipantsTable,
   adminsTable,
   cardThemesTable,
+  socialSettingsTable,
+  captionTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -131,6 +133,17 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     await db
       .delete(juniorParticipantsTable)
       .where(eq(juniorParticipantsTable.tenantId, tenant2Id));
+    // Rows this suite never inserts but a READ creates: GET /social-settings
+    // calls ensureSettings, which lazily provisions the tenant's settings
+    // singleton and seeds its default caption templates. Both FK to tenants, so
+    // leaving them behind makes the tenant delete below fail — and the failure
+    // surfaces as an opaque teardown error, not as a named test.
+    await db
+      .delete(captionTemplatesTable)
+      .where(eq(captionTemplatesTable.tenantId, tenant2Id));
+    await db
+      .delete(socialSettingsTable)
+      .where(eq(socialSettingsTable.tenantId, tenant2Id));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminT1Id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant2Id));
@@ -178,6 +191,34 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
       .set("x-tenant-id", String(tenant2Id))
       .expect(200);
     expect(asT2.body.some((r: { name: string }) => r.name === T2_SPONSOR_NAME)).toBe(true);
+  });
+
+  /**
+   * Regression: `/social-settings` carries `activeSponsors`, which every share
+   * card and the honour-board kiosk render from. `loadActiveSponsors` filtered
+   * on the sponsor's active-date window ALONE — no tenant predicate — so every
+   * tenant received the union of every tenant's sponsors: another club's logos
+   * on your cards, and another club's name on the "presented by" line.
+   *
+   * The `/api/sponsors` case above did not catch it because that endpoint was
+   * correctly scoped; the leak was only on the bundle's read path.
+   */
+  it("social settings: activeSponsors never carries another tenant's sponsor", async () => {
+    const asT1 = await request(app)
+      .get("/api/social-settings")
+      .set("x-tenant-id", "1")
+      .expect(200);
+    expect(
+      asT1.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME),
+    ).toBe(false);
+
+    const asT2 = await request(app)
+      .get("/api/social-settings")
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(
+      asT2.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME),
+    ).toBe(true);
   });
 
   // Phase 3 U2 regression: PATCH/DELETE on sponsors/card-themes previously had

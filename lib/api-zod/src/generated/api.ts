@@ -1194,7 +1194,8 @@ export const CommitImportResponse = zod.object({
   "grade": zod.string(),
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "updated": zod.number(),
-  "created": zod.number()
+  "created": zod.number(),
+  "skipped": zod.number().describe('Players this import would have capped but deliberately did not, because auto-minting was refused for the batch. Non-zero means the cap register is not linked to the roster (a club onboarding with existing history, or seeded caps still carrying player_id = NULL): capping these players automatically would stamp new numbers over a real honour roll, so they must be capped by hand.')
 })),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Echoes the backfill reconcile mode applied, or null for a normal import.'),
   "negativeWarnings": zod.array(zod.object({
@@ -1413,7 +1414,8 @@ export const CommitMatchBatchResponse = zod.object({
   "grade": zod.string(),
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
   "updated": zod.number(),
-  "created": zod.number()
+  "created": zod.number(),
+  "skipped": zod.number().describe('Players this import would have capped but deliberately did not, because auto-minting was refused for the batch. Non-zero means the cap register is not linked to the roster (a club onboarding with existing history, or seeded caps still carrying player_id = NULL): capping these players automatically would stamp new numbers over a real honour roll, so they must be capped by hand.')
 })),
   "reconcileMode": zod.union([zod.literal('peel'),zod.literal('add'),zod.literal(null)]).nullish().describe('Echoes the backfill reconcile mode applied, or null for a normal batch.'),
   "negativeWarnings": zod.array(zod.object({
@@ -3604,7 +3606,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -3620,7 +3622,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -3639,7 +3641,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).optional(),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -3651,7 +3653,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -4852,7 +4854,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })),
@@ -5498,7 +5500,7 @@ export const GetHonourDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
@@ -5767,7 +5769,7 @@ export const GetKioskDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'newCap', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),

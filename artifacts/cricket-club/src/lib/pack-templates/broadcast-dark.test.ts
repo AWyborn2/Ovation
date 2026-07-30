@@ -9,7 +9,12 @@ import type { PackDesignEntry, PackTemplateField } from "./types";
  * suite is the verification artifact: it proves the binding contract is
  * complete (every placeholder declared, every declared field used), that no
  * Claude Design runtime constructs survived the conversion, and that the
- * 20-design / 18-kind mapping matches KTD3.
+ * 19-design / 17-kind mapping matches KTD3.
+ *
+ * KTD3 specified 20 designs / 18 kinds. A15 "new-cap" was dropped when the
+ * `newCap` card kind was retired from the catalogue (Debut covers the same
+ * moment with a superset of its fields), so the expected counts are one lower
+ * on each axis — see components/card-kind-picker.tsx.
  */
 
 const designs = BROADCAST_DARK_PACK.designs;
@@ -36,9 +41,9 @@ function fieldAppearsInHtml(field: PackTemplateField, html: string): boolean {
 }
 
 describe("broadcast-dark pack manifest", () => {
-  it("has packId broadcast-dark-v1 and exactly 20 designs", () => {
+  it("has packId broadcast-dark-v1 and exactly 19 designs", () => {
     expect(BROADCAST_DARK_PACK.packId).toBe("broadcast-dark-v1");
-    expect(designs).toHaveLength(20);
+    expect(designs).toHaveLength(19);
   });
 
   it("has unique design keys", () => {
@@ -46,9 +51,16 @@ describe("broadcast-dark pack manifest", () => {
     expect(new Set(keys).size).toBe(designs.length);
   });
 
-  it("maps 20 designs onto exactly 18 distinct kinds", () => {
+  it("maps 19 designs onto exactly 17 distinct kinds", () => {
     const kinds = new Set(designs.map((d) => d.kind));
-    expect(kinds.size).toBe(18);
+    expect(kinds.size).toBe(17);
+  });
+
+  it("no longer carries the retired newCap kind", () => {
+    // Retired from the catalogue in favour of `debut`, whose fields are a
+    // superset of New Cap's.
+    expect(designs.map((d) => d.kind)).not.toContain("newCap");
+    expect(designs.map((d) => d.designKey)).not.toContain("new-cap");
   });
 
   it("gradeLeader appears twice with distinct category presets", () => {

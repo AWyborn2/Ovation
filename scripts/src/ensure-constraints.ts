@@ -30,10 +30,19 @@ type ConstraintSpec = {
 };
 
 const CONSTRAINTS: ConstraintSpec[] = [
+  // Cap numbers are a PER-TENANT sequence: every club's A Grade list starts at
+  // #1, so the identity must carry tenant_id. The original
+  // `(category, cap_number)` unique made cap #1 global — the second tenant to
+  // mint a cap collided with the first, and cap-sync had to read the register
+  // unfiltered (a global high-water mark) to avoid it, which leaked one club's
+  // numbering into another's. `replaces` drops that constraint first. Widening
+  // an identity can never fail on existing rows, so this needs no data
+  // migration.
   {
     table: "cap_register",
-    name: "cap_register_category_cap_number_unique",
-    columns: ["category", "cap_number"],
+    name: "cap_register_tenant_category_cap_number_unique",
+    columns: ["tenant_id", "category", "cap_number"],
+    replaces: ["cap_register_category_cap_number_unique"],
   },
   // admins_tenant_username_unique is managed here (not in Drizzle schema) because
   // drizzle-kit 0.31 cannot detect the existing constraint and re-proposes it every

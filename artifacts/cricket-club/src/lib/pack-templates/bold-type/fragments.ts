@@ -31,9 +31,19 @@ import { columnRoot, slot } from "../shared";
  * template edits. Every accent reads `var(--gold)` / `var(--panel)` /
  * `var(--ink)` as usual, so tenant theming carries the card.
  *
- * The non-story (portrait/square) branch is deliberately much closer to
- * Broadcast Dark's shared layout — that is how the bundle authored it, so the
- * packs diverge mainly in the story format.
+ * Feed (portrait/square) composition — a DEPARTURE from the bundle.
+ *
+ * The bundle authored every pack's non-story branch as Broadcast Dark's layout
+ * with a different background, so all five packs rendered near-identically in
+ * the feed formats and in the Studio's pack picker — you could not tell Gold
+ * Foil from Bold Type at a glance, which defeats the point of a catalogue.
+ *
+ * Bold Type's feed layout therefore drops the shared top header band entirely
+ * and puts the club name down a vertical TYPE SPINE at the left edge, with the
+ * content column set to its right behind a hard gold rule. That is the pack's
+ * own thesis applied to the format — the type frames the card instead of
+ * sitting in a row above it — and it is what distinguishes it from the other
+ * four packs at thumbnail size.
  */
 
 export {
@@ -74,9 +84,52 @@ export const SHARED_BG =
 // Format roots
 // ---------------------------------------------------------------------------
 
-/** Non-story root: Bold Type background + the standard padded flex column. */
-export function sharedColumnRoot(columnInner: string, rootStyle = ""): string {
-  return columnRoot(SHARED_BG, columnInner, "58px 66px 52px", rootStyle);
+/** Width of the type spine, and the gutter between its rule and the content. */
+const SPINE_W = 156;
+
+/**
+ * The left type spine: the club's own name set vertically in the display face,
+ * with the logo above it and a hard gold rule closing it off.
+ *
+ * This replaces the horizontal logo/name header every pack shared. At thumbnail
+ * size it is the silhouette that identifies Bold Type — a tall block of type on
+ * the left edge rather than a band across the top.
+ */
+function typeSpine(withName: boolean): string {
+  return (
+    `<div style="position:absolute;left:0;top:0;bottom:0;width:${SPINE_W}px;display:flex;flex-direction:column;align-items:center;gap:26px;padding:58px 0 52px;overflow:hidden">` +
+    `<div style="width:72px;height:72px;flex:none">${slot("clubLogo", "logo", "rect")}</div>` +
+    (withName
+      ? `<div style="flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center">` +
+        `<div style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--disp,'Anton'),sans-serif;font-size:64px;line-height:1;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;color:color-mix(in srgb, var(--gold,#FBAC27) 26%, transparent)">{{clubName}}</div>` +
+        `</div>`
+      : "") +
+    `</div>` +
+    `<div style="position:absolute;left:${SPINE_W}px;top:0;bottom:0;width:3px;background:var(--gold,#FBAC27);opacity:.55"></div>`
+  );
+}
+
+/**
+ * Non-story root: the flat field, the type spine, and a content column inset to
+ * the right of the spine's rule.
+ *
+ * `spineName: false` drops the vertical club name for the one card whose
+ * reference design is deliberately logo-only (Debut declares no `clubName`, and
+ * field-key parity forbids a pack declaring a key the reference lacks). That
+ * card keeps the logo and the gold rule, so the silhouette still reads as Bold
+ * Type.
+ */
+export function sharedColumnRoot(
+  columnInner: string,
+  rootStyle = "",
+  { spineName = true }: { spineName?: boolean } = {},
+): string {
+  return columnRoot(
+    SHARED_BG + typeSpine(spineName),
+    columnInner,
+    `58px 66px 52px ${SPINE_W + 46}px`,
+    rootStyle,
+  );
 }
 
 /**
@@ -143,15 +196,18 @@ export function goldChip(label: string): string {
 }
 
 /** Non-story header: club logo + name/tagline on the left, chip + tag right. */
+/**
+ * Feed header — the chip and its tag only.
+ *
+ * The logo and club name live in {@link TYPE_SPINE} now, so this is a single
+ * tracked row rather than the logo/name/chip band the other packs share. The
+ * tagline sits opposite the chip to keep the row from reading half-empty.
+ */
 export function sharedHeader(chipLabel: string, tag: string): string {
   return (
-    `<div style="flex:none;display:flex;align-items:center;justify-content:space-between">` +
-    `<div style="display:flex;align-items:center;gap:20px">` +
-    `<div style="width:100px;height:100px;flex:none">${slot("clubLogo", "logo", "rect")}</div>` +
-    `<div><div style="font-weight:800;font-size:34px;line-height:1;letter-spacing:.01em">{{clubName}}</div>` +
-    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-top:8px">{{clubTagline}}</div></div>` +
-    `</div>` +
-    `<div style="text-align:right">${goldChip(chipLabel)}` +
+    `<div style="flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:20px">` +
+    `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:rgba(255,255,255,.5);padding-top:9px">{{clubTagline}}</div>` +
+    `<div style="text-align:right;flex:none">${goldChip(chipLabel)}` +
     `<div style="font:500 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.15em;color:rgba(255,255,255,.6);margin-top:11px">${tag}</div></div>` +
     `</div>`
   );

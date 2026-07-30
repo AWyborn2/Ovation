@@ -3,7 +3,6 @@ import { matchResult } from "./match-result";
 import { matchDay } from "./match-day";
 import { countdown } from "./countdown";
 import { newSigning } from "./new-signing";
-import { newCap } from "./new-cap";
 import { premiership } from "./premiership";
 import { teamList } from "./team-list";
 import { weekendWrap } from "./weekend-wrap";
@@ -24,8 +23,9 @@ import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
  * Pack B — Gold Foil. Grand-final prestige: metallic foil display type on
  * black, concentric gold grooves, gold ribbon callouts.
  *
- * **Complete: all 20 designs, all 18 kinds** (gradeLeader and clubLeaderboard
- * carry two category-preset designs each, as in Pack A). The api-server `PACKS`
+ * **Complete: all 19 designs, all 17 kinds** (gradeLeader and clubLeaderboard
+ * carry two category-preset designs each, as in Pack A; the bundle's 20th
+ * design, new-cap, went with the retired `newCap` kind). The api-server `PACKS`
  * entry declares the SAME kinds — that pairing is the coverage contract,
  * enforced by `pack-coverage-parity.test.ts`. Stories are transcribed from
  * `Pack B - Gold Foil.dc.html`; the shared (portrait/square) layouts are
@@ -34,13 +34,15 @@ import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
  */
 export const GOLD_FOIL_PACK: PackManifest = {
   packId: "gold-foil-v1",
-  name: "Gold Foil",
+  // `packId` stays `gold-foil-v1`: it is stored on every tenant's
+  // `card_templates` row, so renaming it would orphan their pack selection.
+  // Only the display name changes.
+  name: "Metallic Foil",
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "match-day", kind: "matchDay", template: matchDay },
     { designKey: "countdown", kind: "countdown", template: countdown },
     { designKey: "new-signing", kind: "newSigning", template: newSigning },
-    { designKey: "new-cap", kind: "newCap", template: newCap },
     { designKey: "premiership", kind: "premiership", template: premiership },
     { designKey: "team-list", kind: "teamList", template: teamList },
     { designKey: "weekend-wrap", kind: "weekendWrap", template: weekendWrap },
