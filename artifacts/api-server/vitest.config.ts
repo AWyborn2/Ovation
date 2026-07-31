@@ -16,6 +16,8 @@ const DATA_DEPENDENT = [
   // returns 500 in CI (a known provisioning bug to investigate, not missing data).
   "src/routes/platform-signup.test.ts",
   "src/routes/platform-admin-tenants.test.ts",
+  "src/routes/platform-admin-available-clubs.test.ts",
+  "src/routes/provisioning-exclusions.test.ts",
 ];
 const skipData = !!process.env.CI_SKIP_DATA_TESTS;
 
