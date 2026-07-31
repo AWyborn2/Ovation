@@ -121,6 +121,42 @@ describe("platform-admin tenant archive/restore", () => {
     expect(res.body.suspendedAt).toBeNull();
   });
 
+  it("archiving via the route actually blocks the club admin's own session, and restoring via the route reinstates it -- proves the route's own cache invalidation, not just isTenantSuspended in isolation", async () => {
+    // Baseline: the club-admin session works before archiving.
+    await request(app)
+      .get("/api/auth/me")
+      .set("x-tenant-id", String(tenantId))
+      .set("Cookie", clubAdminCookie)
+      .expect(200);
+
+    await request(app)
+      .post(`/api/platform/admin/tenants/${tenantId}/archive`)
+      .set("Cookie", platformCookie)
+      .expect(200);
+
+    // No manual invalidateTenantConfigCache call here -- if the route ever
+    // drops that call, this is the test that catches it (up to a 5-minute
+    // stale-cache window would otherwise leave the tenant's admin able to act
+    // after archiving).
+    await request(app)
+      .get("/api/auth/me")
+      .set("x-tenant-id", String(tenantId))
+      .set("Cookie", clubAdminCookie)
+      .expect(401);
+
+    await request(app)
+      .post(`/api/platform/admin/tenants/${tenantId}/restore`)
+      .set("Cookie", platformCookie)
+      .expect(200);
+
+    // Same session cookie, no re-login, works again immediately.
+    await request(app)
+      .get("/api/auth/me")
+      .set("x-tenant-id", String(tenantId))
+      .set("Cookie", clubAdminCookie)
+      .expect(200);
+  });
+
   it("refuses to archive the demo tenant (id 1 / Halls Head)", async () => {
     const res = await request(app)
       .post("/api/platform/admin/tenants/1/archive")

@@ -77,11 +77,21 @@ interface TenantConfig {
 const cache = new Map<number, { cfg: TenantConfig; at: number }>();
 
 /**
+ * Bumped on every invalidation. Guards the TOCTOU window in {@link getTenantConfig}
+ * below: a read that was already in flight when a write invalidated the cache
+ * must not re-populate it with the stale value it fetched before the write —
+ * that would silently undo the invalidation (e.g. a just-archived tenant's
+ * admin staying authorized for up to CACHE_TTL_MS longer).
+ */
+let epoch = 0;
+
+/**
  * Drop cached tenant config so the next read reflects a just-changed row. Pass a
  * tenant id to clear one entry, or omit to clear all. Call after any write that
  * changes `plan`, `central_club_id`, `reads_from_central`, or `suspended_at`.
  */
 export function invalidateTenantConfigCache(tenantId?: number): void {
+  epoch++;
   if (tenantId === undefined) cache.clear();
   else cache.delete(tenantId);
 }
@@ -90,6 +100,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
   const hit = cache.get(tenantId);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.cfg;
 
+  const epochAtStart = epoch;
   const [row] = await db
     .select({
       centralClubId: tenantsTable.centralClubId,
@@ -108,7 +119,10 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
     plan: planFromString(row.plan),
     suspended: row.suspendedAt != null,
   };
-  cache.set(tenantId, { cfg, at: Date.now() });
+  // Only cache when no invalidation happened while this read was in flight --
+  // otherwise a slow read racing a concurrent write would overwrite the
+  // invalidation with the stale value it started reading before the write.
+  if (epoch === epochAtStart) cache.set(tenantId, { cfg, at: Date.now() });
   return cfg;
 }
 

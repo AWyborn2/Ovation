@@ -5375,6 +5375,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminTenant"
+        "400":
+          description: Invalid tenant id.
         "401":
           description: Not authenticated.
         "404":

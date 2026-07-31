@@ -10,6 +10,7 @@ import {
   playerIdMapTable,
 } from "@workspace/db";
 import { hashPassword, encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 
 /**
  * Platform-admin tenant oversight + management (Phase 2e). A platform admin can
@@ -216,13 +217,7 @@ describe("platform-admin tenant management", () => {
     // Real-data test, mirrors the equivalent self-serve assertion in
     // platform-signup.test.ts: skips cleanly if this deployment's central DB
     // happens to carry no folded/renamed row.
-    const { centralDb, centralClubsTable } = await import("@workspace/db/central");
-    const { isNotNull } = await import("drizzle-orm");
-    const [folded] = await centralDb
-      .select({ clubId: centralClubsTable.clubId })
-      .from(centralClubsTable)
-      .where(isNotNull(centralClubsTable.activeTo))
-      .limit(1);
+    const folded = await findFoldedCentralClub();
     if (!folded) {
       console.warn(
         "platform-admin-tenants.test.ts: no folded/renamed club found in " +

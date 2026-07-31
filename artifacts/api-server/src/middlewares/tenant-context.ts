@@ -67,14 +67,22 @@ function parseTenantId(raw: string | undefined): number | undefined {
   return Number.isInteger(n) && n > 0 ? n : undefined;
 }
 
+/**
+ * The tenant id this deployment actually falls back to (env override, else the
+ * platform default). Every local/dev/preview host with no matching tenant host
+ * lands here — distinct from {@link DEFAULT_TENANT_ID}, which is only the
+ * hardcoded platform default and can be overridden per-deployment via
+ * `DEFAULT_TENANT_ID` env. Callers that need to protect "the fallback tenant"
+ * (e.g. blocking it from being archived) must use this, not the raw constant.
+ */
+export function effectiveDefaultTenantId(): number {
+  return parseTenantId(process.env.DEFAULT_TENANT_ID) ?? DEFAULT_TENANT_ID;
+}
+
 /** Resolve the tenant id from the header → env → default (the non-host signals). */
 export function resolveTenantId(req: Request): number {
   const headerValue = req.header("x-tenant-id");
-  return (
-    parseTenantId(headerValue) ??
-    parseTenantId(process.env.DEFAULT_TENANT_ID) ??
-    DEFAULT_TENANT_ID
-  );
+  return parseTenantId(headerValue) ?? effectiveDefaultTenantId();
 }
 
 // --- Subdomain / custom-domain → tenant -------------------------------------

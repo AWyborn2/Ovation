@@ -215,14 +215,10 @@ function StatusCard({
         setError(null);
         invalidate();
       },
-      onError: (e) => {
-        const status = (e as { status?: number })?.status;
-        setError(
-          status === 400
-            ? "The demo tenant can't be archived."
-            : "Couldn't archive this tenant.",
-        );
-      },
+      // The demo tenant's Archive button never renders (guarded below), so the
+      // server's 400 for that case can't reach here -- a generic message
+      // covers whatever 400 the server does send without mislabeling it.
+      onError: () => setError("Couldn't archive this tenant."),
     },
   });
   const restore = useRestoreAdminTenant({

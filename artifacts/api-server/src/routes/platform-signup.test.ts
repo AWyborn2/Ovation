@@ -3,6 +3,7 @@ import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
 import { db, tenantsTable, adminsTable, playerIdMapTable } from "@workspace/db";
+import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 
 /**
  * Self-serve signup E2E (Phase 2b). Picks a real available central club, claims a
@@ -130,13 +131,7 @@ describe("platform self-serve signup", () => {
     // against. If this deployment's central DB happens to carry none (every
     // club still active_to = null), there's nothing to assert — skip cleanly
     // rather than failing on data the environment doesn't have.
-    const { centralDb, centralClubsTable } = await import("@workspace/db/central");
-    const { isNotNull } = await import("drizzle-orm");
-    const [folded] = await centralDb
-      .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
-      .from(centralClubsTable)
-      .where(isNotNull(centralClubsTable.activeTo))
-      .limit(1);
+    const folded = await findFoldedCentralClub();
     if (!folded) {
       console.warn(
         "platform-signup.test.ts: no folded/renamed club (activeTo set) found in " +

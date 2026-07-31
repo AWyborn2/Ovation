@@ -1,5 +1,5 @@
-import { Router, type IRouter } from "express";
-import { and, eq, ne, isNull, sql } from "drizzle-orm";
+import { Router, type IRouter, type Request, type Response } from "express";
+import { and, eq, ne, isNull, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   tenantsTable,
@@ -31,7 +31,7 @@ import {
   requirePlatformAdmin,
   type RequestWithPlatformAdmin,
 } from "../middlewares/require-platform-admin";
-import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
+import { effectiveDefaultTenantId } from "../middlewares/tenant-context";
 import { tenantUrl } from "../lib/tenant-url";
 import {
   invalidateTenantBrandCache,
@@ -101,6 +101,77 @@ async function centralClubNames(): Promise<Map<number, string>> {
   }
 }
 
+/** Parse the `:id` route param, writing the standard 400 and returning null if invalid. */
+function parseTenantIdParam(req: Request, res: Response): number | null {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid tenant id" });
+    return null;
+  }
+  return id;
+}
+
+/** Fetch a tenant by id, writing the standard 404 and returning null if it doesn't exist. */
+async function getTenantOrNotFound(id: number, res: Response): Promise<TenantRow | null> {
+  const [tenant] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, id));
+  if (!tenant) {
+    res.status(404).json({ error: "No such tenant" });
+    return null;
+  }
+  return tenant;
+}
+
+/** Shape and send a tenant row as the standard AdminTenant response body. */
+async function respondWithAdminTenant(res: Response, row: TenantRow): Promise<void> {
+  const [names, counts] = await Promise.all([centralClubNames(), adminCountsByTenant()]);
+  res.json(toAdminTenant(row, names.get(row.centralClubId) ?? null, counts.get(row.id) ?? 0));
+}
+
+/**
+ * Idempotently set (archive) or clear (restore) a tenant's suspended state.
+ * No-ops and returns the row unchanged when it's already in the target state,
+ * so a double-click or retry can never bump `suspendedAt` to a new timestamp
+ * or emit a spurious audit log entry.
+ *
+ * The idempotency check is a conditional UPDATE (`suspended_at IS [NOT] NULL`
+ * in the WHERE), not a check-then-act on the pre-read `current` row -- two
+ * concurrent calls for the same tenant can both pass the in-memory guard
+ * above, but only one UPDATE can match the row; the other gets zero rows back
+ * and re-reads the real current state instead of writing a second time.
+ */
+async function setTenantSuspended(
+  current: TenantRow,
+  suspended: boolean,
+  req: Request,
+): Promise<TenantRow> {
+  if ((current.suspendedAt != null) === suspended) return current;
+  const [row] = await db
+    .update(tenantsTable)
+    .set({ suspendedAt: suspended ? new Date() : null })
+    .where(
+      and(
+        eq(tenantsTable.id, current.id),
+        suspended ? isNull(tenantsTable.suspendedAt) : isNotNull(tenantsTable.suspendedAt),
+      ),
+    )
+    .returning();
+  if (!row) {
+    // Lost the race to a concurrent archive/restore call for this tenant.
+    const [fresh] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, current.id));
+    return fresh ?? current;
+  }
+  invalidateTenantConfigCache(current.id);
+  const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
+  req.log?.info(
+    {
+      event: suspended ? "tenant_archived" : "tenant_restored",
+      platformAdminId: platformAdmin.id,
+      tenantId: current.id,
+    },
+    `platform admin ${suspended ? "archived" : "restored"} a tenant`,
+  );
+  return row;
+}
 
 // --- Auth -------------------------------------------------------------------
 
@@ -176,19 +247,10 @@ router.get(
   "/platform/admin/tenants/:id",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(400).json({ error: "Invalid tenant id" });
-      return;
-    }
-    const [tenant] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, id));
-    if (!tenant) {
-      res.status(404).json({ error: "No such tenant" });
-      return;
-    }
+    const id = parseTenantIdParam(req, res);
+    if (id === null) return;
+    const tenant = await getTenantOrNotFound(id, res);
+    if (!tenant) return;
     const admins = await db
       .select({
         id: adminsTable.id,
@@ -213,11 +275,8 @@ router.patch(
   "/platform/admin/tenants/:id",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(400).json({ error: "Invalid tenant id" });
-      return;
-    }
+    const id = parseTenantIdParam(req, res);
+    if (id === null) return;
     const parsed = UpdateAdminTenantBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
@@ -302,17 +361,7 @@ router.patch(
     // directory so the new domain resolves immediately.
     invalidateTenantConfigCache(id);
     if (updates.customDomain !== undefined) invalidateTenantDirectoryCache();
-    const [names, counts] = await Promise.all([
-      centralClubNames(),
-      adminCountsByTenant(),
-    ]);
-    res.json(
-      toAdminTenant(
-        row,
-        names.get(row.centralClubId) ?? null,
-        counts.get(row.id) ?? 0,
-      ),
-    );
+    await respondWithAdminTenant(res, row);
   },
 );
 
@@ -327,50 +376,22 @@ router.post(
   "/platform/admin/tenants/:id/archive",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(400).json({ error: "Invalid tenant id" });
-      return;
-    }
-    // Halls Head is also DEFAULT_TENANT_ID — every local/dev/preview host that
-    // has no matching tenant host falls back to it. Suspending it would take
-    // down every such fallback, not just the demo tenant's own admin access.
-    if (id === DEFAULT_TENANT_ID) {
+    const id = parseTenantIdParam(req, res);
+    if (id === null) return;
+    // Halls Head is the platform default (DEFAULT_TENANT_ID), but a deployment
+    // can override which tenant every local/dev/preview host without a
+    // matching tenant host falls back to via the DEFAULT_TENANT_ID env var —
+    // check the EFFECTIVE fallback, not the hardcoded constant, or a
+    // non-default deployment's real fallback tenant would go unprotected.
+    if (id === effectiveDefaultTenantId()) {
       res.status(400).json({ error: "The demo tenant can't be archived." });
       return;
     }
 
-    const [current] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, id));
-    if (!current) {
-      res.status(404).json({ error: "No such tenant" });
-      return;
-    }
-
-    let row = current;
-    if (current.suspendedAt == null) {
-      [row] = await db
-        .update(tenantsTable)
-        .set({ suspendedAt: new Date() })
-        .where(eq(tenantsTable.id, id))
-        .returning();
-      invalidateTenantConfigCache(id);
-      const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
-      req.log?.info(
-        { event: "tenant_archived", platformAdminId: platformAdmin.id, tenantId: id },
-        "platform admin archived a tenant",
-      );
-    }
-
-    const [names, counts] = await Promise.all([
-      centralClubNames(),
-      adminCountsByTenant(),
-    ]);
-    res.json(
-      toAdminTenant(row, names.get(row.centralClubId) ?? null, counts.get(row.id) ?? 0),
-    );
+    const current = await getTenantOrNotFound(id, res);
+    if (!current) return;
+    const row = await setTenantSuspended(current, true, req);
+    await respondWithAdminTenant(res, row);
   },
 );
 
@@ -384,43 +405,13 @@ router.post(
   "/platform/admin/tenants/:id/restore",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(400).json({ error: "Invalid tenant id" });
-      return;
-    }
+    const id = parseTenantIdParam(req, res);
+    if (id === null) return;
 
-    const [current] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, id));
-    if (!current) {
-      res.status(404).json({ error: "No such tenant" });
-      return;
-    }
-
-    let row = current;
-    if (current.suspendedAt != null) {
-      [row] = await db
-        .update(tenantsTable)
-        .set({ suspendedAt: null })
-        .where(eq(tenantsTable.id, id))
-        .returning();
-      invalidateTenantConfigCache(id);
-      const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
-      req.log?.info(
-        { event: "tenant_restored", platformAdminId: platformAdmin.id, tenantId: id },
-        "platform admin restored a tenant",
-      );
-    }
-
-    const [names, counts] = await Promise.all([
-      centralClubNames(),
-      adminCountsByTenant(),
-    ]);
-    res.json(
-      toAdminTenant(row, names.get(row.centralClubId) ?? null, counts.get(row.id) ?? 0),
-    );
+    const current = await getTenantOrNotFound(id, res);
+    if (!current) return;
+    const row = await setTenantSuspended(current, false, req);
+    await respondWithAdminTenant(res, row);
   },
 );
 
@@ -435,11 +426,8 @@ router.patch(
   "/platform/admin/tenants/:id/brand",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(400).json({ error: "Invalid tenant id" });
-      return;
-    }
+    const id = parseTenantIdParam(req, res);
+    if (id === null) return;
     const parsed = UpdateAdminTenantBrandBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
@@ -630,11 +618,8 @@ router.post(
   "/platform/admin/tenants/:id/admin-resets",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(400).json({ error: "Invalid tenant id" });
-      return;
-    }
+    const id = parseTenantIdParam(req, res);
+    if (id === null) return;
     const parsed = IssueTenantAdminResetBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
