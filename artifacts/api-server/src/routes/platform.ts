@@ -5,7 +5,6 @@ import { PlatformSignupBody } from "@workspace/api-zod";
 import {
   validateSlug,
   isReservedSlug,
-  slugify,
   slugRejectionReason,
 } from "../lib/slug";
 import {
@@ -20,6 +19,7 @@ import {
   signupRateLimiter,
   signupDiscoveryRateLimiter,
 } from "../middlewares/rate-limit";
+import { listAvailableClubs } from "../lib/available-clubs";
 
 const router: IRouter = Router();
 
@@ -59,27 +59,7 @@ router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req,
     res.status(403).json({ error: "Signup is disabled" });
     return;
   }
-  const { centralDb, centralClubsTable, isCentralClubProvisionable } =
-    await import("@workspace/db/central");
-
-  const claimed = await db
-    .select({ centralClubId: tenantsTable.centralClubId })
-    .from(tenantsTable);
-  const claimedIds = new Set(claimed.map((c) => c.centralClubId));
-
-  const clubs = await centralDb.select().from(centralClubsTable);
-  const available = clubs
-    .filter((c) => !claimedIds.has(c.clubId) && isCentralClubProvisionable(c))
-    .map((c) => ({
-      centralClubId: c.clubId,
-      name: c.name ?? `Club ${c.clubId}`,
-      shortName: c.shortName ?? null,
-      backgroundColour: c.primaryColour ?? null,
-      suggestedSlug: slugify(c.name ?? `club-${c.clubId}`),
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  res.json(available);
+  res.json(await listAvailableClubs({ excludeSelfServeOnly: true }));
 });
 
 // --- Public club directory --------------------------------------------------

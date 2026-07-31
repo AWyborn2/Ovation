@@ -46,6 +46,7 @@ import { invalidateTenantDirectoryCache } from "../middlewares/tenant-context";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
+import { listAvailableClubs } from "../lib/available-clubs";
 
 const router: IRouter = Router();
 
@@ -735,6 +736,17 @@ router.post(
       tenantName: tenant.name,
       created,
     });
+  },
+);
+
+// Central PCA clubs available for concierge provisioning: like the public
+// /platform/available-clubs, but a club excluded "self_serve_only" stays
+// visible here so a platform admin can still provision it directly.
+router.get(
+  "/platform/admin/available-clubs",
+  requirePlatformAdmin,
+  async (_req, res): Promise<void> => {
+    res.json(await listAvailableClubs({ excludeSelfServeOnly: false }));
   },
 );
 
