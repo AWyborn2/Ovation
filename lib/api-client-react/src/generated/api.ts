@@ -18604,6 +18604,146 @@ export const useUpdateAdminTenantBrand = <TError = ErrorType<void>,
       return useMutation(getUpdateAdminTenantBrandMutationOptions(options));
     }
 
+export const getArchiveAdminTenantUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/archive`
+}
+
+/**
+ * @summary Archive a tenant: blocks its admin access and removes it from the public directory and future re-signup, without deleting any data. Idempotent — archiving an already-archived tenant is a no-op success.
+ */
+export const archiveAdminTenant = async (id: number, options?: RequestInit): Promise<AdminTenant> => {
+
+  return customFetch<AdminTenant>(getArchiveAdminTenantUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getArchiveAdminTenantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveAdminTenant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveAdminTenant>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['archiveAdminTenant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveAdminTenant>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveAdminTenant(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveAdminTenantMutationResult = NonNullable<Awaited<ReturnType<typeof archiveAdminTenant>>>
+
+    export type ArchiveAdminTenantMutationError = ErrorType<void>
+
+    /**
+ * @summary Archive a tenant: blocks its admin access and removes it from the public directory and future re-signup, without deleting any data. Idempotent — archiving an already-archived tenant is a no-op success.
+ */
+export const useArchiveAdminTenant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveAdminTenant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveAdminTenant>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getArchiveAdminTenantMutationOptions(options));
+    }
+
+export const getRestoreAdminTenantUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/restore`
+}
+
+/**
+ * @summary Restore a previously archived tenant: reinstates admin access and public-directory listing immediately. Idempotent — restoring an already-active tenant is a no-op success.
+ */
+export const restoreAdminTenant = async (id: number, options?: RequestInit): Promise<AdminTenant> => {
+
+  return customFetch<AdminTenant>(getRestoreAdminTenantUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRestoreAdminTenantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreAdminTenant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreAdminTenant>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['restoreAdminTenant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreAdminTenant>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  restoreAdminTenant(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreAdminTenantMutationResult = NonNullable<Awaited<ReturnType<typeof restoreAdminTenant>>>
+
+    export type RestoreAdminTenantMutationError = ErrorType<void>
+
+    /**
+ * @summary Restore a previously archived tenant: reinstates admin access and public-directory listing immediately. Idempotent — restoring an already-active tenant is a no-op success.
+ */
+export const useRestoreAdminTenant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreAdminTenant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreAdminTenant>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRestoreAdminTenantMutationOptions(options));
+    }
+
 export const getGetPlatformBrandUrl = () => {
 
 

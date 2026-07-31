@@ -5326,6 +5326,60 @@ paths:
         "404":
           description: No such tenant.
 
+  /platform/admin/tenants/{id}/archive:
+    post:
+      operationId: archiveAdminTenant
+      tags: [platformAdmin]
+      summary: >-
+        Archive a tenant: blocks its admin access and removes it from the
+        public directory and future re-signup, without deleting any data.
+        Idempotent — archiving an already-archived tenant is a no-op success.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Archived (or already-archived) tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenant"
+        "400":
+          description: This tenant can't be archived (the demo tenant).
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/restore:
+    post:
+      operationId: restoreAdminTenant
+      tags: [platformAdmin]
+      summary: >-
+        Restore a previously archived tenant: reinstates admin access and
+        public-directory listing immediately. Idempotent — restoring an
+        already-active tenant is a no-op success.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Restored (or already-active) tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTenant"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
   /platform/admin/platform-brand:
     get:
       operationId: getPlatformBrand

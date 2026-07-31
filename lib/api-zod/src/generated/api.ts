@@ -7554,6 +7554,72 @@ export const UpdateAdminTenantBrandResponse = zod.object({
 
 
 /**
+ * @summary Archive a tenant: blocks its admin access and removes it from the public directory and future re-signup, without deleting any data. Idempotent — archiving an already-archived tenant is a no-op success.
+ */
+export const ArchiveAdminTenantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ArchiveAdminTenantResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
+  "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
+}).describe('A tenant as listed in the platform-admin console.')
+
+
+/**
+ * @summary Restore a previously archived tenant: reinstates admin access and public-directory listing immediately. Idempotent — restoring an already-active tenant is a no-op success.
+ */
+export const RestoreAdminTenantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RestoreAdminTenantResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "plan": zod.enum(['free', 'club', 'pro']),
+  "centralClubId": zod.number(),
+  "centralClubName": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
+  "readsFromCentral": zod.boolean(),
+  "createdAt": zod.string().nullish(),
+  "adminCount": zod.number(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "faviconUrl": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
+  "primaryColour": zod.string().nullish(),
+  "juniorsColour": zod.string().nullish(),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
+  "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
+}).describe('A tenant as listed in the platform-admin console.')
+
+
+/**
  * @summary Read the current platform brand (name, logo, accent colour, favicon) as stored in platform_settings id=1. Fields that have never been set are returned as null (client falls back to DEFAULT_BRAND).
  */
 export const GetPlatformBrandResponse = zod.object({
