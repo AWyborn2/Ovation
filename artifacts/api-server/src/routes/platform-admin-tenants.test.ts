@@ -211,4 +211,34 @@ describe("platform-admin tenant management", () => {
     expect(res.body.centralClubId).toBe(club.centralClubId);
     expect(res.body.adminCount).toBe(1);
   });
+
+  it("rejects concierge-provisioning a folded/renamed central club (activeTo set)", async () => {
+    // Real-data test, mirrors the equivalent self-serve assertion in
+    // platform-signup.test.ts: skips cleanly if this deployment's central DB
+    // happens to carry no folded/renamed row.
+    const { centralDb, centralClubsTable } = await import("@workspace/db/central");
+    const { isNotNull } = await import("drizzle-orm");
+    const [folded] = await centralDb
+      .select({ clubId: centralClubsTable.clubId })
+      .from(centralClubsTable)
+      .where(isNotNull(centralClubsTable.activeTo))
+      .limit(1);
+    if (!folded) {
+      console.warn(
+        "platform-admin-tenants.test.ts: no folded/renamed club found in " +
+          "central.clubs — skipping the concierge folded-club rejection assertion.",
+      );
+      return;
+    }
+
+    const res = await request(app)
+      .post("/api/platform/admin/tenants")
+      .set("Cookie", platformCookie)
+      .send({
+        centralClubId: folded.clubId,
+        slug: `pa-folded-${STAMP}`.slice(0, 40),
+      })
+      .expect(400);
+    expect(res.body.error).toBeTruthy();
+  });
 });

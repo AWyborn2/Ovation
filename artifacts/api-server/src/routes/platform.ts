@@ -59,7 +59,7 @@ router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req,
     res.status(403).json({ error: "Signup is disabled" });
     return;
   }
-  const { centralDb, centralClubsTable } =
+  const { centralDb, centralClubsTable, isCentralClubProvisionable } =
     await import("@workspace/db/central");
 
   const claimed = await db
@@ -69,7 +69,7 @@ router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req,
 
   const clubs = await centralDb.select().from(centralClubsTable);
   const available = clubs
-    .filter((c) => !claimedIds.has(c.clubId))
+    .filter((c) => !claimedIds.has(c.clubId) && isCentralClubProvisionable(c))
     .map((c) => ({
       centralClubId: c.clubId,
       name: c.name ?? `Club ${c.clubId}`,

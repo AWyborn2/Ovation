@@ -2,7 +2,7 @@ import { eq, ilike } from "drizzle-orm";
 import { db } from "./index";
 import { tenantsTable, type TenantRow } from "./schema/tenants";
 import { playerIdMapTable } from "./schema/player_id_map";
-import { centralDb, centralClubsTable } from "./central";
+import { centralDb, centralClubsTable, isCentralClubProvisionable } from "./central";
 import { centralClubParticipants } from "./central-queries";
 
 /**
@@ -23,6 +23,7 @@ import { centralClubParticipants } from "./central-queries";
 export type ProvisionErrorCode =
   | "club_not_found"
   | "club_ambiguous"
+  | "club_folded"
   | "slug_taken"
   | "club_claimed";
 
@@ -85,7 +86,18 @@ async function resolveCentralClub(opts: ProvisionTenantOptions) {
         ". Provide centralClubId.",
     );
   }
-  return rows[0];
+  const club = rows[0]!;
+  if (!isCentralClubProvisionable(club)) {
+    // Folded, or renamed/merged into a successor row (active_to set) — this id
+    // is not the one to provision, regardless of whether the picker was
+    // bypassed. Defense-in-depth: /platform/available-clubs already excludes
+    // these from both the self-serve and concierge pickers.
+    throw new ProvisionError(
+      "club_folded",
+      `${club.name ?? `Club ${club.clubId}`} is no longer active and can't be provisioned as a tenant.`,
+    );
+  }
+  return club;
 }
 
 export async function provisionTenant(

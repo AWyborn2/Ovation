@@ -123,6 +123,44 @@ describe("platform self-serve signup", () => {
     expect(res.status).toBe(400);
   });
 
+  it("excludes folded/renamed central clubs (activeTo set) from the picker and rejects direct signup", async () => {
+    // Real-data test: finds an actual folded/renamed row in central.clubs
+    // (active_to set) rather than asserting against a fabricated id, since the
+    // available-clubs endpoint never exposes activeTo for us to fabricate
+    // against. If this deployment's central DB happens to carry none (every
+    // club still active_to = null), there's nothing to assert — skip cleanly
+    // rather than failing on data the environment doesn't have.
+    const { centralDb, centralClubsTable } = await import("@workspace/db/central");
+    const { isNotNull } = await import("drizzle-orm");
+    const [folded] = await centralDb
+      .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
+      .from(centralClubsTable)
+      .where(isNotNull(centralClubsTable.activeTo))
+      .limit(1);
+    if (!folded) {
+      console.warn(
+        "platform-signup.test.ts: no folded/renamed club (activeTo set) found in " +
+          "central.clubs — skipping the folded-club exclusion assertions.",
+      );
+      return;
+    }
+
+    const clubs = await request(app).get("/api/platform/available-clubs").expect(200);
+    expect(
+      clubs.body.some((c: { centralClubId: number }) => c.centralClubId === folded.clubId),
+    ).toBe(false);
+
+    const signup = await request(app)
+      .post("/api/platform/signup")
+      .send({
+        centralClubId: folded.clubId,
+        slug: `folded-${STAMP}`,
+        adminEmail: `folded+${STAMP}@example.com`,
+        password: "correct horse battery",
+      });
+    expect(signup.status).toBe(400);
+  });
+
   it("is disabled when SIGNUP_MODE=off (403)", async () => {
     process.env.SIGNUP_MODE = "off";
     const clubs = await request(app).get("/api/platform/available-clubs");

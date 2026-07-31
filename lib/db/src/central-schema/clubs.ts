@@ -18,3 +18,19 @@ export const centralClubsTable = centralSchema.table("clubs", {
 });
 
 export type CentralClubRow = typeof centralClubsTable.$inferSelect;
+
+/**
+ * Whether a central club can be provisioned as a new tenant. False once
+ * `active_to` is set — the club has folded, or renamed/merged into a
+ * successor row (see the lineage columns above). Either way, provisioning
+ * THIS id doesn't make sense: the successor row, if any, is what should be
+ * signed up instead. Pure and DB-free so both `provisionTenant` (same
+ * package) and the `/platform/available-clubs` route (a consumer of
+ * `@workspace/db/central`, which re-exports this module) can share one
+ * definition without a new cross-package dependency.
+ */
+export function isCentralClubProvisionable(
+  club: Pick<CentralClubRow, "activeTo">,
+): boolean {
+  return club.activeTo == null;
+}
