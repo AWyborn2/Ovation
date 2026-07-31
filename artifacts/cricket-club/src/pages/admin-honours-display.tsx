@@ -1872,8 +1872,20 @@ function AdEditor({
   const upload = useUpload({ onError: (e) => setError(e.message) });
   const handleFile = async (file: File) => {
     setError(null);
+    // file.type is normally reliable but can come back empty on some
+    // browser/OS/file-association combinations (the shared useUpload hook
+    // already codes around this — see lib/object-storage-web/src/use-upload.ts);
+    // fall back to the filename extension rather than silently defaulting to
+    // "image", which would reproduce the broken-preview bug this fixes.
+    const mediaType: KioskAd["mediaType"] = file.type
+      ? file.type === "video/mp4"
+        ? "video"
+        : "image"
+      : file.name.toLowerCase().endsWith(".mp4")
+        ? "video"
+        : "image";
     const r = await upload.uploadFile(file);
-    if (r) onPatch({ imageUrl: `/api/storage${r.objectPath}` });
+    if (r) onPatch({ imageUrl: `/api/storage${r.objectPath}`, mediaType });
   };
   return (
     <div
@@ -1899,20 +1911,31 @@ function AdEditor({
         {upload.isUploading ? "Uploading…" : "Upload"}
         <input
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,video/mp4"
           className="hidden"
           disabled={upload.isUploading}
           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
           data-testid={`ad-file-${ad.id}`}
         />
       </label>
-      {ad.imageUrl && (
+      {ad.imageUrl && (ad.mediaType === "video" ? (
+        <video
+          src={ad.imageUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-9 w-16 object-cover rounded border bg-white"
+          data-testid={`ad-preview-${ad.id}`}
+        />
+      ) : (
         <img
           src={ad.imageUrl}
           alt={ad.name}
           className="h-9 w-16 object-cover rounded border bg-white"
+          data-testid={`ad-preview-${ad.id}`}
         />
-      )}
+      ))}
       <Button
         type="button"
         variant="ghost"
