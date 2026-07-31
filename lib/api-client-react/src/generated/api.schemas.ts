@@ -3990,6 +3990,17 @@ export interface CustomGridDef {
 }
 
 /**
+ * The creative's media type. Defaults to "image" when absent (ads created before video support existed).
+ */
+export type KioskAdMediaType = typeof KioskAdMediaType[keyof typeof KioskAdMediaType];
+
+
+export const KioskAdMediaType = {
+  image: 'image',
+  video: 'video',
+} as const;
+
+/**
  * A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).
  */
 export interface KioskAd {
@@ -3998,6 +4009,8 @@ export interface KioskAd {
   name: string;
   /** Full-screen ad image URL (or uploaded object path). */
   imageUrl: string;
+  /** The creative's media type. Defaults to "image" when absent (ads created before video support existed). */
+  mediaType?: KioskAdMediaType;
 }
 
 /**

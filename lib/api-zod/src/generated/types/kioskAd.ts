@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { KioskAdMediaType } from './kioskAdMediaType';
 
 /**
  * A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).
@@ -15,4 +16,6 @@ export interface KioskAd {
   name: string;
   /** Full-screen ad image URL (or uploaded object path). */
   imageUrl: string;
+  /** The creative's media type. Defaults to "image" when absent (ads created before video support existed). */
+  mediaType?: KioskAdMediaType;
 }

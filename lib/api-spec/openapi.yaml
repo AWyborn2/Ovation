@@ -10911,6 +10911,12 @@ components:
         imageUrl:
           type: string
           description: Full-screen ad image URL (or uploaded object path).
+        mediaType:
+          type: string
+          enum: [image, video]
+          description: >-
+            The creative's media type. Defaults to "image" when absent
+            (ads created before video support existed).
 
     HonourSkin:
       type: object

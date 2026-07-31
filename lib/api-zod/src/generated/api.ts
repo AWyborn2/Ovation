@@ -5416,7 +5416,8 @@ export const GetHonourDisplayResponse = zod.object({
   "kioskAds": zod.array(zod.object({
   "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
   "name": zod.string(),
-  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
+  "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
@@ -5685,7 +5686,8 @@ export const GetKioskDisplayResponse = zod.object({
   "kioskAds": zod.array(zod.object({
   "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
   "name": zod.string(),
-  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
+  "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
@@ -5834,7 +5836,8 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "kioskAds": zod.array(zod.object({
   "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
   "name": zod.string(),
-  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
+  "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
@@ -5936,7 +5939,8 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "kioskAds": zod.array(zod.object({
   "id": zod.string().describe('Stable id, \"ad:<uuid>\".'),
   "name": zod.string(),
-  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).')
+  "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
+  "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
