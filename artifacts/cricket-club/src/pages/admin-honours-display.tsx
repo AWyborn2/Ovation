@@ -1872,18 +1872,13 @@ function AdEditor({
   const upload = useUpload({ onError: (e) => setError(e.message) });
   const handleFile = async (file: File) => {
     setError(null);
-    // file.type is normally reliable but can come back empty on some
-    // browser/OS/file-association combinations (the shared useUpload hook
-    // already codes around this — see lib/object-storage-web/src/use-upload.ts);
-    // fall back to the filename extension rather than silently defaulting to
-    // "image", which would reproduce the broken-preview bug this fixes.
-    const mediaType: KioskAd["mediaType"] = file.type
-      ? file.type === "video/mp4"
-        ? "video"
-        : "image"
-      : file.name.toLowerCase().endsWith(".mp4")
-        ? "video"
-        : "image";
+    // Matches the video-type check in card-template-builder.tsx's handleBg.
+    // No filename-extension fallback for an empty file.type: the upload
+    // endpoint's contentType allowlist (storage.ts) already rejects an empty
+    // file.type (sent as "application/octet-stream") before onPatch below
+    // ever runs, so a client-side fallback here can never affect a saved ad.
+    const isVideo = file.type.startsWith("video/");
+    const mediaType: KioskAd["mediaType"] = isVideo ? "video" : "image";
     const r = await upload.uploadFile(file);
     if (r) onPatch({ imageUrl: `/api/storage${r.objectPath}`, mediaType });
   };

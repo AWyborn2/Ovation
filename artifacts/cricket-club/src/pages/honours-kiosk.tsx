@@ -407,10 +407,16 @@ export default function HonoursKiosk() {
   // hide it (and don't reserve its space) while one is showing.
   const showStrip = sponsorStripOn && !isOverlayFrame;
   // A video ad that fails to decode/load must not blank the unattended kiosk
-  // for the rest of its dwell — advance immediately instead. Reuses the same
-  // index update `advance()` uses in the rotation effect above; the effect's
-  // own cleanup clears the now-stale dwell timer when `index` changes.
-  const advanceOnAdError = () => setIndex((i) => (i + 1) % frames.length);
+  // for the rest of its dwell — advance immediately instead. Bumps cycleRef
+  // and clears the pending dwell/scroll timer the same way the rotation
+  // effect's own advance() does, so a stale timer firing in the same tick
+  // as the error can't sneak in an extra advance before the effect re-runs.
+  const advanceOnAdError = () => {
+    cycleRef.current += 1;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    setIndex((i) => (i + 1) % frames.length);
+  };
 
   return (
     <div
@@ -430,7 +436,11 @@ export default function HonoursKiosk() {
               <SponsorSlide sponsors={activeSponsors} brand={brand} />
             )
           ) : current.kind === "ad" ? (
-            <AdSlide ad={current.ad} onError={advanceOnAdError} />
+            // Keyed so two adjacent ad frames never reuse the same <video>
+            // DOM node — an unchanged `src` on a reused element doesn't
+            // reliably re-fire the browser's load/error cycle, which would
+            // silently defeat the onError recovery above.
+            <AdSlide key={current.key} ad={current.ad} onError={advanceOnAdError} />
           ) : (
             <BoardRenderer
               board={current.board}

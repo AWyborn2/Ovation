@@ -99,21 +99,6 @@ describe("AdEditor MP4 upload", () => {
     expect(preview.tagName).toBe("IMG");
   });
 
-  it("falls back to the filename extension when File.type is empty", async () => {
-    installApiMock({
-      "/honour-display": BUNDLE,
-      ...uploadOverride("", "/objects/uploads/test-ad-notype.mp4"),
-    });
-    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
-    const fileInput = await addAdRow();
-
-    const file = new File(["fake-mp4-bytes"], "ad.MP4", { type: "" });
-    fireEvent.change(fileInput, { target: { files: [file] } });
-
-    const preview = await screen.findByTestId(/^ad-preview-/);
-    expect(preview.tagName).toBe("VIDEO");
-  });
-
   it("renders a legacy ad (no mediaType) as an image", async () => {
     installApiMock({
       "/honour-display": {
