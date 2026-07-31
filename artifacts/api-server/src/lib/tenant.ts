@@ -71,6 +71,7 @@ interface TenantConfig {
   centralClubId: number | null;
   readsFromCentral: boolean;
   plan: Plan;
+  suspended: boolean;
 }
 
 const cache = new Map<number, { cfg: TenantConfig; at: number }>();
@@ -78,7 +79,7 @@ const cache = new Map<number, { cfg: TenantConfig; at: number }>();
 /**
  * Drop cached tenant config so the next read reflects a just-changed row. Pass a
  * tenant id to clear one entry, or omit to clear all. Call after any write that
- * changes `plan`, `central_club_id` or `reads_from_central`.
+ * changes `plan`, `central_club_id`, `reads_from_central`, or `suspended_at`.
  */
 export function invalidateTenantConfigCache(tenantId?: number): void {
   if (tenantId === undefined) cache.clear();
@@ -94,6 +95,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
       centralClubId: tenantsTable.centralClubId,
       readsFromCentral: tenantsTable.readsFromCentral,
       plan: tenantsTable.plan,
+      suspendedAt: tenantsTable.suspendedAt,
     })
     .from(tenantsTable)
     .where(eq(tenantsTable.id, tenantId));
@@ -104,9 +106,20 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
     centralClubId: row.centralClubId ?? null,
     readsFromCentral: row.readsFromCentral ?? false,
     plan: planFromString(row.plan),
+    suspended: row.suspendedAt != null,
   };
   cache.set(tenantId, { cfg, at: Date.now() });
   return cfg;
+}
+
+/**
+ * Whether a tenant is currently archived/suspended by a platform admin. A
+ * suspended tenant's admin can no longer sign in or act (see
+ * {@link resolveAdmin} in `middlewares/require-admin.ts` and the `/auth/login`
+ * route); its public site keeps serving read-only pages unaffected.
+ */
+export async function isTenantSuspended(tenantId: number): Promise<boolean> {
+  return (await getTenantConfig(tenantId)).suspended;
 }
 
 /** The current request's tenant plan. */
