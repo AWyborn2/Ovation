@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowLeft, Check, Loader2, Search } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useGetAvailableClubs,
+  useGetAdminAvailableClubs,
   useProvisionTenantAsAdmin,
   checkSlugAvailable,
   getListAllTenantsQueryKey,
@@ -26,7 +26,7 @@ type SlugState =
   | { status: "bad"; reason: string };
 
 function ClubPicker({ onPick }: { onPick: (c: AvailableClub) => void }) {
-  const { data, isLoading, isError } = useGetAvailableClubs();
+  const { data, isLoading, isError } = useGetAdminAvailableClubs();
   const [q, setQ] = useState("");
 
   const clubs = useMemo(() => {
