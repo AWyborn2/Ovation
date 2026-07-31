@@ -89,6 +89,7 @@ import type {
   CreateFixtureBody,
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
+  CreateProvisioningExclusionBody,
   Dashboard,
   DebutEntry,
   DirectoryClub,
@@ -202,6 +203,7 @@ import type {
   PremiershipInput,
   PremiershipUpdate,
   ProvisionTenantBody,
+  ProvisioningExclusion,
   PutTeamListBody,
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
@@ -18742,6 +18744,301 @@ export const useRestoreAdminTenant = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRestoreAdminTenantMutationOptions(options));
+    }
+
+export const getGetAdminAvailableClubsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/available-clubs`
+}
+
+/**
+ * @summary Central PCA clubs available for concierge provisioning. Like /platform/available-clubs but excludes only "everywhere"-visibility provisioning exclusions — a club excluded "self_serve_only" still appears here so a platform admin can concierge-provision it.
+ */
+export const getAdminAvailableClubs = async ( options?: RequestInit): Promise<AvailableClub[]> => {
+
+  return customFetch<AvailableClub[]>(getGetAdminAvailableClubsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminAvailableClubsQueryKey = () => {
+    return [
+    `/api/platform/admin/available-clubs`
+    ] as const;
+    }
+
+
+export const getGetAdminAvailableClubsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAvailableClubs>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAvailableClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminAvailableClubsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAvailableClubs>>> = ({ signal }) => getAdminAvailableClubs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAvailableClubs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminAvailableClubsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAvailableClubs>>>
+export type GetAdminAvailableClubsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Central PCA clubs available for concierge provisioning. Like /platform/available-clubs but excludes only "everywhere"-visibility provisioning exclusions — a club excluded "self_serve_only" still appears here so a platform admin can concierge-provision it.
+ */
+
+export function useGetAdminAvailableClubs<TData = Awaited<ReturnType<typeof getAdminAvailableClubs>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAvailableClubs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminAvailableClubsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListProvisioningExclusionsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/provisioning-exclusions`
+}
+
+/**
+ * @summary All current provisioning exclusions.
+ */
+export const listProvisioningExclusions = async ( options?: RequestInit): Promise<ProvisioningExclusion[]> => {
+
+  return customFetch<ProvisioningExclusion[]>(getListProvisioningExclusionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProvisioningExclusionsQueryKey = () => {
+    return [
+    `/api/platform/admin/provisioning-exclusions`
+    ] as const;
+    }
+
+
+export const getListProvisioningExclusionsQueryOptions = <TData = Awaited<ReturnType<typeof listProvisioningExclusions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProvisioningExclusions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProvisioningExclusionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProvisioningExclusions>>> = ({ signal }) => listProvisioningExclusions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProvisioningExclusions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProvisioningExclusionsQueryResult = NonNullable<Awaited<ReturnType<typeof listProvisioningExclusions>>>
+export type ListProvisioningExclusionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary All current provisioning exclusions.
+ */
+
+export function useListProvisioningExclusions<TData = Awaited<ReturnType<typeof listProvisioningExclusions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProvisioningExclusions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProvisioningExclusionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateProvisioningExclusionUrl = () => {
+
+
+
+
+  return `/api/platform/admin/provisioning-exclusions`
+}
+
+/**
+ * @summary Exclude a central club from provisioning. "everywhere" blocks both self-serve signup and concierge provisioning; "self_serve_only" blocks only public self-serve signup.
+ */
+export const createProvisioningExclusion = async (createProvisioningExclusionBody: CreateProvisioningExclusionBody, options?: RequestInit): Promise<ProvisioningExclusion> => {
+
+  return customFetch<ProvisioningExclusion>(getCreateProvisioningExclusionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createProvisioningExclusionBody,)
+  }
+);}
+
+
+
+
+export const getCreateProvisioningExclusionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProvisioningExclusion>>, TError,{data: BodyType<CreateProvisioningExclusionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProvisioningExclusion>>, TError,{data: BodyType<CreateProvisioningExclusionBody>}, TContext> => {
+
+const mutationKey = ['createProvisioningExclusion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProvisioningExclusion>>, {data: BodyType<CreateProvisioningExclusionBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProvisioningExclusion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProvisioningExclusionMutationResult = NonNullable<Awaited<ReturnType<typeof createProvisioningExclusion>>>
+    export type CreateProvisioningExclusionMutationBody = BodyType<CreateProvisioningExclusionBody>
+    export type CreateProvisioningExclusionMutationError = ErrorType<void>
+
+    /**
+ * @summary Exclude a central club from provisioning. "everywhere" blocks both self-serve signup and concierge provisioning; "self_serve_only" blocks only public self-serve signup.
+ */
+export const useCreateProvisioningExclusion = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProvisioningExclusion>>, TError,{data: BodyType<CreateProvisioningExclusionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProvisioningExclusion>>,
+        TError,
+        {data: BodyType<CreateProvisioningExclusionBody>},
+        TContext
+      > => {
+      return useMutation(getCreateProvisioningExclusionMutationOptions(options));
+    }
+
+export const getDeleteProvisioningExclusionUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/provisioning-exclusions/${id}`
+}
+
+/**
+ * @summary Remove a provisioning exclusion, re-opening that club for provisioning.
+ */
+export const deleteProvisioningExclusion = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteProvisioningExclusionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteProvisioningExclusionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProvisioningExclusion>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProvisioningExclusion>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteProvisioningExclusion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProvisioningExclusion>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteProvisioningExclusion(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteProvisioningExclusionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProvisioningExclusion>>>
+
+    export type DeleteProvisioningExclusionMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a provisioning exclusion, re-opening that club for provisioning.
+ */
+export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProvisioningExclusion>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProvisioningExclusion>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteProvisioningExclusionMutationOptions(options));
     }
 
 export const getGetPlatformBrandUrl = () => {

@@ -7620,6 +7620,51 @@ export const RestoreAdminTenantResponse = zod.object({
 
 
 /**
+ * @summary Central PCA clubs available for concierge provisioning. Like /platform/available-clubs but excludes only "everywhere"-visibility provisioning exclusions — a club excluded "self_serve_only" still appears here so a platform admin can concierge-provision it.
+ */
+export const GetAdminAvailableClubsResponseItem = zod.object({
+  "centralClubId": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
+  "suggestedSlug": zod.string().describe('A pre-validated slug derived from the club name.')
+}).describe('A central PCA club a visitor can claim during signup.')
+export const GetAdminAvailableClubsResponse = zod.array(GetAdminAvailableClubsResponseItem)
+
+
+/**
+ * @summary All current provisioning exclusions.
+ */
+export const ListProvisioningExclusionsResponseItem = zod.object({
+  "id": zod.number(),
+  "centralClubId": zod.number(),
+  "clubName": zod.string().describe('Snapshot of the club\'s name at the time it was excluded.'),
+  "visibility": zod.enum(['everywhere', 'self_serve_only']).describe('\"everywhere\" blocks both self-serve signup and concierge provisioning. \"self_serve_only\" blocks only public self-serve signup; a platform admin can still concierge-provision the club.'),
+  "reason": zod.string().nullable(),
+  "createdAt": zod.string()
+}).describe('A central PCA club a platform admin has excluded from provisioning.')
+export const ListProvisioningExclusionsResponse = zod.array(ListProvisioningExclusionsResponseItem)
+
+
+/**
+ * @summary Exclude a central club from provisioning. "everywhere" blocks both self-serve signup and concierge provisioning; "self_serve_only" blocks only public self-serve signup.
+ */
+export const CreateProvisioningExclusionBody = zod.object({
+  "centralClubId": zod.number(),
+  "visibility": zod.enum(['everywhere', 'self_serve_only']).describe('\"everywhere\" blocks both self-serve signup and concierge provisioning. \"self_serve_only\" blocks only public self-serve signup; a platform admin can still concierge-provision the club.'),
+  "reason": zod.string().optional()
+})
+
+
+/**
+ * @summary Remove a provisioning exclusion, re-opening that club for provisioning.
+ */
+export const DeleteProvisioningExclusionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Read the current platform brand (name, logo, accent colour, favicon) as stored in platform_settings id=1. Fields that have never been set are returned as null (client falls back to DEFAULT_BRAND).
  */
 export const GetPlatformBrandResponse = zod.object({

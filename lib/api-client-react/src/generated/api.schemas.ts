@@ -1461,6 +1461,37 @@ export interface AvailableClub {
 }
 
 /**
+ * "everywhere" blocks both self-serve signup and concierge provisioning. "self_serve_only" blocks only public self-serve signup; a platform admin can still concierge-provision the club.
+ */
+export type ProvisioningExclusionVisibility = typeof ProvisioningExclusionVisibility[keyof typeof ProvisioningExclusionVisibility];
+
+
+export const ProvisioningExclusionVisibility = {
+  everywhere: 'everywhere',
+  self_serve_only: 'self_serve_only',
+} as const;
+
+/**
+ * A central PCA club a platform admin has excluded from provisioning.
+ */
+export interface ProvisioningExclusion {
+  id: number;
+  centralClubId: number;
+  /** Snapshot of the club's name at the time it was excluded. */
+  clubName: string;
+  visibility: ProvisioningExclusionVisibility;
+  /** @nullable */
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface CreateProvisioningExclusionBody {
+  centralClubId: number;
+  visibility: ProvisioningExclusionVisibility;
+  reason?: string;
+}
+
+/**
  * A club listed in the public Ovation directory. Only public branding and the club's own site URL are exposed — no plan, data source, or health.
  */
 export interface DirectoryClub {
