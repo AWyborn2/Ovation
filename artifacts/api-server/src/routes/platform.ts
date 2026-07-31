@@ -59,7 +59,7 @@ router.get("/platform/available-clubs", signupDiscoveryRateLimiter, async (_req,
     res.status(403).json({ error: "Signup is disabled" });
     return;
   }
-  res.json(await listAvailableClubs({ excludeSelfServeOnly: true }));
+  res.json(await listAvailableClubs({ context: "self-serve" }));
 });
 
 // --- Public club directory --------------------------------------------------

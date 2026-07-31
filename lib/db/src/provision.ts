@@ -2,7 +2,11 @@ import { eq, ilike } from "drizzle-orm";
 import { db } from "./index";
 import { tenantsTable, type TenantRow } from "./schema/tenants";
 import { playerIdMapTable } from "./schema/player_id_map";
-import { provisioningExclusionsTable } from "./schema/provisioning_exclusions";
+import {
+  provisioningExclusionsTable,
+  isExcludedForContext,
+  type ProvisioningContext,
+} from "./schema/provisioning_exclusions";
 import { centralDb, centralClubsTable, isCentralClubProvisionable } from "./central";
 import { centralClubParticipants } from "./central-queries";
 
@@ -59,7 +63,7 @@ export interface ProvisionTenantOptions {
    * rejects only an "everywhere" exclusion — a platform admin can still
    * provision a club that's merely hidden from public self-serve signup.
    */
-  context?: "self-serve" | "concierge";
+  context?: ProvisioningContext;
 }
 
 export interface ProvisionTenantResult {
@@ -112,17 +116,11 @@ async function resolveCentralClub(opts: ProvisionTenantOptions) {
     .select({ visibility: provisioningExclusionsTable.visibility })
     .from(provisioningExclusionsTable)
     .where(eq(provisioningExclusionsTable.centralClubId, club.clubId));
-  if (exclusion) {
-    const context = opts.context ?? "self-serve";
-    const rejects =
-      exclusion.visibility === "everywhere" ||
-      (context === "self-serve" && exclusion.visibility === "self_serve_only");
-    if (rejects) {
-      throw new ProvisionError(
-        "club_excluded",
-        `${club.name ?? `Club ${club.clubId}`} has been excluded from provisioning.`,
-      );
-    }
+  if (exclusion && isExcludedForContext(exclusion.visibility, opts.context ?? "self-serve")) {
+    throw new ProvisionError(
+      "club_excluded",
+      `${club.name ?? `Club ${club.clubId}`} has been excluded from provisioning.`,
+    );
   }
 
   return club;

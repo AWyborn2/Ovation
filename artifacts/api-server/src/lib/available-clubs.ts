@@ -1,4 +1,10 @@
-import { db, tenantsTable, provisioningExclusionsTable } from "@workspace/db";
+import {
+  db,
+  tenantsTable,
+  provisioningExclusionsTable,
+  isExcludedForContext,
+  type ProvisioningContext,
+} from "@workspace/db";
 import { slugify } from "./slug";
 
 export interface AvailableClubDto {
@@ -11,23 +17,21 @@ export interface AvailableClubDto {
 
 /**
  * Central PCA clubs eligible for provisioning, shared by the public self-serve
- * picker (`GET /platform/available-clubs`) and the platform-admin concierge
- * picker (`GET /platform/admin/available-clubs`). Both exclude already-claimed
- * and folded/renamed (`active_to` set) clubs; they differ only in which
- * provisioning-exclusion visibility they honour:
- *
- * - `excludeSelfServeOnly: true` (public/self-serve) — excludes clubs marked
- *   either "everywhere" or "self_serve_only".
- * - `excludeSelfServeOnly: false` (concierge) — excludes only "everywhere";
- *   a "self_serve_only" club stays available for a platform admin to pick.
+ * picker (`GET /platform/available-clubs`, `context: "self-serve"`) and the
+ * platform-admin concierge picker (`GET /platform/admin/available-clubs`,
+ * `context: "concierge"`). Both exclude already-claimed and folded/renamed
+ * (`active_to` set) clubs; the exclusion-visibility rule itself is
+ * `isExcludedForContext` -- the same predicate `provisionTenant()` uses server
+ * -side, so the picker and the actual provisioning guard can't disagree about
+ * what's allowed.
  */
 export async function listAvailableClubs(opts: {
-  excludeSelfServeOnly: boolean;
+  context: ProvisioningContext;
 }): Promise<AvailableClubDto[]> {
   const { centralDb, centralClubsTable, isCentralClubProvisionable } =
     await import("@workspace/db/central");
 
-  const [claimed, exclusions] = await Promise.all([
+  const [claimed, exclusions, clubs] = await Promise.all([
     db.select({ centralClubId: tenantsTable.centralClubId }).from(tenantsTable),
     db
       .select({
@@ -35,19 +39,15 @@ export async function listAvailableClubs(opts: {
         visibility: provisioningExclusionsTable.visibility,
       })
       .from(provisioningExclusionsTable),
+    centralDb.select().from(centralClubsTable),
   ]);
   const claimedIds = new Set(claimed.map((c) => c.centralClubId));
   const excludedIds = new Set(
     exclusions
-      .filter(
-        (e) =>
-          e.visibility === "everywhere" ||
-          (opts.excludeSelfServeOnly && e.visibility === "self_serve_only"),
-      )
+      .filter((e) => isExcludedForContext(e.visibility, opts.context))
       .map((e) => e.centralClubId),
   );
 
-  const clubs = await centralDb.select().from(centralClubsTable);
   return clubs
     .filter(
       (c) =>

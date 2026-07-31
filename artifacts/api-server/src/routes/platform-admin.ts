@@ -746,7 +746,7 @@ router.get(
   "/platform/admin/available-clubs",
   requirePlatformAdmin,
   async (_req, res): Promise<void> => {
-    res.json(await listAvailableClubs({ excludeSelfServeOnly: false }));
+    res.json(await listAvailableClubs({ context: "concierge" }));
   },
 );
 
@@ -776,20 +776,20 @@ router.post(
     const { centralClubId, visibility, reason } = parsed.data;
 
     const { centralDb, centralClubsTable } = await import("@workspace/db/central");
-    const { eq: centralEq } = await import("drizzle-orm");
-    const [club] = await centralDb
-      .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
-      .from(centralClubsTable)
-      .where(centralEq(centralClubsTable.clubId, centralClubId));
+    const [[club], [existing]] = await Promise.all([
+      centralDb
+        .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
+        .from(centralClubsTable)
+        .where(eq(centralClubsTable.clubId, centralClubId)),
+      db
+        .select({ id: provisioningExclusionsTable.id })
+        .from(provisioningExclusionsTable)
+        .where(eq(provisioningExclusionsTable.centralClubId, centralClubId)),
+    ]);
     if (!club) {
       res.status(404).json({ error: "No such central club" });
       return;
     }
-
-    const [existing] = await db
-      .select({ id: provisioningExclusionsTable.id })
-      .from(provisioningExclusionsTable)
-      .where(eq(provisioningExclusionsTable.centralClubId, centralClubId));
     if (existing) {
       res.status(409).json({ error: "That club is already excluded." });
       return;

@@ -37,3 +37,24 @@ export type ProvisioningExclusionRow =
   typeof provisioningExclusionsTable.$inferSelect;
 export type InsertProvisioningExclusion =
   typeof provisioningExclusionsTable.$inferInsert;
+
+export type ProvisioningContext = "self-serve" | "concierge";
+
+/**
+ * Whether an exclusion of the given `visibility` blocks provisioning in the
+ * given context. The single source of truth for this rule -- both the
+ * available-clubs picker filter (`listAvailableClubs`) and the provisioning
+ * guard itself (`provisionTenant`'s `resolveCentralClub`) call this rather
+ * than each encoding the "everywhere always blocks; self_serve_only blocks
+ * only self-serve" rule independently, which would risk the picker and the
+ * actual guard silently disagreeing about what's allowed.
+ */
+export function isExcludedForContext(
+  visibility: string,
+  context: ProvisioningContext,
+): boolean {
+  return (
+    visibility === "everywhere" ||
+    (context === "self-serve" && visibility === "self_serve_only")
+  );
+}
