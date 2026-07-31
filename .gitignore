@@ -55,6 +55,10 @@ Thumbs.db
 # platforms without symlink support these dereference into duplicate copies
 .claude/skills/
 
+# Claude Code personal overrides (permissions, local instructions) - not team policy
+.claude/settings.local.json
+CLAUDE.local.md
+
 # design-sync machine state
 .ds-sync/
 ds-bundle/
