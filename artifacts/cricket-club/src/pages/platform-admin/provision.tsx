@@ -238,8 +238,12 @@ export default function ProvisionTenant() {
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Provision a club</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Concierge onboarding from the central PCA register.
+      </p>
+      <p className="mb-6 text-sm text-muted-foreground">
+        Folded or merged clubs aren't available to provision — their history
+        stays in the platform, view-only.
       </p>
       {club ? (
         <DetailsForm club={club} onBack={() => setClub(null)} />

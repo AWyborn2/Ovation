@@ -6,6 +6,8 @@ import {
   useGetAdminTenant,
   useUpdateAdminTenant,
   useIssueTenantAdminReset,
+  useArchiveAdminTenant,
+  useRestoreAdminTenant,
   getGetAdminTenantQueryKey,
   getListAllTenantsQueryKey,
   type AdminResetIssued,
@@ -15,7 +17,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { StatusPill } from "@/components/ui/stat-badge";
+import { useConfirm } from "@/components/confirm-dialog";
 import { BrandingCard } from "./branding-card";
+
+/** Halls Head is DEFAULT_TENANT_ID on the server — the archive route rejects
+ * it, but hiding the control here avoids a round-trip just to show that error. */
+const DEMO_TENANT_ID = 1;
 
 const PLANS: UpdateTenantBodyPlan[] = ["free", "club", "pro"];
 
@@ -170,9 +178,123 @@ export default function TenantDetail() {
 
         <AdminAccessCard tenantId={id} tenantName={tenant.name} />
 
+        <StatusCard tenantId={id} tenant={tenant} />
+
         <BrandingCard key={tenant.id} tenantId={id} tenant={tenant} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Archive/restore control. Archiving blocks the tenant's admin access and
+ * drops it from the public directory without deleting any of its data;
+ * restoring reinstates both immediately, no re-login required. Restore needs
+ * no confirmation (fully reversible); archive does, since it stops a real
+ * club admin's access.
+ */
+function StatusCard({
+  tenantId,
+  tenant,
+}: {
+  tenantId: number;
+  tenant: { name: string; suspendedAt?: string | null };
+}) {
+  const qc = useQueryClient();
+  const confirm = useConfirm();
+  const [error, setError] = useState<string | null>(null);
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
+    qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
+  };
+
+  const archive = useArchiveAdminTenant({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        invalidate();
+      },
+      onError: (e) => {
+        const status = (e as { status?: number })?.status;
+        setError(
+          status === 400
+            ? "The demo tenant can't be archived."
+            : "Couldn't archive this tenant.",
+        );
+      },
+    },
+  });
+  const restore = useRestoreAdminTenant({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        invalidate();
+      },
+      onError: () => setError("Couldn't restore this tenant."),
+    },
+  });
+
+  const archived = tenant.suspendedAt != null;
+
+  async function onArchive() {
+    if (
+      !(await confirm({
+        title: "Archive this club?",
+        description:
+          `${tenant.name} will lose admin access and drop off the public ` +
+          "directory. Its history, photos, and curated content are all " +
+          "preserved untouched, and restoring brings it back instantly.",
+        confirmText: "Archive",
+        destructive: true,
+      }))
+    )
+      return;
+    archive.mutate({ id: tenantId });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Status</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <StatusPill tone={archived ? "danger" : "live"}>
+            {archived ? "Archived" : "Active"}
+          </StatusPill>
+          {archived ? (
+            <span className="text-sm text-muted-foreground">
+              View-only — admin access is blocked; history stays intact.
+            </span>
+          ) : null}
+        </div>
+        {tenantId === DEMO_TENANT_ID ? (
+          <p className="text-sm text-muted-foreground">
+            The demo tenant can't be archived.
+          </p>
+        ) : archived ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => restore.mutate({ id: tenantId })}
+            disabled={restore.isPending}
+          >
+            {restore.isPending ? "Restoring…" : "Restore"}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onArchive}
+            disabled={archive.isPending}
+          >
+            {archive.isPending ? "Archiving…" : "Archive"}
+          </Button>
+        )}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      </CardContent>
+    </Card>
   );
 }
 
