@@ -82,8 +82,38 @@ export interface PackDesignEntry {
   template: PackCardTemplate;
 }
 
+/**
+ * How a pack pulls the tenant's stage tone toward its own art direction.
+ *
+ * `--ink` is the deep stage colour, and the renderer emits it for every pack
+ * from one tenant-level token. That made every pack's own `var(--ink, …)`
+ * fallback dead code: Gold Foil's shared fragment asks for a near-black
+ * `#070603` and Neon Night's for a navy `#081426`, but both resolved to
+ * whatever single value the tenant's theme carried, so any card whose stage IS
+ * `var(--ink)` looked the same in every pack. (Packs still differed elsewhere,
+ * via `--block` / `--surface-*`, which the renderer does not emit — so the
+ * differentiation was inconsistent rather than absent.)
+ *
+ * A tint keeps the club's tone in the mix instead of replacing it, the same way
+ * the metallic foil ramp derives from `--gold`: the stage stays recognisably
+ * the tenant's, while each pack keeps its own cast.
+ */
+export interface PackInkTint {
+  /** The pack's own stage colour — what the tenant tone is mixed toward. */
+  toward: string;
+  /** Percentage of the TENANT's tone retained (0–100). Higher = more tenant. */
+  tenantWeight: number;
+}
+
 export interface PackManifest {
   packId: string;
   name: string;
   designs: PackDesignEntry[];
+  /**
+   * Optional. Omitted means the tenant's `--ink` is used verbatim — which is
+   * what Broadcast Dark does, because its own stage IS the default token and
+   * the Halls Head parity invariant (see `brandDefaultTokens`) requires its
+   * output to stay byte-identical.
+   */
+  inkTint?: PackInkTint;
 }

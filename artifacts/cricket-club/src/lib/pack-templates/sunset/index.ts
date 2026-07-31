@@ -33,6 +33,16 @@ import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
 export const SUNSET_PACK: PackManifest = {
   packId: "sunset-v1",
   name: "Sunset",
+  // A warm dusk base, per this pack's own `var(--ink,#120a07)`; without it the
+  // sunset bloom sits on a neutral slate and reads as just another dark card.
+  //
+  // A LOWER tenant share than the other packs, and deliberately so: #120a07 is
+  // very low-chroma, so at an even 50/50 a cool tenant tone swamps it and the
+  // stage comes out neutral-magenta rather than warm (measured against the
+  // seeded #322F3D: 50% gives #221d22, red and blue level). At 35% red leads
+  // and it reads as dusk. Neon Night's base carries enough blue to hold its
+  // own at 50%; this one does not.
+  inkTint: { toward: "#120a07", tenantWeight: 35 },
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "team-list", kind: "teamList", template: teamList },

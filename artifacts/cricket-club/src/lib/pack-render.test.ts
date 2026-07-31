@@ -35,6 +35,60 @@ const TOKENS: PackTokens = {
 
 const hasUnresolved = (html: string) => /\{\{/.test(html);
 
+/** The `--ink:` declaration the root wrapper emits, whatever its form. */
+const inkDecl = (html: string): string =>
+  /--ink:((?:[^;"]|\([^)]*\))*)/.exec(html)?.[1]?.trim() ?? "";
+
+describe("pack stage tone (--ink)", () => {
+  /**
+   * `--ink` is the deep stage colour. It used to be emitted from ONE
+   * tenant-level token for every pack, which made each pack's own
+   * `var(--ink, …)` fallback dead: Gold Foil's shared fragment asks for a
+   * near-black #070603 and Neon Night's for a navy #081426, but both resolved
+   * to whatever single value the tenant carried. Any card whose stage IS
+   * `var(--ink)` — the Debut card sets `background:var(--ink,…)` outright, and
+   * Gold Foil's fragments do the same — therefore looked identical in every
+   * pack, while cards driven by `--block`/`--surface-*` still differed. The
+   * differentiation was inconsistent, which is harder to spot than absent.
+   */
+  const input = sampleCardInput("matchSummary");
+  const render = (packId?: string) =>
+    renderPackCard(input, "square", true, TOKENS, false, null, packId);
+
+  it("gives each tinted pack a distinct stage, all derived from the tenant's tone", () => {
+    const inks = new Map(
+      ["broadcast-dark-v1", "gold-foil-v1", "neon-night-v1", "sunset-v1"].map(
+        (p) => [p, inkDecl(render(p))] as const,
+      ),
+    );
+    expect(new Set(inks.values()).size).toBe(inks.size);
+    // Every tinted stage still carries the TENANT's ink in the mix — a pack
+    // that simply hard-coded its own base would look the same for every club,
+    // which is the opposite failure.
+    for (const [packId, ink] of inks) {
+      if (packId === "broadcast-dark-v1") continue;
+      expect(ink, packId).toContain(TOKENS.ink);
+      expect(ink, packId).toMatch(/^color-mix\(/);
+    }
+  });
+
+  it("leaves Broadcast Dark's stage untinted — the Halls Head parity invariant", () => {
+    // Broadcast Dark's own stage IS the default token, and `brandDefaultTokens`
+    // documents that HH pack cards must stay byte-identical. A tint here would
+    // silently reskin the demo tenant's whole catalogue.
+    expect(inkDecl(render("broadcast-dark-v1"))).toBe(TOKENS.ink);
+    expect(render("broadcast-dark-v1")).toBe(render());
+  });
+
+  it("keeps the junior brown panel independent of the stage tint", () => {
+    // Tokens resolve `junior > override > theme > brand`; the tint sits on the
+    // stage only and must not disturb the juniors invariant.
+    const html = renderPackCard(input, "square", true, TOKENS, true, null, "sunset-v1");
+    expect(html).toContain(`--panel:${JUNIOR_PANEL}`);
+    expect(inkDecl(html)).toMatch(/^color-mix\(/);
+  });
+});
+
 describe("renderPackCard", () => {
   it("binds a full matchSummary sample into all three sizes with no unresolved placeholders", () => {
     const input = sampleCardInput("matchSummary");

@@ -31,6 +31,9 @@ import { bigMoment } from "./big-moment";
 export const NEON_NIGHT_PACK: PackManifest = {
   packId: "neon-night-v1",
   name: "Neon Night",
+  // The cyan glow needs a cool night-navy behind it, which is what this pack's
+  // own `var(--ink,#081426)` asks for.
+  inkTint: { toward: "#081426", tenantWeight: 50 },
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "record", kind: "record", template: record },

@@ -16,6 +16,7 @@ import { getPackManifest } from "./pack-templates/registry";
 import type {
   PackCardTemplate,
   PackDesignEntry,
+  PackInkTint,
   PackTemplateFormats,
   PackTemplateField,
 } from "./pack-templates/types";
@@ -1180,26 +1181,44 @@ function darkenHex(hex: string, amount: number): string | null {
   return `#${to2(r)}${to2(g)}${to2(b)}`;
 }
 
+/**
+ * The stage colour for this pack: the tenant's `ink` pulled toward the pack's
+ * own base by its {@link PackInkTint}, or the tenant's tone verbatim when the
+ * pack declares no tint.
+ *
+ * `color-mix` rather than a flat swap so the club's tone still carries the card
+ * — the same technique the metallic foil ramp uses on `--gold`. A pack that
+ * simply hard-coded its own base would look identical for every club, which is
+ * the opposite failure.
+ */
+function stageInk(tokens: PackTokens, tint?: PackInkTint): string {
+  if (!tint) return tokens.ink;
+  const w = Math.max(0, Math.min(100, tint.tenantWeight));
+  return `color-mix(in srgb, ${tokens.ink} ${w}%, ${tint.toward})`;
+}
+
 function rootStyle(
   tokens: PackTokens,
   junior: boolean,
   size: CardSize,
+  inkTint?: PackInkTint,
 ): string {
   const native = NATIVE[size] ?? NATIVE.story;
   const panel = junior ? JUNIOR_PANEL : tokens.panel;
   const panel2 = darkenHex(panel, 0.42);
   const disp = DISPLAY_FONT_FAMILY[tokens.displayFont ?? "anton"] ?? DISPLAY_FONT_FAMILY.anton;
+  const ink = stageInk(tokens, inkTint);
   const decls: string[] = [
     `position:relative`,
     `width:${native.w}px`,
     `height:${native.h}px`,
     `overflow:hidden`,
-    `background:${tokens.ink}`,
+    `background:${ink}`,
     `color:${tokens.textLight}`,
     `font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif`,
     `--gold:${tokens.accent}`,
     `--panel:${panel}`,
-    `--ink:${tokens.ink}`,
+    `--ink:${ink}`,
     `--disp:${disp}`,
     `--k:${SHARED_K[size] ?? 1.4}`,
   ];
@@ -1330,7 +1349,7 @@ export function renderPackCard(
   html = substituteFields(html, values);
   html = cleanupEmptyRoles(html);
 
-  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size)}">${html}</div>`;
+  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}</div>`;
 }
 
 /** Native pixel dimensions for a size (exposed for scaled mounting). */
