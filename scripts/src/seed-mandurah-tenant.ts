@@ -38,6 +38,9 @@ async function main(): Promise<void> {
       logoUrl: arg("logo-url") ?? KNOWN_LOGOS[name] ?? null,
       plan: "pilot",
       mode: "upsert",
+      // An operator running this script by hand is concierge provisioning,
+      // not public self-serve -- matches the console's concierge picker.
+      context: "concierge",
     });
     const { tenant } = result;
     console.log(

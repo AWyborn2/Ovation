@@ -7287,7 +7287,7 @@ export const GetTenantPlanResponse = zod.object({
 
 
 /**
- * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant, folded/renamed, or excluded from provisioning). Empty / 403 when signup is disabled.
  */
 export const GetAvailableClubsResponseItem = zod.object({
   "centralClubId": zod.number(),
@@ -7617,6 +7617,51 @@ export const RestoreAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
+
+
+/**
+ * @summary Central PCA clubs available for concierge provisioning. Like /platform/available-clubs but excludes only "everywhere"-visibility provisioning exclusions — a club excluded "self_serve_only" still appears here so a platform admin can concierge-provision it.
+ */
+export const GetAdminAvailableClubsResponseItem = zod.object({
+  "centralClubId": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "backgroundColour": zod.string().nullish(),
+  "suggestedSlug": zod.string().describe('A pre-validated slug derived from the club name.')
+}).describe('A central PCA club a visitor can claim during signup.')
+export const GetAdminAvailableClubsResponse = zod.array(GetAdminAvailableClubsResponseItem)
+
+
+/**
+ * @summary All current provisioning exclusions.
+ */
+export const ListProvisioningExclusionsResponseItem = zod.object({
+  "id": zod.number(),
+  "centralClubId": zod.number(),
+  "clubName": zod.string().describe('Snapshot of the club\'s name at the time it was excluded.'),
+  "visibility": zod.enum(['everywhere', 'self_serve_only']).describe('\"everywhere\" blocks both self-serve signup and concierge provisioning. \"self_serve_only\" blocks only public self-serve signup; a platform admin can still concierge-provision the club.'),
+  "reason": zod.string().nullable(),
+  "createdAt": zod.string()
+}).describe('A central PCA club a platform admin has excluded from provisioning.')
+export const ListProvisioningExclusionsResponse = zod.array(ListProvisioningExclusionsResponseItem)
+
+
+/**
+ * @summary Exclude a central club from provisioning. "everywhere" blocks both self-serve signup and concierge provisioning; "self_serve_only" blocks only public self-serve signup.
+ */
+export const CreateProvisioningExclusionBody = zod.object({
+  "centralClubId": zod.number(),
+  "visibility": zod.enum(['everywhere', 'self_serve_only']).describe('\"everywhere\" blocks both self-serve signup and concierge provisioning. \"self_serve_only\" blocks only public self-serve signup; a platform admin can still concierge-provision the club.'),
+  "reason": zod.string().optional()
+})
+
+
+/**
+ * @summary Remove a provisioning exclusion. If the club is still unclaimed this makes it provisionable again; if it was already claimed via the self_serve_only concierge path, removal has no visible effect.
+ */
+export const DeleteProvisioningExclusionParams = zod.object({
+  "id": zod.coerce.number()
+})
 
 
 /**

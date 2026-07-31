@@ -8,6 +8,7 @@ import {
   tenantsTable,
   adminsTable,
   playerIdMapTable,
+  provisioningExclusionsTable,
 } from "@workspace/db";
 import { hashPassword, encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
@@ -235,5 +236,76 @@ describe("platform-admin tenant management", () => {
       })
       .expect(400);
     expect(res.body.error).toBeTruthy();
+  });
+
+  it("still concierge-provisions a club excluded self_serve_only (concierge bypasses that visibility)", async () => {
+    const available = await request(app)
+      .get("/api/platform/admin/available-clubs")
+      .set("Cookie", platformCookie)
+      .expect(200);
+    expect(available.body.length).toBeGreaterThan(0);
+    const club = available.body[0];
+
+    const [exclusion] = await db
+      .insert(provisioningExclusionsTable)
+      .values({
+        centralClubId: club.centralClubId,
+        clubName: club.name,
+        visibility: "self_serve_only",
+        createdByPlatformAdminId: 1,
+      })
+      .returning();
+    try {
+      const res = await request(app)
+        .post("/api/platform/admin/tenants")
+        .set("Cookie", platformCookie)
+        .send({
+          centralClubId: club.centralClubId,
+          slug: `pa-ssonly-${STAMP}`.slice(0, 40),
+        })
+        .expect(201);
+      expect(res.body.centralClubId).toBe(club.centralClubId);
+
+      await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, res.body.id));
+      await db.delete(tenantsTable).where(eq(tenantsTable.id, res.body.id));
+    } finally {
+      await db
+        .delete(provisioningExclusionsTable)
+        .where(eq(provisioningExclusionsTable.id, exclusion!.id));
+    }
+  });
+
+  it("rejects concierge-provisioning a club excluded everywhere", async () => {
+    const available = await request(app)
+      .get("/api/platform/admin/available-clubs")
+      .set("Cookie", platformCookie)
+      .expect(200);
+    expect(available.body.length).toBeGreaterThan(0);
+    const club = available.body[0];
+
+    const [exclusion] = await db
+      .insert(provisioningExclusionsTable)
+      .values({
+        centralClubId: club.centralClubId,
+        clubName: club.name,
+        visibility: "everywhere",
+        createdByPlatformAdminId: 1,
+      })
+      .returning();
+    try {
+      const res = await request(app)
+        .post("/api/platform/admin/tenants")
+        .set("Cookie", platformCookie)
+        .send({
+          centralClubId: club.centralClubId,
+          slug: `pa-everywhere-${STAMP}`.slice(0, 40),
+        })
+        .expect(400);
+      expect(res.body.error).toBeTruthy();
+    } finally {
+      await db
+        .delete(provisioningExclusionsTable)
+        .where(eq(provisioningExclusionsTable.id, exclusion!.id));
+    }
   });
 });

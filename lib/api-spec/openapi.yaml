@@ -5070,8 +5070,9 @@ paths:
       operationId: getAvailableClubs
       tags: [platform]
       summary: >-
-        Central PCA clubs available to claim via self-serve signup (those not yet
-        onboarded as a tenant). Empty / 403 when signup is disabled.
+        Central PCA clubs available to claim via self-serve signup (those not
+        yet onboarded as a tenant, folded/renamed, or excluded from
+        provisioning). Empty / 403 when signup is disabled.
       responses:
         "200":
           description: Clubs available to claim
@@ -5381,6 +5382,96 @@ paths:
           description: Not authenticated.
         "404":
           description: No such tenant.
+
+  /platform/admin/available-clubs:
+    get:
+      operationId: getAdminAvailableClubs
+      tags: [platformAdmin]
+      summary: >-
+        Central PCA clubs available for concierge provisioning. Like
+        /platform/available-clubs but excludes only "everywhere"-visibility
+        provisioning exclusions — a club excluded "self_serve_only" still
+        appears here so a platform admin can concierge-provision it.
+      responses:
+        "200":
+          description: Clubs available for concierge provisioning
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableClub"
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/provisioning-exclusions:
+    get:
+      operationId: listProvisioningExclusions
+      tags: [platformAdmin]
+      summary: All current provisioning exclusions.
+      responses:
+        "200":
+          description: Current exclusions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProvisioningExclusion"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: createProvisioningExclusion
+      tags: [platformAdmin]
+      summary: >-
+        Exclude a central club from provisioning. "everywhere" blocks both
+        self-serve signup and concierge provisioning; "self_serve_only" blocks
+        only public self-serve signup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProvisioningExclusionBody"
+      responses:
+        "201":
+          description: Exclusion created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProvisioningExclusion"
+        "400":
+          description: Invalid visibility value.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No central.clubs row matches the given centralClubId.
+        "409":
+          description: That club is already excluded.
+
+  /platform/admin/provisioning-exclusions/{id}:
+    delete:
+      operationId: deleteProvisioningExclusion
+      tags: [platformAdmin]
+      summary: >-
+        Remove a provisioning exclusion. If the club is still unclaimed this
+        makes it provisionable again; if it was already claimed via the
+        self_serve_only concierge path, removal has no visible effect.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed.
+        "400":
+          description: Invalid id.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such exclusion.
 
   /platform/admin/platform-brand:
     get:
@@ -7321,6 +7412,44 @@ components:
         suggestedSlug:
           type: string
           description: A pre-validated slug derived from the club name.
+
+    ProvisioningExclusionVisibility:
+      type: string
+      enum: [everywhere, self_serve_only]
+      description: >-
+        "everywhere" blocks both self-serve signup and concierge provisioning.
+        "self_serve_only" blocks only public self-serve signup; a platform
+        admin can still concierge-provision the club.
+
+    ProvisioningExclusion:
+      type: object
+      description: A central PCA club a platform admin has excluded from provisioning.
+      required: [id, centralClubId, clubName, visibility, reason, createdAt]
+      properties:
+        id:
+          type: integer
+        centralClubId:
+          type: integer
+        clubName:
+          type: string
+          description: Snapshot of the club's name at the time it was excluded.
+        visibility:
+          $ref: "#/components/schemas/ProvisioningExclusionVisibility"
+        reason:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    CreateProvisioningExclusionBody:
+      type: object
+      required: [centralClubId, visibility]
+      properties:
+        centralClubId:
+          type: integer
+        visibility:
+          $ref: "#/components/schemas/ProvisioningExclusionVisibility"
+        reason:
+          type: string
 
     DirectoryClub:
       type: object

@@ -5,6 +5,7 @@ import {
   tenantsTable,
   adminsTable,
   adminPasswordResetsTable,
+  provisioningExclusionsTable,
   type TenantRow,
 } from "@workspace/db";
 import { toAdminTenant } from "../lib/admin-tenant-shape";
@@ -15,6 +16,7 @@ import {
   UpdatePlatformBrandBody,
   ProvisionTenantAsAdminBody,
   IssueTenantAdminResetBody,
+  CreateProvisioningExclusionBody,
 } from "@workspace/api-zod";
 import {
   PLATFORM_SESSION_COOKIE,
@@ -44,6 +46,7 @@ import { invalidateTenantDirectoryCache } from "../middlewares/tenant-context";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
+import { listAvailableClubs } from "../lib/available-clubs";
 
 const router: IRouter = Router();
 
@@ -101,11 +104,11 @@ async function centralClubNames(): Promise<Map<number, string>> {
   }
 }
 
-/** Parse the `:id` route param, writing the standard 400 and returning null if invalid. */
-function parseTenantIdParam(req: Request, res: Response): number | null {
+/** Parse a positive-integer `:id` route param, writing the standard 400 and returning null if invalid. */
+function parseIdParam(req: Request, res: Response): number | null {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
-    res.status(400).json({ error: "Invalid tenant id" });
+    res.status(400).json({ error: "Invalid id" });
     return null;
   }
   return id;
@@ -171,6 +174,26 @@ async function setTenantSuspended(
     `platform admin ${suspended ? "archived" : "restored"} a tenant`,
   );
   return row;
+}
+
+/** Shape a provisioning-exclusion row for the platform-admin console. */
+function toProvisioningExclusion(row: {
+  id: number;
+  centralClubId: number;
+  clubName: string;
+  visibility: string;
+  reason: string | null;
+  createdAt: Date | string;
+}) {
+  return {
+    id: row.id,
+    centralClubId: row.centralClubId,
+    clubName: row.clubName,
+    visibility: row.visibility,
+    reason: row.reason,
+    createdAt:
+      row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
+  };
 }
 
 // --- Auth -------------------------------------------------------------------
@@ -247,7 +270,7 @@ router.get(
   "/platform/admin/tenants/:id",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = parseTenantIdParam(req, res);
+    const id = parseIdParam(req, res);
     if (id === null) return;
     const tenant = await getTenantOrNotFound(id, res);
     if (!tenant) return;
@@ -275,7 +298,7 @@ router.patch(
   "/platform/admin/tenants/:id",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = parseTenantIdParam(req, res);
+    const id = parseIdParam(req, res);
     if (id === null) return;
     const parsed = UpdateAdminTenantBody.safeParse(req.body);
     if (!parsed.success) {
@@ -376,7 +399,7 @@ router.post(
   "/platform/admin/tenants/:id/archive",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = parseTenantIdParam(req, res);
+    const id = parseIdParam(req, res);
     if (id === null) return;
     // Halls Head is the platform default (DEFAULT_TENANT_ID), but a deployment
     // can override which tenant every local/dev/preview host without a
@@ -405,7 +428,7 @@ router.post(
   "/platform/admin/tenants/:id/restore",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = parseTenantIdParam(req, res);
+    const id = parseIdParam(req, res);
     if (id === null) return;
 
     const current = await getTenantOrNotFound(id, res);
@@ -426,7 +449,7 @@ router.patch(
   "/platform/admin/tenants/:id/brand",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = parseTenantIdParam(req, res);
+    const id = parseIdParam(req, res);
     if (id === null) return;
     const parsed = UpdateAdminTenantBrandBody.safeParse(req.body);
     if (!parsed.success) {
@@ -563,6 +586,7 @@ router.post(
         name: parsed.data.name,
         plan: parsed.data.plan ?? "free",
         mode: "create",
+        context: "concierge",
       });
 
       if (adminEmail && parsed.data.password) {
@@ -618,7 +642,7 @@ router.post(
   "/platform/admin/tenants/:id/admin-resets",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const id = parseTenantIdParam(req, res);
+    const id = parseIdParam(req, res);
     if (id === null) return;
     const parsed = IssueTenantAdminResetBody.safeParse(req.body);
     if (!parsed.success) {
@@ -712,6 +736,114 @@ router.post(
       tenantName: tenant.name,
       created,
     });
+  },
+);
+
+// Central PCA clubs available for concierge provisioning: like the public
+// /platform/available-clubs, but a club excluded "self_serve_only" stays
+// visible here so a platform admin can still provision it directly.
+router.get(
+  "/platform/admin/available-clubs",
+  requirePlatformAdmin,
+  async (_req, res): Promise<void> => {
+    res.json(await listAvailableClubs({ context: "concierge" }));
+  },
+);
+
+// --- Provisioning exclusions -------------------------------------------------
+
+router.get(
+  "/platform/admin/provisioning-exclusions",
+  requirePlatformAdmin,
+  async (_req, res): Promise<void> => {
+    const rows = await db
+      .select()
+      .from(provisioningExclusionsTable)
+      .orderBy(provisioningExclusionsTable.clubName);
+    res.json(rows.map(toProvisioningExclusion));
+  },
+);
+
+router.post(
+  "/platform/admin/provisioning-exclusions",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = CreateProvisioningExclusionBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const { centralClubId, visibility, reason } = parsed.data;
+
+    const { centralDb, centralClubsTable } = await import("@workspace/db/central");
+    const [club] = await centralDb
+      .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
+      .from(centralClubsTable)
+      .where(eq(centralClubsTable.clubId, centralClubId));
+    if (!club) {
+      res.status(404).json({ error: "No such central club" });
+      return;
+    }
+
+    const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
+    // Atomic insert-or-skip on the table's centralClubId unique constraint,
+    // rather than a separate pre-check SELECT: two concurrent requests for the
+    // same club can no longer both pass a check and race on the INSERT (which
+    // would otherwise surface as an uncaught constraint violation / bare 500
+    // for the loser instead of the same 409 a non-racing duplicate gets).
+    const [row] = await db
+      .insert(provisioningExclusionsTable)
+      .values({
+        centralClubId,
+        clubName: club.name ?? `Club ${club.clubId}`,
+        visibility,
+        reason: reason ?? null,
+        createdByPlatformAdminId: platformAdmin.id,
+      })
+      .onConflictDoNothing({ target: provisioningExclusionsTable.centralClubId })
+      .returning();
+    if (!row) {
+      res.status(409).json({ error: "That club is already excluded." });
+      return;
+    }
+    req.log?.info(
+      {
+        event: "provisioning_exclusion_created",
+        platformAdminId: platformAdmin.id,
+        centralClubId,
+        visibility,
+      },
+      "platform admin excluded a club from provisioning",
+    );
+    res.status(201).json(toProvisioningExclusion(row!));
+  },
+);
+
+router.delete(
+  "/platform/admin/provisioning-exclusions/:id",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = parseIdParam(req, res);
+    if (id === null) return;
+
+    const [row] = await db
+      .delete(provisioningExclusionsTable)
+      .where(eq(provisioningExclusionsTable.id, id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "No such exclusion" });
+      return;
+    }
+    const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
+    req.log?.info(
+      {
+        event: "provisioning_exclusion_removed",
+        platformAdminId: platformAdmin.id,
+        centralClubId: row.centralClubId,
+      },
+      "platform admin removed a provisioning exclusion",
+    );
+    res.status(204).end();
   },
 );
 

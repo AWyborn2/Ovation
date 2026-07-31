@@ -2,7 +2,13 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, adminsTable, playerIdMapTable } from "@workspace/db";
+import {
+  db,
+  tenantsTable,
+  adminsTable,
+  playerIdMapTable,
+  provisioningExclusionsTable,
+} from "@workspace/db";
 import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 
 /**
@@ -155,6 +161,45 @@ describe("platform self-serve signup", () => {
       });
     expect(signup.status).toBe(400);
   });
+
+  it.each(["everywhere", "self_serve_only"] as const)(
+    "excludes a club with a %s provisioning exclusion from the picker and rejects direct signup",
+    async (visibility) => {
+      const before = await request(app).get("/api/platform/available-clubs").expect(200);
+      expect(before.body.length).toBeGreaterThan(0);
+      const club = before.body[0];
+
+      const [exclusion] = await db
+        .insert(provisioningExclusionsTable)
+        .values({
+          centralClubId: club.centralClubId,
+          clubName: club.name,
+          visibility,
+          createdByPlatformAdminId: 1,
+        })
+        .returning();
+      try {
+        const after = await request(app).get("/api/platform/available-clubs").expect(200);
+        expect(
+          after.body.some((c: { centralClubId: number }) => c.centralClubId === club.centralClubId),
+        ).toBe(false);
+
+        const signup = await request(app)
+          .post("/api/platform/signup")
+          .send({
+            centralClubId: club.centralClubId,
+            slug: `excl-${visibility}-${STAMP}`.slice(0, 40),
+            adminEmail: `excl-${visibility}+${STAMP}@example.com`,
+            password: "correct horse battery",
+          });
+        expect(signup.status).toBe(400);
+      } finally {
+        await db
+          .delete(provisioningExclusionsTable)
+          .where(eq(provisioningExclusionsTable.id, exclusion!.id));
+      }
+    },
+  );
 
   it("is disabled when SIGNUP_MODE=off (403)", async () => {
     process.env.SIGNUP_MODE = "off";
