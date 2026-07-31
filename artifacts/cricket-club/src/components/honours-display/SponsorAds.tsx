@@ -90,12 +90,31 @@ export function SponsorSlideSingle({
 
 /**
  * Full-screen admin-uploaded ad creative, placed between boards in the kiosk
- * rotation (distinct from the club sponsor library).
+ * rotation (distinct from the club sponsor library). `onError` fires when a
+ * video creative fails to decode/load, so the kiosk can advance early
+ * instead of holding on a blank frame for the rest of the dwell.
  */
-export function AdSlide({ ad }: { ad: KioskAd }) {
+export function AdSlide({
+  ad,
+  onError,
+}: {
+  ad: KioskAd;
+  onError?: () => void;
+}) {
   return (
     <div className="hb-ad-slide">
-      <img src={ad.imageUrl} alt={ad.name} />
+      {ad.mediaType === "video" ? (
+        <video
+          src={ad.imageUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          onError={onError}
+        />
+      ) : (
+        <img src={ad.imageUrl} alt={ad.name} />
+      )}
     </div>
   );
 }

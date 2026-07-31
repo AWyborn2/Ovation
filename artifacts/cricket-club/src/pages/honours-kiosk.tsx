@@ -406,6 +406,11 @@ export default function HonoursKiosk() {
   // The persistent strip is redundant on a full-screen sponsor/ad slide, so
   // hide it (and don't reserve its space) while one is showing.
   const showStrip = sponsorStripOn && !isOverlayFrame;
+  // A video ad that fails to decode/load must not blank the unattended kiosk
+  // for the rest of its dwell — advance immediately instead. Reuses the same
+  // index update `advance()` uses in the rotation effect above; the effect's
+  // own cleanup clears the now-stale dwell timer when `index` changes.
+  const advanceOnAdError = () => setIndex((i) => (i + 1) % frames.length);
 
   return (
     <div
@@ -425,7 +430,7 @@ export default function HonoursKiosk() {
               <SponsorSlide sponsors={activeSponsors} brand={brand} />
             )
           ) : current.kind === "ad" ? (
-            <AdSlide ad={current.ad} />
+            <AdSlide ad={current.ad} onError={advanceOnAdError} />
           ) : (
             <BoardRenderer
               board={current.board}
