@@ -8,8 +8,10 @@ import {
   tenantsTable,
   adminsTable,
   playerIdMapTable,
+  provisioningExclusionsTable,
 } from "@workspace/db";
 import { hashPassword, encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 
 /**
  * Platform-admin tenant oversight + management (Phase 2e). A platform admin can
@@ -210,5 +212,100 @@ describe("platform-admin tenant management", () => {
     expect(res.body.readsFromCentral).toBe(true);
     expect(res.body.centralClubId).toBe(club.centralClubId);
     expect(res.body.adminCount).toBe(1);
+  });
+
+  it("rejects concierge-provisioning a folded/renamed central club (activeTo set)", async () => {
+    // Real-data test, mirrors the equivalent self-serve assertion in
+    // platform-signup.test.ts: skips cleanly if this deployment's central DB
+    // happens to carry no folded/renamed row.
+    const folded = await findFoldedCentralClub();
+    if (!folded) {
+      console.warn(
+        "platform-admin-tenants.test.ts: no folded/renamed club found in " +
+          "central.clubs — skipping the concierge folded-club rejection assertion.",
+      );
+      return;
+    }
+
+    const res = await request(app)
+      .post("/api/platform/admin/tenants")
+      .set("Cookie", platformCookie)
+      .send({
+        centralClubId: folded.clubId,
+        slug: `pa-folded-${STAMP}`.slice(0, 40),
+      })
+      .expect(400);
+    expect(res.body.error).toBeTruthy();
+  });
+
+  it("still concierge-provisions a club excluded self_serve_only (concierge bypasses that visibility)", async () => {
+    const available = await request(app)
+      .get("/api/platform/admin/available-clubs")
+      .set("Cookie", platformCookie)
+      .expect(200);
+    expect(available.body.length).toBeGreaterThan(0);
+    const club = available.body[0];
+
+    const [exclusion] = await db
+      .insert(provisioningExclusionsTable)
+      .values({
+        centralClubId: club.centralClubId,
+        clubName: club.name,
+        visibility: "self_serve_only",
+        createdByPlatformAdminId: 1,
+      })
+      .returning();
+    try {
+      const res = await request(app)
+        .post("/api/platform/admin/tenants")
+        .set("Cookie", platformCookie)
+        .send({
+          centralClubId: club.centralClubId,
+          slug: `pa-ssonly-${STAMP}`.slice(0, 40),
+        })
+        .expect(201);
+      expect(res.body.centralClubId).toBe(club.centralClubId);
+
+      await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, res.body.id));
+      await db.delete(tenantsTable).where(eq(tenantsTable.id, res.body.id));
+    } finally {
+      await db
+        .delete(provisioningExclusionsTable)
+        .where(eq(provisioningExclusionsTable.id, exclusion!.id));
+    }
+  });
+
+  it("rejects concierge-provisioning a club excluded everywhere", async () => {
+    const available = await request(app)
+      .get("/api/platform/admin/available-clubs")
+      .set("Cookie", platformCookie)
+      .expect(200);
+    expect(available.body.length).toBeGreaterThan(0);
+    const club = available.body[0];
+
+    const [exclusion] = await db
+      .insert(provisioningExclusionsTable)
+      .values({
+        centralClubId: club.centralClubId,
+        clubName: club.name,
+        visibility: "everywhere",
+        createdByPlatformAdminId: 1,
+      })
+      .returning();
+    try {
+      const res = await request(app)
+        .post("/api/platform/admin/tenants")
+        .set("Cookie", platformCookie)
+        .send({
+          centralClubId: club.centralClubId,
+          slug: `pa-everywhere-${STAMP}`.slice(0, 40),
+        })
+        .expect(400);
+      expect(res.body.error).toBeTruthy();
+    } finally {
+      await db
+        .delete(provisioningExclusionsTable)
+        .where(eq(provisioningExclusionsTable.id, exclusion!.id));
+    }
   });
 });

@@ -20,6 +20,7 @@ import {
 import { resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loginRateLimiter } from "../middlewares/rate-limit";
+import { isTenantSuspended } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -48,8 +49,9 @@ router.post(
     }
     // Authenticate against the admins of the request's tenant (resolved from the
     // host); a Mandurah login on Mandurah's host can't match a Halls Head admin.
+    const tenantId = getTenantId(req);
     const admin = await getAdminByUsernameForTenant(
-      getTenantId(req),
+      tenantId,
       parsed.data.username,
     );
     if (
@@ -57,6 +59,15 @@ router.post(
       !(await verifyPassword(parsed.data.password, admin.passwordHash))
     ) {
       res.status(401).json({ error: "Invalid username or password" });
+      return;
+    }
+    // Checked only after credentials verify, so a suspended tenant's login
+    // attempt can never be used to distinguish a valid from an invalid
+    // username/password.
+    if (await isTenantSuspended(tenantId)) {
+      res
+        .status(403)
+        .json({ error: "This club's admin access is currently suspended." });
       return;
     }
     const token = encodeSession({ adminId: admin.id, issuedAt: Date.now() });

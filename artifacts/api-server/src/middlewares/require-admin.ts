@@ -7,14 +7,18 @@ import {
 } from "../lib/auth";
 import { getTenantId } from "./tenant-context";
 import { touchTenantActivity } from "../lib/tenant-activity";
+import { isTenantSuspended } from "../lib/tenant";
 
 export type RequestWithAdmin = Request & { admin?: AdminRow };
 
 /**
  * Resolve the signed-in admin for THIS request — and only if they belong to the
- * request's tenant. A session minted on one tenant's host can't authorise actions
- * on another's (defence-in-depth atop host-only session cookies). Returns null on
- * a missing/invalid session or a cross-tenant mismatch.
+ * request's tenant AND that tenant isn't archived/suspended. A session minted on
+ * one tenant's host can't authorise actions on another's (defence-in-depth atop
+ * host-only session cookies); a suspended tenant's admin resolves to null here
+ * without the session itself being touched — access resumes on restore with no
+ * re-login required. Returns null on a missing/invalid session, a cross-tenant
+ * mismatch, or a suspended tenant.
  */
 export async function resolveAdmin(req: Request): Promise<AdminRow | null> {
   const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
@@ -23,6 +27,7 @@ export async function resolveAdmin(req: Request): Promise<AdminRow | null> {
   if (!payload) return null;
   const admin = await getAdminById(payload.adminId);
   if (!admin || admin.tenantId !== getTenantId(req)) return null;
+  if (await isTenantSuspended(admin.tenantId)) return null;
   return admin;
 }
 

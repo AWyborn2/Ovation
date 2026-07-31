@@ -2,7 +2,12 @@ import { eq, ilike } from "drizzle-orm";
 import { db } from "./index";
 import { tenantsTable, type TenantRow } from "./schema/tenants";
 import { playerIdMapTable } from "./schema/player_id_map";
-import { centralDb, centralClubsTable } from "./central";
+import {
+  provisioningExclusionsTable,
+  isExcludedForContext,
+  type ProvisioningContext,
+} from "./schema/provisioning_exclusions";
+import { centralDb, centralClubsTable, isCentralClubProvisionable } from "./central";
 import { centralClubParticipants } from "./central-queries";
 
 /**
@@ -23,6 +28,8 @@ import { centralClubParticipants } from "./central-queries";
 export type ProvisionErrorCode =
   | "club_not_found"
   | "club_ambiguous"
+  | "club_folded"
+  | "club_excluded"
   | "slug_taken"
   | "club_claimed";
 
@@ -49,6 +56,14 @@ export interface ProvisionTenantOptions {
    * central club already claimed by another tenant — the self-serve signup path.
    */
   mode?: "upsert" | "create";
+  /**
+   * Which provisioning-exclusion rule applies (see provisioning_exclusions
+   * table): "self-serve" (default, the more restrictive of the two) rejects a
+   * club excluded either "everywhere" or "self_serve_only". "concierge"
+   * rejects only an "everywhere" exclusion — a platform admin can still
+   * provision a club that's merely hidden from public self-serve signup.
+   */
+  context?: ProvisioningContext;
 }
 
 export interface ProvisionTenantResult {
@@ -85,7 +100,30 @@ async function resolveCentralClub(opts: ProvisionTenantOptions) {
         ". Provide centralClubId.",
     );
   }
-  return rows[0];
+  const club = rows[0]!;
+  if (!isCentralClubProvisionable(club)) {
+    // Folded, or renamed/merged into a successor row (active_to set) — this id
+    // is not the one to provision, regardless of whether the picker was
+    // bypassed. Defense-in-depth: /platform/available-clubs already excludes
+    // these from both the self-serve and concierge pickers.
+    throw new ProvisionError(
+      "club_folded",
+      `${club.name ?? `Club ${club.clubId}`} is no longer active and can't be provisioned as a tenant.`,
+    );
+  }
+
+  const [exclusion] = await db
+    .select({ visibility: provisioningExclusionsTable.visibility })
+    .from(provisioningExclusionsTable)
+    .where(eq(provisioningExclusionsTable.centralClubId, club.clubId));
+  if (exclusion && isExcludedForContext(exclusion.visibility, opts.context ?? "self-serve")) {
+    throw new ProvisionError(
+      "club_excluded",
+      `${club.name ?? `Club ${club.clubId}`} has been excluded from provisioning.`,
+    );
+  }
+
+  return club;
 }
 
 export async function provisionTenant(

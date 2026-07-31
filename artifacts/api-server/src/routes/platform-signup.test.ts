@@ -2,7 +2,14 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, adminsTable, playerIdMapTable } from "@workspace/db";
+import {
+  db,
+  tenantsTable,
+  adminsTable,
+  playerIdMapTable,
+  provisioningExclusionsTable,
+} from "@workspace/db";
+import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 
 /**
  * Self-serve signup E2E (Phase 2b). Picks a real available central club, claims a
@@ -122,6 +129,77 @@ describe("platform self-serve signup", () => {
       });
     expect(res.status).toBe(400);
   });
+
+  it("excludes folded/renamed central clubs (activeTo set) from the picker and rejects direct signup", async () => {
+    // Real-data test: finds an actual folded/renamed row in central.clubs
+    // (active_to set) rather than asserting against a fabricated id, since the
+    // available-clubs endpoint never exposes activeTo for us to fabricate
+    // against. If this deployment's central DB happens to carry none (every
+    // club still active_to = null), there's nothing to assert — skip cleanly
+    // rather than failing on data the environment doesn't have.
+    const folded = await findFoldedCentralClub();
+    if (!folded) {
+      console.warn(
+        "platform-signup.test.ts: no folded/renamed club (activeTo set) found in " +
+          "central.clubs — skipping the folded-club exclusion assertions.",
+      );
+      return;
+    }
+
+    const clubs = await request(app).get("/api/platform/available-clubs").expect(200);
+    expect(
+      clubs.body.some((c: { centralClubId: number }) => c.centralClubId === folded.clubId),
+    ).toBe(false);
+
+    const signup = await request(app)
+      .post("/api/platform/signup")
+      .send({
+        centralClubId: folded.clubId,
+        slug: `folded-${STAMP}`,
+        adminEmail: `folded+${STAMP}@example.com`,
+        password: "correct horse battery",
+      });
+    expect(signup.status).toBe(400);
+  });
+
+  it.each(["everywhere", "self_serve_only"] as const)(
+    "excludes a club with a %s provisioning exclusion from the picker and rejects direct signup",
+    async (visibility) => {
+      const before = await request(app).get("/api/platform/available-clubs").expect(200);
+      expect(before.body.length).toBeGreaterThan(0);
+      const club = before.body[0];
+
+      const [exclusion] = await db
+        .insert(provisioningExclusionsTable)
+        .values({
+          centralClubId: club.centralClubId,
+          clubName: club.name,
+          visibility,
+          createdByPlatformAdminId: 1,
+        })
+        .returning();
+      try {
+        const after = await request(app).get("/api/platform/available-clubs").expect(200);
+        expect(
+          after.body.some((c: { centralClubId: number }) => c.centralClubId === club.centralClubId),
+        ).toBe(false);
+
+        const signup = await request(app)
+          .post("/api/platform/signup")
+          .send({
+            centralClubId: club.centralClubId,
+            slug: `excl-${visibility}-${STAMP}`.slice(0, 40),
+            adminEmail: `excl-${visibility}+${STAMP}@example.com`,
+            password: "correct horse battery",
+          });
+        expect(signup.status).toBe(400);
+      } finally {
+        await db
+          .delete(provisioningExclusionsTable)
+          .where(eq(provisioningExclusionsTable.id, exclusion!.id));
+      }
+    },
+  );
 
   it("is disabled when SIGNUP_MODE=off (403)", async () => {
     process.env.SIGNUP_MODE = "off";
