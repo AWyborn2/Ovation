@@ -188,6 +188,7 @@ router.post(
         centralClubId: parsed.data.centralClubId,
         plan: "free",
         mode: "create",
+        context: "self-serve",
       });
 
       // The first club admin (email + password, no verification in the pilot).

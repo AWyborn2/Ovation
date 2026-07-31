@@ -585,6 +585,7 @@ router.post(
         name: parsed.data.name,
         plan: parsed.data.plan ?? "free",
         mode: "create",
+        context: "concierge",
       });
 
       if (adminEmail && parsed.data.password) {
