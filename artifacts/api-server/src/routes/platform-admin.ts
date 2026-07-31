@@ -776,26 +776,21 @@ router.post(
     const { centralClubId, visibility, reason } = parsed.data;
 
     const { centralDb, centralClubsTable } = await import("@workspace/db/central");
-    const [[club], [existing]] = await Promise.all([
-      centralDb
-        .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
-        .from(centralClubsTable)
-        .where(eq(centralClubsTable.clubId, centralClubId)),
-      db
-        .select({ id: provisioningExclusionsTable.id })
-        .from(provisioningExclusionsTable)
-        .where(eq(provisioningExclusionsTable.centralClubId, centralClubId)),
-    ]);
+    const [club] = await centralDb
+      .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
+      .from(centralClubsTable)
+      .where(eq(centralClubsTable.clubId, centralClubId));
     if (!club) {
       res.status(404).json({ error: "No such central club" });
       return;
     }
-    if (existing) {
-      res.status(409).json({ error: "That club is already excluded." });
-      return;
-    }
 
     const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
+    // Atomic insert-or-skip on the table's centralClubId unique constraint,
+    // rather than a separate pre-check SELECT: two concurrent requests for the
+    // same club can no longer both pass a check and race on the INSERT (which
+    // would otherwise surface as an uncaught constraint violation / bare 500
+    // for the loser instead of the same 409 a non-racing duplicate gets).
     const [row] = await db
       .insert(provisioningExclusionsTable)
       .values({
@@ -805,7 +800,12 @@ router.post(
         reason: reason ?? null,
         createdByPlatformAdminId: platformAdmin.id,
       })
+      .onConflictDoNothing({ target: provisioningExclusionsTable.centralClubId })
       .returning();
+    if (!row) {
+      res.status(409).json({ error: "That club is already excluded." });
+      return;
+    }
     req.log?.info(
       {
         event: "provisioning_exclusion_created",

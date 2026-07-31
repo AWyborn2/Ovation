@@ -7287,7 +7287,7 @@ export const GetTenantPlanResponse = zod.object({
 
 
 /**
- * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant, folded/renamed, or excluded from provisioning). Empty / 403 when signup is disabled.
  */
 export const GetAvailableClubsResponseItem = zod.object({
   "centralClubId": zod.number(),
@@ -7657,7 +7657,7 @@ export const CreateProvisioningExclusionBody = zod.object({
 
 
 /**
- * @summary Remove a provisioning exclusion, re-opening that club for provisioning.
+ * @summary Remove a provisioning exclusion. If the club is still unclaimed this makes it provisionable again; if it was already claimed via the self_serve_only concierge path, removal has no visible effect.
  */
 export const DeleteProvisioningExclusionParams = zod.object({
   "id": zod.coerce.number()

@@ -17719,7 +17719,7 @@ export const getGetAvailableClubsUrl = () => {
 }
 
 /**
- * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant, folded/renamed, or excluded from provisioning). Empty / 403 when signup is disabled.
  */
 export const getAvailableClubs = async ( options?: RequestInit): Promise<AvailableClub[]> => {
 
@@ -17766,7 +17766,7 @@ export type GetAvailableClubsQueryError = ErrorType<void>
 
 
 /**
- * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant). Empty / 403 when signup is disabled.
+ * @summary Central PCA clubs available to claim via self-serve signup (those not yet onboarded as a tenant, folded/renamed, or excluded from provisioning). Empty / 403 when signup is disabled.
  */
 
 export function useGetAvailableClubs<TData = Awaited<ReturnType<typeof getAvailableClubs>>, TError = ErrorType<void>>(
@@ -18980,7 +18980,7 @@ export const getDeleteProvisioningExclusionUrl = (id: number,) => {
 }
 
 /**
- * @summary Remove a provisioning exclusion, re-opening that club for provisioning.
+ * @summary Remove a provisioning exclusion. If the club is still unclaimed this makes it provisionable again; if it was already claimed via the self_serve_only concierge path, removal has no visible effect.
  */
 export const deleteProvisioningExclusion = async (id: number, options?: RequestInit): Promise<void> => {
 
@@ -19028,7 +19028,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteProvisioningExclusionMutationError = ErrorType<void>
 
     /**
- * @summary Remove a provisioning exclusion, re-opening that club for provisioning.
+ * @summary Remove a provisioning exclusion. If the club is still unclaimed this makes it provisionable again; if it was already claimed via the self_serve_only concierge path, removal has no visible effect.
  */
 export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProvisioningExclusion>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}

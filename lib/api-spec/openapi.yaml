@@ -5070,8 +5070,9 @@ paths:
       operationId: getAvailableClubs
       tags: [platform]
       summary: >-
-        Central PCA clubs available to claim via self-serve signup (those not yet
-        onboarded as a tenant). Empty / 403 when signup is disabled.
+        Central PCA clubs available to claim via self-serve signup (those not
+        yet onboarded as a tenant, folded/renamed, or excluded from
+        provisioning). Empty / 403 when signup is disabled.
       responses:
         "200":
           description: Clubs available to claim
@@ -5452,7 +5453,10 @@ paths:
     delete:
       operationId: deleteProvisioningExclusion
       tags: [platformAdmin]
-      summary: Remove a provisioning exclusion, re-opening that club for provisioning.
+      summary: >-
+        Remove a provisioning exclusion. If the club is still unclaimed this
+        makes it provisionable again; if it was already claimed via the
+        self_serve_only concierge path, removal has no visible effect.
       parameters:
         - name: id
           in: path
@@ -5462,6 +5466,8 @@ paths:
       responses:
         "204":
           description: Removed.
+        "400":
+          description: Invalid id.
         "401":
           description: Not authenticated.
         "404":

@@ -7,6 +7,7 @@ import {
   useDeleteProvisioningExclusion,
   useGetAvailableClubs,
   getListProvisioningExclusionsQueryKey,
+  getGetAvailableClubsQueryKey,
   type AvailableClub,
   type ProvisioningExclusionVisibility,
 } from "@workspace/api-client-react";
@@ -41,7 +42,7 @@ export default function ProvisioningExclusions() {
     if (
       !(await confirm({
         title: "Remove this exclusion?",
-        description: `${clubName} will become provisionable again.`,
+        description: `${clubName} will become provisionable again, unless it's already been claimed as a tenant.`,
         confirmText: "Remove",
         destructive: true,
       }))
@@ -128,6 +129,7 @@ function AddExclusionCard() {
         setReason("");
         setVisibility("everywhere");
         qc.invalidateQueries({ queryKey: getListProvisioningExclusionsQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetAvailableClubsQueryKey() });
       },
       onError: (e) => {
         const status = (e as { status?: number })?.status;
