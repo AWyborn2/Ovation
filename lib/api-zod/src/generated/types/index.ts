@@ -254,6 +254,7 @@ export * from './juniorStatCorrectionPrevValues';
 export * from './juniorStatCorrectionTargetTable';
 export * from './juniorTotals';
 export * from './kioskAd';
+export * from './kioskAdMediaType';
 export * from './kioskTokenInput';
 export * from './kioskTokenResponse';
 export * from './ladderCardRow';

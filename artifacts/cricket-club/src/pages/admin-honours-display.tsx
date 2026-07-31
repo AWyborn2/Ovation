@@ -1872,8 +1872,15 @@ function AdEditor({
   const upload = useUpload({ onError: (e) => setError(e.message) });
   const handleFile = async (file: File) => {
     setError(null);
+    // Matches the video-type check in card-template-builder.tsx's handleBg.
+    // No filename-extension fallback for an empty file.type: the upload
+    // endpoint's contentType allowlist (storage.ts) already rejects an empty
+    // file.type (sent as "application/octet-stream") before onPatch below
+    // ever runs, so a client-side fallback here can never affect a saved ad.
+    const isVideo = file.type.startsWith("video/");
+    const mediaType: KioskAd["mediaType"] = isVideo ? "video" : "image";
     const r = await upload.uploadFile(file);
-    if (r) onPatch({ imageUrl: `/api/storage${r.objectPath}` });
+    if (r) onPatch({ imageUrl: `/api/storage${r.objectPath}`, mediaType });
   };
   return (
     <div
@@ -1899,20 +1906,31 @@ function AdEditor({
         {upload.isUploading ? "Uploading…" : "Upload"}
         <input
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,video/mp4"
           className="hidden"
           disabled={upload.isUploading}
           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
           data-testid={`ad-file-${ad.id}`}
         />
       </label>
-      {ad.imageUrl && (
+      {ad.imageUrl && (ad.mediaType === "video" ? (
+        <video
+          src={ad.imageUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-9 w-16 object-cover rounded border bg-white"
+          data-testid={`ad-preview-${ad.id}`}
+        />
+      ) : (
         <img
           src={ad.imageUrl}
           alt={ad.name}
           className="h-9 w-16 object-cover rounded border bg-white"
+          data-testid={`ad-preview-${ad.id}`}
         />
-      )}
+      ))}
       <Button
         type="button"
         variant="ghost"

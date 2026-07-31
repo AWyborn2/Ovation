@@ -69,6 +69,8 @@ export interface KioskAdJson {
   id: string; // "ad:<uuid>"
   name: string;
   imageUrl: string;
+  // Missing/undefined means "image" (ads created before video support existed).
+  mediaType?: "image" | "video";
 }
 
 // An admin-authored skin/theme. Built-in skins (p1..p8) are CSS-only and not
