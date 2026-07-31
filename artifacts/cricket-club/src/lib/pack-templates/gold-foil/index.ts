@@ -38,6 +38,11 @@ export const GOLD_FOIL_PACK: PackManifest = {
   // `card_templates` row, so renaming it would orphan their pack selection.
   // Only the display name changes.
   name: "Metallic Foil",
+  // Foil only reads as metal against a near-black stage — that is why every
+  // fragment in this pack asks for `var(--ink,#070603)`. Half the club's tone,
+  // half that base: the card still carries the tenant's colour, and the ramp
+  // keeps the contrast it needs.
+  inkTint: { toward: "#070603", tenantWeight: 50 },
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "match-day", kind: "matchDay", template: matchDay },
