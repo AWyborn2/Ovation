@@ -31,6 +31,7 @@ import {
   requirePlatformAdmin,
   type RequestWithPlatformAdmin,
 } from "../middlewares/require-platform-admin";
+import { DEFAULT_TENANT_ID } from "../middlewares/tenant-context";
 import { tenantUrl } from "../lib/tenant-url";
 import {
   invalidateTenantBrandCache,
@@ -311,6 +312,114 @@ router.patch(
         names.get(row.centralClubId) ?? null,
         counts.get(row.id) ?? 0,
       ),
+    );
+  },
+);
+
+/**
+ * Archive a tenant: blocks its admin access (enforced in requireAdmin/login,
+ * see lib/tenant.ts's isTenantSuspended) and removes it from the public
+ * directory and future re-signup, without deleting any tenant-scoped data.
+ * Idempotent — archiving an already-archived tenant is a no-op success, so a
+ * double-click or retry can never bump suspendedAt to a new timestamp.
+ */
+router.post(
+  "/platform/admin/tenants/:id/archive",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid tenant id" });
+      return;
+    }
+    // Halls Head is also DEFAULT_TENANT_ID — every local/dev/preview host that
+    // has no matching tenant host falls back to it. Suspending it would take
+    // down every such fallback, not just the demo tenant's own admin access.
+    if (id === DEFAULT_TENANT_ID) {
+      res.status(400).json({ error: "The demo tenant can't be archived." });
+      return;
+    }
+
+    const [current] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, id));
+    if (!current) {
+      res.status(404).json({ error: "No such tenant" });
+      return;
+    }
+
+    let row = current;
+    if (current.suspendedAt == null) {
+      [row] = await db
+        .update(tenantsTable)
+        .set({ suspendedAt: new Date() })
+        .where(eq(tenantsTable.id, id))
+        .returning();
+      invalidateTenantConfigCache(id);
+      const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
+      req.log?.info(
+        { event: "tenant_archived", platformAdminId: platformAdmin.id, tenantId: id },
+        "platform admin archived a tenant",
+      );
+    }
+
+    const [names, counts] = await Promise.all([
+      centralClubNames(),
+      adminCountsByTenant(),
+    ]);
+    res.json(
+      toAdminTenant(row, names.get(row.centralClubId) ?? null, counts.get(row.id) ?? 0),
+    );
+  },
+);
+
+/**
+ * Restore a previously archived tenant: reinstates admin access and
+ * public-directory listing on the very next request, using the admin's
+ * existing session (no re-login). Idempotent — restoring an already-active
+ * tenant is a no-op success.
+ */
+router.post(
+  "/platform/admin/tenants/:id/restore",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid tenant id" });
+      return;
+    }
+
+    const [current] = await db
+      .select()
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, id));
+    if (!current) {
+      res.status(404).json({ error: "No such tenant" });
+      return;
+    }
+
+    let row = current;
+    if (current.suspendedAt != null) {
+      [row] = await db
+        .update(tenantsTable)
+        .set({ suspendedAt: null })
+        .where(eq(tenantsTable.id, id))
+        .returning();
+      invalidateTenantConfigCache(id);
+      const platformAdmin = (req as RequestWithPlatformAdmin).platformAdmin!;
+      req.log?.info(
+        { event: "tenant_restored", platformAdminId: platformAdmin.id, tenantId: id },
+        "platform admin restored a tenant",
+      );
+    }
+
+    const [names, counts] = await Promise.all([
+      centralClubNames(),
+      adminCountsByTenant(),
+    ]);
+    res.json(
+      toAdminTenant(row, names.get(row.centralClubId) ?? null, counts.get(row.id) ?? 0),
     );
   },
 );
