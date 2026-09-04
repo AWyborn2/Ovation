@@ -79,8 +79,8 @@ catalogs:
       specifier: ^7.3.2
       version: 7.3.3
     zod:
-      specifier: 3.25.76
-      version: 3.25.76
+      specifier: 4.5.4
+      version: 4.5.4
 
 overrides:
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
@@ -256,7 +256,7 @@ importers:
         version: 25.1.0
       zod:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 4.5.4
     devDependencies:
       '@types/cookie-parser':
         specifier: ^1.4.10
@@ -574,7 +574,7 @@ importers:
     dependencies:
       zod:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 4.5.4
 
   lib/db:
     dependencies:
@@ -583,13 +583,13 @@ importers:
         version: 0.45.2(@types/pg@8.20.0)(pg@8.20.0)
       drizzle-zod:
         specifier: 'catalog:'
-        version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.20.0))(zod@3.25.76)
+        version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.20.0))(zod@4.5.4)
       pg:
         specifier: 'catalog:'
         version: 8.20.0
       zod:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 4.5.4
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2824,10 +2824,12 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
+    deprecated: this version has critical issues, please update to the latest version
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -7197,6 +7199,9 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zod@4.5.4:
+    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
+
 snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
@@ -10988,10 +10993,10 @@ snapshots:
       '@types/pg': 8.20.0
       pg: 8.20.0
 
-  drizzle-zod@0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.20.0))(zod@3.25.76):
+  drizzle-zod@0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.20.0))(zod@4.5.4):
     dependencies:
       drizzle-orm: 0.45.2(@types/pg@8.20.0)(pg@8.20.0)
-      zod: 3.25.76
+      zod: 4.5.4
 
   dunder-proto@1.0.1:
     dependencies:
@@ -14909,3 +14914,5 @@ snapshots:
       readable-stream: 3.6.2
 
   zod@3.25.76: {}
+
+  zod@4.5.4: {}
