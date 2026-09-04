@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Typecheck
         run: pnpm run typecheck
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: ESLint
         run: pnpm run lint
@@ -79,7 +79,7 @@ jobs:
     env:
       BASE_PATH: /
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Build libs
         run: pnpm run typecheck:libs
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Run lib and scripts tests
         run: pnpm run test:libs
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Run cricket-club smoke tests
         run: pnpm --filter @workspace/cricket-club test
@@ -158,7 +158,7 @@ jobs:
       CI_SKIP_DATA_TESTS: "true"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
 
       - name: Apply database migrations
