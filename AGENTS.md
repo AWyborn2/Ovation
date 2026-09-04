@@ -101,7 +101,12 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 - **Tenant isolation is the catastrophic-bug surface.** One tenant must never read
   another's data. Tests exist (`tenant-isolation.test.ts`, `admins-isolation.test.ts`,
   `platform-admin-*.test.ts`) — extend them whenever you touch a read path.
-- **Central DB is READ-ONLY from the app.** Never write to it.
+- **Central DB is READ-ONLY from the app.** Never write to it. The proxy blocks
+  insert/update/delete/transaction/$client; point `CENTRAL_DATABASE_URL` at a
+  SELECT-only role (plan.md §2.6).
+- **Stats reads fail closed.** Only tenant #1 may read the native stats tables; any
+  other tenant is served from central or gets a 409, and `CENTRAL_READS=0` makes
+  central tenants 503 rather than falling back to Halls Head's data.
 - **Data governance:** deep scorecards were scraped for the pilot. Keep ingest behind
   a clean adapter boundary. Do NOT commercialise on scraped data; pilot/non-commercial
   framing until partner/licence access (PlayHQ partner / Fixtura) is secured.
@@ -125,10 +130,20 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 
 ## Where things live (quick index)
 
-- Tenant/brand resolution: `api-server/src/lib/tenant-brand.ts`, `lib/tenant.ts`,
+- Tenant/brand resolution: `api-server/src/lib/tenant-brand.ts`, `lib/tenant.ts`
+  (`dataSource(req)` = the ONE fail-closed decision every stats read goes through;
+  `isCentralTenant` is the raw flag for tenant-scoped surfaces such as juniors),
   `middlewares/tenant-context.ts`
-- Central DB: `lib/db/src/central.ts`, `central-queries.ts`, `provision.ts`
-- Auth/seeding: `api-server/src/lib/auth.ts` (seeds demo admin + platform super-admin)
+- Environment: `api-server/src/config.ts` — every variable is an `env.*()` accessor,
+  validated at boot; ESLint forbids `process.env` elsewhere in the server.
+  `.env.example` lists them all.
+- Central DB: `lib/db/src/central.ts` (lazy, read-only proxy), `central-queries.ts`
+  (barrel over `lib/db/src/central/*`), `provision.ts`. Both pools connect on first
+  use (`getDb`/`getCentralDb`, `closeDb`/`closeCentralDb` for shutdown).
+- Auth/seeding: `api-server/src/lib/auth.ts` (seeds demo admin + platform super-admin;
+  sessions carry a `session_epoch` so password changes and `POST /auth/logout-all`
+  revoke them)
+- Scripts: `scripts/README.md` (inventory + `--tenant` / `--dry-run` guard rails)
 - Billing (inert): `api-server/src/routes/billing.ts`, `lib/billing.ts`,
   `lib/entitlements.ts`
 - Player identity crosswalk (app int id ↔ PlayHQ GUID): `schema/player_id_map.ts`

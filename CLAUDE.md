@@ -121,7 +121,10 @@ treat as unexercised/brittle. The stats core is mid-migration (some reads local,
 so the local-vs-central boundary is the top correctness risk; keep all central reads funnelled
 through `central-queries.ts` and guarded by the `*-consistency.test.ts` suites.
 
-See `AGENTS.md` for the full current-state map.
+See `AGENTS.md` for the full current-state map, and `plan.md` (Sep 2026) for the
+engineering review and its phased implementation — Phases A–C (fail-closed stats reads,
+CI integrity, lint, session revocation, spec drift, code-splitting, mobile tenant
+awareness) are implemented; Phase D items are tracked there.
 
 ## Phase 0 — prove the central model (✅ COMPLETE — kept for context)
 
