@@ -7,13 +7,13 @@ import {
 } from "@workspace/db";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { GRADE_TO_CAP_CATEGORY } from "./cap-sync";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
-// Fill-ins (playerId >= 90000) are excluded from every stats derivation
-// (match-aggregate.ts, points.ts, roundup.ts, stats.ts), so they never
-// accumulate grade games and would otherwise read as a permanent 0 — i.e. a
-// debut on every appearance — while never being issued a cap. Declared locally,
-// as in roundup.ts / fixtures.ts / stats.ts.
-const FILL_IN_FLOOR = 90000;
+// Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats
+// derivation (match-aggregate.ts, points.ts, roundup.ts, stats.ts), so they
+// never accumulate grade games and would otherwise read as a permanent 0 — i.e.
+// a debut on every appearance — while never being issued a cap. The floor is
+// defined once in @workspace/scorecard.
 
 /** One player's batting/bowling figures for the committed match. */
 export type MatchMilestoneLine = {
@@ -215,7 +215,7 @@ export async function detectAndQueueMatchMilestones(
       handled.add(l.playerId);
       // Fill-ins never accrue grade games and never receive a cap, so without
       // this floor every fill-in appearance reads as a fresh debut.
-      if (l.playerId >= FILL_IN_FLOOR) continue;
+      if (l.playerId >= FILL_IN_THRESHOLD) continue;
       if ((gradeGamesBefore.get(l.playerId) ?? 0) > 0) continue;
       const key = `${l.playerId}|${grade}`;
       if (seenDebut.has(key)) continue;

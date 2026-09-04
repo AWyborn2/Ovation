@@ -15,12 +15,12 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 const router: IRouter = Router();
 
-// Fill-ins (playerId >= 90000) are excluded from every stats derivation and
-// must never appear on a published team list either.
-const FILL_IN_FLOOR = 90000;
+// Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats
+// derivation and must never appear on a published team list either.
 
 /** The tenant's fixture with this id, or undefined (never another tenant's). */
 async function findFixture(tenantId: number, id: number) {
@@ -156,11 +156,11 @@ router.put("/fixtures/:id/team-list", requireAdmin, requireEntitlement("socialSt
     return;
   }
   const fillIns = body.data.players.filter(
-    (p: ApiTeamListPlayer) => p.playerId != null && p.playerId >= FILL_IN_FLOOR,
+    (p: ApiTeamListPlayer) => p.playerId != null && p.playerId >= FILL_IN_THRESHOLD,
   );
   if (fillIns.length > 0) {
     res.status(400).json({
-      error: `Fill-in player ids (>= ${FILL_IN_FLOOR}) cannot appear on a team list`,
+      error: `Fill-in player ids (>= ${FILL_IN_THRESHOLD}) cannot appear on a team list`,
     });
     return;
   }

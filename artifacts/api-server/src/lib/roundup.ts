@@ -11,9 +11,9 @@ import {
 import { eq, and, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
 import { tenantIsCentral } from "./tenant";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
-// Fill-ins (playerId >= 90000) are excluded from every stats derivation.
-const FILL_IN_FLOOR = 90000;
+// Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats derivation.
 
 type SocialDraft = SocialDraftRow;
 
@@ -38,7 +38,7 @@ const queryPerformers = async (
   grade: string,
   seasonFilter: { season: number } | "all",
 ): Promise<PerformerRow[]> => {
-  const fillInFloor = lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR);
+  const fillInFloor = lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD);
   const where = seasonFilter === "all"
     ? and(eq(playerGradeSeasonStatsTable.grade, grade), fillInFloor)
     : and(
@@ -93,7 +93,7 @@ const queryInningsRows = async (
       and(
         eq(playerGradeSeasonStatsTable.grade, grade),
         eq(playerGradeSeasonStatsTable.season, season),
-        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
       ),
     );
 

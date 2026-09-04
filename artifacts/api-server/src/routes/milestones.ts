@@ -24,6 +24,7 @@ import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
 import { withMilestonesCache } from "../lib/milestones-cache";
 import { parseMatchDate, partitionMatchDates } from "../lib/match-date";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 const router: IRouter = Router();
 
@@ -183,7 +184,7 @@ export async function buildMilestones(
       wickets: matchPlayerLinesTable.wickets,
     })
     .from(matchPlayerLinesTable)
-    .where(sql`${matchPlayerLinesTable.playerId} < 90000`);
+    .where(sql`${matchPlayerLinesTable.playerId} < ${FILL_IN_THRESHOLD}`);
 
   const players = await db
     .select({
@@ -273,7 +274,7 @@ export async function buildMilestones(
           playerId: matchHatTricksTable.playerId,
         })
         .from(matchHatTricksTable)
-        .where(sql`${matchHatTricksTable.playerId} < 90000`),
+        .where(sql`${matchHatTricksTable.playerId} < ${FILL_IN_THRESHOLD}`),
     [] as { matchId: number; playerId: number }[],
   );
   for (const h of hatTricks) {

@@ -16,9 +16,7 @@ import { deriveOppositionColors } from "./colors";
 import { DEFAULT_BRAND, deriveClubColors, type ClubBrand } from "./brand";
 import { formatDismissal } from "./dismissal";
 import { economy, sumOvers } from "./overs";
-
-/** Fill-in players have synthetic ids; they show but never link/aggregate. */
-const FILL_IN_THRESHOLD = 90000;
+import { FILL_IN_THRESHOLD } from "./fill-in";
 
 const INNINGS_LABELS = ["1ST INNINGS", "2ND INNINGS"];
 
