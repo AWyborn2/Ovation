@@ -232,7 +232,7 @@ function buildErrorMessage(response: Response, data: unknown): string {
 }
 
 export class ApiError<T = unknown> extends Error {
-  readonly name = "ApiError";
+  override readonly name = "ApiError";
   readonly status: number;
   readonly statusText: string;
   readonly data: T | null;
@@ -260,7 +260,7 @@ export class ApiError<T = unknown> extends Error {
 }
 
 export class ResponseParseError extends Error {
-  readonly name = "ResponseParseError";
+  override readonly name = "ResponseParseError";
   readonly status: number;
   readonly statusText: string;
   readonly headers: Headers;
@@ -268,7 +268,7 @@ export class ResponseParseError extends Error {
   readonly method: string;
   readonly url: string;
   readonly rawBody: string;
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   constructor(
     response: Response,

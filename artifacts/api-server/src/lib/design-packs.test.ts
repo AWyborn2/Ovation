@@ -30,14 +30,10 @@ let onConflictDoNothingCalls = 0;
 
 // Drizzle-like chained builder stubs for SELECT.
 function makeSelectChain() {
-  let _table: unknown;
   const conditions: unknown[] = [];
 
   const chain = {
-    from: (table: unknown) => {
-      _table = table;
-      return chain;
-    },
+    from: () => chain,
     where: (cond: unknown) => {
       conditions.push(cond);
       return chain;

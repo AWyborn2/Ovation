@@ -16,13 +16,13 @@ interface State {
  * re-render attempt; a reload link is offered for anything that persists.
  */
 export class RouteErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
     // Surface in the console for diagnosis; there is no error-reporting
     // service wired up yet.
     console.error("Route render failed", error, info.componentStack);
@@ -32,7 +32,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
     this.setState({ error: null });
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (!this.state.error) return this.props.children;
     return (
       <div
