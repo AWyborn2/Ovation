@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter } from "express";
 import { eq, and, desc, sum, count, gt, sql } from "drizzle-orm";
 import {
   db,
@@ -11,7 +11,6 @@ import {
   capRegisterTable,
   recordsDisplaySettingsTable,
   playerIdMapTable,
-  type PlayerGradeStat,
 } from "@workspace/db";
 import {
   UpdateRecordsDisplaySettingsBody,
@@ -21,8 +20,8 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { page } from "../lib/page";
 import { dataSource } from "../lib/tenant";
+import { loadGradeLeaderboard } from "../lib/grade-leaderboard";
 import { getTenantId } from "../middlewares/tenant-context";
-import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
 import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
 import {
@@ -79,44 +78,8 @@ router.get("/grades", async (req, res): Promise<void> => {
   );
 });
 
-// Load one grade's full leaderboard from the correct data source for this
-// request's tenant (central or native), newest/biggest first. Extracted so
-// batch consumers (the carousel-set generator) reuse the exact same rows the
-// route serves. Pagination is applied by the caller.
-export async function loadGradeLeaderboard(
-  req: Request,
-  grade: string,
-): Promise<PlayerGradeStat[]> {
-  const source = await dataSource(req);
-  if (source.kind === "central") {
-    const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
-    const tenantId = getTenantId(req);
-    const [clubId, mapRows, curation] = await Promise.all([
-      source.clubId,
-      db
-        .select({
-          participantId: playerIdMapTable.participantId,
-          playerId: playerIdMapTable.playerId,
-        })
-        .from(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, tenantId)),
-      resolveCuration(tenantId),
-    ]);
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
-    return centralGradeLeaderboard(grade, {
-      clubId,
-      intByGuid,
-      nameByGuid: curation.nameByGuid,
-    });
-  }
-
-  return db
-    .select()
-    .from(playerGradeStatsTable)
-    .where(eq(playerGradeStatsTable.grade, grade))
-    .orderBy(desc(playerGradeStatsTable.games));
-}
-
+// One grade's full leaderboard (lib/grade-leaderboard, shared with the
+// carousel-set generator), paged here.
 router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
   const grade = decodeURIComponent(rawGrade);

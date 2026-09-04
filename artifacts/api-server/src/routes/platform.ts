@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, isNull } from "drizzle-orm";
+import { isNull } from "drizzle-orm";
 import { db, tenantsTable, adminsTable } from "@workspace/db";
 import { PlatformSignupBody } from "@workspace/api-zod";
 import {
@@ -21,6 +21,7 @@ import {
 } from "../middlewares/rate-limit";
 import { listAvailableClubs } from "../lib/available-clubs";
 import { env } from "../config";
+import { isEmail, slugTaken } from "../lib/signup-validation";
 
 const router: IRouter = Router();
 
@@ -37,20 +38,6 @@ function signupMode(): "pca" | "open" | "off" {
   if (m === "off") return "off";
   if (m === "open") return "open";
   return "pca";
-}
-
-/** Basic email shape check (no verification in the pilot). */
-function isEmail(s: string): boolean {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
-}
-
-/** Whether a slug is free in the tenants register. */
-async function slugTaken(slug: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: tenantsTable.id })
-    .from(tenantsTable)
-    .where(eq(tenantsTable.slug, slug));
-  return !!row;
 }
 
 // --- Available clubs (the signup picker) ------------------------------------

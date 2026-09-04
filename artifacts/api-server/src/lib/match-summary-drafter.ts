@@ -28,7 +28,7 @@ import {
   juniorMatchToSummaryInput,
 } from "@workspace/scorecard";
 import { getTenantBrand } from "./tenant-brand";
-import { loadMatchDetail } from "../routes/matches";
+import { loadMatchDetail } from "./match-detail";
 import {
   overlayNativeOpponents,
 } from "./club-brand";

@@ -21,22 +21,9 @@ import { resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { isTenantSuspended } from "../lib/tenant";
+import { serializeAdmin } from "../lib/serialize-principals";
 
 const router: IRouter = Router();
-
-function serializeAdmin(a: {
-  id: number;
-  username: string;
-  displayName: string;
-  createdAt: Date;
-}) {
-  return {
-    id: a.id,
-    username: a.username,
-    displayName: a.displayName,
-    createdAt: a.createdAt.toISOString(),
-  };
-}
 
 router.post(
   "/auth/login",

@@ -83,7 +83,9 @@ app.use(
 app.use(cookieParser());
 
 // The billing webhook needs the RAW body for signature verification, so it must
-// be mounted before the JSON body parser. Inert while billing is disabled.
+// be mounted before the JSON body parser. Answers 404 while billing is disabled
+// (a dormant endpoint must not acknowledge unauthenticated POSTs with a 200) and
+// 503 if billing is enabled without a configured provider.
 app.post(
   "/billing/webhook",
   // Explicit ceiling: this parser is mounted before the global one, so it does

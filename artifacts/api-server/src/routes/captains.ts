@@ -15,18 +15,10 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { hashPassword } from "../lib/auth";
+import { serializeCaptain } from "../lib/serialize-principals";
+import { normaliseGrades } from "../lib/normalise-grades";
 
 const router: IRouter = Router();
-
-function serialize(c: CaptainRow, grades: string[]) {
-  return {
-    id: c.id,
-    username: c.username,
-    displayName: c.displayName,
-    grades,
-    createdAt: c.createdAt.toISOString(),
-  };
-}
 
 async function gradesByCaptain(captainIds: number[]): Promise<Map<number, string[]>> {
   const map = new Map<number, string[]>();
@@ -41,10 +33,6 @@ async function gradesByCaptain(captainIds: number[]): Promise<Map<number, string
     map.get(r.captainId)!.push(r.grade);
   }
   return map;
-}
-
-function normaliseGrades(grades: string[]): string[] {
-  return [...new Set(grades.map((g) => g.trim()).filter((g) => g.length > 0))];
 }
 
 async function setGrades(captainId: number, grades: string[]): Promise<void> {
@@ -66,7 +54,7 @@ router.get("/captains", requireAdmin, async (req, res): Promise<void> => {
     .where(eq(captainsTable.tenantId, getTenantId(req)))
     .orderBy(asc(captainsTable.username));
   const grades = await gradesByCaptain(rows.map((r) => r.id));
-  res.json(rows.map((r) => serialize(r, grades.get(r.id) ?? [])));
+  res.json(rows.map((r) => serializeCaptain(r, grades.get(r.id) ?? [])));
 });
 
 router.post("/captains", requireAdmin, async (req, res): Promise<void> => {
@@ -95,7 +83,7 @@ router.post("/captains", requireAdmin, async (req, res): Promise<void> => {
     .values({ tenantId, username, displayName: parsed.data.displayName, passwordHash })
     .returning();
   await setGrades(row.id, parsed.data.grades);
-  res.status(201).json(serialize(row, normaliseGrades(parsed.data.grades)));
+  res.status(201).json(serializeCaptain(row, normaliseGrades(parsed.data.grades)));
 });
 
 router.patch("/captains/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -147,7 +135,7 @@ router.patch("/captains/:id", requireAdmin, async (req, res): Promise<void> => {
     await setGrades(row.id, body.data.grades);
   }
   const grades = await gradesByCaptain([row.id]);
-  res.json(serialize(row, grades.get(row.id) ?? []));
+  res.json(serializeCaptain(row, grades.get(row.id) ?? []));
 });
 
 router.delete("/captains/:id", requireAdmin, async (req, res): Promise<void> => {

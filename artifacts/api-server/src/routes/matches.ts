@@ -1,16 +1,13 @@
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter } from "express";
 import { eq, and, ne, desc, asc, count, sql, type SQL } from "drizzle-orm";
 import {
   db,
   matchesTable,
   matchPlayerLinesTable,
-  matchOppositionLinesTable,
   matchHatTricksTable,
   matchDisplaySettingsTable,
-  playersTable,
   importsTable,
   clubsTable,
-  playerIdMapTable,
 } from "@workspace/db";
 import {
   ListMatchesQueryParams,
@@ -22,23 +19,16 @@ import {
   UpdateMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
-import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
-import { dataSource, getRequestCentralClubId } from "../lib/tenant";
+import { dataSource } from "../lib/tenant";
+import { loadMatchDetail, loadMatchDetailForRequest } from "../lib/match-detail";
+import { opponentClubColumns, toOpponentClub, notEmptyFixture } from "../lib/grades-helpers";
 import { getOrCreateSettings } from "../lib/settings";
 import {
   getOpponentBrandsByAppClubId,
   getOpponentBrandsByCentralClubId,
   mergeOpponentBrand,
 } from "../lib/club-brand";
-
-/** Split a central display name into given/surname (surname = last token). */
-function splitCentralName(displayName: string | null): { givenName: string; surname: string } {
-  const parts = (displayName ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { givenName: "", surname: "" };
-  if (parts.length === 1) return { givenName: parts[0], surname: "" };
-  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
-}
 
 const router: IRouter = Router();
 
@@ -63,179 +53,6 @@ function serializeMatchDisplaySettings(
 }
 
 // Columns selected from the club register to brand a match's opposition.
-const opponentClubColumns = {
-  opponentClubId: clubsTable.id,
-  opponentClubName: clubsTable.name,
-  opponentClubShortName: clubsTable.shortName,
-  opponentClubLogoUrl: clubsTable.logoUrl,
-  opponentClubLogoUrl128: clubsTable.logoUrl128,
-  opponentClubBackgroundColour: clubsTable.backgroundColour,
-  opponentClubPrimaryColour: clubsTable.primaryColour,
-};
-
-type OpponentClubRow = {
-  opponentClubId: number | null;
-  opponentClubName: string | null;
-  opponentClubShortName: string | null;
-  opponentClubLogoUrl: string | null;
-  opponentClubLogoUrl128: string | null;
-  opponentClubBackgroundColour: string | null;
-  opponentClubPrimaryColour: string | null;
-};
-
-// Collapse the joined club columns into a nullable branding object. Null when
-// the match has no matched opposition club so renderers can fall back.
-function toOpponentClub(row: OpponentClubRow) {
-  if (row.opponentClubId == null || row.opponentClubName == null) return null;
-  return {
-    id: row.opponentClubId,
-    name: row.opponentClubName,
-    shortName: row.opponentClubShortName,
-    logoUrl: row.opponentClubLogoUrl,
-    logoUrl128: row.opponentClubLogoUrl128,
-    backgroundColour: row.opponentClubBackgroundColour,
-    primaryColour: row.opponentClubPrimaryColour,
-  };
-}
-
-export async function loadMatchDetail(matchId: number, tenantId: number) {
-  const [match] = await db
-    .select({
-      id: matchesTable.id,
-      grade: matchesTable.grade,
-      season: matchesTable.season,
-      round: matchesTable.round,
-      stage: matchesTable.stage,
-      competition: matchesTable.competition,
-      matchDate: matchesTable.matchDate,
-      venue: matchesTable.venue,
-      result: matchesTable.result,
-      opponent: matchesTable.opponent,
-      clubScore: matchesTable.hhccScore,
-      opponentScore: matchesTable.opponentScore,
-      clubBattedFirst: matchesTable.hhccBattedFirst,
-      abandoned: matchesTable.abandoned,
-      ...opponentClubColumns,
-    })
-    .from(matchesTable)
-    .leftJoin(clubsTable, eq(clubsTable.id, matchesTable.opponentClubId))
-    .where(eq(matchesTable.id, matchId));
-  if (!match) return null;
-
-  const lines = await db
-    .select({
-      id: matchPlayerLinesTable.id,
-      playerId: matchPlayerLinesTable.playerId,
-      surname: playersTable.surname,
-      givenName: playersTable.givenName,
-      batted: matchPlayerLinesTable.batted,
-      battingPos: matchPlayerLinesTable.battingPos,
-      runs: matchPlayerLinesTable.runs,
-      balls: matchPlayerLinesTable.balls,
-      fours: matchPlayerLinesTable.fours,
-      sixes: matchPlayerLinesTable.sixes,
-      notOut: matchPlayerLinesTable.notOut,
-      dismissal: matchPlayerLinesTable.dismissal,
-      bowled: matchPlayerLinesTable.bowled,
-      overs: matchPlayerLinesTable.overs,
-      maidens: matchPlayerLinesTable.maidens,
-      runsConceded: matchPlayerLinesTable.runsConceded,
-      wickets: matchPlayerLinesTable.wickets,
-      wides: matchPlayerLinesTable.wides,
-      noBalls: matchPlayerLinesTable.noBalls,
-      catches: matchPlayerLinesTable.catches,
-      stumpings: matchPlayerLinesTable.stumpings,
-      runOuts: matchPlayerLinesTable.runOuts,
-    })
-    .from(matchPlayerLinesTable)
-    .innerJoin(playersTable, eq(playersTable.id, matchPlayerLinesTable.playerId))
-    .where(eq(matchPlayerLinesTable.matchId, matchId))
-    .orderBy(asc(matchPlayerLinesTable.battingPos), asc(playersTable.surname));
-
-  // Display-only opposition lines (plain-text names, no player link).
-  const oppositionLines = await db
-    .select({
-      id: matchOppositionLinesTable.id,
-      name: matchOppositionLinesTable.name,
-      batted: matchOppositionLinesTable.batted,
-      battingPos: matchOppositionLinesTable.battingPos,
-      runs: matchOppositionLinesTable.runs,
-      balls: matchOppositionLinesTable.balls,
-      fours: matchOppositionLinesTable.fours,
-      sixes: matchOppositionLinesTable.sixes,
-      notOut: matchOppositionLinesTable.notOut,
-      dismissal: matchOppositionLinesTable.dismissal,
-      bowled: matchOppositionLinesTable.bowled,
-      overs: matchOppositionLinesTable.overs,
-      maidens: matchOppositionLinesTable.maidens,
-      runsConceded: matchOppositionLinesTable.runsConceded,
-      wickets: matchOppositionLinesTable.wickets,
-      wides: matchOppositionLinesTable.wides,
-      noBalls: matchOppositionLinesTable.noBalls,
-      catches: matchOppositionLinesTable.catches,
-      stumpings: matchOppositionLinesTable.stumpings,
-      runOuts: matchOppositionLinesTable.runOuts,
-    })
-    .from(matchOppositionLinesTable)
-    .where(eq(matchOppositionLinesTable.matchId, matchId))
-    .orderBy(asc(matchOppositionLinesTable.battingPos), asc(matchOppositionLinesTable.id));
-
-  const hatTricks = await db
-    .select({ playerId: matchHatTricksTable.playerId })
-    .from(matchHatTricksTable)
-    .where(eq(matchHatTricksTable.matchId, matchId));
-
-  // Brand the DTO with the REQUEST's tenant, not a hard-coded demo tenant. The
-  // DTO field stays `hallsHead` for now (renaming it ripples through the OpenAPI
-  // spec + generated types).
-  const hallsHead = await getTenantBrand(tenantId);
-
-  // If the opponent club is itself a tenant that uploaded its own brand, show
-  // that (its crest/colours) instead of the PlayHQ-scraped register default.
-  let opponentClub = toOpponentClub(match);
-  if (opponentClub) {
-    const overlays = await getOpponentBrandsByAppClubId([opponentClub.id]);
-    opponentClub = mergeOpponentBrand(opponentClub, overlays.get(opponentClub.id));
-  }
-
-  return {
-    id: match.id,
-    grade: match.grade,
-    season: match.season,
-    round: match.round,
-    stage: match.stage,
-    competition: match.competition,
-    matchDate: match.matchDate,
-    venue: match.venue,
-    result: match.result,
-    opponent: match.opponent,
-    clubScore: match.clubScore,
-    opponentScore: match.opponentScore,
-    clubBattedFirst: match.clubBattedFirst,
-    abandoned: match.abandoned,
-    opponentClub,
-    club: hallsHead,
-    lines,
-    oppositionLines,
-    hatTrickPlayerIds: hatTricks.map((h) => h.playerId),
-  };
-}
-
-// Empty placeholder / "bye" fixture shells picked up during scraping: a row
-// with no opponent, no result, no scores and no players on either side (and
-// NOT flagged abandoned — those are real washed-out matches we keep). These
-// aren't real games, so they're hidden from the public match list. This is a
-// read-only filter; the underlying rows are left untouched in the database.
-const notEmptyFixture: SQL = sql`NOT (
-  (${matchesTable.opponent} IS NULL OR btrim(${matchesTable.opponent}) = '')
-  AND COALESCE(${matchesTable.abandoned}, false) = false
-  AND (${matchesTable.result} IS NULL OR btrim(${matchesTable.result}) = '')
-  AND (${matchesTable.hhccScore} IS NULL OR btrim(${matchesTable.hhccScore}) = '')
-  AND (${matchesTable.opponentScore} IS NULL OR btrim(${matchesTable.opponentScore}) = '')
-  AND NOT EXISTS (SELECT 1 FROM match_player_lines mpl WHERE mpl.match_id = ${matchesTable.id})
-  AND NOT EXISTS (SELECT 1 FROM match_opposition_lines mol WHERE mol.match_id = ${matchesTable.id})
-)`;
-
 router.get("/matches", async (req, res): Promise<void> => {
   const query = ListMatchesQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -278,7 +95,7 @@ router.get("/matches", async (req, res): Promise<void> => {
   const conditions: SQL[] = [];
   if (grade) conditions.push(eq(matchesTable.grade, grade));
   if (season !== undefined) conditions.push(eq(matchesTable.season, season));
-  // Always hide empty placeholder fixtures (see notEmptyFixture above).
+  // Always hide empty placeholder fixtures (see notEmptyFixture in lib/grades-helpers).
   conditions.push(notEmptyFixture);
 
   // Within-season round direction is admin-configurable; season stays newest-first.
@@ -369,146 +186,6 @@ router.get("/matches", async (req, res): Promise<void> => {
     }),
   );
 });
-
-// Build the per-request match-detail DTO (the `GET /matches/:id` body) for the
-// central-read path: the two-innings scorecard from the central scorecard tables
-// — own side mapped to int ids via player_id_map (private players masked),
-// opposition side plain text — with the OWN-club brand resolved from THIS tenant.
-// Returns null when the match doesn't exist. Extracted so batch consumers (e.g.
-// the carousel-set generator) can build the same DTO the route serves.
-async function loadCentralMatchDetail(req: Request, matchId: number) {
-  const { centralMatchScorecard } = await import("@workspace/db/central-queries");
-  const tenantId = getTenantId(req);
-  const card = await centralMatchScorecard(
-    await getRequestCentralClubId(req),
-    matchId,
-  );
-  if (!card) return null;
-  const mapRows = await db
-    .select({
-      participantId: playerIdMapTable.participantId,
-      playerId: playerIdMapTable.playerId,
-    })
-    .from(playerIdMapTable)
-    .where(eq(playerIdMapTable.tenantId, tenantId));
-  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
-
-  const { playerCount, ...summary } = card.summary;
-  void playerCount;
-  // Overlay the opponent's own uploaded brand (crest/colours) if that club is
-  // a tenant — central.clubs carries no logo, so this is where it comes from.
-  if (summary.opponentClub) {
-    const overlays = await getOpponentBrandsByCentralClubId([summary.opponentClub.id]);
-    summary.opponentClub = mergeOpponentBrand(
-      summary.opponentClub,
-      overlays.get(summary.opponentClub.id),
-    );
-  }
-  return {
-    ...summary,
-    clubBattedFirst: card.battedFirst,
-    club: await getTenantBrand(tenantId),
-    lines: card.lines.map((l, i) => {
-      const name = l.isPrivate
-        ? { givenName: "Private", surname: "Player" }
-        : splitCentralName(l.displayName);
-      return {
-        id: i,
-        // Private players are masked (no link); otherwise the mapped int id.
-        playerId:
-          l.isPrivate || !l.participantId
-            ? 0
-            : intByGuid.get(l.participantId) ?? 0,
-        surname: name.surname,
-        givenName: name.givenName,
-        batted: l.batted,
-        battingPos: l.battingPos,
-        runs: l.runs,
-        balls: l.balls,
-        fours: l.fours,
-        sixes: l.sixes,
-        notOut: l.notOut,
-        dismissal: l.dismissal,
-        bowled: l.bowled,
-        overs: l.overs,
-        maidens: l.maidens,
-        runsConceded: l.runsConceded,
-        wickets: l.wickets,
-        wides: l.wides,
-        noBalls: l.noBalls,
-        catches: null,
-        stumpings: null,
-        runOuts: null,
-      };
-    }),
-    oppositionLines: card.oppositionLines.map((l, i) => ({
-      id: i,
-      name: l.name,
-      batted: l.batted,
-      battingPos: l.battingPos,
-      runs: l.runs,
-      balls: l.balls,
-      fours: l.fours,
-      sixes: l.sixes,
-      notOut: l.notOut,
-      dismissal: l.dismissal,
-      bowled: l.bowled,
-      overs: l.overs,
-      maidens: l.maidens,
-      runsConceded: l.runsConceded,
-      wickets: l.wickets,
-      wides: l.wides,
-      noBalls: l.noBalls,
-      catches: null,
-      stumpings: null,
-      runOuts: null,
-    })),
-    hatTrickPlayerIds: [] as number[],
-  };
-}
-
-// Resolve one match's full detail DTO from the correct data source for this
-// request's tenant (central or native). Returns null when the match is missing.
-export async function loadMatchDetailForRequest(req: Request, matchId: number) {
-  const source = await dataSource(req);
-  if (source.kind === "central") {
-    return loadCentralMatchDetail(req, matchId);
-  }
-  return loadMatchDetail(matchId, getTenantId(req));
-}
-
-// The match ids in one (grade, season, round) group, from the correct data
-// source for this request's tenant. Used by the carousel-set generator to gather
-// every match in a round. Empty placeholder fixtures are excluded (native path
-// via notEmptyFixture; central rows are always real games).
-export async function listRoundMatchIds(
-  req: Request,
-  opts: { grade: string; season: number; round: number },
-): Promise<number[]> {
-  const source = await dataSource(req);
-  if (source.kind === "central") {
-    const { centralClubMatches } = await import("@workspace/db/central-queries");
-    const rows = await centralClubMatches(source.clubId, {
-      grade: opts.grade,
-      season: opts.season,
-    });
-    return rows.filter((r) => r.round === opts.round).map((r) => r.id);
-  }
-  const rows = await db
-    .select({ id: matchesTable.id })
-    .from(matchesTable)
-    .where(
-      and(
-        eq(matchesTable.grade, opts.grade),
-        eq(matchesTable.season, opts.season),
-        eq(matchesTable.round, opts.round),
-        notEmptyFixture,
-      ),
-    )
-    .orderBy(asc(matchesTable.id));
-  return rows.map((r) => r.id);
-}
-
 router.get("/matches/:id", async (req, res): Promise<void> => {
   const params = GetMatchParams.safeParse(req.params);
   if (!params.success) {

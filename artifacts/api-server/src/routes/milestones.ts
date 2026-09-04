@@ -13,12 +13,12 @@ import {
 } from "@workspace/db";
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
 import {
-  getRequestCentralClubId,
   NATIVE_STATS_TENANT_ID,
   NativeStatsUnavailableError,
   dataSource,
+  type DataSource,
 } from "../lib/tenant";
-import { getTenantId } from "../middlewares/tenant-context";
+
 import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
@@ -356,11 +356,11 @@ export async function buildMilestones(
 }
 
 async function buildCentralMilestones(
-  req: Request,
+  source: { tenantId: number; clubId: number },
   health: BuildHealth = { degraded: false },
 ): Promise<MilestonesResult> {
   const { centralMilestones } = await import("@workspace/db/central-queries");
-  const tenantId = getTenantId(req);
+  const { tenantId, clubId } = source;
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const tiers = {
     games: settings?.gamesTiers ?? DEFAULT_GAMES_TIERS,
@@ -374,7 +374,7 @@ async function buildCentralMilestones(
     optionalSection(
       "central_milestones",
       health,
-      async () => centralMilestones(await getRequestCentralClubId(req), tiers),
+      async () => centralMilestones(clubId, tiers),
       [] as Awaited<ReturnType<typeof centralMilestones>>,
     ),
     db
@@ -451,11 +451,10 @@ async function buildCentralMilestones(
  * Shared by the `/milestones` route and the honour-display board so both honour
  * the tenant boundary instead of leaking tenant #1's players.
  */
-export async function buildMilestonesForRequest(
-  req: Request,
+export async function buildMilestonesForSource(
+  source: DataSource,
 ): Promise<MilestonesResult> {
-  const tenantId = getTenantId(req);
-  const source = await dataSource(req);
+  const tenantId = source.tenantId;
   const central = source.kind === "central";
   // Key on every input that varies the board: the tenant (its settings row
   // drives the recency window and tiers), the read path, and — on the central
@@ -467,10 +466,17 @@ export async function buildMilestonesForRequest(
   return withMilestonesCache(key, async () => {
     const health: BuildHealth = { degraded: false };
     const value = central
-      ? await buildCentralMilestones(req, health)
+      ? await buildCentralMilestones(source, health)
       : await buildMilestones(tenantId, health);
     return { value, degraded: health.degraded };
   });
+}
+
+/** Request-flavoured wrapper: resolves the tenant's data source first. */
+export async function buildMilestonesForRequest(
+  req: Request,
+): Promise<MilestonesResult> {
+  return buildMilestonesForSource(await dataSource(req));
 }
 
 router.get("/milestones", async (req, res): Promise<void> => {

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, ne, count, sql } from "drizzle-orm";
-import { db, adminsTable, type AdminRow } from "@workspace/db";
+import { db, adminsTable } from "@workspace/db";
 import {
   CreateAdminBody,
   UpdateAdminBody,
@@ -10,17 +10,9 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { hashPassword, SESSION_COOKIE } from "../lib/auth";
+import { serializeAdmin } from "../lib/serialize-principals";
 
 const router: IRouter = Router();
-
-function serialize(a: AdminRow) {
-  return {
-    id: a.id,
-    username: a.username,
-    displayName: a.displayName,
-    createdAt: a.createdAt.toISOString(),
-  };
-}
 
 // All admin-management is scoped to the request's tenant: a club admin only ever
 // sees and manages their own club's admins (usernames are unique per tenant).
@@ -32,7 +24,7 @@ router.get("/admins", requireAdmin, async (req, res): Promise<void> => {
     .from(adminsTable)
     .where(eq(adminsTable.tenantId, tenantId))
     .orderBy(asc(adminsTable.username));
-  res.json(rows.map(serialize));
+  res.json(rows.map(serializeAdmin));
 });
 
 router.post("/admins", requireAdmin, async (req, res): Promise<void> => {
@@ -60,7 +52,7 @@ router.post("/admins", requireAdmin, async (req, res): Promise<void> => {
     .insert(adminsTable)
     .values({ tenantId, username, displayName: parsed.data.displayName, passwordHash })
     .returning();
-  res.status(201).json(serialize(row));
+  res.status(201).json(serializeAdmin(row));
 });
 
 router.patch("/admins/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -92,7 +84,7 @@ router.patch("/admins/:id", requireAdmin, async (req, res): Promise<void> => {
   }
   if (Object.keys(patch).length === 0) {
     const [row] = await db.select().from(adminsTable).where(eq(adminsTable.id, params.data.id));
-    res.json(serialize(row));
+    res.json(serializeAdmin(row));
     return;
   }
   if (patch.username) {
@@ -117,7 +109,7 @@ router.patch("/admins/:id", requireAdmin, async (req, res): Promise<void> => {
     .set(set)
     .where(and(eq(adminsTable.id, params.data.id), eq(adminsTable.tenantId, tenantId)))
     .returning();
-  res.json(serialize(row));
+  res.json(serializeAdmin(row));
 });
 
 /**
