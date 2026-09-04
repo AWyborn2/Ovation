@@ -20,7 +20,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { page } from "../lib/page";
-import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
@@ -44,9 +44,10 @@ router.get("/grades", async (req, res): Promise<void> => {
   // Central tenants get their grade summary cards derived from the central PCA
   // database (per-grade aggregates), filtered to their club. Native tenants
   // (Halls Head) keep the curated grade_summaries table below.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralGradeSummaries } = await import("@workspace/db/central-queries");
-    const summaries = await centralGradeSummaries(await getRequestCentralClubId(req));
+    const summaries = await centralGradeSummaries(source.clubId);
     res.json(summaries.map((s, i) => ({ id: i + 1, ...s })));
     return;
   }
@@ -86,11 +87,12 @@ export async function loadGradeLeaderboard(
   req: Request,
   grade: string,
 ): Promise<PlayerGradeStat[]> {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [clubId, mapRows, curation] = await Promise.all([
-      getRequestCentralClubId(req),
+      source.clubId,
       db
         .select({
           participantId: playerIdMapTable.participantId,
@@ -142,11 +144,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // Central tenants: totals, top performers and grade summaries all derived from
   // the central PCA database, filtered to their club. Top-performer GUIDs are
   // mapped to the tenant's int player ids via player_id_map.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralDashboard } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [dash, mapRows] = await Promise.all([
-      centralDashboard(await getRequestCentralClubId(req)),
+      centralDashboard(source.clubId),
       db
         .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
         .from(playerIdMapTable)
@@ -237,9 +240,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
 });
 
 router.get("/overview", async (req, res): Promise<void> => {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const central = await import("@workspace/db/central-queries");
-    const clubId = await getRequestCentralClubId(req);
+    const clubId = source.clubId;
     const tenantId = getTenantId(req);
     const [totals, seasons, mapRows] = await Promise.all([
       central.centralClubTotals(clubId),
@@ -409,9 +413,10 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
   // Central tenants: leaders, season default and grade chips all come from the
   // central PCA database filtered to the tenant's club — never the native
   // (Halls Head) snapshot tables. GUIDs map to tenant int ids via player_id_map.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const central = await import("@workspace/db/central-queries");
-    const clubId = await getRequestCentralClubId(req);
+    const clubId = source.clubId;
     const tenantId = getTenantId(req);
     const mapRows = await db
       .select({
@@ -533,11 +538,12 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
 });
 
 router.get("/records", async (req, res): Promise<void> => {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralClubRecords } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [records, mapRows] = await Promise.all([
-      centralClubRecords(await getRequestCentralClubId(req)),
+      centralClubRecords(source.clubId),
       db
         .select({
           participantId: playerIdMapTable.participantId,

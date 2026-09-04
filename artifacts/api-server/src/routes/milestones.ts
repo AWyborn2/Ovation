@@ -14,9 +14,9 @@ import {
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
 import {
   getRequestCentralClubId,
-  shouldReadCentral,
   NATIVE_STATS_TENANT_ID,
   NativeStatsUnavailableError,
+  dataSource,
 } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { resolveCuration } from "../lib/central-curation";
@@ -454,12 +454,13 @@ export async function buildMilestonesForRequest(
   req: Request,
 ): Promise<MilestonesResult> {
   const tenantId = getTenantId(req);
-  const central = await shouldReadCentral(req);
+  const source = await dataSource(req);
+  const central = source.kind === "central";
   // Key on every input that varies the board: the tenant (its settings row
   // drives the recency window and tiers), the read path, and — on the central
   // path — the club id, so remapping a tenant to a different central club can
   // never keep serving the previous club's players under the new brand.
-  const clubId = central ? await getRequestCentralClubId(req) : null;
+  const clubId = source.kind === "central" ? source.clubId : null;
   const key = `${tenantId}:${central ? `central:${clubId}` : "native"}`;
 
   return withMilestonesCache(key, async () => {

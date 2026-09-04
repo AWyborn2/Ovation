@@ -71,10 +71,6 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@uppy/aws-s3": "^5.1.0",
-    "@uppy/core": "^5.2.0",
-    "@uppy/dashboard": "^5.1.1",
-    "@uppy/react": "^5.2.0",
     "@workspace/object-storage-web": "workspace:*",
     "jszip": "^3.10.1",
     "node-vibrant": "^4.0.4",

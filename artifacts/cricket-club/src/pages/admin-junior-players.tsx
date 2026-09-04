@@ -15,7 +15,8 @@ import {
   getListJuniorMatchesQueryKey,
   type JuniorPlayerSummary,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -284,12 +285,11 @@ function JuniorMergeDialog({
   const [keeper, setKeeper] = useState<SelectedJuniorPlayer | null>(null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <CardTitle>Merge duplicate junior profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg space-y-4">
+        <DialogHeader>
+          <DialogTitle>Merge duplicate junior profile</DialogTitle>
+        </DialogHeader>
           <p className="text-sm">
             <strong>
               {duplicate.displayName}
@@ -356,9 +356,8 @@ function JuniorMergeDialog({
               Cancel
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -394,12 +393,11 @@ function JuniorRowSeniorLinkDialog({
   const busy = setLink.isPending || clearLink.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <CardTitle>Senior profile link</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg space-y-4">
+        <DialogHeader>
+          <DialogTitle>Senior profile link</DialogTitle>
+        </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Link <strong className="text-foreground">{participant.displayName}</strong>{" "}
             to their senior profile. Cross-reference only — junior and senior
@@ -490,8 +488,7 @@ function JuniorRowSeniorLinkDialog({
               Close
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

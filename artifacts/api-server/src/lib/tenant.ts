@@ -234,6 +234,30 @@ export async function getRequestCentralClubId(req: Request): Promise<number> {
 }
 
 /**
+ * Where a stats read for this request should come from, resolved ONCE.
+ *
+ * - `central`: read the central PCA DB filtered by `clubId` (the tenant's
+ *   central club). `tenantId` is still needed for the crosswalk and curation.
+ * - `native`: read the app's own stats tables — only ever tenant #1.
+ *
+ * Replaces the `if (await shouldReadCentral(req)) { … await
+ * getRequestCentralClubId(req) … }` pairs that every stats route repeated: one
+ * cached lookup, one place for the fail-closed guard, and the club id travels
+ * with the decision so a handler cannot mix the two.
+ */
+export type DataSource =
+  | { kind: "central"; tenantId: number; clubId: number }
+  | { kind: "native"; tenantId: number };
+
+export async function dataSource(req: Request): Promise<DataSource> {
+  const tenantId = getTenantId(req);
+  if (await tenantReadsFromCentral(tenantId)) {
+    return { kind: "central", tenantId, clubId: await getTenantCentralClubId(tenantId) };
+  }
+  return { kind: "native", tenantId };
+}
+
+/**
  * Whether the current request's tenant should be served from the central PCA DB.
  * Per-tenant (`tenants.reads_from_central`); `CENTRAL_READS=0` is a global
  * kill-switch (force native everywhere) for incident response.

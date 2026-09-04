@@ -22,7 +22,14 @@ pnpm --filter @workspace/cricket-club test:watch    # watch mode
   the many list endpoints). Add a specific key when a page needs richer shape to
   render past a loading/empty guard.
 - `render.tsx` — renders a page inside the providers every page assumes (wouter
-  Router via memory-location + react-query, retries off).
+  Router via memory-location + react-query, retries off, and the confirm-dialog
+  provider several detail/admin pages call `useConfirm` from).
+- `__tests__/smoke.test.tsx` covers the landing pages; `__tests__/pages-smoke.test.tsx`
+  covers every detail page, the grade leaderboard, compare and the juniors tree.
+  Detail pages read their id from the route, so mount them as
+  `<Route path="/players/:id" component={PlayerDetail} />` at a concrete path.
+  Mock keys match by substring and the first key wins — list `/juniors/players`
+  before `/players`, and `/players/1` before `/players`.
 
 ## Adding a page
 

@@ -309,6 +309,13 @@ export const tenantContext: RequestHandler = (
       // fails closed (404) instead of serving the demo tenant on the wrong host.
       r.platform = true;
     }
+    // Stamp the request logger so every line for this request can be filtered
+    // per club during an incident (plan.md §5.12).
+    if (r.log && typeof r.log.child === "function") {
+      r.log = r.log.child(
+        r.platform ? { surface: "platform" } : { tenantId: r.tenantId },
+      );
+    }
   };
   resolveHostMode(req)
     .then((hm) => {

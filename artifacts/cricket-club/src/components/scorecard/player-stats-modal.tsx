@@ -1,5 +1,6 @@
 import { useGetPlayer, getGetPlayerQueryKey, type Stat } from "@workspace/api-client-react";
 import { Link } from "wouter";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 interface PlayerStatsModalProps {
   playerId: number | null;
@@ -81,23 +82,28 @@ export function PlayerStatsModal({ playerId, fallbackName, onClose }: PlayerStat
     </div>
   );
 
+  // Radix supplies the dialog semantics this overlay used to lack: role="dialog",
+  // aria-modal, focus trap and restore, Escape and outside-click to close.
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-lg overflow-hidden shadow-2xl"
+    <DialogPrimitive.Root open onOpenChange={(open) => !open && onClose()}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className="fixed inset-0 z-50"
+          style={{ background: "rgba(0,0,0,0.75)" }}
+        />
+      <DialogPrimitive.Content
+        className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg overflow-hidden shadow-2xl outline-none"
         style={{ background: "#0c1c33", border: "1px solid rgba(255,255,255,0.12)" }}
-        onClick={(e) => e.stopPropagation()}
+        aria-describedby={undefined}
         data-testid="modal-player-stats"
       >
         <div className="flex items-center justify-between px-5 py-4" style={{ background: "#00305c", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="min-w-0">
-            <p className="uppercase truncate" style={{ color: "#f5a623", fontSize: 18, fontWeight: 800, letterSpacing: "0.06em" }}>
-              {name}
-            </p>
+            <DialogPrimitive.Title asChild>
+              <p className="uppercase truncate" style={{ color: "#f5a623", fontSize: 18, fontWeight: 800, letterSpacing: "0.06em" }}>
+                {name}
+              </p>
+            </DialogPrimitive.Title>
             {data?.gradesPlayed && <p style={{ color: "#9ca3af", fontSize: 12, marginTop: 2 }} className="truncate">{data.gradesPlayed}</p>}
           </div>
           <button
@@ -172,7 +178,8 @@ export function PlayerStatsModal({ playerId, fallbackName, onClose }: PlayerStat
             View full profile →
           </Link>
         </div>
-      </div>
-    </div>
+      </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

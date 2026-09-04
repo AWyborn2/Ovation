@@ -24,7 +24,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
-import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { dataSource, getRequestCentralClubId } from "../lib/tenant";
 import { getOrCreateSettings } from "../lib/settings";
 import {
   getOpponentBrandsByAppClubId,
@@ -248,9 +248,10 @@ router.get("/matches", async (req, res): Promise<void> => {
 
   // Per-tenant data source: central tenants get their game-by-game list from
   // central.matches (symmetric home/away), shaped from the club's perspective.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralClubMatches } = await import("@workspace/db/central-queries");
-    const rows = await centralClubMatches(await getRequestCentralClubId(req), {
+    const rows = await centralClubMatches(source.clubId, {
       grade: grade || undefined,
       season,
       limit,
@@ -469,7 +470,8 @@ async function loadCentralMatchDetail(req: Request, matchId: number) {
 // Resolve one match's full detail DTO from the correct data source for this
 // request's tenant (central or native). Returns null when the match is missing.
 export async function loadMatchDetailForRequest(req: Request, matchId: number) {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     return loadCentralMatchDetail(req, matchId);
   }
   return loadMatchDetail(matchId, getTenantId(req));
@@ -483,9 +485,10 @@ export async function listRoundMatchIds(
   req: Request,
   opts: { grade: string; season: number; round: number },
 ): Promise<number[]> {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralClubMatches } = await import("@workspace/db/central-queries");
-    const rows = await centralClubMatches(await getRequestCentralClubId(req), {
+    const rows = await centralClubMatches(source.clubId, {
       grade: opts.grade,
       season: opts.season,
     });

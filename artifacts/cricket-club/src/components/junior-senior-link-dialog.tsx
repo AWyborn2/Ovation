@@ -6,7 +6,13 @@ import {
   useClearJuniorSeniorLink,
   getListJuniorPlayersBySeniorQueryKey,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
@@ -58,18 +64,17 @@ export function JuniorSeniorLinkDialog({
   const busy = setLink.isPending || clearLink.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <CardTitle>Junior profile link</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg space-y-4">
+        <DialogHeader>
+          <DialogTitle>Junior profile link</DialogTitle>
+          <DialogDescription>
             Link <strong className="text-foreground">{seniorName}</strong> to
             their junior profile. This is a cross-reference only — junior and
             senior stats stay separate and are never combined; both profile
             pages simply show a link to the other career.
-          </p>
+          </DialogDescription>
+        </DialogHeader>
 
           {error && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -164,8 +169,7 @@ export function JuniorSeniorLinkDialog({
               Close
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
