@@ -6,7 +6,10 @@ import {
   boolean,
   timestamp,
   jsonb,
+  check,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Tenant register for the white-label platform. One row per club that runs
@@ -45,43 +48,51 @@ import {
  *   column records and displays suspended state; enforcement (blocking access)
  *   is a separate follow-up.
  */
-export const tenantsTable = pgTable("tenants", {
-  id: serial("id").primaryKey(),
-  slug: text("slug").notNull().unique(),
-  centralClubId: integer("central_club_id").notNull(),
-  appClubId: integer("app_club_id"),
-  readsFromCentral: boolean("reads_from_central").notNull().default(false),
-  name: text("name").notNull(),
-  shortName: text("short_name"),
-  logoUrl: text("logo_url"),
-  faviconUrl: text("favicon_url"),
-  backgroundUrl: text("background_url"),
-  backgroundColour: text("background_colour"),
-  primaryColour: text("primary_colour"),
-  juniorsColour: text("juniors_colour"),
-  // Short club tagline shown under the club name on pack cards (e.g.
-  // "CRICKET CLUB · EST 1991"). Null = no tagline; renderers show nothing rather
-  // than leaking another club's founding line.
-  tagline: text("tagline"),
-  useNavyBase: boolean("use_navy_base").notNull().default(false),
-  // Per-token theme overrides keyed by CSS custom property (see the doc block
-  // above). Null = fully-derived theme (default). Stored as JSONB so the shape
-  // can grow without a column-per-token migration.
-  themeOverrides: jsonb("theme_overrides").$type<Record<string, string>>(),
-  customDomain: text("custom_domain"),
-  // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
-  // entitlements; enforcement is dormant until BILLING_ENABLED=true.
-  plan: text("plan").notNull().default("free"),
-  // Badge shape for grade badges (diamond | shield | hexagon | oval | crest).
-  // Null → default "diamond". Stored as text; validated client-side.
-  badgeStyle: text("badge_style"),
-  // Tenant health (platform dashboard). Both nullable, no backfill.
-  lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
-  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const tenantsTable = pgTable(
+  "tenants",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    centralClubId: integer("central_club_id").notNull(),
+    appClubId: integer("app_club_id"),
+    readsFromCentral: boolean("reads_from_central").notNull().default(false),
+    name: text("name").notNull(),
+    shortName: text("short_name"),
+    logoUrl: text("logo_url"),
+    faviconUrl: text("favicon_url"),
+    backgroundUrl: text("background_url"),
+    backgroundColour: text("background_colour"),
+    primaryColour: text("primary_colour"),
+    juniorsColour: text("juniors_colour"),
+    // Short club tagline shown under the club name on pack cards (e.g.
+    // "CRICKET CLUB · EST 1991"). Null = no tagline; renderers show nothing rather
+    // than leaking another club's founding line.
+    tagline: text("tagline"),
+    useNavyBase: boolean("use_navy_base").notNull().default(false),
+    // Per-token theme overrides keyed by CSS custom property (see the doc block
+    // above). Null = fully-derived theme (default). Stored as JSONB so the shape
+    // can grow without a column-per-token migration.
+    themeOverrides: jsonb("theme_overrides").$type<Record<string, string>>(),
+    customDomain: text("custom_domain"),
+    // Plan tier: free | club | pro (legacy "pilot" reads as free). Drives feature
+    // entitlements; enforcement is dormant until BILLING_ENABLED=true.
+    plan: text("plan").notNull().default("free"),
+    // Badge shape for grade badges (diamond | shield | hexagon | oval | crest).
+    // Null → default "diamond". Stored as text; validated client-side.
+    badgeStyle: text("badge_style"),
+    // Tenant health (platform dashboard). Both nullable, no backfill.
+    lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
+    suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqCentralClub: uniqueIndex("tenants_central_club_id_uidx").on(t.centralClubId),
+    uqCustomDomain: uniqueIndex("tenants_custom_domain_uidx")
+      .on(t.customDomain)
+      .where(sql`"custom_domain" IS NOT NULL`),
+    chkPlan: check("tenants_plan_check", sql`"plan" IN ('free', 'club', 'pro', 'pilot')`),
+  }),
+);
 
 export type TenantRow = typeof tenantsTable.$inferSelect;
 export type InsertTenant = typeof tenantsTable.$inferInsert;

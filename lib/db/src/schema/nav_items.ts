@@ -1,4 +1,14 @@
-import { pgTable, serial, text, integer, boolean, timestamp, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  index,
+  check,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
 
 // Admin-configurable navigation items, one row per item across four public
@@ -31,6 +41,11 @@ export const navItemsTable = pgTable(
   },
   (t) => ({
     idxSurface: index("nav_items_surface_idx").on(t.surface),
+    idxTenant: index("nav_items_tenant_idx").on(t.tenantId),
+    chkSurface: check(
+      "nav_items_surface_check",
+      sql`"surface" IN ('senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles')`,
+    ),
   }),
 );
 

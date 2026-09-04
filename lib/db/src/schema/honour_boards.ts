@@ -11,20 +11,26 @@ import {
 import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
-export const honourBoardsTable = pgTable("honour_boards", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  // NOTE(tenant): `key` is globally unique today; a true multi-tenant setup
-  // wants UNIQUE(tenant_id, key) (move to ensure-constraints.ts per the gotcha).
-  key: text("key").notNull().unique(),
-  label: text("label").notNull(),
-  title: text("title").notNull(),
-  subtitle: text("subtitle").notNull().default(""),
-  headlineLabel: text("headline_label").notNull().default(""),
-  supportingLabel: text("supporting_label").notNull().default(""),
-  displayOrder: integer("display_order").notNull().default(0),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
-});
+export const honourBoardsTable = pgTable(
+  "honour_boards",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    // NOTE(tenant): `key` is globally unique today; a true multi-tenant setup
+    // wants UNIQUE(tenant_id, key) (move to ensure-constraints.ts per the gotcha).
+    key: text("key").notNull().unique(),
+    label: text("label").notNull(),
+    title: text("title").notNull(),
+    subtitle: text("subtitle").notNull().default(""),
+    headlineLabel: text("headline_label").notNull().default(""),
+    supportingLabel: text("supporting_label").notNull().default(""),
+    displayOrder: integer("display_order").notNull().default(0),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (t) => ({
+    idxTenant: index("honour_boards_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export const honourBoardOverridesTable = pgTable(
   "honour_board_overrides",
@@ -40,14 +46,11 @@ export const honourBoardOverridesTable = pgTable(
     note: text("note").notNull().default(""),
   },
   (t) => ({
-    uniqBoardPlayer: uniqueIndex("hbo_board_player_unique").on(
-      t.boardKey,
-      t.playerId,
-    ),
+    uniqBoardPlayer: uniqueIndex("hbo_board_player_unique").on(t.boardKey, t.playerId),
     idxBoard: index("hbo_board_idx").on(t.boardKey),
+    idxTenant: index("honour_board_overrides_tenant_idx").on(t.tenantId),
   }),
 );
 
 export type HonourBoardRow = typeof honourBoardsTable.$inferSelect;
-export type HonourBoardOverrideRow =
-  typeof honourBoardOverridesTable.$inferSelect;
+export type HonourBoardOverrideRow = typeof honourBoardOverridesTable.$inferSelect;

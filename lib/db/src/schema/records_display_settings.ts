@@ -18,23 +18,18 @@ export const recordsDisplaySettingsTable = pgTable(
     byGradeDefaultGrade: text("by_grade_default_grade").notNull().default(""),
     // Default grade filter for the Partnerships tab. Empty string = All grades
     // (highest stand per wicket across every grade).
-    partnershipsDefaultGrade: text("partnerships_default_grade")
-      .notNull()
-      .default(""),
+    partnershipsDefaultGrade: text("partnerships_default_grade").notNull().default(""),
     // Default sort for the Centuries table, as "<column>-<dir>"
     // (column: grade|batsman|score|season; dir: asc|desc).
     centuriesSort: text("centuries_sort").notNull().default("season-desc"),
     // Default sort for the 5-Wicket Hauls table, as "<column>-<dir>"
     // (column: grade|bowler|figures|season; dir: asc|desc).
     fiveForSort: text("five_for_sort").notNull().default("season-desc"),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqTenant: uniqueIndex("records_display_settings_tenant_unique").on(t.tenantId),
   }),
 );
 
-export type RecordsDisplaySettingsRow =
-  typeof recordsDisplaySettingsTable.$inferSelect;
+export type RecordsDisplaySettingsRow = typeof recordsDisplaySettingsTable.$inferSelect;

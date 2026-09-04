@@ -39,11 +39,13 @@ central association database, filtered per tenant.
 pnpm install
 ```
 
-Apply the database schema (drizzle push):
+Apply the database migrations (`lib/db/migrations`; a database built earlier with `drizzle-kit push` is baselined automatically on the first run):
 
 ```bash
-DATABASE_URL=postgres://… pnpm --filter @workspace/db run push
+DATABASE_URL=postgres://… pnpm --filter @workspace/db run migrate
 ```
+
+After editing `lib/db/src/schema`, generate and commit the migration: `pnpm --filter @workspace/db run generate`.
 
 ## Run
 
@@ -65,7 +67,7 @@ pnpm run typecheck                              # whole monorepo
 pnpm --filter @workspace/cricket-club test      # website smoke tests (no backend needed)
 
 # API integration tests — REAL Postgres required:
-DATABASE_URL=postgres://… pnpm --filter @workspace/db run push-force
+DATABASE_URL=postgres://… pnpm --filter @workspace/db run migrate
 DATABASE_URL=postgres://… pnpm --filter @workspace/api-server run seed:ci   # seeds tenant #1 on a fresh DB
 DATABASE_URL=postgres://… pnpm --filter @workspace/api-server test
 ```

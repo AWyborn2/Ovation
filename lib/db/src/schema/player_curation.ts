@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  serial,
-  text,
-  timestamp,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -38,9 +32,7 @@ export const playerCurationTable = pgTable(
      * GUID at read time.
      */
     mergedIntoParticipantId: text("merged_into_participant_id"),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqTenantParticipant: uniqueIndex("player_curation_tenant_participant_uq").on(

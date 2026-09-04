@@ -1,4 +1,4 @@
-import { pgTable, serial, text } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, index } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -10,11 +10,17 @@ import { tenantIdColumn } from "./_tenant";
  * which lets committee/captain rows render a clickable name with a small bio
  * page for people who would otherwise be dead plain text forever.
  */
-export const nonPlayerPeopleTable = pgTable("non_player_people", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull(),
-  bio: text("bio"),
-});
+export const nonPlayerPeopleTable = pgTable(
+  "non_player_people",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull(),
+    bio: text("bio"),
+  },
+  (t) => ({
+    idxTenant: index("non_player_people_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type NonPlayerPersonRow = typeof nonPlayerPeopleTable.$inferSelect;

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, index, unique } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
 import { nonPlayerPeopleTable } from "./non_player_people";
 import { tenantIdColumn } from "./_tenant";
@@ -33,10 +33,9 @@ export const clubRolesTable = pgTable(
     }),
     // Alternative link target for office bearers who never played (no row in
     // `players`). Mutually exclusive with `playerId` at the app level.
-    nonPlayerId: integer("non_player_id").references(
-      () => nonPlayerPeopleTable.id,
-      { onDelete: "set null" },
-    ),
+    nonPlayerId: integer("non_player_id").references(() => nonPlayerPeopleTable.id, {
+      onDelete: "set null",
+    }),
     name: text("name").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
     published: boolean("published").notNull().default(false),
@@ -44,6 +43,10 @@ export const clubRolesTable = pgTable(
   (t) => ({
     idxSeason: index("club_roles_season_idx").on(t.season),
     idxGrade: index("club_roles_grade_idx").on(t.grade),
+    idxTenant: index("club_roles_tenant_idx").on(t.tenantId),
+    uqSeasonRoleGrade: unique("club_roles_season_role_grade_unique")
+      .on(t.season, t.role, t.grade)
+      .nullsNotDistinct(),
   }),
 );
 

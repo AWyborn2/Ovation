@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, index, unique } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -20,16 +20,23 @@ import { tenantIdColumn } from "./_tenant";
  * prompt. The constraint is created idempotently by ensure-constraints.ts.
  * See lib/db/src/schema/cap_register.ts for the full rationale.
  */
-export const captainsTable = pgTable("captains", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  username: text("username").notNull(),
-  displayName: text("display_name").notNull(),
-  passwordHash: text("password_hash").notNull(),
-  /** See adminsTable.sessionEpoch. */
-  sessionEpoch: integer("session_epoch").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const captainsTable = pgTable(
+  "captains",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    username: text("username").notNull(),
+    displayName: text("display_name").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    /** See adminsTable.sessionEpoch. */
+    sessionEpoch: integer("session_epoch").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxTenant: index("captains_tenant_idx").on(t.tenantId),
+    uqTenantUsername: unique("captains_tenant_username_unique").on(t.tenantId, t.username),
+  }),
+);
 
 /**
  * Which grades a captain may submit ballots for. One row per (captain, grade).
@@ -37,13 +44,22 @@ export const captainsTable = pgTable("captains", {
  * than the Drizzle schema (drizzle-kit 0.31 can't reliably detect an existing
  * multi-column unique and re-proposes it every push).
  */
-export const captainGradePermissionsTable = pgTable("captain_grade_permissions", {
-  id: serial("id").primaryKey(),
-  captainId: integer("captain_id")
-    .notNull()
-    .references(() => captainsTable.id, { onDelete: "cascade" }),
-  grade: text("grade").notNull(),
-});
+export const captainGradePermissionsTable = pgTable(
+  "captain_grade_permissions",
+  {
+    id: serial("id").primaryKey(),
+    captainId: integer("captain_id")
+      .notNull()
+      .references(() => captainsTable.id, { onDelete: "cascade" }),
+    grade: text("grade").notNull(),
+  },
+  (t) => ({
+    uqCaptainGrade: unique("captain_grade_permissions_captain_grade_unique").on(
+      t.captainId,
+      t.grade,
+    ),
+  }),
+);
 
 export type CaptainRow = typeof captainsTable.$inferSelect;
 export type CaptainGradePermissionRow = typeof captainGradePermissionsTable.$inferSelect;

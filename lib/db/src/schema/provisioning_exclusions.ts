@@ -28,15 +28,11 @@ export const provisioningExclusionsTable = pgTable("provisioning_exclusions", {
   // Which platform admin added this exclusion (audit trail, no strict FK —
   // matches admin_password_resets.created_by_platform_admin_id).
   createdByPlatformAdminId: integer("created_by_platform_admin_id").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type ProvisioningExclusionRow =
-  typeof provisioningExclusionsTable.$inferSelect;
-export type InsertProvisioningExclusion =
-  typeof provisioningExclusionsTable.$inferInsert;
+export type ProvisioningExclusionRow = typeof provisioningExclusionsTable.$inferSelect;
+export type InsertProvisioningExclusion = typeof provisioningExclusionsTable.$inferInsert;
 
 export type ProvisioningContext = "self-serve" | "concierge";
 
@@ -49,12 +45,8 @@ export type ProvisioningContext = "self-serve" | "concierge";
  * only self-serve" rule independently, which would risk the picker and the
  * actual guard silently disagreeing about what's allowed.
  */
-export function isExcludedForContext(
-  visibility: string,
-  context: ProvisioningContext,
-): boolean {
+export function isExcludedForContext(visibility: string, context: ProvisioningContext): boolean {
   return (
-    visibility === "everywhere" ||
-    (context === "self-serve" && visibility === "self_serve_only")
+    visibility === "everywhere" || (context === "self-serve" && visibility === "self_serve_only")
   );
 }

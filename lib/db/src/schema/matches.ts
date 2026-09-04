@@ -5,7 +5,10 @@ import {
   text,
   boolean,
   timestamp,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { importsTable } from "./imports";
 import { playersTable } from "./players";
 import { clubsTable } from "./clubs";
@@ -32,46 +35,54 @@ import { clubsTable } from "./clubs";
  *     T20 rolling into the base grade) and multi-fixture Colts/finals rounds make
  *     (grade, season, round, stage) genuinely collide in the historical data.
  */
-export const matchesTable = pgTable("matches", {
-  id: serial("id").primaryKey(),
-  importId: integer("import_id")
-    .notNull()
-    .references(() => importsTable.id, { onDelete: "cascade" }),
-  /**
-   * Master-DB identity for bulk-loaded historical matches; NULL for admin
-   * per-match uploads. See the partial uniques in ensure-constraints.ts.
-   */
-  sourceKey: text("source_key"),
-  grade: text("grade").notNull(),
-  season: integer("season").notNull(),
-  round: integer("round"),
-  stage: text("stage"),
-  competition: text("competition"),
-  matchDate: text("match_date"),
-  venue: text("venue"),
-  result: text("result"),
-  opponent: text("opponent"),
-  /**
-   * Resolved opponent club for branding (logo / colours). NULL when the
-   * opponent is only known by a grade label, so rendering must degrade.
-   */
-  opponentClubId: integer("opponent_club_id").references(() => clubsTable.id, {
-    onDelete: "set null",
+export const matchesTable = pgTable(
+  "matches",
+  {
+    id: serial("id").primaryKey(),
+    importId: integer("import_id")
+      .notNull()
+      .references(() => importsTable.id, { onDelete: "cascade" }),
+    /**
+     * Master-DB identity for bulk-loaded historical matches; NULL for admin
+     * per-match uploads. See the partial uniques in ensure-constraints.ts.
+     */
+    sourceKey: text("source_key"),
+    grade: text("grade").notNull(),
+    season: integer("season").notNull(),
+    round: integer("round"),
+    stage: text("stage"),
+    competition: text("competition"),
+    matchDate: text("match_date"),
+    venue: text("venue"),
+    result: text("result"),
+    opponent: text("opponent"),
+    /**
+     * Resolved opponent club for branding (logo / colours). NULL when the
+     * opponent is only known by a grade label, so rendering must degrade.
+     */
+    opponentClubId: integer("opponent_club_id").references(() => clubsTable.id, {
+      onDelete: "set null",
+    }),
+    hhccScore: text("hhcc_score"),
+    opponentScore: text("opponent_score"),
+    /**
+     * True when Halls Head batted first, false when they batted second, NULL when
+     * unknown. Backfilled from the master DB's innings-order export so the
+     * scorecard can render the two innings in true batting order rather than
+     * always putting HH first. Uploads leave this NULL (HH-first is assumed).
+     */
+    hhccBattedFirst: boolean("hhcc_batted_first"),
+    abandoned: boolean("abandoned").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqSourceKey: uniqueIndex("matches_source_key_uidx")
+      .on(t.sourceKey)
+      .where(sql`"source_key" IS NOT NULL`),
+    idxGradeSeason: index("matches_grade_season_idx").on(t.grade, t.season),
+    idxMatchDate: index("matches_match_date_idx").on(t.matchDate),
   }),
-  hhccScore: text("hhcc_score"),
-  opponentScore: text("opponent_score"),
-  /**
-   * True when Halls Head batted first, false when they batted second, NULL when
-   * unknown. Backfilled from the master DB's innings-order export so the
-   * scorecard can render the two innings in true batting order rather than
-   * always putting HH first. Uploads leave this NULL (HH-first is assumed).
-   */
-  hhccBattedFirst: boolean("hhcc_batted_first"),
-  abandoned: boolean("abandoned").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+);
 
 export type MatchRow = typeof matchesTable.$inferSelect;
 
@@ -93,9 +104,7 @@ export const matchHatTricksTable = pgTable("match_hat_tricks", {
   playerId: integer("player_id")
     .notNull()
     .references(() => playersTable.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type MatchHatTrickRow = typeof matchHatTricksTable.$inferSelect;

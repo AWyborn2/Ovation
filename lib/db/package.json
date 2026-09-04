@@ -11,6 +11,9 @@
     "./provision": "./src/provision.ts"
   },
   "scripts": {
+    "generate": "drizzle-kit generate --config ./drizzle.config.ts",
+    "generate:custom": "drizzle-kit generate --custom --config ./drizzle.config.ts",
+    "migrate": "tsx ./src/migrate.ts",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
     "push-central": "drizzle-kit push --force --config ./drizzle.central.config.ts",
@@ -26,6 +29,7 @@
     "@types/node": "catalog:",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0",
     "vitest": "^4.1.7"
   }
 }

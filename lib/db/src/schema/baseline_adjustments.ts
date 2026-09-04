@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { type z } from "zod/v4";
 import { playersTable } from "./players";
@@ -20,31 +20,39 @@ import { playersTable } from "./players";
  * by ensure-constraints.ts. See lib/db/src/schema/cap_register.ts for the full
  * rationale.
  */
-export const baselineAdjustmentsTable = pgTable("baseline_adjustments", {
-  id: serial("id").primaryKey(),
-  grade: text("grade").notNull(),
-  season: integer("season").notNull(),
-  playerId: integer("player_id")
-    .notNull()
-    .references(() => playersTable.id, { onDelete: "cascade" }),
-  games: integer("games").notNull().default(0),
-  innings: integer("innings").notNull().default(0),
-  notOuts: integer("not_outs").notNull().default(0),
-  runs: integer("runs").notNull().default(0),
-  fifties: integer("fifties").notNull().default(0),
-  hundreds: integer("hundreds").notNull().default(0),
-  wickets: integer("wickets").notNull().default(0),
-  runsConceded: integer("runs_conceded").notNull().default(0),
-  fiveWickets: integer("five_wickets").notNull().default(0),
-  catches: integer("catches").notNull().default(0),
-  stumpings: integer("stumpings").notNull().default(0),
-  runOuts: integer("run_outs").notNull().default(0),
-});
+export const baselineAdjustmentsTable = pgTable(
+  "baseline_adjustments",
+  {
+    id: serial("id").primaryKey(),
+    grade: text("grade").notNull(),
+    season: integer("season").notNull(),
+    playerId: integer("player_id")
+      .notNull()
+      .references(() => playersTable.id, { onDelete: "cascade" }),
+    games: integer("games").notNull().default(0),
+    innings: integer("innings").notNull().default(0),
+    notOuts: integer("not_outs").notNull().default(0),
+    runs: integer("runs").notNull().default(0),
+    fifties: integer("fifties").notNull().default(0),
+    hundreds: integer("hundreds").notNull().default(0),
+    wickets: integer("wickets").notNull().default(0),
+    runsConceded: integer("runs_conceded").notNull().default(0),
+    fiveWickets: integer("five_wickets").notNull().default(0),
+    catches: integer("catches").notNull().default(0),
+    stumpings: integer("stumpings").notNull().default(0),
+    runOuts: integer("run_outs").notNull().default(0),
+  },
+  (t) => ({
+    uqIdentity: unique("baseline_adjustments_grade_season_player_id_unique").on(
+      t.grade,
+      t.season,
+      t.playerId,
+    ),
+  }),
+);
 
-export const insertBaselineAdjustmentSchema = createInsertSchema(
-  baselineAdjustmentsTable,
-).omit({ id: true });
-export type InsertBaselineAdjustment = z.infer<
-  typeof insertBaselineAdjustmentSchema
->;
+export const insertBaselineAdjustmentSchema = createInsertSchema(baselineAdjustmentsTable).omit({
+  id: true,
+});
+export type InsertBaselineAdjustment = z.infer<typeof insertBaselineAdjustmentSchema>;
 export type BaselineAdjustment = typeof baselineAdjustmentsTable.$inferSelect;

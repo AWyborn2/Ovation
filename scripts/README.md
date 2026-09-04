@@ -20,7 +20,7 @@ read-only by construction.
 
 | Script | Purpose |
 |---|---|
-| `ensure-constraints` | Re-creates constraints/indexes drizzle-kit cannot manage (composite and partial uniques, performance indexes, tenant identity uniques). Also runs in CI after `db push`. |
+| `ensure-constraints` | Read-only verifier: asserts every constraint/index the migrations own exists (composite and partial uniques, CHECKs, performance and tenant indexes) and exits 1 otherwise. Runs in CI and post-merge after `pnpm --filter @workspace/db run migrate`. `--apply` re-creates them idempotently (legacy path). |
 | `reconcile-caps` | Cap register ↔ stats reconciliation. |
 | `backfill-player-images` | Player photo backfill. |
 

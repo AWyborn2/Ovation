@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { type z } from "zod/v4";
 import { playersTable } from "./players";
@@ -8,16 +8,23 @@ import { tenantIdColumn } from "./_tenant";
 // image surfaced wherever a single player photo is needed (trading card, share
 // card initial selection). `players.image_url` is kept in sync with whichever
 // row is the default so existing single-photo readers keep working.
-export const playerImagesTable = pgTable("player_images", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  playerId: integer("player_id")
-    .notNull()
-    .references(() => playersTable.id, { onDelete: "cascade" }),
-  imageUrl: text("image_url").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
-  isDefault: boolean("is_default").notNull().default(false),
-});
+export const playerImagesTable = pgTable(
+  "player_images",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    playerId: integer("player_id")
+      .notNull()
+      .references(() => playersTable.id, { onDelete: "cascade" }),
+    imageUrl: text("image_url").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    isDefault: boolean("is_default").notNull().default(false),
+  },
+  (t) => ({
+    idxTenant: index("player_images_tenant_idx").on(t.tenantId),
+    idxPlayer: index("player_images_player_idx").on(t.playerId),
+  }),
+);
 
 export const insertPlayerImageSchema = createInsertSchema(playerImagesTable).omit({
   id: true,
