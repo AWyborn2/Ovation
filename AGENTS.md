@@ -45,11 +45,22 @@ now reading shared stats from a central association DB filtered per tenant.**
 
 ## How to run / build (commands)
 
-- Package manager is **pnpm only** (preinstall hook blocks npm/yarn).
-- Typecheck everything: `pnpm run typecheck`
+- Package manager is **pnpm only** (preinstall hook blocks npm/yarn); Node 22 (`.nvmrc`).
+- Typecheck everything: `pnpm run typecheck` (strict TypeScript: `strict`,
+  `noUnusedLocals`, `noImplicitOverride` in `tsconfig.base.json`)
+- Lint / format: `pnpm run lint`, `pnpm run format:check` (ESLint flat config + Prettier
+  at the root)
 - Build everything: `pnpm run build` (typechecks first)
-- API server: `pnpm --filter @workspace/api-server run dev` · tests: `... run test` (vitest)
-- Website: `pnpm --filter @workspace/cricket-club run dev`
+- Database: `pnpm --filter @workspace/db run migrate` applies `lib/db/migrations`
+  (baselines a database that was built with `push`); after editing
+  `lib/db/src/schema`, run `... run generate` and commit the migration. CI fails on a
+  schema edit without its migration. `push` is for local experiments only.
+- API server: `pnpm --filter @workspace/api-server run dev` · tests: `... run test`
+  (vitest, real Postgres — see README for the env vars)
+- Website: `pnpm --filter @workspace/cricket-club run dev` · tests: `... test`
+- Mobile: `pnpm --filter @workspace/cricket-mobile run start` (plain `expo start`; the
+  `dev` script is the Replit-proxied variant)
+- Library unit tests: `pnpm run test:libs`
 - **Regenerate API glue after spec changes:** edit `lib/api-spec/openapi.yaml`, then
   `pnpm --filter @workspace/api-spec run codegen`. Never hand-edit generated files.
 - Full original run instructions + data model live in `replit.md`.
@@ -117,10 +128,18 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
   smoke + logic), lib/db + lib/scorecard + scripts unit suites (mocked), and **no mobile
   tests**. The `*-consistency.test.ts` and `honour-display-kiosk.test.ts` suites still
   need the demo club's full history and are skipped in CI (`CI_SKIP_DATA_TESTS`).
-- **CI** (`.github/workflows/ci.yml`): Typecheck, Lint (ESLint flat config at the root),
-  Build (api-server + website), Library unit tests, Web smoke tests, API integration
-  tests. The API job gives its throwaway Postgres an empty `central` schema plus a small
-  fixture (`seed-ci-central-fixture.ts`) — no live central-DB secret is used in CI.
+- **CI** (`.github/workflows/ci.yml`): Typecheck (+ codegen drift + migration drift),
+  Lint, Build (api-server + website), Library unit tests, Web smoke tests, API
+  integration tests. The API job builds its throwaway Postgres from the migrations
+  (`migrate` → `ensure-constraints` verifier → `migrate` again for idempotency), seeds
+  tenant #1, and gives the same database an empty `central` schema plus a small fixture
+  (`seed-ci-central-fixture.ts`) — no live central-DB secret is used in CI.
+- **Per-process state assumes ONE api-server instance.** Tenant config, brand, host
+  directory, central-query and milestone caches, the card-video job map and the
+  rate-limit store are all in-memory; `invalidateTenantConfigCache` only reaches the
+  local process. Every cache is TTL-bounded (≤ 10 min) so a second instance would be
+  *eventually* consistent, but do not autoscale beyond one instance without moving
+  invalidation to Postgres `LISTEN/NOTIFY` and the job map to a table (plan.md §5.12).
 - **Dormant code rots.** Billing + entitlements are inert in a live server; treat with
   care, they aren't exercised by normal use.
 - **Dual-read boundary (local vs central DB)** is the highest-risk area for *silent*
@@ -137,9 +156,24 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 - Environment: `api-server/src/config.ts` — every variable is an `env.*()` accessor,
   validated at boot; ESLint forbids `process.env` elsewhere in the server.
   `.env.example` lists them all.
-- Central DB: `lib/db/src/central.ts` (lazy, read-only proxy), `central-queries.ts`
-  (barrel over `lib/db/src/central/*`), `provision.ts`. Both pools connect on first
-  use (`getDb`/`getCentralDb`, `closeDb`/`closeCentralDb` for shutdown).
+- Central DB: `lib/db/src/central.ts` (lazy, read-only proxy, verified TLS via
+  `CENTRAL_DB_SSL`), `central-queries.ts` (barrel over `lib/db/src/central/*`),
+  `provision.ts`. Both pools connect on first use (`getDb`/`getCentralDb`,
+  `closeDb`/`closeCentralDb` for shutdown).
+- Schema + migrations: `lib/db/src/schema/*` (constraints, indexes and CHECKs are
+  declared here), `lib/db/migrations/*` (generated; `0001_reconcile_pushed_databases`
+  is hand-written), `lib/db/src/migrate.ts` (runner + baseline),
+  `scripts/src/ensure-constraints.ts` (read-only verifier).
+- Knowledge stores — three, with distinct audiences: `.agents/memory/` is
+  **agent-only** working notes (may lag; this file wins on conflict), `docs/` is
+  **human-facing** (plans, follow-ups, product review), `CONCEPTS.md` is the shared
+  **vocabulary**. `plan.md` is the improvement plan this codebase is being worked
+  through. Tooling metadata you can ignore unless you are changing it: `.design-sync/`
+  (design-token sync config), `.mcp.json` (MCP servers for assistants),
+  `skills-lock.json` (installed assistant skills).
+- Replit-only pieces: `.replit`, `replit.nix`, `scripts/post-merge.sh` (runs migrate +
+  verifier + reconcile/backfill scripts after each pull), mobile `scripts/build.js` +
+  `server/serve.js` (static Expo web build served behind Replit's proxy).
 - Auth/seeding: `api-server/src/lib/auth.ts` (seeds demo admin + platform super-admin;
   sessions carry a `session_epoch` so password changes and `POST /auth/logout-all`
   revoke them)
