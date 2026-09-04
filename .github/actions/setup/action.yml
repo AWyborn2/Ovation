@@ -4,9 +4,9 @@ runs:
   using: composite
   steps:
     - name: Install pnpm
+      # No `version` input: pnpm/action-setup reads the exact pin from
+      # `packageManager` in package.json (and errors if both are given).
       uses: pnpm/action-setup@v4
-      with:
-        version: ${{ env.PNPM_VERSION }}
 
     - name: Install Node
       uses: actions/setup-node@v4

@@ -17,10 +17,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # Pin the toolchain. Bump deliberately; keep in step with local dev
-  # (`packageManager` in package.json and .nvmrc).
+  # Node is pinned here (keep in step with .nvmrc); pnpm comes from the
+  # `packageManager` field in package.json via pnpm/action-setup.
   NODE_VERSION: "22"
-  PNPM_VERSION: "10"
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────
