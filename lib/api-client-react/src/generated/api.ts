@@ -79,6 +79,8 @@ import type {
   CardVideoJobInput,
   Century,
   CheckSlugAvailableParams,
+  CheckoutBody,
+  CheckoutResult,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -90,6 +92,7 @@ import type {
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
   CreateProvisioningExclusionBody,
+  CreateTrackedLinkBody,
   Dashboard,
   DebutEntry,
   DirectoryClub,
@@ -187,6 +190,8 @@ import type {
   PlatformBrand,
   PlatformLoginBody,
   Player,
+  PlayerCuration,
+  PlayerCurationBody,
   PlayerDetail,
   PlayerImage,
   PlayerImageInput,
@@ -205,6 +210,8 @@ import type {
   ProvisionTenantBody,
   ProvisioningExclusion,
   PutTeamListBody,
+  ReadinessStatus,
+  RecapInput,
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
@@ -340,6 +347,85 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReadinessCheckUrl = () => {
+
+
+
+
+  return `/api/readyz`
+}
+
+/**
+ * Probes the tenant database and the central database with a short timeout. 200 when both answer, 503 (with the same body) when either does not, so an autoscaler stops routing to an instance that cannot serve stats reads.
+
+ * @summary Readiness check
+ */
+export const readinessCheck = async ( options?: RequestInit): Promise<ReadinessStatus> => {
+
+  return customFetch<ReadinessStatus>(getReadinessCheckUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadinessCheckQueryKey = () => {
+    return [
+    `/api/readyz`
+    ] as const;
+    }
+
+
+export const getReadinessCheckQueryOptions = <TData = Awaited<ReturnType<typeof readinessCheck>>, TError = ErrorType<ReadinessStatus>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readinessCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadinessCheckQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readinessCheck>>> = ({ signal }) => readinessCheck({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readinessCheck>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReadinessCheckQueryResult = NonNullable<Awaited<ReturnType<typeof readinessCheck>>>
+export type ReadinessCheckQueryError = ErrorType<ReadinessStatus>
+
+
+/**
+ * @summary Readiness check
+ */
+
+export function useReadinessCheck<TData = Awaited<ReturnType<typeof readinessCheck>>, TError = ErrorType<ReadinessStatus>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readinessCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReadinessCheckQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -14476,6 +14562,76 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getApproveSocialDraftMutationOptions(options));
     }
 
+export const getMarkSocialDraftPostedUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/posted`
+}
+
+/**
+ * @summary Mark an approved draft as posted
+ */
+export const markSocialDraftPosted = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getMarkSocialDraftPostedUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkSocialDraftPostedMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSocialDraftPosted>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markSocialDraftPosted>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['markSocialDraftPosted'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markSocialDraftPosted>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  markSocialDraftPosted(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkSocialDraftPostedMutationResult = NonNullable<Awaited<ReturnType<typeof markSocialDraftPosted>>>
+
+    export type MarkSocialDraftPostedMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark an approved draft as posted
+ */
+export const useMarkSocialDraftPosted = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSocialDraftPosted>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markSocialDraftPosted>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getMarkSocialDraftPostedMutationOptions(options));
+    }
+
 export const getDismissSocialDraftUrl = (id: number,) => {
 
 
@@ -14609,6 +14765,77 @@ export const useGenerateRoundUp = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getGenerateRoundUpMutationOptions(options));
+    }
+
+export const getGenerateRecapsUrl = () => {
+
+
+
+
+  return `/api/social-recaps`
+}
+
+/**
+ * @summary Generate season-recap drafts for a grade
+ */
+export const generateRecaps = async (recapInput: RecapInput, options?: RequestInit): Promise<SocialDraft[]> => {
+
+  return customFetch<SocialDraft[]>(getGenerateRecapsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      recapInput,)
+  }
+);}
+
+
+
+
+export const getGenerateRecapsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateRecaps>>, TError,{data: BodyType<RecapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateRecaps>>, TError,{data: BodyType<RecapInput>}, TContext> => {
+
+const mutationKey = ['generateRecaps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateRecaps>>, {data: BodyType<RecapInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateRecaps(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateRecapsMutationResult = NonNullable<Awaited<ReturnType<typeof generateRecaps>>>
+    export type GenerateRecapsMutationBody = BodyType<RecapInput>
+    export type GenerateRecapsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate season-recap drafts for a grade
+ */
+export const useGenerateRecaps = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateRecaps>>, TError,{data: BodyType<RecapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateRecaps>>,
+        TError,
+        {data: BodyType<RecapInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateRecapsMutationOptions(options));
     }
 
 export const getSweepMatchSummaryDraftsUrl = () => {
@@ -14758,6 +14985,369 @@ export function useListTrackedLinks<TData = Awaited<ReturnType<typeof listTracke
 
 
 
+
+export const getCreateTrackedLinkUrl = () => {
+
+
+
+
+  return `/api/tracked-links`
+}
+
+/**
+ * Called by the share flow so a caption and downloaded card carry a measurable /go/{slug} link. Unauthenticated, per-IP rate limited, and every field is length-bounded.
+
+ * @summary Mint a tracked short link for an in-app path (public; rate limited)
+ */
+export const createTrackedLink = async (createTrackedLinkBody: CreateTrackedLinkBody, options?: RequestInit): Promise<TrackedLink> => {
+
+  return customFetch<TrackedLink>(getCreateTrackedLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createTrackedLinkBody,)
+  }
+);}
+
+
+
+
+export const getCreateTrackedLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTrackedLink>>, TError,{data: BodyType<CreateTrackedLinkBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTrackedLink>>, TError,{data: BodyType<CreateTrackedLinkBody>}, TContext> => {
+
+const mutationKey = ['createTrackedLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTrackedLink>>, {data: BodyType<CreateTrackedLinkBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTrackedLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTrackedLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createTrackedLink>>>
+    export type CreateTrackedLinkMutationBody = BodyType<CreateTrackedLinkBody>
+    export type CreateTrackedLinkMutationError = ErrorType<void>
+
+    /**
+ * @summary Mint a tracked short link for an in-app path (public; rate limited)
+ */
+export const useCreateTrackedLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTrackedLink>>, TError,{data: BodyType<CreateTrackedLinkBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTrackedLink>>,
+        TError,
+        {data: BodyType<CreateTrackedLinkBody>},
+        TContext
+      > => {
+      return useMutation(getCreateTrackedLinkMutationOptions(options));
+    }
+
+export const getListPlayerCurationUrl = () => {
+
+
+
+
+  return `/api/player-curation`
+}
+
+/**
+ * @summary List this tenant's central-player curation rows (renames and merges)
+ */
+export const listPlayerCuration = async ( options?: RequestInit): Promise<PlayerCuration[]> => {
+
+  return customFetch<PlayerCuration[]>(getListPlayerCurationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPlayerCurationQueryKey = () => {
+    return [
+    `/api/player-curation`
+    ] as const;
+    }
+
+
+export const getListPlayerCurationQueryOptions = <TData = Awaited<ReturnType<typeof listPlayerCuration>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlayerCuration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlayerCurationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlayerCuration>>> = ({ signal }) => listPlayerCuration({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPlayerCuration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPlayerCurationQueryResult = NonNullable<Awaited<ReturnType<typeof listPlayerCuration>>>
+export type ListPlayerCurationQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List this tenant's central-player curation rows (renames and merges)
+ */
+
+export function useListPlayerCuration<TData = Awaited<ReturnType<typeof listPlayerCuration>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlayerCuration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPlayerCurationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertPlayerCurationUrl = (participantId: string,) => {
+
+
+
+
+  return `/api/player-curation/${participantId}`
+}
+
+/**
+ * @summary Rename and/or merge one central participant for this tenant
+ */
+export const upsertPlayerCuration = async (participantId: string,
+    playerCurationBody: PlayerCurationBody, options?: RequestInit): Promise<PlayerCuration> => {
+
+  return customFetch<PlayerCuration>(getUpsertPlayerCurationUrl(participantId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      playerCurationBody,)
+  }
+);}
+
+
+
+
+export const getUpsertPlayerCurationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPlayerCuration>>, TError,{participantId: string;data: BodyType<PlayerCurationBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertPlayerCuration>>, TError,{participantId: string;data: BodyType<PlayerCurationBody>}, TContext> => {
+
+const mutationKey = ['upsertPlayerCuration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertPlayerCuration>>, {participantId: string;data: BodyType<PlayerCurationBody>}> = (props) => {
+          const {participantId,data} = props ?? {};
+
+          return  upsertPlayerCuration(participantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertPlayerCurationMutationResult = NonNullable<Awaited<ReturnType<typeof upsertPlayerCuration>>>
+    export type UpsertPlayerCurationMutationBody = BodyType<PlayerCurationBody>
+    export type UpsertPlayerCurationMutationError = ErrorType<void>
+
+    /**
+ * @summary Rename and/or merge one central participant for this tenant
+ */
+export const useUpsertPlayerCuration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPlayerCuration>>, TError,{participantId: string;data: BodyType<PlayerCurationBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertPlayerCuration>>,
+        TError,
+        {participantId: string;data: BodyType<PlayerCurationBody>},
+        TContext
+      > => {
+      return useMutation(getUpsertPlayerCurationMutationOptions(options));
+    }
+
+export const getDeletePlayerCurationUrl = (participantId: string,) => {
+
+
+
+
+  return `/api/player-curation/${participantId}`
+}
+
+/**
+ * @summary Clear curation for one participant (revert to central defaults)
+ */
+export const deletePlayerCuration = async (participantId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePlayerCurationUrl(participantId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePlayerCurationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlayerCuration>>, TError,{participantId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePlayerCuration>>, TError,{participantId: string}, TContext> => {
+
+const mutationKey = ['deletePlayerCuration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePlayerCuration>>, {participantId: string}> = (props) => {
+          const {participantId} = props ?? {};
+
+          return  deletePlayerCuration(participantId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePlayerCurationMutationResult = NonNullable<Awaited<ReturnType<typeof deletePlayerCuration>>>
+
+    export type DeletePlayerCurationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Clear curation for one participant (revert to central defaults)
+ */
+export const useDeletePlayerCuration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlayerCuration>>, TError,{participantId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePlayerCuration>>,
+        TError,
+        {participantId: string},
+        TContext
+      > => {
+      return useMutation(getDeletePlayerCurationMutationOptions(options));
+    }
+
+export const getCreateBillingCheckoutUrl = () => {
+
+
+
+
+  return `/api/billing/checkout`
+}
+
+/**
+ * @summary Start an upgrade checkout for the current tenant (inert while billing is disabled)
+ */
+export const createBillingCheckout = async (checkoutBody: CheckoutBody, options?: RequestInit): Promise<CheckoutResult> => {
+
+  return customFetch<CheckoutResult>(getCreateBillingCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      checkoutBody,)
+  }
+);}
+
+
+
+
+export const getCreateBillingCheckoutMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingCheckout>>, TError,{data: BodyType<CheckoutBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBillingCheckout>>, TError,{data: BodyType<CheckoutBody>}, TContext> => {
+
+const mutationKey = ['createBillingCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBillingCheckout>>, {data: BodyType<CheckoutBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBillingCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBillingCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createBillingCheckout>>>
+    export type CreateBillingCheckoutMutationBody = BodyType<CheckoutBody>
+    export type CreateBillingCheckoutMutationError = ErrorType<void>
+
+    /**
+ * @summary Start an upgrade checkout for the current tenant (inert while billing is disabled)
+ */
+export const useCreateBillingCheckout = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingCheckout>>, TError,{data: BodyType<CheckoutBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBillingCheckout>>,
+        TError,
+        {data: BodyType<CheckoutBody>},
+        TContext
+      > => {
+      return useMutation(getCreateBillingCheckoutMutationOptions(options));
+    }
 
 export const getRequestUploadUrlUrl = () => {
 

@@ -35,6 +35,13 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Typecheck
         run: pnpm run typecheck
+      - name: Generated API client is up to date
+        # OpenAPI-first: lib/api-client-react and lib/api-zod are generated from
+        # lib/api-spec/openapi.yaml. Regenerate and fail if the committed output
+        # differs, so a spec edit can never merge without its codegen.
+        run: |
+          pnpm --filter @workspace/api-spec run codegen
+          git diff --exit-code -- lib/api-client-react/src lib/api-zod/src
 
   # ───────────────────────────────────────────────────────────────────────────
   # Lint. Hermetic. ESLint flat config at the repo root.

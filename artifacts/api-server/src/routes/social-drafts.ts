@@ -12,6 +12,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { publicWriteRateLimiter } from "../middlewares/rate-limit";
+import { CreateTrackedLinkBody, GenerateRecapsBody } from "@workspace/api-zod";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
@@ -158,12 +159,12 @@ router.post("/social-roundups", requireAdmin, requireEntitlement("socialStudio")
 });
 
 router.post("/social-recaps", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const grade = String(req.body?.grade ?? "");
-  const season = parseInt(String(req.body?.season ?? ""), 10);
-  if (!grade || !Number.isInteger(season)) {
+  const parsed = GenerateRecapsBody.safeParse(req.body);
+  if (!parsed.success) {
     res.status(400).json({ error: "grade and season required" });
     return;
   }
+  const { grade, season } = parsed.data;
   const created = await generateRecapDrafts(getTenantId(req), grade, season);
   res.json(created);
 });
@@ -227,27 +228,18 @@ router.post("/social-drafts/sweep", requireAdmin, requireEntitlement("socialStud
 // open redirect.
 const ALLOWED_APP_PATHS = /^\/(players|grades|records|premierships|stats|)(\/[A-Za-z0-9%\-_ ]+)?\/?$/;
 
-/** Upper bounds for the caller-supplied text on a tracked link. */
-const TRACKED_LINK_MAX = { targetUrl: 512, engine: 64, platform: 64, label: 200 } as const;
-
 router.post("/tracked-links", publicWriteRateLimiter, async (req, res): Promise<void> => {
-  const targetUrl = String(req.body?.targetUrl ?? "");
-  const engine = String(req.body?.engine ?? "ondemand");
-  const platform = String(req.body?.platform ?? "");
-  const label = String(req.body?.label ?? "");
-  if (!targetUrl.startsWith("/") || !ALLOWED_APP_PATHS.test(targetUrl)) {
-    res.status(400).json({ error: "targetUrl must be an in-app path" });
+  // Public, unauthenticated write: the generated schema bounds every free-text
+  // field (see CreateTrackedLinkBody in openapi.yaml) so a client cannot store
+  // arbitrarily large strings against the tenant.
+  const parsed = CreateTrackedLinkBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
     return;
   }
-  // Public, unauthenticated write: bound every free-text field so a client
-  // cannot store arbitrarily large strings against the tenant.
-  if (
-    targetUrl.length > TRACKED_LINK_MAX.targetUrl ||
-    engine.length > TRACKED_LINK_MAX.engine ||
-    platform.length > TRACKED_LINK_MAX.platform ||
-    label.length > TRACKED_LINK_MAX.label
-  ) {
-    res.status(400).json({ error: "Tracked link fields exceed the allowed length" });
+  const { targetUrl, engine = "ondemand", platform = "", label = "" } = parsed.data;
+  if (!targetUrl.startsWith("/") || !ALLOWED_APP_PATHS.test(targetUrl)) {
+    res.status(400).json({ error: "targetUrl must be an in-app path" });
     return;
   }
   const slug = randomSlug();

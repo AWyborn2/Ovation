@@ -5,6 +5,8 @@ import {
   useApproveSocialDraft,
   useDismissSocialDraft,
   useGenerateRoundUp,
+  markSocialDraftPosted,
+  generateRecaps,
   useListTrackedLinks,
   getListTrackedLinksQueryKey,
   useGetSocialSettings,
@@ -77,20 +79,12 @@ export default function AdminSocialQueue() {
   });
 
   const markPosted = async (id: number) => {
-    await fetch(`/api/social-drafts/${id}/posted`, {
-      method: "POST",
-      credentials: "include",
-    });
+    await markSocialDraftPosted(id);
     invalidateDrafts();
   };
 
   const triggerRecap = async () => {
-    await fetch(`/api/social-recaps`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ grade, season }),
-    });
+    await generateRecaps({ grade, season });
     invalidateDrafts();
   };
 

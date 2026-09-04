@@ -110,6 +110,9 @@ export default tseslint.config(
       "artifacts/api-server/src/routes/platform-admin.ts",
       "artifacts/api-server/src/routes/provisioning-exclusions.ts",
       "artifacts/api-server/src/lib/tenant-brand.ts",
+      // Ops surfaces need the handle itself: readiness probe + graceful shutdown.
+      "artifacts/api-server/src/routes/health.ts",
+      "artifacts/api-server/src/index.ts",
       "scripts/src/**",
     ],
     rules: {
@@ -123,6 +126,27 @@ export default tseslint.config(
                 "Read the central DB only through @workspace/db/central-queries so every read is club-filtered, cached and tested in one place (plan.md §4.1).",
             },
           ],
+        },
+      ],
+    },
+  },
+
+  // ── API server: every environment read goes through src/config.ts ────────
+  {
+    files: ["artifacts/api-server/src/**/*.ts"],
+    ignores: [
+      "artifacts/api-server/src/config.ts",
+      "artifacts/api-server/src/maintenance/**",
+      "artifacts/api-server/src/**/*.test.ts",
+      "artifacts/api-server/src/**/*.test-helpers.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[object.type='MemberExpression'][object.object.name='process'][object.property.name='env']",
+          message:
+            "Read environment variables through `env` in src/config.ts so every setting is declared, validated at boot, and listed in .env.example (plan.md §4.2).",
         },
       ],
     },

@@ -1,38 +1,39 @@
 import { useLocation } from "wouter";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
+import { LoadingState } from "@/components/data-states";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useEntitlements, type Feature } from "@/lib/entitlements";
-import AdminSocial from "@/pages/admin-social";
-import AdminSocialStudio from "@/pages/admin-social-studio";
-import AdminSocialCreate from "@/pages/admin-social-create";
-import AdminSocialSets from "@/pages/admin-social-sets";
-import AdminJuniorSocial from "@/pages/admin-junior-social";
-import AdminSocialQueue from "@/pages/admin-social-queue";
-import AdminFixtures from "@/pages/admin-fixtures";
-import AdminMatchDisplay from "@/pages/admin-match-display";
-import AdminRecordsDisplay from "@/pages/admin-records-display";
-import AdminTradingCards from "@/pages/admin-trading-cards";
-import AdminHonourBoards from "@/pages/admin-honour-boards";
-import AdminMilestoneBoard from "@/pages/admin-milestone-board";
-import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
-import AdminTourContent from "@/pages/admin-tour-content";
-import AdminBranding from "@/pages/admin-branding";
-import AdminNav from "@/pages/admin-nav";
-import AdminPlayers from "@/pages/admin-players";
-import AdminStats from "@/pages/admin-stats";
-import AdminJuniorStats from "@/pages/admin-junior-stats";
-import AdminJuniorPlayers from "@/pages/admin-junior-players";
-import AdminCommittee from "@/pages/admin-committee";
-import AdminCaptains from "@/pages/admin-captains";
-import AdminJuniorCommittee from "@/pages/admin-junior-committee";
-import AdminPeople from "@/pages/admin-people";
-import AdminPremierships from "@/pages/admin-premierships";
-import AdminAwards from "@/pages/admin-awards";
-import AdminTeamOfDecade from "@/pages/admin-team-of-decade";
-import AdminCaps from "@/pages/admin-caps";
-import AdminLifeMembers from "@/pages/admin-life-members";
-import AdminJuniorPremierships from "@/pages/admin-junior-premierships";
-import AdminHonoursDisplay from "@/pages/admin-honours-display";
+const AdminSocial = lazy(() => import("@/pages/admin-social"));
+const AdminSocialStudio = lazy(() => import("@/pages/admin-social-studio"));
+const AdminSocialCreate = lazy(() => import("@/pages/admin-social-create"));
+const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
+const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
+const AdminSocialQueue = lazy(() => import("@/pages/admin-social-queue"));
+const AdminFixtures = lazy(() => import("@/pages/admin-fixtures"));
+const AdminMatchDisplay = lazy(() => import("@/pages/admin-match-display"));
+const AdminRecordsDisplay = lazy(() => import("@/pages/admin-records-display"));
+const AdminTradingCards = lazy(() => import("@/pages/admin-trading-cards"));
+const AdminHonourBoards = lazy(() => import("@/pages/admin-honour-boards"));
+const AdminMilestoneBoard = lazy(() => import("@/pages/admin-milestone-board"));
+const AdminJuniorMatchDisplay = lazy(() => import("@/pages/admin-junior-match-display"));
+const AdminTourContent = lazy(() => import("@/pages/admin-tour-content"));
+const AdminBranding = lazy(() => import("@/pages/admin-branding"));
+const AdminNav = lazy(() => import("@/pages/admin-nav"));
+const AdminPlayers = lazy(() => import("@/pages/admin-players"));
+const AdminStats = lazy(() => import("@/pages/admin-stats"));
+const AdminJuniorStats = lazy(() => import("@/pages/admin-junior-stats"));
+const AdminJuniorPlayers = lazy(() => import("@/pages/admin-junior-players"));
+const AdminCommittee = lazy(() => import("@/pages/admin-committee"));
+const AdminCaptains = lazy(() => import("@/pages/admin-captains"));
+const AdminJuniorCommittee = lazy(() => import("@/pages/admin-junior-committee"));
+const AdminPeople = lazy(() => import("@/pages/admin-people"));
+const AdminPremierships = lazy(() => import("@/pages/admin-premierships"));
+const AdminAwards = lazy(() => import("@/pages/admin-awards"));
+const AdminTeamOfDecade = lazy(() => import("@/pages/admin-team-of-decade"));
+const AdminCaps = lazy(() => import("@/pages/admin-caps"));
+const AdminLifeMembers = lazy(() => import("@/pages/admin-life-members"));
+const AdminJuniorPremierships = lazy(() => import("@/pages/admin-junior-premierships"));
+const AdminHonoursDisplay = lazy(() => import("@/pages/admin-honours-display"));
 
 type AdminTab = {
   value: string;
@@ -44,6 +45,9 @@ type AdminTab = {
   feature?: Feature;
 };
 
+// Every tab page is a separate lazy chunk: opening one admin tab no longer
+// downloads every admin page (the honours display, social sets, card editors,
+// import tooling, …) in a single ~MB bundle. Only the active tab's chunk loads.
 // Shared tabbed shell for a consolidated admin group. The active tab is driven
 // by the URL (the first tab lives at the group's base path; every other tab is
 // a single path segment under it), so each tab is directly deep-linkable and the
@@ -99,7 +103,7 @@ function AdminTabGroup({
           </TabsList>
           {visibleTabs.map((t) => (
             <TabsContent key={t.value} value={t.value} className="mt-6">
-              {t.element}
+              <Suspense fallback={<LoadingState label="Loading…" />}>{t.element}</Suspense>
             </TabsContent>
           ))}
         </Tabs>

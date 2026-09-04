@@ -508,8 +508,8 @@ const headlineFor = (input: ShareCardInput): string => {
   }
 };
 
-export const seasonLabel = (year: number) =>
-  `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
+export { seasonLabel } from "./season-label";
+import { seasonLabel } from "./season-label";
 
 // Draw `img` so it covers the rect (object-fit: cover) honouring a focal point
 // and zoom. `focalX`/`focalY` are 0-1 (0.5 = centred) and select the point of

@@ -8,6 +8,7 @@ import {
   type Plan,
   type Entitlements,
 } from "./entitlements";
+import { env } from "../config";
 
 /**
  * Per-tenant config resolution for the stats reads.
@@ -179,7 +180,7 @@ export class CentralReadsDisabledError extends Error {
  *   everyone Halls Head's data".
  */
 function decideReadsFromCentral(tenantId: number, readsFromCentral: boolean): boolean {
-  const killSwitch = process.env.CENTRAL_READS === "0";
+  const killSwitch = env.centralReadsDisabled();
   if (tenantId === NATIVE_STATS_TENANT_ID) {
     return killSwitch ? false : readsFromCentral;
   }

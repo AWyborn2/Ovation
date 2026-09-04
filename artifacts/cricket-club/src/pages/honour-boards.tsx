@@ -156,7 +156,7 @@ export default function HonourBoards() {
     <div className="space-y-6">
       {/* Hero header */}
       <div className="bg-card border border-border rounded-md p-6 md:p-8 flex items-center gap-4 md:gap-6 shadow-lg">
-        <img src={logoUrl} alt={brand.name} className="h-16 md:h-20 w-auto drop-shadow-lg" />
+        <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-16 md:h-20 w-auto drop-shadow-lg" />
         <div>
           <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary m-0 leading-tight">
             {brand.name} — Honour Boards

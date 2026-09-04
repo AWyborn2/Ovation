@@ -6,6 +6,11 @@ import {
   useCommitImport,
   useDeleteImport,
   useUndoSeason,
+  uploadPlaycricketCsv,
+  uploadMatchScorecard,
+  uploadMatchBatch,
+  commitMatchBatch,
+  revalidateMatchBatch,
   getListImportsQueryKey,
   getGetDashboardQueryKey,
   getListPlayersQueryKey,
@@ -21,7 +26,6 @@ import type {
   PlayerResolution,
   BackfillPlayerFigures,
   BatchFileResolution,
-  BatchRevalidatePreview,
 } from "@workspace/api-client-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import {
@@ -413,20 +417,11 @@ export default function AdminImport() {
     const seq = ++revalidateSeq.current;
     const handle = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/imports/match-batch/${importId}/revalidate`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fileResolutions: buildFileResolutions(fileResolutions),
-            }),
-            credentials: "include",
-            signal: controller.signal,
-          },
+        const data = await revalidateMatchBatch(
+          importId,
+          { fileResolutions: buildFileResolutions(fileResolutions) },
+          { signal: controller.signal },
         );
-        if (!res.ok) return;
-        const data = (await res.json()) as BatchRevalidatePreview;
         // Drop stale responses that resolved after a newer request was issued.
         if (seq !== revalidateSeq.current) return;
         setBatchPreview((prev) =>
@@ -479,30 +474,12 @@ export default function AdminImport() {
     }
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("season", String(season));
-      const res = await fetch("/api/imports/playcricket-csv", {
-        method: "POST",
-        body: form,
-        credentials: "include",
-      });
-      if (res.status === 401) {
-        invalidateAdmin();
-        setError("Your session has expired — please sign in again.");
-        return;
-      }
-      const body = await res.json();
-      if (!res.ok) {
-        setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
-        return;
-      }
-      const data = body as ImportPreview;
+      const data = await uploadPlaycricketCsv({ file, season });
       setPreview(data);
       seedResolutions(data.players);
       refetchImports();
     } catch (err) {
-      setError((err as Error).message);
+      if (!handleMutationError(err)) setError(apiErrorMessage(err));
     } finally {
       setUploading(false);
     }
@@ -517,31 +494,14 @@ export default function AdminImport() {
     }
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/imports/match-xlsx", {
-        method: "POST",
-        body: form,
-        credentials: "include",
-      });
-      if (res.status === 401) {
-        invalidateAdmin();
-        setError("Your session has expired — please sign in again.");
-        return;
-      }
-      const body = await res.json();
-      if (!res.ok) {
-        setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
-        return;
-      }
-      const data = body as MatchImportPreview;
+      const data = await uploadMatchScorecard({ file });
       setMatchPreview(data);
       setMatchRound(data.round != null ? String(data.round) : "");
       setMatchStage(data.stage ?? "");
       seedResolutions(data.players);
       refetchImports();
     } catch (err) {
-      setError((err as Error).message);
+      if (!handleMutationError(err)) setError(apiErrorMessage(err));
     } finally {
       setUploading(false);
     }
@@ -556,32 +516,23 @@ export default function AdminImport() {
     }
     setUploading(true);
     try {
-      const form = new FormData();
-      for (const f of Array.from(batchFiles)) form.append("files", f);
-      const res = await fetch("/api/imports/match-batch", {
-        method: "POST",
-        body: form,
-        credentials: "include",
-      });
-      if (res.status === 401) {
-        invalidateAdmin();
-        setError("Your session has expired — please sign in again.");
-        return;
-      }
-      const body = await res.json();
-      if (!res.ok) {
-        setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
-        return;
-      }
-      const data = body as BatchImportPreview;
+      const data = await uploadMatchBatch({ files: Array.from(batchFiles) });
       setBatchPreview(data);
       seedResolutions(data.players);
       refetchImports();
     } catch (err) {
-      setError((err as Error).message);
+      if (!handleMutationError(err)) setError(apiErrorMessage(err));
     } finally {
       setUploading(false);
     }
+  };
+
+  /** Message for a failed generated-client call: the server's `error` field when present. */
+  const apiErrorMessage = (e: unknown): string => {
+    const err = e as { status?: number; data?: { error?: unknown }; message?: string } | null;
+    if (typeof err?.data?.error === "string") return err.data.error;
+    if (typeof err?.status === "number") return `HTTP ${err.status}`;
+    return err?.message ?? "Request failed";
   };
 
   const handleMutationError = (e: unknown): boolean => {
@@ -656,37 +607,19 @@ export default function AdminImport() {
     setUploading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/imports/match-batch/${batchPreview.importId}/commit`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            resolutions: buildResolutions(resolutions, batchPreview.players),
-            fileResolutions: buildFileResolutions(fileResolutions),
-            reconcileMode: isBackfill ? reconcileMode : null,
-          }),
-          credentials: "include",
-        },
-      );
-      if (res.status === 401) {
-        invalidateAdmin();
-        setError("Your session has expired — please sign in again.");
-        return;
-      }
-      const body = await res.json();
-      if (!res.ok) {
-        setError(typeof body?.error === "string" ? body.error : `HTTP ${res.status}`);
-        return;
-      }
-      const committedCount = (body?.committed as number) ?? 0;
+      const body = await commitMatchBatch(batchPreview.importId, {
+        resolutions: buildResolutions(resolutions, batchPreview.players),
+        fileResolutions: buildFileResolutions(fileResolutions),
+        reconcileMode: isBackfill ? reconcileMode : null,
+      });
+      const committedCount = body.committed ?? 0;
       setCommitted({
         label: `${committedCount} match${committedCount === 1 ? "" : "es"}`,
       });
       resetPreviews();
       invalidateAggregates();
     } catch (err) {
-      setError((err as Error).message);
+      if (!handleMutationError(err)) setError(apiErrorMessage(err));
     } finally {
       setUploading(false);
     }

@@ -170,7 +170,7 @@ export default function Premierships() {
     >
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
-          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
+          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
           <div className="text-center text-white">
             <h1
               className="m-0 font-bold tracking-[0.08em] leading-tight text-xl md:text-3xl lg:text-4xl"
@@ -185,7 +185,7 @@ export default function Premierships() {
               PREMIERSHIPS
             </div>
           </div>
-          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
+          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">

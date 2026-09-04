@@ -20,6 +20,7 @@ import {
   signupDiscoveryRateLimiter,
 } from "../middlewares/rate-limit";
 import { listAvailableClubs } from "../lib/available-clubs";
+import { env } from "../config";
 
 const router: IRouter = Router();
 
@@ -32,7 +33,7 @@ const router: IRouter = Router();
 
 /** Onboarding gate. `pca` (default) onboards central PCA clubs; `off` disables. */
 function signupMode(): "pca" | "open" | "off" {
-  const m = (process.env.SIGNUP_MODE ?? "pca").toLowerCase();
+  const m = (env.SIGNUP_MODE() ?? "pca").toLowerCase();
   if (m === "off") return "off";
   if (m === "open") return "open";
   return "pca";

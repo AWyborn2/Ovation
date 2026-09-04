@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { SocialSettingsBundle } from "@workspace/api-client-react";
+import { createTrackedLink, type SocialSettingsBundle } from "@workspace/api-client-react";
 import type { ShareCardInput } from "@/lib/share-card";
 import {
   renderCaption,
@@ -44,13 +44,8 @@ export function useCaptions({
   useEffect(() => {
     let cancelled = false;
     if (!open || trackedSlug || autoSlug || !appPath || engine !== "ondemand") return;
-    fetch("/api/tracked-links", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetUrl: appPath, engine: "ondemand", label: "On-demand share" }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((row: { slug?: string } | null) => {
+    createTrackedLink({ targetUrl: appPath, engine: "ondemand", label: "On-demand share" })
+      .then((row) => {
         if (!cancelled && row?.slug) setAutoSlug(row.slug);
       })
       .catch(() => {});

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
+import { env } from "../config";
 
 /**
  * Advance `tenants.last_active_at` when a club admin acts on their tenant — the
@@ -64,7 +65,7 @@ export function claimActivityWindow(
  */
 export function touchTenantActivity(tenantId: number): void {
   const now = Date.now();
-  const throttleMs = resolveThrottleMs(process.env.TENANT_ACTIVITY_THROTTLE_MS);
+  const throttleMs = resolveThrottleMs(env.TENANT_ACTIVITY_THROTTLE_MS());
   if (!claimActivityWindow(tenantId, now, throttleMs)) return;
   void db
     .update(tenantsTable)

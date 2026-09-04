@@ -67,6 +67,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /readyz:
+    get:
+      operationId: readinessCheck
+      tags: [health]
+      summary: Readiness check
+      description: >
+        Probes the tenant database and the central database with a short timeout.
+        200 when both answer, 503 (with the same body) when either does not, so an
+        autoscaler stops routing to an instance that cannot serve stats reads.
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+        "503":
+          description: Degraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+
   /players:
     get:
       operationId: listPlayers
@@ -3993,6 +4016,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/SocialDraft"
 
+  /social-drafts/{id}/posted:
+    post:
+      operationId: markSocialDraftPosted
+      tags: [socialCards]
+      summary: Mark an approved draft as posted
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
+
   /social-drafts/{id}/dismiss:
     post:
       operationId: dismissSocialDraft
@@ -4017,6 +4060,27 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RoundUpInput"
+      responses:
+        "200":
+          description: Drafts created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialDraft"
+
+  /social-recaps:
+    post:
+      operationId: generateRecaps
+      tags: [socialCards]
+      summary: Generate season-recap drafts for a grade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecapInput"
       responses:
         "200":
           description: Drafts created
@@ -4083,6 +4147,105 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TrackedLink"
+    post:
+      operationId: createTrackedLink
+      tags: [socialCards]
+      summary: Mint a tracked short link for an in-app path (public; rate limited)
+      description: >
+        Called by the share flow so a caption and downloaded card carry a
+        measurable /go/{slug} link. Unauthenticated, per-IP rate limited, and
+        every field is length-bounded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrackedLinkBody"
+      responses:
+        "201":
+          description: The minted link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackedLink"
+        "400":
+          description: Not an in-app path, or a field is too long
+        "429":
+          description: Rate limited
+
+  /player-curation:
+    get:
+      operationId: listPlayerCuration
+      tags: [players]
+      summary: List this tenant's central-player curation rows (renames and merges)
+      responses:
+        "200":
+          description: Curation rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerCuration"
+
+  /player-curation/{participantId}:
+    put:
+      operationId: upsertPlayerCuration
+      tags: [players]
+      summary: Rename and/or merge one central participant for this tenant
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerCurationBody"
+      responses:
+        "200":
+          description: The saved curation row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerCuration"
+        "400":
+          description: Invalid body, or a player merged into itself
+    delete:
+      operationId: deletePlayerCuration
+      tags: [players]
+      summary: Clear curation for one participant (revert to central defaults)
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Cleared
+
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      tags: [billing]
+      summary: Start an upgrade checkout for the current tenant (inert while billing is disabled)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutBody"
+      responses:
+        "200":
+          description: Checkout session (url is null while billing is disabled)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResult"
+        "400":
+          description: plan must be club or pro
 
   /storage/uploads/request-url:
     post:
@@ -5723,6 +5886,22 @@ components:
           type: string
       required:
         - status
+
+    ReadinessStatus:
+      type: object
+      required: [status, db, central]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        db:
+          type: string
+          enum: [ok, error]
+          description: Tenant database probe
+        central:
+          type: string
+          enum: [ok, error]
+          description: Central (read-only) database probe
 
     Player:
       type: object
@@ -11659,6 +11838,77 @@ components:
             Halls Head's official branding (logo + colours) from the clubs
             register — the default theme/logo for share cards. Null when
             unavailable; renderers fall back to their built-in official defaults.
+
+    CreateTrackedLinkBody:
+      type: object
+      required: [targetUrl]
+      properties:
+        targetUrl:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: In-app path, e.g. /players/12
+        engine:
+          type: string
+          maxLength: 64
+          default: ondemand
+        platform:
+          type: string
+          maxLength: 64
+        label:
+          type: string
+          maxLength: 200
+
+    RecapInput:
+      type: object
+      required: [grade, season]
+      properties:
+        grade:
+          type: string
+          minLength: 1
+        season:
+          type: integer
+
+    PlayerCuration:
+      type: object
+      required: [id, tenantId, participantId, overrideDisplayName, mergedIntoParticipantId, updatedAt]
+      properties:
+        id: { type: integer }
+        tenantId: { type: integer }
+        participantId: { type: string }
+        overrideDisplayName: { type: string, nullable: true }
+        mergedIntoParticipantId: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time }
+
+    PlayerCurationBody:
+      type: object
+      properties:
+        overrideDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        mergedIntoParticipantId:
+          type: string
+          minLength: 1
+          nullable: true
+
+    CheckoutBody:
+      type: object
+      required: [plan]
+      properties:
+        plan:
+          type: string
+          enum: [club, pro]
+        successUrl: { type: string }
+        cancelUrl: { type: string }
+
+    CheckoutResult:
+      type: object
+      required: [url, disabled]
+      properties:
+        url: { type: string, nullable: true }
+        disabled: { type: boolean }
 
     SocialDraft:
       type: object

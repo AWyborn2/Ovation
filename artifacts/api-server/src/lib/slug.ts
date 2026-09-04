@@ -3,6 +3,8 @@
  * subdomain label (`<slug>.<platform-domain>`), so it must be a valid DNS label
  * and not collide with the platform's own hostnames or reserved words.
  */
+import { env } from "../config";
+
 
 const MIN = 2;
 const MAX = 40;
@@ -59,7 +61,7 @@ export function validateSlug(raw: string): SlugRejection | null {
 /** True when the slug is reserved (static list or an apex label in PLATFORM_HOSTS). */
 export function isReservedSlug(slug: string): boolean {
   if (RESERVED.has(slug)) return true;
-  const platformLabels = (process.env.PLATFORM_HOSTS ?? "")
+  const platformLabels = (env.PLATFORM_HOSTS() ?? "")
     .split(",")
     .map((h) => h.trim().toLowerCase().split(".")[0])
     .filter(Boolean);

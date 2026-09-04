@@ -1,6 +1,7 @@
 import { Router, type IRouter, type RequestHandler } from "express";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
+import { CreateBillingCheckoutBody } from "@workspace/api-zod";
 import {
   getBillingProvider,
   applyBillingEvent,
@@ -20,15 +21,12 @@ const router: IRouter = Router();
 // Start an upgrade checkout for the current tenant. Disabled (no-op) until billing
 // is enabled and a provider is configured.
 router.post("/billing/checkout", requireAdmin, async (req, res): Promise<void> => {
-  const body = (req.body ?? {}) as {
-    plan?: string;
-    successUrl?: string;
-    cancelUrl?: string;
-  };
-  if (body.plan !== "club" && body.plan !== "pro") {
+  const parsed = CreateBillingCheckoutBody.safeParse(req.body);
+  if (!parsed.success) {
     res.status(400).json({ error: "plan must be 'club' or 'pro'" });
     return;
   }
+  const body = parsed.data;
   const result = await getBillingProvider().createCheckoutSession({
     tenantId: getTenantId(req),
     plan: body.plan,

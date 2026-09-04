@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { platformBaseDomain } from "./tenant-url";
+import { env } from "../config";
 
 /** Halls Head is tenant #1 — the seed admin's tenant and the dev/default tenant. */
 const DEFAULT_TENANT_ID = 1;
@@ -26,7 +27,7 @@ const CAPTAIN_COOKIE_NAME = "ovation_captain_session";
 const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function getSessionSecret(): string {
-  const s = process.env["SESSION_SECRET"];
+  const s = env.SESSION_SECRET();
   if (!s) throw new Error("SESSION_SECRET is not configured");
   return s;
 }
@@ -105,7 +106,7 @@ export const SESSION_COOKIE = COOKIE_NAME;
 export const SESSION_COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env["NODE_ENV"] === "production",
+  secure: env.isProduction(),
   path: "/",
   maxAge: COOKIE_MAX_AGE_MS,
 };
@@ -187,7 +188,7 @@ export async function ensureSeedAdmin(): Promise<void> {
     .where(eq(adminsTable.tenantId, DEFAULT_TENANT_ID))
     .limit(1);
   if (existing.length > 0) return;
-  const seedPassword = process.env["ADMIN_PASSWORD"];
+  const seedPassword = env.ADMIN_PASSWORD();
   if (!seedPassword) {
     // Nothing we can do until the operator sets one.
     return;
@@ -270,8 +271,8 @@ export async function ensureSeedPlatformAdmin(): Promise<void> {
     .from(platformAdminsTable)
     .limit(1);
   if (existing.length > 0) return;
-  const email = process.env["PLATFORM_ADMIN_EMAIL"];
-  const password = process.env["PLATFORM_ADMIN_PASSWORD"];
+  const email = env.PLATFORM_ADMIN_EMAIL();
+  const password = env.PLATFORM_ADMIN_PASSWORD();
   if (!email || !password) return; // nothing to seed until the operator sets both
   const passwordHash = await hashPassword(password);
   await db.insert(platformAdminsTable).values({

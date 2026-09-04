@@ -14,6 +14,7 @@ import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin, ensureSeedPlatformAdmin } from "./lib/auth";
+import { env } from "./config";
 
 const app: Express = express();
 
@@ -34,8 +35,8 @@ function buildAllowedOrigins(): Set<string> {
       if (trimmed) origins.add(`https://${trimmed}`);
     }
   };
-  addHosts(process.env["REPLIT_DOMAINS"]);
-  addHosts(process.env["REPLIT_DEV_DOMAIN"]);
+  addHosts(env.REPLIT_DOMAINS());
+  addHosts(env.REPLIT_DEV_DOMAIN());
   return origins;
 }
 

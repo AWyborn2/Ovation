@@ -51,7 +51,7 @@ const stubProvider: BillingProvider = {
  * routes and the webhook already speak this interface).
  */
 export function getBillingProvider(): BillingProvider {
-  // if (billingEnabled() && process.env.STRIPE_SECRET_KEY) return stripeProvider;
+  // if (billingEnabled() && process.env.STRIPE_SECRET_KEY) return stripeProvider; // read via env.STRIPE_SECRET_KEY() from ../config
   return stubProvider;
 }
 

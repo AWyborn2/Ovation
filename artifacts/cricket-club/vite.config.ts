@@ -28,13 +28,10 @@ export default defineConfig(async ({ command }) => {
     }
   }
 
-  const basePath = process.env.BASE_PATH;
-
-  if (!basePath) {
-    throw new Error(
-      "BASE_PATH environment variable is required but was not provided.",
-    );
-  }
+  // Replit injects BASE_PATH for its artifact serving. Everywhere else (local
+  // `vite build`, CI) the site is served from the root, so default to "/"
+  // instead of failing the build.
+  const basePath = process.env.BASE_PATH || "/";
 
   return {
     base: basePath,

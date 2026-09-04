@@ -43,7 +43,6 @@ import {
   downloadBlob,
   cardBaseFilename,
   type CardSize,
-  type ShareCardInput,
   type PhotoTransform,
   type MotionPreset,
   type RenderOptions,
@@ -68,7 +67,7 @@ import { CardLayoutEditor } from "@/components/card-layout-editor";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import { Wand2 } from "lucide-react";
 import { PLATFORM_LIMITS } from "@/lib/captions";
-import { PLATFORMS, MOTION_OPTIONS, LENGTH_OPTIONS, SPEED_OPTIONS, type EngineKey, type Props } from "@/components/share-card-modal/constants";
+import { PLATFORMS, MOTION_OPTIONS, LENGTH_OPTIONS, SPEED_OPTIONS, type Props } from "@/components/share-card-modal/constants";
 import { AnimatedCardPreview } from "@/components/share-card-modal/animated-card-preview";
 import { usePhotoControls } from "@/components/share-card-modal/use-photo-controls";
 import { PhotoControls } from "@/components/share-card-modal/photo-controls";
@@ -1355,76 +1354,6 @@ export function ShareCardModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    </>
-  );
-}
-
-export function ShareButton({
-  input,
-  engine = "ondemand",
-  appPath,
-  trackedSlug,
-  playerId,
-  size = "sm",
-  variant = "outline",
-  label = "Share",
-  className,
-  iconOnly = false,
-}: {
-  input: ShareCardInput;
-  engine?: EngineKey;
-  appPath?: string;
-  trackedSlug?: string | null;
-  playerId?: number | null;
-  size?: "sm" | "default" | "icon";
-  variant?: "default" | "outline" | "ghost" | "secondary";
-  label?: string;
-  className?: string;
-  iconOnly?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const settingsQ = useGetSocialSettings({
-    query: { queryKey: getGetSocialSettingsQueryKey() },
-  });
-  const bundle = settingsQ.data as SocialSettingsBundle | undefined;
-  if (bundle) {
-    const s = bundle.settings;
-    const enabled =
-      engine === "ondemand"
-        ? s.engineOnDemand !== false
-        : engine === "milestone"
-          ? s.engineMilestone !== false
-          : engine === "roundup"
-            ? s.engineRoundUp !== false
-            : s.engineRecap !== false;
-    if (!enabled) return null;
-  }
-  return (
-    <>
-      <Button
-        type="button"
-        size={size}
-        variant={variant}
-        className={className}
-        aria-label={iconOnly ? label : undefined}
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          setOpen(true);
-        }}
-      >
-        <Download className={iconOnly ? "h-4 w-4" : "h-3.5 w-3.5 mr-1"} />
-        {iconOnly ? null : label}
-      </Button>
-      <ShareCardModal
-        open={open}
-        onOpenChange={setOpen}
-        input={input}
-        engine={engine}
-        appPath={appPath}
-        trackedSlug={trackedSlug ?? null}
-        playerId={playerId ?? null}
-      />
     </>
   );
 }

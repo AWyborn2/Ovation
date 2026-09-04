@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, NextFunction, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { db, tenantsTable } from "@workspace/db";
+import { env } from "../config";
 
 /**
  * Per-request tenant resolution for the white-label platform.
@@ -49,7 +50,7 @@ export class NoTenantContextError extends Error {
  */
 function platformHosts(): Set<string> {
   return new Set(
-    (process.env.PLATFORM_HOSTS ?? "")
+    (env.PLATFORM_HOSTS() ?? "")
       .split(",")
       .map((h) => h.trim().toLowerCase())
       .filter(Boolean),
@@ -77,7 +78,7 @@ function parseTenantId(raw: string | undefined): number | undefined {
  * (e.g. blocking it from being archived) must use this, not the raw constant.
  */
 export function effectiveDefaultTenantId(): number {
-  return parseTenantId(process.env.DEFAULT_TENANT_ID) ?? DEFAULT_TENANT_ID;
+  return parseTenantId(env.DEFAULT_TENANT_ID()) ?? DEFAULT_TENANT_ID;
 }
 
 /** Resolve the tenant id from the header → env → default (the non-host signals). */
@@ -142,7 +143,7 @@ async function tenantDirectory() {
  *    header, so it's safe to trust.
  */
 export function hostOf(req: Request): string {
-  const proxyKey = process.env.PROXY_SHARED_SECRET;
+  const proxyKey = env.PROXY_SHARED_SECRET();
   const ovationHost = req.headers["x-ovation-host"];
   const presentedKey = req.headers["x-ovation-proxy-key"];
   if (
@@ -157,7 +158,7 @@ export function hostOf(req: Request): string {
   // `X-Forwarded-Host` is client-controlled unless a trusted proxy rewrites
   // it. Replit's edge does; set TRUST_FORWARDED_HOST=0 on any deployment
   // where it does not, so a direct client cannot pick its tenant by header.
-  const trustForwardedHost = process.env.TRUST_FORWARDED_HOST !== "0";
+  const trustForwardedHost = env.trustForwardedHost();
   const xfh = trustForwardedHost ? req.headers["x-forwarded-host"] : undefined;
   const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
   const raw = forwarded || req.headers.host || "";
@@ -259,7 +260,7 @@ export function classifyNonTenantHost(req: Request): HostMode {
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
   const switcherAllowed =
     isPreviewHost(host) ||
-    (isPublishedReplitHost(host) && process.env.TENANT_HEADER_ON_PUBLISHED_HOST === "1");
+    (isPublishedReplitHost(host) && env.tenantHeaderOnPublishedHost());
   if (headerTenant !== undefined && switcherAllowed) {
     return { mode: "tenant", tenantId: headerTenant };
   }
@@ -272,7 +273,7 @@ export function classifyNonTenantHost(req: Request): HostMode {
   // DEFAULT_TENANT_ID env means the operator chose a single-tenant default for
   // any host. Everything else — an unknown PUBLIC host — is platform mode, NOT
   // the demo tenant: fail closed rather than leak tenant #1.
-  if (isLocalDevHost(host) || process.env.DEFAULT_TENANT_ID) {
+  if (isLocalDevHost(host) || env.DEFAULT_TENANT_ID()) {
     return { mode: "fallback" };
   }
   return { mode: "platform" };

@@ -13,7 +13,7 @@ import {
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
 import { GradeBadge } from "@/components/grade-badge";
 import { DigitalScorecard } from "@/components/scorecard/digital-scorecard";
-import { ShareCardModal } from "@/components/share-card-modal";
+import { LazyShareCardModal } from "@/components/share-card-modal-lazy";
 import { matchToSummaryInput } from "@/lib/match-summary";
 import { matchLabel } from "@/lib/utils";
 import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame, Share2 } from "lucide-react";
@@ -317,7 +317,7 @@ export default function MatchDetail() {
         </div>
       )}
 
-      <ShareCardModal
+      <LazyShareCardModal
         open={shareOpen}
         onOpenChange={setShareOpen}
         input={shareOpen ? matchToSummaryInput(match) : null}
@@ -344,7 +344,7 @@ function OpponentCrest({
   const src = club?.logoUrl128 || club?.logoUrl;
   if (!club || !src || errored) return null;
   return (
-    <img
+    <img loading="lazy" decoding="async"
       src={src}
       alt={`${club.name} logo`}
       title={club.name}

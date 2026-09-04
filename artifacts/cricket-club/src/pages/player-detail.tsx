@@ -19,7 +19,7 @@ import {
 } from "@/lib/honour-boards";
 import { downloadMilestoneCard } from "@/lib/milestone-share";
 import { useBrand } from "@/lib/brand-context";
-import { ShareButton } from "@/components/share-card-modal";
+import { ShareButton } from "@/components/share-button";
 import type { ShareCardInput } from "@/lib/share-card";
 import { TradingCardModal } from "@/components/trading-card";
 import { IdCard } from "lucide-react";
@@ -261,7 +261,7 @@ export default function PlayerDetail() {
             <div className="relative shrink-0">
               <div className="h-20 w-20 rounded-full overflow-hidden border-2 border-primary/40 bg-muted flex items-center justify-center">
                 {player.imageUrl ? (
-                  <img src={player.imageUrl} alt={`${player.givenName} ${player.surname}`} className="h-full w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={player.imageUrl} alt={`${player.givenName} ${player.surname}`} className="h-full w-full object-cover" />
                 ) : (
                   <ImageOff className="h-7 w-7 text-muted-foreground" />
                 )}

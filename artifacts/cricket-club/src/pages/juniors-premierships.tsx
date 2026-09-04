@@ -189,7 +189,7 @@ export default function JuniorsPremierships() {
     >
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
-          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
+          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
           <div className="text-center text-white">
             <div className="text-xs font-bold uppercase tracking-[0.3em] text-[#e7c9b1] mb-1">
               Juniors
@@ -207,7 +207,7 @@ export default function JuniorsPremierships() {
               JUNIOR PREMIERSHIPS
             </div>
           </div>
-          <img src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
+          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">
