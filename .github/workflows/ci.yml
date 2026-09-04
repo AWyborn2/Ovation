@@ -6,15 +6,20 @@ on:
     branches: [main]
   pull_request:
 
-# Cancel an in-progress run for a branch/PR when a newer commit is pushed.
+# The workflow only reads the repo; nothing here needs to write back.
+permissions:
+  contents: read
+
+# Cancel an in-progress run for a PR when a newer commit is pushed. Runs on
+# `main` are left to finish so a quick pair of merges never hides a red main.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # Pin the toolchain. Bump deliberately; keep in step with local dev.
+  # Node is pinned here (keep in step with .nvmrc); pnpm comes from the
+  # `packageManager` field in package.json via pnpm/action-setup.
   NODE_VERSION: "22"
-  PNPM_VERSION: "10"
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────
@@ -23,25 +28,77 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      - uses: ./.github/actions/setup
       - name: Typecheck
         run: pnpm run typecheck
+      - name: Generated API client is up to date
+        # OpenAPI-first: lib/api-client-react and lib/api-zod are generated from
+        # lib/api-spec/openapi.yaml. Regenerate and fail if the committed output
+        # differs, so a spec edit can never merge without its codegen.
+        run: |
+          pnpm --filter @workspace/api-spec run codegen
+          git diff --exit-code -- lib/api-client-react/src lib/api-zod/src
+      - name: Migrations match the Drizzle schema
+        # `generate` diffs the schema against the last snapshot and writes a new
+        # migration when they differ. Any new or changed file means a schema
+        # edit was committed without `pnpm --filter @workspace/db run generate`.
+        # No database is contacted; the URL only satisfies the config guard.
+        env:
+          DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+        run: |
+          pnpm --filter @workspace/db run generate
+          git diff --exit-code -- lib/db/migrations
+          test -z "$(git status --porcelain -- lib/db/migrations)"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Lint. Hermetic. ESLint flat config at the repo root.
+  # ───────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: ESLint
+        run: pnpm run lint
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Production build of everything that ships from CI (api-server bundle and
+  # the website). The mobile app's build is Replit-specific (needs a deployment
+  # domain) and is exercised there. Proves build.mjs, vite.config.ts and the
+  # generated client all bundle — previously only ever run on deploy.
+  # ───────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_PATH: /
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build libs
+        run: pnpm run typecheck:libs
+      - name: Build api-server and website
+        run: pnpm --filter @workspace/api-server --filter @workspace/cricket-club run build
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Library unit tests (lib/db, lib/scorecard, scripts). Hermetic — every
+  # database is mocked in these suites.
+  # ───────────────────────────────────────────────────────────────────────────
+  lib-tests:
+    name: Library unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run lib and scripts tests
+        run: pnpm run test:libs
 
   # ───────────────────────────────────────────────────────────────────────────
   # Website smoke tests (cricket-club). Hermetic — fetch is mocked, no backend
@@ -50,35 +107,25 @@ jobs:
   web-tests:
     name: Web smoke tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      - uses: ./.github/actions/setup
       - name: Run cricket-club smoke tests
         run: pnpm --filter @workspace/cricket-club test
 
   # ───────────────────────────────────────────────────────────────────────────
   # API server tests (api-server). These are REAL-DB integration tests: they
   # import the Express app and hit a live Postgres (tenant isolation, billing,
-  # platform-admin, consistency suites). So CI spins up Postgres, applies the
-  # Drizzle schema with `db push`, then runs vitest against it.
+  # platform-admin, provisioning, consistency suites). CI spins up Postgres,
+  # applies the migrations in lib/db/migrations, seeds tenant #1, gives the same
+  # database an empty `central` schema plus a small deterministic fixture, and
+  # runs vitest against it. No live central-DB secret is needed or used.
   # ───────────────────────────────────────────────────────────────────────────
   api-tests:
     name: API integration tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -99,39 +146,47 @@ jobs:
     env:
       # Local service Postgres — never a real/shared database.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
+      # The central schema lives in the SAME local database in CI (see the
+      # push-central / fixture steps below). The real central DB is never
+      # reachable from CI.
+      CENTRAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
       # Deterministic secret so session-cookie signing is stable across the run.
       SESSION_SECRET: ci-session-secret-not-for-production
-      # Read-only central PCA database (Supabase). Stored as a GitHub Actions secret.
-      # Several tenant/platform suites import a module that connects on load.
-      CENTRAL_DATABASE_URL: ${{ secrets.CENTRAL_DATABASE_URL }}
-      # Skip data-dependent api tests that need the club's full stats data (not in a fresh CI DB).
+      # Skip suites that need the demo club's FULL curated history (not in a
+      # fresh CI DB). Provisioning suites are no longer skipped: the central
+      # fixture satisfies them.
       CI_SKIP_DATA_TESTS: "true"
 
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
+      - name: Apply database migrations
+        # The same command post-merge runs on Replit (scripts/post-merge.sh):
+        # lib/db/migrations applied by src/migrate.ts. A fresh database runs
+        # 0000 for real; the reconcile migration is then a no-op.
+        run: pnpm --filter @workspace/db run migrate
 
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+      - name: Verify constraints and indexes
+        # Read-only assertion that every constraint/index the migrations own
+        # exists, so a migration that silently drops one fails CI.
+        run: pnpm --filter @workspace/scripts run ensure-constraints
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Apply database schema
-        # Non-interactive: --force skips the drizzle-kit confirmation prompt.
-        run: pnpm --filter @workspace/db run push-force
+      - name: Re-run migrations (idempotency)
+        run: pnpm --filter @workspace/db run migrate
 
       - name: Seed tenant #1 (fresh-DB only)
-        # A CI database built fresh from `db push` is empty; the integration
+        # A CI database built fresh from the migrations is empty; the integration
         # tests assume the demo tenant (Halls Head, id 1) exists. Idempotent.
         run: pnpm --filter @workspace/api-server run seed:ci
+
+      - name: Create the central schema (CI fixture)
+        # Empty `central.*` tables matching lib/db/src/central-schema. Refuses
+        # to run against a non-local host.
+        run: pnpm --filter @workspace/db run push-central
+
+      - name: Seed the central fixture
+        run: pnpm --filter @workspace/api-server run seed:ci-central
 
       - name: Run api-server tests
         run: pnpm --filter @workspace/api-server test

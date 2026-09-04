@@ -122,6 +122,23 @@ export const juniorMergeRateLimiter = rateLimit({
   },
 });
 
+/**
+ * Throttle the one unauthenticated write on the public surface: minting a
+ * tracked short link when a visitor shares a page. Each call inserts a row, so
+ * without a limit one client could fill `tracked_links` for any tenant.
+ * Keyed by IP (there is no session). Generous enough for a real share flow,
+ * which mints one link per share.
+ */
+export const publicWriteRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please wait a few minutes and try again.",
+  },
+});
+
 export const adminWriteRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   limit: 30,

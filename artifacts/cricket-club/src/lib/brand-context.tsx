@@ -93,6 +93,16 @@ export function useBrand(): ClubBrand {
 }
 
 /**
+ * The club's short display name for compact labels ("HHCC batted first"),
+ * falling back to the full name when the tenant has not set one. Use this
+ * anywhere a form label or heading names the club — never a literal.
+ */
+export function useClubShortName(): string {
+  const brand = useBrand();
+  return brand.shortName?.trim() || brand.name;
+}
+
+/**
  * Apply the tenant brand to the runtime theme for the given light/dark mode:
  * every structural + accent CSS custom property comes from
  * {@link deriveThemeTokens} (Phase 5), plus the juniors banner accent (the

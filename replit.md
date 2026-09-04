@@ -9,7 +9,7 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run generate` — write a migration for a schema change (commit it); `run migrate` applies `lib/db/migrations` (CI + post-merge). `run push` is for local experiments only
 - Required env: `DATABASE_URL` — Postgres connection string (tenant app DB)
 - `CENTRAL_DATABASE_URL` — read-only Postgres connection string for the central PCA database (schema `central`); used by `lib/db/src/central.ts`. Separate from `DATABASE_URL`; never written to by the app.
 
@@ -28,7 +28,7 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - `artifacts/cricket-club/src/` — React frontend (pages, components, hooks)
 - `lib/api-client-react/src/generated/` — generated React Query hooks (do not hand-edit)
 - `lib/api-zod/src/generated/` — generated Zod schemas for server validation (do not hand-edit)
-- `scripts/src/seed.ts` — DB seed script (run via executeSql, not pnpm directly)
+- `scripts/src/` — maintenance and seed scripts (see `scripts/README.md`); single-tenant relics live in `scripts/legacy/` and must not be run against the shared DB
 - `attached_assets/Halls Head Cricket Club Stats and Honours.xlsx` — original data source
 
 ## Data model
@@ -38,7 +38,7 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - **players** — one row per player; career aggregates derived from player_grade_stats.
 - **grade_summaries** — derived from player_grade_stats (one row per grade).
 - **imports** — audit row per upload (filename, grade, season, round, kind, row_count, status). `kind` is `'csv'` (whole-season) or `'match'` (per-match). Snapshot rows reference it via `import_id` and cascade-delete with it.
-- **matches** — permanent per-match history, one row per (grade, season, round). `hhcc_batted_first` (nullable bool; true/null = HH batted first) drives true innings order. `source_key` carries the master DB's match identity for bulk-loaded matches (uploads leave NULL); `opponent_club_id` → `clubs(id)` for branded scorecards. Two partial uniques live in `ensure-constraints.ts`, NOT the Drizzle schema: `(grade,season,round,stage)` WHERE `source_key IS NULL` and `source_key` WHERE NOT NULL.
+- **matches** — permanent per-match history, one row per (grade, season, round). `hhcc_batted_first` (nullable bool; true/null = HH batted first) drives true innings order. `source_key` carries the master DB's match identity for bulk-loaded matches (uploads leave NULL); `opponent_club_id` → `clubs(id)` for branded scorecards. Two partial uniques: `matches_source_key_uidx` (`source_key` WHERE NOT NULL, in the Drizzle schema) and `matches_identity_manual_uidx` (`(grade,season,round,stage)` NULLS NOT DISTINCT WHERE `source_key IS NULL`, hand-written in `lib/db/migrations/0001_reconcile_pushed_databases.sql` because Drizzle's index builder cannot express NULLS NOT DISTINCT with a WHERE clause).
 - **match_player_lines** — one row per player per match: per-innings batting/bowling/fielding. Cascades from `matches`.
 - **match_opposition_lines** — display-only opposition innings (plain-text `name`, NO player FK). Captured at import; NEVER contributes to any club stat/record/leaderboard/milestone; rendered as a second innings. Abandoned matches store none. Cascades from `matches`.
 
@@ -95,8 +95,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 - Re-run `pnpm --filter @workspace/api-spec run codegen` after any OpenAPI spec change.
 - Don't add query params to `getGradeLeaderboard` — Orval naming collision.
 - The spreadsheet's "CLUB TOTAL" summary row must be filtered out during seeding (null given_name).
-- Seeding via `pnpm --filter @workspace/scripts run seed` fails (drizzle-orm not at runtime); use executeSql or add drizzle-orm to scripts deps.
-- **Don't re-add the `cap_register` composite unique to the Drizzle schema.** drizzle-kit 0.31 can't detect the existing `(category, cap_number)` unique, re-proposes it every `push`, and the truncate prompt has no TTY in post-merge → silent migration failure. It's left out on purpose and re-created idempotently by `scripts/src/ensure-constraints.ts` (run from `post-merge.sh` after `db push`). Add any future un-manageable constraint there, not the schema.
+- Seed scripts require `--tenant=<id>` and refuse a non-local `DATABASE_URL` without `--yes` (see `scripts/src/lib/cli.ts`). The old tenant-blind `seed.ts` was removed.
+- **Schema changes ship as migrations, not `push`.** Composite / NULLS NOT DISTINCT / partial uniques, CHECKs and indexes now live in the Drizzle schema and in `lib/db/migrations` (`pnpm --filter @workspace/db run generate` after editing `lib/db/src/schema`, commit the new file; `run migrate` applies it — post-merge and CI do this). `drizzle-kit push` still cannot see those constraints and will re-propose them, which is why `push` is no longer part of any pipeline. `scripts/src/ensure-constraints.ts` is now a read-only verifier (CI fails if a migration drops one of the listed constraints); `--apply` keeps the old idempotent creation for emergencies.
 - **One ingestion method per (grade, season).** Match commit re-derives the season snapshot by DELETE+INSERT of `player_grade_season_stats` rows with `import_id IS NULL`; a whole-season CSV writes the same kind of rows. Mixing both for the SAME grade+season lets one clobber the other. Different grades/seasons are independent.
 - **Master `career_stats` is hand-kept and gappy; match scorecards are the authoritative match-era record.** When bulk-loading match history, we chose **Option A (user-approved): let match history fill the gaps — career/season totals rise** rather than capping at stale master figures (~1,555 extra appearances are HHCC players' own missing games, NOT opposition). The ETL peels each match-era (grade,season) out of the `season=NULL` baseline with a floor (careers never go negative), recording `baseline_adjustments` for reversal.
 - **Fill-ins (player_id ≥ 90000)** live in `match_player_lines` for scorecard history but must be EXCLUDED from every derivation (no real player record). The ETL and `milestones.ts` already filter `playerId < 90000`; any new query iterating `match_player_lines` for stats/records must do the same.

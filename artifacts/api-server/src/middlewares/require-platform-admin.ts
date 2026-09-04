@@ -4,6 +4,7 @@ import {
   PLATFORM_SESSION_COOKIE,
   decodePlatformSession,
   getPlatformAdminById,
+  sessionIsCurrent,
 } from "../lib/auth";
 
 export type RequestWithPlatformAdmin = Request & { platformAdmin?: PlatformAdminRow };
@@ -19,7 +20,9 @@ export async function resolvePlatformAdmin(req: Request): Promise<PlatformAdminR
   const token = cookies?.[PLATFORM_SESSION_COOKIE];
   const payload = decodePlatformSession(token);
   if (!payload) return null;
-  return (await getPlatformAdminById(payload.platformAdminId)) ?? null;
+  const admin = await getPlatformAdminById(payload.platformAdminId);
+  if (!admin || !sessionIsCurrent(payload, admin)) return null;
+  return admin;
 }
 
 export const requirePlatformAdmin: RequestHandler = (

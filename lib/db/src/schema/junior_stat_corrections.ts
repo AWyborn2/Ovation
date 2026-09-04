@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  text,
-  jsonb,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, jsonb, timestamp, index } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -50,18 +42,12 @@ export const juniorStatCorrectionsTable = pgTable(
     participantId: text("participant_id"),
     note: text("note"),
     createdBy: text("created_by"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     idxTenant: index("junior_stat_corrections_tenant_idx").on(t.tenantId),
-    idxTarget: index("junior_stat_corrections_target_idx").on(
-      t.targetTable,
-      t.targetId,
-    ),
+    idxTarget: index("junior_stat_corrections_target_idx").on(t.targetTable, t.targetId),
   }),
 );
 
-export type JuniorStatCorrectionRow =
-  typeof juniorStatCorrectionsTable.$inferSelect;
+export type JuniorStatCorrectionRow = typeof juniorStatCorrectionsTable.$inferSelect;

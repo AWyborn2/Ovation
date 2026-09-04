@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  text,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, uniqueIndex } from "drizzle-orm/pg-core";
 import { tenantsTable } from "./tenants";
 
 /**
@@ -38,10 +32,7 @@ export const playerIdMapTable = pgTable(
       t.tenantId,
       t.participantId,
     ),
-    uniqTenantPlayer: uniqueIndex("player_id_map_tenant_player_uq").on(
-      t.tenantId,
-      t.playerId,
-    ),
+    uniqTenantPlayer: uniqueIndex("player_id_map_tenant_player_uq").on(t.tenantId, t.playerId),
   }),
 );
 

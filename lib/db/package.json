@@ -11,18 +11,25 @@
     "./provision": "./src/provision.ts"
   },
   "scripts": {
+    "generate": "drizzle-kit generate --config ./drizzle.config.ts",
+    "generate:custom": "drizzle-kit generate --custom --config ./drizzle.config.ts",
+    "migrate": "tsx ./src/migrate.ts",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
+    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
+    "push-central": "drizzle-kit push --force --config ./drizzle.central.config.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
-    "drizzle-zod": "^0.8.3",
-    "pg": "^8.20.0",
+    "drizzle-zod": "catalog:",
+    "pg": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@types/pg": "^8.20.0",
-    "drizzle-kit": "^0.31.10"
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
+    "tsx": "^4.21.0",
+    "vitest": "^4.1.7"
   }
 }

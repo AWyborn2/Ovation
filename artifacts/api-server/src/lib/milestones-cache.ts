@@ -15,11 +15,13 @@
  *  - Single-flight. The build runs five unbounded queries; without in-flight
  *    sharing, N concurrent cold requests each pay for all five.
  */
+import { env } from "../config";
+
 
 const DEFAULT_TTL_MS = 60_000;
 
 function ttlMs(): number {
-  const raw = process.env.MILESTONES_CACHE_TTL_MS;
+  const raw = env.MILESTONES_CACHE_TTL_MS();
   if (raw !== undefined && raw !== "") {
     const n = Number(raw);
     if (Number.isFinite(n) && n >= 0) return n;

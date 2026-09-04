@@ -1,9 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Feather } from "@expo/vector-icons";
+import { type Feather } from "@expo/vector-icons";
 
-// First-launch welcome is remembered on the device. Bumping the suffix would
-// re-show the welcome to everyone (e.g. after a major feature change).
-const WELCOME_SEEN_KEY = "hhcc.welcome.seen.v1";
+// First-launch welcome is remembered on the device. Bumping the version suffix
+// would re-show the welcome to everyone (e.g. after a major feature change).
+//
+// The key is namespaced by tenant — the build's slug, else the API host it
+// talks to — so two tenant builds installed on one device (or one Expo Go
+// pointed at different tenants) never share onboarding state.
+const TENANT_SCOPE = (
+  process.env.EXPO_PUBLIC_TENANT_SLUG ||
+  process.env.EXPO_PUBLIC_DOMAIN ||
+  "default"
+).toLowerCase();
+const WELCOME_SEEN_KEY = `ovation.welcome.seen.v1.${TENANT_SCOPE}`;
 
 export async function hasSeenWelcome(): Promise<boolean> {
   try {

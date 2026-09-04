@@ -48,6 +48,44 @@ export interface HealthStatus {
   status: string;
 }
 
+export type ReadinessStatusStatus = typeof ReadinessStatusStatus[keyof typeof ReadinessStatusStatus];
+
+
+export const ReadinessStatusStatus = {
+  ok: 'ok',
+  degraded: 'degraded',
+} as const;
+
+/**
+ * Tenant database probe
+ */
+export type ReadinessStatusDb = typeof ReadinessStatusDb[keyof typeof ReadinessStatusDb];
+
+
+export const ReadinessStatusDb = {
+  ok: 'ok',
+  error: 'error',
+} as const;
+
+/**
+ * Central (read-only) database probe
+ */
+export type ReadinessStatusCentral = typeof ReadinessStatusCentral[keyof typeof ReadinessStatusCentral];
+
+
+export const ReadinessStatusCentral = {
+  ok: 'ok',
+  error: 'error',
+} as const;
+
+export interface ReadinessStatus {
+  status: ReadinessStatusStatus;
+  /** Tenant database probe */
+  db: ReadinessStatusDb;
+  /** Central (read-only) database probe */
+  central: ReadinessStatusCentral;
+}
+
 export interface Player {
   id: number;
   surname: string;
@@ -4363,6 +4401,65 @@ export interface SocialSettingsBundle {
   activeSponsors: Sponsor[];
   /** Halls Head's official branding (logo + colours) from the clubs register — the default theme/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults. */
   brand?: HallsHeadBrand | null;
+}
+
+export interface CreateTrackedLinkBody {
+  /**
+     * In-app path, e.g. /players/12
+     * @minLength 1
+     * @maxLength 512
+     */
+  targetUrl: string;
+  /** @maxLength 64 */
+  engine?: string;
+  /** @maxLength 64 */
+  platform?: string;
+  /** @maxLength 200 */
+  label?: string;
+}
+
+export interface RecapInput {
+  /** @minLength 1 */
+  grade: string;
+  season: number;
+}
+
+export interface PlayerCuration {
+  id: number;
+  tenantId: number;
+  participantId: string;
+  overrideDisplayName: string | null;
+  mergedIntoParticipantId: string | null;
+  updatedAt: string;
+}
+
+export interface PlayerCurationBody {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  overrideDisplayName?: string | null;
+  /** @minLength 1 */
+  mergedIntoParticipantId?: string | null;
+}
+
+export type CheckoutBodyPlan = typeof CheckoutBodyPlan[keyof typeof CheckoutBodyPlan];
+
+
+export const CheckoutBodyPlan = {
+  club: 'club',
+  pro: 'pro',
+} as const;
+
+export interface CheckoutBody {
+  plan: CheckoutBodyPlan;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+export interface CheckoutResult {
+  url: string | null;
+  disabled: boolean;
 }
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];

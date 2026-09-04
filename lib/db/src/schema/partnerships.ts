@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, index } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -7,28 +7,40 @@ import { tenantIdColumn } from "./_tenant";
  * per grade, plus the full 50+ list), not a per-match panel. `grade` is the
  * app's flat grade name; `season` is the display label (YYYY/YY).
  */
-export const partnershipRecordsTable = pgTable("partnership_records", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  grade: text("grade").notNull(),
-  wicket: text("wicket").notNull(),
-  runs: integer("runs").notNull(),
-  batsmen: text("batsmen").notNull(),
-  opposition: text("opposition"),
-  season: text("season"),
-});
+export const partnershipRecordsTable = pgTable(
+  "partnership_records",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    grade: text("grade").notNull(),
+    wicket: text("wicket").notNull(),
+    runs: integer("runs").notNull(),
+    batsmen: text("batsmen").notNull(),
+    opposition: text("opposition"),
+    season: text("season"),
+  },
+  (t) => ({
+    idxTenant: index("partnership_records_tenant_idx").on(t.tenantId),
+  }),
+);
 
-export const partnerships50PlusTable = pgTable("partnerships_50plus", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  grade: text("grade").notNull(),
-  wicket: text("wicket").notNull(),
-  runs: integer("runs").notNull(),
-  batsmen: text("batsmen").notNull(),
-  opposition: text("opposition"),
-  season: text("season"),
-  source: text("source"),
-});
+export const partnerships50PlusTable = pgTable(
+  "partnerships_50plus",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    grade: text("grade").notNull(),
+    wicket: text("wicket").notNull(),
+    runs: integer("runs").notNull(),
+    batsmen: text("batsmen").notNull(),
+    opposition: text("opposition"),
+    season: text("season"),
+    source: text("source"),
+  },
+  (t) => ({
+    idxTenant: index("partnerships_50plus_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type PartnershipRecordRow = typeof partnershipRecordsTable.$inferSelect;
 export type Partnership50PlusRow = typeof partnerships50PlusTable.$inferSelect;

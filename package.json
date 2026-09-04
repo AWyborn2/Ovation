@@ -4,27 +4,30 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm run typecheck:release && pnpm -r --filter \"!@workspace/mockup-sandbox\" --if-present run build",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "typecheck:release": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --filter \"!@workspace/mockup-sandbox\" --if-present run typecheck"
-  },
-  "//scripts": {
-    "typecheck": "Full sweep, including the mockup-sandbox scratch workspace. This is what CI runs — sandbox breakage should still be visible.",
-    "typecheck:release": "Shippable projects only. Used by `build` so a scratch workspace can never block a production deploy.",
-    "build": "Builds everything that ships. mockup-sandbox is private, deploys nowhere, and is not referenced by .replit."
+    "test": "pnpm -r --if-present run test",
+    "test:libs": "pnpm --filter @workspace/db --filter @workspace/scorecard --filter @workspace/scripts run test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "private": true,
-  "pnpm": {
-    "overrides": {
-      "@types/react": "19.2.14"
-    }
-  },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.4.0",
     "prettier": "^3.8.3",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "eslint-plugin-unused-imports": "^4.2.0"
   },
-  "dependencies": {
-    "xlsx": "^0.18.5"
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
   }
 }

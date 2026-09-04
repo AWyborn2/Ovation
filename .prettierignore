@@ -1,0 +1,9 @@
+**/generated/**
+**/dist/**
+**/node_modules/**
+pnpm-lock.yaml
+attached_assets/
+docs/product-review/
+.design-sync/
+.agents/
+lib/api-spec/openapi.yaml

@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Award, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
 import { GradeBadge, GradeBadgeList, sortGradesBySeniority } from "@/components/grade-badge";
-import { ShareButton } from "@/components/share-card-modal";
+import { ShareButton } from "@/components/share-button";
 import type { ShareCardInput } from "@/lib/share-card";
 import { CardGridSkeleton, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 

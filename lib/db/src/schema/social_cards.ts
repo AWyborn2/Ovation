@@ -8,6 +8,8 @@ import {
   date,
   jsonb,
   uniqueIndex,
+  check,
+  index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
@@ -48,24 +50,30 @@ export type SponsorRow = typeof sponsorsTable.$inferSelect;
 
 // Named, selectable card themes (colors + optional background image + optional logo).
 // Admins pick a theme per social card; one row is flagged isDefault.
-export const cardThemesTable = pgTable("card_themes", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull(),
-  bgDark: text("bg_dark").notNull().default("#322F3D"),
-  bgPanel: text("bg_panel").notNull().default("#3F3C4C"),
-  accent: text("accent").notNull().default("#FBD039"),
-  textLight: text("text_light").notNull().default("#F5F2E8"),
-  // Curated display-font key driving the pack renderer's `--disp` token
-  // (anton | bebas | oswald | teko | archivo). Nullable — null resolves to the
-  // default "anton" family in `pack-render.ts` (see KTD6).
-  displayFont: text("display_font"),
-  backgroundImageUrl: text("background_image_url"),
-  logoUrl: text("logo_url"),
-  isDefault: boolean("is_default").notNull().default(false),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const cardThemesTable = pgTable(
+  "card_themes",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull(),
+    bgDark: text("bg_dark").notNull().default("#322F3D"),
+    bgPanel: text("bg_panel").notNull().default("#3F3C4C"),
+    accent: text("accent").notNull().default("#FBD039"),
+    textLight: text("text_light").notNull().default("#F5F2E8"),
+    // Curated display-font key driving the pack renderer's `--disp` token
+    // (anton | bebas | oswald | teko | archivo). Nullable — null resolves to the
+    // default "anton" family in `pack-render.ts` (see KTD6).
+    displayFont: text("display_font"),
+    backgroundImageUrl: text("background_image_url"),
+    logoUrl: text("logo_url"),
+    isDefault: boolean("is_default").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxTenant: index("card_themes_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type CardThemeRow = typeof cardThemesTable.$inferSelect;
 
@@ -75,18 +83,24 @@ export type CardThemeRow = typeof cardThemesTable.$inferSelect;
 // library track or an admin upload. `durationMs` is the source track length when
 // known (purely informational for the trim UI); the clip itself only ever uses a
 // `durationMs`-long window starting at the admin-chosen trim offset.
-export const cardAudioTracksTable = pgTable("card_audio_tracks", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull(),
-  url: text("url").notNull(),
-  durationMs: integer("duration_ms"),
-  // Marks the small built-in royalty-free library so it can be visually
-  // distinguished from admin uploads (and protected from accidental deletion).
-  isCurated: boolean("is_curated").notNull().default(false),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const cardAudioTracksTable = pgTable(
+  "card_audio_tracks",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    durationMs: integer("duration_ms"),
+    // Marks the small built-in royalty-free library so it can be visually
+    // distinguished from admin uploads (and protected from accidental deletion).
+    isCurated: boolean("is_curated").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxTenant: index("card_audio_tracks_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type CardAudioTrackRow = typeof cardAudioTracksTable.$inferSelect;
 
@@ -254,16 +268,22 @@ export type CardLayoutRow = typeof cardLayoutsTable.$inferSelect;
 // on a layer's `effects`). Admins save the current layer's effects as a preset
 // and apply it to any layer in one click. A handful of curated built-in presets
 // ship in the client; these rows are the admin-created additions.
-export const cardEffectPresetsTable = pgTable("card_effect_presets", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  name: text("name").notNull(),
-  // A LayerEffects object (CardLayerEffects in the OpenAPI spec). Opaque jsonb
-  // here so new effect fields need no schema change.
-  effects: jsonb("effects").$type<Record<string, unknown>>().notNull().default({}),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const cardEffectPresetsTable = pgTable(
+  "card_effect_presets",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    name: text("name").notNull(),
+    // A LayerEffects object (CardLayerEffects in the OpenAPI spec). Opaque jsonb
+    // here so new effect fields need no schema change.
+    effects: jsonb("effects").$type<Record<string, unknown>>().notNull().default({}),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxTenant: index("card_effect_presets_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type CardEffectPresetRow = typeof cardEffectPresetsTable.$inferSelect;
 
@@ -362,7 +382,10 @@ export const socialSettingsTable = pgTable(
     engineRoundUp: boolean("engine_round_up").notNull().default(false),
     engineRecap: boolean("engine_recap").notNull().default(false),
     engineMatchSummary: boolean("engine_match_summary").notNull().default(true), // deliberately defaults ON (convention break — see plan)
-    matchSummaryGradeConfig: jsonb("match_summary_grade_config").$type<Record<string, { enabled: boolean }>>().notNull().default({}),
+    matchSummaryGradeConfig: jsonb("match_summary_grade_config")
+      .$type<Record<string, { enabled: boolean }>>()
+      .notNull()
+      .default({}),
     // Gates POST /card-sets/autoseed — auto-assembling a round's APPROVED
     // match-summary drafts into a carousel card_sets row. Default OFF: dormant
     // like the other social-automation toggles until a tenant opts in.
@@ -410,7 +433,10 @@ export const milestoneBoardSettingsTable = pgTable(
     // baseline tier; bigger values rank higher. Defaults keep 100 games / 1000
     // runs / 100 wickets as the baseline lowest tier.
     gamesTiers: integer("games_tiers").array().notNull().default([100, 150, 200, 250, 300]),
-    runsTiers: integer("runs_tiers").array().notNull().default([1000, 2000, 3000, 5000, 7500, 10000]),
+    runsTiers: integer("runs_tiers")
+      .array()
+      .notNull()
+      .default([1000, 2000, 3000, 5000, 7500, 10000]),
     wicketsTiers: integer("wickets_tiers").array().notNull().default([100, 150, 200, 300]),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -445,22 +471,28 @@ export type CaptionTemplateRow = typeof captionTemplatesTable.$inferSelect;
 
 // Milestone events emitted by the detector (scaffolded for follow-up work).
 // Other features (e.g. push notifications) will subscribe to this table.
-export const milestoneEventsTable = pgTable("milestone_events", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  playerId: integer("player_id").notNull(),
-  boardKey: text("board_key").notNull(),
-  tierIndex: integer("tier_index").notNull(),
-  tierLabel: text("tier_label").notNull(),
-  value: integer("value").notNull(),
-  threshold: integer("threshold").notNull(),
-  source: text("source").notNull(), // "import" | "manual"
-  sourceImportId: integer("source_import_id"),
-  payload: jsonb("payload"),
-  detectedAt: timestamp("detected_at", { withTimezone: true }).notNull().defaultNow(),
-  dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
-  postedAt: timestamp("posted_at", { withTimezone: true }),
-});
+export const milestoneEventsTable = pgTable(
+  "milestone_events",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    playerId: integer("player_id").notNull(),
+    boardKey: text("board_key").notNull(),
+    tierIndex: integer("tier_index").notNull(),
+    tierLabel: text("tier_label").notNull(),
+    value: integer("value").notNull(),
+    threshold: integer("threshold").notNull(),
+    source: text("source").notNull(), // "import" | "manual"
+    sourceImportId: integer("source_import_id"),
+    payload: jsonb("payload"),
+    detectedAt: timestamp("detected_at", { withTimezone: true }).notNull().defaultNow(),
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+  },
+  (t) => ({
+    idxTenant: index("milestone_events_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type MilestoneEventRow = typeof milestoneEventsTable.$inferSelect;
 
@@ -491,6 +523,10 @@ export const socialDraftsTable = pgTable(
     matchDedupe: uniqueIndex("social_drafts_match_dedupe")
       .on(t.tenantId, t.sourceKind, t.sourceMatchId, t.sourceMatchIsJunior)
       .where(sql`source_kind = 'matchSummary' AND status != 'dismissed'`),
+    chkStatus: check(
+      "social_drafts_status_check",
+      sql`"status" IN ('pending', 'approved', 'dismissed', 'posted')`,
+    ),
   }),
 );
 

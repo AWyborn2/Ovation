@@ -26,9 +26,7 @@ export const tradingCardSettingsTable = pgTable(
     // Award keys (awards.key) eligible to appear; each player's card shows the
     // ones that player has actually won. Empty = all published awards eligible.
     awardKeys: text("award_keys").array().notNull().default([]),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqTenant: uniqueIndex("trading_card_settings_tenant_unique").on(t.tenantId),

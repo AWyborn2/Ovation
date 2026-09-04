@@ -71,3 +71,15 @@ ds-bundle/
 .impeccable/config.local.json
 artifacts/*/.impeccable/hook.cache.json
 artifacts/*/.impeccable/config.local.json
+
+# Database dumps and archives never belong in git (they carry participant data
+# and weigh hundreds of MB). Keep them in object storage; see scripts/README.md.
+attached_assets/*.sql
+attached_assets/*.db
+attached_assets/*.zip
+# Local environment files
+.env
+.env.*
+!.env.example
+# Mobile static build output
+artifacts/cricket-mobile/static-build/

@@ -21,9 +21,8 @@ import {
   styles,
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 
-const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
 const fmtDate = (d: string | null | undefined) => {
   if (!d) return null;
@@ -153,6 +152,7 @@ export default function DashboardScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useGetSeniorOverview();
   const { data: dashboard } = useGetDashboard();
   const colors = useColors();
+  const brand = useBrand();
   const [gradeFilter, setGradeFilter] = useState<string>("");
   const [season, setSeason] = useState<SeasonChoice>("latest");
 
@@ -203,7 +203,8 @@ export default function DashboardScreen() {
     >
       <View>
         <Body muted size={11} style={{ letterSpacing: 2, textTransform: "uppercase" }}>
-          {BRAND.name} · Est. {BRAND.foundedYear}
+          {brand.name}
+          {brand.tagline ? ` · ${brand.tagline}` : ""}
         </Body>
         <Heading size="xl" style={{ marginTop: 4 }}>Club Totals</Heading>
       </View>

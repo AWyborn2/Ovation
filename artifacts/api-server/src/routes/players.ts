@@ -34,7 +34,7 @@ import {
 import { playerIdMapTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
-import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import {
   splitCentralName,
@@ -67,11 +67,12 @@ router.get("/players", async (req, res): Promise<void> => {
   // PCA DB filtered to their club, with central GUIDs translated to this tenant's
   // int ids via player_id_map (so /players/:id links stay int-based). Native
   // tenants fall through to the unchanged tenant query below.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralPlayerCareers } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [careers, mapRows] = await Promise.all([
-      centralPlayerCareers(await getRequestCentralClubId(req)),
+      centralPlayerCareers(source.clubId),
       db
         .select({
           participantId: playerIdMapTable.participantId,
@@ -244,7 +245,8 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   // Per-tenant data source: central tenants resolve the int id → GUID via
   // player_id_map, then read that player's central per-grade career. Curated bits
   // (premierships/awards) aren't central, so they come back empty.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralPlayerDetail } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [mapRow] = await db
@@ -261,7 +263,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       return;
     }
     const detail = await centralPlayerDetail(
-      await getRequestCentralClubId(req),
+      source.clubId,
       mapRow.participantId,
     );
     if (!detail || detail.isPrivate) {
@@ -388,7 +390,8 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
     return;
   }
 
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralPlayerSeasons } = await import("@workspace/db/central-queries");
     const participantId = await centralParticipantFor(req, params.data.id);
     if (!participantId) {
@@ -396,7 +399,7 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
       return;
     }
     res.json(
-      await centralPlayerSeasons(await getRequestCentralClubId(req), participantId),
+      await centralPlayerSeasons(source.clubId, participantId),
     );
     return;
   }
@@ -470,7 +473,8 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
     return;
   }
 
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralPlayerMatchLog } = await import("@workspace/db/central-queries");
     const participantId = await centralParticipantFor(req, params.data.id);
     if (!participantId) {
@@ -478,7 +482,7 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
       return;
     }
     res.json(
-      await centralPlayerMatchLog(await getRequestCentralClubId(req), participantId),
+      await centralPlayerMatchLog(source.clubId, participantId),
     );
     return;
   }

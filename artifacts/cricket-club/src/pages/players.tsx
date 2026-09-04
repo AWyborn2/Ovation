@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useListPlayers, useCreatePlayer, getListPlayersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -112,7 +111,6 @@ export default function Players() {
           </table>
         </div>
       )}
-      
       <div className="flex justify-between items-center">
         <Button disabled={page === 1} onClick={() => setPage(p => p - 1)} variant="outline">Previous</Button>
         <span className="text-sm text-muted-foreground">Page {page}</span>

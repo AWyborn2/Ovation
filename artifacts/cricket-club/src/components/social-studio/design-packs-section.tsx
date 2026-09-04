@@ -28,7 +28,7 @@ export function DesignPacksSection({
   previewData: PackCardData | null;
   theme: ApiCardTheme | null;
 }) {
-  const { availablePacks, bulkPackId, busy, kindsUsing, usePackEverywhere } =
+  const { availablePacks, bulkPackId, busy, kindsUsing, applyPackEverywhere } =
     selection;
 
   if (availablePacks.length === 0) return null;
@@ -65,7 +65,7 @@ export function DesignPacksSection({
                 className="h-7 w-full text-xs"
                 aria-label={`Use ${pack.name} for all card types`}
                 disabled={busy}
-                onClick={() => usePackEverywhere(pack.packId)}
+                onClick={() => applyPackEverywhere(pack.packId)}
               >
                 {bulkPackId === pack.packId && (
                   <Loader2 className="mr-1 h-3 w-3 animate-spin" />

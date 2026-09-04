@@ -13,6 +13,7 @@
  */
 import { db, cardAudioTracksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { confirmDatabaseTarget } from "./lib/cli";
 
 type CuratedTrack = {
   name: string;
@@ -43,6 +44,9 @@ const CURATED: CuratedTrack[] = [
 ];
 
 async function main() {
+  // Curated tracks are a platform-wide library (see card_audio_tracks), so no
+  // tenant argument — but still refuse a non-local database without --yes.
+  confirmDatabaseTarget();
   let inserted = 0;
   for (const t of CURATED) {
     const existing = await db

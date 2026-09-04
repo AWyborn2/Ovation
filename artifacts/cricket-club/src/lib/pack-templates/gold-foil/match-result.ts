@@ -4,7 +4,6 @@ import {
   HASHTAG_FOOTER_STORY,
   PRESENTED_BY_STORY,
   SPONSOR_STRIP_SHARED,
-  STORY_BG,
   clubHeaderFields,
   foilText,
   logoField,

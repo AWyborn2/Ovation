@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { Body, Heading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 
 const CAN_DO: { icon: keyof typeof Feather.glyphMap; text: string }[] = [
   { icon: "users", text: "Browse every player and their career stats" },
@@ -26,6 +26,7 @@ export function WelcomeGuide({
   onStartTour: () => void;
 }) {
   const colors = useColors();
+  const brand = useBrand();
 
   return (
     <Modal
@@ -74,13 +75,13 @@ export function WelcomeGuide({
                   textTransform: "uppercase",
                 }}
               >
-                {BRAND.name}
+                {brand.name}
               </Body>
             </View>
 
             <Heading size="lg">Welcome to the club app</Heading>
             <Body muted size={14} style={{ marginTop: 8, lineHeight: 21 }}>
-              Your home for {BRAND.possessive} players, matches, records and
+              Your home for {brand.possessive} players, matches, records and
               honours — seniors and juniors alike.
             </Body>
 

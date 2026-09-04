@@ -1,16 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useListPlayers, useGetPlayer, getGetPlayerQueryKey } from "@workspace/api-client-react";
-import type { Player, Stat } from "@workspace/api-client-react";
+import type { Stat } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { QueryError } from "@/components/data-states";
 
-type Side = "a" | "b";
 
 function PlayerPicker({ value, onChange, label }: { value: number | null; onChange: (id: number | null) => void; label: string }) {
   const [open, setOpen] = useState(false);
@@ -166,8 +165,11 @@ export default function Compare() {
     }
   }, [a, b, location, search, setLocation]);
 
-  const { data: playerA } = useGetPlayer(a ?? 0, { query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) } });
-  const { data: playerB } = useGetPlayer(b ?? 0, { query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) } });
+  const queryA = useGetPlayer(a ?? 0, { query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) } });
+  const queryB = useGetPlayer(b ?? 0, { query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) } });
+  const playerA = queryA.data;
+  const playerB = queryB.data;
+  const failed = queryA.isError ? queryA : queryB.isError ? queryB : null;
 
   const careerA = aggregateCareer(playerA?.stats);
   const careerB = aggregateCareer(playerB?.stats);
@@ -224,6 +226,11 @@ export default function Compare() {
         <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
           Select two players to see a head-to-head comparison.
         </div>
+      ) : failed ? (
+        <QueryError
+          message="One of the players couldn’t be loaded. Please try again."
+          onRetry={() => void failed.refetch()}
+        />
       ) : (
         <>
           <div className="bg-card border rounded-lg shadow-sm overflow-hidden">

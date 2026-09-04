@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, index } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
@@ -9,48 +9,72 @@ import { tenantIdColumn } from "./_tenant";
  * name; `season` is the display label (YYYY/YY). `playerId` links to a player
  * where the master provided one.
  */
-export const centuriesTable = pgTable("centuries", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  playerId: integer("player_id").references(() => playersTable.id, {
-    onDelete: "set null",
+export const centuriesTable = pgTable(
+  "centuries",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    playerId: integer("player_id").references(() => playersTable.id, {
+      onDelete: "set null",
+    }),
+    grade: text("grade").notNull(),
+    batsman: text("batsman").notNull(),
+    score: text("score"),
+    season: text("season"),
+  },
+  (t) => ({
+    idxTenant: index("centuries_tenant_idx").on(t.tenantId),
   }),
-  grade: text("grade").notNull(),
-  batsman: text("batsman").notNull(),
-  score: text("score"),
-  season: text("season"),
-});
+);
 
-export const fiveWicketHaulsTable = pgTable("five_wicket_hauls", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  playerId: integer("player_id").references(() => playersTable.id, {
-    onDelete: "set null",
+export const fiveWicketHaulsTable = pgTable(
+  "five_wicket_hauls",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    playerId: integer("player_id").references(() => playersTable.id, {
+      onDelete: "set null",
+    }),
+    grade: text("grade").notNull(),
+    bowler: text("bowler").notNull(),
+    figures: text("figures"),
+    season: text("season"),
+  },
+  (t) => ({
+    idxTenant: index("five_wicket_hauls_tenant_idx").on(t.tenantId),
   }),
-  grade: text("grade").notNull(),
-  bowler: text("bowler").notNull(),
-  figures: text("figures"),
-  season: text("season"),
-});
+);
 
 /** The club's hand-kept record holders (e.g. "GAMES RECORD HOLDERS"). */
-export const clubRecordsTable = pgTable("club_records", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  recordType: text("record_type").notNull(),
-  grade: text("grade"),
-  detail: text("detail"),
-});
+export const clubRecordsTable = pgTable(
+  "club_records",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    recordType: text("record_type").notNull(),
+    grade: text("grade"),
+    detail: text("detail"),
+  },
+  (t) => ({
+    idxTenant: index("club_records_tenant_idx").on(t.tenantId),
+  }),
+);
 
 /** Administrative honour-board records (e.g. "Most Seasons as President"). */
-export const honourBoardRecordsTable = pgTable("honour_board_records", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  category: text("category").notNull(),
-  rank: integer("rank"),
-  name: text("name"),
-  value: text("value"),
-});
+export const honourBoardRecordsTable = pgTable(
+  "honour_board_records",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    category: text("category").notNull(),
+    rank: integer("rank"),
+    name: text("name"),
+    value: text("value"),
+  },
+  (t) => ({
+    idxTenant: index("honour_board_records_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type CenturyRow = typeof centuriesTable.$inferSelect;
 export type FiveWicketHaulRow = typeof fiveWicketHaulsTable.$inferSelect;

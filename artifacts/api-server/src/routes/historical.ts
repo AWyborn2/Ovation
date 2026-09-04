@@ -8,7 +8,7 @@ import {
   fiveWicketHaulsTable,
   playerIdMapTable,
 } from "@workspace/db";
-import { getRequestCentralClubId, shouldReadCentral } from "../lib/tenant";
+import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 
 const router: IRouter = Router();
@@ -33,7 +33,8 @@ async function playerIdMapForTenant(tenantId: number): Promise<Map<string, numbe
 
 router.get("/partnerships", async (req, res): Promise<void> => {
   // No partnership data in central — central tenants get their own (empty) list.
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     res.json({ records: [], fiftyPlus: [] });
     return;
   }
@@ -55,11 +56,12 @@ router.get("/partnerships", async (req, res): Promise<void> => {
 });
 
 router.get("/centuries", async (req, res): Promise<void> => {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralCenturies } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [rows, idMap] = await Promise.all([
-      centralCenturies(await getRequestCentralClubId(req)),
+      centralCenturies(source.clubId),
       playerIdMapForTenant(tenantId),
     ]);
     res.json(
@@ -83,11 +85,12 @@ router.get("/centuries", async (req, res): Promise<void> => {
 });
 
 router.get("/five-wicket-hauls", async (req, res): Promise<void> => {
-  if (await shouldReadCentral(req)) {
+  const source = await dataSource(req);
+  if (source.kind === "central") {
     const { centralFiveWicketHauls } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [rows, idMap] = await Promise.all([
-      centralFiveWicketHauls(await getRequestCentralClubId(req)),
+      centralFiveWicketHauls(source.clubId),
       playerIdMapForTenant(tenantId),
     ]);
     res.json(

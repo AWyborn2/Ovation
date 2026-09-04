@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
 import { logger } from "./logger";
+import { env } from "../config";
 
 // The frontend exposes a hidden harness route that runs the EXACT same renderer
 // the browser preview uses, so server-rendered MP4s are pixel-identical to the
@@ -19,10 +20,10 @@ const HARNESS_PATH = "/__card-render";
 // origin, then localhost:80 as a last resort for request-less contexts (the
 // render smoke test / internal callers).
 function harnessUrl(originOverride?: string | null): string {
-  const explicitUrl = process.env["RENDER_HARNESS_URL"];
+  const explicitUrl = env.RENDER_HARNESS_URL();
   if (explicitUrl) return explicitUrl;
   const origin =
-    process.env["RENDER_HARNESS_ORIGIN"] ??
+    env.RENDER_HARNESS_ORIGIN() ??
     (originOverride || undefined) ??
     "http://localhost:80";
   return `${origin.replace(/\/$/, "")}${HARNESS_PATH}`;
@@ -53,7 +54,7 @@ let cachedChromium: string | null = null;
 function resolveChromiumPath(): string {
   if (cachedChromium) return cachedChromium;
   const fromEnv =
-    process.env["PUPPETEER_EXECUTABLE_PATH"] ?? process.env["CHROMIUM_PATH"];
+    env.PUPPETEER_EXECUTABLE_PATH() ?? env.CHROMIUM_PATH();
   if (fromEnv && existsSync(fromEnv)) {
     cachedChromium = fromEnv;
     return fromEnv;

@@ -8,9 +8,9 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { db, adminsTable, importsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const FIXTURES = join(process.cwd(), "..", "..", "attached_assets");
-const ROUND1 = "A_Grade_Round_1_-_Abandoned_1780356716493.xlsx";
-const ROUND2 = "A_Grade_Round_2_1780356716494.xlsx";
+const FIXTURES = join(process.cwd(), "src", "test", "fixtures");
+const ROUND1 = "A_Grade_Round_1_-_Abandoned.xlsx";
+const ROUND2 = "A_Grade_Round_2.xlsx";
 
 describe("season batch import — upload/preview (integration)", () => {
   let adminId: number;

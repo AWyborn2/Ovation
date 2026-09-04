@@ -7,6 +7,7 @@ import {
   type AwardPointsConfigRow,
 } from "@workspace/db";
 import { playerName } from "./voting";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 /** The nine scorable stat categories of a points award. */
 export type PointsCategoryKey =
@@ -99,9 +100,9 @@ export async function computeLeaderboard(
   config: AwardPointsConfigRow,
   grade: string,
 ): Promise<ComputedLeaderboard> {
-  // Fill-ins (playerId >= 90000) are excluded from every stats derivation
+  // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats derivation
   // (replit.md Gotcha) — a fill-in must never accrue award points.
-  const excludeFillIns = lt(matchPlayerLinesTable.playerId, 90000);
+  const excludeFillIns = lt(matchPlayerLinesTable.playerId, FILL_IN_THRESHOLD);
   const matchWhere = config.includeFinals
     ? and(
         eq(matchesTable.grade, grade),

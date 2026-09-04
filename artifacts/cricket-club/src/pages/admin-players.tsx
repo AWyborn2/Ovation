@@ -20,6 +20,13 @@ import {
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -526,19 +533,18 @@ function MergeDialog({
   const [keeper, setKeeper] = useState<SelectedPlayer | null>(null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <CardTitle>Merge player</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg space-y-4">
+        <DialogHeader>
+          <DialogTitle>Merge player</DialogTitle>
+          <DialogDescription>
             All stats, premiership squad rows, cap register rows and life member rows belonging to{" "}
             <strong>
               {duplicate.surname}, {duplicate.givenName}
             </strong>{" "}
             will be reassigned to the keeper. The duplicate will then be deleted.
-          </p>
+          </DialogDescription>
+        </DialogHeader>
           <div className="space-y-1">
             <Label>Keeper (the player to keep)</Label>
             <PlayerTypeahead value={keeper} onChange={setKeeper} />
@@ -554,8 +560,7 @@ function MergeDialog({
               Cancel
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

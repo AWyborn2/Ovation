@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { sampleCardInput } from "./sample-card-inputs";
 import { shortClubName } from "./pack-card-data";
-import type { LadderRow, MatchSummaryInput } from "./share-card";
+import type { LadderRow, ShareCardInput } from "./share-card";
+
+type MatchSummaryInput = Extract<ShareCardInput, { kind: "matchSummary" }>;
 
 /**
  * Tenant-named samples: the Studio gallery and the composer seed pass the

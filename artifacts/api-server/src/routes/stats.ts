@@ -17,10 +17,9 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
 import { shouldReadCentral } from "../lib/tenant";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 const router: IRouter = Router();
-
-const FILL_IN_FLOOR = 90000;
 
 // The /stats CRUD surface curates the NATIVE snapshot tables
 // (player_grade_season_stats → player_grade_stats), which hold only the demo
@@ -59,9 +58,9 @@ router.get("/stats", async (req, res): Promise<void> => {
   const offset = (Number(page) - 1) * Number(limit);
   const lim = Number(limit);
 
-  // Fill-ins (playerId >= 90000) are excluded from every stats derivation.
+  // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats derivation.
   const conditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
-    lt(playerGradeStatsTable.playerId, FILL_IN_FLOOR),
+    lt(playerGradeStatsTable.playerId, FILL_IN_THRESHOLD),
   ];
   if (search) {
     conditions.push(

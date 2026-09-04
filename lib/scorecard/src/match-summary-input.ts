@@ -122,7 +122,8 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
   const sc: Scorecard = buildScorecard(match);
 
   // Guard: match exists but no scorecard data yet (thin data).
-  if (sc.innings.length === 0) {
+  const first = sc.innings[0];
+  if (!first) {
     const roundLabel = match.stage
       ? match.stage
       : match.round != null
@@ -158,7 +159,6 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
     };
   }
 
-  const first = sc.innings[0];
   const clubTeam = first.battingTeam.isHallsHead
     ? first.battingTeam
     : first.bowlingTeam;

@@ -140,9 +140,10 @@ const FALLBACK_PRIMARY = DEFAULT_BRAND.primaryColour as string;
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return null;
-  let h = m[1];
+  let h = m[1] ?? "";
   if (h.length === 3) {
-    h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    const [a = "", b = "", c = ""] = h;
+    h = a + a + b + b + c + c;
   }
   return {
     r: parseInt(h.slice(0, 2), 16),

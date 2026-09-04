@@ -13,17 +13,18 @@ import {
 } from "@workspace/db";
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
 import {
-  getRequestCentralClubId,
-  shouldReadCentral,
   NATIVE_STATS_TENANT_ID,
   NativeStatsUnavailableError,
+  dataSource,
+  type DataSource,
 } from "../lib/tenant";
-import { getTenantId } from "../middlewares/tenant-context";
+
 import { resolveCuration } from "../lib/central-curation";
 import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
 import { withMilestonesCache } from "../lib/milestones-cache";
 import { parseMatchDate, partitionMatchDates } from "../lib/match-date";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 const router: IRouter = Router();
 
@@ -183,7 +184,7 @@ export async function buildMilestones(
       wickets: matchPlayerLinesTable.wickets,
     })
     .from(matchPlayerLinesTable)
-    .where(sql`${matchPlayerLinesTable.playerId} < 90000`);
+    .where(sql`${matchPlayerLinesTable.playerId} < ${FILL_IN_THRESHOLD}`);
 
   const players = await db
     .select({
@@ -273,7 +274,7 @@ export async function buildMilestones(
           playerId: matchHatTricksTable.playerId,
         })
         .from(matchHatTricksTable)
-        .where(sql`${matchHatTricksTable.playerId} < 90000`),
+        .where(sql`${matchHatTricksTable.playerId} < ${FILL_IN_THRESHOLD}`),
     [] as { matchId: number; playerId: number }[],
   );
   for (const h of hatTricks) {
@@ -355,11 +356,11 @@ export async function buildMilestones(
 }
 
 async function buildCentralMilestones(
-  req: Request,
+  source: { tenantId: number; clubId: number },
   health: BuildHealth = { degraded: false },
 ): Promise<MilestonesResult> {
   const { centralMilestones } = await import("@workspace/db/central-queries");
-  const tenantId = getTenantId(req);
+  const { tenantId, clubId } = source;
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const tiers = {
     games: settings?.gamesTiers ?? DEFAULT_GAMES_TIERS,
@@ -373,7 +374,7 @@ async function buildCentralMilestones(
     optionalSection(
       "central_milestones",
       health,
-      async () => centralMilestones(await getRequestCentralClubId(req), tiers),
+      async () => centralMilestones(clubId, tiers),
       [] as Awaited<ReturnType<typeof centralMilestones>>,
     ),
     db
@@ -450,25 +451,32 @@ async function buildCentralMilestones(
  * Shared by the `/milestones` route and the honour-display board so both honour
  * the tenant boundary instead of leaking tenant #1's players.
  */
-export async function buildMilestonesForRequest(
-  req: Request,
+export async function buildMilestonesForSource(
+  source: DataSource,
 ): Promise<MilestonesResult> {
-  const tenantId = getTenantId(req);
-  const central = await shouldReadCentral(req);
+  const tenantId = source.tenantId;
+  const central = source.kind === "central";
   // Key on every input that varies the board: the tenant (its settings row
   // drives the recency window and tiers), the read path, and — on the central
   // path — the club id, so remapping a tenant to a different central club can
   // never keep serving the previous club's players under the new brand.
-  const clubId = central ? await getRequestCentralClubId(req) : null;
+  const clubId = source.kind === "central" ? source.clubId : null;
   const key = `${tenantId}:${central ? `central:${clubId}` : "native"}`;
 
   return withMilestonesCache(key, async () => {
     const health: BuildHealth = { degraded: false };
     const value = central
-      ? await buildCentralMilestones(req, health)
+      ? await buildCentralMilestones(source, health)
       : await buildMilestones(tenantId, health);
     return { value, degraded: health.degraded };
   });
+}
+
+/** Request-flavoured wrapper: resolves the tenant's data source first. */
+export async function buildMilestonesForRequest(
+  req: Request,
+): Promise<MilestonesResult> {
+  return buildMilestonesForSource(await dataSource(req));
 }
 
 router.get("/milestones", async (req, res): Promise<void> => {

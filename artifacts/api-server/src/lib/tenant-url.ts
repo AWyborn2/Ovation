@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import type { TenantRow } from "@workspace/db";
+import { env } from "../config";
 
 /**
  * The platform's registrable apex domain, used to build tenant subdomain URLs
@@ -8,9 +9,9 @@ import type { TenantRow } from "@workspace/db";
  * dropping the left-most label of the request host.
  */
 export function platformBaseDomain(req: Request): string {
-  const explicit = process.env.PLATFORM_BASE_DOMAIN?.trim().toLowerCase();
+  const explicit = env.PLATFORM_BASE_DOMAIN()?.trim().toLowerCase();
   if (explicit) return explicit;
-  const fromHosts = (process.env.PLATFORM_HOSTS ?? "")
+  const fromHosts = (env.PLATFORM_HOSTS() ?? "")
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean)

@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request } from "express";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import {
   db,
   adminsTable,
@@ -21,22 +21,9 @@ import { resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { isTenantSuspended } from "../lib/tenant";
+import { serializeAdmin } from "../lib/serialize-principals";
 
 const router: IRouter = Router();
-
-function serializeAdmin(a: {
-  id: number;
-  username: string;
-  displayName: string;
-  createdAt: Date;
-}) {
-  return {
-    id: a.id,
-    username: a.username,
-    displayName: a.displayName,
-    createdAt: a.createdAt.toISOString(),
-  };
-}
 
 router.post(
   "/auth/login",
@@ -70,7 +57,7 @@ router.post(
         .json({ error: "This club's admin access is currently suspended." });
       return;
     }
-    const token = encodeSession({ adminId: admin.id, issuedAt: Date.now() });
+    const token = encodeSession({ adminId: admin.id, issuedAt: Date.now(), epoch: admin.sessionEpoch });
     res.cookie(SESSION_COOKIE, token, SESSION_COOKIE_OPTS);
     res.json(serializeAdmin(admin));
   },
@@ -161,9 +148,10 @@ router.post(
     }
     const passwordHash = await hashPassword(parsed.data.password);
     const now = new Date();
+    // A reset also revokes every session the old password may have minted.
     await db
       .update(adminsTable)
-      .set({ passwordHash })
+      .set({ passwordHash, sessionEpoch: sql`${adminsTable.sessionEpoch} + 1` })
       .where(eq(adminsTable.id, reset.adminId));
     // Spend this token AND any siblings so the link is strictly single-use.
     await db

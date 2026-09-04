@@ -5,6 +5,7 @@
  * fully featured for free. Flipping the flag enforces the tiers with no code
  * change. Per governance, monetisation stays off until data licensing lands.
  */
+import { env } from "../config";
 
 export type Plan = "free" | "club" | "pro";
 
@@ -47,7 +48,7 @@ const PLAN_FEATURES: Record<Plan, Entitlements> = {
 
 /** Whether tier enforcement is live. Off (the pilot default) ⇒ everything unlocked. */
 export function billingEnabled(): boolean {
-  return process.env.BILLING_ENABLED === "true";
+  return env.billingEnabled();
 }
 
 /** Normalise a stored plan string (incl. legacy "pilot") to a known plan. */

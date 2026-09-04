@@ -11,6 +11,7 @@
  * only seeds the definitions, their mechanism, and their points grade.
  */
 import { db, awardsTable } from "@workspace/db";
+import { confirmDatabaseTarget, isDryRun, requireTenantArg } from "./lib/cli";
 
 type Mechanism = "voted" | "points" | "manual";
 
@@ -165,10 +166,17 @@ const AWARDS: AwardSeed[] = [
 ];
 
 async function main() {
+  const tenantId = requireTenantArg();
+  confirmDatabaseTarget();
+  if (isDryRun()) {
+    console.log(`DRY RUN: would upsert ${AWARDS.length} awards for tenant ${tenantId}.`);
+    return;
+  }
   for (const a of AWARDS) {
     await db
       .insert(awardsTable)
       .values({
+        tenantId,
         key: a.key,
         title: a.title,
         description: a.description,
@@ -190,14 +198,12 @@ async function main() {
       });
   }
 
-  // eslint-disable-next-line no-console
   console.log(`Seeded ${AWARDS.length} award definition(s).`);
 }
 
 main().then(
   () => process.exit(0),
   (err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exit(1);
   },

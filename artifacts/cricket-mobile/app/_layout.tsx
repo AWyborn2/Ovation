@@ -17,17 +17,26 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { setBaseUrl } from "@workspace/api-client-react";
+import { setBaseUrl, setTenantId } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OnboardingProvider } from "@/components/onboarding-provider";
 import colors from "@/constants/colors";
+import { TenantBrandProvider } from "@/lib/tenant-brand";
 
 SplashScreen.preventAutoHideAsync();
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) {
   setBaseUrl(`https://${domain}`);
+}
+
+// Which tenant this build talks to. In production EXPO_PUBLIC_DOMAIN is the
+// tenant's own host and the API resolves the tenant from it; the header below
+// only matters on dev/preview hosts, where the API has no host to go on.
+const tenantId = Number(process.env.EXPO_PUBLIC_TENANT_ID);
+if (Number.isInteger(tenantId) && tenantId > 0) {
+  setTenantId(tenantId);
 }
 
 const queryClient = new QueryClient();
@@ -85,13 +94,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <OnboardingProvider>
-                <RootLayoutNav />
-              </OnboardingProvider>
-            </KeyboardProvider>
-          </GestureHandlerRootView>
+          <TenantBrandProvider>
+            <GestureHandlerRootView>
+              <KeyboardProvider>
+                <OnboardingProvider>
+                  <RootLayoutNav />
+                </OnboardingProvider>
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </TenantBrandProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

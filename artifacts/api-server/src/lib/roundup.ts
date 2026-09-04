@@ -10,10 +10,10 @@ import {
 } from "@workspace/db";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
-import { tenantReadsFromCentral } from "./tenant";
+import { tenantIsCentral } from "./tenant";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
-// Fill-ins (playerId >= 90000) are excluded from every stats derivation.
-const FILL_IN_FLOOR = 90000;
+// Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats derivation.
 
 type SocialDraft = SocialDraftRow;
 
@@ -38,7 +38,7 @@ const queryPerformers = async (
   grade: string,
   seasonFilter: { season: number } | "all",
 ): Promise<PerformerRow[]> => {
-  const fillInFloor = lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR);
+  const fillInFloor = lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD);
   const where = seasonFilter === "all"
     ? and(eq(playerGradeSeasonStatsTable.grade, grade), fillInFloor)
     : and(
@@ -93,7 +93,7 @@ const queryInningsRows = async (
       and(
         eq(playerGradeSeasonStatsTable.grade, grade),
         eq(playerGradeSeasonStatsTable.season, season),
-        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
       ),
     );
 
@@ -188,7 +188,7 @@ export async function generateRoundUpDrafts(
   // Round-ups are computed from the native (Halls Head) stats tables. A central
   // tenant has no native data of its own — generating here would celebrate the
   // demo club's players under that tenant, so bail rather than leak.
-  if (await tenantReadsFromCentral(tenantId)) return [];
+  if (await tenantIsCentral(tenantId)) return [];
   const stats = await queryPerformers(grade, { season });
   const innings = await queryInningsRows(grade, season);
   const created: SocialDraft[] = [];
@@ -380,7 +380,7 @@ export async function generateRecapDrafts(
   season: number,
 ): Promise<SocialDraft[]> {
   // Native-derived (see generateRoundUpDrafts) — no recap for central tenants.
-  if (await tenantReadsFromCentral(tenantId)) return [];
+  if (await tenantIsCentral(tenantId)) return [];
   const stats = await queryPerformers(grade, { season });
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Season Recap`;

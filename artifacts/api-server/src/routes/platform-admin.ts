@@ -47,6 +47,7 @@ import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
 import { listAvailableClubs } from "../lib/available-clubs";
+import { isEmail, slugTaken } from "../lib/signup-validation";
 
 const router: IRouter = Router();
 
@@ -57,20 +58,6 @@ const router: IRouter = Router();
  * routes. Central reads are imported lazily so a tenant-only deployment without
  * CENTRAL_DATABASE_URL still boots.
  */
-
-/** Basic email shape check (mirrors the signup route; no verification in pilot). */
-function isEmail(s: string): boolean {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
-}
-
-/** Whether a slug is already claimed in the tenants register. */
-async function slugTaken(slug: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: tenantsTable.id })
-    .from(tenantsTable)
-    .where(eq(tenantsTable.slug, slug));
-  return !!row;
-}
 
 /** Admin counts keyed by tenant id (one grouped query). */
 async function adminCountsByTenant(): Promise<Map<number, number>> {
@@ -221,6 +208,7 @@ router.post(
       encodePlatformSession({
         platformAdminId: admin.id,
         issuedAt: Date.now(),
+        epoch: admin.sessionEpoch,
       }),
       SESSION_COOKIE_OPTS,
     );

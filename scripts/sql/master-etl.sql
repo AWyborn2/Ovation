@@ -1,3 +1,7 @@
+-- SINGLE-TENANT LOADER (tenant #1 / Halls Head only). Runs against a staging schema
+-- built by scripts/src/load-*-db.ts. It contains wholesale DELETEs with no tenant
+-- predicate and must never be run directly against the shared multi-tenant DB.
+
 -- Master DB ETL: map the staged master export (schema `staging`) onto the app
 -- schema (schema `public`) and recompute every derived total.
 --

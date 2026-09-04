@@ -50,7 +50,7 @@ function shieldPath(size: number, scale = 1): string {
 export function TeamLogo({ logoUrl, teamName, primaryColor, secondaryColor, size = 56 }: TeamLogoProps) {
   if (logoUrl) {
     return (
-      <img
+      <img loading="lazy" decoding="async"
         src={logoUrl}
         alt={`${teamName} logo`}
         style={{ width: size, height: size, objectFit: "contain", display: "block" }}

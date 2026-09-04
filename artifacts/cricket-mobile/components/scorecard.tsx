@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 import {
   buildScorecard,
   type MatchDetail,
@@ -505,6 +505,7 @@ export function DigitalScorecard({
   match: MatchDetail;
   hatTrickIds?: Set<number>;
 }) {
+  const brand = useBrand();
   const scorecard = useMemo(() => buildScorecard(match), [match]);
   const [selected, setSelected] = useState<{ id: number; name: string } | null>(null);
   const onPlayer = (id: number, name: string) => setSelected({ id, name });
@@ -533,7 +534,7 @@ export function DigitalScorecard({
       ))}
       {!scorecard.orderKnown ? (
         <Body size={11} style={{ color: "#6b7280", textAlign: "center" }}>
-          Batting order not confirmed — innings shown {BRAND.shortName} first.
+          Batting order not confirmed — innings shown {brand.shortName} first.
         </Body>
       ) : null}
 

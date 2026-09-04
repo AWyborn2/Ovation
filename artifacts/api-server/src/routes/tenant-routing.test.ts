@@ -4,7 +4,10 @@ import { eq } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import {
   shouldReadCentral,
+  isCentralTenant,
   getTenantCentralClubId,
+  NativeStatsUnavailableError,
+  CentralReadsDisabledError,
 } from "../lib/tenant";
 import {
   resolveTenantBySubdomain,
@@ -81,14 +84,22 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
     await db.delete(tenantsTable).where(eq(tenantsTable.id, nativeTenantId));
   });
 
-  it("routes a reads_from_central tenant to central, a native tenant to native", async () => {
+  it("routes a reads_from_central tenant to central; a non-demo native tenant fails closed", async () => {
     expect(await shouldReadCentral(fakeReq({ tenantId: centralTenantId }))).toBe(true);
-    expect(await shouldReadCentral(fakeReq({ tenantId: nativeTenantId }))).toBe(false);
+    // The native stats tables hold only tenant #1's history, so a non-demo
+    // tenant configured for native reads is an error (409), never a read.
+    await expect(
+      shouldReadCentral(fakeReq({ tenantId: nativeTenantId })),
+    ).rejects.toBeInstanceOf(NativeStatsUnavailableError);
+    // The raw flag is still readable for tenant-scoped surfaces (juniors etc.).
+    expect(await isCentralTenant(fakeReq({ tenantId: nativeTenantId }))).toBe(false);
   });
 
-  it("CENTRAL_READS=0 is a global kill-switch (forces native everywhere)", async () => {
+  it("CENTRAL_READS=0 makes central tenants unavailable (503) rather than serving native", async () => {
     process.env.CENTRAL_READS = "0";
-    expect(await shouldReadCentral(fakeReq({ tenantId: centralTenantId }))).toBe(false);
+    await expect(
+      shouldReadCentral(fakeReq({ tenantId: centralTenantId })),
+    ).rejects.toBeInstanceOf(CentralReadsDisabledError);
   });
 
   it("resolves the tenant's central club id", async () => {
@@ -154,10 +165,33 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
     });
   });
 
-  it("an explicit x-tenant-id on a *.replit.app host pins that tenant (dev switcher)", async () => {
+  it("an explicit x-tenant-id on a *.replit.app host is ignored unless the switcher is opted in", async () => {
+    const prev = process.env.TENANT_HEADER_ON_PUBLISHED_HOST;
+    delete process.env.TENANT_HEADER_ON_PUBLISHED_HOST;
+    try {
+      // Default: a public production host never lets a client pick a tenant.
+      expect(
+        await resolveHostMode(
+          fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId }),
+        ),
+      ).toEqual({ mode: "platform" });
+      // Opt-in: the dev tenant switcher pins that tenant.
+      process.env.TENANT_HEADER_ON_PUBLISHED_HOST = "1";
+      expect(
+        await resolveHostMode(
+          fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId }),
+        ),
+      ).toEqual({ mode: "tenant", tenantId: nativeTenantId });
+    } finally {
+      if (prev === undefined) delete process.env.TENANT_HEADER_ON_PUBLISHED_HOST;
+      else process.env.TENANT_HEADER_ON_PUBLISHED_HOST = prev;
+    }
+  });
+
+  it("an explicit x-tenant-id on a *.replit.dev preview host still pins that tenant", async () => {
     expect(
       await resolveHostMode(
-        fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId }),
+        fakeReq({ host: `preview-${STAMP}.replit.dev`, tenantId: nativeTenantId }),
       ),
     ).toEqual({ mode: "tenant", tenantId: nativeTenantId });
   });

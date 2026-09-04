@@ -1,0 +1,9 @@
+# Default owner for everything. Add path-specific lines above this as the team grows.
+* @AWyborn2
+
+# The tenant-isolation surface: any change here should get a second look.
+/artifacts/api-server/src/lib/tenant.ts          @AWyborn2
+/artifacts/api-server/src/middlewares/            @AWyborn2
+/lib/db/src/central.ts                           @AWyborn2
+/lib/db/src/central-queries.ts                   @AWyborn2
+/lib/db/src/schema/_tenant.ts                    @AWyborn2

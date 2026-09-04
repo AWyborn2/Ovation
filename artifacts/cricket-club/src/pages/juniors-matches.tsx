@@ -20,7 +20,7 @@ function MatchCardCrest({ club }: { club: JuniorMatchSummary["opponentClub"] }) 
   const src = club?.logoUrl128 || club?.logoUrl;
   if (!club || !src || errored) return null;
   return (
-    <img
+    <img loading="lazy" decoding="async"
       src={src}
       alt={`${club.name} logo`}
       title={club.name}

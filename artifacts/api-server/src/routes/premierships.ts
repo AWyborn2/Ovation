@@ -15,7 +15,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
-import { shouldReadCentral } from "../lib/tenant";
+import { isCentralTenant, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -227,10 +227,14 @@ router.get("/premierships", async (req, res): Promise<void> => {
   // Grand-final match linking reads the NATIVE matches table (Halls Head's).
   // For a central tenant those ids belong to another club, so skip linking
   // (matchId null) rather than attach a wrong-club match to their premiership.
-  const central = await shouldReadCentral(req);
+  // Only tenant #1 owns rows in the native matches table, so linking is limited
+  // to it: any other tenant (central or a misconfigured native one) would
+  // otherwise attach Halls Head's grand finals to its own premierships.
+  const central = await isCentralTenant(req);
+  const canLinkNativeMatches = !central && getTenantId(req) === NATIVE_STATS_TENANT_ID;
   const gfByKey = new Map<string, GfMatch[]>();
   const finalsByKey = new Map<string, GfMatch[]>();
-  if (!central) {
+  if (canLinkNativeMatches) {
     // Most competitions label their decider "Grand Final", but a few (e.g. the
     // PPL T20 Cup and PCA Colts) label it generically as "Finals". Fetch both so
     // a premiership whose grade+season has no "Grand Final" can fall back to the

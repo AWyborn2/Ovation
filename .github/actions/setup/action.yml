@@ -1,0 +1,19 @@
+name: Setup toolchain
+description: Install pnpm + Node (with the pnpm store cached) and the workspace dependencies. Shared by every CI job.
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      # No `version` input: pnpm/action-setup reads the exact pin from
+      # `packageManager` in package.json (and errors if both are given).
+      uses: pnpm/action-setup@v4
+
+    - name: Install Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

@@ -1,9 +1,3 @@
-// @ts-nocheck — `@workspace/db` deliberately carries no vitest devDependency
-// (it is a leaf lib; the workspace's test runner lives in the api-server
-// package). Run this suite with the api-server's vitest install, e.g. from
-// lib/db:  node ../../artifacts/api-server/node_modules/vitest/vitest.mjs run
-// Both the central DB and the tenant DB are fully mocked below, so neither
-// CENTRAL_DATABASE_URL nor DATABASE_URL is needed.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** FIFO of result sets the mocked centralDb.select() query resolves to. */

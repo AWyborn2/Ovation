@@ -2,22 +2,14 @@ import { defineConfig } from "vitest/config";
 
 // Data-dependent suites validate the club's real curated stats data and cannot
 // pass against a fresh, empty CI database. Excluded in CI via CI_SKIP_DATA_TESTS;
-// they still run locally against a populated DB.
+// they still run locally against a populated DB. The provisioning suites and
+// the batch-import preview are NOT here any more: CI seeds a small `central`
+// fixture (seed-ci-central-fixture.ts) and the xlsx fixtures live in
+// src/test/fixtures, so they run everywhere. Likewise award-voting, historical,
+// imports-backfill, juniors-office-bearers and player-images seed what they need.
 const DATA_DEPENDENT = [
   "src/routes/*-consistency.test.ts",
-  "src/routes/award-voting.test.ts",
-  "src/routes/historical.test.ts",
   "src/routes/honour-display-kiosk.test.ts",
-  "src/routes/imports-backfill.test.ts",
-  "src/routes/imports-batch.test.ts",
-  "src/routes/juniors-office-bearers.test.ts",
-  "src/routes/player-images.test.ts",
-  // Platform provisioning suites: exercise the central-DB provision path, which
-  // returns 500 in CI (a known provisioning bug to investigate, not missing data).
-  "src/routes/platform-signup.test.ts",
-  "src/routes/platform-admin-tenants.test.ts",
-  "src/routes/platform-admin-available-clubs.test.ts",
-  "src/routes/provisioning-exclusions.test.ts",
 ];
 const skipData = !!process.env.CI_SKIP_DATA_TESTS;
 

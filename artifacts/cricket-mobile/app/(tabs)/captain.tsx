@@ -274,7 +274,6 @@ function AwardVotingCard({ award }: { award: VotableAward }) {
 }
 
 function GradeSection({ configId, grade }: { configId: number; grade: VotableGrade }) {
-  const colors = useColors();
   const rounds = grade.rounds.slice().sort((a, b) => b.round - a.round);
   return (
     <View style={{ gap: 10 }}>

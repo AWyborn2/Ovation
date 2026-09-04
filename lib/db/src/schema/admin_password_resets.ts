@@ -1,11 +1,5 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  text,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, index } from "drizzle-orm/pg-core";
+import { tenantsTable } from "./tenants";
 
 /**
  * Single-use password-reset / bootstrap tokens for club admins, minted by a
@@ -24,7 +18,9 @@ export const adminPasswordResetsTable = pgTable(
   "admin_password_resets",
   {
     id: serial("id").primaryKey(),
-    tenantId: integer("tenant_id").notNull(),
+    tenantId: integer("tenant_id")
+      .notNull()
+      .references(() => tenantsTable.id),
     adminId: integer("admin_id").notNull(),
     tokenHash: text("token_hash").notNull(),
     // Which platform admin issued this token (audit trail).
@@ -32,15 +28,13 @@ export const adminPasswordResetsTable = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     // Set the moment the token is redeemed; a used token can never be reused.
     usedAt: timestamp("used_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     tokenHashIdx: index("admin_password_resets_token_hash_idx").on(t.tokenHash),
     adminIdx: index("admin_password_resets_admin_idx").on(t.adminId),
+    idxTenant: index("admin_password_resets_tenant_idx").on(t.tenantId),
   }),
 );
 
-export type AdminPasswordResetRow =
-  typeof adminPasswordResetsTable.$inferSelect;
+export type AdminPasswordResetRow = typeof adminPasswordResetsTable.$inferSelect;

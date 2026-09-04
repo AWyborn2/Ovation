@@ -28,6 +28,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireCaptain, type RequestWithCaptain } from "../middlewares/require-captain";
 import { getTenantId } from "../middlewares/tenant-context";
+import { normaliseGrades } from "../lib/normalise-grades";
 import {
   computeTally,
   isTallyVisible,
@@ -92,10 +93,6 @@ async function tallyResponse(
     entries: visible ? entries : ([] as TallyEntry[]),
     winnerPlayerIds: visible ? winnerPlayerIds : [],
   };
-}
-
-function normaliseGrades(grades: string[]): string[] {
-  return [...new Set(grades.map((g) => g.trim()).filter((g) => g.length > 0))];
 }
 
 // ---- Admin: voting config ----

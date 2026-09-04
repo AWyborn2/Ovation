@@ -1,32 +1,36 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  text,
-  boolean,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, index, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
-export const awardsTable = pgTable("awards", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
-  key: text("key").notNull().unique(),
-  title: text("title").notNull(),
-  description: text("description").notNull().default(""),
-  displayOrder: integer("display_order").notNull().default(0),
-  votingEnabled: boolean("voting_enabled").notNull().default(false),
-  // How a season's winner is determined: 'voted' (captain 3-2-1 ballots),
-  // 'points' (auto-tallied from match stats for `pointsGrade`), or 'manual'
-  // (admin records the winner directly).
-  mechanism: text("mechanism").notNull().default("manual"),
-  // Public visibility. Draft awards (published=false) are admin-only.
-  published: boolean("published").notNull().default(false),
-  // For 'points' awards: the single grade whose match stats are tallied.
-  pointsGrade: text("points_grade"),
-});
+export const awardsTable = pgTable(
+  "awards",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
+    key: text("key").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    displayOrder: integer("display_order").notNull().default(0),
+    votingEnabled: boolean("voting_enabled").notNull().default(false),
+    // How a season's winner is determined: 'voted' (captain 3-2-1 ballots),
+    // 'points' (auto-tallied from match stats for `pointsGrade`), or 'manual'
+    // (admin records the winner directly).
+    mechanism: text("mechanism").notNull().default("manual"),
+    // Public visibility. Draft awards (published=false) are admin-only.
+    published: boolean("published").notNull().default(false),
+    // For 'points' awards: the single grade whose match stats are tallied.
+    pointsGrade: text("points_grade"),
+  },
+  (t) => ({
+    idxTenant: index("awards_tenant_idx").on(t.tenantId),
+    chkMechanism: check(
+      "awards_mechanism_check",
+      sql`"mechanism" IN ('voted', 'points', 'manual')`,
+    ),
+  }),
+);
 
 export const awardWinnersTable = pgTable(
   "award_winners",
@@ -48,6 +52,7 @@ export const awardWinnersTable = pgTable(
   },
   (t) => ({
     idxAward: index("award_winners_award_idx").on(t.awardId),
+    idxTenant: index("award_winners_tenant_idx").on(t.tenantId),
   }),
 );
 

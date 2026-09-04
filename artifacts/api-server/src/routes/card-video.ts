@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { CreateCardVideoJobBody } from "@workspace/api-zod";
+import { eq } from "drizzle-orm";
+import { db, tenantsTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -24,12 +26,18 @@ router.post(
       return;
     }
     const { input, options, fps } = parsed.data;
+    const tenantId = getTenantId(req);
+    const [tenant] = await db
+      .select({ slug: tenantsTable.slug })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, tenantId));
     const job = createJob(
-      getTenantId(req),
+      tenantId,
       input,
       options,
       fps ?? undefined,
       harnessOriginFromHeaders(req.headers),
+      tenant?.slug ?? "ovation",
     );
     res.status(201).json(publicJob(job));
   },

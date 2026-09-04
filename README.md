@@ -30,7 +30,7 @@ central association database, filtered per tenant.
 ## Prerequisites
 
 - Node 22
-- pnpm 9 (this repo is pnpm-only; npm/yarn are blocked by a preinstall hook)
+- pnpm 10 (this repo is pnpm-only; npm/yarn are blocked by a preinstall hook; `packageManager` in `package.json` pins the exact version)
 - A Postgres database (for the API server) — set `DATABASE_URL`
 
 ## Setup
@@ -39,11 +39,13 @@ central association database, filtered per tenant.
 pnpm install
 ```
 
-Apply the database schema (drizzle push):
+Apply the database migrations (`lib/db/migrations`; a database built earlier with `drizzle-kit push` is baselined automatically on the first run):
 
 ```bash
-DATABASE_URL=postgres://… pnpm --filter @workspace/db run push
+DATABASE_URL=postgres://… pnpm --filter @workspace/db run migrate
 ```
+
+After editing `lib/db/src/schema`, generate and commit the migration: `pnpm --filter @workspace/db run generate`.
 
 ## Run
 
@@ -65,7 +67,7 @@ pnpm run typecheck                              # whole monorepo
 pnpm --filter @workspace/cricket-club test      # website smoke tests (no backend needed)
 
 # API integration tests — REAL Postgres required:
-DATABASE_URL=postgres://… pnpm --filter @workspace/db run push-force
+DATABASE_URL=postgres://… pnpm --filter @workspace/db run migrate
 DATABASE_URL=postgres://… pnpm --filter @workspace/api-server run seed:ci   # seeds tenant #1 on a fresh DB
 DATABASE_URL=postgres://… pnpm --filter @workspace/api-server test
 ```
@@ -81,8 +83,11 @@ Every push to `main` and every pull request runs [`.github/workflows/ci.yml`](./
 | Job | What it does | Needs a DB? |
 |-----|--------------|-------------|
 | **Typecheck** | `pnpm run typecheck` across the monorepo | no |
+| **Lint** | `pnpm run lint` (ESLint flat config, `eslint.config.mjs`) | no |
+| **Build** | api-server bundle + website `vite build` | no |
+| **Library unit tests** | `pnpm run test:libs` — lib/db, lib/scorecard, scripts (databases mocked) | no |
 | **Web smoke tests** | cricket-club page-render tests | no |
-| **API integration tests** | spins up Postgres, applies schema, seeds tenant #1, runs api-server vitest | yes (service container) |
+| **API integration tests** | spins up Postgres, applies schema, seeds tenant #1 and a small `central` fixture, runs api-server vitest | yes (service container) |
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the merge workflow and branch protection.
 

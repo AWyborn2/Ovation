@@ -8,26 +8,19 @@
  * share-card.ts does not import back, so the dependency is one-directional
  * and cannot cycle.
  */
-import { renderToStaticMarkup } from "react-dom/server";
-import { createElement } from "react";
-import { Crown, Trophy, Medal, Award, Star, Shield, Sparkles, type LucideIcon } from "lucide-react";
-import type { CardTemplate, CardLayoutLayer } from "@workspace/api-client-react";
-import { DEFAULT_BRAND, type ClubBrand, type HallsHeadBrand } from "@workspace/scorecard";
+import { DEFAULT_BRAND } from "@workspace/scorecard";
 import {
-  resolveTextField,
   resolvePhotoField,
   type TemplateContext,
 } from "./card-template";
-import { getSticker } from "./sticker-library";
-import { ensureCardFontsLoaded } from "./card-fonts";
 
 import {
-  AnimationHandle,
-  BakedLayer,
-  CardAudioSpec,
-  RenderOptions,
+  type AnimationHandle,
+  type BakedLayer,
+  type CardAudioSpec,
+  type RenderOptions,
   SIZES,
-  ShareCardInput,
+  type ShareCardInput,
   applyLayerTransform,
   applyLayout,
   bakeLayer,

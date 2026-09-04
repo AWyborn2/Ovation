@@ -4,7 +4,6 @@ import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
 import {
   db,
-  tenantsTable,
   adminsTable,
   importsTable,
   matchesTable,
@@ -12,10 +11,9 @@ import {
   socialDraftsTable,
   socialSettingsTable,
   cardSetsTable,
-  captionTemplatesTable,
-  cardThemesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 
 /**
  * C4 (N4) — DB-backed integration test for POST /card-sets/autoseed.
@@ -37,29 +35,23 @@ const SEASON = 2099;
 const ROUND = 7;
 
 describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => {
-  let tenantId: number;
+  // Tenant #1: the matchSummary generate path reads the native matches table,
+  // which only tenant #1 owns (the stats-core guard rejects any other tenant
+  // configured for native reads). Everything created here is keyed on a
+  // per-run grade string so cleanup only touches this run's rows.
+  const tenantId = NATIVE_STATS_TENANT_ID;
   let adminCookie: string;
   let adminId: number;
   let importId: number;
   let matchIds: number[] = [];
+  const draftIds: number[] = [];
   let juniorMatchId: number;
+  /** Tenant #1's pre-existing autoseed toggle (null = no settings row yet). */
+  let previousAutoseed: boolean | null = null;
 
   beforeAll(async () => {
     process.env.SESSION_SECRET =
       process.env.SESSION_SECRET ?? "test-secret-for-card-sets-autoseed";
-
-    const [tenant] = await db
-      .insert(tenantsTable)
-      .values({
-        slug: `c4-autoseed-tenant-${STAMP}`,
-        centralClubId: 999,
-        appClubId: null,
-        readsFromCentral: false, // native path; autoseed looks up matches directly
-        name: "C4 Autoseed Test Tenant",
-        plan: "pilot",
-      })
-      .returning();
-    tenantId = tenant.id;
 
     const [imp] = await db
       .insert(importsTable)
@@ -68,31 +60,51 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
     importId = imp.id;
 
     // Two senior matches in the same (grade, season, round) → one carousel.
+    // Manual uploads are unique per (grade, season, round, stage) — see
+    // matches_identity_manual_uidx in scripts/src/ensure-constraints.ts — so
+    // two matches in one round can only come from a bulk load, which carries a
+    // source_key. Give these the bulk-load shape.
     const m = await db
       .insert(matchesTable)
       .values([
-        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "Rovers" },
-        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "United" },
+        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "Rovers", sourceKey: `c4-${STAMP}-a` },
+        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "United", sourceKey: `c4-${STAMP}-b` },
       ])
       .returning({ id: matchesTable.id });
     matchIds = m.map((r) => r.id);
 
-    // Settings row with the autoseed toggle ON.
-    await db.insert(socialSettingsTable).values({ tenantId, autoseedCarousels: true });
+    // Autoseed toggle ON for the run; the prior state is restored in afterAll.
+    const [existingSettings] = await db
+      .select({ autoseedCarousels: socialSettingsTable.autoseedCarousels })
+      .from(socialSettingsTable)
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    if (existingSettings) {
+      previousAutoseed = existingSettings.autoseedCarousels;
+      await db
+        .update(socialSettingsTable)
+        .set({ autoseedCarousels: true })
+        .where(eq(socialSettingsTable.tenantId, tenantId));
+    } else {
+      await db.insert(socialSettingsTable).values({ tenantId, autoseedCarousels: true });
+    }
 
     // Two APPROVED match-summary drafts, one per match.
-    await db.insert(socialDraftsTable).values(
-      matchIds.map((matchId) => ({
-        tenantId,
-        engine: "matchSummary",
-        status: "approved",
-        sourceKind: "matchSummary",
-        sourceMatchId: matchId,
-        sourceMatchIsJunior: false,
-        cardInput: { kind: "matchSummary", matchId },
-        appPath: `/matches/${matchId}`,
-      })),
-    );
+    const seniorDrafts = await db
+      .insert(socialDraftsTable)
+      .values(
+        matchIds.map((matchId) => ({
+          tenantId,
+          engine: "matchSummary",
+          status: "approved",
+          sourceKind: "matchSummary",
+          sourceMatchId: matchId,
+          sourceMatchIsJunior: false,
+          cardInput: { kind: "matchSummary", matchId },
+          appPath: `/matches/${matchId}`,
+        })),
+      )
+      .returning({ id: socialDraftsTable.id });
+    draftIds.push(...seniorDrafts.map((d) => d.id));
 
     // A JUNIOR match whose ageGroup is the IDENTICAL string as the senior grade,
     // in the same season/round — the worst-case collision for the dedupe key.
@@ -109,16 +121,20 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
     });
 
     // One APPROVED junior match-summary draft for it.
-    await db.insert(socialDraftsTable).values({
-      tenantId,
-      engine: "matchSummary",
-      status: "approved",
-      sourceKind: "matchSummary",
-      sourceMatchId: juniorMatchId,
-      sourceMatchIsJunior: true,
-      cardInput: { kind: "matchSummary", matchId: juniorMatchId, junior: true },
-      appPath: `/juniors/matches/${juniorMatchId}`,
-    });
+    const juniorDrafts = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId,
+        engine: "matchSummary",
+        status: "approved",
+        sourceKind: "matchSummary",
+        sourceMatchId: juniorMatchId,
+        sourceMatchIsJunior: true,
+        cardInput: { kind: "matchSummary", matchId: juniorMatchId, junior: true },
+        appPath: `/juniors/matches/${juniorMatchId}`,
+      })
+      .returning({ id: socialDraftsTable.id });
+    draftIds.push(...juniorDrafts.map((d) => d.id));
 
     const [admin] = await db
       .insert(adminsTable)
@@ -134,12 +150,21 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
   });
 
   afterAll(async () => {
-    await db.delete(cardSetsTable).where(eq(cardSetsTable.tenantId, tenantId));
-    await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
-    // ensureSettings() seeds caption_templates + card_themes for the tenant.
-    await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
-    await db.delete(cardThemesTable).where(eq(cardThemesTable.tenantId, tenantId));
-    await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
+    await db
+      .delete(cardSetsTable)
+      .where(and(eq(cardSetsTable.tenantId, tenantId), eq(cardSetsTable.grade, TEST_GRADE)));
+    if (draftIds.length) {
+      await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.id, draftIds));
+    }
+    // Put tenant #1's autoseed toggle back the way we found it.
+    if (previousAutoseed === null) {
+      await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
+    } else {
+      await db
+        .update(socialSettingsTable)
+        .set({ autoseedCarousels: previousAutoseed })
+        .where(eq(socialSettingsTable.tenantId, tenantId));
+    }
     if (matchIds.length) {
       await db.delete(matchesTable).where(inArray(matchesTable.id, matchIds));
     }
@@ -148,7 +173,6 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
     }
     await db.delete(importsTable).where(eq(importsTable.id, importId));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
-    await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
   });
 
   const body = {
@@ -202,6 +226,7 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
         and(
           eq(cardSetsTable.tenantId, tenantId),
           eq(cardSetsTable.sourceKind, "matchSummary"),
+          eq(cardSetsTable.grade, TEST_GRADE),
         ),
       );
     expect(rows).toHaveLength(1);

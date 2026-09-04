@@ -1,17 +1,25 @@
 /**
- * Idempotently (re)create database constraints that drizzle-kit cannot manage
- * reliably, so a fresh `drizzle-kit push` followed by this script lands on the
- * intended schema. Run from post-merge after `pnpm --filter db push`.
+ * Verify (default) or idempotently re-create (`--apply`) the database
+ * constraints and indexes that the migrations in `lib/db/migrations` own.
  *
- * Why this exists: drizzle-kit 0.31's push fails to detect existing multi-column
- * UNIQUE constraints and re-proposes them every run, which hangs the
- * non-interactive post-merge migration on a "truncate?" TTY prompt. Those
- * constraints are therefore left out of the Drizzle schema and enforced here
- * instead. See lib/db/src/schema/cap_register.ts for the full rationale.
+ *   pnpm --filter @workspace/scripts run ensure-constraints          # verify, exit 1 on any gap
+ *   pnpm --filter @workspace/scripts run ensure-constraints --apply  # legacy: create what is missing
  *
- * Run with: pnpm --filter @workspace/scripts run ensure-constraints
+ * History: drizzle-kit 0.31's `push` cannot detect existing multi-column /
+ * NULLS NOT DISTINCT / partial uniques and re-proposes them on every run, so for
+ * a long time these objects were kept OUT of the Drizzle schema and created here
+ * after each push. Since plan.md §5.4 the schema declares them and
+ * `lib/db/migrations` creates them (`0000_initial_schema.sql` on a fresh
+ * database, `0001_reconcile_pushed_databases.sql` on one that was pushed), so
+ * this script's job is now to PROVE the database matches: CI and post-merge run
+ * it read-only right after `pnpm --filter @workspace/db run migrate`. `--apply`
+ * keeps the old creation path for an emergency repair; it never drops anything
+ * except the superseded constraint names listed in `replaces`.
+ *
+ * Add new constraints to the Drizzle schema + a generated migration first, then
+ * list them here so the verifier covers them.
  */
-import { db } from "@workspace/db";
+import { db, closeDb } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
 type ConstraintSpec = {
@@ -22,7 +30,7 @@ type ConstraintSpec = {
   /**
    * Treat NULLs as equal (Postgres 15+ `UNIQUE NULLS NOT DISTINCT`). Needed when
    * a nullable column participates in the identity and two NULL rows must still
-   * collide (e.g. matches identity where round XOR stage is always NULL).
+   * collide (e.g. club_roles where grade is NULL for club-wide roles).
    */
   nullsNotDistinct?: boolean;
   /** Stale constraint names to DROP first (e.g. a previous narrower unique). */
@@ -32,22 +40,13 @@ type ConstraintSpec = {
 const CONSTRAINTS: ConstraintSpec[] = [
   // Cap numbers are a PER-TENANT sequence: every club's A Grade list starts at
   // #1, so the identity must carry tenant_id. The original
-  // `(category, cap_number)` unique made cap #1 global — the second tenant to
-  // mint a cap collided with the first, and cap-sync had to read the register
-  // unfiltered (a global high-water mark) to avoid it, which leaked one club's
-  // numbering into another's. `replaces` drops that constraint first. Widening
-  // an identity can never fail on existing rows, so this needs no data
-  // migration.
+  // `(category, cap_number)` unique made cap #1 global; `replaces` drops it.
   {
     table: "cap_register",
     name: "cap_register_tenant_category_cap_number_unique",
     columns: ["tenant_id", "category", "cap_number"],
     replaces: ["cap_register_category_cap_number_unique"],
   },
-  // admins_tenant_username_unique is managed here (not in Drizzle schema) because
-  // drizzle-kit 0.31 cannot detect the existing constraint and re-proposes it every
-  // push, causing an interactive truncate prompt that hangs post-merge. Same pattern
-  // as cap_register above.
   {
     table: "admins",
     name: "admins_tenant_username_unique",
@@ -91,11 +90,39 @@ const CONSTRAINTS: ConstraintSpec[] = [
   },
 ];
 
+/** CHECK constraints for the comment-only value sets (plan.md §5.4). */
+const CHECKS: { table: string; name: string; sql: string }[] = [
+  {
+    table: "tenants",
+    name: "tenants_plan_check",
+    sql: `"plan" IN ('free', 'club', 'pro', 'pilot')`,
+  },
+  {
+    table: "imports",
+    name: "imports_kind_check",
+    sql: `"kind" IN ('csv', 'match', 'match-batch')`,
+  },
+  {
+    table: "social_drafts",
+    name: "social_drafts_status_check",
+    sql: `"status" IN ('pending', 'approved', 'dismissed', 'posted')`,
+  },
+  {
+    table: "awards",
+    name: "awards_mechanism_check",
+    sql: `"mechanism" IN ('voted', 'points', 'manual')`,
+  },
+  {
+    table: "nav_items",
+    name: "nav_items_surface_check",
+    sql: `"surface" IN ('senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles')`,
+  },
+];
+
 /**
- * Partial unique indexes that the ConstraintSpec machinery above can't express
- * (a partial / WHERE-clause unique is an INDEX, not a table CONSTRAINT). Created
- * with raw idempotent SQL. `drops` removes any superseded constraint/index from
- * an earlier schema so the partial versions can take over.
+ * Partial unique indexes (a WHERE-clause unique is an INDEX, not a table
+ * CONSTRAINT). `drops` removes any superseded constraint/index from an earlier
+ * schema so the partial versions can take over.
  */
 type PartialIndexSpec = {
   name: string;
@@ -106,7 +133,22 @@ type PartialIndexSpec = {
 };
 
 const PARTIAL_INDEXES: PartialIndexSpec[] = [
-  // Admin per-match uploads (source_key IS NULL): one match per identity.
+  // Tenant identity (plan.md §2.7): one tenant per central club, one owner per
+  // custom domain.
+  {
+    name: "tenants_central_club_id_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_central_club_id_uidx"
+          ON "tenants" ("central_club_id")`,
+  },
+  {
+    name: "tenants_custom_domain_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_custom_domain_uidx"
+          ON "tenants" ("custom_domain")
+          WHERE "custom_domain" IS NOT NULL`,
+  },
+  // Admin per-match uploads (source_key IS NULL): one match per identity. Lives
+  // only in the reconcile migration + here: Drizzle's index builder cannot
+  // express NULLS NOT DISTINCT together with a WHERE clause.
   {
     name: "matches_identity_manual_uidx",
     sql: `CREATE UNIQUE INDEX IF NOT EXISTS "matches_identity_manual_uidx"
@@ -126,98 +168,110 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
   },
 ];
 
-/**
- * Non-unique performance indexes on the per-club stats core.
- *
- * These five tables carried only their serial `id` primary key, so every
- * scorecard render, player profile, grade leaderboard and stat recompute did a
- * sequential scan. Verified against the schema on 2026-07-22: zero secondary
- * indexes declared on any of them.
- *
- * Kept here rather than in the Drizzle schema for the same reason the partial
- * uniques are: this script runs immediately after `drizzle-kit push` in
- * post-merge, so anything push drops or fails to reconcile is restored on the
- * same run. `CREATE INDEX IF NOT EXISTS` is idempotent and never prompts, which
- * matters because post-merge is non-interactive with a 180s timeout.
- *
- * Deliberately NOT indexed: `players.surname` / `given_name`. Name lookup is
- * ILIKE, which a btree can't serve, and the tenant players table is small.
- */
-const PERFORMANCE_INDEXES: { name: string; sql: string }[] = [
-  {
-    name: "match_player_lines_match_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "match_player_lines_match_idx"
-          ON "match_player_lines" ("match_id")`,
-  },
-  {
-    name: "match_player_lines_player_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "match_player_lines_player_idx"
-          ON "match_player_lines" ("player_id")`,
-  },
-  {
-    name: "player_grade_stats_player_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "player_grade_stats_player_idx"
-          ON "player_grade_stats" ("player_id")`,
-  },
-  {
-    name: "player_grade_stats_grade_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "player_grade_stats_grade_idx"
-          ON "player_grade_stats" ("grade")`,
-  },
-  {
-    name: "pgss_player_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "pgss_player_idx"
-          ON "player_grade_season_stats" ("player_id")`,
-  },
-  {
-    // Grade and season are filtered together on season leaderboards; the
-    // composite also serves grade alone via its leading column.
-    name: "pgss_grade_season_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "pgss_grade_season_idx"
-          ON "player_grade_season_stats" ("grade", "season")`,
-  },
-  {
-    name: "matches_grade_season_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "matches_grade_season_idx"
-          ON "matches" ("grade", "season")`,
-  },
-  {
-    // The milestones board derives its recency window from the latest date.
-    name: "matches_match_date_idx",
-    sql: `CREATE INDEX IF NOT EXISTS "matches_match_date_idx"
-          ON "matches" ("match_date")`,
-  },
+/** Non-unique indexes: stats-core performance, FK columns, tenant_id. */
+const INDEXES: { name: string; table: string; columns: string[] }[] = [
+  { name: "match_player_lines_match_idx", table: "match_player_lines", columns: ["match_id"] },
+  { name: "match_player_lines_player_idx", table: "match_player_lines", columns: ["player_id"] },
+  { name: "player_grade_stats_player_idx", table: "player_grade_stats", columns: ["player_id"] },
+  { name: "player_grade_stats_grade_idx", table: "player_grade_stats", columns: ["grade"] },
+  { name: "pgss_player_idx", table: "player_grade_season_stats", columns: ["player_id"] },
+  { name: "pgss_grade_season_idx", table: "player_grade_season_stats", columns: ["grade", "season"] },
+  { name: "matches_grade_season_idx", table: "matches", columns: ["grade", "season"] },
+  { name: "matches_match_date_idx", table: "matches", columns: ["match_date"] },
+  { name: "cap_register_player_idx", table: "cap_register", columns: ["player_id"] },
+  { name: "premiership_players_premiership_idx", table: "premiership_players", columns: ["premiership_id"] },
+  { name: "junior_match_batting_match_idx", table: "junior_match_batting", columns: ["match_id"] },
+  { name: "junior_match_bowling_match_idx", table: "junior_match_bowling", columns: ["match_id"] },
+  { name: "junior_match_rosters_match_idx", table: "junior_match_rosters", columns: ["match_id"] },
+  { name: "player_images_player_idx", table: "player_images", columns: ["player_id"] },
+  ...[
+    "admin_password_resets",
+    "admins",
+    "awards",
+    "award_winners",
+    "cap_register",
+    "captains",
+    "club_roles",
+    "fixtures",
+    "centuries",
+    "five_wicket_hauls",
+    "club_records",
+    "honour_board_records",
+    "honour_boards",
+    "honour_board_overrides",
+    "junior_matches",
+    "junior_participants",
+    "junior_premierships",
+    "junior_office_bearers",
+    "life_members",
+    "nav_items",
+    "non_player_people",
+    "partnership_records",
+    "partnerships_50plus",
+    "player_images",
+    "premierships",
+    "premiership_players",
+    "card_themes",
+    "card_audio_tracks",
+    "card_effect_presets",
+    "milestone_events",
+    "team_of_decade_boards",
+    "team_of_decade_members",
+  ].map((table) => ({ name: `${table}_tenant_idx`, table, columns: ["tenant_id"] })),
 ];
 
-async function main() {
+async function constraintExists(table: string, name: string, type: "u" | "c"): Promise<boolean> {
+  // Scoped to the exact table: constraint names are not unique across tables.
+  const res = await db.execute(
+    sql`SELECT 1
+        FROM pg_constraint con
+        JOIN pg_class rel ON rel.oid = con.conrelid
+        JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+        WHERE con.conname = ${name}
+          AND con.contype = ${type}
+          AND rel.relname = ${table}
+          AND ns.nspname = 'public'
+        LIMIT 1`,
+  );
+  return res.rows.length > 0;
+}
+
+async function indexExists(name: string): Promise<boolean> {
+  const res = await db.execute(
+    sql`SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = ${name} LIMIT 1`,
+  );
+  return res.rows.length > 0;
+}
+
+/** Read-only: list every expected object that is missing. */
+async function verify(): Promise<string[]> {
+  const missing: string[] = [];
   for (const c of CONSTRAINTS) {
-    // Drop any superseded constraints first so the new identity can be applied.
+    if (!(await constraintExists(c.table, c.name, "u"))) missing.push(`unique ${c.table}.${c.name}`);
+  }
+  for (const c of CHECKS) {
+    if (!(await constraintExists(c.table, c.name, "c"))) missing.push(`check ${c.table}.${c.name}`);
+  }
+  for (const ix of PARTIAL_INDEXES) {
+    if (!(await indexExists(ix.name))) missing.push(`unique index ${ix.name}`);
+  }
+  for (const ix of INDEXES) {
+    if (!(await indexExists(ix.name))) missing.push(`index ${ix.name} on ${ix.table}`);
+  }
+  return missing;
+}
+
+/** Legacy path: create whatever is missing, idempotently. */
+async function apply(): Promise<void> {
+  for (const c of CONSTRAINTS) {
     for (const old of c.replaces ?? []) {
-      await db.execute(
-        sql.raw(
-          `ALTER TABLE "${c.table}" DROP CONSTRAINT IF EXISTS "${old}"`,
-        ),
-      );
+      await db.execute(sql.raw(`ALTER TABLE "${c.table}" DROP CONSTRAINT IF EXISTS "${old}"`));
     }
-    // Existence check is scoped to the exact table + a unique constraint, since
-    // constraint names are NOT globally unique across tables/schemas.
-    const exists = await db.execute(
-      sql`SELECT 1
-          FROM pg_constraint con
-          JOIN pg_class rel ON rel.oid = con.conrelid
-          JOIN pg_namespace ns ON ns.oid = rel.relnamespace
-          WHERE con.conname = ${c.name}
-            AND con.contype = 'u'
-            AND rel.relname = ${c.table}
-            AND ns.nspname = 'public'
-          LIMIT 1`,
-    );
-    if (exists.rows.length > 0) {
+    if (await constraintExists(c.table, c.name, "u")) {
       console.log(`✓ ${c.name} already present`);
       continue;
     }
-    // Fail fast (with a clear message) instead of letting ADD CONSTRAINT throw
-    // an opaque error if the data violates the invariant we're about to enforce.
+    // Fail fast with a clear message instead of an opaque ADD CONSTRAINT error.
     const cols = c.columns.map((col) => `"${col}"`).join(", ");
     const dups = await db.execute(
       sql.raw(
@@ -227,26 +281,31 @@ async function main() {
     );
     if (dups.rows.length > 0) {
       throw new Error(
-        `Cannot add ${c.name}: "${c.table}" has duplicate ${c.columns.join(
-          ", ",
-        )} rows: ${JSON.stringify(dups.rows)}`,
+        `Cannot add ${c.name}: "${c.table}" has duplicate ${c.columns.join(", ")} rows: ${JSON.stringify(dups.rows)}`,
       );
     }
     const nullsClause = c.nullsNotDistinct ? "NULLS NOT DISTINCT " : "";
     await db.execute(
-      sql.raw(
-        `ALTER TABLE "${c.table}" ADD CONSTRAINT "${c.name}" UNIQUE ${nullsClause}(${cols})`,
-      ),
+      sql.raw(`ALTER TABLE "${c.table}" ADD CONSTRAINT "${c.name}" UNIQUE ${nullsClause}(${cols})`),
     );
     console.log(`+ added ${c.name} on ${c.table}`);
   }
 
-  // Partial / WHERE-clause unique indexes (can't be table constraints).
+  for (const c of CHECKS) {
+    if (await constraintExists(c.table, c.name, "c")) {
+      console.log(`✓ ${c.name} already present`);
+      continue;
+    }
+    // NOT VALID: legacy rows are not re-checked; new writes are.
+    await db.execute(
+      sql.raw(`ALTER TABLE "${c.table}" ADD CONSTRAINT "${c.name}" CHECK (${c.sql}) NOT VALID`),
+    );
+    console.log(`+ added ${c.name} on ${c.table} (NOT VALID)`);
+  }
+
   for (const ix of PARTIAL_INDEXES) {
     for (const con of ix.dropConstraints ?? []) {
-      await db.execute(
-        sql.raw(`ALTER TABLE "matches" DROP CONSTRAINT IF EXISTS "${con}"`),
-      );
+      await db.execute(sql.raw(`ALTER TABLE "matches" DROP CONSTRAINT IF EXISTS "${con}"`));
     }
     for (const idx of ix.dropIndexes ?? []) {
       await db.execute(sql.raw(`DROP INDEX IF EXISTS "${idx}"`));
@@ -255,18 +314,40 @@ async function main() {
     console.log(`✓ ${ix.name} ensured`);
   }
 
-  // Non-unique performance indexes on the stats core.
-  for (const ix of PERFORMANCE_INDEXES) {
-    await db.execute(sql.raw(ix.sql));
+  for (const ix of INDEXES) {
+    const cols = ix.columns.map((col) => `"${col}"`).join(", ");
+    await db.execute(
+      sql.raw(`CREATE INDEX IF NOT EXISTS "${ix.name}" ON "${ix.table}" (${cols})`),
+    );
     console.log(`✓ ${ix.name} ensured`);
   }
+}
 
-  console.log("ensure-constraints: done");
+async function main(): Promise<void> {
+  const applyMode = process.argv.includes("--apply");
+  if (applyMode) {
+    await apply();
+    console.log("ensure-constraints: applied");
+  }
+  const missing = await verify();
+  if (missing.length > 0) {
+    console.error(`ensure-constraints: ${missing.length} expected object(s) missing:`);
+    for (const m of missing) console.error(`  - ${m}`);
+    console.error(
+      "Run `pnpm --filter @workspace/db run migrate` (or `ensure-constraints --apply` to repair in place).",
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const total = CONSTRAINTS.length + CHECKS.length + PARTIAL_INDEXES.length + INDEXES.length;
+  console.log(`ensure-constraints: verified ${total} constraints/indexes present`);
 }
 
 main()
-  .then(() => process.exit(0))
   .catch((e) => {
     console.error(e);
-    process.exit(1);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeDb().catch(() => undefined);
   });

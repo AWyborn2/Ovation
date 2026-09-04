@@ -1,8 +1,15 @@
 import { useParams, Link } from "wouter";
-import { useGetStat, getGetStatQueryKey, useUpdateStat, useDeleteStat } from "@workspace/api-client-react";
+import {
+  useGetStat,
+  getGetStatQueryKey,
+  useUpdateStat,
+  useDeleteStat,
+  type Stat,
+  type StatUpdate,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,12 +21,13 @@ export default function StatDetail() {
   const statId = parseInt(id, 10);
   const confirm = useConfirm();
   const { data: stat, isLoading, isError, refetch } = useGetStat(statId, { query: { enabled: !!statId, queryKey: getGetStatQueryKey(statId) } });
-  
   const queryClient = useQueryClient();
   const updateStat = useUpdateStat();
   const deleteStat = useDeleteStat();
 
-  const [formData, setFormData] = useState<any>({});
+  // Draft of the record being edited: seeded from the loaded `Stat`, then patched
+  // field-by-field by `handleChange`. Every field is optional until the record loads.
+  const [formData, setFormData] = useState<Partial<Stat>>({});
 
   useEffect(() => {
     if (stat) {
@@ -29,7 +37,7 @@ export default function StatDetail() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === "number" ? (value === "" ? null : Number(value)) : value
     }));
@@ -37,11 +45,12 @@ export default function StatDetail() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const updateData = { ...formData };
-    delete updateData.id;
-    delete updateData.playerId;
-    delete updateData.surname;
-    delete updateData.givenName;
+    // Identity + player-name fields are read-only on the wire. A cleared number
+    // input is held as `null` and sent as-is (the server clears the column), so
+    // the draft is wider than `StatUpdate` only in that nullability.
+    const { id: _id, playerId: _playerId, surname: _surname, givenName: _givenName, ...rest } =
+      formData;
+    const updateData = rest as StatUpdate;
 
     updateStat.mutate({ id: statId, data: updateData }, {
       onSuccess: () => {
@@ -156,7 +165,6 @@ export default function StatDetail() {
                 <Input type="number" name="runOuts" value={formData.runOuts || ""} onChange={handleChange} />
               </div>
             </div>
-            
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
               <Button type="submit" disabled={updateStat.isPending}>Save Changes</Button>

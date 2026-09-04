@@ -1,8 +1,3 @@
-// @ts-nocheck — `@workspace/db` deliberately carries no vitest devDependency
-// (it is a leaf lib; the workspace's test runner lives in the api-server
-// package). Run this suite with the api-server's vitest install, e.g. from
-// lib/db:  node ../../artifacts/api-server/node_modules/vitest/vitest.mjs run
-// The central DB is fully mocked below, so no CENTRAL_DATABASE_URL is needed.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -68,6 +63,7 @@ vi.mock("./central", async () => {
   };
 });
 
+import { PgDialect } from "drizzle-orm/pg-core";
 import {
   centralClubMatches,
   centralClubTotals,
@@ -75,6 +71,9 @@ import {
   centralDashboard,
   centralLadder,
   clearCentralQueriesCache,
+  clubInvolvedWhere,
+  inList,
+  isPrivateRow,
   withCentralCache,
 } from "./central-queries";
 import { centralMatchesTable } from "./central-schema";
@@ -387,5 +386,30 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
     process.env.CENTRAL_CACHE_TTL_MS = "0";
     queuedResults.push([{ matchId: 1, grade: "A Grade", season: "Summer 2023/24" }]);
     await expect(centralClubTotalsBySeason(5, 2024)).resolves.toEqual([]);
+  });
+});
+
+describe("shared predicates (central/where.ts) and the privacy rule", () => {
+  const dialect = new PgDialect();
+
+  it("clubInvolvedWhere: home OR away club id, both bound to the same club", () => {
+    const q = dialect.sqlToQuery(clubInvolvedWhere(7));
+    expect(q.sql).toMatch(/"home_club_id" = \$1 or .*"away_club_id" = \$2/);
+    expect(q.params).toEqual([7, 7]);
+  });
+
+  it("inList: binds the whole id list as ONE array parameter (= any($1))", () => {
+    const ids = Array.from({ length: 1500 }, (_, i) => i + 1);
+    const q = dialect.sqlToQuery(inList(centralMatchesTable.matchId, ids));
+    expect(q.sql).toMatch(/"match_id" = any\(\$1\)$/);
+    expect(q.params).toEqual([ids]); // not 1,500 separate bind parameters
+  });
+
+  it("isPrivateRow: only is_private = 1 is private; missing rows are public", () => {
+    expect(isPrivateRow({ isPrivate: 1 })).toBe(true);
+    expect(isPrivateRow({ isPrivate: 0 })).toBe(false);
+    expect(isPrivateRow({ isPrivate: null })).toBe(false);
+    expect(isPrivateRow(undefined)).toBe(false);
+    expect(isPrivateRow(null)).toBe(false);
   });
 });

@@ -24,12 +24,11 @@ artifacts/            ← the runnable apps
   cricket-club/       ← React + Vite + Tailwind website (~50k LOC, 58 pages) — the main product
   api-server/         ← Express 5 + Drizzle + Postgres backend (~23k LOC, ~48 route modules)
   cricket-mobile/     ← Expo / React Native phone app (~7.6k LOC)
-  mockup-sandbox/     ← design scratch area — NOT production
 lib/                  ← shared toolkits
   api-spec/           ← openapi.yaml (single 10.4k-line contract, ~215 operations) — SOURCE OF TRUTH for the API
   api-client-react/   ← GENERATED from openapi.yaml (React Query hooks) — do not hand-edit
   api-zod/            ← GENERATED from openapi.yaml (Zod validators) — do not hand-edit
-  db/                 ← Drizzle schema (35 tables) + central DB connection/queries
+  db/                 ← Drizzle schema (47 tables) + central DB connection/queries
   scorecard/          ← shared match→scorecard view-model, used by web AND mobile
   object-storage-web/ ← image/file upload helpers
 scripts/              ← maintenance / data scripts (incl. central-DB compare & seed)
@@ -46,11 +45,22 @@ now reading shared stats from a central association DB filtered per tenant.**
 
 ## How to run / build (commands)
 
-- Package manager is **pnpm only** (preinstall hook blocks npm/yarn).
-- Typecheck everything: `pnpm run typecheck`
+- Package manager is **pnpm only** (preinstall hook blocks npm/yarn); Node 22 (`.nvmrc`).
+- Typecheck everything: `pnpm run typecheck` (strict TypeScript: `strict`,
+  `noUnusedLocals`, `noImplicitOverride` in `tsconfig.base.json`)
+- Lint / format: `pnpm run lint`, `pnpm run format:check` (ESLint flat config + Prettier
+  at the root)
 - Build everything: `pnpm run build` (typechecks first)
-- API server: `pnpm --filter @workspace/api-server run dev` · tests: `... run test` (vitest)
-- Website: `pnpm --filter @workspace/cricket-club run dev`
+- Database: `pnpm --filter @workspace/db run migrate` applies `lib/db/migrations`
+  (baselines a database that was built with `push`); after editing
+  `lib/db/src/schema`, run `... run generate` and commit the migration. CI fails on a
+  schema edit without its migration. `push` is for local experiments only.
+- API server: `pnpm --filter @workspace/api-server run dev` · tests: `... run test`
+  (vitest, real Postgres — see README for the env vars)
+- Website: `pnpm --filter @workspace/cricket-club run dev` · tests: `... test`
+- Mobile: `pnpm --filter @workspace/cricket-mobile run start` (plain `expo start`; the
+  `dev` script is the Replit-proxied variant)
+- Library unit tests: `pnpm run test:libs`
 - **Regenerate API glue after spec changes:** edit `lib/api-spec/openapi.yaml`, then
   `pnpm --filter @workspace/api-spec run codegen`. Never hand-edit generated files.
 - Full original run instructions + data model live in `replit.md`.
@@ -70,7 +80,8 @@ now reading shared stats from a central association DB filtered per tenant.**
   Curated tables carry tenant ownership via the `tenantIdColumn()` helper
   (`schema/_tenant.ts` — read its comment block; it documents what is tenant-scoped
   now, what is deferred, and why).
-- **Strict TypeScript** (explicit return types, `import type`), functional React +
+- **TypeScript** with most strict flags on (see `tsconfig.base.json`; `strict: true` is a
+  plan.md follow-up), explicit return types, `import type`, ESLint enforced in CI, functional React +
   hooks, Tailwind tokens for theming, Radix UI primitives. Doc-comments explain
   intent — keep that habit.
 - `@workspace/scorecard` is the SINGLE view-model for web + mobile. Don't fork it.
@@ -101,16 +112,34 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 - **Tenant isolation is the catastrophic-bug surface.** One tenant must never read
   another's data. Tests exist (`tenant-isolation.test.ts`, `admins-isolation.test.ts`,
   `platform-admin-*.test.ts`) — extend them whenever you touch a read path.
-- **Central DB is READ-ONLY from the app.** Never write to it.
+- **Central DB is READ-ONLY from the app.** Never write to it. The proxy blocks
+  insert/update/delete/transaction/$client; point `CENTRAL_DATABASE_URL` at a
+  SELECT-only role (plan.md §2.6).
+- **Stats reads fail closed.** Only tenant #1 may read the native stats tables; any
+  other tenant is served from central or gets a 409, and `CENTRAL_READS=0` makes
+  central tenants 503 rather than falling back to Halls Head's data.
 - **Data governance:** deep scorecards were scraped for the pilot. Keep ingest behind
   a clean adapter boundary. Do NOT commercialise on scraped data; pilot/non-commercial
   framing until partner/licence access (PlayHQ partner / Fixtura) is secured.
 
 ## Known gaps / watch-outs
 
-- **No frontend or mobile tests.** ~58k LOC of UI is unguarded. All 22 test files are
-  backend. A thin smoke-test layer on critical pages is the cheapest win.
-- **No README.** Knowledge is split across CLAUDE.md / replit.md / `.agents/memory/`.
+- **Test coverage is uneven.** ~70 API suites (real Postgres), ~30 web suites (hermetic
+  smoke + logic), lib/db + lib/scorecard + scripts unit suites (mocked), and **no mobile
+  tests**. The `*-consistency.test.ts` and `honour-display-kiosk.test.ts` suites still
+  need the demo club's full history and are skipped in CI (`CI_SKIP_DATA_TESTS`).
+- **CI** (`.github/workflows/ci.yml`): Typecheck (+ codegen drift + migration drift),
+  Lint, Build (api-server + website), Library unit tests, Web smoke tests, API
+  integration tests. The API job builds its throwaway Postgres from the migrations
+  (`migrate` → `ensure-constraints` verifier → `migrate` again for idempotency), seeds
+  tenant #1, and gives the same database an empty `central` schema plus a small fixture
+  (`seed-ci-central-fixture.ts`) — no live central-DB secret is used in CI.
+- **Per-process state assumes ONE api-server instance.** Tenant config, brand, host
+  directory, central-query and milestone caches, the card-video job map and the
+  rate-limit store are all in-memory; `invalidateTenantConfigCache` only reaches the
+  local process. Every cache is TTL-bounded (≤ 10 min) so a second instance would be
+  *eventually* consistent, but do not autoscale beyond one instance without moving
+  invalidation to Postgres `LISTEN/NOTIFY` and the job map to a table (plan.md §5.12).
 - **Dormant code rots.** Billing + entitlements are inert in a live server; treat with
   care, they aren't exercised by normal use.
 - **Dual-read boundary (local vs central DB)** is the highest-risk area for *silent*
@@ -120,10 +149,35 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 
 ## Where things live (quick index)
 
-- Tenant/brand resolution: `api-server/src/lib/tenant-brand.ts`, `lib/tenant.ts`,
+- Tenant/brand resolution: `api-server/src/lib/tenant-brand.ts`, `lib/tenant.ts`
+  (`dataSource(req)` = the ONE fail-closed decision every stats read goes through;
+  `isCentralTenant` is the raw flag for tenant-scoped surfaces such as juniors),
   `middlewares/tenant-context.ts`
-- Central DB: `lib/db/src/central.ts`, `central-queries.ts`, `provision.ts`
-- Auth/seeding: `api-server/src/lib/auth.ts` (seeds demo admin + platform super-admin)
+- Environment: `api-server/src/config.ts` — every variable is an `env.*()` accessor,
+  validated at boot; ESLint forbids `process.env` elsewhere in the server.
+  `.env.example` lists them all.
+- Central DB: `lib/db/src/central.ts` (lazy, read-only proxy, verified TLS via
+  `CENTRAL_DB_SSL`), `central-queries.ts` (barrel over `lib/db/src/central/*`),
+  `provision.ts`. Both pools connect on first use (`getDb`/`getCentralDb`,
+  `closeDb`/`closeCentralDb` for shutdown).
+- Schema + migrations: `lib/db/src/schema/*` (constraints, indexes and CHECKs are
+  declared here), `lib/db/migrations/*` (generated; `0001_reconcile_pushed_databases`
+  is hand-written), `lib/db/src/migrate.ts` (runner + baseline),
+  `scripts/src/ensure-constraints.ts` (read-only verifier).
+- Knowledge stores — three, with distinct audiences: `.agents/memory/` is
+  **agent-only** working notes (may lag; this file wins on conflict), `docs/` is
+  **human-facing** (plans, follow-ups, product review), `CONCEPTS.md` is the shared
+  **vocabulary**. `plan.md` is the improvement plan this codebase is being worked
+  through. Tooling metadata you can ignore unless you are changing it: `.design-sync/`
+  (design-token sync config), `.mcp.json` (MCP servers for assistants),
+  `skills-lock.json` (installed assistant skills).
+- Replit-only pieces: `.replit`, `replit.nix`, `scripts/post-merge.sh` (runs migrate +
+  verifier + reconcile/backfill scripts after each pull), mobile `scripts/build.js` +
+  `server/serve.js` (static Expo web build served behind Replit's proxy).
+- Auth/seeding: `api-server/src/lib/auth.ts` (seeds demo admin + platform super-admin;
+  sessions carry a `session_epoch` so password changes and `POST /auth/logout-all`
+  revoke them)
+- Scripts: `scripts/README.md` (inventory + `--tenant` / `--dry-run` guard rails)
 - Billing (inert): `api-server/src/routes/billing.ts`, `lib/billing.ts`,
   `lib/entitlements.ts`
 - Player identity crosswalk (app int id ↔ PlayHQ GUID): `schema/player_id_map.ts`

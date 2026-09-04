@@ -22,7 +22,7 @@ vi.mock("@workspace/scorecard", () => ({
   juniorMatchToSummaryInput: vi.fn(),
 }));
 vi.mock("./tenant-brand", () => ({ getTenantBrand: vi.fn() }));
-vi.mock("../routes/matches", () => ({ loadMatchDetail: vi.fn() }));
+vi.mock("./match-detail", () => ({ loadMatchDetail: vi.fn() }));
 vi.mock("./club-brand", () => ({
   getOpponentBrandsByAppClubId: vi.fn(),
   overlayNativeOpponents: vi.fn(),

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Download, Loader2 } from "lucide-react";
 import { saveOrSharePng } from "@/lib/trading-card-export";
 
@@ -66,15 +66,15 @@ export function PlaqueLightbox<T>({
     return () => window.removeEventListener("resize", compute);
   }, []);
 
+  // Escape is handled by the Radix dialog; arrows page through the gallery.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
+      if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
       else if (e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, onIndexChange, index, hasPrev, hasNext]);
+  }, [onIndexChange, index, hasPrev, hasNext]);
 
   if (!current) return null;
 
@@ -136,13 +136,20 @@ export function PlaqueLightbox<T>({
     zIndex: 10,
   });
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden"
+  // Radix gives the overlay real dialog semantics (role, aria-modal, focus trap
+  // and restore, Escape). The Content covers the viewport so a click on the
+  // backdrop still closes it; the plaque itself stops propagation below.
+  return (
+    <DialogPrimitive.Root open onOpenChange={(open) => !open && onClose()}>
+      <DialogPrimitive.Portal>
+    <DialogPrimitive.Content
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden outline-none"
       style={{ background: "rgba(0,0,0,0.82)" }}
       onClick={onClose}
+      aria-describedby={undefined}
       data-testid="plaque-lightbox"
     >
+      <DialogPrimitive.Title className="sr-only">Premiership plaque</DialogPrimitive.Title>
       <button
         onClick={onClose}
         aria-label="Close"
@@ -233,7 +240,8 @@ export function PlaqueLightbox<T>({
           {exporting ? "Preparing…" : "Save / Share image"}
         </button>
       )}
-    </div>,
-    document.body,
+    </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

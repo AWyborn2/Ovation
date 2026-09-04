@@ -10,7 +10,7 @@ import {
   getGetJuniorLeaderboardsQueryKey,
 } from "@workspace/api-client-react";
 
-import { Body, Card, ErrorView, Heading, Loading } from "@/components/ui";
+import { Body, Card, ErrorView, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { JUNIOR, fmtJuniorDate, fmtNum, fmtSeasonSpan } from "@/lib/juniors";
 

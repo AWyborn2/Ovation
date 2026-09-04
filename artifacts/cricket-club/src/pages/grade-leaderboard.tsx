@@ -8,7 +8,7 @@ import {
   useListClubRoles,
 } from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
-import { ShareButton } from "@/components/share-card-modal";
+import { ShareButton } from "@/components/share-button";
 import { TableSkeleton, QueryError } from "@/components/data-states";
 
 const STAT_COLUMN_COUNT = 13;

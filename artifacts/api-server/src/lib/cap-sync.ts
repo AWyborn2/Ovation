@@ -5,6 +5,7 @@ import {
   playerGradeStatsTable,
   playersTable,
 } from "@workspace/db";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 /** The transaction handle passed to a `db.transaction` callback. */
 export type CapSyncTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -29,10 +30,9 @@ export const CAP_CATEGORY_TO_GRADE: Record<"male" | "female", string> = {
  * Fill-ins are excluded from every stats derivation (match-aggregate.ts,
  * points.ts, roundup.ts, stats.ts), so they never accumulate grade games and
  * would read as permanently uncapped. They are borrowed players, not club
- * members, and must never be issued a cap. Declared locally, as in
- * match-milestone-detector.ts / roundup.ts / fixtures.ts / stats.ts.
+ * members, and must never be issued a cap. The floor itself is
+ * `FILL_IN_THRESHOLD` from @workspace/scorecard — the single definition.
  */
-const FILL_IN_FLOOR = 90000;
 
 /**
  * Circuit breaker on auto-minting. A single import that would cap more than
@@ -274,7 +274,7 @@ export async function syncCapsFromStats(
   const fielded: number[] = [];
   const isFielded = new Set<number>();
   for (const id of orderedPlayerIds) {
-    if (id >= FILL_IN_FLOOR) continue;
+    if (id >= FILL_IN_THRESHOLD) continue;
     if (gamesByPlayer.has(id) && !isFielded.has(id)) {
       isFielded.add(id);
       fielded.push(id);

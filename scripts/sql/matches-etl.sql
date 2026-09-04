@@ -1,3 +1,7 @@
+-- SINGLE-TENANT LOADER (tenant #1 / Halls Head only). Runs against a staging schema
+-- built by scripts/src/load-*-db.ts. It contains wholesale DELETEs with no tenant
+-- predicate and must never be run directly against the shared multi-tenant DB.
+
 -- =====================================================================
 -- matches-etl.sql — bulk-load the master DB's PlayHQ-era match history
 -- into the app's match tables, then reconcile the match-era seasons

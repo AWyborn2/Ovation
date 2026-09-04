@@ -202,7 +202,6 @@ async function main() {
   });
   await db.insert(lifeMembersTable).values(lmRows);
 
-  // eslint-disable-next-line no-console
   console.log(
     `Seeded ${capRows.length} caps (${capRows.filter((c) => c.playerId).length} matched), ${lmRows.length} life members (${lmRows.filter((m) => m.playerId).length} matched).`,
   );
@@ -211,7 +210,6 @@ async function main() {
 main().then(
   () => process.exit(0),
   (err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exit(1);
   },

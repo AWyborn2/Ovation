@@ -1,25 +1,50 @@
 import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import app from "../app";
+import { getBillingProvider, BillingNotConfiguredError } from "../lib/billing";
 
 /**
- * Billing is inert during the pilot (Phase 2d). The webhook acknowledges without
- * touching plans while disabled, and checkout is unauthenticated-guarded and
- * returns "disabled". Real-DB integration test (importing the app needs
- * DATABASE_URL); no Stripe calls are made.
+ * Billing is inert during the pilot (Phase 2d), and fail-safe about it:
+ *
+ *  - while BILLING_ENABLED is unset the webhook does not exist (404) — a dormant
+ *    endpoint must never acknowledge an unauthenticated POST with a 200 — and
+ *    checkout is admin-guarded and returns "disabled";
+ *  - with BILLING_ENABLED=true but no real provider wired, the adapter refuses
+ *    to hand out the stub (throws) and the webhook answers 503.
+ *
+ * Real-DB integration test (importing the app needs DATABASE_URL); no Stripe
+ * calls are made.
  */
 describe("billing adapter (dormant)", () => {
   afterEach(() => {
     delete process.env.BILLING_ENABLED;
   });
 
-  it("webhook acknowledges and does nothing while billing is disabled", async () => {
+  it("webhook is not exposed (404) while billing is disabled", async () => {
     const res = await request(app)
       .post("/billing/webhook")
       .set("content-type", "application/json")
       .send(JSON.stringify({ type: "anything" }));
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ received: true, disabled: true });
+    expect(res.status).toBe(404);
+  });
+
+  it("webhook answers 503 when billing is enabled without a provider", async () => {
+    process.env.BILLING_ENABLED = "true";
+    const res = await request(app)
+      .post("/billing/webhook")
+      .set("content-type", "application/json")
+      .send(JSON.stringify({ type: "anything" }));
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ error: "Billing is not configured" });
+  });
+
+  it("getBillingProvider hands out the stub only while billing is disabled", () => {
+    delete process.env.BILLING_ENABLED;
+    expect(() => getBillingProvider()).not.toThrow();
+
+    process.env.BILLING_ENABLED = "true";
+    expect(() => getBillingProvider()).toThrow(BillingNotConfiguredError);
+    expect(() => getBillingProvider()).toThrow(/BILLING_ENABLED=true/);
   });
 
   it("checkout requires an admin session", async () => {

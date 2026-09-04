@@ -1,4 +1,13 @@
-import { pgTable, serial, text, integer, boolean, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  boolean,
+  jsonb,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 // A board / page background source. kind "none" clears any inherited image;
@@ -119,73 +128,53 @@ export const honourDisplaySettingsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-  // The one skin every board renders in: one of p1..p7. Each board keeps its
-  // natural layout; the skin only changes the look.
-  defaultTemplate: text("default_template").notNull().default("p1"),
-  // Ordered list of board ids the kiosk rotates through. Empty = all boards.
-  kioskSequence: jsonb("kiosk_sequence")
-    .$type<string[]>()
-    .notNull()
-    .default([]),
-  // Hold (ms) on each board before any credit-scroll begins.
-  kioskDwellMs: integer("kiosk_dwell_ms").notNull().default(3500),
-  // Credit-scroll speed in px/sec for boards taller than the viewport.
-  kioskScrollSpeed: integer("kiosk_scroll_speed").notNull().default(36),
-  // Hold (ms) at the bottom of a scrolled board / on short boards before advancing.
-  kioskEndHoldMs: integer("kiosk_end_hold_ms").notNull().default(3000),
-  // Sponsor advertising on the kiosk (reuses the club sponsor library). The
-  // strip embeds a "proudly supported by" logo bar on every board screen;
-  // slides rotate a full-screen sponsor board in after every N boards. Both
-  // independently toggleable and only render when there are active sponsors.
-  kioskSponsorStrip: boolean("kiosk_sponsor_strip").notNull().default(false),
-  kioskSponsorSlides: boolean("kiosk_sponsor_slides").notNull().default(false),
-  kioskSponsorSlideEvery: integer("kiosk_sponsor_slide_every").notNull().default(3),
-  // Sponsor slide style: one grid of all sponsors, or one large sponsor per slide.
-  kioskSponsorSlideStyle: text("kiosk_sponsor_slide_style").notNull().default("grid"),
-  // Which sponsors appear on the kiosk (subset of active); empty = all active.
-  kioskSponsorIds: jsonb("kiosk_sponsor_ids")
-    .$type<number[]>()
-    .notNull()
-    .default([]),
-  // Admin-uploaded full-screen ad creatives placed between boards.
-  kioskAds: jsonb("kiosk_ads")
-    .$type<KioskAdJson[]>()
-    .notNull()
-    .default([]),
-  // Long-lived read-only access token that lets a fixed clubroom TV / Raspberry
-  // Pi load the kiosk rotation without an admin login. NULL = no link issued
-  // (kiosk token access disabled). Rotating/clearing this revokes old links.
-  kioskToken: text("kiosk_token"),
-  // Per-board display overrides keyed by board id (column count, transition, fit).
-  boardConfigs: jsonb("board_configs")
-    .$type<Record<string, BoardDisplayConfigJson>>()
-    .notNull()
-    .default({}),
-  // Admin-defined composite "columns" boards.
-  composites: jsonb("composites")
-    .$type<CompositeDefJson[]>()
-    .notNull()
-    .default([]),
-  // Admin-built custom season-grid boards.
-  customGrids: jsonb("custom_grids")
-    .$type<CustomGridDefJson[]>()
-    .notNull()
-    .default([]),
-  // Admin-authored skins/themes (built-in p1..p8 are CSS-only, not stored here).
-  skins: jsonb("skins")
-    .$type<HonourSkinJson[]>()
-    .notNull()
-    .default([]),
-  // Club-wide colour overrides layered on top of the active skin.
-  colourOverrides: jsonb("colour_overrides")
-    .$type<HonourColourOverridesJson>()
-    .notNull()
-    .default({}),
-  // Club-wide default title font stack (null = the skin's own font).
-  defaultFont: text("default_font"),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    // The one skin every board renders in: one of p1..p7. Each board keeps its
+    // natural layout; the skin only changes the look.
+    defaultTemplate: text("default_template").notNull().default("p1"),
+    // Ordered list of board ids the kiosk rotates through. Empty = all boards.
+    kioskSequence: jsonb("kiosk_sequence").$type<string[]>().notNull().default([]),
+    // Hold (ms) on each board before any credit-scroll begins.
+    kioskDwellMs: integer("kiosk_dwell_ms").notNull().default(3500),
+    // Credit-scroll speed in px/sec for boards taller than the viewport.
+    kioskScrollSpeed: integer("kiosk_scroll_speed").notNull().default(36),
+    // Hold (ms) at the bottom of a scrolled board / on short boards before advancing.
+    kioskEndHoldMs: integer("kiosk_end_hold_ms").notNull().default(3000),
+    // Sponsor advertising on the kiosk (reuses the club sponsor library). The
+    // strip embeds a "proudly supported by" logo bar on every board screen;
+    // slides rotate a full-screen sponsor board in after every N boards. Both
+    // independently toggleable and only render when there are active sponsors.
+    kioskSponsorStrip: boolean("kiosk_sponsor_strip").notNull().default(false),
+    kioskSponsorSlides: boolean("kiosk_sponsor_slides").notNull().default(false),
+    kioskSponsorSlideEvery: integer("kiosk_sponsor_slide_every").notNull().default(3),
+    // Sponsor slide style: one grid of all sponsors, or one large sponsor per slide.
+    kioskSponsorSlideStyle: text("kiosk_sponsor_slide_style").notNull().default("grid"),
+    // Which sponsors appear on the kiosk (subset of active); empty = all active.
+    kioskSponsorIds: jsonb("kiosk_sponsor_ids").$type<number[]>().notNull().default([]),
+    // Admin-uploaded full-screen ad creatives placed between boards.
+    kioskAds: jsonb("kiosk_ads").$type<KioskAdJson[]>().notNull().default([]),
+    // Long-lived read-only access token that lets a fixed clubroom TV / Raspberry
+    // Pi load the kiosk rotation without an admin login. NULL = no link issued
+    // (kiosk token access disabled). Rotating/clearing this revokes old links.
+    kioskToken: text("kiosk_token"),
+    // Per-board display overrides keyed by board id (column count, transition, fit).
+    boardConfigs: jsonb("board_configs")
+      .$type<Record<string, BoardDisplayConfigJson>>()
       .notNull()
-      .defaultNow(),
+      .default({}),
+    // Admin-defined composite "columns" boards.
+    composites: jsonb("composites").$type<CompositeDefJson[]>().notNull().default([]),
+    // Admin-built custom season-grid boards.
+    customGrids: jsonb("custom_grids").$type<CustomGridDefJson[]>().notNull().default([]),
+    // Admin-authored skins/themes (built-in p1..p8 are CSS-only, not stored here).
+    skins: jsonb("skins").$type<HonourSkinJson[]>().notNull().default([]),
+    // Club-wide colour overrides layered on top of the active skin.
+    colourOverrides: jsonb("colour_overrides")
+      .$type<HonourColourOverridesJson>()
+      .notNull()
+      .default({}),
+    // Club-wide default title font stack (null = the skin's own font).
+    defaultFont: text("default_font"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqTenant: uniqueIndex("honour_display_settings_tenant_unique").on(t.tenantId),
@@ -194,5 +183,4 @@ export const honourDisplaySettingsTable = pgTable(
   }),
 );
 
-export type HonourDisplaySettingsRow =
-  typeof honourDisplaySettingsTable.$inferSelect;
+export type HonourDisplaySettingsRow = typeof honourDisplaySettingsTable.$inferSelect;

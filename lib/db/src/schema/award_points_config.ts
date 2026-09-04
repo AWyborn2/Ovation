@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  text,
-  boolean,
-  real,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, boolean, real, timestamp, unique } from "drizzle-orm/pg-core";
 import { awardsTable } from "./awards";
 
 /**
@@ -27,40 +19,44 @@ import { awardsTable } from "./awards";
  * The (award_id, season) uniqueness is enforced by `ensure-constraints`, not the
  * Drizzle schema (see cap_register.ts for the rationale).
  */
-export const awardPointsConfigTable = pgTable("award_points_config", {
-  id: serial("id").primaryKey(),
-  awardId: integer("award_id")
-    .notNull()
-    .references(() => awardsTable.id, { onDelete: "cascade" }),
-  season: integer("season").notNull(),
-  includeFinals: boolean("include_finals").notNull().default(false),
-  // Admin switch for showing the live points leaderboard publicly (mirrors the
-  // voting tally's `tallyVisible`).
-  leaderboardVisible: boolean("leaderboard_visible").notNull().default(false),
+export const awardPointsConfigTable = pgTable(
+  "award_points_config",
+  {
+    id: serial("id").primaryKey(),
+    awardId: integer("award_id")
+      .notNull()
+      .references(() => awardsTable.id, { onDelete: "cascade" }),
+    season: integer("season").notNull(),
+    includeFinals: boolean("include_finals").notNull().default(false),
+    // Admin switch for showing the live points leaderboard publicly (mirrors the
+    // voting tally's `tallyVisible`).
+    leaderboardVisible: boolean("leaderboard_visible").notNull().default(false),
 
-  runsEnabled: boolean("runs_enabled").notNull().default(true),
-  runsValue: real("runs_value").notNull().default(1),
-  wicketsEnabled: boolean("wickets_enabled").notNull().default(true),
-  wicketsValue: real("wickets_value").notNull().default(1),
-  catchesEnabled: boolean("catches_enabled").notNull().default(true),
-  catchesValue: real("catches_value").notNull().default(1),
-  stumpingsEnabled: boolean("stumpings_enabled").notNull().default(true),
-  stumpingsValue: real("stumpings_value").notNull().default(1),
-  runOutsEnabled: boolean("run_outs_enabled").notNull().default(false),
-  runOutsValue: real("run_outs_value").notNull().default(1),
-  gamesEnabled: boolean("games_enabled").notNull().default(false),
-  gamesValue: real("games_value").notNull().default(0),
-  fiftiesEnabled: boolean("fifties_enabled").notNull().default(false),
-  fiftiesValue: real("fifties_value").notNull().default(0),
-  hundredsEnabled: boolean("hundreds_enabled").notNull().default(false),
-  hundredsValue: real("hundreds_value").notNull().default(0),
-  fiveWicketsEnabled: boolean("five_wickets_enabled").notNull().default(false),
-  fiveWicketsValue: real("five_wickets_value").notNull().default(0),
+    runsEnabled: boolean("runs_enabled").notNull().default(true),
+    runsValue: real("runs_value").notNull().default(1),
+    wicketsEnabled: boolean("wickets_enabled").notNull().default(true),
+    wicketsValue: real("wickets_value").notNull().default(1),
+    catchesEnabled: boolean("catches_enabled").notNull().default(true),
+    catchesValue: real("catches_value").notNull().default(1),
+    stumpingsEnabled: boolean("stumpings_enabled").notNull().default(true),
+    stumpingsValue: real("stumpings_value").notNull().default(1),
+    runOutsEnabled: boolean("run_outs_enabled").notNull().default(false),
+    runOutsValue: real("run_outs_value").notNull().default(1),
+    gamesEnabled: boolean("games_enabled").notNull().default(false),
+    gamesValue: real("games_value").notNull().default(0),
+    fiftiesEnabled: boolean("fifties_enabled").notNull().default(false),
+    fiftiesValue: real("fifties_value").notNull().default(0),
+    hundredsEnabled: boolean("hundreds_enabled").notNull().default(false),
+    hundredsValue: real("hundreds_value").notNull().default(0),
+    fiveWicketsEnabled: boolean("five_wickets_enabled").notNull().default(false),
+    fiveWicketsValue: real("five_wickets_value").notNull().default(0),
 
-  finalisedAt: timestamp("finalised_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+    finalisedAt: timestamp("finalised_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqAwardSeason: unique("award_points_config_award_season_unique").on(t.awardId, t.season),
+  }),
+);
 
 export type AwardPointsConfigRow = typeof awardPointsConfigTable.$inferSelect;

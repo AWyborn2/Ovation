@@ -4,8 +4,8 @@ import type { DebutEntry, MilestoneItem } from "@workspace/api-client-react";
 import type { PromotionEntry, ApproachingEntry } from "@/lib/honour-boards";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge } from "@/components/grade-badge";
-import { ShareButton } from "@/components/share-card-modal";
-import { seasonLabel } from "@/lib/share-card";
+import { ShareButton } from "@/components/share-button";
+import { seasonLabel } from "@/lib/season-label";
 import { MILESTONE_KIND_META } from "./constants";
 import { formatMatchDate } from "./helpers";
 

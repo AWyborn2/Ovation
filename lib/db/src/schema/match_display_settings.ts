@@ -1,11 +1,4 @@
-import {
-  pgTable,
-  serial,
-  text,
-  integer,
-  timestamp,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 // One row per tenant (unique on tenantId) controlling how that tenant's public

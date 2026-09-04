@@ -16,9 +16,7 @@ import { deriveOppositionColors } from "./colors";
 import { DEFAULT_BRAND, deriveClubColors, type ClubBrand } from "./brand";
 import { formatDismissal } from "./dismissal";
 import { economy, sumOvers } from "./overs";
-
-/** Fill-in players have synthetic ids; they show but never link/aggregate. */
-const FILL_IN_THRESHOLD = 90000;
+import { FILL_IN_THRESHOLD } from "./fill-in";
 
 const INNINGS_LABELS = ["1ST INNINGS", "2ND INNINGS"];
 
@@ -45,9 +43,9 @@ function parseScore(
   if (!m) {
     // A bare number is treated as runs.
     const n = /^\s*(\d+)\s*$/.exec(score);
-    return { wickets: null, runs: n ? parseInt(n[1], 10) : null };
+    return { wickets: null, runs: n ? parseInt(n[1] ?? "0", 10) : null };
   }
-  return { runs: parseInt(m[1], 10), wickets: parseInt(m[2], 10) };
+  return { runs: parseInt(m[1] ?? "0", 10), wickets: parseInt(m[2] ?? "0", 10) };
 }
 
 function strikeRate(

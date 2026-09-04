@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
@@ -16,22 +17,28 @@ import { tenantIdColumn } from "./_tenant";
 // CRUD, the only writer today) or "playhq" (reserved for the follow-up PlayHQ
 // ingest — ingested rows will carry it so manual edits and re-ingests can be
 // reconciled without clobbering each other).
-export const fixturesTable = pgTable("fixtures", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  grade: text("grade").notNull(),
-  roundLabel: text("round_label"),
-  opponentName: text("opponent_name").notNull(),
-  // Optional link into the shared clubs register (for logo/colour lookups).
-  opponentClubId: integer("opponent_club_id"),
-  opponentLogoUrl: text("opponent_logo_url"),
-  venue: text("venue"),
-  startAt: timestamp("start_at", { withTimezone: true }).notNull(),
-  isHome: boolean("is_home").notNull().default(true),
-  notes: text("notes"),
-  source: text("source").notNull().default("manual"), // "manual" | "playhq"
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const fixturesTable = pgTable(
+  "fixtures",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    grade: text("grade").notNull(),
+    roundLabel: text("round_label"),
+    opponentName: text("opponent_name").notNull(),
+    // Optional link into the shared clubs register (for logo/colour lookups).
+    opponentClubId: integer("opponent_club_id"),
+    opponentLogoUrl: text("opponent_logo_url"),
+    venue: text("venue"),
+    startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+    isHome: boolean("is_home").notNull().default(true),
+    notes: text("notes"),
+    source: text("source").notNull().default("manual"), // "manual" | "playhq"
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxTenant: index("fixtures_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type FixtureRow = typeof fixturesTable.$inferSelect;
 

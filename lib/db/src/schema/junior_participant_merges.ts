@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  serial,
-  text,
-  jsonb,
-  timestamp,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, text, jsonb, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -37,20 +29,16 @@ export const juniorParticipantMergesTable = pgTable(
     /** Snapshot of the absorbed junior_participants row (audit). */
     duplicateRow: jsonb("duplicate_row"),
     createdBy: text("created_by"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    uniqTenantDuplicate: uniqueIndex(
-      "junior_participant_merges_tenant_duplicate_uq",
-    ).on(t.tenantId, t.duplicateParticipantId),
-    idxTenant: index("junior_participant_merges_tenant_idx").on(t.tenantId),
-    idxKeeper: index("junior_participant_merges_keeper_idx").on(
-      t.keeperParticipantId,
+    uniqTenantDuplicate: uniqueIndex("junior_participant_merges_tenant_duplicate_uq").on(
+      t.tenantId,
+      t.duplicateParticipantId,
     ),
+    idxTenant: index("junior_participant_merges_tenant_idx").on(t.tenantId),
+    idxKeeper: index("junior_participant_merges_keeper_idx").on(t.keeperParticipantId),
   }),
 );
 
-export type JuniorParticipantMergeRow =
-  typeof juniorParticipantMergesTable.$inferSelect;
+export type JuniorParticipantMergeRow = typeof juniorParticipantMergesTable.$inferSelect;

@@ -25,107 +25,131 @@ import { tenantIdColumn } from "./_tenant";
  * bowling / roster lines also carry a participant_id but those are NOT Halls
  * Head participants, so participant_id is intentionally NOT a foreign key.
  */
-export const juniorMatchesTable = pgTable("junior_matches", {
-  id: integer("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  playhqMatchId: text("playhq_match_id"),
-  season: text("season"),
-  seasonStartYear: integer("season_start_year"),
-  grade: text("grade"),
-  // age_group is the app's age-group GROUPING token. By club decision it now
-  // holds the unified school-year BAND (Year 4 … Year 10-11) — the dump's
-  // age_band, which merges the legacy Under-age naming (U10→Year 4, … U14→Year 8,
-  // U15→Year 9, U16 + U17 → Year 10-11). The original raw label is kept in
-  // age_group_raw for traceability. Loaded by scripts/sql/juniors-etl.sql.
-  ageGroup: text("age_group"),
-  ageGroupRaw: text("age_group_raw"),
-  teamName: text("team_name"),
-  competition: text("competition"),
-  // PlayHQ governing-competition classification (Peel Junior Cricket Association,
-  // Community Cup, Girls League, South West Junior (SWMJCC)).
-  association: text("association"),
-  round: text("round"),
-  matchDate: text("match_date"),
-  venue: text("venue"),
-  venueOval: text("venue_oval"),
-  venueAddress: text("venue_address"),
-  venueSuburb: text("venue_suburb"),
-  status: text("status"),
-  team1: text("team1"),
-  team1Score: text("team1_score"),
-  team2: text("team2"),
-  team2Score: text("team2_score"),
-  hhTeamId: text("hh_team_id"),
-  hhResult: text("hh_result"),
-  winner: text("winner"),
-  tossWinner: text("toss_winner"),
-  hhBattedFirst: boolean("hh_batted_first"),
-  opponentName: text("opponent_name"),
-  // Optional link to the shared clubs register so junior scorecards/cards can
-  // render opposition club crests + colours, mirroring senior matches. Populated
-  // by a conservative normalized-name match in juniors-etl.sql; most metro junior
-  // opponents are not in the (Peel-focused) clubs table, so this stays NULL for
-  // them and renderers fall back gracefully. clubs is a neutral shared reference
-  // table (not a senior stat table), so this does not blend junior + senior data.
-  opponentClubId: integer("opponent_club_id").references(() => clubsTable.id, {
-    onDelete: "set null",
+export const juniorMatchesTable = pgTable(
+  "junior_matches",
+  {
+    id: integer("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    playhqMatchId: text("playhq_match_id"),
+    season: text("season"),
+    seasonStartYear: integer("season_start_year"),
+    grade: text("grade"),
+    // age_group is the app's age-group GROUPING token. By club decision it now
+    // holds the unified school-year BAND (Year 4 … Year 10-11) — the dump's
+    // age_band, which merges the legacy Under-age naming (U10→Year 4, … U14→Year 8,
+    // U15→Year 9, U16 + U17 → Year 10-11). The original raw label is kept in
+    // age_group_raw for traceability. Loaded by scripts/sql/juniors-etl.sql.
+    ageGroup: text("age_group"),
+    ageGroupRaw: text("age_group_raw"),
+    teamName: text("team_name"),
+    competition: text("competition"),
+    // PlayHQ governing-competition classification (Peel Junior Cricket Association,
+    // Community Cup, Girls League, South West Junior (SWMJCC)).
+    association: text("association"),
+    round: text("round"),
+    matchDate: text("match_date"),
+    venue: text("venue"),
+    venueOval: text("venue_oval"),
+    venueAddress: text("venue_address"),
+    venueSuburb: text("venue_suburb"),
+    status: text("status"),
+    team1: text("team1"),
+    team1Score: text("team1_score"),
+    team2: text("team2"),
+    team2Score: text("team2_score"),
+    hhTeamId: text("hh_team_id"),
+    hhResult: text("hh_result"),
+    winner: text("winner"),
+    tossWinner: text("toss_winner"),
+    hhBattedFirst: boolean("hh_batted_first"),
+    opponentName: text("opponent_name"),
+    // Optional link to the shared clubs register so junior scorecards/cards can
+    // render opposition club crests + colours, mirroring senior matches. Populated
+    // by a conservative normalized-name match in juniors-etl.sql; most metro junior
+    // opponents are not in the (Peel-focused) clubs table, so this stays NULL for
+    // them and renderers fall back gracefully. clubs is a neutral shared reference
+    // table (not a senior stat table), so this does not blend junior + senior data.
+    opponentClubId: integer("opponent_club_id").references(() => clubsTable.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => ({
+    idxTenant: index("junior_matches_tenant_idx").on(t.tenantId),
   }),
-});
+);
 
 export type JuniorMatchRow = typeof juniorMatchesTable.$inferSelect;
 
-export const juniorMatchBattingTable = pgTable("junior_match_batting", {
-  id: integer("id").primaryKey(),
-  matchId: integer("match_id")
-    .notNull()
-    .references(() => juniorMatchesTable.id, { onDelete: "cascade" }),
-  innings: integer("innings"),
-  battingTeam: text("batting_team"),
-  isHallsHead: boolean("is_halls_head").notNull().default(false),
-  batOrder: integer("bat_order"),
-  participantId: text("participant_id"),
-  playerName: text("player_name"),
-  runs: integer("runs"),
-  balls: integer("balls"),
-  fours: integer("fours"),
-  sixes: integer("sixes"),
-  strikeRate: real("strike_rate"),
-  dismissal: text("dismissal"),
-});
+export const juniorMatchBattingTable = pgTable(
+  "junior_match_batting",
+  {
+    id: integer("id").primaryKey(),
+    matchId: integer("match_id")
+      .notNull()
+      .references(() => juniorMatchesTable.id, { onDelete: "cascade" }),
+    innings: integer("innings"),
+    battingTeam: text("batting_team"),
+    isHallsHead: boolean("is_halls_head").notNull().default(false),
+    batOrder: integer("bat_order"),
+    participantId: text("participant_id"),
+    playerName: text("player_name"),
+    runs: integer("runs"),
+    balls: integer("balls"),
+    fours: integer("fours"),
+    sixes: integer("sixes"),
+    strikeRate: real("strike_rate"),
+    dismissal: text("dismissal"),
+  },
+  (t) => ({
+    idxMatch: index("junior_match_batting_match_idx").on(t.matchId),
+  }),
+);
 
 export type JuniorMatchBattingRow = typeof juniorMatchBattingTable.$inferSelect;
 
-export const juniorMatchBowlingTable = pgTable("junior_match_bowling", {
-  id: integer("id").primaryKey(),
-  matchId: integer("match_id")
-    .notNull()
-    .references(() => juniorMatchesTable.id, { onDelete: "cascade" }),
-  innings: integer("innings"),
-  bowlingTeam: text("bowling_team"),
-  isHallsHead: boolean("is_halls_head").notNull().default(false),
-  participantId: text("participant_id"),
-  playerName: text("player_name"),
-  overs: real("overs"),
-  maidens: integer("maidens"),
-  runs: integer("runs"),
-  wickets: integer("wickets"),
-  economy: real("economy"),
-  wides: integer("wides"),
-  noBalls: integer("no_balls"),
-});
+export const juniorMatchBowlingTable = pgTable(
+  "junior_match_bowling",
+  {
+    id: integer("id").primaryKey(),
+    matchId: integer("match_id")
+      .notNull()
+      .references(() => juniorMatchesTable.id, { onDelete: "cascade" }),
+    innings: integer("innings"),
+    bowlingTeam: text("bowling_team"),
+    isHallsHead: boolean("is_halls_head").notNull().default(false),
+    participantId: text("participant_id"),
+    playerName: text("player_name"),
+    overs: real("overs"),
+    maidens: integer("maidens"),
+    runs: integer("runs"),
+    wickets: integer("wickets"),
+    economy: real("economy"),
+    wides: integer("wides"),
+    noBalls: integer("no_balls"),
+  },
+  (t) => ({
+    idxMatch: index("junior_match_bowling_match_idx").on(t.matchId),
+  }),
+);
 
 export type JuniorMatchBowlingRow = typeof juniorMatchBowlingTable.$inferSelect;
 
-export const juniorMatchRostersTable = pgTable("junior_match_rosters", {
-  id: integer("id").primaryKey(),
-  matchId: integer("match_id")
-    .notNull()
-    .references(() => juniorMatchesTable.id, { onDelete: "cascade" }),
-  teamName: text("team_name"),
-  isHallsHead: boolean("is_halls_head").notNull().default(false),
-  participantId: text("participant_id"),
-  playerName: text("player_name"),
-});
+export const juniorMatchRostersTable = pgTable(
+  "junior_match_rosters",
+  {
+    id: integer("id").primaryKey(),
+    matchId: integer("match_id")
+      .notNull()
+      .references(() => juniorMatchesTable.id, { onDelete: "cascade" }),
+    teamName: text("team_name"),
+    isHallsHead: boolean("is_halls_head").notNull().default(false),
+    participantId: text("participant_id"),
+    playerName: text("player_name"),
+  },
+  (t) => ({
+    idxMatch: index("junior_match_rosters_match_idx").on(t.matchId),
+  }),
+);
 
 export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
 
@@ -139,67 +163,75 @@ export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
  * decision — the juniors dataset must stay fully decoupled from senior tables so
  * neither schema constrains the other.
  */
-export const juniorParticipantsTable = pgTable("junior_participants", {
-  participantId: text("participant_id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  displayName: text("display_name"),
-  isPrivate: boolean("is_private").notNull().default(false),
-  scorecardLines: integer("scorecard_lines"),
-  rosterAppearances: integer("roster_appearances"),
-  firstSeason: text("first_season"),
-  lastSeason: text("last_season"),
-  teams: text("teams"),
-  seniorPlayerId: integer("senior_player_id"),
-});
+export const juniorParticipantsTable = pgTable(
+  "junior_participants",
+  {
+    participantId: text("participant_id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    displayName: text("display_name"),
+    isPrivate: boolean("is_private").notNull().default(false),
+    scorecardLines: integer("scorecard_lines"),
+    rosterAppearances: integer("roster_appearances"),
+    firstSeason: text("first_season"),
+    lastSeason: text("last_season"),
+    teams: text("teams"),
+    seniorPlayerId: integer("senior_player_id"),
+  },
+  (t) => ({
+    idxTenant: index("junior_participants_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export type JuniorParticipantRow = typeof juniorParticipantsTable.$inferSelect;
 
-export const juniorPremiershipsTable = pgTable("junior_premierships", {
-  id: integer("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  season: text("season"),
-  // age_group holds the unified school-year BAND (see juniorMatchesTable.ageGroup);
-  // ageGroupRaw keeps the original Under-age / year label for traceability.
-  ageGroup: text("age_group"),
-  ageGroupRaw: text("age_group_raw"),
-  teamName: text("team_name"),
-  competition: text("competition"),
-  association: text("association"),
-  matchDate: text("match_date"),
-  venue: text("venue"),
-  venueOval: text("venue_oval"),
-  opponent: text("opponent"),
-  hhScore: text("hh_score"),
-  oppScore: text("opp_score"),
-  resultText: text("result_text"),
-  // Man-of-the-match name. NOT present in the PlayHQ dump — entered manually by
-  // admins, so the juniors ETL snapshots + re-applies it across a reload.
-  mom: text("mom"),
-  matchId: integer("match_id").references(() => juniorMatchesTable.id, {
-    onDelete: "set null",
+export const juniorPremiershipsTable = pgTable(
+  "junior_premierships",
+  {
+    id: integer("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    season: text("season"),
+    // age_group holds the unified school-year BAND (see juniorMatchesTable.ageGroup);
+    // ageGroupRaw keeps the original Under-age / year label for traceability.
+    ageGroup: text("age_group"),
+    ageGroupRaw: text("age_group_raw"),
+    teamName: text("team_name"),
+    competition: text("competition"),
+    association: text("association"),
+    matchDate: text("match_date"),
+    venue: text("venue"),
+    venueOval: text("venue_oval"),
+    opponent: text("opponent"),
+    hhScore: text("hh_score"),
+    oppScore: text("opp_score"),
+    resultText: text("result_text"),
+    // Man-of-the-match name. NOT present in the PlayHQ dump — entered manually by
+    // admins, so the juniors ETL snapshots + re-applies it across a reload.
+    mom: text("mom"),
+    matchId: integer("match_id").references(() => juniorMatchesTable.id, {
+      onDelete: "set null",
+    }),
+    playhqMatchId: text("playhq_match_id"),
+  },
+  (t) => ({
+    idxTenant: index("junior_premierships_tenant_idx").on(t.tenantId),
   }),
-  playhqMatchId: text("playhq_match_id"),
-});
+);
 
 export type JuniorPremiershipRow = typeof juniorPremiershipsTable.$inferSelect;
 
-export const juniorPremiershipPlayersTable = pgTable(
-  "junior_premiership_players",
-  {
-    id: integer("id").primaryKey(),
-    premiershipId: integer("premiership_id")
-      .notNull()
-      .references(() => juniorPremiershipsTable.id, { onDelete: "cascade" }),
-    participantId: text("participant_id"),
-    playerName: text("player_name"),
-    // Captain flag. NOT present in the PlayHQ dump — set manually by admins, so
-    // the juniors ETL snapshots + re-applies it across a reload.
-    isCaptain: boolean("is_captain").notNull().default(false),
-  },
-);
+export const juniorPremiershipPlayersTable = pgTable("junior_premiership_players", {
+  id: integer("id").primaryKey(),
+  premiershipId: integer("premiership_id")
+    .notNull()
+    .references(() => juniorPremiershipsTable.id, { onDelete: "cascade" }),
+  participantId: text("participant_id"),
+  playerName: text("player_name"),
+  // Captain flag. NOT present in the PlayHQ dump — set manually by admins, so
+  // the juniors ETL snapshots + re-applies it across a reload.
+  isCaptain: boolean("is_captain").notNull().default(false),
+});
 
-export type JuniorPremiershipPlayerRow =
-  typeof juniorPremiershipPlayersTable.$inferSelect;
+export type JuniorPremiershipPlayerRow = typeof juniorPremiershipPlayersTable.$inferSelect;
 
 /**
  * Halls Head Junior Cricket Club office bearers, entered and managed MANUALLY by
@@ -228,11 +260,11 @@ export const juniorOfficeBearersTable = pgTable(
   },
   (t) => ({
     idxSeason: index("junior_office_bearers_season_idx").on(t.season),
+    idxTenant: index("junior_office_bearers_tenant_idx").on(t.tenantId),
   }),
 );
 
-export type JuniorOfficeBearerRow =
-  typeof juniorOfficeBearersTable.$inferSelect;
+export type JuniorOfficeBearerRow = typeof juniorOfficeBearersTable.$inferSelect;
 
 /**
  * Singleton settings controlling how the public Juniors Matches page behaves by
@@ -258,14 +290,11 @@ export const juniorMatchDisplaySettingsTable = pgTable(
     // Ordered list of age-group tokens for the menu. Tokens not listed fall back
     // to the natural order, appended after the configured ones.
     ageGroupOrder: text("age_group_order").array().notNull().default([]),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqTenant: uniqueIndex("junior_match_display_settings_tenant_unique").on(t.tenantId),
   }),
 );
 
-export type JuniorMatchDisplaySettingsRow =
-  typeof juniorMatchDisplaySettingsTable.$inferSelect;
+export type JuniorMatchDisplaySettingsRow = typeof juniorMatchDisplaySettingsTable.$inferSelect;

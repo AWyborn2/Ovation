@@ -1,19 +1,23 @@
 /**
- * Mobile brand config — tenant #1 (Halls Head) values. This is the single seam
- * for white-labeling the mobile app: all club copy reads from here rather than
- * inline literals.
+ * Neutral placeholder brand for the mobile app — what every screen shows until
+ * `GET /tenant-brand` resolves (or when the API is unreachable). Deliberately
+ * carries NO club identity: the real name, tagline and colours come from the
+ * tenant's record via `useBrand()` in `lib/tenant-brand.tsx`. Never put a
+ * specific club's values here — that is exactly how one club's brand would
+ * leak onto another tenant's build.
  *
- * Per-tenant mobile builds (and fetching the brand from the API like the web app)
- * are a later phase. `app.json` keeps the Halls Head store identity (name, slug,
- * bundle id, icons) for now — see the TODO there.
+ * Store identity (app name, slug, bundle id) is separate and comes from the
+ * `EXPO_PUBLIC_TENANT_*` build-time variables read by `app.config.ts`.
  */
-export const BRAND = {
-  /** Full club name. */
-  name: "Halls Head Cricket Club",
+export const DEFAULT_BRAND = {
+  /** Full display name. */
+  name: "Ovation",
   /** Short label used in tight UI (scorecards, headings). */
-  shortName: "Halls Head",
-  /** Possessive form for body copy ("…for Halls Head's players"). */
-  possessive: "Halls Head's",
-  /** Founding year, shown on the home hero. */
-  foundedYear: 1991,
-} as const;
+  shortName: "Ovation",
+  /** Sub-line under the club name on the home hero; null = show nothing. */
+  tagline: null as string | null,
+  logoUrl: null as string | null,
+  primaryColour: null as string | null,
+  backgroundColour: null as string | null,
+  juniorsColour: null as string | null,
+};

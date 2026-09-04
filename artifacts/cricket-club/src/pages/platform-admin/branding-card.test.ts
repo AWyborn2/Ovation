@@ -24,6 +24,7 @@ const PERSISTED: PersistedBrandFields = {
   juniorsColour: "#42342B",
   badgeStyle: null,
   useNavyBase: false,
+  themeOverrides: null,
 };
 
 const FIELD_EDITS = {

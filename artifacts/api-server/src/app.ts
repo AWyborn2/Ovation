@@ -14,6 +14,7 @@ import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin, ensureSeedPlatformAdmin } from "./lib/auth";
+import { env } from "./config";
 
 const app: Express = express();
 
@@ -34,8 +35,8 @@ function buildAllowedOrigins(): Set<string> {
       if (trimmed) origins.add(`https://${trimmed}`);
     }
   };
-  addHosts(process.env["REPLIT_DOMAINS"]);
-  addHosts(process.env["REPLIT_DEV_DOMAIN"]);
+  addHosts(env.REPLIT_DOMAINS());
+  addHosts(env.REPLIT_DEV_DOMAIN());
   return origins;
 }
 
@@ -82,7 +83,9 @@ app.use(
 app.use(cookieParser());
 
 // The billing webhook needs the RAW body for signature verification, so it must
-// be mounted before the JSON body parser. Inert while billing is disabled.
+// be mounted before the JSON body parser. Answers 404 while billing is disabled
+// (a dormant endpoint must not acknowledge unauthenticated POSTs with a 200) and
+// 503 if billing is enabled without a configured provider.
 app.post(
   "/billing/webhook",
   // Explicit ceiling: this parser is mounted before the global one, so it does
@@ -97,8 +100,9 @@ app.post(
 // multipart handling in `imports.ts`, so neither is affected. Raising this is a
 // relaxation, not hardening — if a route ever needs a larger body, give that
 // route its own limit instead of widening the global one.
+// JSON only. No route reads a form-encoded body, and leaving the urlencoded
+// parser mounted would let a cross-site HTML form POST reach a handler.
 app.use(express.json({ limit: "100kb" }));
-app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).

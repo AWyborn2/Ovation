@@ -1,8 +1,3 @@
-// @ts-nocheck — @workspace/scorecard carries no vitest devDependency (it is a
-// leaf lib; the workspace's test runner lives in the api-server or cricket-club
-// package). Run this suite with:
-//   npx vitest run lib/scorecard/src/match-summary-input.test.ts
-// The functions under test are pure mappers with no DB or DOM dependency.
 import { describe, it, expect, vi } from "vitest";
 import {
   deriveWinner,

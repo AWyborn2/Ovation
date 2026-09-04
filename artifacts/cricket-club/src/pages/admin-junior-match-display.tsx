@@ -9,14 +9,27 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Save, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
+import {
+  DefaultSelect,
+  OrderList,
+  RadioCards,
+  SaveSettingsButton,
+  SettingsSection,
+  mergeOrder,
+  moveItem,
+} from "@/components/display-settings";
 
 type SeasonMode = JuniorMatchDisplaySettings["defaultSeasonMode"];
 
+const SEASON_MODES: { value: SeasonMode; label: string }[] = [
+  { value: "latest", label: "Latest available season" },
+  { value: "specific", label: "A specific season" },
+  { value: "all", label: "All seasons" },
+];
+
+/** Junior matches page defaults — reads/writes only `/api/juniors/*` settings. */
 export default function AdminJuniorMatchDisplay() {
   const qc = useQueryClient();
   const settingsQ = useGetJuniorMatchDisplaySettings();
@@ -55,17 +68,6 @@ export default function AdminJuniorMatchDisplay() {
   );
 }
 
-/**
- * Merge the saved age-group order with the live list: configured age groups in
- * their saved order first (only if they still exist), then any remaining groups
- * in natural order.
- */
-function mergeAgeOrder(saved: string[], all: string[]): string[] {
-  const present = saved.filter((a) => all.includes(a));
-  const rest = all.filter((a) => !present.includes(a));
-  return [...present, ...rest];
-}
-
 function SettingsCard({
   settings,
   allAgeGroups,
@@ -81,7 +83,7 @@ function SettingsCard({
   const [seasonMode, setSeasonMode] = useState<SeasonMode>(settings.defaultSeasonMode);
   const [specificSeason, setSpecificSeason] = useState(settings.defaultSeason ?? "");
   const [ageOrder, setAgeOrder] = useState<string[]>(
-    mergeAgeOrder(settings.ageGroupOrder, allAgeGroups),
+    mergeOrder(settings.ageGroupOrder, allAgeGroups),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -99,18 +101,11 @@ function SettingsCard({
     setDefaultAgeGroup(settings.defaultAgeGroup);
     setSeasonMode(settings.defaultSeasonMode);
     setSpecificSeason(settings.defaultSeason ?? "");
-    setAgeOrder(mergeAgeOrder(settings.ageGroupOrder, allAgeGroups));
+    setAgeOrder(mergeOrder(settings.ageGroupOrder, allAgeGroups));
   }, [settings, allAgeGroups]);
 
-  const move = (idx: number, dir: -1 | 1) => {
-    setAgeOrder((prev) => {
-      const next = prev.slice();
-      const target = idx + dir;
-      if (target < 0 || target >= next.length) return prev;
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
-    });
-  };
+  const move = (idx: number, dir: -1 | 1) =>
+    setAgeOrder((prev) => moveItem(prev, idx, dir));
 
   const save = () => {
     setError(null);
@@ -139,135 +134,72 @@ function SettingsCard({
         <CardTitle>Default filters &amp; ordering</CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
-        {/* Default age group */}
-        <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-            Default age group
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            The age group pre-selected when the Junior Matches page first opens.
-          </p>
-          <select
+        <SettingsSection
+          title="Default age group"
+          description="The age group pre-selected when the Junior Matches page first opens."
+        >
+          <DefaultSelect
             value={defaultAgeGroup}
-            onChange={(e) => setDefaultAgeGroup(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[14rem]"
-            data-testid="select-default-age-group"
-          >
-            <option value="">All age groups</option>
-            {allAgeGroups.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </div>
+            onChange={setDefaultAgeGroup}
+            options={allAgeGroups}
+            allLabel="All age groups"
+            testId="select-default-age-group"
+          />
+        </SettingsSection>
 
-        {/* Default season */}
-        <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-            Default season
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Which season loads first. "Latest available" always tracks the newest season as
-            new matches are imported.
-          </p>
-          <div className="space-y-2">
-            {([
-              { value: "latest", label: "Latest available season" },
-              { value: "specific", label: "A specific season" },
-              { value: "all", label: "All seasons" },
-            ] as { value: SeasonMode; label: string }[]).map((m) => (
-              <label
-                key={m.value}
-                className={`flex items-center gap-3 border rounded p-3 cursor-pointer transition-colors ${
-                  seasonMode === m.value ? "border-primary bg-primary/5" : "hover:bg-muted"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="seasonMode"
-                  checked={seasonMode === m.value}
-                  onChange={() => setSeasonMode(m.value)}
-                />
-                <span className="font-medium text-sm">{m.label}</span>
-                {m.value === "specific" && seasonMode === "specific" && (
-                  <select
-                    value={specificSeason}
-                    onChange={(e) => setSpecificSeason(e.target.value)}
-                    className="ml-2 px-2 py-1 rounded border border-input bg-card text-foreground text-sm"
-                    data-testid="select-specific-season"
-                  >
-                    <option value="">Choose…</option>
-                    {allSeasons.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </label>
-            ))}
-          </div>
-        </div>
+        <SettingsSection
+          title="Default season"
+          description={
+            <>
+              Which season loads first. "Latest available" always tracks the newest season as
+              new matches are imported.
+            </>
+          }
+        >
+          <RadioCards
+            name="seasonMode"
+            value={seasonMode}
+            onChange={setSeasonMode}
+            options={SEASON_MODES}
+            className="space-y-2"
+            extra={(m) =>
+              m.value === "specific" && seasonMode === "specific" ? (
+                <select
+                  value={specificSeason}
+                  onChange={(e) => setSpecificSeason(e.target.value)}
+                  className="ml-2 px-2 py-1 rounded border border-input bg-card text-foreground text-sm"
+                  data-testid="select-specific-season"
+                >
+                  <option value="">Choose…</option>
+                  {allSeasons.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              ) : null
+            }
+          />
+        </SettingsSection>
 
-        {/* Age-group menu order */}
-        <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-            Age-group menu order
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            The order age groups appear in the dropdown on the Junior Matches page.
-          </p>
-          <ul className="space-y-1 max-w-md">
-            {ageOrder.map((a, idx) => (
-              <li
-                key={a}
-                className="flex items-center gap-2 border rounded px-3 py-2 bg-card"
-                data-testid={`age-order-row-${a}`}
-              >
-                <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
-                <span className="flex-1 text-sm font-medium">{a}</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  disabled={idx === 0}
-                  onClick={() => move(idx, -1)}
-                  data-testid={`button-age-up-${a}`}
-                >
-                  <ArrowUp className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  disabled={idx === ageOrder.length - 1}
-                  onClick={() => move(idx, 1)}
-                  data-testid={`button-age-down-${a}`}
-                >
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </Button>
-              </li>
-            ))}
-            {ageOrder.length === 0 && (
-              <li className="text-xs text-muted-foreground italic">No age groups available yet.</li>
-            )}
-          </ul>
-        </div>
+        <SettingsSection
+          title="Age-group menu order"
+          description="The order age groups appear in the dropdown on the Junior Matches page."
+        >
+          <OrderList
+            items={ageOrder}
+            onMove={move}
+            emptyText="No age groups available yet."
+            testIds={(a) => ({
+              row: `age-order-row-${a}`,
+              up: `button-age-up-${a}`,
+              down: `button-age-down-${a}`,
+            })}
+          />
+        </SettingsSection>
 
         {error && <div className="text-sm text-destructive">{error}</div>}
-        <div className="flex justify-end">
-          <Button onClick={save} disabled={update.isPending} data-testid="button-save-settings">
-            {update.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Save settings
-          </Button>
-        </div>
+        <SaveSettingsButton onClick={save} pending={update.isPending} />
       </CardContent>
     </Card>
   );

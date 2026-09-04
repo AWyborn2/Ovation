@@ -1,5 +1,7 @@
 import type { Request, RequestHandler, NextFunction, Response } from "express";
+import { timingSafeEqual } from "node:crypto";
 import { db, tenantsTable } from "@workspace/db";
+import { env } from "../config";
 
 /**
  * Per-request tenant resolution for the white-label platform.
@@ -48,7 +50,7 @@ export class NoTenantContextError extends Error {
  */
 function platformHosts(): Set<string> {
   return new Set(
-    (process.env.PLATFORM_HOSTS ?? "")
+    (env.PLATFORM_HOSTS() ?? "")
       .split(",")
       .map((h) => h.trim().toLowerCase())
       .filter(Boolean),
@@ -76,7 +78,7 @@ function parseTenantId(raw: string | undefined): number | undefined {
  * (e.g. blocking it from being archived) must use this, not the raw constant.
  */
 export function effectiveDefaultTenantId(): number {
-  return parseTenantId(process.env.DEFAULT_TENANT_ID) ?? DEFAULT_TENANT_ID;
+  return parseTenantId(env.DEFAULT_TENANT_ID()) ?? DEFAULT_TENANT_ID;
 }
 
 /** Resolve the tenant id from the header → env → default (the non-host signals). */
@@ -141,20 +143,33 @@ async function tenantDirectory() {
  *    header, so it's safe to trust.
  */
 export function hostOf(req: Request): string {
-  const proxyKey = process.env.PROXY_SHARED_SECRET;
+  const proxyKey = env.PROXY_SHARED_SECRET();
   const ovationHost = req.headers["x-ovation-host"];
+  const presentedKey = req.headers["x-ovation-proxy-key"];
   if (
     proxyKey &&
     typeof ovationHost === "string" &&
     ovationHost &&
-    req.headers["x-ovation-proxy-key"] === proxyKey
+    typeof presentedKey === "string" &&
+    secretsMatch(presentedKey, proxyKey)
   ) {
     return ovationHost.split(":")[0]?.toLowerCase().trim() ?? "";
   }
-  const xfh = req.headers["x-forwarded-host"];
+  // `X-Forwarded-Host` is client-controlled unless a trusted proxy rewrites
+  // it. Replit's edge does; set TRUST_FORWARDED_HOST=0 on any deployment
+  // where it does not, so a direct client cannot pick its tenant by header.
+  const trustForwardedHost = env.trustForwardedHost();
+  const xfh = trustForwardedHost ? req.headers["x-forwarded-host"] : undefined;
   const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
   const raw = forwarded || req.headers.host || "";
   return raw.split(":")[0]?.toLowerCase().trim() ?? "";
+}
+
+/** Constant-time comparison of a presented secret against the configured one. */
+function secretsMatch(presented: string, expected: string): boolean {
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /**
@@ -237,8 +252,16 @@ export function classifyNonTenantHost(req: Request): HostMode {
   // chain instead). These hosts are also platform hosts, so this must come
   // before the platform check. Inert on real tenant hosts: the
   // subdomain/custom-domain match wins first and the header is never consulted.
+  //
+  // On the PUBLISHED `.replit.app` host this is a public tenant switcher: any
+  // client can render any tenant's public data by header. It is therefore
+  // opt-in there (`TENANT_HEADER_ON_PUBLISHED_HOST=1`) and always on for
+  // `.replit.dev` previews.
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
-  if (headerTenant !== undefined && (isPreviewHost(host) || isPublishedReplitHost(host))) {
+  const switcherAllowed =
+    isPreviewHost(host) ||
+    (isPublishedReplitHost(host) && env.tenantHeaderOnPublishedHost());
+  if (headerTenant !== undefined && switcherAllowed) {
     return { mode: "tenant", tenantId: headerTenant };
   }
 
@@ -250,7 +273,7 @@ export function classifyNonTenantHost(req: Request): HostMode {
   // DEFAULT_TENANT_ID env means the operator chose a single-tenant default for
   // any host. Everything else — an unknown PUBLIC host — is platform mode, NOT
   // the demo tenant: fail closed rather than leak tenant #1.
-  if (isLocalDevHost(host) || process.env.DEFAULT_TENANT_ID) {
+  if (isLocalDevHost(host) || env.DEFAULT_TENANT_ID()) {
     return { mode: "fallback" };
   }
   return { mode: "platform" };
@@ -285,6 +308,13 @@ export const tenantContext: RequestHandler = (
       // Carry NO tenant id — a tenant-scoped route that calls getTenantId() then
       // fails closed (404) instead of serving the demo tenant on the wrong host.
       r.platform = true;
+    }
+    // Stamp the request logger so every line for this request can be filtered
+    // per club during an incident (plan.md §5.12).
+    if (r.log && typeof r.log.child === "function") {
+      r.log = r.log.child(
+        r.platform ? { surface: "platform" } : { tenantId: r.tenantId },
+      );
     }
   };
   resolveHostMode(req)

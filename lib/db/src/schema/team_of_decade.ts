@@ -1,26 +1,25 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  text,
-  boolean,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
 import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
-export const teamOfDecadeBoardsTable = pgTable("team_of_decade_boards", {
-  id: serial("id").primaryKey(),
-  tenantId: tenantIdColumn(),
-  // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
-  key: text("key").notNull().unique(),
-  title: text("title").notNull(),
-  teamLabel: text("team_label").notNull().default(""),
-  periodLabel: text("period_label").notNull().default(""),
-  subtitle: text("subtitle").notNull().default(""),
-  published: boolean("published").notNull().default(false),
-  displayOrder: integer("display_order").notNull().default(0),
-});
+export const teamOfDecadeBoardsTable = pgTable(
+  "team_of_decade_boards",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
+    key: text("key").notNull().unique(),
+    title: text("title").notNull(),
+    teamLabel: text("team_label").notNull().default(""),
+    periodLabel: text("period_label").notNull().default(""),
+    subtitle: text("subtitle").notNull().default(""),
+    published: boolean("published").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0),
+  },
+  (t) => ({
+    idxTenant: index("team_of_decade_boards_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export const teamOfDecadeMembersTable = pgTable(
   "team_of_decade_members",
@@ -43,9 +42,9 @@ export const teamOfDecadeMembersTable = pgTable(
   },
   (t) => ({
     idxBoard: index("tod_members_board_idx").on(t.boardId),
+    idxTenant: index("team_of_decade_members_tenant_idx").on(t.tenantId),
   }),
 );
 
 export type TeamOfDecadeBoardRow = typeof teamOfDecadeBoardsTable.$inferSelect;
-export type TeamOfDecadeMemberRow =
-  typeof teamOfDecadeMembersTable.$inferSelect;
+export type TeamOfDecadeMemberRow = typeof teamOfDecadeMembersTable.$inferSelect;

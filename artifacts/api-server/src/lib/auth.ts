@@ -17,16 +17,17 @@ import {
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { platformBaseDomain } from "./tenant-url";
+import { env } from "../config";
 
 /** Halls Head is tenant #1 — the seed admin's tenant and the dev/default tenant. */
 const DEFAULT_TENANT_ID = 1;
 
-const COOKIE_NAME = "hhcc_session";
-const CAPTAIN_COOKIE_NAME = "hhcc_captain_session";
+const COOKIE_NAME = "ovation_session";
+const CAPTAIN_COOKIE_NAME = "ovation_captain_session";
 const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function getSessionSecret(): string {
-  const s = process.env["SESSION_SECRET"];
+  const s = env.SESSION_SECRET();
   if (!s) throw new Error("SESSION_SECRET is not configured");
   return s;
 }
@@ -34,6 +35,25 @@ export function getSessionSecret(): string {
 export interface SessionPayload {
   adminId: number;
   issuedAt: number;
+  /**
+   * The admin's `session_epoch` when this token was minted. Absent on tokens
+   * minted before the column existed (treated as 0). See {@link sessionIsCurrent}.
+   */
+  epoch?: number;
+}
+
+/**
+ * Whether a decoded token is still current for its account: the epoch it was
+ * minted under must equal the row's `session_epoch`. Bumping the row's epoch
+ * (password change or reset, "log out everywhere") invalidates every
+ * outstanding token at once — the revocation a stateless HMAC cookie otherwise
+ * lacks.
+ */
+export function sessionIsCurrent(
+  payload: { epoch?: number },
+  row: { sessionEpoch: number },
+): boolean {
+  return (payload.epoch ?? 0) === row.sessionEpoch;
 }
 
 function b64urlEncode(buf: Buffer): string {
@@ -86,7 +106,7 @@ export const SESSION_COOKIE = COOKIE_NAME;
 export const SESSION_COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env["NODE_ENV"] === "production",
+  secure: env.isProduction(),
   path: "/",
   maxAge: COOKIE_MAX_AGE_MS,
 };
@@ -168,7 +188,7 @@ export async function ensureSeedAdmin(): Promise<void> {
     .where(eq(adminsTable.tenantId, DEFAULT_TENANT_ID))
     .limit(1);
   if (existing.length > 0) return;
-  const seedPassword = process.env["ADMIN_PASSWORD"];
+  const seedPassword = env.ADMIN_PASSWORD();
   if (!seedPassword) {
     // Nothing we can do until the operator sets one.
     return;
@@ -189,6 +209,8 @@ const PLATFORM_COOKIE_NAME = "ovation_platform_session";
 export interface PlatformSessionPayload {
   platformAdminId: number;
   issuedAt: number;
+  /** See {@link SessionPayload.epoch}. */
+  epoch?: number;
 }
 
 export function encodePlatformSession(p: PlatformSessionPayload): string {
@@ -249,8 +271,8 @@ export async function ensureSeedPlatformAdmin(): Promise<void> {
     .from(platformAdminsTable)
     .limit(1);
   if (existing.length > 0) return;
-  const email = process.env["PLATFORM_ADMIN_EMAIL"];
-  const password = process.env["PLATFORM_ADMIN_PASSWORD"];
+  const email = env.PLATFORM_ADMIN_EMAIL();
+  const password = env.PLATFORM_ADMIN_PASSWORD();
   if (!email || !password) return; // nothing to seed until the operator sets both
   const passwordHash = await hashPassword(password);
   await db.insert(platformAdminsTable).values({
@@ -292,6 +314,8 @@ export function hashResetToken(token: string): string {
 export interface CaptainSessionPayload {
   captainId: number;
   issuedAt: number;
+  /** See {@link SessionPayload.epoch}. */
+  epoch?: number;
 }
 
 export function encodeCaptainSession(p: CaptainSessionPayload): string {

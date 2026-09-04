@@ -6,8 +6,9 @@ import {
   playersTable,
   matchesTable,
   clubsTable,
-  recordsDisplaySettingsTable,
+  type recordsDisplaySettingsTable,
 } from "@workspace/db";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 /**
  * Shared helpers for the grades routes: opponent-club branding, season/date
@@ -17,7 +18,6 @@ import {
  * a route — so importing them back into the router cannot create a cycle.
  */
 
-export const FILL_IN_FLOOR = 90000;
 
 export const opponentClubColumns = {
   opponentClubId: clubsTable.id,
@@ -119,7 +119,7 @@ export async function seasonLeaders(
       : playerGradeSeasonStatsTable.wickets;
   const conds: SQL[] = [
     eq(playerGradeSeasonStatsTable.season, season),
-    lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+    lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
   ];
   if (grade) conds.push(eq(playerGradeSeasonStatsTable.grade, grade));
 
@@ -152,7 +152,7 @@ export async function allTimeLeaders(
 ): Promise<{ playerId: number; givenName: string; surname: string; value: number }[]> {
   const col =
     metric === "runs" ? playerGradeStatsTable.runs : playerGradeStatsTable.wickets;
-  const conds: SQL[] = [lt(playerGradeStatsTable.playerId, FILL_IN_FLOOR)];
+  const conds: SQL[] = [lt(playerGradeStatsTable.playerId, FILL_IN_THRESHOLD)];
   if (grade) conds.push(eq(playerGradeStatsTable.grade, grade));
 
   const rows = await db
@@ -185,7 +185,7 @@ export async function seasonOptions(): Promise<{ season: number; label: string }
     .where(
       and(
         isNotNull(playerGradeSeasonStatsTable.season),
-        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
       ),
     )
     .orderBy(desc(playerGradeSeasonStatsTable.season));
@@ -196,7 +196,7 @@ export async function seasonOptions(): Promise<{ season: number; label: string }
 
 export async function gradesForSeason(season: number | null): Promise<string[]> {
   const conds: SQL[] = [
-    lt(playerGradeSeasonStatsTable.playerId, FILL_IN_FLOOR),
+    lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
     gt(playerGradeSeasonStatsTable.games, 0),
   ];
   if (season !== null) conds.push(eq(playerGradeSeasonStatsTable.season, season));

@@ -5,6 +5,7 @@ import {
   playerGradeSeasonStatsTable,
 } from "@workspace/db";
 import type { CapSyncTx } from "./cap-sync";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 /**
  * One derived per-(player, grade, season) snapshot, summed from every committed
@@ -81,10 +82,10 @@ export async function deriveSeasonSnapshotFromMatches(
         eq(matchesTable.grade, grade),
         eq(matchesTable.season, season),
         eq(matchesTable.abandoned, false),
-        // Fill-ins (playerId >= 90000) are excluded from EVERY stats derivation
+        // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from EVERY stats derivation
         // (replit.md Gotcha) — they must not land in the season snapshot, career
         // totals or cap sync that consume this aggregate.
-        lt(matchPlayerLinesTable.playerId, 90000),
+        lt(matchPlayerLinesTable.playerId, FILL_IN_THRESHOLD),
       ),
     );
 

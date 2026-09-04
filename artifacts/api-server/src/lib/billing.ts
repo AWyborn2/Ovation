@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import { billingEnabled, type Plan } from "./entitlements";
+import { env } from "../config";
 
 /**
  * Billing adapter boundary — built but INERT. No money moves during the pilot:
@@ -46,12 +47,38 @@ const stubProvider: BillingProvider = {
 };
 
 /**
- * The active billing provider. Always the stub for now; when BILLING_ENABLED=true
- * and Stripe is configured, return a real provider here (the only change needed —
- * routes and the webhook already speak this interface).
+ * Thrown when billing enforcement is switched on but nothing real sits behind
+ * the adapter. Carries `status: 503` so the central error handler answers
+ * "service unavailable" rather than a generic 500 if a route lets it escape.
+ */
+export class BillingNotConfiguredError extends Error {
+  readonly status = 503;
+  constructor(detail: string) {
+    super(
+      `BILLING_ENABLED=true but no billing provider is configured (${detail}). ` +
+        "Wire a real provider behind getBillingProvider() in lib/billing.ts, or unset BILLING_ENABLED.",
+    );
+    this.name = "BillingNotConfiguredError";
+  }
+}
+
+/**
+ * The active billing provider. The stub while billing is dormant. Once
+ * BILLING_ENABLED=true this must be a real provider; until one is wired it
+ * THROWS rather than silently serving the stub — an "enabled" deployment that
+ * acknowledged every webhook as ignored and never moved a plan would look
+ * healthy while doing nothing.
  */
 export function getBillingProvider(): BillingProvider {
-  // if (billingEnabled() && process.env.STRIPE_SECRET_KEY) return stripeProvider;
+  if (billingEnabled()) {
+    // When a Stripe adapter lands, construct and return it here from
+    // env.STRIPE_SECRET_KEY(); nothing else in the routes or webhook changes.
+    throw new BillingNotConfiguredError(
+      env.STRIPE_SECRET_KEY()
+        ? "STRIPE_SECRET_KEY is set but no Stripe adapter is wired"
+        : "STRIPE_SECRET_KEY is unset and no adapter is wired",
+    );
+  }
   return stubProvider;
 }
 

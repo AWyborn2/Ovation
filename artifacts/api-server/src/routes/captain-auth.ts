@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
 import { CaptainLoginBody } from "@workspace/api-zod";
-import type { CaptainRow } from "@workspace/db";
 import {
   CAPTAIN_SESSION_COOKIE,
   SESSION_COOKIE_OPTS,
@@ -11,18 +10,9 @@ import {
 import { resolveCaptain, getCaptainGrades } from "../middlewares/require-captain";
 import { loginRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
+import { serializeCaptain } from "../lib/serialize-principals";
 
 const router: IRouter = Router();
-
-function serializeCaptain(c: CaptainRow, grades: string[]) {
-  return {
-    id: c.id,
-    username: c.username,
-    displayName: c.displayName,
-    grades,
-    createdAt: c.createdAt.toISOString(),
-  };
-}
 
 router.post("/captain-auth/login", loginRateLimiter, async (req, res): Promise<void> => {
   const parsed = CaptainLoginBody.safeParse(req.body);
@@ -35,7 +25,7 @@ router.post("/captain-auth/login", loginRateLimiter, async (req, res): Promise<v
     res.status(401).json({ error: "Invalid username or password" });
     return;
   }
-  const token = encodeCaptainSession({ captainId: captain.id, issuedAt: Date.now() });
+  const token = encodeCaptainSession({ captainId: captain.id, issuedAt: Date.now(), epoch: captain.sessionEpoch });
   res.cookie(CAPTAIN_SESSION_COOKIE, token, SESSION_COOKIE_OPTS);
   const grades = await getCaptainGrades(captain.id);
   res.json(serializeCaptain(captain, grades));

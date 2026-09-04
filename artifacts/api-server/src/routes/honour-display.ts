@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, honourDisplaySettingsTable } from "@workspace/db";
 import { UpdateHonourDisplaySettingsBody } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loadActiveSponsors } from "../lib/active-sponsors";
-
+import { dataSource } from "../lib/tenant";
 import {
   assembleBoards,
   buildBrand,
@@ -29,9 +29,12 @@ const router: IRouter = Router();
 
 router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
-  const settingsRow = await ensureHonourDisplaySettings(tenantId);
+  const [settingsRow, source] = await Promise.all([
+    ensureHonourDisplaySettings(tenantId),
+    dataSource(req),
+  ]);
   const [boards, brand, gridCatalog, activeSponsors] = await Promise.all([
-    assembleBoards(settingsRow, req),
+    assembleBoards(settingsRow, source),
     buildBrand(tenantId),
     buildGridCatalog(tenantId),
     loadActiveSponsors(tenantId, req.log),
@@ -56,7 +59,7 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
     return;
   }
   const [boards, brand, activeSponsors] = await Promise.all([
-    assembleBoards(settingsRow, req),
+    assembleBoards(settingsRow, await dataSource(req)),
     buildBrand(tenantId),
     loadActiveSponsors(tenantId, req.log),
   ]);

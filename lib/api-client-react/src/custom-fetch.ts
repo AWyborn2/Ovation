@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _tenantId: number | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,27 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Pin the tenant every request is made on behalf of.  When set, an
+ * `x-tenant-id: <id>` header is attached to every fetch that does not already
+ * carry one.  Non-positive / non-integer ids are treated as `null` (unset).
+ *
+ * Useful for Expo bundles, which have no host for the API to resolve a tenant
+ * from: a per-tenant build sets `EXPO_PUBLIC_TENANT_ID` and calls this once on
+ * boot.  NOTE the server honours `x-tenant-id` ONLY on dev/preview hosts
+ * (localhost, `.replit.dev`, `*.replit.app`) — see the middleware doc in
+ * `api-server/src/middlewares/tenant-context.ts`.  In production a mobile build
+ * must instead point `EXPO_PUBLIC_DOMAIN` (→ {@link setBaseUrl}) at the tenant's
+ * own host (its `<slug>.ovation…` subdomain or custom domain), where the server
+ * resolves the tenant from the host and this header is ignored.
+ *
+ * Pass `null` to clear the tenant.  Web builds should not call this: the
+ * browser's host (or the dev-only localStorage override below) is the signal.
+ */
+export function setTenantId(id: number | null): void {
+  _tenantId = id != null && Number.isInteger(id) && id > 0 ? id : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,7 +153,8 @@ function mergeHeaders(...sources: Array<HeadersInit | undefined>): Headers {
 
 function getMediaType(headers: Headers): string | null {
   const value = headers.get("content-type");
-  return value ? value.split(";", 1)[0].trim().toLowerCase() : null;
+  const mediaType = value?.split(";", 1)[0];
+  return mediaType ? mediaType.trim().toLowerCase() : null;
 }
 
 function isJsonMediaType(mediaType: string | null): boolean {
@@ -210,7 +233,7 @@ function buildErrorMessage(response: Response, data: unknown): string {
 }
 
 export class ApiError<T = unknown> extends Error {
-  readonly name = "ApiError";
+  override readonly name = "ApiError";
   readonly status: number;
   readonly statusText: string;
   readonly data: T | null;
@@ -238,7 +261,7 @@ export class ApiError<T = unknown> extends Error {
 }
 
 export class ResponseParseError extends Error {
-  readonly name = "ResponseParseError";
+  override readonly name = "ResponseParseError";
   readonly status: number;
   readonly statusText: string;
   readonly headers: Headers;
@@ -246,7 +269,7 @@ export class ResponseParseError extends Error {
   readonly method: string;
   readonly url: string;
   readonly rawBody: string;
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   constructor(
     response: Response,
@@ -396,12 +419,14 @@ export async function customFetch<T = unknown>(
     }
   }
 
-  // Dev-only tenant pin (see comment above getDevTenantOverride): only ever
-  // attached on localhost/preview hosts, and only when not already set.
+  // Tenant pin, when not already set explicitly on the request: the
+  // module-level id from setTenantId (Expo builds) wins; otherwise the
+  // dev-only web override (see comment above getDevTenantOverride), which is
+  // only ever attached on localhost/preview hosts.
   if (!headers.has("x-tenant-id")) {
-    const devTenant = getDevTenantOverride();
-    if (devTenant) {
-      headers.set("x-tenant-id", devTenant);
+    const tenant = _tenantId != null ? String(_tenantId) : getDevTenantOverride();
+    if (tenant) {
+      headers.set("x-tenant-id", tenant);
     }
   }
 

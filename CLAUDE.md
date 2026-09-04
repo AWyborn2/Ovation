@@ -19,7 +19,7 @@ Mature pnpm monorepo: React+Vite+Tailwind web (`artifacts/cricket-club`), Expo m
 (`artifacts/cricket-mobile`), Express 5 + Drizzle + Postgres API (`artifacts/api-server`),
 OpenAPI-first (`lib/api-spec/openapi.yaml` → Orval-generated hooks in `lib/api-client-react`
 and Zod in `lib/api-zod`), shared scorecard view-model `lib/scorecard`, schema in
-`lib/db/src/schema/`. 33 schema tables, ~39 route modules, ~55 web pages. Run commands and the
+`lib/db/src/schema/`. 47 schema tables, ~90 route modules, ~66 web pages. Run commands and the
 full data model are in `replit.md`.
 
 ### Where Halls Head is baked in (white-label debt inventory)
@@ -121,7 +121,10 @@ treat as unexercised/brittle. The stats core is mid-migration (some reads local,
 so the local-vs-central boundary is the top correctness risk; keep all central reads funnelled
 through `central-queries.ts` and guarded by the `*-consistency.test.ts` suites.
 
-See `AGENTS.md` for the full current-state map.
+See `AGENTS.md` for the full current-state map, and `plan.md` (Sep 2026) for the
+engineering review and its phased implementation — Phases A–C (fail-closed stats reads,
+CI integrity, lint, session revocation, spec drift, code-splitting, mobile tenant
+awareness) are implemented; Phase D items are tracked there.
 
 ## Phase 0 — prove the central model (✅ COMPLETE — kept for context)
 

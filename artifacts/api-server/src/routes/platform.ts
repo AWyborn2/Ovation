@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, isNull } from "drizzle-orm";
+import { isNull } from "drizzle-orm";
 import { db, tenantsTable, adminsTable } from "@workspace/db";
 import { PlatformSignupBody } from "@workspace/api-zod";
 import {
@@ -20,6 +20,8 @@ import {
   signupDiscoveryRateLimiter,
 } from "../middlewares/rate-limit";
 import { listAvailableClubs } from "../lib/available-clubs";
+import { env } from "../config";
+import { isEmail, slugTaken } from "../lib/signup-validation";
 
 const router: IRouter = Router();
 
@@ -32,24 +34,10 @@ const router: IRouter = Router();
 
 /** Onboarding gate. `pca` (default) onboards central PCA clubs; `off` disables. */
 function signupMode(): "pca" | "open" | "off" {
-  const m = (process.env.SIGNUP_MODE ?? "pca").toLowerCase();
+  const m = (env.SIGNUP_MODE() ?? "pca").toLowerCase();
   if (m === "off") return "off";
   if (m === "open") return "open";
   return "pca";
-}
-
-/** Basic email shape check (no verification in the pilot). */
-function isEmail(s: string): boolean {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
-}
-
-/** Whether a slug is free in the tenants register. */
-async function slugTaken(slug: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: tenantsTable.id })
-    .from(tenantsTable)
-    .where(eq(tenantsTable.slug, slug));
-  return !!row;
 }
 
 // --- Available clubs (the signup picker) ------------------------------------
@@ -200,7 +188,7 @@ router.post(
       // new tenant's own subdomain. The cookie is scoped to the shared apex domain
       // (not just this host) because the redirect below sends the browser to the
       // new tenant's own subdomain, a different host from the one setting it.
-      const token = encodeSession({ adminId: admin.id, issuedAt: Date.now() });
+      const token = encodeSession({ adminId: admin.id, issuedAt: Date.now(), epoch: admin.sessionEpoch });
       res.cookie(SESSION_COOKIE, token, signupSessionCookieOpts(req));
 
       // The new tenant's slug must resolve on its subdomain right away (the

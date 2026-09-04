@@ -18,6 +18,18 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Probes the tenant database and the central database with a short timeout. 200 when both answer, 503 (with the same body) when either does not, so an autoscaler stops routing to an instance that cannot serve stats reads.
+
+ * @summary Readiness check
+ */
+export const ReadinessCheckResponse = zod.object({
+  "status": zod.enum(['ok', 'degraded']),
+  "db": zod.enum(['ok', 'error']).describe('Tenant database probe'),
+  "central": zod.enum(['ok', 'error']).describe('Central (read-only) database probe')
+})
+
+
+/**
  * @summary List all players
  */
 export const ListPlayersQueryParams = zod.object({
@@ -6223,6 +6235,30 @@ export const ApproveSocialDraftResponse = zod.object({
 })
 
 
+/**
+ * @summary Mark an approved draft as posted
+ */
+export const MarkSocialDraftPostedParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MarkSocialDraftPostedResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish()
+})
+
+
 export const DismissSocialDraftParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -6252,6 +6288,35 @@ export const GenerateRoundUpResponseItem = zod.object({
   "reviewedAt": zod.coerce.date().nullish()
 })
 export const GenerateRoundUpResponse = zod.array(GenerateRoundUpResponseItem)
+
+
+/**
+ * @summary Generate season-recap drafts for a grade
+ */
+
+
+
+export const GenerateRecapsBody = zod.object({
+  "grade": zod.string().min(1),
+  "season": zod.number()
+})
+
+export const GenerateRecapsResponseItem = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish()
+})
+export const GenerateRecapsResponse = zod.array(GenerateRecapsResponseItem)
 
 
 /**
@@ -6286,6 +6351,94 @@ export const ListTrackedLinksResponseItem = zod.object({
   "createdAt": zod.coerce.date()
 })
 export const ListTrackedLinksResponse = zod.array(ListTrackedLinksResponseItem)
+
+
+/**
+ * Called by the share flow so a caption and downloaded card carry a measurable /go/{slug} link. Unauthenticated, per-IP rate limited, and every field is length-bounded.
+
+ * @summary Mint a tracked short link for an in-app path (public; rate limited)
+ */
+export const createTrackedLinkBodyTargetUrlMax = 512;
+
+export const createTrackedLinkBodyEngineDefault = `ondemand`;
+export const createTrackedLinkBodyEngineMax = 64;
+
+export const createTrackedLinkBodyPlatformMax = 64;
+
+export const createTrackedLinkBodyLabelMax = 200;
+
+
+
+export const CreateTrackedLinkBody = zod.object({
+  "targetUrl": zod.string().min(1).max(createTrackedLinkBodyTargetUrlMax).describe('In-app path, e.g. \/players\/12'),
+  "engine": zod.string().max(createTrackedLinkBodyEngineMax).default(createTrackedLinkBodyEngineDefault),
+  "platform": zod.string().max(createTrackedLinkBodyPlatformMax).optional(),
+  "label": zod.string().max(createTrackedLinkBodyLabelMax).optional()
+})
+
+
+/**
+ * @summary List this tenant's central-player curation rows (renames and merges)
+ */
+export const ListPlayerCurationResponseItem = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "participantId": zod.string(),
+  "overrideDisplayName": zod.string().nullable(),
+  "mergedIntoParticipantId": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPlayerCurationResponse = zod.array(ListPlayerCurationResponseItem)
+
+
+/**
+ * @summary Rename and/or merge one central participant for this tenant
+ */
+export const UpsertPlayerCurationParams = zod.object({
+  "participantId": zod.coerce.string()
+})
+
+export const upsertPlayerCurationBodyOverrideDisplayNameMax = 120;
+
+
+
+
+export const UpsertPlayerCurationBody = zod.object({
+  "overrideDisplayName": zod.string().min(1).max(upsertPlayerCurationBodyOverrideDisplayNameMax).nullish(),
+  "mergedIntoParticipantId": zod.string().min(1).nullish()
+})
+
+export const UpsertPlayerCurationResponse = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "participantId": zod.string(),
+  "overrideDisplayName": zod.string().nullable(),
+  "mergedIntoParticipantId": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Clear curation for one participant (revert to central defaults)
+ */
+export const DeletePlayerCurationParams = zod.object({
+  "participantId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Start an upgrade checkout for the current tenant (inert while billing is disabled)
+ */
+export const CreateBillingCheckoutBody = zod.object({
+  "plan": zod.enum(['club', 'pro']),
+  "successUrl": zod.string().optional(),
+  "cancelUrl": zod.string().optional()
+})
+
+export const CreateBillingCheckoutResponse = zod.object({
+  "url": zod.string().nullable(),
+  "disabled": zod.boolean()
+})
 
 
 /**

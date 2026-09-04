@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq, desc } from "drizzle-orm";
-import { z } from "zod";
+import { UpsertPlayerCurationBody } from "@workspace/api-zod";
 import { db, playerCurationTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -10,15 +10,10 @@ import { getTenantId } from "../middlewares/tenant-context";
  * scoped to the requesting tenant — a club can only curate its own view of
  * central players, and nothing here ever writes to the central database.
  *
- * Validation is inline (zod) rather than generated so the route is self-
- * contained; the OpenAPI spec mirrors it for the client hooks (run codegen).
+ * Bodies are validated with the schema generated from openapi.yaml
+ * (PlayerCurationBody), so the contract, the client hooks and this route agree.
  */
 const router: IRouter = Router();
-
-const CurationBody = z.object({
-  overrideDisplayName: z.string().trim().min(1).max(120).nullable().optional(),
-  mergedIntoParticipantId: z.string().trim().min(1).nullable().optional(),
-});
 
 function paramStr(v: string | string[] | undefined): string {
   return Array.isArray(v) ? v[0] : (v ?? "");
@@ -46,7 +41,7 @@ router.put(
       res.status(400).json({ error: "participantId is required" });
       return;
     }
-    const parsed = CurationBody.safeParse(req.body);
+    const parsed = UpsertPlayerCurationBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
       return;
