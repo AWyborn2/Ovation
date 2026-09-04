@@ -18,10 +18,7 @@
  * Unknown shapes are passed through unchanged. Empty names are dropped so we
  * never render dangling "b" with nothing after it.
  */
-export function formatDismissal(
-  raw: string | null | undefined,
-  notOut: boolean,
-): string {
+export function formatDismissal(raw: string | null | undefined, notOut: boolean): string {
   if (notOut) return "not out";
   if (!raw) return "";
   const text = raw.trim();

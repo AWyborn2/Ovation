@@ -7,9 +7,7 @@ import type { AdminRow, CaptainRow } from "@workspace/db";
  * guarantees the password hash never rides along.
  */
 
-export function serializeAdmin(
-  a: Pick<AdminRow, "id" | "username" | "displayName" | "createdAt">,
-) {
+export function serializeAdmin(a: Pick<AdminRow, "id" | "username" | "displayName" | "createdAt">) {
   return {
     id: a.id,
     username: a.username,

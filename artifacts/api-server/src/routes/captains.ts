@@ -1,11 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, sql } from "drizzle-orm";
-import {
-  db,
-  captainsTable,
-  captainGradePermissionsTable,
-  type CaptainRow,
-} from "@workspace/db";
+import { db, captainsTable, captainGradePermissionsTable, type CaptainRow } from "@workspace/db";
 import {
   CreateCaptainBody,
   UpdateCaptainBody,
@@ -146,12 +141,7 @@ router.delete("/captains/:id", requireAdmin, async (req, res): Promise<void> => 
   }
   const [row] = await db
     .delete(captainsTable)
-    .where(
-      and(
-        eq(captainsTable.id, params.data.id),
-        eq(captainsTable.tenantId, getTenantId(req)),
-      ),
-    )
+    .where(and(eq(captainsTable.id, params.data.id), eq(captainsTable.tenantId, getTenantId(req))))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Captain not found" });

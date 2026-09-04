@@ -56,9 +56,7 @@ function fromDefaults(isLoaded: boolean): MobileBrand {
 }
 
 /** True when the response is the apex/platform marker rather than a tenant brand. */
-function isPlatformResponse(
-  data: TenantBrand | PlatformBrand | undefined,
-): data is PlatformBrand {
+function isPlatformResponse(data: TenantBrand | PlatformBrand | undefined): data is PlatformBrand {
   return !!data && "platform" in data && data.platform === true;
 }
 

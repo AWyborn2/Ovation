@@ -21,8 +21,7 @@ describe("player photo gallery (integration)", () => {
   const LEGACY_URL = `/api/storage/objects/legacy-${Date.now()}`;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-player-images";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-player-images";
 
     const [admin] = await db
       .insert(adminsTable)
@@ -55,12 +54,8 @@ describe("player photo gallery (integration)", () => {
   });
 
   afterAll(async () => {
-    await db
-      .delete(playerImagesTable)
-      .where(eq(playerImagesTable.playerId, legacyPlayerId));
-    await db
-      .delete(playerImagesTable)
-      .where(eq(playerImagesTable.playerId, galleryPlayerId));
+    await db.delete(playerImagesTable).where(eq(playerImagesTable.playerId, legacyPlayerId));
+    await db.delete(playerImagesTable).where(eq(playerImagesTable.playerId, galleryPlayerId));
     await db.delete(playersTable).where(eq(playersTable.id, legacyPlayerId));
     await db.delete(playersTable).where(eq(playersTable.id, galleryPlayerId));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
@@ -74,19 +69,15 @@ describe("player photo gallery (integration)", () => {
   });
 
   it("backfills a legacy image_url as the default gallery row on read", async () => {
-    const res = await request(app)
-      .get(`/api/players/${legacyPlayerId}/images`)
-      .expect(200);
+    const res = await request(app).get(`/api/players/${legacyPlayerId}/images`).expect(200);
     const images = res.body as GalleryImage[];
     expect(images).toHaveLength(1);
     expect(images[0].imageUrl).toBe(LEGACY_URL);
     expect(images[0].isDefault).toBe(true);
 
     // Idempotent: a second read does not create a duplicate row.
-    const res2 = await request(app)
-      .get(`/api/players/${legacyPlayerId}/images`)
-      .expect(200);
-    expect((res2.body as GalleryImage[])).toHaveLength(1);
+    const res2 = await request(app).get(`/api/players/${legacyPlayerId}/images`).expect(200);
+    expect(res2.body as GalleryImage[]).toHaveLength(1);
   });
 
   it("adds, sets default (syncing image_url), and deletes with promotion", async () => {
@@ -142,9 +133,7 @@ describe("player photo gallery (integration)", () => {
       .where(eq(playersTable.id, galleryPlayerId));
     expect(player.imageUrl).toBe("/api/storage/objects/first");
 
-    const after = await request(app)
-      .get(`/api/players/${galleryPlayerId}/images`)
-      .expect(200);
+    const after = await request(app).get(`/api/players/${galleryPlayerId}/images`).expect(200);
     const remaining = after.body as GalleryImage[];
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe(firstId);

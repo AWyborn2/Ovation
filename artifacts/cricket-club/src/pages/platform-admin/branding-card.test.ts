@@ -173,17 +173,13 @@ describe("contrast warning (R7, AE3)", () => {
 
   it("flags a dark colour against the dark surface", () => {
     expect(hasLowContrast("#1a3350", DARK_SURFACE_HEX)).toBe(true);
-    expect(contrastWarningMessage(["#1a3350"], "dark")).toBe(
-      "Low contrast against dark surfaces.",
-    );
+    expect(contrastWarningMessage(["#1a3350"], "dark")).toBe("Low contrast against dark surfaces.");
   });
 
   it("returns null when every colour passes on the previewed surface", () => {
     // The design system's amber accent reads well on the dark navy surface
     // (near-white passes there too — accents are fills with dark text).
-    expect(
-      contrastWarningMessage([ACCENT_HEX.amber, null, undefined], "dark"),
-    ).toBeNull();
+    expect(contrastWarningMessage([ACCENT_HEX.amber, null, undefined], "dark")).toBeNull();
   });
 
   it("is advisory only — a low-contrast choice still produces a full save payload", () => {

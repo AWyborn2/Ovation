@@ -134,9 +134,7 @@ export default function AdminSocialQueue() {
 
   const clubUrl = bundle?.settings.clubUrl ?? "";
   const buildShortUrl = (slug: string) =>
-    clubUrl
-      ? `${clubUrl.replace(/\/$/, "")}/go/${slug}`
-      : `/go/${slug}`;
+    clubUrl ? `${clubUrl.replace(/\/$/, "")}/go/${slug}` : `/go/${slug}`;
 
   const renderList = (list: SocialDraft[]) => {
     if (draftsQ.isLoading) return <CardGridSkeleton count={4} className="md:grid-cols-2" />;
@@ -162,15 +160,15 @@ export default function AdminSocialQueue() {
           const isJuniorMatch = !!(msInput && msInput.junior);
           const heading = msInput
             ? `${msInput.club.name} vs ${msInput.opposition.name}`
-            : (input && (input as { playerName?: string }).playerName) ??
+            : ((input && (input as { playerName?: string }).playerName) ??
               (input && (input as { headline?: string }).headline) ??
-              d.engine;
+              d.engine);
           const sub = msInput
             ? `${msInput.matchTitle} — ${msInput.result}`
-            : (input && (input as { tierLabel?: string }).tierLabel) ??
+            : ((input && (input as { tierLabel?: string }).tierLabel) ??
               (input && (input as { category?: string }).category) ??
               (input && (input as { grade?: string }).grade) ??
-              d.appPath;
+              d.appPath);
           const engineLabel = msInput ? "Match Summary" : d.engine;
           return (
             <Card key={d.id}>
@@ -186,7 +184,9 @@ export default function AdminSocialQueue() {
                         Junior
                       </Badge>
                     )}
-                    <Badge variant="outline" className="capitalize">{engineLabel}</Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {engineLabel}
+                    </Badge>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{sub}</p>
@@ -205,9 +205,7 @@ export default function AdminSocialQueue() {
                       size="icon"
                       variant="ghost"
                       className="h-6 w-6"
-                      onClick={() =>
-                        navigator.clipboard.writeText(buildShortUrl(d.trackedSlug!))
-                      }
+                      onClick={() => navigator.clipboard.writeText(buildShortUrl(d.trackedSlug!))}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -260,12 +258,7 @@ export default function AdminSocialQueue() {
                     </Button>
                   )}
                   {d.appPath && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      asChild
-                    >
+                    <Button type="button" size="sm" variant="ghost" asChild>
                       <a href={d.appPath} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                       </a>
@@ -346,18 +339,10 @@ export default function AdminSocialQueue() {
 
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending">
-            Pending ({byStatus.pending.length})
-          </TabsTrigger>
-          <TabsTrigger value="approved">
-            Approved ({byStatus.approved.length})
-          </TabsTrigger>
-          <TabsTrigger value="posted">
-            Posted ({byStatus.posted.length})
-          </TabsTrigger>
-          <TabsTrigger value="dismissed">
-            Dismissed ({byStatus.dismissed.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Pending ({byStatus.pending.length})</TabsTrigger>
+          <TabsTrigger value="approved">Approved ({byStatus.approved.length})</TabsTrigger>
+          <TabsTrigger value="posted">Posted ({byStatus.posted.length})</TabsTrigger>
+          <TabsTrigger value="dismissed">Dismissed ({byStatus.dismissed.length})</TabsTrigger>
           <TabsTrigger value="links">Tracked links</TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="mt-4">
@@ -415,11 +400,7 @@ export default function AdminSocialQueue() {
         engine={(previewDraft?.engine as EngineKey) ?? "ondemand"}
         appPath={previewDraft?.appPath ?? undefined}
         trackedSlug={previewDraft?.trackedSlug ?? null}
-        onApprove={
-          approveMode && previewDraft
-            ? () => markPosted(previewDraft.id)
-            : undefined
-        }
+        onApprove={approveMode && previewDraft ? () => markPosted(previewDraft.id) : undefined}
         approveLabel="Approve & mark posted"
       />
     </div>

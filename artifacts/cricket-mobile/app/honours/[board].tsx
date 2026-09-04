@@ -89,10 +89,18 @@ function TierSectionHeader({
         <Body muted size={10} style={{ flex: 1, textTransform: "uppercase", letterSpacing: 1 }}>
           Player
         </Body>
-        <Body muted size={10} style={{ width: 80, textAlign: "right", textTransform: "uppercase", letterSpacing: 1 }}>
+        <Body
+          muted
+          size={10}
+          style={{ width: 80, textAlign: "right", textTransform: "uppercase", letterSpacing: 1 }}
+        >
           {headlineLabel}
         </Body>
-        <Body muted size={10} style={{ width: 70, textAlign: "right", textTransform: "uppercase", letterSpacing: 1 }}>
+        <Body
+          muted
+          size={10}
+          style={{ width: 70, textAlign: "right", textTransform: "uppercase", letterSpacing: 1 }}
+        >
           {supportingLabel}
         </Body>
       </View>
@@ -190,16 +198,12 @@ function useGradeBoard(boardKey: BoardKey, grade: string | null, opts: { enabled
   const enabled = opts.enabled && !!grade;
   // The hook now takes (grade, params, options); passing no params keeps the
   // full grade, which the honour board aggregates over.
-  const { data, isLoading, isError } = useGetGradeLeaderboard(
-    grade ?? "",
-    undefined,
-    {
-      query: {
-        enabled,
-        queryKey: getGetGradeLeaderboardQueryKey(grade ?? ""),
-      },
+  const { data, isLoading, isError } = useGetGradeLeaderboard(grade ?? "", undefined, {
+    query: {
+      enabled,
+      queryKey: getGetGradeLeaderboardQueryKey(grade ?? ""),
     },
-  );
+  });
 
   const board = useMemo(() => {
     if (!data) return [];

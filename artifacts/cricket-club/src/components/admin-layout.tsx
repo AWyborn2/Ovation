@@ -30,7 +30,13 @@ const NAV: {
   feature?: Feature;
 }[] = [
   { href: "/admin", label: "Hub", icon: LayoutGrid },
-  { href: "/admin/social", label: "Social Media Studio", icon: Image, badge: "social-queue", feature: "socialStudio" },
+  {
+    href: "/admin/social",
+    label: "Social Media Studio",
+    icon: Image,
+    badge: "social-queue",
+    feature: "socialStudio",
+  },
   { href: "/admin/settings", label: "Display & Settings", icon: Settings },
   { href: "/admin/people", label: "People", icon: Users },
   { href: "/admin/honours", label: "Honours & Records", icon: Trophy },

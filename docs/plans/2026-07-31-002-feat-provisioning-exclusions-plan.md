@@ -14,14 +14,14 @@ product_contract_source: ce-plan-bootstrap
 
 Add a platform-admin-managed exclusion list for central PCA clubs, independent of `central.clubs.active_to` (the 2026-07-31-001 plan's folded-club guard). Two visibility states per excluded club: **hidden everywhere** (excluded from both self-serve signup and the concierge picker — for clubs that are defunct or have merged into another club) and **hidden from self-serve only** (excluded from public signup but still concierge-provisionable by a platform admin — for clubs invited into selected PCA competitions but not ready for public self-serve).
 
-This is deliberately a *second*, independent mechanism from the existing `active_to`-based guard: `central.clubs` is read-only from this app (`CLAUDE.md`, "Never write to it from the app"), and this app has no way to verify today's `active_to` values for any specific club without a live `CENTRAL_DATABASE_URL` connection. Rather than guess, platform admins get a table they fully control, populated by searching and picking real clubs from a live list — not by auto-matching free-text club names to `centralClubId`, which risks silently matching the wrong row.
+This is deliberately a _second_, independent mechanism from the existing `active_to`-based guard: `central.clubs` is read-only from this app (`CLAUDE.md`, "Never write to it from the app"), and this app has no way to verify today's `active_to` values for any specific club without a live `CENTRAL_DATABASE_URL` connection. Rather than guess, platform admins get a table they fully control, populated by searching and picking real clubs from a live list — not by auto-matching free-text club names to `centralClubId`, which risks silently matching the wrong row.
 
 ## Problem Frame
 
 The self-serve signup wizard and the platform-admin concierge picker currently share one endpoint (`GET /platform/available-clubs`, `artifacts/api-server/src/routes/platform.ts:57`) and one filter set: already-claimed clubs, and (per 2026-07-31-001) folded/renamed clubs (`active_to` set). There is no way to:
 
 1. Exclude a club that is defunct or merged but whose `active_to` value in the external central database can't be confirmed from this app.
-2. Exclude a club from *public self-serve* while still letting a platform admin concierge-provision it later, once a club is ready to onboard (e.g. clubs invited into selected PCA competitions, still being built out).
+2. Exclude a club from _public self-serve_ while still letting a platform admin concierge-provision it later, once a club is ready to onboard (e.g. clubs invited into selected PCA competitions, still being built out).
 
 Fifteen named clubs need this today (per the user's list): eight are defunct or merged (hidden everywhere) and seven belong to other associations and aren't ready for public signup yet (hidden from self-serve only). The exact `centralClubId` for each is not known in this session (no live central DB connection) — the platform admin will add them via a search-and-pick UI once this ships, the same way `provision.tsx` already lets them pick a club by name today.
 
@@ -29,7 +29,7 @@ Fifteen named clubs need this today (per the user's list): eight are defunct or 
 
 - **R1**: A platform admin can add a central club to the exclusion list, choosing "hidden everywhere" or "hidden from self-serve only", with an optional reason/note, by searching and picking the club (not by typing a raw id).
 - **R2**: A platform admin can view the current exclusion list (club name, visibility, reason) and remove an entry.
-- **R3**: The public self-serve signup picker (`/platform/available-clubs`) excludes clubs in *either* visibility state, in addition to the existing claimed/folded filters.
+- **R3**: The public self-serve signup picker (`/platform/available-clubs`) excludes clubs in _either_ visibility state, in addition to the existing claimed/folded filters.
 - **R4**: The concierge picker (`provision.tsx`) excludes only "hidden everywhere" clubs — "hidden from self-serve only" clubs remain visible and provisionable there.
 - **R5**: `provisionTenant()` rejects a direct API call for an excluded club, applying the same visibility rule as the caller's context (self-serve vs. concierge) — defense-in-depth, mirroring the existing `club_folded` guard from 2026-07-31-001.
 - **R6**: No dependency on `central.clubs.active_to` or any write to the central database.
@@ -65,12 +65,12 @@ flowchart LR
     Concierge -.does NOT exclude.-> SS
 ```
 
-| Club state | Self-serve signup | Concierge picker |
-|---|---|---|
-| Normal, unclaimed | visible | visible |
-| Folded (`active_to` set) | excluded | excluded |
-| Exclusion: `everywhere` | excluded | excluded |
-| Exclusion: `self_serve_only` | excluded | **visible** |
+| Club state                   | Self-serve signup | Concierge picker |
+| ---------------------------- | ----------------- | ---------------- |
+| Normal, unclaimed            | visible           | visible          |
+| Folded (`active_to` set)     | excluded          | excluded         |
+| Exclusion: `everywhere`      | excluded          | excluded         |
+| Exclusion: `self_serve_only` | excluded          | **visible**      |
 
 ---
 
@@ -79,6 +79,7 @@ flowchart LR
 **In scope:** the `provisioning_exclusions` table; CRUD endpoints; the split available-clubs endpoints; the `provisionTenant()` context guard; the manage-exclusions platform-admin page; wiring the concierge picker to the new admin endpoint.
 
 **Out of scope / deferred:**
+
 - Populating the 15 named clubs — a manual, post-deploy action by the platform admin via the new UI, not part of this plan's implementation units.
 - Any change to the existing `central.clubs.active_to` folded-club guard (2026-07-31-001) — the two mechanisms run side by side.
 - Editing an existing exclusion's visibility/reason in place — v1 is add/remove only; changing an entry means removing and re-adding it.
@@ -97,6 +98,7 @@ flowchart LR
 **Dependencies:** none
 
 **Files:**
+
 - `lib/db/src/schema/provisioning_exclusions.ts` — new table definition.
 - `lib/db/src/schema/index.ts` — add `export * from "./provisioning_exclusions"`.
 
@@ -105,6 +107,7 @@ flowchart LR
 **Patterns to follow:** `lib/db/src/schema/platform_settings.ts` (platform-wide table, no tenant column), `lib/db/src/schema/admin_password_resets.ts` (FK to `platformAdminsTable`, `createdAt` default pattern).
 
 **Test scenarios:**
+
 - Test expectation: none -- pure schema addition, no behavior; exercised indirectly by U3's route tests.
 
 **Verification:** `pnpm --filter @workspace/db run push` (operational step, run against the real database — not available in a sandbox without `DATABASE_URL`) applies the new table without conflicts; `tsc --build` on `lib/db` compiles clean.
@@ -120,6 +123,7 @@ flowchart LR
 **Dependencies:** U1 (response shapes reference the new row's fields)
 
 **Files:**
+
 - `lib/api-spec/openapi.yaml` — add:
   - `GET /platform/admin/provisioning-exclusions` (operationId `listProvisioningExclusions`) — returns an array of a new `ProvisioningExclusion` schema (`id`, `centralClubId`, `clubName`, `visibility` enum, `reason` nullable, `createdAt`).
   - `POST /platform/admin/provisioning-exclusions` (operationId `createProvisioningExclusion`) — body `{ centralClubId, visibility, reason? }`; 201 returns the created row; 404 if the central club id doesn't resolve; 409 if already excluded.
@@ -131,6 +135,7 @@ flowchart LR
 **Patterns to follow:** `lib/api-spec/openapi.yaml:5295` (`/brand` sub-path, request/response shape for a platform-admin POST/PATCH), `lib/api-spec/openapi.yaml:7252` (`AvailableClub` schema).
 
 **Test scenarios:**
+
 - Test expectation: none -- pure contract addition; verified indirectly by U3/U5's route tests and generated-type compilation.
 
 **Verification:** `pnpm --filter @workspace/api-spec run codegen` (or the direct `orval` binary — see `windows-local-test-setup` project memory) regenerates `@workspace/api-zod` and `@workspace/api-client-react` without errors.
@@ -146,10 +151,12 @@ flowchart LR
 **Dependencies:** U1, U2
 
 **Files:**
+
 - `artifacts/api-server/src/routes/platform-admin.ts` — add the three route handlers, near the tenant archive/restore routes.
 - `artifacts/api-server/src/routes/provisioning-exclusions.test.ts` (new) — route-level tests.
 
 **Approach:**
+
 - `GET`: `requirePlatformAdmin`, plain `db.select().from(provisioningExclusionsTable).orderBy(...)`.
 - `POST`: `requirePlatformAdmin`; validate body via the generated Zod schema; lazily resolve the central club by id (mirroring `resolveCentralClub`'s pattern in `lib/db/src/provision.ts`) to snapshot `clubName` and to 404 on an unknown id; 409 if `centralClubId` already has a row (unique constraint); insert; `req.log?.info` an audit entry (`event: "provisioning_exclusion_created"`).
 - `DELETE`: `requirePlatformAdmin`; 404 if missing; delete; audit log (`event: "provisioning_exclusion_removed"`).
@@ -157,6 +164,7 @@ flowchart LR
 **Patterns to follow:** `artifacts/api-server/src/routes/platform-admin.ts` (the `parseTenantIdParam`/`getTenantOrNotFound`-style small-helper convention introduced in 2026-07-31-001, the `admin-resets` audit-log shape).
 
 **Test scenarios:**
+
 - Listing returns an empty array when no exclusions exist, and all rows (newest first or by name — pick one, document it) once some do.
 - Creating an exclusion for a real central club id succeeds, snapshots the club's name, and appears in the list.
 - Creating an exclusion for an unknown central club id 404s.
@@ -180,6 +188,7 @@ Covers R1, R2. Test file: `artifacts/api-server/src/routes/provisioning-exclusio
 **Dependencies:** U1
 
 **Files:**
+
 - `lib/db/src/provision.ts` — extend `ProvisionTenantOptions` with `context?: "self-serve" | "concierge"` (default `"self-serve"` — the more restrictive default, so an unspecified context never accidentally under-restricts); add the exclusion check in `resolveCentralClub`, alongside the existing `club_folded` check.
 - `artifacts/api-server/src/routes/platform.ts` — `POST /platform/signup` passes `context: "self-serve"` (or omits it, relying on the restrictive default — make it explicit for clarity).
 - `artifacts/api-server/src/routes/platform-admin.ts` — `POST /platform/admin/tenants` (concierge provisioning) passes `context: "concierge"`.
@@ -190,6 +199,7 @@ Covers R1, R2. Test file: `artifacts/api-server/src/routes/provisioning-exclusio
 **Patterns to follow:** `lib/db/src/provision.ts`'s existing `club_folded` check (2026-07-31-001) — same shape, one more condition.
 
 **Test scenarios:**
+
 - `provisionTenant({ context: "self-serve" })` rejects a club with an `everywhere` exclusion.
 - `provisionTenant({ context: "self-serve" })` rejects a club with a `self_serve_only` exclusion.
 - `provisionTenant({ context: "concierge" })` rejects a club with an `everywhere` exclusion.
@@ -212,6 +222,7 @@ Covers R5, R6. Test file: `lib/db/src/provision.test.ts` (extend the existing fi
 **Dependencies:** U1, U2
 
 **Files:**
+
 - `artifacts/api-server/src/routes/platform.ts` — `GET /platform/available-clubs`: add the exclusion filter (both visibilities) alongside the existing `claimedIds`/`isCentralClubProvisionable` filters.
 - `artifacts/api-server/src/routes/platform-admin.ts` — add `GET /platform/admin/available-clubs`, `requirePlatformAdmin`-gated, same shaping as the public endpoint but excluding only `everywhere`-visibility clubs.
 - `lib/db/src/central-schema/clubs.ts` or a small new shared helper — consider whether the "is this club excluded for context X" predicate belongs alongside `isCentralClubProvisionable` for reuse between this unit and U4, or stays route-local; decide based on how much the two call sites actually share once written (both read `provisioningExclusionsTable`, but one is a `WHERE ... NOT IN` set-membership filter over many rows and the other is a single-row lookup — likely different enough that a shared predicate isn't a real reduction in duplication, but check before assuming).
@@ -223,6 +234,7 @@ Covers R5, R6. Test file: `lib/db/src/provision.test.ts` (extend the existing fi
 **Patterns to follow:** `artifacts/api-server/src/routes/platform.ts:57` (`GET /platform/available-clubs`'s existing filter chain).
 
 **Test scenarios:**
+
 - Public `GET /platform/available-clubs` excludes a club with an `everywhere` exclusion.
 - Public `GET /platform/available-clubs` excludes a club with a `self_serve_only` exclusion.
 - Admin `GET /platform/admin/available-clubs` excludes a club with an `everywhere` exclusion.
@@ -245,6 +257,7 @@ Covers R3, R4. Test files: extend `artifacts/api-server/src/routes/platform-sign
 **Dependencies:** U2, U5 (needs the generated `useGetAdminAvailableClubs`-equivalent hook and the live endpoint)
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/platform-admin/provision.tsx` — `ClubPicker` switches from `useGetAvailableClubs` to the new generated admin-scoped hook.
 
 **Approach:** Pure data-source swap — the component's search/pick/display logic is unchanged; only the hook it calls changes.
@@ -252,6 +265,7 @@ Covers R3, R4. Test files: extend `artifacts/api-server/src/routes/platform-sign
 **Patterns to follow:** The existing `useGetAvailableClubs` call site being replaced.
 
 **Test scenarios:**
+
 - Test expectation: none -- one-line hook swap, no new logic; covered by U3/U5's backend tests proving the endpoint's filtering, and a manual/browser check that the picker still renders and searches correctly.
 
 **Verification:** Manual dev-server pass (or `agent-browser`, if available in the execution environment): open "Provision a club", confirm the list loads and search still works.
@@ -267,6 +281,7 @@ Covers R3, R4. Test files: extend `artifacts/api-server/src/routes/platform-sign
 **Dependencies:** U2, U3
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/platform-admin/provisioning-exclusions.tsx` (new).
 - `artifacts/cricket-club/src/pages/platform-admin/index.tsx` — add the route.
 - `artifacts/cricket-club/src/components/platform-admin-shell.tsx` — add the nav entry.
@@ -276,6 +291,7 @@ Covers R3, R4. Test files: extend `artifacts/api-server/src/routes/platform-sign
 **Patterns to follow:** `artifacts/cricket-club/src/pages/platform-admin/provision.tsx` (`ClubPicker`, two-step page flow), `artifacts/cricket-club/src/pages/platform-admin/tenant-detail.tsx`'s `StatusCard` (confirm-gated destructive action, `useConfirm()`), `artifacts/cricket-club/src/components/platform-admin-shell.tsx:118` (nav array).
 
 **Test scenarios:**
+
 - Test expectation: none -- UI composition of already-tested backend endpoints and existing design-system primitives; verified via manual dev-server pass per the project's UI-change testing convention.
 
 **Verification:** Manual dev-server pass: add an exclusion (both visibility choices), confirm it appears in the list and disappears from the relevant picker(s); remove it via the confirm-gated button and confirm it reappears.

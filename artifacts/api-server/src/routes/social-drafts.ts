@@ -47,186 +47,217 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
   res.json({ count: Number(row?.count ?? 0) });
 });
 
-router.post("/social-drafts/:id/approve", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const id = parseInt(String(req.params.id), 10);
-  if (!Number.isInteger(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const [draft] = await db
-    .select()
-    .from(socialDraftsTable)
-    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)));
-  if (!draft) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  let slug = draft.trackedSlug;
-  if (!slug && draft.appPath) {
-    slug = randomSlug();
-    await db.insert(trackedLinksTable).values({
-      tenantId,
-      slug,
-      targetUrl: draft.appPath,
-      label: `${draft.engine} #${draft.id}`,
-      engine: draft.engine,
-    });
-  }
-  const [updated] = await db
-    .update(socialDraftsTable)
-    .set({ status: "approved", trackedSlug: slug, reviewedAt: new Date() })
-    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
-    .returning();
-  res.json(updated);
-});
+router.post(
+  "/social-drafts/:id/approve",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const [draft] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)));
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    let slug = draft.trackedSlug;
+    if (!slug && draft.appPath) {
+      slug = randomSlug();
+      await db.insert(trackedLinksTable).values({
+        tenantId,
+        slug,
+        targetUrl: draft.appPath,
+        label: `${draft.engine} #${draft.id}`,
+        engine: draft.engine,
+      });
+    }
+    const [updated] = await db
+      .update(socialDraftsTable)
+      .set({ status: "approved", trackedSlug: slug, reviewedAt: new Date() })
+      .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+      .returning();
+    res.json(updated);
+  },
+);
 
-router.post("/social-drafts/:id/posted", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const id = parseInt(String(req.params.id), 10);
-  if (!Number.isInteger(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const [updated] = await db
-    .update(socialDraftsTable)
-    .set({ status: "posted", reviewedAt: new Date() })
-    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
-    .returning();
-  if (!updated) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  // Stamp the linked milestone event so other features (push notifications,
-  // "just posted" feeds) and re-detection know this moment has been shared.
-  if (updated.milestoneEventId) {
-    await db
-      .update(milestoneEventsTable)
-      .set({ postedAt: new Date() })
+router.post(
+  "/social-drafts/:id/posted",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const [updated] = await db
+      .update(socialDraftsTable)
+      .set({ status: "posted", reviewedAt: new Date() })
+      .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+      .returning();
+    if (!updated) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    // Stamp the linked milestone event so other features (push notifications,
+    // "just posted" feeds) and re-detection know this moment has been shared.
+    if (updated.milestoneEventId) {
+      await db
+        .update(milestoneEventsTable)
+        .set({ postedAt: new Date() })
+        .where(
+          and(
+            eq(milestoneEventsTable.id, updated.milestoneEventId),
+            eq(milestoneEventsTable.tenantId, tenantId),
+          ),
+        );
+    }
+    res.json(updated);
+  },
+);
+
+router.post(
+  "/social-drafts/:id/dismiss",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const [updated] = await db
+      .update(socialDraftsTable)
+      .set({ status: "dismissed", reviewedAt: new Date() })
+      .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+      .returning();
+    if (updated?.milestoneEventId) {
+      await db
+        .update(milestoneEventsTable)
+        .set({ dismissedAt: new Date() })
+        .where(
+          and(
+            eq(milestoneEventsTable.id, updated.milestoneEventId),
+            eq(milestoneEventsTable.tenantId, tenantId),
+          ),
+        );
+    }
+    res.status(204).end();
+  },
+);
+
+router.post(
+  "/social-roundups",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const grade = String(req.body?.grade ?? "");
+    const season = parseInt(String(req.body?.season ?? ""), 10);
+    if (!grade || !Number.isInteger(season)) {
+      res.status(400).json({ error: "grade and season required" });
+      return;
+    }
+    const [imp] = await db
+      .select({ id: importsTable.id })
+      .from(importsTable)
       .where(
-        and(
-          eq(milestoneEventsTable.id, updated.milestoneEventId),
-          eq(milestoneEventsTable.tenantId, tenantId),
-        ),
-      );
-  }
-  res.json(updated);
-});
+        sql`${importsTable.grade} = ${grade} AND ${importsTable.season} = ${season} AND ${importsTable.status} = 'committed'`,
+      )
+      .orderBy(desc(importsTable.importedAt))
+      .limit(1);
+    const created = await generateRoundUpDrafts(getTenantId(req), grade, season, imp?.id ?? null);
+    res.json(created);
+  },
+);
 
-router.post("/social-drafts/:id/dismiss", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const id = parseInt(String(req.params.id), 10);
-  if (!Number.isInteger(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const [updated] = await db
-    .update(socialDraftsTable)
-    .set({ status: "dismissed", reviewedAt: new Date() })
-    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
-    .returning();
-  if (updated?.milestoneEventId) {
-    await db
-      .update(milestoneEventsTable)
-      .set({ dismissedAt: new Date() })
-      .where(
-        and(
-          eq(milestoneEventsTable.id, updated.milestoneEventId),
-          eq(milestoneEventsTable.tenantId, tenantId),
-        ),
-      );
-  }
-  res.status(204).end();
-});
-
-router.post("/social-roundups", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const grade = String(req.body?.grade ?? "");
-  const season = parseInt(String(req.body?.season ?? ""), 10);
-  if (!grade || !Number.isInteger(season)) {
-    res.status(400).json({ error: "grade and season required" });
-    return;
-  }
-  const [imp] = await db
-    .select({ id: importsTable.id })
-    .from(importsTable)
-    .where(
-      sql`${importsTable.grade} = ${grade} AND ${importsTable.season} = ${season} AND ${importsTable.status} = 'committed'`,
-    )
-    .orderBy(desc(importsTable.importedAt))
-    .limit(1);
-  const created = await generateRoundUpDrafts(getTenantId(req), grade, season, imp?.id ?? null);
-  res.json(created);
-});
-
-router.post("/social-recaps", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const parsed = GenerateRecapsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "grade and season required" });
-    return;
-  }
-  const { grade, season } = parsed.data;
-  const created = await generateRecapDrafts(getTenantId(req), grade, season);
-  res.json(created);
-});
+router.post(
+  "/social-recaps",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = GenerateRecapsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "grade and season required" });
+      return;
+    }
+    const { grade, season } = parsed.data;
+    const created = await generateRecapDrafts(getTenantId(req), grade, season);
+    res.json(created);
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Sweep: bulk-generate match summary drafts for a set of matches.
 // ---------------------------------------------------------------------------
-router.post("/social-drafts/sweep", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const tenantId = getTenantId(req);
-  const matchIds: number[] | undefined = req.body?.matchIds;
-  const junior: boolean = !!req.body?.junior;
-  const season: number | undefined =
-    req.body?.season != null ? parseInt(String(req.body.season), 10) : undefined;
-  const grade: string | undefined = req.body?.grade || undefined;
+router.post(
+  "/social-drafts/sweep",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const tenantId = getTenantId(req);
+    const matchIds: number[] | undefined = req.body?.matchIds;
+    const junior: boolean = !!req.body?.junior;
+    const season: number | undefined =
+      req.body?.season != null ? parseInt(String(req.body.season), 10) : undefined;
+    const grade: string | undefined = req.body?.grade || undefined;
 
-  let ids: number[] = [];
+    let ids: number[] = [];
 
-  if (Array.isArray(matchIds) && matchIds.length > 0) {
-    // Explicit match IDs provided.
-    ids = matchIds.map((id) => parseInt(String(id), 10)).filter(Number.isInteger);
-  } else if (season != null && Number.isInteger(season)) {
-    // Query matches for the given season (+grade) filter.
-    if (junior) {
-      const conditions = [
-        eq(juniorMatchesTable.tenantId, tenantId),
-        eq(juniorMatchesTable.seasonStartYear, season),
-      ];
-      if (grade) {
-        conditions.push(eq(juniorMatchesTable.ageGroup, grade));
+    if (Array.isArray(matchIds) && matchIds.length > 0) {
+      // Explicit match IDs provided.
+      ids = matchIds.map((id) => parseInt(String(id), 10)).filter(Number.isInteger);
+    } else if (season != null && Number.isInteger(season)) {
+      // Query matches for the given season (+grade) filter.
+      if (junior) {
+        const conditions = [
+          eq(juniorMatchesTable.tenantId, tenantId),
+          eq(juniorMatchesTable.seasonStartYear, season),
+        ];
+        if (grade) {
+          conditions.push(eq(juniorMatchesTable.ageGroup, grade));
+        }
+        const rows = await db
+          .select({ id: juniorMatchesTable.id })
+          .from(juniorMatchesTable)
+          .where(and(...conditions));
+        ids = rows.map((r) => r.id);
+      } else {
+        const conditions = [eq(matchesTable.season, season)];
+        if (grade) {
+          conditions.push(eq(matchesTable.grade, grade));
+        }
+        const rows = await db
+          .select({ id: matchesTable.id })
+          .from(matchesTable)
+          .where(and(...conditions));
+        ids = rows.map((r) => r.id);
       }
-      const rows = await db
-        .select({ id: juniorMatchesTable.id })
-        .from(juniorMatchesTable)
-        .where(and(...conditions));
-      ids = rows.map((r) => r.id);
     } else {
-      const conditions = [eq(matchesTable.season, season)];
-      if (grade) {
-        conditions.push(eq(matchesTable.grade, grade));
-      }
-      const rows = await db
-        .select({ id: matchesTable.id })
-        .from(matchesTable)
-        .where(and(...conditions));
-      ids = rows.map((r) => r.id);
+      res.status(400).json({ error: "Provide matchIds or season to sweep" });
+      return;
     }
-  } else {
-    res.status(400).json({ error: "Provide matchIds or season to sweep" });
-    return;
-  }
 
-  const result = junior
-    ? await generateJuniorMatchSummaryDrafts(tenantId, ids)
-    : await generateMatchSummaryDrafts(tenantId, ids);
+    const result = junior
+      ? await generateJuniorMatchSummaryDrafts(tenantId, ids)
+      : await generateMatchSummaryDrafts(tenantId, ids);
 
-  res.json(result);
-});
+    res.json(result);
+  },
+);
 
 // Mint a tracked short link for an on-demand share. Public (share buttons are
 // on public pages) but restricted to in-app paths so it can't be abused as an
 // open redirect.
-const ALLOWED_APP_PATHS = /^\/(players|grades|records|premierships|stats|)(\/[A-Za-z0-9%\-_ ]+)?\/?$/;
+const ALLOWED_APP_PATHS =
+  /^\/(players|grades|records|premierships|stats|)(\/[A-Za-z0-9%\-_ ]+)?\/?$/;
 
 router.post("/tracked-links", publicWriteRateLimiter, async (req, res): Promise<void> => {
   // Public, unauthenticated write: the generated schema bounds every free-text
@@ -281,7 +312,7 @@ goRedirectRouter.get("/go/:slug", async (req, res): Promise<void> => {
     .where(eq(trackedLinksTable.id, link.id));
   const target = link.targetUrl.startsWith("http")
     ? link.targetUrl
-    : `https://${(req.headers.host ?? "")}${link.targetUrl.startsWith("/") ? "" : "/"}${link.targetUrl}`;
+    : `https://${req.headers.host ?? ""}${link.targetUrl.startsWith("/") ? "" : "/"}${link.targetUrl}`;
   res.redirect(302, target);
 });
 

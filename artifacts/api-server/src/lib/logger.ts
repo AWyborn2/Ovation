@@ -5,11 +5,7 @@ const isProduction = env.isProduction();
 
 export const logger = pino({
   level: env.LOG_LEVEL() ?? "info",
-  redact: [
-    "req.headers.authorization",
-    "req.headers.cookie",
-    "res.headers['set-cookie']",
-  ],
+  redact: ["req.headers.authorization", "req.headers.cookie", "res.headers['set-cookie']"],
   ...(isProduction
     ? {}
     : {

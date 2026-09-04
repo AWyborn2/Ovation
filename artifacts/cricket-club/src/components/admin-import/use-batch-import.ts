@@ -5,11 +5,7 @@ import {
   revalidateMatchBatch,
   type BatchImportPreview,
 } from "@workspace/api-client-react";
-import {
-  buildFileResolutions,
-  buildResolutions,
-  type FileResolutionEntry,
-} from "./resolution";
+import { buildFileResolutions, buildResolutions, type FileResolutionEntry } from "./resolution";
 import type { ImportSession } from "./use-import-session";
 
 /**
@@ -20,9 +16,7 @@ import type { ImportSession } from "./use-import-session";
 export function useBatchImport(session: ImportSession, active: boolean) {
   const [files, setFiles] = useState<FileList | null>(null);
   const [preview, setPreview] = useState<BatchImportPreview | null>(null);
-  const [fileResolutions, setFileResolutions] = useState<
-    Record<string, FileResolutionEntry>
-  >({});
+  const [fileResolutions, setFileResolutions] = useState<Record<string, FileResolutionEntry>>({});
 
   // Monotonic token so only the latest revalidate response is applied — rapid
   // resolver edits fire overlapping requests that can resolve out of order.

@@ -83,7 +83,7 @@ question if they turn out wrong:
 - **KTD3 — No server/storage changes.** `POST /storage/uploads/request-url`
   already allowlists `video/mp4` (`ALLOWED_VIDEO_MIME` in
   `artifacts/api-server/src/routes/storage.ts`) with a 50MB cap, added for
-  animated card-template backgrounds. This plan only widens the *client's*
+  animated card-template backgrounds. This plan only widens the _client's_
   `accept` filter and adds `mediaType` bookkeeping; the storage route is
   untouched.
 - **KTD4 — Field is optional and defaults to `"image"`.** `mediaType` is not
@@ -133,6 +133,7 @@ so downstream clients can decide image vs. video rendering.
 **Dependencies:** none
 
 **Files:**
+
 - `lib/db/src/schema/honour_display_settings.ts` (`KioskAdJson` interface)
 - `lib/api-spec/openapi.yaml` (`KioskAd` schema, ~line 10896)
 - `lib/api-zod/src/generated/**` (regenerated via codegen — never hand-edit)
@@ -143,7 +144,7 @@ schema file (no `null` member — a missing/undefined value already carries
 the "image" default per KTD4, so the DB-layer type and the OpenAPI-layer
 type stay in lockstep with no separate null-handling path to reconcile).
 Mirror it in the OpenAPI `KioskAd` schema as an optional string enum
-(`image`, `video`) property, *not* added to `required`, with a
+(`image`, `video`) property, _not_ added to `required`, with a
 description noting it defaults to `image` when absent. Regenerate with
 `pnpm --filter @workspace/api-spec run codegen` per repo convention (never
 hand-edit generated files) and confirm the regenerated `KioskAd` TypeScript
@@ -179,6 +180,7 @@ Display → Ad creatives and see it preview correctly as video.
 **Dependencies:** U1
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-honours-display.tsx` (`AdEditor`
   component, ~lines 1861-1929)
 - `artifacts/cricket-club/src/pages/admin-honours-display.test.tsx` (new)
@@ -219,6 +221,7 @@ and the mocked-global-`fetch` PUT to `uploadURL` (also served by the same
 mock, matching on no override so it returns 200) completes successfully.
 
 **Test scenarios:**
+
 - Happy path: firing a file-input change with a `File` whose `type` is
   `"video/mp4"`, against an `installApiMock` override for
   `"uploads/request-url"` as described above, results in `onPatch` being
@@ -254,6 +257,7 @@ muted and looping, wherever it currently shows image ad creatives.
 **Dependencies:** U1
 
 **Files:**
+
 - `artifacts/cricket-club/src/components/honours-display/SponsorAds.tsx`
   (`AdSlide` component)
 - `artifacts/cricket-club/src/pages/honours-kiosk.tsx` (wire `AdSlide`'s new
@@ -276,8 +280,8 @@ frame-advance function, and attach it to the `<video>`'s `onError` so a
 video that fails to decode or 404s triggers the same early-advance path the
 kiosk already uses at the end of a slide's normal dwell, instead of leaving
 a blank frame for the rest of the dwell period. This is the only change to
-`honours-kiosk.tsx`: frame *construction* (how the `ad` frame is built) and
-the dwell-*timer duration* itself (KTD5) are otherwise untouched — this
+`honours-kiosk.tsx`: frame _construction_ (how the `ad` frame is built) and
+the dwell-_timer duration_ itself (KTD5) are otherwise untouched — this
 only adds an early-exit trigger to the advance path that already exists.
 Add a `.hb-ad-slide video` CSS rule mirroring the existing `.hb-ad-slide
 img` rule (`max-width/max-height: 100%; object-fit: contain`) so video and
@@ -290,6 +294,7 @@ unattended looping video (autoplay with sound is blocked by browsers without
 a user gesture, so `muted` is required, not optional).
 
 **Test scenarios:**
+
 - Happy path: `AdSlide` given
   `{ id, name, imageUrl: "/api/storage/x.mp4", mediaType: "video" }` renders
   a `<video>` element whose `src` equals `imageUrl`, with `muted`, `loop`,

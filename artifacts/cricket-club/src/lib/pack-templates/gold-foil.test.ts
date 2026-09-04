@@ -45,20 +45,14 @@ describe("gold-foil manifest", () => {
     const packAKinds = new Set(BROADCAST_DARK_PACK.designs.map((d) => d.kind));
     for (const kind of packAKinds) {
       if (covered.has(kind)) continue;
-      expect(packSupportsKind(kind, "gold-foil-v1"), `${kind} not yet transcribed`).toBe(
-        false,
-      );
+      expect(packSupportsKind(kind, "gold-foil-v1"), `${kind} not yet transcribed`).toBe(false);
     }
   });
 
   it("ships all three formats for Match Result (as the bundle does)", () => {
     const entry = GOLD_FOIL_PACK.designs.find((d) => d.kind === "matchSummary");
     expect(entry).toBeDefined();
-    expect(Object.keys(entry!.template.formats).sort()).toEqual([
-      "portrait",
-      "square",
-      "story",
-    ]);
+    expect(Object.keys(entry!.template.formats).sort()).toEqual(["portrait", "square", "story"]);
   });
 });
 

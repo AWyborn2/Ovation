@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -14,7 +14,7 @@ export function matchLabel(
   round: number | null | undefined,
   stage: string | null | undefined,
 ): string | null {
-  if (stage) return stage
-  if (round != null) return `Round ${round}`
-  return null
+  if (stage) return stage;
+  if (round != null) return `Round ${round}`;
+  return null;
 }

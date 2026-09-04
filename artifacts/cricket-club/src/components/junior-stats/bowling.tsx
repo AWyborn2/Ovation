@@ -39,12 +39,48 @@ const right = "px-2 py-1.5 text-right";
 const mono = "px-2 py-1.5 text-right font-mono";
 
 const BOWLING_COLUMNS: InningsColumn<JuniorBowlingLine>[] = [
-  { key: "overs", header: "Overs", headerClassName: right, cellClassName: mono, render: (l) => l.overs ?? "—" },
-  { key: "maidens", header: "Mdns", headerClassName: right, cellClassName: mono, render: (l) => l.maidens ?? "—" },
-  { key: "runs", header: "Runs", headerClassName: right, cellClassName: mono, render: (l) => l.runs ?? "—" },
-  { key: "wickets", header: "Wkts", headerClassName: right, cellClassName: mono, render: (l) => l.wickets ?? "—" },
-  { key: "wides", header: "Wides", headerClassName: right, cellClassName: mono, render: (l) => l.wides ?? "—" },
-  { key: "noBalls", header: "NBs", headerClassName: right, cellClassName: mono, render: (l) => l.noBalls ?? "—" },
+  {
+    key: "overs",
+    header: "Overs",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.overs ?? "—",
+  },
+  {
+    key: "maidens",
+    header: "Mdns",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.maidens ?? "—",
+  },
+  {
+    key: "runs",
+    header: "Runs",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.runs ?? "—",
+  },
+  {
+    key: "wickets",
+    header: "Wkts",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.wickets ?? "—",
+  },
+  {
+    key: "wides",
+    header: "Wides",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.wides ?? "—",
+  },
+  {
+    key: "noBalls",
+    header: "NBs",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.noBalls ?? "—",
+  },
 ];
 
 export function BowlingTable({
@@ -163,19 +199,35 @@ export function BowlingEditRow({
         />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={maidens} onChange={(e) => setMaidens(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={maidens}
+          onChange={(e) => setMaidens(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
         <Input value={runs} onChange={(e) => setRuns(e.target.value)} className="w-16 text-right" />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={wickets} onChange={(e) => setWickets(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={wickets}
+          onChange={(e) => setWickets(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={wides} onChange={(e) => setWides(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={wides}
+          onChange={(e) => setWides(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={noBalls} onChange={(e) => setNoBalls(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={noBalls}
+          onChange={(e) => setNoBalls(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
         <div className="inline-flex gap-1">

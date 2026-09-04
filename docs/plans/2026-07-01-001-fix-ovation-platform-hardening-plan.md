@@ -27,7 +27,7 @@ A hardening pass over the existing platform, sequenced launch-readiness-first: f
 
 ### Problem Frame
 
-The app is a fork of a single-club Halls Head site, mid-transformation into multi-tenant SaaS. The brief framed the work as "rebuild the social studio, rethink onboarding, redo the UI" — but a code audit showed all three are substantially built and tested. What's actually wrong is that a club which *isn't* Halls Head can't yet be trusted or shipped:
+The app is a fork of a single-club Halls Head site, mid-transformation into multi-tenant SaaS. The brief framed the work as "rebuild the social studio, rethink onboarding, redo the UI" — but a code audit showed all three are substantially built and tested. What's actually wrong is that a club which _isn't_ Halls Head can't yet be trusted or shipped:
 
 - Its stats render wrong — player links are dead (the identity crosswalk was only ever built for Halls Head), some players are impossibly merged (one "M Brown" showing 214 innings), and totals can be another club's data leaking through.
 - Its brand leaks — the Halls Head logo and a hard-coded Halls Head background texture still show through.

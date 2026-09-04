@@ -60,11 +60,7 @@ export function MatchMetaForm({
           {fields.map((f) => (
             <div key={f.label} className="space-y-1">
               <Label>{f.label}</Label>
-              <Input
-                value={f.value}
-                onChange={(e) => f.set(e.target.value)}
-                className="w-44"
-              />
+              <Input value={f.value} onChange={(e) => f.set(e.target.value)} className="w-44" />
             </div>
           ))}
           <div className="space-y-1">
@@ -92,8 +88,7 @@ export function MatchMetaForm({
                     hhResult: hhResult.trim() === "" ? null : hhResult,
                     winner: winner.trim() === "" ? null : winner,
                     tossWinner: tossWinner.trim() === "" ? null : tossWinner,
-                    hhBattedFirst:
-                      battedFirst === "" ? null : battedFirst === "yes",
+                    hhBattedFirst: battedFirst === "" ? null : battedFirst === "yes",
                     status: status.trim() === "" ? null : status,
                     matchDate: matchDate.trim() === "" ? null : matchDate,
                     round: round.trim() === "" ? null : round,

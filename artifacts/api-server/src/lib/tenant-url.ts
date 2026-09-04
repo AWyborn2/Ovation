@@ -23,10 +23,7 @@ export function platformBaseDomain(req: Request): string {
 }
 
 /** The canonical public host for a tenant: its custom domain, else `slug.<apex>`. */
-export function tenantHost(
-  req: Request,
-  tenant: Pick<TenantRow, "slug" | "customDomain">,
-): string {
+export function tenantHost(req: Request, tenant: Pick<TenantRow, "slug" | "customDomain">): string {
   const custom = tenant.customDomain?.trim().toLowerCase();
   if (custom) return custom;
   return `${tenant.slug}.${platformBaseDomain(req)}`;

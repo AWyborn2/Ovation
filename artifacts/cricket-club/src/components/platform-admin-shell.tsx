@@ -6,10 +6,7 @@ import {
   usePlatformAdminLogout,
   type PlatformAdmin,
 } from "@workspace/api-client-react";
-import {
-  usePlatformAdmin,
-  useInvalidatePlatformAdmin,
-} from "@/lib/platform-admin-auth";
+import { usePlatformAdmin, useInvalidatePlatformAdmin } from "@/lib/platform-admin-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -102,13 +99,7 @@ function PlatformLoginGate() {
   );
 }
 
-function PlatformAdminLayout({
-  admin,
-  children,
-}: {
-  admin: PlatformAdmin;
-  children: ReactNode;
-}) {
+function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; children: ReactNode }) {
   const [location] = useLocation();
   const invalidate = useInvalidatePlatformAdmin();
   const logout = usePlatformAdminLogout({
@@ -143,7 +134,8 @@ function PlatformAdminLayout({
         </div>
         <nav className="mx-auto flex max-w-5xl gap-1 px-4">
           {nav.map(({ href, label, icon: Icon }) => {
-            const active = href === "/platform-admin" ? location === href : location.startsWith(href);
+            const active =
+              href === "/platform-admin" ? location === href : location.startsWith(href);
             return (
               <Link
                 key={href}

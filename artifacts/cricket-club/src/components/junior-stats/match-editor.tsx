@@ -25,13 +25,7 @@ import { CorrectionsPanel } from "./corrections-panel";
  * tables, roster and the corrections journal. Every mutation invalidates the
  * match plus the live-derived junior aggregates (`/api/juniors/*` only).
  */
-export function JuniorMatchEditor({
-  matchId,
-  onBack,
-}: {
-  matchId: number;
-  onBack: () => void;
-}) {
+export function JuniorMatchEditor({ matchId, onBack }: { matchId: number; onBack: () => void }) {
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 

@@ -157,10 +157,7 @@ export default function AdminImport() {
         />
       )}
 
-      <UndoSeasonCard
-        disabled={session.undoSeason.isPending}
-        onUndo={session.runUndoSeason}
-      />
+      <UndoSeasonCard disabled={session.undoSeason.isPending} onUndo={session.runUndoSeason} />
 
       <PastImportsCard
         imports={session.imports}

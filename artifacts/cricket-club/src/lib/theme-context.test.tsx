@@ -15,7 +15,13 @@ function mockMatchMedia(matches: boolean) {
     "matchMedia",
     vi.fn().mockImplementation(() => mql),
   );
-  return { mql, fireChange: (next: boolean) => { mql.matches = next; listeners.forEach((cb) => cb()); } };
+  return {
+    mql,
+    fireChange: (next: boolean) => {
+      mql.matches = next;
+      listeners.forEach((cb) => cb());
+    },
+  };
 }
 
 function Probe() {

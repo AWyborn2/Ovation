@@ -39,10 +39,34 @@ const right = "px-2 py-1.5 text-right";
 const mono = "px-2 py-1.5 text-right font-mono";
 
 const BATTING_COLUMNS: InningsColumn<JuniorBattingLine>[] = [
-  { key: "runs", header: "Runs", headerClassName: right, cellClassName: mono, render: (l) => l.runs ?? "—" },
-  { key: "balls", header: "Balls", headerClassName: right, cellClassName: mono, render: (l) => l.balls ?? "—" },
-  { key: "fours", header: "4s", headerClassName: right, cellClassName: mono, render: (l) => l.fours ?? "—" },
-  { key: "sixes", header: "6s", headerClassName: right, cellClassName: mono, render: (l) => l.sixes ?? "—" },
+  {
+    key: "runs",
+    header: "Runs",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.runs ?? "—",
+  },
+  {
+    key: "balls",
+    header: "Balls",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.balls ?? "—",
+  },
+  {
+    key: "fours",
+    header: "4s",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.fours ?? "—",
+  },
+  {
+    key: "sixes",
+    header: "6s",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.sixes ?? "—",
+  },
   {
     key: "dismissal",
     header: "Dismissal",
@@ -50,7 +74,13 @@ const BATTING_COLUMNS: InningsColumn<JuniorBattingLine>[] = [
     cellClassName: "px-2 py-1.5",
     render: (l) => l.dismissal ?? "—",
   },
-  { key: "batOrder", header: "Order", headerClassName: right, cellClassName: mono, render: (l) => l.batOrder ?? "—" },
+  {
+    key: "batOrder",
+    header: "Order",
+    headerClassName: right,
+    cellClassName: mono,
+    render: (l) => l.batOrder ?? "—",
+  },
 ];
 
 export function BattingTable({
@@ -164,19 +194,35 @@ export function BattingEditRow({
         <Input value={runs} onChange={(e) => setRuns(e.target.value)} className="w-16 text-right" />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={balls} onChange={(e) => setBalls(e.target.value)} className="w-16 text-right" />
+        <Input
+          value={balls}
+          onChange={(e) => setBalls(e.target.value)}
+          className="w-16 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={fours} onChange={(e) => setFours(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={fours}
+          onChange={(e) => setFours(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={sixes} onChange={(e) => setSixes(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={sixes}
+          onChange={(e) => setSixes(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5">
         <Input value={dismissal} onChange={(e) => setDismissal(e.target.value)} className="w-40" />
       </td>
       <td className="px-2 py-1.5 text-right">
-        <Input value={batOrder} onChange={(e) => setBatOrder(e.target.value)} className="w-14 text-right" />
+        <Input
+          value={batOrder}
+          onChange={(e) => setBatOrder(e.target.value)}
+          className="w-14 text-right"
+        />
       </td>
       <td className="px-2 py-1.5 text-right">
         <div className="inline-flex gap-1">

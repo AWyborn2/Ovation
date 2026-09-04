@@ -49,8 +49,7 @@ describe("platform storage upload route", () => {
   let tenantId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-platform-storage";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-platform-storage";
 
     const passwordHash = await hashPassword(PASSWORD);
     await db
@@ -98,9 +97,7 @@ describe("platform storage upload route", () => {
       .expect(200);
 
     expect(res.body.uploadURL).toContain("https://storage.googleapis.com/");
-    expect(res.body.objectPath).toBe(
-      "/objects/uploads/00000000-0000-0000-0000-000000000000",
-    );
+    expect(res.body.objectPath).toBe("/objects/uploads/00000000-0000-0000-0000-000000000000");
     expect(res.body.metadata).toEqual({
       name: "logo.png",
       size: 1024,

@@ -27,8 +27,7 @@ let importId: number;
 let matchId: number;
 
 beforeAll(async () => {
-  process.env.SESSION_SECRET =
-    process.env.SESSION_SECRET ?? "test-secret-for-sweep";
+  process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-sweep";
 
   const [tenant] = await db
     .insert(tenantsTable)
@@ -89,12 +88,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db
-    .delete(socialDraftsTable)
-    .where(eq(socialDraftsTable.tenantId, tenantId));
-  await db
-    .delete(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
+  await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
+  await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
   await db.delete(matchesTable).where(eq(matchesTable.id, matchId));
   await db.delete(importsTable).where(eq(importsTable.id, importId));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));

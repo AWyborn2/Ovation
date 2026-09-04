@@ -1,8 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import {
-  RequestUploadUrlBody,
-  RequestUploadUrlResponse,
-} from "@workspace/api-zod";
+import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-zod";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { requirePlatformAdmin } from "../middlewares/require-platform-admin";
 

@@ -34,11 +34,7 @@ import {
   BOWLING_STAT_COLS,
 } from "../lib/junior-admin-helpers";
 import { isCentralTenant } from "../lib/tenant";
-import {
-  isValidOversNotation,
-  strikeRateOf,
-  economyOf,
-} from "../lib/junior-cricket";
+import { isValidOversNotation, strikeRateOf, economyOf } from "../lib/junior-cricket";
 
 /**
  * Juniors admin — batting and bowling line corrections.
@@ -198,9 +194,7 @@ router.patch(
     // participant in this tenant (opposition lines have no participant row).
     if (body.data.participantId !== undefined) {
       if (!line.isHallsHead) {
-        res
-          .status(400)
-          .json({ error: "Only Halls Head lines can be re-attributed" });
+        res.status(400).json({ error: "Only Halls Head lines can be re-attributed" });
         return;
       }
       const participant = await tenantParticipant(req, body.data.participantId);
@@ -223,12 +217,8 @@ router.patch(
 
     // Recompute the derived strike rate from the post-patch figures and store
     // it in the journal patch so the SQL re-apply never has to derive it.
-    const nextRuns = (set.runs !== undefined ? set.runs : line.runs) as
-      | number
-      | null;
-    const nextBalls = (set.balls !== undefined ? set.balls : line.balls) as
-      | number
-      | null;
+    const nextRuns = (set.runs !== undefined ? set.runs : line.runs) as number | null;
+    const nextBalls = (set.balls !== undefined ? set.balls : line.balls) as number | null;
     if (set.runs !== undefined || set.balls !== undefined) {
       const sr = strikeRateOf(nextRuns, nextBalls);
       set.strikeRate = sr;
@@ -290,9 +280,7 @@ router.delete(
     }
 
     await db.transaction(async (tx) => {
-      await tx
-        .delete(juniorMatchBattingTable)
-        .where(eq(juniorMatchBattingTable.id, line.id));
+      await tx.delete(juniorMatchBattingTable).where(eq(juniorMatchBattingTable.id, line.id));
       await journal(tx, {
         tenantId: getTenantId(req),
         targetTable: "junior_match_batting",
@@ -481,9 +469,7 @@ router.patch(
 
     if (body.data.participantId !== undefined) {
       if (!line.isHallsHead) {
-        res
-          .status(400)
-          .json({ error: "Only Halls Head lines can be re-attributed" });
+        res.status(400).json({ error: "Only Halls Head lines can be re-attributed" });
         return;
       }
       const participant = await tenantParticipant(req, body.data.participantId);
@@ -504,12 +490,8 @@ router.patch(
       return;
     }
 
-    const nextRuns = (set.runs !== undefined ? set.runs : line.runs) as
-      | number
-      | null;
-    const nextOvers = (set.overs !== undefined ? set.overs : line.overs) as
-      | number
-      | null;
+    const nextRuns = (set.runs !== undefined ? set.runs : line.runs) as number | null;
+    const nextOvers = (set.overs !== undefined ? set.overs : line.overs) as number | null;
     if (set.runs !== undefined || set.overs !== undefined) {
       const econ = economyOf(nextRuns, nextOvers);
       set.economy = econ;
@@ -571,9 +553,7 @@ router.delete(
     }
 
     await db.transaction(async (tx) => {
-      await tx
-        .delete(juniorMatchBowlingTable)
-        .where(eq(juniorMatchBowlingTable.id, line.id));
+      await tx.delete(juniorMatchBowlingTable).where(eq(juniorMatchBowlingTable.id, line.id));
       await journal(tx, {
         tenantId: getTenantId(req),
         targetTable: "junior_match_bowling",

@@ -109,7 +109,11 @@ router.get("/five-wicket-hauls", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(fiveWicketHaulsTable)
-    .orderBy(asc(fiveWicketHaulsTable.grade), asc(fiveWicketHaulsTable.bowler), asc(fiveWicketHaulsTable.id));
+    .orderBy(
+      asc(fiveWicketHaulsTable.grade),
+      asc(fiveWicketHaulsTable.bowler),
+      asc(fiveWicketHaulsTable.id),
+    );
   res.json(rows);
 });
 

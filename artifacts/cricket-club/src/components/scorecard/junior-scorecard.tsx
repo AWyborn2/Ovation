@@ -17,9 +17,7 @@ interface JuniorScorecardProps {
 export function JuniorScorecard({ match }: JuniorScorecardProps) {
   const scorecard = useMemo(() => buildJuniorScorecard(match), [match]);
 
-  const hasAnyData = scorecard.innings.some(
-    (inn) => inn.batsmen.length + inn.bowlers.length > 0,
-  );
+  const hasAnyData = scorecard.innings.some((inn) => inn.batsmen.length + inn.bowlers.length > 0);
 
   if (!hasAnyData) {
     return (

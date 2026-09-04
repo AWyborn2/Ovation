@@ -72,18 +72,12 @@ export function ShareCardModal({
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
   const photo = usePhotoControls({ open, playerId, input });
-  const {
-    showPhotoControls,
-    photoPlacement,
-    photoTransform,
-    renderTransform,
-    effectivePhotoUrl,
-  } = photo;
+  const { showPhotoControls, photoPlacement, photoTransform, renderTransform, effectivePhotoUrl } =
+    photo;
 
   // Junior cards are locked to the brown junior palette (no admin theme) and the
   // built-in layout, so we suppress theme + custom-template selection entirely.
-  const isJunior =
-    !!input && "junior" in input && (input as { junior?: boolean }).junior === true;
+  const isJunior = !!input && "junior" in input && (input as { junior?: boolean }).junior === true;
 
   const style = useThemeStyle({ open, isJunior });
   const { themes, selectedThemeId, selectedTheme, effectiveTheme } = style;
@@ -164,7 +158,16 @@ export function ShareCardModal({
   const clubUrl = bundle?.settings.clubUrl ?? "";
   const hashtag = tenantHashtag(bundle);
 
-  const captions = useCaptions({ open, input, bundle, engine, appPath, trackedSlug, clubUrl, hashtag });
+  const captions = useCaptions({
+    open,
+    input,
+    bundle,
+    engine,
+    appPath,
+    trackedSlug,
+    clubUrl,
+    hashtag,
+  });
 
   // Build the render options shared by the still preview, PNG/zip export and the
   // animated preview/video export. `transform` is supplied separately because
@@ -215,8 +218,32 @@ export function ShareCardModal({
     activeSize,
     renderTransform,
     buildOpts,
-    renderDeps: [open, input, activeSize, sponsors, presentingSponsorName, clubUrl, hashtag, selectedTheme, selectedTemplate, layoutSig, effectivePhotoUrl, photoPlacement, renderTransform],
-    invalidateDeps: [includeSponsors, input, selectedThemeId, layoutId, layoutSig, sponsorSig, effectivePhotoUrl, photoPlacement, renderTransform],
+    renderDeps: [
+      open,
+      input,
+      activeSize,
+      sponsors,
+      presentingSponsorName,
+      clubUrl,
+      hashtag,
+      selectedTheme,
+      selectedTemplate,
+      layoutSig,
+      effectivePhotoUrl,
+      photoPlacement,
+      renderTransform,
+    ],
+    invalidateDeps: [
+      includeSponsors,
+      input,
+      selectedThemeId,
+      layoutId,
+      layoutSig,
+      sponsorSig,
+      effectivePhotoUrl,
+      photoPlacement,
+      renderTransform,
+    ],
   });
 
   const video = useVideoExport({ open, input, buildOpts, photoTransform, brand: bundle?.brand });
@@ -239,7 +266,19 @@ export function ShareCardModal({
         `${renderTransform.focalX},${renderTransform.focalY},${renderTransform.zoom}`,
         sponsorSig,
       ].join("|"),
-    [activeSize, layoutId, layoutSig, selectedThemeId, motion, durationMs, speed, effectivePhotoUrl, photoPlacement, renderTransform, sponsorSig],
+    [
+      activeSize,
+      layoutId,
+      layoutSig,
+      selectedThemeId,
+      motion,
+      durationMs,
+      speed,
+      effectivePhotoUrl,
+      photoPlacement,
+      renderTransform,
+      sponsorSig,
+    ],
   );
 
   const exp = useCardExport({
@@ -267,153 +306,150 @@ export function ShareCardModal({
   if (!input) return null;
 
   const captionsEnabled = bundle?.settings.captionsEnabled !== false;
-  const sponsorsAvailable = (bundle?.activeSponsors?.length ?? 0) > 0 && bundle?.settings.sponsorsEnabled;
+  const sponsorsAvailable =
+    (bundle?.activeSponsors?.length ?? 0) > 0 && bundle?.settings.sponsorsEnabled;
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Share to socials</DialogTitle>
-          <DialogDescription>
-            Download a branded card for Instagram, Facebook, TikTok or X.
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Share to socials</DialogTitle>
+            <DialogDescription>
+              Download a branded card for Instagram, Facebook, TikTok or X.
+            </DialogDescription>
+          </DialogHeader>
 
-        {isAdmin && !selectedTemplate && (
-          <div className="flex items-center justify-between rounded border border-dashed px-3 py-2">
-            <span className="text-xs text-muted-foreground">
-              {savedLayout.length > 0
-                ? "This card uses a custom layout."
-                : "Move, resize and add elements to this card."}
-            </span>
-            {!editingLayout && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingLayout(true)}
-              >
-                <Wand2 className="h-3.5 w-3.5 mr-1" />
-                Customise layout
-              </Button>
-            )}
-          </div>
-        )}
+          {isAdmin && !selectedTemplate && (
+            <div className="flex items-center justify-between rounded border border-dashed px-3 py-2">
+              <span className="text-xs text-muted-foreground">
+                {savedLayout.length > 0
+                  ? "This card uses a custom layout."
+                  : "Move, resize and add elements to this card."}
+              </span>
+              {!editingLayout && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingLayout(true)}
+                >
+                  <Wand2 className="h-3.5 w-3.5 mr-1" />
+                  Customise layout
+                </Button>
+              )}
+            </div>
+          )}
 
-        {editingLayout && isAdmin ? (
-          <CardLayoutEditor
-            input={input}
-            baseOpts={buildOpts(activeSize, photoTransform)}
-            activeSize={activeSize}
-            onClose={() => setEditingLayout(false)}
-          />
-        ) : (
-        <div className="grid gap-4 md:grid-cols-[2fr_3fr]">
-          <div className="space-y-3">
-            <PreviewTabs
+          {editingLayout && isAdmin ? (
+            <CardLayoutEditor
               input={input}
+              baseOpts={buildOpts(activeSize, photoTransform)}
               activeSize={activeSize}
-              setActiveSize={setActiveSize}
-              enabledSizes={enabledSizes}
-              animated={animated}
-              buildOpts={buildOpts}
-              renderTransform={renderTransform}
-              animSig={animSig}
-              soundOn={isAdmin && previewSoundOn && !!audioSpec}
-              isPackCard={isPackCard}
-              includeSponsors={includeSponsors}
-              effectiveTheme={effectiveTheme}
-              isJunior={isJunior}
-              buildPackData={buildPackData}
-              packId={packId}
-              rendering={rendering}
-              previewUrls={previewUrls}
+              onClose={() => setEditingLayout(false)}
             />
-
-            {!isJunior && applicableTemplates.length > 0 && (
-              <LayoutSelect
-                layoutId={layoutId}
-                setLayoutId={layout.setLayoutId}
-                setLayoutTouched={layout.setLayoutTouched}
-                applicableTemplates={applicableTemplates}
-              />
-            )}
-
-            {isAdmin && !isPackCard && (
-              <MotionPanel
-                motion={motionAudio}
-                animated={animated}
-                videoSupported={videoSupported}
-                videoFormat={videoFormat}
-                gifSupported={gifSupported}
-              />
-            )}
-
-            {isAdmin && animated && <AudioPanel audio={motionAudio} />}
-
-            {!isJunior && selectedTemplate === null && themes.length > 1 && (
-              <ThemeSelect
-                themes={themes}
-                selectedThemeId={selectedThemeId}
-                setSelectedThemeId={style.setSelectedThemeId}
-              />
-            )}
-
-            {!isJunior && isPackCard && <StylePanel style={style} hashtag={hashtag} />}
-
-            {isPackCard && imageSlots.length > 0 && <SlotImagesPanel layout={layout} />}
-
-            {sponsorsAvailable && (
-              <div className="flex items-center justify-between rounded border px-3 py-2">
-                <Label htmlFor="sponsors-toggle" className="text-sm">
-                  Include sponsor strip
-                </Label>
-                <Switch
-                  id="sponsors-toggle"
-                  checked={includeSponsors}
-                  onCheckedChange={setIncludeSponsors}
+          ) : (
+            <div className="grid gap-4 md:grid-cols-[2fr_3fr]">
+              <div className="space-y-3">
+                <PreviewTabs
+                  input={input}
+                  activeSize={activeSize}
+                  setActiveSize={setActiveSize}
+                  enabledSizes={enabledSizes}
+                  animated={animated}
+                  buildOpts={buildOpts}
+                  renderTransform={renderTransform}
+                  animSig={animSig}
+                  soundOn={isAdmin && previewSoundOn && !!audioSpec}
+                  isPackCard={isPackCard}
+                  includeSponsors={includeSponsors}
+                  effectiveTheme={effectiveTheme}
+                  isJunior={isJunior}
+                  buildPackData={buildPackData}
+                  packId={packId}
+                  rendering={rendering}
+                  previewUrls={previewUrls}
                 />
+
+                {!isJunior && applicableTemplates.length > 0 && (
+                  <LayoutSelect
+                    layoutId={layoutId}
+                    setLayoutId={layout.setLayoutId}
+                    setLayoutTouched={layout.setLayoutTouched}
+                    applicableTemplates={applicableTemplates}
+                  />
+                )}
+
+                {isAdmin && !isPackCard && (
+                  <MotionPanel
+                    motion={motionAudio}
+                    animated={animated}
+                    videoSupported={videoSupported}
+                    videoFormat={videoFormat}
+                    gifSupported={gifSupported}
+                  />
+                )}
+
+                {isAdmin && animated && <AudioPanel audio={motionAudio} />}
+
+                {!isJunior && selectedTemplate === null && themes.length > 1 && (
+                  <ThemeSelect
+                    themes={themes}
+                    selectedThemeId={selectedThemeId}
+                    setSelectedThemeId={style.setSelectedThemeId}
+                  />
+                )}
+
+                {!isJunior && isPackCard && <StylePanel style={style} hashtag={hashtag} />}
+
+                {isPackCard && imageSlots.length > 0 && <SlotImagesPanel layout={layout} />}
+
+                {sponsorsAvailable && (
+                  <div className="flex items-center justify-between rounded border px-3 py-2">
+                    <Label htmlFor="sponsors-toggle" className="text-sm">
+                      Include sponsor strip
+                    </Label>
+                    <Switch
+                      id="sponsors-toggle"
+                      checked={includeSponsors}
+                      onCheckedChange={setIncludeSponsors}
+                    />
+                  </div>
+                )}
+
+                {showPhotoControls && <PhotoControls photo={photo} activeSize={activeSize} />}
               </div>
-            )}
 
-            {showPhotoControls && (
-              <PhotoControls photo={photo} activeSize={activeSize} />
-            )}
-          </div>
+              <div className="space-y-3">
+                {captionsEnabled && <CaptionsPanel captions={captions} />}
+              </div>
+            </div>
+          )}
 
-          <div className="space-y-3">
-            {captionsEnabled && <CaptionsPanel captions={captions} />}
-          </div>
-        </div>
-        )}
+          {isAdmin && animated && serverError && (
+            <p className="text-xs text-destructive">
+              Server render failed ({serverError}). Use “Preview (browser)” to record the clip
+              locally instead.
+            </p>
+          )}
 
-        {isAdmin && animated && serverError && (
-          <p className="text-xs text-destructive">
-            Server render failed ({serverError}). Use “Preview (browser)” to
-            record the clip locally instead.
-          </p>
-        )}
+          {exportError && <p className="text-xs text-destructive">{exportError}</p>}
 
-        {exportError && (
-          <p className="text-xs text-destructive">{exportError}</p>
-        )}
+          <ExportFooter
+            activeSize={activeSize}
+            isAdmin={isAdmin}
+            animated={animated}
+            videoSupported={videoSupported}
+            gifSupported={gifSupported}
+            exp={exp}
+            video={video}
+            onApprove={onApprove}
+            approveLabel={approveLabel}
+          />
+        </DialogContent>
+      </Dialog>
 
-        <ExportFooter
-          activeSize={activeSize}
-          isAdmin={isAdmin}
-          animated={animated}
-          videoSupported={videoSupported}
-          gifSupported={gifSupported}
-          exp={exp}
-          video={video}
-          onApprove={onApprove}
-          approveLabel={approveLabel}
-        />
-      </DialogContent>
-    </Dialog>
-
-    <VideoPreviewDialog video={video} />
+      <VideoPreviewDialog video={video} />
     </>
   );
 }

@@ -31,17 +31,17 @@ Ovation is a white-label cricket stats platform. The Platform Admin console (`/p
 
 ## Key files to know
 
-| Area | File | Notes |
-|------|------|-------|
-| Brand resolver | `artifacts/api-server/src/lib/tenant-brand.ts` | `buildTenantBrand()` — just fixed precedence |
-| Brand tests | `artifacts/api-server/src/lib/tenant-brand.test.ts` | 14 tests including precedence coverage |
-| Tenants schema | `lib/db/src/schema/tenants.ts` | Columns: slug, central_club_id, app_club_id, name, short_name, logo_url, favicon_url, colours, plan, badge_style |
-| Platform Admin routes | `artifacts/api-server/src/routes/platform-admin.ts` | CRUD for tenants, branding, admin resets |
-| Platform Admin UI | `artifacts/cricket-club/src/pages/platform-admin/` | tenants-list, tenant-detail, provision, branding-card |
-| Entitlements | `artifacts/api-server/src/lib/entitlements.ts` | Plan tiers + feature matrix, `BILLING_ENABLED` flag |
-| Billing (dormant) | `artifacts/api-server/src/routes/billing.ts` + `lib/billing.ts` | Stub provider, returns `{disabled: true}` |
-| Tenant middleware | `artifacts/api-server/src/middlewares/tenant-context.ts` | Resolves tenant per-request |
-| Provisioning | `lib/db/src/provision.ts` | Shared by concierge + self-serve signup |
+| Area                  | File                                                            | Notes                                                                                                            |
+| --------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Brand resolver        | `artifacts/api-server/src/lib/tenant-brand.ts`                  | `buildTenantBrand()` — just fixed precedence                                                                     |
+| Brand tests           | `artifacts/api-server/src/lib/tenant-brand.test.ts`             | 14 tests including precedence coverage                                                                           |
+| Tenants schema        | `lib/db/src/schema/tenants.ts`                                  | Columns: slug, central_club_id, app_club_id, name, short_name, logo_url, favicon_url, colours, plan, badge_style |
+| Platform Admin routes | `artifacts/api-server/src/routes/platform-admin.ts`             | CRUD for tenants, branding, admin resets                                                                         |
+| Platform Admin UI     | `artifacts/cricket-club/src/pages/platform-admin/`              | tenants-list, tenant-detail, provision, branding-card                                                            |
+| Entitlements          | `artifacts/api-server/src/lib/entitlements.ts`                  | Plan tiers + feature matrix, `BILLING_ENABLED` flag                                                              |
+| Billing (dormant)     | `artifacts/api-server/src/routes/billing.ts` + `lib/billing.ts` | Stub provider, returns `{disabled: true}`                                                                        |
+| Tenant middleware     | `artifacts/api-server/src/middlewares/tenant-context.ts`        | Resolves tenant per-request                                                                                      |
+| Provisioning          | `lib/db/src/provision.ts`                                       | Shared by concierge + self-serve signup                                                                          |
 
 ## Open decisions
 

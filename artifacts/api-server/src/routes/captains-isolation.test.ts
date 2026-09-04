@@ -28,8 +28,7 @@ const STAMP = Date.now();
 
 function reqFor(tenantId: number, sessionToken?: string): Request {
   return {
-    header: (name: string) =>
-      name.toLowerCase() === "x-tenant-id" ? String(tenantId) : undefined,
+    header: (name: string) => (name.toLowerCase() === "x-tenant-id" ? String(tenantId) : undefined),
     headers: {},
     cookies: sessionToken ? { [CAPTAIN_SESSION_COOKIE]: sessionToken } : {},
   } as unknown as Request;
@@ -44,8 +43,7 @@ describe("tenant-scoped captains", () => {
   let adminBCookie: string;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-captains-isolation";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-captains-isolation";
 
     const [a] = await db
       .insert(tenantsTable)

@@ -55,9 +55,7 @@ async function main(): Promise<void> {
     .onConflictDoUpdate({ target: tenantsTable.slug, set: values })
     .returning();
 
-  console.log(
-    `seed-tenants: upserted tenant #${row.id} (${row.slug}) — ${row.name}`,
-  );
+  console.log(`seed-tenants: upserted tenant #${row.id} (${row.slug}) — ${row.name}`);
   if (row.id !== 1) {
     console.warn(
       `⚠️  Halls Head landed on id ${row.id}, expected 1. ` +

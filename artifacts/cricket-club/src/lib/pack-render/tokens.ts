@@ -28,9 +28,7 @@ export interface CardThemeLike {
  * (`bgPanel`→`panel`, `bgDark`→`ink`, `accent`→`accent`, `textLight`→`textLight`,
  * `displayFont`→`displayFont`.)
  */
-export function tokensFromCardTheme(
-  theme: CardThemeLike | null | undefined,
-): Partial<PackTokens> {
+export function tokensFromCardTheme(theme: CardThemeLike | null | undefined): Partial<PackTokens> {
   const out: Partial<PackTokens> = {};
   if (!theme) return out;
   if (theme.accent) out.accent = theme.accent;
@@ -154,9 +152,7 @@ export function normaliseBrandHex(colour?: string | null): string | null {
  * background #333F48, breaking parity. Leaving `ink` fixed keeps HH byte-for-byte
  * identical while still letting non-HH brands seed their accent + panel.
  */
-export function brandDefaultTokens(
-  brand?: PackCardData["brand"],
-): PackTokens {
+export function brandDefaultTokens(brand?: PackCardData["brand"]): PackTokens {
   const tokens: PackTokens = { ...PACK_DEFAULT_TOKENS };
   if (!brand) return tokens;
   // Sanitise + normalise each brand colour at the boundary: only a strict hex

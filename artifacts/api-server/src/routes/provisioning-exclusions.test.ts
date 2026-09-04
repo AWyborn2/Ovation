@@ -2,7 +2,13 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import { db, platformAdminsTable, adminsTable, tenantsTable, provisioningExclusionsTable } from "@workspace/db";
+import {
+  db,
+  platformAdminsTable,
+  adminsTable,
+  tenantsTable,
+  provisioningExclusionsTable,
+} from "@workspace/db";
 import { hashPassword, encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
@@ -101,9 +107,7 @@ describe("platform-admin provisioning exclusions", () => {
       .get("/api/platform/admin/provisioning-exclusions")
       .set("Cookie", platformCookie)
       .expect(200);
-    expect(
-      list.body.some((e: { id: number }) => e.id === res.body.id),
-    ).toBe(true);
+    expect(list.body.some((e: { id: number }) => e.id === res.body.id)).toBe(true);
   });
 
   it("creating an exclusion with no reason omits it (null)", async () => {

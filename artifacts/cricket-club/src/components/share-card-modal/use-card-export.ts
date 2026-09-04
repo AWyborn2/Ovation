@@ -204,9 +204,7 @@ export function useCardExport({
       onOpenChange(false);
     } catch (e) {
       console.error("Approve & download failed", e);
-      setExportError(
-        e instanceof Error ? `Approve failed: ${e.message}` : "Approve failed",
-      );
+      setExportError(e instanceof Error ? `Approve failed: ${e.message}` : "Approve failed");
     } finally {
       setApproving(false);
     }

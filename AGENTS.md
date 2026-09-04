@@ -90,7 +90,7 @@ now reading shared stats from a central association DB filtered per tenant.**
 
 ⚠️ **`CLAUDE.md` says "Phase 0". The code is past that.** Git history shows committed:
 Phase 2b self-serve onboarding + tenant-scoped admin auth, Phase 2c plan entitlements
-(*dormant*), Phase 2d Stripe billing adapter (*built, inert*), Phase 2e super-admin
+(_dormant_), Phase 2d Stripe billing adapter (_built, inert_), Phase 2e super-admin
 console. The central-DB integration that CLAUDE.md lists as a future Phase 0 step
 already exists: `lib/db/src/central.ts`, `lib/db/src/central-queries.ts`,
 `lib/db/src/provision.ts`, and a `shouldReadCentral` feature flag in
@@ -102,8 +102,8 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 ## Hard constraints — do not break
 
 - **OpenAPI-first** workflow (above). Never hand-edit generated files.
-- **Juniors isolation:** junior_* tables, `/api/juniors/*` only, never blended with
-  seniors. Holds per-tenant. (See `replit.md`.)
+- **Juniors isolation:** junior\__ tables, `/api/juniors/_`only, never blended with
+seniors. Holds per-tenant. (See`replit.md`.)
 - **Fill-in exclusion:** `player_id >= 90000` = fill-in player, excluded from all
   derivations.
 - **One ingestion method per (grade, season).** No mixing.
@@ -138,11 +138,11 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
   directory, central-query and milestone caches, the card-video job map and the
   rate-limit store are all in-memory; `invalidateTenantConfigCache` only reaches the
   local process. Every cache is TTL-bounded (≤ 10 min) so a second instance would be
-  *eventually* consistent, but do not autoscale beyond one instance without moving
+  _eventually_ consistent, but do not autoscale beyond one instance without moving
   invalidation to Postgres `LISTEN/NOTIFY` and the job map to a table (plan.md §5.12).
 - **Dormant code rots.** Billing + entitlements are inert in a live server; treat with
   care, they aren't exercised by normal use.
-- **Dual-read boundary (local vs central DB)** is the highest-risk area for *silent*
+- **Dual-read boundary (local vs central DB)** is the highest-risk area for _silent_
   data disagreement. Funnel all central reads through `central-queries.ts`; guard with
   consistency tests (`*-consistency.test.ts` already exist — extend per flipped read).
 - **Roadmap docs lag the code** — reconcile before relying on them for sequencing.

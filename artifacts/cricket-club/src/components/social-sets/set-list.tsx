@@ -27,8 +27,7 @@ export function SetList({ onOpen }: { onOpen: (id: number) => void }) {
   const sets = (setsQ.data ?? []) as CardSet[];
   const [name, setName] = useState("");
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: getListCardSetsQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: getListCardSetsQueryKey() });
   const create = useCreateCardSet({ mutation: { onSuccess: invalidate } });
   const remove = useDeleteCardSet({ mutation: { onSuccess: invalidate } });
 
@@ -45,9 +44,9 @@ export function SetList({ onOpen }: { onOpen: (id: number) => void }) {
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground">
-        Build a linked carousel — 2 to 10 branded slides that post together.
-        Bind each slide to real club data, reorder, design, then export the whole
-        set as numbered images at one platform size.
+        Build a linked carousel — 2 to 10 branded slides that post together. Bind each slide to real
+        club data, reorder, design, then export the whole set as numbered images at one platform
+        size.
       </p>
 
       <Card>
@@ -68,10 +67,7 @@ export function SetList({ onOpen }: { onOpen: (id: number) => void }) {
                 }}
               />
             </div>
-            <Button
-              onClick={handleCreate}
-              disabled={!name.trim() || create.isPending}
-            >
+            <Button onClick={handleCreate} disabled={!name.trim() || create.isPending}>
               {create.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -88,9 +84,7 @@ export function SetList({ onOpen }: { onOpen: (id: number) => void }) {
       ) : setsQ.isLoading ? (
         <LoadingState label="Loading sets…" />
       ) : sets.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No carousel sets yet. Create one above.
-        </p>
+        <p className="text-sm text-muted-foreground">No carousel sets yet. Create one above.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sets.map((s) => (
@@ -111,7 +105,13 @@ export function SetList({ onOpen }: { onOpen: (id: number) => void }) {
               <CardContent className="space-y-3">
                 <p className="text-xs text-muted-foreground">
                   {s.slides.length} slide{s.slides.length === 1 ? "" : "s"} ·{" "}
-                  {SIZES[(s.platformSize as CardSize) in SIZES ? (s.platformSize as CardSize) : "square"].label}
+                  {
+                    SIZES[
+                      (s.platformSize as CardSize) in SIZES
+                        ? (s.platformSize as CardSize)
+                        : "square"
+                    ].label
+                  }
                 </p>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => onOpen(s.id)}>

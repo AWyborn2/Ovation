@@ -8,7 +8,12 @@ import {
   getListCardEffectPresetsQueryKey,
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
-import { BUILTIN_EFFECT_PRESETS, hasLayerEffects, type EffectPreset, type LayerEffects } from "@/lib/share-card";
+import {
+  BUILTIN_EFFECT_PRESETS,
+  hasLayerEffects,
+  type EffectPreset,
+  type LayerEffects,
+} from "@/lib/share-card";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { useConfirm } from "@/components/confirm-dialog";
 
@@ -35,8 +40,7 @@ export function EffectPresets({
     ...saved.map((p) => ({ id: p.id, name: p.name, effects: p.effects as LayerEffects })),
   ];
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: getListCardEffectPresetsQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: getListCardEffectPresetsQueryKey() });
 
   const apply = (id: string) => {
     const p = presets.find((x) => String(x.id) === id);
@@ -164,7 +168,9 @@ export function EffectPresets({
               {p.name}
               <button
                 type="button"
-                onClick={() => void removePreset({ id: p.id, name: p.name, effects: p.effects as LayerEffects })}
+                onClick={() =>
+                  void removePreset({ id: p.id, name: p.name, effects: p.effects as LayerEffects })
+                }
                 title="Delete preset"
                 className="text-muted-foreground hover:text-destructive"
               >

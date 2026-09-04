@@ -16,15 +16,13 @@ interface ObjectUploaderProps {
    * to request per-file presigned URLs from your backend.
    */
   onGetUploadParameters: (
-    file: UppyFile<Record<string, unknown>, Record<string, unknown>>
+    file: UppyFile<Record<string, unknown>, Record<string, unknown>>,
   ) => Promise<{
     method: "PUT";
     url: string;
     headers?: Record<string, string>;
   }>;
-  onComplete?: (
-    result: UploadResult<Record<string, unknown>, Record<string, unknown>>
-  ) => void;
+  onComplete?: (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => void;
   buttonClassName?: string;
   children: ReactNode;
 }
@@ -68,8 +66,12 @@ export function ObjectUploader({
 }: ObjectUploaderProps) {
   const onCompleteRef = useRef(onComplete);
   const onGetUploadParametersRef = useRef(onGetUploadParameters);
-  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
-  useEffect(() => { onGetUploadParametersRef.current = onGetUploadParameters; }, [onGetUploadParameters]);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+  useEffect(() => {
+    onGetUploadParametersRef.current = onGetUploadParameters;
+  }, [onGetUploadParameters]);
 
   const [showModal, setShowModal] = useState(false);
   const [uppy] = useState(() =>
@@ -86,7 +88,7 @@ export function ObjectUploader({
       })
       .on("complete", (result) => {
         onCompleteRef.current?.(result);
-      })
+      }),
   );
 
   return (

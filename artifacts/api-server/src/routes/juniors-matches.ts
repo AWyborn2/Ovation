@@ -183,10 +183,7 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
   };
 
   const inningsNums = Array.from(
-    new Set([
-      ...battingRows.map((b) => b.innings ?? 1),
-      ...bowlingRows.map((b) => b.innings ?? 1),
-    ]),
+    new Set([...battingRows.map((b) => b.innings ?? 1), ...bowlingRows.map((b) => b.innings ?? 1)]),
   ).sort((a, b) => a - b);
 
   const innings = inningsNums.map((n) => {
@@ -259,33 +256,27 @@ router.get("/juniors/match-display-settings", async (req, res): Promise<void> =>
   res.json(serializeJuniorMatchDisplaySettings(settings));
 });
 
-router.patch(
-  "/juniors/match-display-settings",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const parsed = UpdateJuniorMatchDisplaySettingsBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
-      return;
-    }
-    const tenantId = getTenantId(req);
-    await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
-    const patch: Record<string, unknown> = { updatedAt: new Date() };
-    if (parsed.data.defaultAgeGroup !== undefined)
-      patch.defaultAgeGroup = parsed.data.defaultAgeGroup;
-    if (parsed.data.defaultSeasonMode !== undefined)
-      patch.defaultSeasonMode = parsed.data.defaultSeasonMode;
-    if (parsed.data.defaultSeason !== undefined)
-      patch.defaultSeason = parsed.data.defaultSeason;
-    if (parsed.data.ageGroupOrder !== undefined)
-      patch.ageGroupOrder = parsed.data.ageGroupOrder;
-    const [updated] = await db
-      .update(juniorMatchDisplaySettingsTable)
-      .set(patch)
-      .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId))
-      .returning();
-    res.json(serializeJuniorMatchDisplaySettings(updated));
-  },
-);
+router.patch("/juniors/match-display-settings", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = UpdateJuniorMatchDisplaySettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (parsed.data.defaultAgeGroup !== undefined)
+    patch.defaultAgeGroup = parsed.data.defaultAgeGroup;
+  if (parsed.data.defaultSeasonMode !== undefined)
+    patch.defaultSeasonMode = parsed.data.defaultSeasonMode;
+  if (parsed.data.defaultSeason !== undefined) patch.defaultSeason = parsed.data.defaultSeason;
+  if (parsed.data.ageGroupOrder !== undefined) patch.ageGroupOrder = parsed.data.ageGroupOrder;
+  const [updated] = await db
+    .update(juniorMatchDisplaySettingsTable)
+    .set(patch)
+    .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId))
+    .returning();
+  res.json(serializeJuniorMatchDisplaySettings(updated));
+});
 
 export default router;

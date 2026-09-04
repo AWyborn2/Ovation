@@ -131,9 +131,7 @@ function LeaderList({
   if (rows.length === 0) return null;
   return (
     <Card style={{ marginBottom: 10, padding: 14 }}>
-      <View
-        style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}
-      >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
         <Feather name="trending-up" size={15} color={JUNIOR.accent} />
         <Heading size="sm">{title}</Heading>
       </View>
@@ -201,8 +199,8 @@ export default function JuniorsOverviewScreen() {
           Junior Cricket
         </Heading>
         <Body muted size={13} style={{ marginTop: 4 }}>
-          Match results, scorecards, premierships and player stats for{" "}
-          {brand.possessive} junior grades.
+          Match results, scorecards, premierships and player stats for {brand.possessive} junior
+          grades.
         </Body>
       </View>
 
@@ -293,11 +291,7 @@ export default function JuniorsOverviewScreen() {
                             </Body>
                           ) : null}
                         </View>
-                        <Feather
-                          name="chevron-right"
-                          size={18}
-                          color={colors.mutedForeground}
-                        />
+                        <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
                       </View>
                     </Card>
                   </TouchableOpacity>

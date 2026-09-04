@@ -66,9 +66,9 @@ export function CardLayoutEditor(props: CardLayoutEditorProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Drag any element to move it, drag its corner to resize. Add images,
-        shapes or text, restack with the layer list, then save. Changes apply to
-        every size; reset restores the built-in design.
+        Drag any element to move it, drag its corner to resize. Add images, shapes or text, restack
+        with the layer list, then save. Changes apply to every size; reset restores the built-in
+        design.
       </p>
 
       {isTemplate && (

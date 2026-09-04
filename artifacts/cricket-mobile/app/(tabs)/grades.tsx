@@ -27,11 +27,7 @@ export default function GradesScreen() {
       </Heading>
 
       {data.map((g) => (
-        <Link
-          key={g.grade}
-          href={`/grades/${encodeURIComponent(g.grade)}` as never}
-          asChild
-        >
+        <Link key={g.grade} href={`/grades/${encodeURIComponent(g.grade)}` as never} asChild>
           <TouchableOpacity activeOpacity={0.7}>
             <Card style={{ marginBottom: 10 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -61,7 +57,12 @@ export default function GradesScreen() {
                     {(g.wickets ?? 0).toLocaleString()}w · {(g.catches ?? 0).toLocaleString()}ct
                   </Body>
                 </View>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
+                <Feather
+                  name="chevron-right"
+                  size={18}
+                  color={colors.mutedForeground}
+                  style={{ marginLeft: 8 }}
+                />
               </View>
             </Card>
           </TouchableOpacity>

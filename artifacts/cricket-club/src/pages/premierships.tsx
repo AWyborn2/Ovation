@@ -19,12 +19,16 @@ const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
 
 const Plaque = ({ prem }: { prem: Premiership }) => (
   <PlaqueFrame>
-    <div style={PLAQUE_STYLES.title} className="text-[12px] font-bold">{prem.grade.toUpperCase()}</div>
+    <div style={PLAQUE_STYLES.title} className="text-[12px] font-bold">
+      {prem.grade.toUpperCase()}
+    </div>
 
     {(prem.venue || prem.matchDate) && (
       <div style={{ ...PLAQUE_STYLES.meta, marginTop: "2px" }}>
         {prem.venue && <div className="text-[10px]">{prem.venue.toUpperCase()}</div>}
-        {prem.matchDate && <div className="text-[10px] mt-[2px] mb-[2px]">{formatPlaqueDate(prem.matchDate)}</div>}
+        {prem.matchDate && (
+          <div className="text-[10px] mt-[2px] mb-[2px]">{formatPlaqueDate(prem.matchDate)}</div>
+        )}
       </div>
     )}
 
@@ -76,7 +80,10 @@ export default function Premierships() {
       isLoading={isLoading}
       isError={isError}
       onRetry={() => refetch()}
-      empty={{ title: "No premierships found", message: "No premierships match the selected grade." }}
+      empty={{
+        title: "No premierships found",
+        message: "No premierships match the selected grade.",
+      }}
       renderPlaque={(p) => <Plaque prem={p} />}
       plaqueLabel={(p) => `Enlarge ${p.grade} premiership plaque`}
       focusRingClass="focus-visible:ring-white/70"

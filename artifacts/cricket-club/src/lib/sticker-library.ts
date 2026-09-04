@@ -82,7 +82,11 @@ const INK = "#1A1A1A";
 
 const hexToRgb = (hex: string): [number, number, number] => {
   let h = (hex || "").trim().replace(/^#/, "");
-  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
   const n = parseInt(h, 16);
   if (h.length !== 6 || Number.isNaN(n)) return [251, 172, 39];
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -173,13 +177,7 @@ const regularPolygonPath = (
 };
 
 // Shield outline path (badge silhouette), centred in the rect.
-const shieldPath = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-) => {
+const shieldPath = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => {
   const r = w * 0.18;
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -197,11 +195,7 @@ const shieldPath = (
 
 const ICON_CACHE = new Map<string, Promise<HTMLImageElement>>();
 
-const loadIconImage = (
-  Icon: LucideIcon,
-  id: string,
-  color: string,
-): Promise<HTMLImageElement> => {
+const loadIconImage = (Icon: LucideIcon, id: string, color: string): Promise<HTMLImageElement> => {
   const key = `${id}:${color}`;
   const cached = ICON_CACHE.get(key);
   if (cached) return cached;
@@ -929,10 +923,7 @@ export const searchStickers = (
   return STICKER_ASSETS.filter((a) => {
     if (category !== "all" && a.category !== category) return false;
     if (!q) return true;
-    return (
-      a.name.toLowerCase().includes(q) ||
-      a.keywords.some((k) => k.includes(q))
-    );
+    return a.name.toLowerCase().includes(q) || a.keywords.some((k) => k.includes(q));
   });
 };
 

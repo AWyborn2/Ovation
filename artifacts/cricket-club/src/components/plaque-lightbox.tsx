@@ -142,105 +142,105 @@ export function PlaqueLightbox<T>({
   return (
     <DialogPrimitive.Root open onOpenChange={(open) => !open && onClose()}>
       <DialogPrimitive.Portal>
-    <DialogPrimitive.Content
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden outline-none"
-      style={{ background: "rgba(0,0,0,0.82)" }}
-      onClick={onClose}
-      aria-describedby={undefined}
-      data-testid="plaque-lightbox"
-    >
-      <DialogPrimitive.Title className="sr-only">Premiership plaque</DialogPrimitive.Title>
-      <button
-        onClick={onClose}
-        aria-label="Close"
-        className="absolute top-4 right-4 flex items-center justify-center rounded-full"
-        style={{
-          width: 44,
-          height: 44,
-          color: accent,
-          background: "rgba(255,255,255,0.08)",
-          border: `1px solid ${accent}`,
-          fontSize: 26,
-          lineHeight: 1,
-          cursor: "pointer",
-          zIndex: 10,
-        }}
-        data-testid="button-close-lightbox"
-      >
-        ×
-      </button>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (hasPrev) onIndexChange(index - 1);
-        }}
-        disabled={!hasPrev}
-        aria-label="Previous plaque"
-        className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-        style={navBtnStyle(hasPrev)}
-        data-testid="button-prev-plaque"
-      >
-        ‹
-      </button>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (hasNext) onIndexChange(index + 1);
-        }}
-        disabled={!hasNext}
-        aria-label="Next plaque"
-        className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-        style={navBtnStyle(hasNext)}
-        data-testid="button-next-plaque"
-      >
-        ›
-      </button>
-
-      <div
-        onClick={(e) => e.stopPropagation()}
-        onClickCapture={handleClickCapture}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          width: PLAQUE_W,
-          height: PLAQUE_H,
-          transform: `scale(${scale})`,
-          transformOrigin: "center",
-          flex: "none",
-        }}
-        data-testid="plaque-lightbox-content"
-      >
-        <div ref={plaqueRef}>{renderItem(current)}</div>
-      </div>
-
-      {exportFileName && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            void handleExport();
-          }}
-          disabled={exporting}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
-          style={{
-            color: theme === "gold" ? "#42342B" : "#0f172a",
-            background: accent,
-            border: `1px solid ${accent}`,
-            cursor: exporting ? "default" : "pointer",
-            zIndex: 10,
-          }}
-          data-testid="button-save-plaque"
+        <DialogPrimitive.Content
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden outline-none"
+          style={{ background: "rgba(0,0,0,0.82)" }}
+          onClick={onClose}
+          aria-describedby={undefined}
+          data-testid="plaque-lightbox"
         >
-          {exporting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
+          <DialogPrimitive.Title className="sr-only">Premiership plaque</DialogPrimitive.Title>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-4 right-4 flex items-center justify-center rounded-full"
+            style={{
+              width: 44,
+              height: 44,
+              color: accent,
+              background: "rgba(255,255,255,0.08)",
+              border: `1px solid ${accent}`,
+              fontSize: 26,
+              lineHeight: 1,
+              cursor: "pointer",
+              zIndex: 10,
+            }}
+            data-testid="button-close-lightbox"
+          >
+            ×
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasPrev) onIndexChange(index - 1);
+            }}
+            disabled={!hasPrev}
+            aria-label="Previous plaque"
+            className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
+            style={navBtnStyle(hasPrev)}
+            data-testid="button-prev-plaque"
+          >
+            ‹
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasNext) onIndexChange(index + 1);
+            }}
+            disabled={!hasNext}
+            aria-label="Next plaque"
+            className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
+            style={navBtnStyle(hasNext)}
+            data-testid="button-next-plaque"
+          >
+            ›
+          </button>
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onClickCapture={handleClickCapture}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            style={{
+              width: PLAQUE_W,
+              height: PLAQUE_H,
+              transform: `scale(${scale})`,
+              transformOrigin: "center",
+              flex: "none",
+            }}
+            data-testid="plaque-lightbox-content"
+          >
+            <div ref={plaqueRef}>{renderItem(current)}</div>
+          </div>
+
+          {exportFileName && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleExport();
+              }}
+              disabled={exporting}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+              style={{
+                color: theme === "gold" ? "#42342B" : "#0f172a",
+                background: accent,
+                border: `1px solid ${accent}`,
+                cursor: exporting ? "default" : "pointer",
+                zIndex: 10,
+              }}
+              data-testid="button-save-plaque"
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {exporting ? "Preparing…" : "Save / Share image"}
+            </button>
           )}
-          {exporting ? "Preparing…" : "Save / Share image"}
-        </button>
-      )}
-    </DialogPrimitive.Content>
+        </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );

@@ -15,30 +15,31 @@ import { getTenantId } from "../middlewares/tenant-context";
 const router: IRouter = Router();
 
 // Curated set of internal page targets the admin can link a nav item to.
-const INTERNAL_TARGETS: { value: string; label: string; section: "senior" | "junior" | "admin" }[] = [
-  // Senior public pages
-  { value: "/", label: "Honour Boards", section: "senior" },
-  { value: "/players", label: "Players", section: "senior" },
-  { value: "/matches", label: "Matches", section: "senior" },
-  { value: "/grades", label: "Grades", section: "senior" },
-  { value: "/records", label: "Records", section: "senior" },
-  { value: "/premierships", label: "Premierships", section: "senior" },
-  { value: "/compare", label: "Compare", section: "senior" },
-  // Junior public pages
-  { value: "/juniors", label: "Juniors Overview", section: "junior" },
-  { value: "/juniors/matches", label: "Juniors Matches", section: "junior" },
-  { value: "/juniors/premierships", label: "Juniors Premierships", section: "junior" },
-  { value: "/juniors/players", label: "Juniors Players", section: "junior" },
-  { value: "/juniors/office-bearers", label: "Juniors Office Bearers", section: "junior" },
-  // Admin pages (consolidated groups; each group page is tabbed)
-  { value: "/admin", label: "Admin Hub", section: "admin" },
-  { value: "/admin/social", label: "Social Media", section: "admin" },
-  { value: "/admin/settings", label: "Display & Settings", section: "admin" },
-  { value: "/admin/people", label: "People", section: "admin" },
-  { value: "/admin/honours", label: "Honours & Records", section: "admin" },
-  { value: "/admin/import", label: "Import CSV", section: "admin" },
-  { value: "/admin/users", label: "Admin users", section: "admin" },
-];
+const INTERNAL_TARGETS: { value: string; label: string; section: "senior" | "junior" | "admin" }[] =
+  [
+    // Senior public pages
+    { value: "/", label: "Honour Boards", section: "senior" },
+    { value: "/players", label: "Players", section: "senior" },
+    { value: "/matches", label: "Matches", section: "senior" },
+    { value: "/grades", label: "Grades", section: "senior" },
+    { value: "/records", label: "Records", section: "senior" },
+    { value: "/premierships", label: "Premierships", section: "senior" },
+    { value: "/compare", label: "Compare", section: "senior" },
+    // Junior public pages
+    { value: "/juniors", label: "Juniors Overview", section: "junior" },
+    { value: "/juniors/matches", label: "Juniors Matches", section: "junior" },
+    { value: "/juniors/premierships", label: "Juniors Premierships", section: "junior" },
+    { value: "/juniors/players", label: "Juniors Players", section: "junior" },
+    { value: "/juniors/office-bearers", label: "Juniors Office Bearers", section: "junior" },
+    // Admin pages (consolidated groups; each group page is tabbed)
+    { value: "/admin", label: "Admin Hub", section: "admin" },
+    { value: "/admin/social", label: "Social Media", section: "admin" },
+    { value: "/admin/settings", label: "Display & Settings", section: "admin" },
+    { value: "/admin/people", label: "People", section: "admin" },
+    { value: "/admin/honours", label: "Honours & Records", section: "admin" },
+    { value: "/admin/import", label: "Import CSV", section: "admin" },
+    { value: "/admin/users", label: "Admin users", section: "admin" },
+  ];
 
 // Curated icon keys. The client maps each key to a lucide icon; keep this list
 // in sync with NAV_ICON_MAP in the frontend (src/lib/nav-icons.tsx).
@@ -79,11 +80,7 @@ const ICON_KEYS = [
 function serialize(row: typeof navItemsTable.$inferSelect) {
   return {
     id: row.id,
-    surface: row.surface as
-      | "senior_menu"
-      | "junior_menu"
-      | "junior_quick_links"
-      | "admin_tiles",
+    surface: row.surface as "senior_menu" | "junior_menu" | "junior_quick_links" | "admin_tiles",
     label: row.label,
     description: row.description,
     iconKey: row.iconKey,
@@ -106,8 +103,7 @@ router.get("/nav-items", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const includeHidden =
-    parsed.data.includeHidden === true && !!(await resolveAdmin(req));
+  const includeHidden = parsed.data.includeHidden === true && !!(await resolveAdmin(req));
 
   const conditions: SQL[] = [eq(navItemsTable.tenantId, getTenantId(req))];
   if (parsed.data.surface) {
@@ -138,16 +134,11 @@ router.post("/nav-items", requireAdmin, async (req, res): Promise<void> => {
     .select({ sortOrder: navItemsTable.sortOrder })
     .from(navItemsTable)
     .where(
-      and(
-        eq(navItemsTable.tenantId, tenantId),
-        eq(navItemsTable.surface, parsed.data.surface),
-      ),
+      and(eq(navItemsTable.tenantId, tenantId), eq(navItemsTable.surface, parsed.data.surface)),
     );
   const nextOrder =
     parsed.data.sortOrder ??
-    (existing.length === 0
-      ? 0
-      : Math.max(...existing.map((e) => e.sortOrder)) + 1);
+    (existing.length === 0 ? 0 : Math.max(...existing.map((e) => e.sortOrder)) + 1);
 
   const [row] = await db
     .insert(navItemsTable)
@@ -179,12 +170,7 @@ router.patch("/nav-items/reorder", requireAdmin, async (req, res): Promise<void>
     const rows = await db
       .select({ id: navItemsTable.id, surface: navItemsTable.surface })
       .from(navItemsTable)
-      .where(
-        and(
-          eq(navItemsTable.tenantId, tenantId),
-          inArray(navItemsTable.id, ids),
-        ),
-      );
+      .where(and(eq(navItemsTable.tenantId, tenantId), inArray(navItemsTable.id, ids)));
     const bySurface = new Set(rows.filter((r) => r.surface === surface).map((r) => r.id));
     if (ids.some((id) => !bySurface.has(id))) {
       res.status(400).json({ error: "All ids must belong to the given surface." });
@@ -195,12 +181,7 @@ router.patch("/nav-items/reorder", requireAdmin, async (req, res): Promise<void>
         await tx
           .update(navItemsTable)
           .set({ sortOrder: i, updatedAt: new Date() })
-          .where(
-            and(
-              eq(navItemsTable.tenantId, tenantId),
-              eq(navItemsTable.id, ids[i]),
-            ),
-          );
+          .where(and(eq(navItemsTable.tenantId, tenantId), eq(navItemsTable.id, ids[i])));
       }
     });
   }
@@ -226,12 +207,7 @@ router.patch("/nav-items/:id", requireAdmin, async (req, res): Promise<void> => 
   const [row] = await db
     .update(navItemsTable)
     .set({ ...body.data, updatedAt: new Date() })
-    .where(
-      and(
-        eq(navItemsTable.tenantId, getTenantId(req)),
-        eq(navItemsTable.id, params.data.id),
-      ),
-    )
+    .where(and(eq(navItemsTable.tenantId, getTenantId(req)), eq(navItemsTable.id, params.data.id)))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Nav item not found" });
@@ -248,12 +224,7 @@ router.delete("/nav-items/:id", requireAdmin, async (req, res): Promise<void> =>
   }
   const [row] = await db
     .delete(navItemsTable)
-    .where(
-      and(
-        eq(navItemsTable.tenantId, getTenantId(req)),
-        eq(navItemsTable.id, params.data.id),
-      ),
-    )
+    .where(and(eq(navItemsTable.tenantId, getTenantId(req)), eq(navItemsTable.id, params.data.id)))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Nav item not found" });

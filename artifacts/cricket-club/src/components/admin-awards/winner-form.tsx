@@ -55,9 +55,7 @@ export function WinnerForm({
             max={2100}
             required
           />
-          <p className="text-xs text-muted-foreground">
-            Shown as {formatSeason(season || 0)}
-          </p>
+          <p className="text-xs text-muted-foreground">Shown as {formatSeason(season || 0)}</p>
         </div>
         <div className="space-y-2">
           <Label>Linked player (optional)</Label>

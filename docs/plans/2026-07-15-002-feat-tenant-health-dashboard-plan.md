@@ -15,13 +15,13 @@ deepened: 2026-07-15
 
 Give the platform operator at-a-glance visibility into which of the (soon) 27 PCA tenants are set up, active, and healthy. Add `last_active_at` and `suspended_at` columns to the `tenants` table, populate `last_active_at` from authenticated club-admin activity (throttled), surface a computed health picture through the platform-admin tenant list API, and rebuild the tenant list UI with health columns plus client-side sorting and filtering.
 
-**Product Contract preservation:** This plan implements the "Tenant health dashboard" must-build item from the origin requirements plan. Product Contract unchanged — scope is narrowed to the first must-build item; suspension *enforcement* (the unavailable page and suspend/restore controls) remains the separate "Tenant suspension" item and is deferred here (see Scope Boundaries).
+**Product Contract preservation:** This plan implements the "Tenant health dashboard" must-build item from the origin requirements plan. Product Contract unchanged — scope is narrowed to the first must-build item; suspension _enforcement_ (the unavailable page and suspend/restore controls) remains the separate "Tenant suspension" item and is deferred here (see Scope Boundaries).
 
 ---
 
 ## Problem Frame
 
-The Platform Admin tenant list ([tenants-list.tsx](artifacts/cricket-club/src/pages/platform-admin/tenants-list.tsx)) shows club name, address, plan, data source, and admin count. It has no signal for whether a tenant is *healthy*: whether anyone is actively managing it, whether branding was ever configured, or whether it's been suspended. At 2–3 pilot tenants the operator holds this in their head. At 27 clubs — many concierge-provisioned and then left for a club secretary to finish — the operator cannot tell which onboardings stalled, which sites are live and used, and which need a nudge. The list is also unsorted beyond alphabetical and unfilterable beyond a name search.
+The Platform Admin tenant list ([tenants-list.tsx](artifacts/cricket-club/src/pages/platform-admin/tenants-list.tsx)) shows club name, address, plan, data source, and admin count. It has no signal for whether a tenant is _healthy_: whether anyone is actively managing it, whether branding was ever configured, or whether it's been suspended. At 2–3 pilot tenants the operator holds this in their head. At 27 clubs — many concierge-provisioned and then left for a club secretary to finish — the operator cannot tell which onboardings stalled, which sites are live and used, and which need a nudge. The list is also unsorted beyond alphabetical and unfilterable beyond a name search.
 
 ---
 
@@ -40,17 +40,17 @@ The Platform Admin tenant list ([tenants-list.tsx](artifacts/cricket-club/src/pa
 
 ### KTD1 — `last_active_at` tracks authenticated club-admin activity, throttled
 
-The health question the operator most needs answered is "is this club actually being managed?" — the strongest stall signal. Hook the write into the `requireAdmin` middleware's success continuation in [require-admin.ts](artifacts/api-server/src/middlewares/require-admin.ts) — the `.then((admin) => …)` block after `resolveAdmin` returns a valid admin — **not** inside the shared `resolveAdmin` helper itself. `resolveAdmin` is exported and also called on optional-admin *read* paths (e.g. `social-cards.ts`'s `GET /card-sets`); placing the side effect in the helper would advance `last_active_at` on those reads too, broadening the signal beyond "a club admin acted on the tenant". The middleware `.then` block is reached only on `requireAdmin`-guarded routes, which is exactly the write signal we want.
+The health question the operator most needs answered is "is this club actually being managed?" — the strongest stall signal. Hook the write into the `requireAdmin` middleware's success continuation in [require-admin.ts](artifacts/api-server/src/middlewares/require-admin.ts) — the `.then((admin) => …)` block after `resolveAdmin` returns a valid admin — **not** inside the shared `resolveAdmin` helper itself. `resolveAdmin` is exported and also called on optional-admin _read_ paths (e.g. `social-cards.ts`'s `GET /card-sets`); placing the side effect in the helper would advance `last_active_at` on those reads too, broadening the signal beyond "a club admin acted on the tenant". The middleware `.then` block is reached only on `requireAdmin`-guarded routes, which is exactly the write signal we want.
 
 Throttle with an **in-process recently-touched guard** (a `Map<tenantId, lastWriteMs>`), not a database read: issue the `UPDATE` only when the tenant is absent from the guard or its entry is older than a threshold (default 15 min, `TENANT_ACTIVITY_THROTTLE_MS`, clamped to a sane floor — see below). This needs **no** read of the stored `last_active_at` — the guard alone decides whether to write, and the `getAdminById` row (`adminsTable` only) never carried the tenant's timestamp anyway. On process restart the guard is empty, so the first admin request per tenant writes once and repopulates the guard; negligible. `TENANT_ACTIVITY_THROTTLE_MS` is parsed defensively: coerce to a number, and on `NaN` or a value below a floor (60 s) fall back to the 15-min default, so a misconfiguration can never collapse the throttle into a per-request write.
 
-*Alternative considered:* update on all tenant-scoped requests including end-user traffic. Rejected as the primary signal — it answers "is the site visited" not "is it being managed", and multiplies writes. End-user-traffic health is a richer future signal (see Future Considerations), not this unit.
+_Alternative considered:_ update on all tenant-scoped requests including end-user traffic. Rejected as the primary signal — it answers "is the site visited" not "is it being managed", and multiplies writes. End-user-traffic health is a richer future signal (see Future Considerations), not this unit.
 
-*Write-path safety:* the activity write is best-effort and must never fail or delay the request it rides on — fire it after `next()` semantics or as a non-awaited, error-swallowing side effect, mirroring the existing best-effort patterns in the codebase (e.g. `centralClubNames()` swallowing a missing central DB).
+_Write-path safety:_ the activity write is best-effort and must never fail or delay the request it rides on — fire it after `next()` semantics or as a non-awaited, error-swallowing side effect, mirroring the existing best-effort patterns in the codebase (e.g. `centralClubNames()` swallowing a missing central DB).
 
 ### KTD2 — Branding completeness is derived, not stored
 
-"Branding complete" is computable from columns that already exist: a tenant has meaningful branding when it has a logo (`logo_url` non-null) **and** a primary colour (`primary_colour` non-null). Compute it in the API response shaper ([toAdminTenant](artifacts/api-server/src/routes/platform-admin.ts:95)); do not add a column that can drift from the underlying brand fields. Note: the brand *resolver* ([tenant-brand.ts](artifacts/api-server/src/lib/tenant-brand.ts)) can fall back to the `clubs` register for a tenant with `appClubId` set, so "branding incomplete" here means "the tenant has set no explicit brand columns", which is exactly the onboarding-stall signal the operator wants — do not reach into the clubs register to mask it.
+"Branding complete" is computable from columns that already exist: a tenant has meaningful branding when it has a logo (`logo_url` non-null) **and** a primary colour (`primary_colour` non-null). Compute it in the API response shaper ([toAdminTenant](artifacts/api-server/src/routes/platform-admin.ts:95)); do not add a column that can drift from the underlying brand fields. Note: the brand _resolver_ ([tenant-brand.ts](artifacts/api-server/src/lib/tenant-brand.ts)) can fall back to the `clubs` register for a tenant with `appClubId` set, so "branding incomplete" here means "the tenant has set no explicit brand columns", which is exactly the onboarding-stall signal the operator wants — do not reach into the clubs register to mask it.
 
 ### KTD3 — Schema change via `drizzle-kit push`, not migration files
 
@@ -95,6 +95,7 @@ The write path and read path are decoupled through the `tenants` table. The writ
 **Dependencies:** none
 
 **Files:**
+
 - [lib/db/src/schema/tenants.ts](lib/db/src/schema/tenants.ts) — add two nullable `timestamp({ withTimezone: true })` columns: `lastActiveAt` (`last_active_at`) and `suspendedAt` (`suspended_at`). Extend the doc comment to describe both. `TenantRow` / `InsertTenant` inferred types pick them up automatically.
 
 **Approach:** Mirror the existing `createdAt` column definition but nullable and without `.defaultNow()`. Place them after `plan` / before `createdAt` for readability. Apply with `pnpm --filter @workspace/db push` against the dev database (KTD3). Both columns nullable → additive, no backfill.
@@ -116,6 +117,7 @@ The write path and read path are decoupled through the `tenants` table. The writ
 **Dependencies:** U1
 
 **Files:**
+
 - [artifacts/api-server/src/middlewares/require-admin.ts](artifacts/api-server/src/middlewares/require-admin.ts) — in the `requireAdmin` handler's `.then((admin) => …)` success block (not the shared `resolveAdmin` helper — KTD1), trigger a throttled, best-effort `last_active_at` write for `admin.tenantId`.
 - `artifacts/api-server/src/lib/tenant-activity.ts` (new) — house the throttled-write helper and its in-process guard so the middleware stays thin and the throttle logic is unit-testable in isolation.
 - `artifacts/api-server/src/lib/tenant-activity.test.ts` (new) — unit tests for the throttle decision and env parsing.
@@ -127,6 +129,7 @@ The write path and read path are decoupled through the `tenants` table. The writ
 **Patterns to follow:** the best-effort/error-swallowing style of `centralClubNames()` in [platform-admin.ts](artifacts/api-server/src/routes/platform-admin.ts:78); the in-process TTL cache pattern in [tenant-brand.ts](artifacts/api-server/src/lib/tenant-brand.ts:34) and the directory cache in [tenant-context.ts](artifacts/api-server/src/middlewares/tenant-context.ts:68).
 
 **Test scenarios:**
+
 - `shouldWrite` returns true when the guard has no entry for the tenant (first request this process / after restart). Covers R2.
 - `shouldWrite` returns true when the guard entry is older than the threshold.
 - `shouldWrite` returns false when the guard entry is within the threshold window.
@@ -149,6 +152,7 @@ The write path and read path are decoupled through the `tenants` table. The writ
 **Dependencies:** U1
 
 **Files:**
+
 - [lib/api-spec/openapi.yaml](lib/api-spec/openapi.yaml) — extend the `AdminTenant` schema (line 6281) with `lastActiveAt` (`["string","null"]`), `suspendedAt` (`["string","null"]`), and `brandingComplete` (`boolean`, required). Then regenerate clients.
 - [artifacts/api-server/src/routes/platform-admin.ts](artifacts/api-server/src/routes/platform-admin.ts) — extend `toAdminTenant` (line 95) to emit the three fields: pass through `last_active_at`/`suspended_at` as ISO strings (same `instanceof Date` guard used for `createdAt` at line 109), and derive `brandingComplete = logoUrl != null && primaryColour != null` (KTD2).
 - Generated clients (do not hand-edit): `lib/api-client-react/src/generated/*`, `lib/api-zod/src/generated/*` — regenerated by codegen.
@@ -160,6 +164,7 @@ The write path and read path are decoupled through the `tenants` table. The writ
 **Patterns to follow:** the existing `createdAt` ISO-serialization guard in `toAdminTenant`; the nullable-field style already in the `AdminTenant` schema (`centralClubName`, `customDomain`).
 
 **Test scenarios:**
+
 - `toAdminTenant` sets `brandingComplete: true` when both `logoUrl` and `primaryColour` are present.
 - `toAdminTenant` sets `brandingComplete: false` when `logoUrl` is null (colour present) and when `primaryColour` is null (logo present) and when both are null.
 - `toAdminTenant` serializes a `Date` `lastActiveAt` to an ISO string and passes a null through as null.
@@ -179,22 +184,25 @@ The write path and read path are decoupled through the `tenants` table. The writ
 **Dependencies:** U3
 
 **Files:**
+
 - [artifacts/cricket-club/src/pages/platform-admin/tenants-list.tsx](artifacts/cricket-club/src/pages/platform-admin/tenants-list.tsx) — add "Last active" and "Branding" columns; add a suspended badge next to the club name; add sortable column headers (name, last active, admins) and a health filter control; keep the existing search, links, plan/data-source columns.
 - `artifacts/cricket-club/src/pages/platform-admin/tenants-list.test.tsx` (new, if the web package has a component-test setup) — sorting/filtering logic tests. If no component-test harness exists in this package, extract the pure sort/filter/format helpers into a sibling module and unit-test those instead.
 
 **Approach:** Render "Last active" as a relative string ("2 days ago", "never" when null) — reuse an existing relative-time formatter if the web package has one, else a small local helper. Render "Branding" as a check/dash from `brandingComplete`. Show a "Suspended" `StatusPill` (reuse [StatusPill](artifacts/cricket-club/src/components/ui/stat-badge.tsx)) beside the name when `suspendedAt != null`. Add a filter control (segmented buttons or a select) for: All, Never active, Branding incomplete, Suspended. Compose filter + search + sort in the memo. `null` `lastActiveAt` sorts as oldest (stalest first when sorting by last-active ascending) so stalled tenants surface at the top — the operator's primary need.
 
-*Sorting and its affordances (design review):*
+_Sorting and its affordances (design review):_
+
 - **Default sort on load is last-active ascending** (never-active first, then oldest→newest), so the operator's primary signal — which onboardings stalled — is visible on first paint without any interaction. This is a behavior change from today's component (which does no sorting); do not fall back to API return order.
 - The **sortable columns are name, last active, and admins**; Address, Plan, Data source, and Branding are static. Sort state is `{ column, direction }` driving the existing `useMemo`; clicking a sortable header toggles direction (and switches column).
 - Show the **active sort visibly**: a direction caret (▲/▼) on the active header plus active-header styling, so the operator can tell what the list is ordered by and that a direction-only toggle did something.
 - Render sortable headers as **focusable buttons with `aria-sort`** reflecting the current state, so sort is keyboard-reachable and announced (this is an internal operator console, so this is a light requirement, not a blocker).
 
-*Empty states (two distinct cases):* keep the existing zero-search-results copy for a non-matching search, and add a **distinct filtered-to-empty state** for when an active health filter yields no rows (e.g. "Suspended" with no suspended tenants) — a neutral "No tenants match the current filter" with a clear-filter affordance, never the search-keyed `No tenants match "{q}"` copy (which renders a misleading empty-quote message when only a filter is active).
+_Empty states (two distinct cases):_ keep the existing zero-search-results copy for a non-matching search, and add a **distinct filtered-to-empty state** for when an active health filter yields no rows (e.g. "Suspended" with no suspended tenants) — a neutral "No tenants match the current filter" with a clear-filter affordance, never the search-keyed `No tenants match "{q}"` copy (which renders a misleading empty-quote message when only a filter is active).
 
 **Patterns to follow:** the existing `useMemo` filter and `StatusPill`/`PlanBadge` usage already in the file; the table markup already present (extend, don't replace).
 
 **Test scenarios:**
+
 - On initial load (no interaction), the list is sorted last-active ascending — a never-active tenant appears above an active one. Covers R5.
 - Sort by last-active ascending places `null` (never active) rows first, then oldest→newest. Covers R5.
 - Sort by admins descending orders by `adminCount`; sort by name preserves the existing alphabetical behavior as one selectable mode.
@@ -213,14 +221,17 @@ The write path and read path are decoupled through the `tenants` table. The writ
 ## Scope Boundaries
 
 ### In scope
+
 - `last_active_at` and `suspended_at` columns; throttled activity write; health fields on the tenant list API; health columns + sort/filter in the tenant list UI.
 
 ### Deferred to Follow-Up Work
-- **Suspension enforcement** — the "temporarily unavailable" page for a suspended tenant and the suspend/restore controls on tenant detail. This plan lands the `suspended_at` column and *displays* suspended state; acting on it is the separate "Tenant suspension" must-build item in the [origin plan](docs/plans/2026-07-15-001-feat-platform-admin-saas-features-plan.md).
+
+- **Suspension enforcement** — the "temporarily unavailable" page for a suspended tenant and the suspend/restore controls on tenant detail. This plan lands the `suspended_at` column and _displays_ suspended state; acting on it is the separate "Tenant suspension" must-build item in the [origin plan](docs/plans/2026-07-15-001-feat-platform-admin-saas-features-plan.md).
 - **End-user-traffic health** — a richer "site is being visited" signal distinct from admin activity (see Future Considerations).
 - **Server-side sort/filter/pagination** — unnecessary at PCA scale (KTD4).
 
 ### Out of scope
+
 - Email onboarding, audit log, bulk provisioning, entitlements, billing — separate items in the origin plan.
 
 ---

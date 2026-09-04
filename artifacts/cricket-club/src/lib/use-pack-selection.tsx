@@ -14,12 +14,7 @@ import {
 } from "@/lib/card-template";
 import { listPackManifests, DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import {
-  ALL_CARD_KINDS,
-  kindLabel,
-  packName,
-  type CardKind,
-} from "@/lib/social-studio";
+import { ALL_CARD_KINDS, kindLabel, packName, type CardKind } from "@/lib/social-studio";
 
 /**
  * The confirm dialog the Studio already uses, narrowed to what this hook needs.
@@ -99,9 +94,7 @@ export function usePackSelection({
   const selectablePacksByKind = useMemo(
     () =>
       new Map<CardKind, string[]>(
-        ALL_CARD_KINDS.map(
-          (k) => [k, listSelectablePacksForKind(templates, k)] as const,
-        ),
+        ALL_CARD_KINDS.map((k) => [k, listSelectablePacksForKind(templates, k)] as const),
       ),
     [templates],
   );
@@ -120,9 +113,7 @@ export function usePackSelection({
    * type" on Broadcast Dark while every selector calls it "(default)".
    */
   const kindsUsing = (packId: string): number =>
-    ALL_CARD_KINDS.filter(
-      (k) => (packIdByKind.get(k) ?? DEFAULT_PACK_ID) === packId,
-    ).length;
+    ALL_CARD_KINDS.filter((k) => (packIdByKind.get(k) ?? DEFAULT_PACK_ID) === packId).length;
 
   /**
    * One write path for both surfaces, and ONE PATCH per action, to one canonical
@@ -131,11 +122,7 @@ export function usePackSelection({
    * three sequential writes across a pack's square/portrait/story rows would
    * leave only the last one claiming anything.
    */
-  const claimKindsForPack = (
-    packId: string,
-    kinds: CardKind[],
-    onSettled?: () => void,
-  ) => {
+  const claimKindsForPack = (packId: string, kinds: CardKind[], onSettled?: () => void) => {
     setError(null);
     const row = canonicalPackRowFor(templates, packId);
     if (!row || kinds.length === 0) {
@@ -178,9 +165,7 @@ export function usePackSelection({
 
   /** The kinds a pack can actually render for this tenant, in gallery order. */
   const kindsCoveredByPack = (packId: string): CardKind[] =>
-    ALL_CARD_KINDS.filter((k) =>
-      (selectablePacksByKind.get(k) ?? []).includes(packId),
-    );
+    ALL_CARD_KINDS.filter((k) => (selectablePacksByKind.get(k) ?? []).includes(packId));
 
   const applyPackEverywhere = async (packId: string) => {
     const name = packName(packId);
@@ -200,14 +185,12 @@ export function usePackSelection({
       description: (
         <>
           <span className="block">
-            {name} will be used for {covered.length} card{" "}
-            {covered.length === 1 ? "type" : "types"}.
+            {name} will be used for {covered.length} card {covered.length === 1 ? "type" : "types"}.
           </span>
           {uncovered.length > 0 && (
             <span className="block pt-2">
-              {uncovered.length} card {uncovered.length === 1 ? "type" : "types"}{" "}
-              this pack doesn't cover stay as they are:{" "}
-              {uncovered.map(kindLabel).join(", ")}.
+              {uncovered.length} card {uncovered.length === 1 ? "type" : "types"} this pack doesn't
+              cover stay as they are: {uncovered.map(kindLabel).join(", ")}.
             </span>
           )}
           <span className="block pt-2">

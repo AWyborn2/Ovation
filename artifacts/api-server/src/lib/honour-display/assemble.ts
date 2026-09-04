@@ -15,11 +15,26 @@ import {
 } from "@workspace/db";
 import { getTenantBrand } from "../tenant-brand";
 import type { DataSource } from "../tenant";
-import { buildAwardBoards, buildAwardPoints, buildAwardWinnersGrid, buildTeamOfDecade } from "./awards";
+import {
+  buildAwardBoards,
+  buildAwardPoints,
+  buildAwardWinnersGrid,
+  buildTeamOfDecade,
+} from "./awards";
 import { buildComposites, buildCustomGrids } from "./composites";
 import { buildCaptains, buildCaptainsGrid, buildCommittee, buildLifeMembers } from "./people";
 import { buildPremierships, buildPremiershipsGrid, premParentGrade } from "./premierships";
-import { buildCenturies, buildClubRecords, buildFiveWicketHauls, buildMilestoneBoard, buildMostGames, buildPartnerships, buildRecordsByGrade, buildRecordsLeaderboards, roleRank } from "./records";
+import {
+  buildCenturies,
+  buildClubRecords,
+  buildFiveWicketHauls,
+  buildMilestoneBoard,
+  buildMostGames,
+  buildPartnerships,
+  buildRecordsByGrade,
+  buildRecordsLeaderboards,
+  roleRank,
+} from "./records";
 import { clampWrapBlocks, gradeRank, resolveDisplay } from "./shared";
 import { type GridCatalogEntryOut, type HonourBoardOut } from "./types";
 
@@ -32,8 +47,7 @@ export async function assembleBoards(
   const { tenantId } = source;
   const central = source.kind === "central";
   const boardConfigsAll = settings.boardConfigs ?? {};
-  const gridCols = (id: string): string[] | undefined =>
-    boardConfigsAll[id]?.gridColumns;
+  const gridCols = (id: string): string[] | undefined => boardConfigsAll[id]?.gridColumns;
   const [
     premierships,
     premiershipsGrid,
@@ -103,9 +117,7 @@ export async function assembleBoards(
 
   // Stamp the resolved display config + per-board skin/footnote onto every board.
   const boardConfigs = settings.boardConfigs ?? {};
-  const customDefById = new Map(
-    (settings.customGrids ?? []).map((d) => [d.id, d]),
-  );
+  const customDefById = new Map((settings.customGrids ?? []).map((d) => [d.id, d]));
   for (const b of boards) {
     const cfg = boardConfigs[b.id];
     if (b.layout === "columns") {

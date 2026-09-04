@@ -41,10 +41,7 @@ export async function buildAwardWinnersGrid(
     .select()
     .from(awardWinnersTable)
     .where(
-      and(
-        inArray(awardWinnersTable.awardId, awardIds),
-        eq(awardWinnersTable.published, true),
-      ),
+      and(inArray(awardWinnersTable.awardId, awardIds), eq(awardWinnersTable.published, true)),
     );
   if (winners.length === 0) return null;
 
@@ -92,10 +89,7 @@ export async function buildAwardPoints(tenantId: number): Promise<HonourBoardOut
     .orderBy(desc(awardPointsConfigTable.season));
   if (configs.length === 0) return [];
   // award_points_config has no tenant_id — scope via the parent award.
-  const awards = await db
-    .select()
-    .from(awardsTable)
-    .where(eq(awardsTable.tenantId, tenantId));
+  const awards = await db.select().from(awardsTable).where(eq(awardsTable.tenantId, tenantId));
   const awardById = new Map(awards.map((a) => [a.id, a]));
 
   // Filter to eligible configs first (same guard as the old `for` loop's
@@ -211,12 +205,7 @@ export async function buildAwardBoards(tenantId: number): Promise<HonourBoardOut
   const winners = await db
     .select()
     .from(awardWinnersTable)
-    .where(
-      and(
-        inArray(awardWinnersTable.awardId, awardIds),
-        eq(awardWinnersTable.published, true),
-      ),
-    )
+    .where(and(inArray(awardWinnersTable.awardId, awardIds), eq(awardWinnersTable.published, true)))
     .orderBy(desc(awardWinnersTable.season), asc(awardWinnersTable.displayOrder));
   const byAward = new Map<number, typeof winners>();
   for (const w of winners) {

@@ -15,9 +15,7 @@ function fireLoad() {
 describe("ensureCardFontsLoaded", () => {
   beforeEach(() => {
     __resetCardFontsForTests();
-    document
-      .querySelectorAll('link[rel="stylesheet"]')
-      .forEach((l) => l.remove());
+    document.querySelectorAll('link[rel="stylesheet"]').forEach((l) => l.remove());
   });
 
   it("injects the decorative Google Fonts stylesheet once", async () => {

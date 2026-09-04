@@ -38,8 +38,7 @@ describe("platform-admin admin reset / bootstrap", () => {
   let tenantBId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-admin-reset";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-admin-reset";
     process.env.PLATFORM_BASE_DOMAIN = "test.ovation.app";
 
     const passwordHash = await hashPassword(PASSWORD);
@@ -93,16 +92,12 @@ describe("platform-admin admin reset / bootstrap", () => {
         .from(adminsTable)
         .where(eq(adminsTable.tenantId, t));
       for (const a of admins) {
-        await db
-          .delete(adminPasswordResetsTable)
-          .where(eq(adminPasswordResetsTable.adminId, a.id));
+        await db.delete(adminPasswordResetsTable).where(eq(adminPasswordResetsTable.adminId, a.id));
       }
       await db.delete(adminsTable).where(eq(adminsTable.tenantId, t));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, t));
     }
-    await db
-      .delete(platformAdminsTable)
-      .where(eq(platformAdminsTable.email, EMAIL));
+    await db.delete(platformAdminsTable).where(eq(platformAdminsTable.email, EMAIL));
     delete process.env.PLATFORM_BASE_DOMAIN;
   });
 
@@ -148,12 +143,7 @@ describe("platform-admin admin reset / bootstrap", () => {
     const [admin] = await db
       .select()
       .from(adminsTable)
-      .where(
-        and(
-          eq(adminsTable.tenantId, tenantAId),
-          eq(adminsTable.username, email),
-        ),
-      );
+      .where(and(eq(adminsTable.tenantId, tenantAId), eq(adminsTable.username, email)));
     expect(admin).toBeTruthy();
     // A live (unused) token row was minted for that admin.
     const resets = await db
@@ -170,12 +160,7 @@ describe("platform-admin admin reset / bootstrap", () => {
     const [before] = await db
       .select({ id: adminsTable.id })
       .from(adminsTable)
-      .where(
-        and(
-          eq(adminsTable.tenantId, tenantAId),
-          eq(adminsTable.username, email),
-        ),
-      );
+      .where(and(eq(adminsTable.tenantId, tenantAId), eq(adminsTable.username, email)));
 
     const res = await request(app)
       .post(`/api/platform/admin/tenants/${tenantAId}/admin-resets`)

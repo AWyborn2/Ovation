@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  composeCustomGrid,
-  normalizeCustomKioskToken,
-  kioskTokenMatches,
-} from "./honour-display";
+import { composeCustomGrid, normalizeCustomKioskToken, kioskTokenMatches } from "./honour-display";
 
 describe("composeCustomGrid", () => {
   const cols = [

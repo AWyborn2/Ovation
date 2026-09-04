@@ -62,9 +62,7 @@ export function WelcomeGuide() {
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary mb-1">
             <Trophy className="h-5 w-5" />
-            <span className="text-xs font-bold uppercase tracking-[0.2em]">
-              {brand.name}
-            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em]">{brand.name}</span>
           </div>
           <DialogTitle className="text-2xl">{resolveWelcomeTitle(content)}</DialogTitle>
           <DialogDescription>{resolveWelcomeBody(content)}</DialogDescription>
@@ -86,11 +84,10 @@ export function WelcomeGuide() {
           </div>
 
           <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground leading-relaxed">
-            <strong className="text-foreground/80">Good to know:</strong> stats
-            reflect what club admins have recorded after each round, so the very
-            latest games may take a little while to appear. Some older seasons
-            are still being backfilled and may be incomplete, and a few junior
-            players are kept private and hidden.
+            <strong className="text-foreground/80">Good to know:</strong> stats reflect what club
+            admins have recorded after each round, so the very latest games may take a little while
+            to appear. Some older seasons are still being backfilled and may be incomplete, and a
+            few junior players are kept private and hidden.
           </div>
         </div>
 

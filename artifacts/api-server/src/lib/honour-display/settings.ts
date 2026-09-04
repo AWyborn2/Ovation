@@ -87,9 +87,7 @@ export function kioskTokenMatches(stored: string | null, presented: unknown): bo
   }
   const caseInsensitive = KIOSK_CODE_RE.test(stored) || KIOSK_CUSTOM_RE.test(stored);
   const a = Buffer.from(caseInsensitive ? stored.toUpperCase() : stored);
-  const b = Buffer.from(
-    caseInsensitive ? presented.trim().toUpperCase() : presented,
-  );
+  const b = Buffer.from(caseInsensitive ? presented.trim().toUpperCase() : presented);
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }

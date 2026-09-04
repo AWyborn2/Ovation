@@ -1,9 +1,4 @@
-import {
-  createHash,
-  createHmac,
-  randomBytes,
-  timingSafeEqual,
-} from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Request } from "express";
 import bcrypt from "bcryptjs";
 import {
@@ -57,11 +52,7 @@ export function sessionIsCurrent(
 }
 
 function b64urlEncode(buf: Buffer): string {
-  return buf
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function b64urlDecode(s: string): Buffer {
@@ -70,9 +61,7 @@ function b64urlDecode(s: string): Buffer {
 }
 
 function sign(payload: string): string {
-  return b64urlEncode(
-    createHmac("sha256", getSessionSecret()).update(payload).digest(),
-  );
+  return b64urlEncode(createHmac("sha256", getSessionSecret()).update(payload).digest());
 }
 
 export function encodeSession(p: SessionPayload): string {
@@ -80,9 +69,7 @@ export function encodeSession(p: SessionPayload): string {
   return `${body}.${sign(body)}`;
 }
 
-export function decodeSession(
-  token: string | undefined | null,
-): SessionPayload | null {
+export function decodeSession(token: string | undefined | null): SessionPayload | null {
   if (!token) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
@@ -148,18 +135,12 @@ export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 10);
 }
 
-export async function verifyPassword(
-  plain: string,
-  hash: string,
-): Promise<boolean> {
+export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
 }
 
 export async function getAdminById(id: number): Promise<AdminRow | null> {
-  const [row] = await db
-    .select()
-    .from(adminsTable)
-    .where(eq(adminsTable.id, id));
+  const [row] = await db.select().from(adminsTable).where(eq(adminsTable.id, id));
   return row ?? null;
 }
 
@@ -172,10 +153,7 @@ export async function getAdminByUsernameForTenant(
     .select()
     .from(adminsTable)
     .where(
-      and(
-        eq(adminsTable.tenantId, tenantId),
-        eq(adminsTable.username, username.toLowerCase()),
-      ),
+      and(eq(adminsTable.tenantId, tenantId), eq(adminsTable.username, username.toLowerCase())),
     );
   return row ?? null;
 }
@@ -230,10 +208,7 @@ export function decodePlatformSession(
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   try {
     const obj = JSON.parse(b64urlDecode(body).toString("utf8"));
-    if (
-      typeof obj?.platformAdminId !== "number" ||
-      typeof obj?.issuedAt !== "number"
-    ) {
+    if (typeof obj?.platformAdminId !== "number" || typeof obj?.issuedAt !== "number") {
       return null;
     }
     if (Date.now() - obj.issuedAt > COOKIE_MAX_AGE_MS) return null;
@@ -245,19 +220,12 @@ export function decodePlatformSession(
 
 export const PLATFORM_SESSION_COOKIE = PLATFORM_COOKIE_NAME;
 
-export async function getPlatformAdminById(
-  id: number,
-): Promise<PlatformAdminRow | null> {
-  const [row] = await db
-    .select()
-    .from(platformAdminsTable)
-    .where(eq(platformAdminsTable.id, id));
+export async function getPlatformAdminById(id: number): Promise<PlatformAdminRow | null> {
+  const [row] = await db.select().from(platformAdminsTable).where(eq(platformAdminsTable.id, id));
   return row ?? null;
 }
 
-export async function getPlatformAdminByEmail(
-  email: string,
-): Promise<PlatformAdminRow | null> {
+export async function getPlatformAdminByEmail(email: string): Promise<PlatformAdminRow | null> {
   const [row] = await db
     .select()
     .from(platformAdminsTable)
@@ -335,10 +303,7 @@ export function decodeCaptainSession(
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   try {
     const obj = JSON.parse(b64urlDecode(body).toString("utf8"));
-    if (
-      typeof obj?.captainId !== "number" ||
-      typeof obj?.issuedAt !== "number"
-    ) {
+    if (typeof obj?.captainId !== "number" || typeof obj?.issuedAt !== "number") {
       return null;
     }
     if (Date.now() - obj.issuedAt > COOKIE_MAX_AGE_MS) return null;
@@ -351,10 +316,7 @@ export function decodeCaptainSession(
 export const CAPTAIN_SESSION_COOKIE = CAPTAIN_COOKIE_NAME;
 
 export async function getCaptainById(id: number): Promise<CaptainRow | null> {
-  const [row] = await db
-    .select()
-    .from(captainsTable)
-    .where(eq(captainsTable.id, id));
+  const [row] = await db.select().from(captainsTable).where(eq(captainsTable.id, id));
   return row ?? null;
 }
 
@@ -367,10 +329,7 @@ export async function getCaptainByUsername(
     .select()
     .from(captainsTable)
     .where(
-      and(
-        eq(captainsTable.tenantId, tenantId),
-        eq(captainsTable.username, username.toLowerCase()),
-      ),
+      and(eq(captainsTable.tenantId, tenantId), eq(captainsTable.username, username.toLowerCase())),
     );
   return row ?? null;
 }

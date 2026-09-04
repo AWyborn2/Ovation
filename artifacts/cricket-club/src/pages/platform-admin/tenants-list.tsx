@@ -56,17 +56,9 @@ function SortHeader({
   align?: "left" | "right";
 }) {
   const active = sort.column === column;
-  const ariaSort = active
-    ? sort.direction === "asc"
-      ? "ascending"
-      : "descending"
-    : "none";
+  const ariaSort = active ? (sort.direction === "asc" ? "ascending" : "descending") : "none";
   return (
-    <th
-      className="px-4 py-2 font-medium"
-      aria-sort={ariaSort}
-      style={{ textAlign: align }}
-    >
+    <th className="px-4 py-2 font-medium" aria-sort={ariaSort} style={{ textAlign: align }}>
       <button
         type="button"
         onClick={() => onSort(column)}
@@ -95,9 +87,7 @@ export default function TenantsList() {
 
   const tenants = useMemo(() => {
     const all = data ?? [];
-    const matched = all.filter(
-      (t) => matchesSearch(t, q) && passesHealthFilter(t, filter),
-    );
+    const matched = all.filter((t) => matchesSearch(t, q) && passesHealthFilter(t, filter));
     return sortTenants(matched, sort);
   }, [data, q, filter, sort]);
 
@@ -150,14 +140,10 @@ export default function TenantsList() {
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading tenants…
         </div>
       ) : isError ? (
-        <p className="py-16 text-center text-muted-foreground">
-          Couldn't load tenants.
-        </p>
+        <p className="py-16 text-center text-muted-foreground">Couldn't load tenants.</p>
       ) : tenants.length === 0 ? (
         <p className="py-16 text-center text-sm text-muted-foreground">
-          {q.trim()
-            ? `No tenants match “${q}”.`
-            : EMPTY_FILTER_COPY[filter]}
+          {q.trim() ? `No tenants match “${q}”.` : EMPTY_FILTER_COPY[filter]}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-md border bg-background">
@@ -170,7 +156,13 @@ export default function TenantsList() {
                 <th className="px-4 py-2 font-medium">Data source</th>
                 <th className="px-4 py-2 font-medium">Branding</th>
                 <SortHeader label="Last active" column="lastActive" sort={sort} onSort={onSort} />
-                <SortHeader label="Admins" column="admins" sort={sort} onSort={onSort} align="right" />
+                <SortHeader
+                  label="Admins"
+                  column="admins"
+                  sort={sort}
+                  onSort={onSort}
+                  align="right"
+                />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -184,14 +176,10 @@ export default function TenantsList() {
                       >
                         {t.name}
                       </Link>
-                      {t.suspendedAt ? (
-                        <StatusPill tone="danger">Suspended</StatusPill>
-                      ) : null}
+                      {t.suspendedAt ? <StatusPill tone="danger">Suspended</StatusPill> : null}
                     </div>
                     {t.centralClubName ? (
-                      <div className="text-xs text-muted-foreground">
-                        {t.centralClubName}
-                      </div>
+                      <div className="text-xs text-muted-foreground">{t.centralClubName}</div>
                     ) : null}
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">
@@ -207,15 +195,16 @@ export default function TenantsList() {
                     {t.brandingComplete ? (
                       <Check className="h-4 w-4 text-emerald-500" aria-label="Branding complete" />
                     ) : (
-                      <Minus className="h-4 w-4 text-muted-foreground" aria-label="Branding incomplete" />
+                      <Minus
+                        className="h-4 w-4 text-muted-foreground"
+                        aria-label="Branding incomplete"
+                      />
                     )}
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {formatLastActive(t.lastActiveAt)}
                   </td>
-                  <td className="px-4 py-2 text-right text-muted-foreground">
-                    {t.adminCount}
-                  </td>
+                  <td className="px-4 py-2 text-right text-muted-foreground">{t.adminCount}</td>
                 </tr>
               ))}
             </tbody>

@@ -19,10 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Pencil, Trash2, Plus, IdCard } from "lucide-react";
-import {
-  CardLayoutEditor,
-  type TemplateMode,
-} from "@/components/card-layout-editor";
+import { CardLayoutEditor, type TemplateMode } from "@/components/card-layout-editor";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
 import { usePackSelection } from "@/lib/use-pack-selection";
@@ -37,12 +34,7 @@ import {
   type CardKind,
 } from "@/lib/social-studio";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
-import {
-  renderShareCard,
-  SIZES,
-  type RenderOptions,
-  type ShareCardInput,
-} from "@/lib/share-card";
+import { renderShareCard, SIZES, type RenderOptions, type ShareCardInput } from "@/lib/share-card";
 import {
   buildPackData,
   tenantHashtag,
@@ -337,7 +329,6 @@ export default function AdminSocialStudio() {
   // and Delete on one isn't durable (the server re-creates it on next start).
   const bgTemplates = templates.filter((t) => t.source === "background");
 
-
   return (
     <div className="space-y-8">
       {/* Two independent error sources, one banner. `packs.error` was
@@ -356,18 +347,16 @@ export default function AdminSocialStudio() {
       )}
 
       <p className="text-sm text-muted-foreground">
-        Design every kind of share card from one place. Edit a card type's
-        built-in layout, or build named templates you can assign to one or many
-        card types — and set one as the default for a type so it's applied
-        automatically everywhere that card is shared.
+        Design every kind of share card from one place. Edit a card type's built-in layout, or build
+        named templates you can assign to one or many card types — and set one as the default for a
+        type so it's applied automatically everywhere that card is shared.
       </p>
 
       {/* Design packs — the bulk path, met before the per-kind selectors */}
       <DesignPacksSection
         selection={packs}
         previewInput={
-          galleryInputByKind.get("matchSummary") ??
-          sampleCardInput("matchSummary", galleryClubName)
+          galleryInputByKind.get("matchSummary") ?? sampleCardInput("matchSummary", galleryClubName)
         }
         previewData={galleryDataByKind.get("matchSummary") ?? null}
         theme={galleryTheme}
@@ -383,82 +372,76 @@ export default function AdminSocialStudio() {
             return (
               <PackPreviewTile
                 key={kind}
-                input={
-                  galleryInputByKind.get(kind) ??
-                  sampleCardInput(kind, galleryClubName)
-                }
+                input={galleryInputByKind.get(kind) ?? sampleCardInput(kind, galleryClubName)}
                 theme={galleryTheme}
                 data={galleryDataByKind.get(kind) ?? null}
                 packId={packs.packIdByKind.get(kind) ?? null}
               >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-sm font-medium">{o.label}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <select
-                      aria-label={`Design pack for ${o.label}`}
-                      className="h-7 w-full min-w-0 rounded-md border bg-background px-1 text-[11px]"
-                      // No claim and an explicit default-pack claim render the
-                      // same card, so both present as the leading "" option —
-                      // otherwise an explicit default claim holds a value that
-                      // the filtered option list no longer contains and the
-                      // control goes blank.
-                      value={
-                        (packs.packIdByKind.get(kind) ?? DEFAULT_PACK_ID) ===
-                        DEFAULT_PACK_ID
-                          ? ""
-                          : packs.packIdByKind.get(kind)!
-                      }
-                      // Gate on ANY in-flight pack write, not just this kind's.
-                      // Every kind of a pack claims through the same canonical
-                      // row and the PATCH replaces the whole array, so a second
-                      // selection made against the pre-write cache would drop
-                      // the first claim.
-                      disabled={packs.busy}
-                      onChange={(e) => packs.selectPack(kind, e.target.value)}
-                    >
-                      {/* Explicit leading option: without it a kind with no
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-sm font-medium">{o.label}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <select
+                    aria-label={`Design pack for ${o.label}`}
+                    className="h-7 w-full min-w-0 rounded-md border bg-background px-1 text-[11px]"
+                    // No claim and an explicit default-pack claim render the
+                    // same card, so both present as the leading "" option —
+                    // otherwise an explicit default claim holds a value that
+                    // the filtered option list no longer contains and the
+                    // control goes blank.
+                    value={
+                      (packs.packIdByKind.get(kind) ?? DEFAULT_PACK_ID) === DEFAULT_PACK_ID
+                        ? ""
+                        : packs.packIdByKind.get(kind)!
+                    }
+                    // Gate on ANY in-flight pack write, not just this kind's.
+                    // Every kind of a pack claims through the same canonical
+                    // row and the PATCH replaces the whole array, so a second
+                    // selection made against the pre-write cache would drop
+                    // the first claim.
+                    disabled={packs.busy}
+                    onChange={(e) => packs.selectPack(kind, e.target.value)}
+                  >
+                    {/* Explicit leading option: without it a kind with no
                           claim holds a value absent from the option list and
                           the control renders blank. */}
-                      <option value="">{DEFAULT_PACK_NAME} (default)</option>
-                      {/* The default pack already has the leading option above;
+                    <option value="">{DEFAULT_PACK_NAME} (default)</option>
+                    {/* The default pack already has the leading option above;
                           it is also registered and covers every kind, so mapping
                           it again would list it twice under two values that
                           apply the same pack. */}
-                      {(packs.selectablePacksByKind.get(kind) ?? [])
-                        .filter((p) => p !== DEFAULT_PACK_ID)
-                        .map((p) => (
-                          <option key={p} value={p}>
-                            {packName(p)}
-                          </option>
-                        ))}
-                    </select>
-                    {packs.pendingKind === kind && (
-                      <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
-                  {def && (
-                    // A "layers" template makes the card bypass the pack
-                    // entirely, so the selector above it is not what ships —
-                    // say so, rather than captioning it as a plain default.
-                    <p className="truncate text-[11px] text-muted-foreground">
-                      {def.source === "layers"
-                        ? `Overridden by template: ${def.name}`
-                        : `Default template: ${def.name}`}
-                    </p>
+                    {(packs.selectablePacksByKind.get(kind) ?? [])
+                      .filter((p) => p !== DEFAULT_PACK_ID)
+                      .map((p) => (
+                        <option key={p} value={p}>
+                          {packName(p)}
+                        </option>
+                      ))}
+                  </select>
+                  {packs.pendingKind === kind && (
+                    <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
                   )}
-                  <div className="flex flex-wrap gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs"
-                      onClick={() =>
-                        setEditing({ mode: "template-new", baseKind: kind })
-                      }
-                    >
-                      <Plus className="mr-1 h-3 w-3" /> Template
-                    </Button>
-                  </div>
+                </div>
+                {def && (
+                  // A "layers" template makes the card bypass the pack
+                  // entirely, so the selector above it is not what ships —
+                  // say so, rather than captioning it as a plain default.
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {def.source === "layers"
+                      ? `Overridden by template: ${def.name}`
+                      : `Default template: ${def.name}`}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => setEditing({ mode: "template-new", baseKind: kind })}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Template
+                  </Button>
+                </div>
               </PackPreviewTile>
             );
           })}
@@ -483,9 +466,7 @@ export default function AdminSocialStudio() {
             </select>
             <Button
               size="sm"
-              onClick={() =>
-                setEditing({ mode: "template-new", baseKind: newBaseKind })
-              }
+              onClick={() => setEditing({ mode: "template-new", baseKind: newBaseKind })}
             >
               <Plus className="mr-1 h-3.5 w-3.5" /> New template
             </Button>
@@ -494,8 +475,8 @@ export default function AdminSocialStudio() {
 
         {layerTemplates.length === 0 ? (
           <p className="rounded border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-            No templates yet. Build one with the layer editor, then assign it to
-            card types and pick a default.
+            No templates yet. Build one with the layer editor, then assign it to card types and pick
+            a default.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -509,9 +490,7 @@ export default function AdminSocialStudio() {
                     layout={t.layers ?? []}
                   />
                   <CardContent className="space-y-2 p-3">
-                    <span className="block truncate text-sm font-medium">
-                      {t.name}
-                    </span>
+                    <span className="block truncate text-sm font-medium">{t.name}</span>
                     <div className="flex flex-wrap gap-1">
                       {(t.cardKinds?.length ?? 0) === 0 ? (
                         <Badge variant="outline" className="text-[10px]">
@@ -521,11 +500,7 @@ export default function AdminSocialStudio() {
                         t.cardKinds.map((k) => (
                           <Badge
                             key={k}
-                            variant={
-                              t.defaultForKinds?.includes(k)
-                                ? "default"
-                                : "outline"
-                            }
+                            variant={t.defaultForKinds?.includes(k) ? "default" : "outline"}
                             className="text-[10px]"
                           >
                             {kindLabel(k)}
@@ -539,9 +514,7 @@ export default function AdminSocialStudio() {
                         size="sm"
                         variant="outline"
                         className="h-7 flex-1 text-xs"
-                        onClick={() =>
-                          setEditing({ mode: "template-edit", template: t })
-                        }
+                        onClick={() => setEditing({ mode: "template-edit", template: t })}
                       >
                         <Pencil className="mr-1 h-3 w-3" /> Edit
                       </Button>
@@ -582,15 +555,11 @@ export default function AdminSocialStudio() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-xs text-muted-foreground">
-                        No background
-                      </span>
+                      <span className="text-xs text-muted-foreground">No background</span>
                     )}
                   </div>
                   <CardContent className="space-y-2 p-3">
-                    <span className="block truncate text-sm font-medium">
-                      {t.name}
-                    </span>
+                    <span className="block truncate text-sm font-medium">{t.name}</span>
                     <div className="flex flex-wrap gap-1">
                       {(t.cardKinds?.length ?? 0) === 0 ? (
                         <Badge variant="outline" className="text-[10px]">
@@ -600,11 +569,7 @@ export default function AdminSocialStudio() {
                         t.cardKinds.map((k) => (
                           <Badge
                             key={k}
-                            variant={
-                              t.defaultForKinds?.includes(k)
-                                ? "default"
-                                : "outline"
-                            }
+                            variant={t.defaultForKinds?.includes(k) ? "default" : "outline"}
                             className="text-[10px]"
                           >
                             {kindLabel(k)}
@@ -640,8 +605,8 @@ export default function AdminSocialStudio() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Choose which stats and awards appear on collectible player trading
-              cards, with optional per-role overrides.
+              Choose which stats and awards appear on collectible player trading cards, with
+              optional per-role overrides.
             </p>
             <Link href="/admin/social/trading-cards">
               <Button size="sm" variant="outline">
@@ -666,4 +631,3 @@ export default function AdminSocialStudio() {
     </div>
   );
 }
-

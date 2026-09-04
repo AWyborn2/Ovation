@@ -16,7 +16,10 @@ import { centralDb, centralPremiersTable } from "@workspace/db/central";
 import { appGradeFromCentral } from "@workspace/db/central-queries";
 
 const arg = (n: string): string | undefined =>
-  process.argv.slice(2).find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+  process.argv
+    .slice(2)
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.slice(n.length + 3);
 
 const seasonStartYear = (s: string | null): number => {
   const m = s ? /(\d{4})/.exec(s) : null;
@@ -47,12 +50,11 @@ async function main(): Promise<void> {
     competition: p.grade ?? p.format ?? "",
     venue: p.venue ?? null,
     matchDate: p.matchDate ?? null,
-    result: p.opponent ? `def ${p.opponent}` : p.note ?? "Premiers",
+    result: p.opponent ? `def ${p.opponent}` : (p.note ?? "Premiers"),
     mom: null as string | null,
     notes:
-      [p.note, p.confidence ? `confidence: ${p.confidence}` : null]
-        .filter(Boolean)
-        .join(" · ") || null,
+      [p.note, p.confidence ? `confidence: ${p.confidence}` : null].filter(Boolean).join(" · ") ||
+      null,
   }));
 
   // Full replace for this tenant (tenant-scoped delete keeps other tenants safe).

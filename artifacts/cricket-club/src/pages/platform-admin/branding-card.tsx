@@ -118,9 +118,7 @@ export function seedPersistedFromTenant(
  * the neutral defaults so the `<input type="color">` swatches stay valid.
  */
 export function seedColourState(persisted: PersistedBrandFields): ColourEdits {
-  const accent = snapHexToAccentToken(
-    persisted.primaryColour ?? persisted.backgroundColour,
-  );
+  const accent = snapHexToAccentToken(persisted.primaryColour ?? persisted.backgroundColour);
   return {
     accent,
     hexPrimary: persisted.backgroundColour ?? (DEFAULT_BRAND.backgroundColour as string),
@@ -237,9 +235,7 @@ export function suggestionFromPalette(palette: ExtractedPalette): {
       note: "Couldn't detect a colour from this logo — pick the colours below.",
     };
   }
-  const accent = snapHexToAccentToken(
-    palette.primaryColour ?? palette.backgroundColour,
-  );
+  const accent = snapHexToAccentToken(palette.primaryColour ?? palette.backgroundColour);
   return {
     accent,
     note: `Suggested the ${ACCENT_LABELS[accent].toLowerCase()} accent from the logo — change it below if it doesn't feel right.`,
@@ -252,13 +248,7 @@ export function suggestionFromPalette(palette: ExtractedPalette): {
  * accent picker, and card-scoped live preview — plus an advanced exact-colour
  * mode (hex / RGB / Pantone) the platform PATCH schema allows.
  */
-export function BrandingCard({
-  tenantId,
-  tenant,
-}: {
-  tenantId: number;
-  tenant: AdminTenant;
-}) {
+export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: AdminTenant }) {
   const qc = useQueryClient();
   const { mode } = useThemeMode();
 
@@ -279,9 +269,9 @@ export function BrandingCard({
   );
   // Full per-token overrides — the premium "custom design" offering. Only
   // customised keys are present; an empty map saves as null (fully-derived theme).
-  const [overrides, setOverrides] = useState<Record<string, string>>(
-    { ...(tenant.themeOverrides ?? {}) },
-  );
+  const [overrides, setOverrides] = useState<Record<string, string>>({
+    ...(tenant.themeOverrides ?? {}),
+  });
   const [customDesignOpen, setCustomDesignOpen] = useState<boolean>(
     Object.keys(tenant.themeOverrides ?? {}).length > 0,
   );
@@ -424,8 +414,7 @@ export function BrandingCard({
           primaryColour: colours.hexSecondary,
           juniorsColour: colours.hexTertiary,
         };
-  const overridesPayload =
-    Object.keys(overrides).length > 0 ? overrides : null;
+  const overridesPayload = Object.keys(overrides).length > 0 ? overrides : null;
   const previewBrand: ClubBrand = {
     name: name || tenant.name,
     shortName: shortName || null,
@@ -438,12 +427,8 @@ export function BrandingCard({
 
   // Derived scale WITHOUT overrides — seeds each token picker with the value it
   // replaces so "custom" starts from the current auto colour.
-  const autoTokens = deriveThemeTokens(
-    { ...previewBrand, themeOverrides: undefined },
-    mode,
-  );
-  const autoHex = (key: string): string =>
-    hslTripletToHex(autoTokens[key]) ?? "#334155";
+  const autoTokens = deriveThemeTokens({ ...previewBrand, themeOverrides: undefined }, mode);
+  const autoHex = (key: string): string => hslTripletToHex(autoTokens[key]) ?? "#334155";
 
   const warning = contrastWarningMessage(
     colourMode === "token"
@@ -538,11 +523,7 @@ export function BrandingCard({
 
             <div className="space-y-2">
               <Label>Badge style</Label>
-              <div
-                className="flex flex-wrap gap-3"
-                role="radiogroup"
-                aria-label="Badge style"
-              >
+              <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Badge style">
                 {BADGE_STYLE_ORDER.map((style) => (
                   <button
                     key={style}
@@ -590,15 +571,9 @@ export function BrandingCard({
                 />
                 <span>Use standard navy background</span>
               </label>
-              {colourNote && (
-                <p className="text-sm text-muted-foreground">{colourNote}</p>
-              )}
+              {colourNote && <p className="text-sm text-muted-foreground">{colourNote}</p>}
               {colourMode === "token" ? (
-                <div
-                  className="flex flex-wrap gap-3"
-                  role="radiogroup"
-                  aria-label="Accent colour"
-                >
+                <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent colour">
                   {ACCENT_ORDER.map((token) => (
                     <button
                       key={token}
@@ -618,9 +593,7 @@ export function BrandingCard({
                         className="flex h-9 w-9 items-center justify-center rounded-full"
                         style={{ backgroundColor: ACCENT_HEX[token] }}
                       >
-                        {colours.accent === token && (
-                          <Check className="h-4 w-4 text-[#0B0F1A]" />
-                        )}
+                        {colours.accent === token && <Check className="h-4 w-4 text-[#0B0F1A]" />}
                       </span>
                       <span className="text-xs font-medium">{ACCENT_LABELS[token]}</span>
                     </button>
@@ -655,7 +628,10 @@ export function BrandingCard({
                 </div>
               )}
               {warning && (
-                <p className="text-sm text-amber-600 dark:text-amber-500" data-testid="text-contrast-warning">
+                <p
+                  className="text-sm text-amber-600 dark:text-amber-500"
+                  data-testid="text-contrast-warning"
+                >
                   {warning}
                 </p>
               )}
@@ -674,8 +650,8 @@ export function BrandingCard({
                     Custom design (full token control)
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    Premium concierge offering — override any of the theme's tokens
-                    individually. Each stays on its derived value until set.
+                    Premium concierge offering — override any of the theme's tokens individually.
+                    Each stays on its derived value until set.
                   </span>
                 </span>
                 <span className="shrink-0 text-sm text-muted-foreground">
@@ -699,9 +675,7 @@ export function BrandingCard({
                               key={key}
                               className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5"
                             >
-                              <span className="truncate text-xs">
-                                {TOKEN_LABELS[key]}
-                              </span>
+                              <span className="truncate text-xs">{TOKEN_LABELS[key]}</span>
                               <div className="flex shrink-0 items-center gap-1.5">
                                 <input
                                   type="color"
@@ -722,9 +696,7 @@ export function BrandingCard({
                                     Auto
                                   </button>
                                 ) : (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    Auto
-                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">Auto</span>
                                 )}
                               </div>
                             </div>
@@ -763,9 +735,7 @@ export function BrandingCard({
                         onChange={(e) =>
                           setOverrideKey(
                             "--app-font-sans",
-                            e.target.value === DEFAULT_FONT_SANS
-                              ? null
-                              : e.target.value,
+                            e.target.value === DEFAULT_FONT_SANS ? null : e.target.value,
                           )
                         }
                         disabled={busy}
@@ -831,8 +801,8 @@ export function BrandingCard({
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              This preview is scoped to this card only — it doesn't change the rest of
-              the platform console while you're editing.
+              This preview is scoped to this card only — it doesn't change the rest of the platform
+              console while you're editing.
             </p>
           </div>
         </form>

@@ -156,9 +156,7 @@ function ctx(over: Partial<MatchMilestoneContext> = {}): MatchMilestoneContext {
 }
 
 const debutEvents = () =>
-  h.state.inserts.filter(
-    (i) => i.table === "milestone_events" && i.values.boardKey === "debut",
-  );
+  h.state.inserts.filter((i) => i.table === "milestone_events" && i.values.boardKey === "debut");
 const debutDrafts = () =>
   h.state.inserts.filter(
     (i) =>
@@ -251,9 +249,7 @@ describe("debut detection gate", () => {
   });
 
   it("does not fire for a player who already has games in the grade", async () => {
-    await detectAndQueueMatchMilestones(
-      ctx({ gradeGamesBefore: new Map([[DEBUTANT, 34]]) }),
-    );
+    await detectAndQueueMatchMilestones(ctx({ gradeGamesBefore: new Map([[DEBUTANT, 34]]) }));
     expect(debutEvents()).toHaveLength(0);
   });
 

@@ -46,11 +46,7 @@ export function resolveThrottleMs(raw: string | undefined): number {
  * Pure over the module-level guard map plus its args, so the throttle is
  * unit-testable without a database.
  */
-export function claimActivityWindow(
-  tenantId: number,
-  nowMs: number,
-  throttleMs: number,
-): boolean {
+export function claimActivityWindow(tenantId: number, nowMs: number, throttleMs: number): boolean {
   const last = lastWriteByTenant.get(tenantId);
   if (last !== undefined && nowMs - last < throttleMs) return false;
   lastWriteByTenant.set(tenantId, nowMs);

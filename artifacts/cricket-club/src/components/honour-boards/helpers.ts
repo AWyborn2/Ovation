@@ -11,7 +11,11 @@ export function formatMatchDate(d: string | null): string | null {
   if (m) {
     const parsed = new Date(`${m[1]} ${m[2]} ${m[3]}`);
     if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+      return parsed.toLocaleDateString("en-AU", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
     }
   }
   return d;

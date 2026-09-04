@@ -137,7 +137,10 @@ async function main() {
     await tx.execute(sql`
       DELETE FROM cap_register
       WHERE category = 'male'
-        AND cap_number IN (${sql.join(capsToDelete.map((n) => sql`${n}`), sql`, `)})
+        AND cap_number IN (${sql.join(
+          capsToDelete.map((n) => sql`${n}`),
+          sql`, `,
+        )})
     `);
 
     // 7) Recompute all derived tables from the snapshot source of truth.
@@ -153,7 +156,10 @@ async function main() {
           (SELECT games FROM player_grade_stats g
            WHERE g.grade = 'A Grade' AND g.player_id = c.player_id), 0) > 0
       WHERE c.category = 'male'
-        AND c.player_id IN (${sql.join(SYNC_CAP_PLAYER_IDS.map((i) => sql`${i}`), sql`, `)})
+        AND c.player_id IN (${sql.join(
+          SYNC_CAP_PLAYER_IDS.map((i) => sql`${i}`),
+          sql`, `,
+        )})
     `);
 
     // 9) Delete the now-redundant duplicate player records. Safe: their
@@ -162,7 +168,10 @@ async function main() {
     const dupPlayers = MERGES.map((m) => m.duplicate);
     await tx.execute(sql`
       DELETE FROM players
-      WHERE id IN (${sql.join(dupPlayers.map((i) => sql`${i}`), sql`, `)})
+      WHERE id IN (${sql.join(
+        dupPlayers.map((i) => sql`${i}`),
+        sql`, `,
+      )})
     `);
 
     // 10) Audit row.
@@ -314,7 +323,9 @@ async function verify() {
     )
   `);
   if (gaps.rows.length > 0) {
-    throw new Error(`Gaps in male cap numbers: ${gaps.rows.map((r) => (r as { missing: number }).missing).join(", ")}`);
+    throw new Error(
+      `Gaps in male cap numbers: ${gaps.rows.map((r) => (r as { missing: number }).missing).join(", ")}`,
+    );
   }
   console.log("  No gaps in male cap numbers: OK");
 
@@ -330,7 +341,15 @@ async function verify() {
 
   // 4) Each consolidated person appears once with the right A Grade games.
   const expectAGames: Record<number, number> = {
-    28: 10, 91: 51, 46: 128, 312: 18, 159: 10, 285: 23, 415: 12, 82: 68, 188: 22,
+    28: 10,
+    91: 51,
+    46: 128,
+    312: 18,
+    159: 10,
+    285: 23,
+    415: 12,
+    82: 68,
+    188: 22,
   };
   const capRows = await db.execute(sql`
     SELECT c.cap_number, c.player_id, c.name, c.in_stats, c.games_a_grade,
@@ -344,8 +363,12 @@ async function verify() {
     ORDER BY c.player_id
   `);
   for (const r of capRows.rows as Array<{
-    cap_number: number; player_id: number; name: string;
-    in_stats: boolean; games_a_grade: number; stat_games: number;
+    cap_number: number;
+    player_id: number;
+    name: string;
+    in_stats: boolean;
+    games_a_grade: number;
+    stat_games: number;
   }>) {
     const exp = expectAGames[r.player_id];
     const ok = Number(r.games_a_grade) === exp && Number(r.stat_games) === exp && r.in_stats;
@@ -376,7 +399,9 @@ async function verify() {
            (SELECT total_games FROM players WHERE id=248) AS total_games
   `);
   const s = sam.rows[0] as { a_rows: number; caps: number; total_games: number };
-  console.log(`  Samuel Evans (248): A rows=${s.a_rows} male caps=${s.caps} total_games=${s.total_games}`);
+  console.log(
+    `  Samuel Evans (248): A rows=${s.a_rows} male caps=${s.caps} total_games=${s.total_games}`,
+  );
   if (Number(s.a_rows) !== 0 || Number(s.caps) !== 0) {
     throw new Error("Samuel Evans still has an A Grade stat row or cap.");
   }

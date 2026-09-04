@@ -30,9 +30,7 @@ describe("junior office bearers CRUD (integration)", () => {
 
   afterAll(async () => {
     for (const id of createdIds) {
-      await db
-        .delete(juniorOfficeBearersTable)
-        .where(eq(juniorOfficeBearersTable.id, id));
+      await db.delete(juniorOfficeBearersTable).where(eq(juniorOfficeBearersTable.id, id));
     }
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   });
@@ -69,17 +67,11 @@ describe("junior office bearers CRUD (integration)", () => {
       .get("/api/juniors/office-bearers/all")
       .set("Cookie", adminCookie)
       .expect(200);
-    expect(
-      (allRes.body as Array<{ id: number }>).some((r) => r.id === id),
-    ).toBe(true);
+    expect((allRes.body as Array<{ id: number }>).some((r) => r.id === id)).toBe(true);
 
     // Public list excludes the unpublished row.
-    const publicBefore = await request(app)
-      .get("/api/juniors/office-bearers")
-      .expect(200);
-    expect(
-      (publicBefore.body as Array<{ id: number }>).some((r) => r.id === id),
-    ).toBe(false);
+    const publicBefore = await request(app).get("/api/juniors/office-bearers").expect(200);
+    expect((publicBefore.body as Array<{ id: number }>).some((r) => r.id === id)).toBe(false);
 
     // Publish + unlink the participant.
     const patchRes = await request(app)
@@ -91,12 +83,8 @@ describe("junior office bearers CRUD (integration)", () => {
     expect(patchRes.body.participantId).toBeNull();
 
     // Public list now includes it.
-    const publicAfter = await request(app)
-      .get("/api/juniors/office-bearers")
-      .expect(200);
-    expect(
-      (publicAfter.body as Array<{ id: number }>).some((r) => r.id === id),
-    ).toBe(true);
+    const publicAfter = await request(app).get("/api/juniors/office-bearers").expect(200);
+    expect((publicAfter.body as Array<{ id: number }>).some((r) => r.id === id)).toBe(true);
 
     // Delete it.
     await request(app)
@@ -109,8 +97,6 @@ describe("junior office bearers CRUD (integration)", () => {
       .get("/api/juniors/office-bearers/all")
       .set("Cookie", adminCookie)
       .expect(200);
-    expect(
-      (allAfter.body as Array<{ id: number }>).some((r) => r.id === id),
-    ).toBe(false);
+    expect((allAfter.body as Array<{ id: number }>).some((r) => r.id === id)).toBe(false);
   });
 });

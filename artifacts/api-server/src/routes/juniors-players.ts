@@ -22,11 +22,7 @@ import {
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { isCentralTenant } from "../lib/tenant";
-import {
-  BALLS_PER_OVER,
-  oversToBalls,
-  ballsToOvers,
-} from "../lib/junior-cricket";
+import { BALLS_PER_OVER, oversToBalls, ballsToOvers } from "../lib/junior-cricket";
 import { rosterGamesByParticipant } from "../lib/junior-leaderboards";
 
 /**
@@ -135,10 +131,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
         runs: sql<number>`coalesce(sum(${juniorMatchBattingTable.runs}),0)::int`,
       })
       .from(juniorMatchBattingTable)
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-      )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(and(...battingAggConds))
       .groupBy(juniorMatchBattingTable.participantId),
     db
@@ -147,10 +140,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
         wickets: sql<number>`coalesce(sum(${juniorMatchBowlingTable.wickets}),0)::int`,
       })
       .from(juniorMatchBowlingTable)
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-      )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(...bowlingAggConds))
       .groupBy(juniorMatchBowlingTable.participantId),
     rosterGamesByParticipant({ season, ageGroup }),
@@ -184,48 +174,45 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
 // only; this endpoint returns identities, never any figure, so junior and
 // senior stats stay completely separate.
 // ---------------------------------------------------------------------------
-router.get(
-  "/juniors/players/by-senior/:playerId",
-  async (req, res): Promise<void> => {
-    const params = ListJuniorPlayersBySeniorParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
-      return;
-    }
+router.get("/juniors/players/by-senior/:playerId", async (req, res): Promise<void> => {
+  const params = ListJuniorPlayersBySeniorParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
 
-    // Central tenants have no native junior participants — empty list, no leak.
-    if (await isCentralTenant(req)) {
-      res.json([]);
-      return;
-    }
+  // Central tenants have no native junior participants — empty list, no leak.
+  if (await isCentralTenant(req)) {
+    res.json([]);
+    return;
+  }
 
-    const rows = await db
-      .select({
-        participantId: juniorParticipantsTable.participantId,
-        displayName: juniorParticipantsTable.displayName,
-        firstSeason: juniorParticipantsTable.firstSeason,
-        lastSeason: juniorParticipantsTable.lastSeason,
-      })
-      .from(juniorParticipantsTable)
-      .where(
-        and(
-          eq(juniorParticipantsTable.seniorPlayerId, params.data.playerId),
-          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-          eq(juniorParticipantsTable.isPrivate, false),
-        ),
-      )
-      .orderBy(juniorParticipantsTable.displayName);
+  const rows = await db
+    .select({
+      participantId: juniorParticipantsTable.participantId,
+      displayName: juniorParticipantsTable.displayName,
+      firstSeason: juniorParticipantsTable.firstSeason,
+      lastSeason: juniorParticipantsTable.lastSeason,
+    })
+    .from(juniorParticipantsTable)
+    .where(
+      and(
+        eq(juniorParticipantsTable.seniorPlayerId, params.data.playerId),
+        eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+        eq(juniorParticipantsTable.isPrivate, false),
+      ),
+    )
+    .orderBy(juniorParticipantsTable.displayName);
 
-    res.json(
-      rows.map((r) => ({
-        participantId: r.participantId,
-        displayName: r.displayName ?? "",
-        firstSeason: r.firstSeason,
-        lastSeason: r.lastSeason,
-      })),
-    );
-  },
-);
+  res.json(
+    rows.map((r) => ({
+      participantId: r.participantId,
+      displayName: r.displayName ?? "",
+      firstSeason: r.firstSeason,
+      lastSeason: r.lastSeason,
+    })),
+  );
+});
 
 // ---------------------------------------------------------------------------
 // PUT /juniors/participants/{id}/senior-link (admin)
@@ -397,10 +384,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
       match: juniorMatchesTable,
     })
     .from(juniorMatchBattingTable)
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(
       and(
         eq(juniorMatchBattingTable.participantId, pid),
@@ -413,10 +397,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
       match: juniorMatchesTable,
     })
     .from(juniorMatchBowlingTable)
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(
       and(
         eq(juniorMatchBowlingTable.participantId, pid),
@@ -426,10 +407,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
   const rosterRows = await db
     .select({ match: juniorMatchesTable })
     .from(juniorMatchRostersTable)
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId))
     .where(
       and(
         eq(juniorMatchRostersTable.participantId, pid),
@@ -450,8 +428,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     fours += line.fours ?? 0;
     sixes += line.sixes ?? 0;
     if (isNotOut(line.dismissal)) notOuts += 1;
-    if (line.runs != null && (highScore == null || line.runs > highScore))
-      highScore = line.runs;
+    if (line.runs != null && (highScore == null || line.runs > highScore)) highScore = line.runs;
   }
   const battingInnings = battingRows.length;
   const outs = battingInnings - notOuts;
@@ -498,10 +475,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     wickets: bWickets,
     bestWickets,
     bestRuns,
-    economy:
-      bBalls > 0
-        ? Math.round((bRuns / (bBalls / BALLS_PER_OVER)) * 100) / 100
-        : null,
+    economy: bBalls > 0 ? Math.round((bRuns / (bBalls / BALLS_PER_OVER)) * 100) / 100 : null,
   };
 
   // Per-match lines (batting + bowling merged by match), newest season first.

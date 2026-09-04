@@ -13,8 +13,7 @@ export type TemplateFieldDef = {
   type: "text" | "photo";
 };
 
-const seasonLabel = (year: number) =>
-  `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
+const seasonLabel = (year: number) => `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
 
 // Fields common to every card kind (resolved from render options / club config).
 export const COMMON_FIELDS: TemplateFieldDef[] = [
@@ -227,8 +226,7 @@ export const templateAppliesToKind = (
   template: Pick<CardTemplate, "cardKinds" | "isActive">,
   kind: CardKind,
 ): boolean =>
-  template.isActive &&
-  (template.cardKinds.length === 0 || template.cardKinds.includes(kind));
+  template.isActive && (template.cardKinds.length === 0 || template.cardKinds.includes(kind));
 
 const isPackRow = (t: CardTemplate): boolean => t.source === "pack";
 
@@ -245,13 +243,9 @@ const findDefaultRow = (
   matchesSource: (t: CardTemplate) => boolean,
 ): CardTemplate | null => {
   if (!templates?.length) return null;
-  const rows = templates.filter(
-    (t) => matchesSource(t) && templateAppliesToKind(t, kind),
-  );
+  const rows = templates.filter((t) => matchesSource(t) && templateAppliesToKind(t, kind));
   return (
-    rows.find((t) => t.defaultForKinds?.includes(kind)) ??
-    rows.find((t) => t.isDefault) ??
-    null
+    rows.find((t) => t.defaultForKinds?.includes(kind)) ?? rows.find((t) => t.isDefault) ?? null
   );
 };
 
@@ -419,7 +413,7 @@ export const resolveTextField = (
     case "hashtag":
       return ctx.hashtag ?? "";
     case "headline":
-      return "headline" in input ? input.headline ?? "" : "";
+      return "headline" in input ? (input.headline ?? "") : "";
   }
 
   switch (input.kind) {
@@ -615,10 +609,7 @@ export const resolveTextField = (
 
 // Resolve the photo URL for a photo slot: explicit context override wins,
 // otherwise the input's own baked photo.
-export const resolvePhotoField = (
-  input: ShareCardInput,
-  ctx: TemplateContext,
-): string | null => {
+export const resolvePhotoField = (input: ShareCardInput, ctx: TemplateContext): string | null => {
   if (ctx.photoUrl !== undefined) return ctx.photoUrl;
-  return "photoUrl" in input ? input.photoUrl ?? null : null;
+  return "photoUrl" in input ? (input.photoUrl ?? null) : null;
 };

@@ -71,8 +71,7 @@ function findPackCardMounts(source: string): Array<{ line: number; tag: string }
   return out;
 }
 
-const hasDataProp = (tag: string): boolean =>
-  /\bdata\s*=/.test(tag) || /\{\s*\.\.\./.test(tag);
+const hasDataProp = (tag: string): boolean => /\bdata\s*=/.test(tag) || /\{\s*\.\.\./.test(tag);
 
 describe("PackCard mounts pass tenant data (R7)", () => {
   const files = walk(SRC);
@@ -80,9 +79,7 @@ describe("PackCard mounts pass tenant data (R7)", () => {
   // The scan is only as trustworthy as its matcher, so prove the matcher
   // before trusting a green result from it.
   it("detects an unwired mount (negative control)", () => {
-    const mounts = findPackCardMounts(
-      `<PackCard input={i} size={s} sponsorsOn junior={false} />`,
-    );
+    const mounts = findPackCardMounts(`<PackCard input={i} size={s} sponsorsOn junior={false} />`);
     expect(mounts).toHaveLength(1);
     expect(hasDataProp(mounts[0].tag)).toBe(false);
   });
@@ -107,10 +104,7 @@ describe("PackCard mounts pass tenant data (R7)", () => {
   it("finds the PackCard mounts it is meant to be guarding", () => {
     // Guard the guard: if a refactor renames the component or moves the
     // mounts, a silently-zero-match scan would pass forever.
-    const total = files.reduce(
-      (n, f) => n + findPackCardMounts(readFileSync(f, "utf8")).length,
-      0,
-    );
+    const total = files.reduce((n, f) => n + findPackCardMounts(readFileSync(f, "utf8")).length, 0);
     expect(total).toBeGreaterThanOrEqual(4);
   });
 

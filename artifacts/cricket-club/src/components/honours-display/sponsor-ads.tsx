@@ -14,12 +14,7 @@ export function SponsorStrip({ sponsors }: { sponsors: Sponsor[] }) {
       <span className="hb-sponsor-strip-label">Proudly supported by</span>
       <div className="hb-sponsor-strip-logos">
         {sponsors.map((s) => (
-          <img
-            key={s.id}
-            className="hb-sponsor-strip-logo"
-            src={s.logoUrl}
-            alt={s.name}
-          />
+          <img key={s.id} className="hb-sponsor-strip-logo" src={s.logoUrl} alt={s.name} />
         ))}
       </div>
     </div>
@@ -30,13 +25,7 @@ export function SponsorStrip({ sponsors }: { sponsors: Sponsor[] }) {
  * Full-screen sponsor slide rotated in between honour boards. Shows the club
  * crest, a thank-you heading and a grid of every active sponsor logo.
  */
-export function SponsorSlide({
-  sponsors,
-  brand,
-}: {
-  sponsors: Sponsor[];
-  brand: HonourBrand;
-}) {
+export function SponsorSlide({ sponsors, brand }: { sponsors: Sponsor[]; brand: HonourBrand }) {
   return (
     <div className="hb-sponsor-slide">
       <div className="hb-sponsor-slide-head">
@@ -44,9 +33,7 @@ export function SponsorSlide({
           <img className="hb-sponsor-slide-crest" src={brand.logoUrl} alt="" />
         ) : null}
         <div className="hb-sponsor-slide-title">Our Proud Sponsors</div>
-        <div className="hb-sponsor-slide-sub">
-          Thank you for supporting {brand.name}
-        </div>
+        <div className="hb-sponsor-slide-sub">Thank you for supporting {brand.name}</div>
       </div>
       <div className="hb-sponsor-slide-grid">
         {sponsors.map((s) => (
@@ -63,13 +50,7 @@ export function SponsorSlide({
  * Full-screen slide featuring a SINGLE sponsor large (used when the admin picks
  * the "one sponsor per slide" rotation style instead of the all-sponsors grid).
  */
-export function SponsorSlideSingle({
-  sponsor,
-  brand,
-}: {
-  sponsor: Sponsor;
-  brand: HonourBrand;
-}) {
+export function SponsorSlideSingle({ sponsor, brand }: { sponsor: Sponsor; brand: HonourBrand }) {
   return (
     <div className="hb-sponsor-slide">
       <div className="hb-sponsor-slide-head">
@@ -94,24 +75,11 @@ export function SponsorSlideSingle({
  * video creative fails to decode/load, so the kiosk can advance early
  * instead of holding on a blank frame for the rest of the dwell.
  */
-export function AdSlide({
-  ad,
-  onError,
-}: {
-  ad: KioskAd;
-  onError?: () => void;
-}) {
+export function AdSlide({ ad, onError }: { ad: KioskAd; onError?: () => void }) {
   return (
     <div className="hb-ad-slide">
       {ad.mediaType === "video" ? (
-        <video
-          src={ad.imageUrl}
-          autoPlay
-          muted
-          loop
-          playsInline
-          onError={onError}
-        />
+        <video src={ad.imageUrl} autoPlay muted loop playsInline onError={onError} />
       ) : (
         <img src={ad.imageUrl} alt={ad.name} />
       )}

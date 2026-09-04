@@ -13,12 +13,7 @@ declare module "gifenc" {
   }
 
   export interface GifEncoder {
-    writeFrame(
-      index: Uint8Array,
-      width: number,
-      height: number,
-      options?: WriteFrameOptions,
-    ): void;
+    writeFrame(index: Uint8Array, width: number, height: number, options?: WriteFrameOptions): void;
     finish(): void;
     bytes(): Uint8Array;
     bytesView(): Uint8Array;
@@ -26,10 +21,7 @@ declare module "gifenc" {
     readonly buffer: ArrayBuffer;
   }
 
-  export function GIFEncoder(options?: {
-    initialCapacity?: number;
-    auto?: boolean;
-  }): GifEncoder;
+  export function GIFEncoder(options?: { initialCapacity?: number; auto?: boolean }): GifEncoder;
 
   export function quantize(
     rgba: Uint8Array | Uint8ClampedArray,

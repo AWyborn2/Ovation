@@ -47,8 +47,7 @@ export function useThemeStyle({ open, isJunior }: { open: boolean; isJunior: boo
   const effAccent = styleAccent ?? selectedTheme?.accent ?? "#FBAC27";
   const effPanel = stylePanel ?? selectedTheme?.bgPanel ?? "#42342B";
   const effFont =
-    styleFont ??
-    ((selectedTheme as { displayFont?: string } | undefined)?.displayFont || "anton");
+    styleFont ?? ((selectedTheme as { displayFont?: string } | undefined)?.displayFont || "anton");
 
   // Fold the overrides onto the selected theme so BOTH the live PackCard preview
   // and the server still render (the harness only threads `theme`) resolve to

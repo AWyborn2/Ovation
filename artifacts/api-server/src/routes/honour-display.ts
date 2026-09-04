@@ -68,37 +68,32 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
 
 // Generate (or rotate) the kiosk token. Replaces any existing one, so the
 // previous link immediately stops working.
-router.post(
-  "/honour-display/kiosk-token",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const tenantId = getTenantId(req);
-    await ensureHonourDisplaySettings(tenantId);
-    // A non-empty `token` in the body sets a custom code; otherwise generate a
-    // random one. An invalid custom code is rejected rather than silently
-    // falling back, so the admin knows their chosen code wasn't accepted.
-    const raw = (req.body ?? {}).token;
-    let token: string;
-    if (typeof raw === "string" && raw.trim() !== "") {
-      const custom = normalizeCustomKioskToken(raw);
-      if (!custom) {
-        res.status(400).json({
-          error:
-            "Custom kiosk code must be 3–40 characters: letters, numbers and hyphens only.",
-        });
-        return;
-      }
-      token = custom;
-    } else {
-      token = generateKioskToken();
+router.post("/honour-display/kiosk-token", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  await ensureHonourDisplaySettings(tenantId);
+  // A non-empty `token` in the body sets a custom code; otherwise generate a
+  // random one. An invalid custom code is rejected rather than silently
+  // falling back, so the admin knows their chosen code wasn't accepted.
+  const raw = (req.body ?? {}).token;
+  let token: string;
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const custom = normalizeCustomKioskToken(raw);
+    if (!custom) {
+      res.status(400).json({
+        error: "Custom kiosk code must be 3–40 characters: letters, numbers and hyphens only.",
+      });
+      return;
     }
-    await db
-      .update(honourDisplaySettingsTable)
-      .set({ kioskToken: token, updatedAt: new Date() })
-      .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
-    res.json({ token });
-  },
-);
+    token = custom;
+  } else {
+    token = generateKioskToken();
+  }
+  await db
+    .update(honourDisplaySettingsTable)
+    .set({ kioskToken: token, updatedAt: new Date() })
+    .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
+  res.json({ token });
+});
 
 // Revoke the kiosk token so any existing link stops working.
 router.delete(
@@ -148,4 +143,3 @@ router.patch(
 );
 
 export default router;
-

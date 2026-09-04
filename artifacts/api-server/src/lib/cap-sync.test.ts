@@ -111,14 +111,19 @@ const h = vi.hoisted(() => {
     }),
     delete: (t: { __table: string }) => ({
       where: async (p: Pred) => {
-        state.rows[t.__table] = (state.rows[t.__table] ?? []).filter(
-          (r) => !matches(r, p),
-        );
+        state.rows[t.__table] = (state.rows[t.__table] ?? []).filter((r) => !matches(r, p));
       },
     }),
   };
 
-  return { db: writable, tx: writable, capRegisterTable, playerGradeStatsTable, playersTable, state };
+  return {
+    db: writable,
+    tx: writable,
+    capRegisterTable,
+    playerGradeStatsTable,
+    playersTable,
+    state,
+  };
 });
 
 vi.mock("drizzle-orm", () => ({
@@ -184,8 +189,7 @@ function seedPlayer(id: number, games = 1, grade = GRADE) {
   h.state.rows.player_grade_stats.push({ id, playerId: id, grade, games });
 }
 
-const capsFor = (tenantId: number) =>
-  h.state.caps().filter((c) => c.tenantId === tenantId);
+const capsFor = (tenantId: number) => h.state.caps().filter((c) => c.tenantId === tenantId);
 
 beforeEach(() => h.state.reset());
 
@@ -205,9 +209,7 @@ describe("cap-sync — tenancy", () => {
     const result = await syncCapsFromStats(TX, HOME, GRADE, [1, 2]);
 
     expect(result?.created).toBe(1);
-    expect(result?.createdCaps).toEqual([
-      { capNumber: 8, playerId: 2, name: "Giv2 Sur2" },
-    ]);
+    expect(result?.createdCaps).toEqual([{ capNumber: 8, playerId: 2, name: "Giv2 Sur2" }]);
     expect(capsFor(OTHER)).toHaveLength(1);
   });
 

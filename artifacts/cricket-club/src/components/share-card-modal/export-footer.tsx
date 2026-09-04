@@ -36,8 +36,14 @@ export function ExportFooter({
   onApprove: (() => void | Promise<void>) | undefined;
   approveLabel: string;
 }) {
-  const { downloading, zipping, approving, handleDownload, handleDownloadAll, handleApproveAndDownload } =
-    exp;
+  const {
+    downloading,
+    zipping,
+    approving,
+    handleDownload,
+    handleDownloadAll,
+    handleApproveAndDownload,
+  } = exp;
   const {
     videoExporting,
     gifExporting,
@@ -75,9 +81,7 @@ export function ExportFooter({
           ) : (
             <Download className="h-4 w-4 mr-2" />
           )}
-          {serverRendering
-            ? `Rendering MP4… ${Math.round(serverProgress * 100)}%`
-            : "Render MP4"}
+          {serverRendering ? `Rendering MP4… ${Math.round(serverProgress * 100)}%` : "Render MP4"}
         </Button>
       )}
       {isAdmin && animated && videoSupported && (
@@ -121,15 +125,15 @@ export function ExportFooter({
         }}
         disabled={zipping || approving || videoExporting}
       >
-        {zipping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+        {zipping ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4 mr-2" />
+        )}
         Download all sizes (zip)
       </Button>
       {onApprove && (
-        <Button
-          type="button"
-          onClick={handleApproveAndDownload}
-          disabled={approving || zipping}
-        >
+        <Button type="button" onClick={handleApproveAndDownload} disabled={approving || zipping}>
           {approving ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
@@ -157,9 +161,8 @@ export function VideoPreviewDialog({ video }: { video: VideoExport }) {
         <DialogHeader>
           <DialogTitle>Preview rendered video</DialogTitle>
           <DialogDescription>
-            This is the exact {videoPreview?.ext.toUpperCase()} clip that will
-            download. Play it through to check the first frame and loop seam, then
-            save it or re-record.
+            This is the exact {videoPreview?.ext.toUpperCase()} clip that will download. Play it
+            through to check the first frame and loop seam, then save it or re-record.
           </DialogDescription>
         </DialogHeader>
         {videoPreview && (

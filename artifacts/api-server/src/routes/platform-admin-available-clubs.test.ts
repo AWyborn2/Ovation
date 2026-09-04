@@ -31,8 +31,7 @@ describe("platform-admin available-clubs (concierge picker)", () => {
   const createdExclusionIds: number[] = [];
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-admin-available-clubs";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-admin-available-clubs";
 
     const passwordHash = await hashPassword(PASSWORD);
     await db
@@ -126,7 +125,9 @@ describe("platform-admin available-clubs (concierge picker)", () => {
     // Still hidden from the public self-serve picker...
     const publicList = await request(app).get("/api/platform/available-clubs").expect(200);
     expect(
-      publicList.body.some((c: { centralClubId: number }) => c.centralClubId === club.centralClubId),
+      publicList.body.some(
+        (c: { centralClubId: number }) => c.centralClubId === club.centralClubId,
+      ),
     ).toBe(false);
 
     // ...but still visible to the concierge picker.

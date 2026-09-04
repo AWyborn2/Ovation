@@ -118,7 +118,9 @@ export function InningsTable<L extends InningsLine, P, A>({
                     <td className="px-2 py-1.5">
                       {l.playerName}
                       {!l.isHallsHead && (
-                        <span className="ml-2 text-[10px] uppercase text-muted-foreground">opposition</span>
+                        <span className="ml-2 text-[10px] uppercase text-muted-foreground">
+                          opposition
+                        </span>
                       )}
                     </td>
                     {columns.map((c) => (

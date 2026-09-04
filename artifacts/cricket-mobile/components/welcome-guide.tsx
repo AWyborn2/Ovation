@@ -29,12 +29,7 @@ export function WelcomeGuide({
   const brand = useBrand();
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onDismiss}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View
         style={{
           flex: 1,
@@ -53,10 +48,7 @@ export function WelcomeGuide({
             overflow: "hidden",
           }}
         >
-          <ScrollView
-            contentContainerStyle={{ padding: 22 }}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView contentContainerStyle={{ padding: 22 }} showsVerticalScrollIndicator={false}>
             <View
               style={{
                 flexDirection: "row",
@@ -81,8 +73,8 @@ export function WelcomeGuide({
 
             <Heading size="lg">Welcome to the club app</Heading>
             <Body muted size={14} style={{ marginTop: 8, lineHeight: 21 }}>
-              Your home for {brand.possessive} players, matches, records and
-              honours — seniors and juniors alike.
+              Your home for {brand.possessive} players, matches, records and honours — seniors and
+              juniors alike.
             </Body>
 
             <Body
@@ -99,10 +91,7 @@ export function WelcomeGuide({
             </Body>
             <View style={{ gap: 12 }}>
               {CAN_DO.map(({ icon, text }) => (
-                <View
-                  key={text}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-                >
+                <View key={text} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                   <Feather name={icon} size={18} color={colors.primary} />
                   <Body size={14} style={{ flex: 1 }}>
                     {text}
@@ -125,10 +114,10 @@ export function WelcomeGuide({
                 <Body bold size={12}>
                   Good to know:{" "}
                 </Body>
-                stats reflect what club admins have recorded after each round, so
-                the very latest games may take a little while to appear. Some
-                older seasons are still being backfilled and may be incomplete,
-                and a few junior players are kept private and hidden.
+                stats reflect what club admins have recorded after each round, so the very latest
+                games may take a little while to appear. Some older seasons are still being
+                backfilled and may be incomplete, and a few junior players are kept private and
+                hidden.
               </Body>
             </View>
 
@@ -164,12 +153,7 @@ export function WelcomeGuide({
                   alignItems: "center",
                 }}
               >
-                <Body
-                  bold
-                  size={14}
-                  muted
-                  style={{ textTransform: "uppercase", letterSpacing: 1 }}
-                >
+                <Body bold size={14} muted style={{ textTransform: "uppercase", letterSpacing: 1 }}>
                   Maybe later
                 </Body>
               </TouchableOpacity>

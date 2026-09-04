@@ -33,12 +33,11 @@ export default function AdminHonoursDisplay() {
       <div>
         <h1 className="text-3xl font-serif font-bold">Honour boards display &amp; kiosk</h1>
         <p className="text-muted-foreground mt-1">
-          Pick the single skin every honour board renders in, and configure the
-          auto-rotating clubroom TV kiosk. These pages are admin-only: the display lives
-          at <code>/honours-display</code> and the TV mode opens from a short{" "}
-          <code>/tv/&lt;code&gt;</code> link you generate below — easy to type into
-          a wall-mounted TV. Each board keeps its natural layout — the skin only
-          changes the look.
+          Pick the single skin every honour board renders in, and configure the auto-rotating
+          clubroom TV kiosk. These pages are admin-only: the display lives at{" "}
+          <code>/honours-display</code> and the TV mode opens from a short{" "}
+          <code>/tv/&lt;code&gt;</code> link you generate below — easy to type into a wall-mounted
+          TV. Each board keeps its natural layout — the skin only changes the look.
         </p>
       </div>
 
@@ -49,9 +48,7 @@ export default function AdminHonoursDisplay() {
       ) : bundleQ.data ? (
         <SettingsForm
           bundle={bundleQ.data}
-          onSaved={() =>
-            qc.invalidateQueries({ queryKey: getGetHonourDisplayQueryKey() })
-          }
+          onSaved={() => qc.invalidateQueries({ queryKey: getGetHonourDisplayQueryKey() })}
         />
       ) : (
         <QueryError onRetry={() => bundleQ.refetch()} />
@@ -60,13 +57,7 @@ export default function AdminHonoursDisplay() {
   );
 }
 
-function SettingsForm({
-  bundle,
-  onSaved,
-}: {
-  bundle: HonourDisplayBundle;
-  onSaved: () => void;
-}) {
+function SettingsForm({ bundle, onSaved }: { bundle: HonourDisplayBundle; onSaved: () => void }) {
   const form = useHonoursDisplaySettings(bundle, onSaved);
 
   return (

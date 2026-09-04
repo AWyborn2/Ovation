@@ -9,12 +9,7 @@ import {
   centralPlayersTable,
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
-import {
-  appGradeFromCentral,
-  parseRound,
-  parseSeasonStartYear,
-  parseStage,
-} from "./grades";
+import { appGradeFromCentral, parseRound, parseSeasonStartYear, parseStage } from "./grades";
 import { isPrivateRow } from "./privacy";
 import { classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
@@ -160,11 +155,7 @@ async function centralClubMatchesImpl(
     .select()
     .from(centralMatchesTable)
     .where(and(...conditions))
-    .orderBy(
-      desc(seasonStartYearSql),
-      desc(roundSortSql),
-      desc(centralMatchesTable.matchId),
-    )
+    .orderBy(desc(seasonStartYearSql), desc(roundSortSql), desc(centralMatchesTable.matchId))
     .$dynamic();
   if (opts.limit !== undefined) query = query.limit(opts.limit);
   if (opts.offset !== undefined) query = query.offset(opts.offset);
@@ -228,12 +219,7 @@ async function centralClubMatchesImpl(
     const oppClubId = isHome ? m.awayClubId : m.homeClubId;
     const opp = oppClubId != null ? oppById.get(oppClubId) : undefined;
     const result =
-      m.resultText ??
-      (m.winnerClubId == null
-        ? null
-        : m.winnerClubId === clubId
-          ? "Won"
-          : "Lost");
+      m.resultText ?? (m.winnerClubId == null ? null : m.winnerClubId === clubId ? "Won" : "Lost");
 
     rows.push({
       id: m.matchId,
@@ -264,18 +250,23 @@ async function centralClubMatchesImpl(
     });
   }
 
-  rows.sort(
-    (a, b) =>
-      b.season - a.season ||
-      (b.round ?? -1) - (a.round ?? -1) ||
-      b.id - a.id,
-  );
+  rows.sort((a, b) => b.season - a.season || (b.round ?? -1) - (a.round ?? -1) || b.id - a.id);
   return rows;
 }
 
 const WRAP_MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /** Format a central "YYYY-MM-DD" date as "D Mon YYYY"; falls back to the raw
@@ -435,8 +426,7 @@ async function centralWeekendWrapImpl(
   const matches: CentralWeekendWrapMatch[] = picked.map((m) => {
     const outcome: "WON" | "LOST" | "" =
       m.result === "Won" ? "WON" : m.result === "Lost" ? "LOST" : "";
-    const connector =
-      outcome === "WON" ? "def" : outcome === "LOST" ? "def by" : "vs";
+    const connector = outcome === "WON" ? "def" : outcome === "LOST" ? "def by" : "vs";
     const opp = m.opponent ?? m.opponentClub?.name ?? "Opposition";
     const clubScore = m.clubScore ?? "—";
     const oppScore = m.opponentScore ?? "—";
@@ -640,8 +630,7 @@ async function centralMatchScorecardImpl(
 
   const build = (side: number): Line[] => {
     const byKey = new Map<string, Line>();
-    const keyOf = (pid: string | null, name: string | null) =>
-      pid ?? `name:${name ?? ""}`;
+    const keyOf = (pid: string | null, name: string | null) => pid ?? `name:${name ?? ""}`;
     for (const b of batting) {
       if (b.clubId !== side) continue;
       const key = keyOf(b.participantId, b.playerName);
@@ -670,9 +659,7 @@ async function centralMatchScorecardImpl(
       line.noBalls = bw.noBalls;
       byKey.set(key, line);
     }
-    return [...byKey.values()].sort(
-      (a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99),
-    );
+    return [...byKey.values()].sort((a, b) => (a.battingPos ?? 99) - (b.battingPos ?? 99));
   };
 
   const clubLines = build(clubId).map((l): CentralScorecardLine => {
@@ -681,8 +668,7 @@ async function centralMatchScorecardImpl(
       participantId: l.participantId,
       // First non-empty: central display_name, then the scorecard line's own
       // player_name (?? alone would keep an empty-string display_name).
-      displayName:
-        p?.displayName && p.displayName.trim() ? p.displayName : l.playerName,
+      displayName: p?.displayName && p.displayName.trim() ? p.displayName : l.playerName,
       isPrivate: isPrivateRow(p),
       batted: l.batted,
       battingPos: l.battingPos,
@@ -726,12 +712,11 @@ async function centralMatchScorecardImpl(
 
   const oppClub = opp[0];
   const result =
-    m.resultText ??
-    (m.winnerClubId == null ? null : m.winnerClubId === clubId ? "Won" : "Lost");
+    m.resultText ?? (m.winnerClubId == null ? null : m.winnerClubId === clubId ? "Won" : "Lost");
 
   const summary: CentralMatchSummary = {
     id: m.matchId,
-    grade: grade ?? (m.grade ?? ""),
+    grade: grade ?? m.grade ?? "",
     season: season ?? 0,
     round: parseRound(m.round),
     stage: parseStage(m.round),

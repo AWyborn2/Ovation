@@ -20,8 +20,7 @@ import {
 // score. Uses the red LIVE chip instead of the gold pill and a slightly
 // stronger gold beam (16%) per the bundle.
 
-const liveChip =
-  `<div style="display:inline-flex;align-items:center;gap:9px;background:#E23B3B;color:#fff;font-weight:800;font-size:20px;line-height:1;letter-spacing:.06em;padding:11px 15px;border-radius:7px"><span style="width:12px;height:12px;border-radius:50%;background:#fff;color:#E23B3B;animation:hhPulse 1.4s ease-in-out infinite"></span>LIVE</div>`;
+const liveChip = `<div style="display:inline-flex;align-items:center;gap:9px;background:#E23B3B;color:#fff;font-weight:800;font-size:20px;line-height:1;letter-spacing:.06em;padding:11px 15px;border-radius:7px"><span style="width:12px;height:12px;border-radius:50%;background:#fff;color:#E23B3B;animation:hhPulse 1.4s ease-in-out infinite"></span>LIVE</div>`;
 
 const storyHtml = formatRoot(
   bgLayers(16) +

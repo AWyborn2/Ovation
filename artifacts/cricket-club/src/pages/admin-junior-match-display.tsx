@@ -42,9 +42,9 @@ export default function AdminJuniorMatchDisplay() {
     <div className="space-y-6">
       <div>
         <p className="text-muted-foreground mt-1">
-          Control how the public Junior Matches page behaves by default: which age group and
-          season load first, and the order age groups appear in the dropdown. Visitors can
-          still change the filters themselves after the page loads.
+          Control how the public Junior Matches page behaves by default: which age group and season
+          load first, and the order age groups appear in the dropdown. Visitors can still change the
+          filters themselves after the page loads.
         </p>
       </div>
 
@@ -104,8 +104,7 @@ function SettingsCard({
     setAgeOrder(mergeOrder(settings.ageGroupOrder, allAgeGroups));
   }, [settings, allAgeGroups]);
 
-  const move = (idx: number, dir: -1 | 1) =>
-    setAgeOrder((prev) => moveItem(prev, idx, dir));
+  const move = (idx: number, dir: -1 | 1) => setAgeOrder((prev) => moveItem(prev, idx, dir));
 
   const save = () => {
     setError(null);
@@ -151,8 +150,8 @@ function SettingsCard({
           title="Default season"
           description={
             <>
-              Which season loads first. "Latest available" always tracks the newest season as
-              new matches are imported.
+              Which season loads first. "Latest available" always tracks the newest season as new
+              matches are imported.
             </>
           }
         >

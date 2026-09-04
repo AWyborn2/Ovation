@@ -20,8 +20,8 @@ export function SlotImagesPanel({ layout }: { layout: LayoutTemplate }) {
         )}
       </div>
       <p className="text-xs text-muted-foreground">
-        Upload or paste an image to override any slot on this card. Left
-        blank, each slot keeps its bound / branded image.
+        Upload or paste an image to override any slot on this card. Left blank, each slot keeps its
+        bound / branded image.
       </p>
       {imageSlots.map((slot) => (
         <ImageControl

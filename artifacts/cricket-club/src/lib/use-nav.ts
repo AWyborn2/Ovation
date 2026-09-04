@@ -16,10 +16,7 @@ export {
 // site always renders even if the API is unavailable or unseeded. The
 // filtering / ordering / fallback rules are `resolveNavItems` in
 // @workspace/scorecard, shared with the mobile app.
-export function useNavSurface(
-  surface: NavSurface,
-  fallback: ResolvedNavItem[],
-): ResolvedNavItem[] {
+export function useNavSurface(surface: NavSurface, fallback: ResolvedNavItem[]): ResolvedNavItem[] {
   const { data } = useListNavItems({ surface });
   return resolveNavItems(surface, data, fallback);
 }

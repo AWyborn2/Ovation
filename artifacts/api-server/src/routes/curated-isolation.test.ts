@@ -37,8 +37,7 @@ describe("tenant isolation: team of the decade, tour content, cap register", () 
   let boardId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-curated-isolation";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-curated-isolation";
 
     const [tenant2] = await db
       .insert(tenantsTable)

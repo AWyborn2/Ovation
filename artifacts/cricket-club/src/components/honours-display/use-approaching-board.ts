@@ -11,11 +11,7 @@ import {
   DEFAULT_MILESTONE_THRESHOLDS,
   type MilestoneThresholds,
 } from "@/lib/honour-boards";
-import type {
-  DisplayBoard,
-  BoardDisplay,
-  BoardDisplayConfig,
-} from "./types";
+import type { DisplayBoard, BoardDisplay, BoardDisplayConfig } from "./types";
 
 /** Client-side default display for the approaching board (no server row). */
 export const CLIENT_DEFAULT_DISPLAY: BoardDisplay = {
@@ -56,10 +52,7 @@ export function useApproachingBoard(): DisplayBoard | null {
   const { data: gradesList } = useListGrades();
   const { data: milestoneSettings } = useGetMilestoneBoardSettings();
 
-  const grades = useMemo(
-    () => (gradesList ?? []).map((g) => g.grade),
-    [gradesList],
-  );
+  const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
 
   // One leaderboard query per grade — a real fan-out on the kiosk/display, so
   // treat the results as fresh for a long while. Career milestones only move

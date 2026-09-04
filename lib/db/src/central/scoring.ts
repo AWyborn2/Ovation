@@ -65,9 +65,7 @@ end`;
  */
 export type CentralFieldingKind = "catch" | "stumping" | "runOut";
 
-export function classifyFieldingKind(
-  kind: string | null | undefined,
-): CentralFieldingKind | null {
+export function classifyFieldingKind(kind: string | null | undefined): CentralFieldingKind | null {
   const k = (kind ?? "").trim().toLowerCase();
   if (!k) return null;
   // Order matters: run-out and stumping are checked before catch so a keeper's

@@ -21,9 +21,7 @@ export interface CentralGradeMapping {
   note?: string;
 }
 
-export function classifyCentralGrade(
-  centralGrade: string | null,
-): CentralGradeMapping {
+export function classifyCentralGrade(centralGrade: string | null): CentralGradeMapping {
   if (!centralGrade) return { appGrade: null };
   const raw = centralGrade.trim();
   if (!raw) return { appGrade: null };

@@ -82,9 +82,7 @@ export function MatchSource({
       onAddMany(details.map((d) => matchToSummaryInput(d)));
     } catch (e) {
       console.error("Batch add (round) failed", e);
-      setBatchError(
-        e instanceof Error ? e.message : "Could not load every match in this round.",
-      );
+      setBatchError(e instanceof Error ? e.message : "Could not load every match in this round.");
     } finally {
       setBatching(false);
     }
@@ -130,9 +128,7 @@ export function MatchSource({
           disabled={filtered.length === 0}
           onChange={(e) => setMatchId(e.target.value ? Number(e.target.value) : null)}
         >
-          <option value="">
-            {filtered.length === 0 ? "No matches" : "Select a match…"}
-          </option>
+          <option value="">{filtered.length === 0 ? "No matches" : "Select a match…"}</option>
           {filtered.map((m) => (
             <option key={m.id} value={m.id}>
               {matchLabel(m)}
@@ -184,9 +180,7 @@ export function MatchSource({
           Add all in Round {effectiveRound ?? "—"} ({roundMatches.length})
         </Button>
       </div>
-      {batchError && (
-        <p className="text-sm text-destructive">{batchError}</p>
-      )}
+      {batchError && <p className="text-sm text-destructive">{batchError}</p>}
     </div>
   );
 }

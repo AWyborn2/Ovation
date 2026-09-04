@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  useListPlayers,
-  getListPlayersQueryKey,
-  type Player,
-} from "@workspace/api-client-react";
+import { useListPlayers, getListPlayersQueryKey, type Player } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { LoadingState } from "@/components/data-states";

@@ -1,5 +1,10 @@
 import { Link, useParams } from "wouter";
-import { useGetJuniorPlayer, getGetJuniorPlayerQueryKey, useGetPlayer, getGetPlayerQueryKey } from "@workspace/api-client-react";
+import {
+  useGetJuniorPlayer,
+  getGetJuniorPlayerQueryKey,
+  useGetPlayer,
+  getGetPlayerQueryKey,
+} from "@workspace/api-client-react";
 import { ArrowLeft } from "lucide-react";
 import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
@@ -8,7 +13,9 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="bg-card border border-border rounded-md p-3 text-center">
       <div className="text-xl font-serif font-bold text-primary">{value}</div>
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{label}</div>
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
+        {label}
+      </div>
     </div>
   );
 }
@@ -16,7 +23,12 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 export default function JuniorsPlayerDetail() {
   const params = useParams();
   const id = params.id ?? "";
-  const { data: player, isLoading, isError, refetch } = useGetJuniorPlayer(id, {
+  const {
+    data: player,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetJuniorPlayer(id, {
     query: { enabled: !!id, queryKey: getGetJuniorPlayerQueryKey(id) },
   });
 
@@ -44,7 +56,7 @@ export default function JuniorsPlayerDetail() {
             <div className="text-sm text-muted-foreground mt-1">
               {player.firstSeason && player.lastSeason
                 ? `${player.firstSeason} – ${player.lastSeason}`
-                : player.firstSeason ?? ""}
+                : (player.firstSeason ?? "")}
               {player.teams ? ` · ${player.teams}` : ""}
             </div>
           </div>
@@ -72,7 +84,11 @@ export default function JuniorsPlayerDetail() {
               <Stat label="Maidens" value={player.bowling.maidens} />
               <Stat
                 label="Best"
-                value={player.bowling.bestWickets != null ? `${player.bowling.bestWickets}/${player.bowling.bestRuns ?? "—"}` : "—"}
+                value={
+                  player.bowling.bestWickets != null
+                    ? `${player.bowling.bestWickets}/${player.bowling.bestRuns ?? "—"}`
+                    : "—"
+                }
               />
               <Stat label="Economy" value={fmtNum(player.bowling.economy, 2)} />
             </div>
@@ -121,17 +137,29 @@ export default function JuniorsPlayerDetail() {
                         vs {m.opponentName ?? "Unknown"}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                        {m.season ?? ""}{m.ageGroup ? ` · ${m.ageGroup}` : ""}{m.round ? ` · ${m.round}` : ""}
+                        {m.season ?? ""}
+                        {m.ageGroup ? ` · ${m.ageGroup}` : ""}
+                        {m.round ? ` · ${m.round}` : ""}
                       </div>
                       {fmtJuniorDate(m.matchDate) && (
-                        <div className="text-xs text-muted-foreground">{fmtJuniorDate(m.matchDate)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {fmtJuniorDate(m.matchDate)}
+                        </div>
                       )}
                       <div className="ml-auto flex items-center gap-3 text-xs font-mono">
-                        {m.batting && (m.batting.runs != null) && (
-                          <span title="Batting">{m.batting.runs}{m.batting.dismissal && /not out/i.test(m.batting.dismissal) ? "*" : ""} runs</span>
+                        {m.batting && m.batting.runs != null && (
+                          <span title="Batting">
+                            {m.batting.runs}
+                            {m.batting.dismissal && /not out/i.test(m.batting.dismissal)
+                              ? "*"
+                              : ""}{" "}
+                            runs
+                          </span>
                         )}
-                        {m.bowling && (m.bowling.wickets != null) && (
-                          <span title="Bowling">{m.bowling.wickets}/{m.bowling.runs ?? "—"}</span>
+                        {m.bowling && m.bowling.wickets != null && (
+                          <span title="Bowling">
+                            {m.bowling.wickets}/{m.bowling.runs ?? "—"}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -172,7 +200,9 @@ function SeniorCareerSection({ seniorPlayerId }: { seniorPlayerId: number }) {
     <section className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-lg font-serif font-bold text-primary">Senior Career</h2>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Kept separate from junior records</span>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          Kept separate from junior records
+        </span>
       </div>
       <div className="bg-card border border-border rounded-md p-4 shadow-sm">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
@@ -189,8 +219,8 @@ function SeniorCareerSection({ seniorPlayerId }: { seniorPlayerId: number }) {
           <Stat label="Wickets" value={wickets} />
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          Senior records are kept completely separate from junior records and
-          are never combined into any career figure.
+          Senior records are kept completely separate from junior records and are never combined
+          into any career figure.
         </p>
       </div>
     </section>

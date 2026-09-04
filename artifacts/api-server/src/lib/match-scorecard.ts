@@ -301,7 +301,11 @@ export async function parseMatchScorecard(buffer: Buffer): Promise<ParsedMatch> 
   const [leftRaw, rightRaw = ""] = title.split(/\s*—\s*/);
   const seasonMatch = leftRaw.match(/(\d{4})\/(\d{2})/);
   const season = seasonMatch ? parseInt(seasonMatch[1], 10) : null;
-  const competition = leftRaw.replace(/\d{4}\/\d{2}/, "").replace(/\s+/g, " ").trim() || null;
+  const competition =
+    leftRaw
+      .replace(/\d{4}\/\d{2}/, "")
+      .replace(/\s+/g, " ")
+      .trim() || null;
   // A finals scorecard names its stage ("Grand Final", "2nd Semi Final", …)
   // instead of a numeric round. Finals never carry a numeric round, so a stage
   // wins over any stray digits (e.g. "2nd") in the title.
@@ -495,9 +499,7 @@ export async function parseMatchScorecard(buffer: Buffer): Promise<ParsedMatch> 
     for (const ob of oppBlock.batsmen) {
       if (!ob.dismissal) continue;
       for (const ref of parseFielders(ob.dismissal)) {
-        const line = fieldingIndex.get(
-          `${ref.initial.toLowerCase()}|${ref.surname.toLowerCase()}`,
-        );
+        const line = fieldingIndex.get(`${ref.initial.toLowerCase()}|${ref.surname.toLowerCase()}`);
         if (!line) {
           warnings.push(
             `Unmatched fielder "${ref.initial} ${ref.surname}" in dismissal "${ob.dismissal}".`,
@@ -516,8 +518,7 @@ export async function parseMatchScorecard(buffer: Buffer): Promise<ParsedMatch> 
   // Opposition bowling = bowlers in the HHCC block (they bowled to us).
   // Opposition fielding = derived from HHCC batsmen dismissal text.
   const oppByKey = new Map<string, ParsedOppositionLine>();
-  const fullName = (surname: string, givenName: string) =>
-    `${givenName} ${surname}`.trim();
+  const fullName = (surname: string, givenName: string) => `${givenName} ${surname}`.trim();
   const oppBlank = (name: string): ParsedOppositionLine => ({
     name,
     batted: false,

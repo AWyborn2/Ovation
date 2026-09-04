@@ -16,12 +16,11 @@ export function PerBoardSection({ form }: { form: HonoursDisplayForm }) {
         <p className="text-xs text-muted-foreground">
           Override how each board appears on the display and TV kiosk.
           <strong> Columns</strong> spreads a long list across 2–3 columns.
-          <strong> Transition</strong> chooses how tall boards advance on the
-          kiosk: <em>scroll</em> credit-rolls the whole board; <em>slide</em>{" "}
-          pages through it a screen at a time. <strong>Fit</strong> fills the
-          full screen width instead of the narrow centred cap. Expand a board
-          to override its heading, text size, density, font, crest and
-          background — and, for grid-capable boards, the season-grid columns.
+          <strong> Transition</strong> chooses how tall boards advance on the kiosk: <em>scroll</em>{" "}
+          credit-rolls the whole board; <em>slide</em> pages through it a screen at a time.{" "}
+          <strong>Fit</strong> fills the full screen width instead of the narrow centred cap. Expand
+          a board to override its heading, text size, density, font, crest and background — and, for
+          grid-capable boards, the season-grid columns.
         </p>
         <div className="space-y-2">
           {tunableBoards.map((b) => (
@@ -42,8 +41,7 @@ export function PerBoardSection({ form }: { form: HonoursDisplayForm }) {
 
 /** Composite "columns" boards built from existing list boards. */
 export function CompositeSection({ form }: { form: HonoursDisplayForm }) {
-  const { composites, sourceBoards, addComposite, patchComposite, removeComposite } =
-    form;
+  const { composites, sourceBoards, addComposite, patchComposite, removeComposite } = form;
   return (
     <Card>
       <CardHeader>
@@ -53,11 +51,10 @@ export function CompositeSection({ form }: { form: HonoursDisplayForm }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Place several existing list boards side-by-side as columns — like the
-          club's physical honour board. Add at least two columns; each pulls
-          from a list board. Turn on <strong>Season-aligned</strong> to add a
-          leading SEASON column and line rows up by season (only works when
-          every chosen board is season-based — otherwise it falls back to plain
+          Place several existing list boards side-by-side as columns — like the club's physical
+          honour board. Add at least two columns; each pulls from a list board. Turn on{" "}
+          <strong>Season-aligned</strong> to add a leading SEASON column and line rows up by season
+          (only works when every chosen board is season-based — otherwise it falls back to plain
           side-by-side columns).
         </p>
         <div className="space-y-4">
@@ -71,9 +68,7 @@ export function CompositeSection({ form }: { form: HonoursDisplayForm }) {
             />
           ))}
           {composites.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">
-              No composite boards yet.
-            </p>
+            <p className="text-xs text-muted-foreground italic">No composite boards yet.</p>
           )}
         </div>
         <Button type="button" variant="outline" onClick={addComposite}>
@@ -103,11 +98,10 @@ export function CustomGridSection({ form }: { form: HonoursDisplayForm }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Build a season-grid board like a real honour board: the season runs
-          down the left and each column is a title/award you choose. Columns can
-          pull from committee offices, awards, grade captains or premierships —
-          or be typed in by hand. Set a season range to pre-list blank future
-          seasons, add a footnote, pick a skin, and choose how it fills the TV.
+          Build a season-grid board like a real honour board: the season runs down the left and each
+          column is a title/award you choose. Columns can pull from committee offices, awards, grade
+          captains or premierships — or be typed in by hand. Set a season range to pre-list blank
+          future seasons, add a footnote, pick a skin, and choose how it fills the TV.
         </p>
         <div className="space-y-4">
           {customGrids.map((g) => (
@@ -121,9 +115,7 @@ export function CustomGridSection({ form }: { form: HonoursDisplayForm }) {
             />
           ))}
           {customGrids.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">
-              No custom grid boards yet.
-            </p>
+            <p className="text-xs text-muted-foreground italic">No custom grid boards yet.</p>
           )}
         </div>
         <Button type="button" variant="outline" onClick={addCustomGrid}>

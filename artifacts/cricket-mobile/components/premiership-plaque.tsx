@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -314,10 +308,7 @@ export function PlaqueModal({
                 ))}
 
                 {summary ? (
-                  <Body
-                    size={13}
-                    style={{ color: theme.text, textAlign: "center", marginTop: 10 }}
-                  >
+                  <Body size={13} style={{ color: theme.text, textAlign: "center", marginTop: 10 }}>
                     {summary}
                   </Body>
                 ) : null}

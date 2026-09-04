@@ -52,9 +52,7 @@ router.get(
       return;
     }
     const clubId = await getRequestCentralClubId(req);
-    const { centralClubTotalsBySeason } = await import(
-      "@workspace/db/central-queries"
-    );
+    const { centralClubTotalsBySeason } = await import("@workspace/db/central-queries");
     res.json(await centralClubTotalsBySeason(clubId, season));
   },
 );

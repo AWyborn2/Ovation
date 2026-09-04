@@ -109,11 +109,7 @@ function fixtureTemplates() {
   const goldSquare = packRow("gold-foil-v1", "Gold Foil — Square (1080×1080)", "square", [
     "record",
   ]);
-  const goldPortrait = packRow(
-    "gold-foil-v1",
-    "Gold Foil — Portrait (1080×1350)",
-    "portrait",
-  );
+  const goldPortrait = packRow("gold-foil-v1", "Gold Foil — Portrait (1080×1350)", "portrait");
   const goldStory = packRow("gold-foil-v1", "Gold Foil — Story (1080×1920)", "story");
   const layerTemplate = byoRow("My Player Layout", "layers", ["player"], ["player"]);
   const backgroundTemplate = byoRow("My Uploaded Background", "background", [], ["debut"]);
@@ -178,11 +174,7 @@ function setupApi(templates: CardTemplate[]): Write[] {
       const method = (init?.method ?? "GET").toUpperCase();
       if (method !== "GET") {
         const url =
-          typeof input === "string"
-            ? input
-            : input instanceof URL
-              ? input.toString()
-              : input.url;
+          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         writes.push({
           url,
           method,
@@ -239,11 +231,7 @@ function setupStatefulApi(initial: CardTemplate[]) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
       const method = (init?.method ?? "GET").toUpperCase();
 
       if (url.includes("/card-templates")) {
@@ -258,9 +246,7 @@ function setupStatefulApi(initial: CardTemplate[]) {
         if (claimed.length > 0) {
           for (const t of store) {
             if (t.id === id) continue;
-            t.defaultForKinds = (t.defaultForKinds ?? []).filter(
-              (k) => !claimed.includes(k),
-            );
+            t.defaultForKinds = (t.defaultForKinds ?? []).filter((k) => !claimed.includes(k));
           }
         }
         Object.assign(target, patch);
@@ -297,9 +283,7 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     expect(writes[0].method).toBe("PATCH");
     // Canonical row = lowest active id for the pack (the square variant here).
     expect(writes[0].url).toContain(`/card-templates/${f.goldSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(
-      expect.arrayContaining(["record", "century"]),
-    );
+    expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining(["record", "century"]));
   });
 
   it("selecting a different pack for a claimed kind produces exactly one claim", async () => {
@@ -320,9 +304,9 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     const claimed = writes[0].body?.defaultForKinds as string[];
     expect(claimed.filter((k) => k === "matchSummary")).toHaveLength(1);
     // The old owner is NOT patched from the client — the server clears it.
-    expect(
-      writes.some((w) => w.url.includes(`/card-templates/${f.broadcastSquare.id}`)),
-    ).toBe(false);
+    expect(writes.some((w) => w.url.includes(`/card-templates/${f.broadcastSquare.id}`))).toBe(
+      false,
+    );
   });
 
   it("selecting the leading default option writes an explicit Broadcast Dark claim", async () => {
@@ -355,9 +339,7 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
 
-    expect(
-      screen.getByText("Overridden by template: My Player Layout"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Overridden by template: My Player Layout")).toBeInTheDocument();
   });
 });
 
@@ -377,9 +359,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     expect(selectorFor("Century").value).toBe("");
     fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
 
-    await waitFor(() =>
-      expect(selectorFor("Century").value).toBe("gold-foil-v1"),
-    );
+    await waitFor(() => expect(selectorFor("Century").value).toBe("gold-foil-v1"));
   });
 
   it("persists the claim server-side on the pack's canonical row", async () => {
@@ -389,9 +369,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
 
     await waitFor(() =>
-      expect(store.find((t) => t.id === f.goldSquare.id)?.defaultForKinds).toContain(
-        "century",
-      ),
+      expect(store.find((t) => t.id === f.goldSquare.id)?.defaultForKinds).toContain("century"),
     );
   });
 
@@ -411,11 +389,7 @@ describe("admin social studio — the selection survives the round trip", () => 
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url =
-          typeof input === "string"
-            ? input
-            : input instanceof URL
-              ? input.toString()
-              : input.url;
+          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         const method = (init?.method ?? "GET").toUpperCase();
         if (url.includes("/card-templates")) {
           if (method === "GET")
@@ -481,9 +455,7 @@ describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
     // The tenant's own default still gets a caption — a "layers" template
     // overrides the pack outright, so it reads as the override rather than a
     // plain default, and it is captioned exactly once (not once per phrasing).
-    expect(
-      screen.getByText("Overridden by template: My Player Layout"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Overridden by template: My Player Layout")).toBeInTheDocument();
     expect(screen.queryByText(/Default template: My Player Layout/)).toBeNull();
     // Pack claims never surface as a "Default template" caption at all.
     expect(screen.queryByText(/Default template: Gold Foil/)).toBeNull();
@@ -500,9 +472,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const cancel = await screen.findByRole("button", { name: /cancel/i });
     fireEvent.click(cancel);
 
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: /cancel/i })).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByRole("button", { name: /cancel/i })).toBeNull());
     expect(writes).toHaveLength(0);
   });
 
@@ -521,8 +491,6 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0].method).toBe("PATCH");
     expect(writes[0].url).toContain(`/card-templates/${f.goldSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(
-      expect.arrayContaining([...ALL_KINDS]),
-    );
+    expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining([...ALL_KINDS]));
   });
 });

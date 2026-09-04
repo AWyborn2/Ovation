@@ -1,9 +1,5 @@
 import { and, eq, lt, sql } from "drizzle-orm";
-import {
-  matchesTable,
-  matchPlayerLinesTable,
-  playerGradeSeasonStatsTable,
-} from "@workspace/db";
+import { matchesTable, matchPlayerLinesTable, playerGradeSeasonStatsTable } from "@workspace/db";
 import type { CapSyncTx } from "./cap-sync";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
@@ -138,10 +134,7 @@ export async function deriveSeasonSnapshotFromMatches(
       if (runs >= 100) a.hundreds += 1;
       else if (runs >= 50) a.fifties += 1;
       // Highest score: greater runs wins; on a tie a not-out beats an out.
-      if (
-        runs > a.bestHsRuns ||
-        (runs === a.bestHsRuns && l.notOut && !a.bestHsNotOut)
-      ) {
+      if (runs > a.bestHsRuns || (runs === a.bestHsRuns && l.notOut && !a.bestHsNotOut)) {
         a.bestHsRuns = runs;
         a.bestHsNotOut = l.notOut;
       }
@@ -154,10 +147,7 @@ export async function deriveSeasonSnapshotFromMatches(
       a.runsConceded += conceded;
       if (wkts >= 5) a.fiveWickets += 1;
       // Best bowling: most wickets, then fewest runs conceded.
-      if (
-        wkts > a.bestBowlWickets ||
-        (wkts === a.bestBowlWickets && conceded < a.bestBowlRuns)
-      ) {
+      if (wkts > a.bestBowlWickets || (wkts === a.bestBowlWickets && conceded < a.bestBowlRuns)) {
         a.bestBowlWickets = wkts;
         a.bestBowlRuns = conceded;
       }
@@ -171,10 +161,8 @@ export async function deriveSeasonSnapshotFromMatches(
   const stats: DerivedSeasonStat[] = [];
   for (const a of byPlayer.values()) {
     a.games = a.matchIds.size;
-    a.highScore =
-      a.bestHsRuns >= 0 ? `${a.bestHsRuns}${a.bestHsNotOut ? "*" : ""}` : null;
-    a.bestBowling =
-      a.bestBowlWickets > 0 ? `${a.bestBowlWickets}/${a.bestBowlRuns}` : null;
+    a.highScore = a.bestHsRuns >= 0 ? `${a.bestHsRuns}${a.bestHsNotOut ? "*" : ""}` : null;
+    a.bestBowling = a.bestBowlWickets > 0 ? `${a.bestBowlWickets}/${a.bestBowlRuns}` : null;
     const {
       matchIds: _mi,
       bestHsRuns: _hr,
@@ -190,10 +178,7 @@ export async function deriveSeasonSnapshotFromMatches(
 
   const orderedPlayerIds = [...byPlayer.values()]
     .sort(
-      (x, y) =>
-        x.firstRound - y.firstRound ||
-        x.firstPos - y.firstPos ||
-        x.playerId - y.playerId,
+      (x, y) => x.firstRound - y.firstRound || x.firstPos - y.firstPos || x.playerId - y.playerId,
     )
     .map((a) => a.playerId);
 

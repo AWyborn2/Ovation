@@ -1,8 +1,5 @@
 import { toPng, toCanvas } from "html-to-image";
-import {
-  pickVideoMime,
-  canExportVideo,
-} from "@/lib/share-card-animation";
+import { pickVideoMime, canExportVideo } from "@/lib/share-card-animation";
 
 export { canExportVideo };
 export const videoFormatLabel = (): string => pickVideoMime().ext.toUpperCase();
@@ -110,8 +107,7 @@ export interface CardVideoFrame {
   durationMs: number;
 }
 
-const easeInOut = (t: number): number =>
-  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeInOut = (t: number): number => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
 
 function drawFrame(

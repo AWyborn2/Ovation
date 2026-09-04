@@ -5,10 +5,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 // pure, DB-free schema/contract/mapping round-trip.
 import { socialSettingsTable } from "@workspace/db/schema";
 import { AutoseedCardSetBody } from "@workspace/api-zod";
-import {
-  deriveAutoseedGroups,
-  type AutoseedDraft,
-} from "../lib/social-cards-generate";
+import { deriveAutoseedGroups, type AutoseedDraft } from "../lib/social-cards-generate";
 
 /**
  * C4 — auto-seed a carousel from a round's APPROVED match-summary drafts:
@@ -54,7 +51,9 @@ describe("C4 autoseed — AutoseedCardSetBody contract", () => {
 
   it("rejects a missing required season/round/platformSize", () => {
     expect(AutoseedCardSetBody.safeParse({ round: 1, platformSize: "square" }).success).toBe(false);
-    expect(AutoseedCardSetBody.safeParse({ season: 2025, platformSize: "square" }).success).toBe(false);
+    expect(AutoseedCardSetBody.safeParse({ season: 2025, platformSize: "square" }).success).toBe(
+      false,
+    );
     expect(AutoseedCardSetBody.safeParse({ season: 2025, round: 1 }).success).toBe(false);
     expect(
       AutoseedCardSetBody.safeParse({ season: 2025, round: 1, platformSize: "wall" }).success,

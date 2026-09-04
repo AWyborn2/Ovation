@@ -20,20 +20,19 @@ import { db, tenantsTable, playerIdMapTable } from "@workspace/db";
 import { mintPlayerIdMap } from "@workspace/db/provision";
 import { centralClubParticipants } from "@workspace/db/central-queries";
 
-const flag = (n: string): boolean =>
-  process.argv.slice(2).includes(`--${n}`);
+const flag = (n: string): boolean => process.argv.slice(2).includes(`--${n}`);
 const arg = (n: string): string | undefined =>
-  process.argv.slice(2).find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+  process.argv
+    .slice(2)
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.slice(n.length + 3);
 
 async function main(): Promise<void> {
   const dryRun = flag("dry-run");
   const onlyTenant = arg("tenant-id");
 
   // Central-data tenants only: reads_from_central AND a resolved central club.
-  const conds = [
-    eq(tenantsTable.readsFromCentral, true),
-    isNotNull(tenantsTable.centralClubId),
-  ];
+  const conds = [eq(tenantsTable.readsFromCentral, true), isNotNull(tenantsTable.centralClubId)];
   if (onlyTenant) conds.push(eq(tenantsTable.id, Number(onlyTenant)));
   const tenants = await db
     .select({
@@ -69,10 +68,7 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const { minted, totalParticipants } = await mintPlayerIdMap(
-      t.id,
-      t.centralClubId,
-    );
+    const { minted, totalParticipants } = await mintPlayerIdMap(t.id, t.centralClubId);
     totalMinted += minted;
     console.log(
       `tenant #${t.id} ${t.slug} (${t.name}): minted ${minted} new mapping(s) ` +

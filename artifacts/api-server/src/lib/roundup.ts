@@ -39,13 +39,14 @@ const queryPerformers = async (
   seasonFilter: { season: number } | "all",
 ): Promise<PerformerRow[]> => {
   const fillInFloor = lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD);
-  const where = seasonFilter === "all"
-    ? and(eq(playerGradeSeasonStatsTable.grade, grade), fillInFloor)
-    : and(
-        eq(playerGradeSeasonStatsTable.grade, grade),
-        eq(playerGradeSeasonStatsTable.season, seasonFilter.season),
-        fillInFloor,
-      );
+  const where =
+    seasonFilter === "all"
+      ? and(eq(playerGradeSeasonStatsTable.grade, grade), fillInFloor)
+      : and(
+          eq(playerGradeSeasonStatsTable.grade, grade),
+          eq(playerGradeSeasonStatsTable.season, seasonFilter.season),
+          fillInFloor,
+        );
   const rows = await db
     .select({
       playerId: playerGradeSeasonStatsTable.playerId,
@@ -58,11 +59,7 @@ const queryPerformers = async (
     .from(playerGradeSeasonStatsTable)
     .innerJoin(playersTable, eq(playerGradeSeasonStatsTable.playerId, playersTable.id))
     .where(where)
-    .groupBy(
-      playerGradeSeasonStatsTable.playerId,
-      playersTable.surname,
-      playersTable.givenName,
-    );
+    .groupBy(playerGradeSeasonStatsTable.playerId, playersTable.surname, playersTable.givenName);
   return rows.map((r) => ({
     playerId: r.playerId,
     runs: Number(r.runs),
@@ -75,10 +72,7 @@ const queryPerformers = async (
 
 // Per-row high score / best bowling for a (grade, season) — kept as raw strings
 // so the card can show "87*" or "5/22" verbatim rather than a re-summed number.
-const queryInningsRows = async (
-  grade: string,
-  season: number,
-): Promise<InningsRow[]> =>
+const queryInningsRows = async (grade: string, season: number): Promise<InningsRow[]> =>
   db
     .select({
       playerId: playerGradeSeasonStatsTable.playerId,
@@ -100,8 +94,7 @@ const queryInningsRows = async (
 const fullName = (s: { givenName: string; surname: string }) =>
   `${s.givenName} ${s.surname}`.trim();
 
-const seasonLabel = (year: number) =>
-  `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
+const seasonLabel = (year: number) => `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
 
 // Leading numeric part of a score, e.g. "87*" -> 87, "112 (retired)" -> 112.
 const parseHighScore = (hs: string | null): number | null => {
@@ -157,10 +150,8 @@ const insertCard = async (
   return row;
 };
 
-const topBatting = (rows: PerformerRow[]) =>
-  [...rows].sort((a, b) => b.runs - a.runs)[0];
-const topBowling = (rows: PerformerRow[]) =>
-  [...rows].sort((a, b) => b.wickets - a.wickets)[0];
+const topBatting = (rows: PerformerRow[]) => [...rows].sort((a, b) => b.runs - a.runs)[0];
+const topBowling = (rows: PerformerRow[]) => [...rows].sort((a, b) => b.wickets - a.wickets)[0];
 const topKeeping = (rows: PerformerRow[]) =>
   [...rows].sort((a, b) => b.dismissals - a.dismissals)[0];
 
@@ -301,7 +292,11 @@ async function generateMilestoneRecapCards(
   if (missing.length > 0) {
     const ids = Array.from(new Set(missing.map((r) => r.playerId)));
     const players = await db
-      .select({ id: playersTable.id, surname: playersTable.surname, givenName: playersTable.givenName })
+      .select({
+        id: playersTable.id,
+        surname: playersTable.surname,
+        givenName: playersTable.givenName,
+      })
       .from(playersTable)
       .where(sql`${playersTable.id} = ANY(${ids})`);
     for (const p of players) nameById.set(p.id, fullName(p));
@@ -309,7 +304,8 @@ async function generateMilestoneRecapCards(
 
   const created: SocialDraft[] = [];
   for (const r of rows) {
-    const name = (r.payload as { name?: string } | null)?.name ?? nameById.get(r.playerId) ?? "Unknown";
+    const name =
+      (r.payload as { name?: string } | null)?.name ?? nameById.get(r.playerId) ?? "Unknown";
     created.push(
       await insertCard(
         tenantId,

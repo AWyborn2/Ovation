@@ -44,9 +44,7 @@ const TEXTURE_BY_ID = new Map(TEXTURES.map((t) => [t.id, t.css]));
  * the background is unset / "none". Url backgrounds cover the surface; textures
  * map to a built-in CSS pattern.
  */
-export function backgroundCss(
-  bg: HonourBackground | null | undefined,
-): string | undefined {
+export function backgroundCss(bg: HonourBackground | null | undefined): string | undefined {
   if (!bg || bg.kind === "none" || !bg.value) return undefined;
   if (bg.kind === "url") {
     return `center / cover no-repeat url("${bg.value}")`;
@@ -168,9 +166,7 @@ export function boardSkinStyle(
  * background image (board background wins over the page background). Returns
  * undefined when nothing is overridden so un-configured boards stay untouched.
  */
-export function boardStyle(
-  cfg?: BoardDisplayConfig | null,
-): CSSProperties | undefined {
+export function boardStyle(cfg?: BoardDisplayConfig | null): CSSProperties | undefined {
   if (!cfg) return undefined;
   const vars: Record<string, string> = {};
   if (cfg.font) vars["--hb-title-font"] = cfg.font;

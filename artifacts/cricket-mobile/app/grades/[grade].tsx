@@ -29,16 +29,12 @@ export default function GradeLeaderboardScreen() {
 
   // The hook now takes (grade, params, options); passing no params keeps the
   // full grade, which is what this screen renders.
-  const { data, isLoading, isError } = useGetGradeLeaderboard(
-    decoded,
-    undefined,
-    {
-      query: {
-        enabled: !!decoded,
-        queryKey: getGetGradeLeaderboardQueryKey(decoded),
-      },
+  const { data, isLoading, isError } = useGetGradeLeaderboard(decoded, undefined, {
+    query: {
+      enabled: !!decoded,
+      queryKey: getGetGradeLeaderboardQueryKey(decoded),
     },
-  );
+  });
 
   const sorted = useMemo(() => {
     if (!data) return [];
@@ -112,16 +108,23 @@ export default function GradeLeaderboardScreen() {
                             {item.surname}, {item.givenName}
                           </Body>
                           <Body muted size={11} style={{ marginTop: 2 }}>
-                            {item.games ?? 0}g · {(item.runs ?? 0).toLocaleString()}r · {item.wickets ?? 0}w
+                            {item.games ?? 0}g · {(item.runs ?? 0).toLocaleString()}r ·{" "}
+                            {item.wickets ?? 0}w
                           </Body>
                         </View>
                         <View style={{ alignItems: "flex-end", marginRight: 6 }}>
                           <Heading size="md">
                             {sort === "batAvg"
-                              ? (item.batAvg != null ? item.batAvg.toFixed(2) : "-")
+                              ? item.batAvg != null
+                                ? item.batAvg.toFixed(2)
+                                : "-"
                               : cfg.get(item).toLocaleString()}
                           </Heading>
-                          <Body muted size={10} style={{ textTransform: "uppercase", letterSpacing: 1 }}>
+                          <Body
+                            muted
+                            size={10}
+                            style={{ textTransform: "uppercase", letterSpacing: 1 }}
+                          >
                             {cfg.label}
                           </Body>
                         </View>

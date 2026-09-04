@@ -18,7 +18,6 @@ import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
  * a route — so importing them back into the router cannot create a cycle.
  */
 
-
 export const opponentClubColumns = {
   opponentClubId: clubsTable.id,
   opponentClubName: clubsTable.name,
@@ -114,9 +113,7 @@ export async function seasonLeaders(
   grade?: string,
 ): Promise<{ playerId: number; givenName: string; surname: string; value: number }[]> {
   const col =
-    metric === "runs"
-      ? playerGradeSeasonStatsTable.runs
-      : playerGradeSeasonStatsTable.wickets;
+    metric === "runs" ? playerGradeSeasonStatsTable.runs : playerGradeSeasonStatsTable.wickets;
   const conds: SQL[] = [
     eq(playerGradeSeasonStatsTable.season, season),
     lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
@@ -150,8 +147,7 @@ export async function allTimeLeaders(
   metric: "runs" | "wickets",
   grade?: string,
 ): Promise<{ playerId: number; givenName: string; surname: string; value: number }[]> {
-  const col =
-    metric === "runs" ? playerGradeStatsTable.runs : playerGradeStatsTable.wickets;
+  const col = metric === "runs" ? playerGradeStatsTable.runs : playerGradeStatsTable.wickets;
   const conds: SQL[] = [lt(playerGradeStatsTable.playerId, FILL_IN_THRESHOLD)];
   if (grade) conds.push(eq(playerGradeStatsTable.grade, grade));
 
@@ -211,12 +207,7 @@ export function serializeRecordsDisplaySettings(
   row: typeof recordsDisplaySettingsTable.$inferSelect,
 ) {
   return {
-    defaultTab: row.defaultTab as
-      | "total"
-      | "by-grade"
-      | "partnerships"
-      | "centuries"
-      | "five-for",
+    defaultTab: row.defaultTab as "total" | "by-grade" | "partnerships" | "centuries" | "five-for",
     byGradeDefaultGrade: row.byGradeDefaultGrade,
     partnershipsDefaultGrade: row.partnershipsDefaultGrade,
     centuriesSort: row.centuriesSort,

@@ -1,11 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
-import type {
-  DisplayBoard,
-  BoardEntry,
-  BoardDisplayConfig,
-  HonourBrand,
-} from "./types";
+import type { DisplayBoard, BoardEntry, BoardDisplayConfig, HonourBrand } from "./types";
 import { gradeBadge, formatDate } from "./helpers";
 
 interface LayoutProps {
@@ -61,8 +56,7 @@ function BoardHead({
   // Logo defaults on; admins can hide the crest per board.
   const showLogo = cfg?.logo !== false;
   const title = cfg?.heading || board.title;
-  const subtitle =
-    cfg?.subtitle != null ? cfg.subtitle : (board.subtitle ?? "");
+  const subtitle = cfg?.subtitle != null ? cfg.subtitle : (board.subtitle ?? "");
   return (
     <header className="hb-head">
       {showLogo ? <Crest brand={brand} /> : null}
@@ -89,13 +83,9 @@ export function PremiershipBoard({ board, brand, kiosk, cfg }: LayoutProps) {
             <div className="hb-flag-top">
               <div>
                 <div className="hb-flag-season">{e.season || "—"}</div>
-                <div className="hb-flag-comp">
-                  {e.meta?.competition || board.title}
-                </div>
+                <div className="hb-flag-comp">{e.meta?.competition || board.title}</div>
               </div>
-              {e.meta?.grade ? (
-                <span className="hb-chip">{gradeBadge(e.meta.grade)}</span>
-              ) : null}
+              {e.meta?.grade ? <span className="hb-chip">{gradeBadge(e.meta.grade)}</span> : null}
             </div>
 
             {e.detail ? <div className="hb-flag-result">{e.detail}</div> : null}
@@ -282,9 +272,7 @@ export function ColumnsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
                         {e.primaryText || ""}
                       </NameLink>
                     </span>
-                    {e.detail ? (
-                      <span className="hb-cell-detail">{e.detail}</span>
-                    ) : null}
+                    {e.detail ? <span className="hb-cell-detail">{e.detail}</span> : null}
                   </>
                 ) : null}
               </div>
@@ -330,9 +318,7 @@ export function GridBoard({ board, brand, kiosk, cfg }: LayoutProps) {
                       <NameLink playerId={en.playerId} kiosk={kiosk}>
                         {en.text}
                       </NameLink>
-                      {en.note ? (
-                        <span className="hb-grid-note">{en.note}</span>
-                      ) : null}
+                      {en.note ? <span className="hb-grid-note">{en.note}</span> : null}
                     </span>
                   ))
                 ) : (
@@ -358,8 +344,7 @@ export function GridBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   } else if (wrap && grid.rows.length > blocks) {
     const per = Math.ceil(grid.rows.length / blocks);
     const chunks: NonNullable<typeof grid>["rows"][] = [];
-    for (let i = 0; i < grid.rows.length; i += per)
-      chunks.push(grid.rows.slice(i, i + per));
+    for (let i = 0; i < grid.rows.length; i += per) chunks.push(grid.rows.slice(i, i + per));
     body = (
       <div
         className="hb-grid-wrap"
@@ -443,13 +428,19 @@ function LifeMemberCard({ entry, kiosk }: { entry: BoardEntry; kiosk?: boolean }
           <LmStat
             label="Runs"
             value={s.runs.toLocaleString()}
-            sub={[battingAvg ? `Avg ${battingAvg}` : null, s.highScore ? `HS ${s.highScore}` : null]}
+            sub={[
+              battingAvg ? `Avg ${battingAvg}` : null,
+              s.highScore ? `HS ${s.highScore}` : null,
+            ]}
           />
           <LmStat label="50s / 100s" value={`${s.fifties} / ${s.hundreds}`} />
           <LmStat
             label="Wickets"
             value={s.wickets}
-            sub={[bowlingAvg ? `Avg ${bowlingAvg}` : null, s.bestBowling ? `BB ${s.bestBowling}` : null]}
+            sub={[
+              bowlingAvg ? `Avg ${bowlingAvg}` : null,
+              s.bestBowling ? `BB ${s.bestBowling}` : null,
+            ]}
           />
           <LmStat label="5-Wkt Hauls" value={s.fiveWickets} />
           <LmStat

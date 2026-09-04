@@ -91,7 +91,10 @@ describe("buildPackData", () => {
 
   it("passes the photo url and transform through unchanged", () => {
     const transform = { focalX: 0.25, focalY: 0.75, zoom: 1.5 };
-    const data = buildPackData({ photoUrl: "https://cdn.example/p.png", photoTransform: transform });
+    const data = buildPackData({
+      photoUrl: "https://cdn.example/p.png",
+      photoTransform: transform,
+    });
     expect(data.photoUrl).toBe("https://cdn.example/p.png");
     expect(data.photoTransform).toEqual(transform);
   });
@@ -108,9 +111,9 @@ describe("buildPackData", () => {
  */
 describe("tenantHashtag", () => {
   it("prefers the configured club hashtag", () => {
-    expect(
-      tenantHashtag({ settings: { clubHashtag: "#MCC" }, brand: { shortName: "MAND" } }),
-    ).toBe("#MCC");
+    expect(tenantHashtag({ settings: { clubHashtag: "#MCC" }, brand: { shortName: "MAND" } })).toBe(
+      "#MCC",
+    );
   });
 
   it("derives one from the short name when none is configured", () => {

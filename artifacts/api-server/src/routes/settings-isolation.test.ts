@@ -28,8 +28,7 @@ describe("tenant-scoped settings singletons", () => {
   let adminCookie: string;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-settings-isolation";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-settings-isolation";
 
     const [tenant2] = await db
       .insert(tenantsTable)
@@ -87,10 +86,7 @@ describe("tenant-scoped settings singletons", () => {
       .send({ clubHashtag: `#IsoT2${STAMP}` })
       .expect(200);
 
-    const asT1 = await request(app)
-      .get("/api/social-settings")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/social-settings").set("x-tenant-id", "1").expect(200);
     expect(asT1.body.settings.clubHashtag).not.toBe(`#IsoT2${STAMP}`);
 
     const asT2 = await request(app)

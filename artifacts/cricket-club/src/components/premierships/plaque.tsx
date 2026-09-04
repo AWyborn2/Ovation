@@ -47,7 +47,12 @@ export function PlaqueFrame({ children }: { children: ReactNode }) {
       <div className="h-full border-slate-800" style={{ borderWidth: "1px", padding: "1px" }}>
         <div
           className="h-full text-center flex flex-col border border-slate-800 overflow-hidden"
-          style={{ color: "#0f172a", fontFamily: PLAQUE_FONT, paddingInline: "5px", paddingBlock: "6px" }}
+          style={{
+            color: "#0f172a",
+            fontFamily: PLAQUE_FONT,
+            paddingInline: "5px",
+            paddingBlock: "6px",
+          }}
         >
           {children}
         </div>
@@ -68,7 +73,9 @@ export function PlaqueLine({ href, label }: { href: string | null; label: string
           {label}
         </Link>
       ) : (
-        <span className="block whitespace-nowrap text-slate-900 font-semibold text-[9px]">{label}</span>
+        <span className="block whitespace-nowrap text-slate-900 font-semibold text-[9px]">
+          {label}
+        </span>
       )}
     </li>
   );
@@ -109,7 +116,10 @@ export function PlaqueResult({
       {text}
     </Link>
   ) : (
-    <div style={{ ...PLAQUE_STYLES.result, whiteSpace: "pre-line" }} className="text-[12px] font-bold">
+    <div
+      style={{ ...PLAQUE_STYLES.result, whiteSpace: "pre-line" }}
+      className="text-[12px] font-bold"
+    >
       {text}
     </div>
   );

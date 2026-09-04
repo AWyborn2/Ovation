@@ -14,11 +14,7 @@ import {
   type RenderOptions,
   type ShareCardInput,
 } from "@/lib/share-card";
-import {
-  renderShareCardVideo,
-  renderShareCardGif,
-  canExportGif,
-} from "@/lib/share-card-animation";
+import { renderShareCardVideo, renderShareCardGif, canExportGif } from "@/lib/share-card-animation";
 import type { ClubBrand } from "@workspace/scorecard";
 
 const POLL_INTERVAL_MS = 700;

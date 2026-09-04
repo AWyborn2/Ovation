@@ -39,9 +39,7 @@ const MANIFESTS: readonly PackManifest[] = [
   SUNSET_PACK,
 ];
 
-const BY_ID: ReadonlyMap<string, PackManifest> = new Map(
-  MANIFESTS.map((p) => [p.packId, p]),
-);
+const BY_ID: ReadonlyMap<string, PackManifest> = new Map(MANIFESTS.map((p) => [p.packId, p]));
 
 /** Every registered pack, in registration order. */
 export function listPackManifests(): readonly PackManifest[] {

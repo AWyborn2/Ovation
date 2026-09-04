@@ -42,9 +42,7 @@ describe("C3 card_sets generation — schema shape", () => {
   });
 
   it("has a partial unique index on the grouping key for idempotent regeneration", () => {
-    const idx = config.indexes.find(
-      (i) => i.config.name === "card_sets_source_dedupe",
-    );
+    const idx = config.indexes.find((i) => i.config.name === "card_sets_source_dedupe");
     expect(idx, "card_sets_source_dedupe index present").toBeTruthy();
     expect(idx?.config.unique).toBe(true);
 
@@ -58,9 +56,7 @@ describe("C3 card_sets generation — schema shape", () => {
     const entries = idx?.config.columns ?? [];
     expect(entries).toHaveLength(5);
     const named = entries.map((c) =>
-      typeof c === "object" && c !== null && "name" in c
-        ? (c as { name: string }).name
-        : null,
+      typeof c === "object" && c !== null && "name" in c ? (c as { name: string }).name : null,
     );
     expect(named.slice(0, 2)).toEqual(["tenant_id", "source_kind"]);
     // The last three are COALESCE expressions, not plain named columns.
@@ -95,9 +91,7 @@ describe("C3 generate contract — Zod round-trip", () => {
   });
 
   it("rejects an unknown kind and a bad platform size", () => {
-    expect(() =>
-      GenerateCardSetBody.parse({ kind: "nope", platformSize: "square" }),
-    ).toThrow();
+    expect(() => GenerateCardSetBody.parse({ kind: "nope", platformSize: "square" })).toThrow();
     expect(() =>
       GenerateCardSetBody.parse({ kind: "gradeLeader", platformSize: "banner" }),
     ).toThrow();
@@ -136,10 +130,7 @@ describe("C3 slide assembly + mapping — pure helpers", () => {
   const input = (kind: string) => ({ kind });
 
   it("assembles ordered slides with deterministic ids and draft defaults", () => {
-    const { slides, truncated } = assembleSlides(
-      [input("a"), input("b"), input("c")],
-      10,
-    );
+    const { slides, truncated } = assembleSlides([input("a"), input("b"), input("c")], 10);
     expect(truncated).toBe(0);
     expect(slides.map((s) => s.id)).toEqual(["gen-1", "gen-2", "gen-3"]);
     expect(slides[0].themeId).toBeNull();

@@ -32,7 +32,11 @@ const storyHtml = formatRoot(
     `<div style="position:absolute;top:1000px;left:74px;font-weight:700;font-size:60px;line-height:1">{{playerName}}</div>` +
     `<div style="position:absolute;top:1080px;left:74px;font:600 24px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">{{grade}}</div>` +
     sponsorsOn(
-      footerRowStory(52, presentedBy("records by", ";text-shadow:0 2px 10px rgba(0,0,0,.8)"), ";text-shadow:0 2px 10px rgba(0,0,0,.7)"),
+      footerRowStory(
+        52,
+        presentedBy("records by", ";text-shadow:0 2px 10px rgba(0,0,0,.8)"),
+        ";text-shadow:0 2px 10px rgba(0,0,0,.7)",
+      ),
     ) +
     hashtagFooterStory(60, ";text-shadow:0 2px 10px rgba(0,0,0,.7)"),
 );

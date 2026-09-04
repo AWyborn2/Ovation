@@ -78,8 +78,7 @@ import {
 } from "./central-queries";
 import { centralMatchesTable } from "./central-schema";
 
-const matchesQueries = () =>
-  queriedTables.filter((t) => t === centralMatchesTable).length;
+const matchesQueries = () => queriedTables.filter((t) => t === centralMatchesTable).length;
 
 const savedTtl = process.env.CENTRAL_CACHE_TTL_MS;
 
@@ -288,9 +287,36 @@ describe("centralLadder (Ladder card prefill)", () => {
     queuedResults.push([
       // Two A-Grade rows (one is the tenant's club 5) + a B-Grade row that the
       // grade filter must drop.
-      { grade: "A Grade", clubId: 6, club: "Them CC", played: 10, won: 5, lost: 5, tied: 0, noResult: 0 },
-      { grade: "A Grade", clubId: 5, club: "Us CC", played: 10, won: 8, lost: 1, tied: 0, noResult: 1 },
-      { grade: "B Grade", clubId: 5, club: "Us CC B", played: 10, won: 9, lost: 1, tied: 0, noResult: 0 },
+      {
+        grade: "A Grade",
+        clubId: 6,
+        club: "Them CC",
+        played: 10,
+        won: 5,
+        lost: 5,
+        tied: 0,
+        noResult: 0,
+      },
+      {
+        grade: "A Grade",
+        clubId: 5,
+        club: "Us CC",
+        played: 10,
+        won: 8,
+        lost: 1,
+        tied: 0,
+        noResult: 1,
+      },
+      {
+        grade: "B Grade",
+        clubId: 5,
+        club: "Us CC B",
+        played: 10,
+        won: 9,
+        lost: 1,
+        tied: 0,
+        noResult: 0,
+      },
     ]);
     const rows = await centralLadder(5, 2024, "A Grade");
     expect(rows).toHaveLength(2);
@@ -312,8 +338,26 @@ describe("centralLadder (Ladder card prefill)", () => {
     queuedResults.push([
       // "A Grade" and "A Grade: Wyllie Cup" both map to app grade "A Grade";
       // the same club must not appear twice — keep the most-played record.
-      { grade: "A Grade", clubId: 5, club: "Us CC", played: 200, won: 120, lost: 60, tied: 0, noResult: 20 },
-      { grade: "A Grade: Wyllie Cup", clubId: 5, club: "Us CC", played: 40, won: 25, lost: 15, tied: 0, noResult: 0 },
+      {
+        grade: "A Grade",
+        clubId: 5,
+        club: "Us CC",
+        played: 200,
+        won: 120,
+        lost: 60,
+        tied: 0,
+        noResult: 20,
+      },
+      {
+        grade: "A Grade: Wyllie Cup",
+        clubId: 5,
+        club: "Us CC",
+        played: 40,
+        won: 25,
+        lost: 15,
+        tied: 0,
+        noResult: 0,
+      },
     ]);
     const rows = await centralLadder(5, 2024, "A Grade");
     expect(rows).toHaveLength(1);
@@ -322,7 +366,18 @@ describe("centralLadder (Ladder card prefill)", () => {
 
   it("empty ladder (no rows for the grade) returns [] and never throws", async () => {
     process.env.CENTRAL_CACHE_TTL_MS = "0";
-    queuedResults.push([{ grade: "B Grade", clubId: 5, club: "Us CC B", played: 5, won: 3, lost: 2, tied: 0, noResult: 0 }]);
+    queuedResults.push([
+      {
+        grade: "B Grade",
+        clubId: 5,
+        club: "Us CC B",
+        played: 5,
+        won: 3,
+        lost: 2,
+        tied: 0,
+        noResult: 0,
+      },
+    ]);
     await expect(centralLadder(5, 2024, "A Grade")).resolves.toEqual([]);
   });
 });

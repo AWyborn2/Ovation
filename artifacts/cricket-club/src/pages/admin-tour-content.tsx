@@ -58,10 +58,10 @@ export default function AdminTourContent() {
       <div>
         <h1 className="text-3xl font-serif font-bold">Welcome & guided tour</h1>
         <p className="text-muted-foreground mt-1">
-          Edit the first-visit welcome message and the wording of each guided-tour step. Leave
-          a field blank to use the built-in default. Which sections the tour points at is fixed,
-          but you can re-word every title and description — changes go live for visitors right
-          away, no developer needed.
+          Edit the first-visit welcome message and the wording of each guided-tour step. Leave a
+          field blank to use the built-in default. Which sections the tour points at is fixed, but
+          you can re-word every title and description — changes go live for visitors right away, no
+          developer needed.
         </p>
       </div>
 
@@ -72,9 +72,7 @@ export default function AdminTourContent() {
       ) : contentQ.data ? (
         <Editor
           content={contentQ.data}
-          onSaved={() =>
-            qc.invalidateQueries({ queryKey: getGetTourContentQueryKey() })
-          }
+          onSaved={() => qc.invalidateQueries({ queryKey: getGetTourContentQueryKey() })}
         />
       ) : (
         <QueryError onRetry={() => contentQ.refetch()} />
@@ -83,13 +81,7 @@ export default function AdminTourContent() {
   );
 }
 
-function Editor({
-  content,
-  onSaved,
-}: {
-  content: TourContent;
-  onSaved: () => void;
-}) {
+function Editor({ content, onSaved }: { content: TourContent; onSaved: () => void }) {
   const [welcomeTitle, setWelcomeTitle] = useState(content.welcomeTitle);
   const [welcomeBody, setWelcomeBody] = useState(content.welcomeBody);
   const [fanSteps, setFanSteps] = useState<EditableStep[]>(
@@ -156,8 +148,8 @@ function Editor({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            Shown once per visitor the first time they open the site. Blank fields fall back to
-            the defaults.
+            Shown once per visitor the first time they open the site. Blank fields fall back to the
+            defaults.
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="welcome-title">Title</Label>
@@ -246,9 +238,7 @@ function StepEditor({
             className="space-y-2 border rounded-md p-4"
             data-testid={`tour-step-${s.key}`}
           >
-            <div className="text-xs font-mono text-muted-foreground">
-              Step {idx + 1}
-            </div>
+            <div className="text-xs font-mono text-muted-foreground">Step {idx + 1}</div>
             <div className="space-y-1.5">
               <Label htmlFor={`${s.key}-title`}>Title</Label>
               <Input

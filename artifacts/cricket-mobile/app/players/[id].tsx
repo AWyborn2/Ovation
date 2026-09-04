@@ -37,8 +37,12 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
         borderBottomColor: colors.border,
       }}
     >
-      <Body muted size={13}>{label}</Body>
-      <Body bold size={13}>{value}</Body>
+      <Body muted size={13}>
+        {label}
+      </Body>
+      <Body bold size={13}>
+        {value}
+      </Body>
     </View>
   );
 }
@@ -69,7 +73,9 @@ function MatchLineRow({ m }: { m: PlayerMatchLine }) {
                 {m.bowled
                   ? `Bowl ${m.wickets ?? 0}/${m.runsConceded ?? 0}${m.overs ? ` (${m.overs})` : ""}`
                   : ""}
-                {fieldParts.length ? `${m.batted || m.bowled ? "  ·  " : ""}${fieldParts.join(" ")}` : ""}
+                {fieldParts.length
+                  ? `${m.batted || m.bowled ? "  ·  " : ""}${fieldParts.join(" ")}`
+                  : ""}
               </Body>
             </View>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -116,8 +122,14 @@ export default function PlayerDetailScreen() {
         renderItem={({ item }) => <MatchLineRow m={item} />}
         ListHeaderComponent={
           <>
-            <Heading size="xl">{data.givenName} {data.surname}</Heading>
-            <Body muted size={12} style={{ marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
+            <Heading size="xl">
+              {data.givenName} {data.surname}
+            </Heading>
+            <Body
+              muted
+              size={12}
+              style={{ marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}
+            >
               {data.gradesPlayed || "—"}
             </Body>
 
@@ -130,16 +142,16 @@ export default function PlayerDetailScreen() {
               <StatTile label="Catches" value={totalCatches} />
             </View>
 
-            {hasMatchLines ? (
-              <SectionHeader icon="clipboard" title="Match by Match" />
-            ) : null}
+            {hasMatchLines ? <SectionHeader icon="clipboard" title="Match by Match" /> : null}
           </>
         }
         ListFooterComponent={
           <>
             <SectionHeader icon="layers" title="By Grade" />
             {data.stats.length === 0 ? (
-              <Card><Body muted>No stats recorded.</Body></Card>
+              <Card>
+                <Body muted>No stats recorded.</Body>
+              </Card>
             ) : (
               data.stats.map((s) => (
                 <Card key={s.id} style={{ marginBottom: 10 }}>
@@ -149,11 +161,17 @@ export default function PlayerDetailScreen() {
                     <StatRow label="Innings" value={s.innings ?? 0} />
                     <StatRow label="Not Outs" value={s.notOuts ?? 0} />
                     <StatRow label="Runs" value={(s.runs ?? 0).toLocaleString()} />
-                    <StatRow label="Batting Avg" value={s.batAvg != null ? s.batAvg.toFixed(2) : "-"} />
+                    <StatRow
+                      label="Batting Avg"
+                      value={s.batAvg != null ? s.batAvg.toFixed(2) : "-"}
+                    />
                     <StatRow label="High Score" value={s.highScore || "-"} />
                     <StatRow label="50s / 100s" value={`${s.fifties ?? 0} / ${s.hundreds ?? 0}`} />
                     <StatRow label="Wickets" value={s.wickets ?? 0} />
-                    <StatRow label="Bowling Avg" value={s.bowlAvg != null ? s.bowlAvg.toFixed(2) : "-"} />
+                    <StatRow
+                      label="Bowling Avg"
+                      value={s.bowlAvg != null ? s.bowlAvg.toFixed(2) : "-"}
+                    />
                     <StatRow label="Best Bowling" value={s.bestBowling || "-"} />
                     <StatRow label="5wI" value={s.fiveWickets ?? 0} />
                     <StatRow label="Catches" value={s.catches ?? 0} />

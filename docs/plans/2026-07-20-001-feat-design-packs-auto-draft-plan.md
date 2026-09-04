@@ -83,12 +83,12 @@ Match result lands (via any of 4 ingest paths)
 
 ### Ingest Path Coverage
 
-| Path | Trigger mechanism | Implementation |
-|---|---|---|
-| Senior API import (`routes/imports.ts`) | Post-commit hook in `runPostCommitSocial` | Add `generateMatchSummaryDrafts` call after existing milestone/roundup calls |
-| Senior ETL (`scripts/src/load-matches.ts`) | No hook; offline script | Call sweep function at end of ETL run, OR admin triggers via API |
-| Junior ETL (`scripts/src/load-juniors-db.ts`) | No hook; offline script | Same sweep approach; junior grades default OFF |
-| Central DB reads | Read-only; no ingest event | Admin-triggered sweep via API endpoint |
+| Path                                          | Trigger mechanism                         | Implementation                                                               |
+| --------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| Senior API import (`routes/imports.ts`)       | Post-commit hook in `runPostCommitSocial` | Add `generateMatchSummaryDrafts` call after existing milestone/roundup calls |
+| Senior ETL (`scripts/src/load-matches.ts`)    | No hook; offline script                   | Call sweep function at end of ETL run, OR admin triggers via API             |
+| Junior ETL (`scripts/src/load-juniors-db.ts`) | No hook; offline script                   | Same sweep approach; junior grades default OFF                               |
+| Central DB reads                              | Read-only; no ingest event                | Admin-triggered sweep via API endpoint                                       |
 
 ### Pack Registration Model
 
@@ -126,11 +126,13 @@ cardTemplatesTable row (source = "pack"):
 **Rationale:** cardInput is frozen at draft time, so opposition branding must be correct in the DB before any drafts are generated. This must land before U3.
 
 **Files:**
+
 - `scripts/src/data/pca-clubs.ts` — 17-club dataset from Figma package's `clubData.ts`, keyed on `playhqOrgId`
 - `scripts/src/topup-clubs.ts` — idempotent upsert script: for each club in the dataset, upsert into `clubs` table matching on `playhqOrgId`, updating `primaryColour`, `secondaryColour`, `tertiaryColour`, `quaternaryColour`, `logoUrl`, `logoUrl128`, `shortName` where the existing value is null or differs
 - `scripts/src/load-master-db.ts` — after the wholesale clubs REPLACE, run the top-up upsert so PCA colours survive reloads
 
 **Test scenarios:**
+
 - `scripts/src/topup-clubs.test.ts`:
   - Upsert inserts a new club when playhqOrgId doesn't exist
   - Upsert updates colours/logo when playhqOrgId exists with stale data
@@ -147,6 +149,7 @@ cardTemplatesTable row (source = "pack"):
 **Rationale:** The server-side auto-draft engine needs `matchToSummaryInput`, which currently lives in the web client package (`artifacts/cricket-club/src/lib/match-summary.ts`). Moving it to the shared scorecard package makes it importable from both client and server.
 
 **Files:**
+
 - `lib/scorecard/src/match-summary-input.ts` — move `matchToSummaryInput`, `seasonLabel`, `formatMatchDate`, `toTeam`, `topBatters`, `topBowlers`, `deriveWinner` from `artifacts/cricket-club/src/lib/match-summary.ts`; also move `juniorMatchToSummaryInput` and its helpers from `artifacts/cricket-club/src/lib/junior-match-summary.ts`
 - `lib/scorecard/src/match-summary-types.ts` — move `MatchSummaryTeam`, `MatchSummaryInnings`, `MatchSummaryBatter`, `MatchSummaryBowler` type definitions (currently in `share-card.ts` lines 39–71); these are the types the mapper produces and the renderer consumes, shared between packages
 - `lib/scorecard/src/index.ts` — re-export the new modules
@@ -157,6 +160,7 @@ cardTemplatesTable row (source = "pack"):
 **Critical constraint:** `share-card.ts` defines `ShareCardInput` as a discriminated union that references the match-summary types. The types must be importable from @workspace/scorecard but `ShareCardInput` itself stays in `share-card.ts` (it depends on all 10 card-kind shapes). The mapper function's return type annotation changes from `ShareCardInput` to the specific match-summary shape, and the client's existing call sites continue to work because the shape is structurally compatible.
 
 **Fix thin-data crash:** In the moved `matchToSummaryInput`, guard `sc.innings[0]` access:
+
 ```
 // Before (crashes on empty innings):
 const first = sc.innings[0];
@@ -178,6 +182,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rename `isHallsHead` → `isClub`:** The `ScorecardTeam.isHallsHead` field is a Halls Head naming debt; rename it to `isClub` since it semantically means "is the tenant's own club." This touches `lib/scorecard/src/types.ts`, `lib/scorecard/src/mapping.ts`, and all consumers.
 
 **Test scenarios:**
+
 - `lib/scorecard/src/match-summary-input.test.ts`:
   - Standard two-innings match produces correct club/opposition split
   - Match with zero innings returns minimal card without crashing
@@ -198,6 +203,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rationale:** The auto-draft engine needs dedupe columns on `social_drafts` and per-grade config on `social_settings`.
 
 **Files:**
+
 - `lib/db/src/schema/social_cards.ts`:
   - `socialDraftsTable`: add `sourceKind text` (nullable, for back-compat with existing milestone/roundup/recap drafts that don't set it), `sourceMatchId integer` (nullable), `sourceMatchIsJunior boolean default false`
   - `socialSettingsTable`: add `engineMatchSummary boolean default true` (senior default ON — deliberate convention break), `matchSummaryGradeConfig jsonb default '{}'` (type `Record<string, { enabled: boolean }>`)
@@ -207,6 +213,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 - Codegen: `pnpm --filter @workspace/api-spec run codegen`
 
 **Test scenarios:**
+
 - `lib/db/src/social-drafts-dedupe.test.ts`:
   - Inserting two drafts with same (tenantId, sourceKind="matchSummary", sourceMatchId) and status="pending" violates the unique index
   - Inserting a second draft after the first is "dismissed" succeeds (partial index excludes dismissed)
@@ -222,6 +229,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rationale:** Core business logic: detect completed matches and queue draft cards.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/match-summary-drafter.ts` — new module:
   - `generateMatchSummaryDrafts(tenantId: number, matchIds: number[], opts?: { junior?: boolean })`: for each match ID:
     1. Load match detail (reuse existing match-detail query)
@@ -245,6 +253,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Entitlement gate:** The sweep endpoint and the auto-draft engine both check `requireEntitlement("socialStudio")` before proceeding. While entitlements are dormant (`BILLING_ENABLED=false` → all entitlements ON), this is a no-op, but the gate must be present for when billing activates.
 
 **Test scenarios:**
+
 - `artifacts/api-server/src/lib/match-summary-drafter.test.ts`:
   - Completed match with full scorecard produces a valid draft with correct cardInput
   - Match with zero innings produces a minimal "Result pending" draft (thin-data best-effort)
@@ -268,6 +277,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rationale:** Formalises code-authored designs as a third template source. Pack #1 provides the Figma-derived match summary designs.
 
 **Files:**
+
 - `lib/db/src/schema/social_cards.ts`:
   - `cardTemplatesTable`: add `packId text` (nullable — null for non-pack templates), `packVariant text` (nullable)
   - Document the `source` column's new `"pack"` value
@@ -293,6 +303,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 - `lib/api-spec/openapi.yaml` — update `CardTemplate` schema to include `packId`, `packVariant`, and `source` enum value `"pack"`
 
 **Test scenarios:**
+
 - `artifacts/api-server/src/lib/design-packs.test.ts`:
   - `ensurePackTemplates` creates 3 template rows for pack #1 on first call
   - Second call is idempotent — no duplicates
@@ -309,6 +320,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rationale:** The actual visual rendering of the three Figma-derived designs. This is the largest unit — translating the Figma package's SquareCard, PortraitCard, and StoriesCard components into canvas-rendered equivalents within the existing `share-card.ts` renderer.
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/share-card.ts`:
   - New rendering functions: `renderPackSquareMatchSummary`, `renderPackPortraitMatchSummary`, `renderPackStoryMatchSummary` — canvas-drawing code adapted from the Figma package's React components, using the same layout geometry, colour logic, and typography but painted via CanvasRenderingContext2D instead of React DOM
   - In `buildLayers` / the renderer dispatch: when a `matchSummary` card has a pack template applied (`opts.template?.source === "pack"`), dispatch to the pack renderer based on `packVariant` instead of the built-in `renderMatchSummaryCard`
@@ -324,6 +336,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
   - **Story (1080×1920):** Full-height animated card — phases: (1) match title + team crests slide in, (2) first innings scores count up + top performers fade in, (3) second innings same, (4) result banner slam. Total animation 3.5s, loops
 
 **Test scenarios:**
+
 - `artifacts/cricket-club/src/lib/share-card-pack.test.ts`:
   - Pack square renderer produces a canvas without throwing for a standard two-innings match
   - Pack portrait renderer produces a canvas without throwing
@@ -343,6 +356,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rationale:** Admins need to enable/disable auto-draft per grade and toggle the overall engine.
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-social-studio.tsx` — in the Settings tab:
   - Add "Match Summary Auto-Draft" section below the existing engine toggles
   - Toggle for `engineMatchSummary` (master switch)
@@ -355,6 +369,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 - `lib/api-spec/openapi.yaml` — already updated in U2; ensure `SocialSettings` response includes the new fields
 
 **Test scenarios:**
+
 - Manual browser testing (golden path):
   - Settings page loads with engine toggles visible
   - Toggling engineMatchSummary ON/OFF persists
@@ -371,6 +386,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 **Rationale:** Match summary drafts need to display correctly in the existing social queue with appropriate preview and metadata.
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-social-queue.tsx`:
   - Add `engine: "matchSummary"` to the engine filter options
   - Render match summary drafts with a preview thumbnail showing the match title, teams, and result
@@ -381,6 +397,7 @@ The junior variant already handles this (line 89–94 of `junior-match-summary.t
 - `artifacts/cricket-club/src/components/share-card-modal.tsx` — when previewing a matchSummary draft, allow switching between pack variants (square/portrait/story) if the pack is applied
 
 **Test scenarios:**
+
 - Manual browser testing:
   - Match summary drafts appear in the queue with correct preview
   - Engine filter includes "matchSummary"

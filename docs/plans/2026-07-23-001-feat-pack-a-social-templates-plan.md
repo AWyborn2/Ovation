@@ -156,19 +156,19 @@ Data flow for export: builder assembles `ShareCardInput` → preview binds it in
 
 Unit index:
 
-| U-ID | Title | Key files | Depends on |
-|---|---|---|---|
-| U1 | Pack A template assets + binding manifest | `artifacts/cricket-club/src/lib/pack-templates/broadcast-dark/*` | — |
-| U2 | New card-kind input shapes + samples | `share-card.ts`, `sample-card-inputs.ts`, `card-template.ts` | — |
-| U3 | PackCard DOM renderer + live preview | `pack-card.tsx` (new), `share-card-modal.tsx`, `admin-social-studio.tsx` | U1, U2 |
-| U4 | Server-side static PNG export | `card-render-harness.tsx`, `card-video-renderer.ts`, `routes/social-cards.ts`, `openapi.yaml` | U3 |
-| U5 | Pack registration + old-pack/layouts migration | `design-packs.ts`, `social_cards.ts` schema, migration | U1, U2 |
-| U6 | Fixtures + team-list store (schema, API, admin UI) | `lib/db/src/schema/fixtures.ts` (new), routes, admin page | — |
-| U7 | Prefill data services (ladder, club totals, wrap) | `central-queries.ts`, `routes/*`, `openapi.yaml` | — |
-| U8 | Builder forms for all 18 kinds | `admin-social-create.tsx`, new form components | U2, U3, U6, U7 |
-| U9 | Style token panel + themes extension | `social_cards.ts`, `routes/social-cards.ts`, modal/studio UI | U3 |
-| U10 | Retire canvas renderers + layout editor | `share-card.ts`, `card-layout-editor.tsx`, routes, `admin-social-studio.tsx` | U3, U4, U5, U8, U9 |
-| U11 | Consistency sweep + invariants audit | tests across packages | U10 |
+| U-ID | Title                                              | Key files                                                                                     | Depends on         |
+| ---- | -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------ |
+| U1   | Pack A template assets + binding manifest          | `artifacts/cricket-club/src/lib/pack-templates/broadcast-dark/*`                              | —                  |
+| U2   | New card-kind input shapes + samples               | `share-card.ts`, `sample-card-inputs.ts`, `card-template.ts`                                  | —                  |
+| U3   | PackCard DOM renderer + live preview               | `pack-card.tsx` (new), `share-card-modal.tsx`, `admin-social-studio.tsx`                      | U1, U2             |
+| U4   | Server-side static PNG export                      | `card-render-harness.tsx`, `card-video-renderer.ts`, `routes/social-cards.ts`, `openapi.yaml` | U3                 |
+| U5   | Pack registration + old-pack/layouts migration     | `design-packs.ts`, `social_cards.ts` schema, migration                                        | U1, U2             |
+| U6   | Fixtures + team-list store (schema, API, admin UI) | `lib/db/src/schema/fixtures.ts` (new), routes, admin page                                     | —                  |
+| U7   | Prefill data services (ladder, club totals, wrap)  | `central-queries.ts`, `routes/*`, `openapi.yaml`                                              | —                  |
+| U8   | Builder forms for all 18 kinds                     | `admin-social-create.tsx`, new form components                                                | U2, U3, U6, U7     |
+| U9   | Style token panel + themes extension               | `social_cards.ts`, `routes/social-cards.ts`, modal/studio UI                                  | U3                 |
+| U10  | Retire canvas renderers + layout editor            | `share-card.ts`, `card-layout-editor.tsx`, routes, `admin-social-studio.tsx`                  | U3, U4, U5, U8, U9 |
+| U11  | Consistency sweep + invariants audit               | tests across packages                                                                         | U10                |
 
 ### U1. Pack A template assets + binding manifest
 

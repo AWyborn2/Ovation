@@ -1,10 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import {
-  slugify,
-  validateSlug,
-  isReservedSlug,
-  slugRejectionReason,
-} from "./slug";
+import { slugify, validateSlug, isReservedSlug, slugRejectionReason } from "./slug";
 
 /** Pure slug rules for self-serve signup — no DB, runs anywhere. */
 describe("signup slug rules", () => {

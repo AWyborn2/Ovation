@@ -5,10 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AdEditor } from "../editors";
-import type {
-  HonoursDisplayForm,
-  SponsorSlideStyle,
-} from "../use-honours-display-settings";
+import type { HonoursDisplayForm, SponsorSlideStyle } from "../use-honours-display-settings";
 
 /** Sponsor strip / slides, kiosk sponsor selection and uploaded ad creatives. */
 export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
@@ -41,8 +38,8 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-xs text-muted-foreground max-w-2xl">
-          Show your club sponsors as in-built advertising on the clubroom TV.
-          Logos come from the club sponsor library — manage them under{" "}
+          Show your club sponsors as in-built advertising on the clubroom TV. Logos come from the
+          club sponsor library — manage them under{" "}
           <Link
             href="/admin/social/cards"
             className="font-medium text-primary underline underline-offset-2"
@@ -62,8 +59,8 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
             <span>
               <span className="text-sm font-medium">Sponsor strip</span>
               <span className="block text-xs text-muted-foreground">
-                A permanent “Proudly supported by” logo bar pinned to the
-                bottom of every board screen.
+                A permanent “Proudly supported by” logo bar pinned to the bottom of every board
+                screen.
               </span>
             </span>
           </label>
@@ -103,9 +100,7 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
                 <select
                   className="px-2 py-1 rounded border bg-background text-sm"
                   value={sponsorSlideStyle}
-                  onChange={(e) =>
-                    setSponsorSlideStyle(e.target.value as SponsorSlideStyle)
-                  }
+                  onChange={(e) => setSponsorSlideStyle(e.target.value as SponsorSlideStyle)}
                   data-testid="select-sponsor-slide-style"
                 >
                   <option value="grid">One grid of all sponsors</option>
@@ -120,14 +115,12 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
           <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
             Sponsors shown on the kiosk{" "}
             {activeSponsors.length > 0 && (
-              <span className="text-muted-foreground/70">
-                ({activeSponsors.length} active)
-              </span>
+              <span className="text-muted-foreground/70">({activeSponsors.length} active)</span>
             )}
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Click a sponsor to include/exclude it from the kiosk. None selected
-            = show all active sponsors.
+            Click a sponsor to include/exclude it from the kiosk. None selected = show all active
+            sponsors.
           </p>
           {sponsorsLoading ? (
             <p className="text-xs text-muted-foreground">Loading sponsors…</p>
@@ -169,8 +162,8 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
             Ad creatives
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Upload your own full-screen ad images (designed promos, not just
-            logos). Add them to the rotation in the kiosk sequence above.
+            Upload your own full-screen ad images (designed promos, not just logos). Add them to the
+            rotation in the kiosk sequence above.
           </p>
           <div className="space-y-3 max-w-2xl">
             {kioskAds.map((ad) => (
@@ -182,9 +175,7 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
               />
             ))}
             {kioskAds.length === 0 && (
-              <p className="text-xs text-muted-foreground italic">
-                No ad creatives yet.
-              </p>
+              <p className="text-xs text-muted-foreground italic">No ad creatives yet.</p>
             )}
           </div>
           <Button
@@ -192,9 +183,7 @@ export function SponsorSection({ form }: { form: HonoursDisplayForm }) {
             variant="outline"
             size="sm"
             className="mt-3"
-            onClick={() =>
-              addAd({ id: `ad:${crypto.randomUUID()}`, name: "", imageUrl: "" })
-            }
+            onClick={() => addAd({ id: `ad:${crypto.randomUUID()}`, name: "", imageUrl: "" })}
             data-testid="button-add-ad"
           >
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Add ad creative

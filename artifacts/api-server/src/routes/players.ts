@@ -36,11 +36,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
 import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
-import {
-  splitCentralName,
-  getPlayerOrderCol,
-  centralParticipantFor,
-} from "../lib/player-helpers";
+import { splitCentralName, getPlayerOrderCol, centralParticipantFor } from "../lib/player-helpers";
 
 const router: IRouter = Router();
 
@@ -51,14 +47,7 @@ router.get("/players", async (req, res): Promise<void> => {
     return;
   }
 
-  const {
-    search,
-    grade,
-    sortBy = "name",
-    sortOrder = "asc",
-    page = 1,
-    limit = 20,
-  } = query.data;
+  const { search, grade, sortBy = "name", sortOrder = "asc", page = 1, limit = 20 } = query.data;
 
   const offset = (Number(page) - 1) * Number(limit);
   const lim = Number(limit);
@@ -115,9 +104,7 @@ router.get("/players", async (req, res): Promise<void> => {
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter(
-        (r) =>
-          r.surname.toLowerCase().includes(s) ||
-          r.givenName.toLowerCase().includes(s),
+        (r) => r.surname.toLowerCase().includes(s) || r.givenName.toLowerCase().includes(s),
       );
     }
     const dir = sortOrder === "desc" ? -1 : 1;
@@ -172,18 +159,14 @@ router.get("/players", async (req, res): Promise<void> => {
       db
         .select()
         .from(playersTable)
-        .where(
-          search ? sql`(${whereClause}) AND (${or(...conditions)})` : whereClause,
-        )
+        .where(search ? sql`(${whereClause}) AND (${or(...conditions)})` : whereClause)
         .orderBy(orderCol)
         .limit(lim)
         .offset(offset),
       db
         .select({ count: count() })
         .from(playersTable)
-        .where(
-          search ? sql`(${whereClause}) AND (${or(...conditions)})` : whereClause,
-        ),
+        .where(search ? sql`(${whereClause}) AND (${or(...conditions)})` : whereClause),
     ]);
 
     res.json({
@@ -199,13 +182,7 @@ router.get("/players", async (req, res): Promise<void> => {
   const orderCol = getPlayerOrderCol(sortBy, sortOrder);
 
   const [players, totalResult] = await Promise.all([
-    db
-      .select()
-      .from(playersTable)
-      .where(whereClause)
-      .orderBy(orderCol)
-      .limit(lim)
-      .offset(offset),
+    db.select().from(playersTable).where(whereClause).orderBy(orderCol).limit(lim).offset(offset),
     db.select({ count: count() }).from(playersTable).where(whereClause),
   ]);
 
@@ -253,19 +230,13 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       .select({ participantId: playerIdMapTable.participantId })
       .from(playerIdMapTable)
       .where(
-        and(
-          eq(playerIdMapTable.tenantId, tenantId),
-          eq(playerIdMapTable.playerId, params.data.id),
-        ),
+        and(eq(playerIdMapTable.tenantId, tenantId), eq(playerIdMapTable.playerId, params.data.id)),
       );
     if (!mapRow) {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    const detail = await centralPlayerDetail(
-      source.clubId,
-      mapRow.participantId,
-    );
+    const detail = await centralPlayerDetail(source.clubId, mapRow.participantId);
     if (!detail || detail.isPrivate) {
       res.status(404).json({ error: "Player not found" });
       return;
@@ -305,8 +276,16 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   }
 
   const [playerRow, stats, premRows, debutRow, awardRows] = await Promise.all([
-    db.select().from(playersTable).where(eq(playersTable.id, params.data.id)).then((rows) => rows[0]),
-    db.select().from(playerGradeStatsTable).where(eq(playerGradeStatsTable.playerId, params.data.id)).orderBy(asc(playerGradeStatsTable.grade)),
+    db
+      .select()
+      .from(playersTable)
+      .where(eq(playersTable.id, params.data.id))
+      .then((rows) => rows[0]),
+    db
+      .select()
+      .from(playerGradeStatsTable)
+      .where(eq(playerGradeStatsTable.playerId, params.data.id))
+      .orderBy(asc(playerGradeStatsTable.grade)),
     db
       .select({
         id: premiershipsTable.id,
@@ -332,7 +311,9 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     db
       .select({
         baselineGames: sql<number>`COALESCE(SUM(${playerGradeSeasonStatsTable.games}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NULL), 0)`,
-        firstSeason: sql<number | null>`MIN(${playerGradeSeasonStatsTable.season}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NOT NULL AND ${playerGradeSeasonStatsTable.games} > 0)`,
+        firstSeason: sql<
+          number | null
+        >`MIN(${playerGradeSeasonStatsTable.season}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NOT NULL AND ${playerGradeSeasonStatsTable.games} > 0)`,
         seasonsPlayed: sql<number>`COUNT(DISTINCT ${playerGradeSeasonStatsTable.season}) FILTER (WHERE ${playerGradeSeasonStatsTable.season} IS NOT NULL AND ${playerGradeSeasonStatsTable.games} > 0)`,
       })
       .from(playerGradeSeasonStatsTable)
@@ -398,9 +379,7 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    res.json(
-      await centralPlayerSeasons(source.clubId, participantId),
-    );
+    res.json(await centralPlayerSeasons(source.clubId, participantId));
     return;
   }
 
@@ -481,9 +460,7 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    res.json(
-      await centralPlayerMatchLog(source.clubId, participantId),
-    );
+    res.json(await centralPlayerMatchLog(source.clubId, participantId));
     return;
   }
 
@@ -569,33 +546,38 @@ router.delete("/players/:id", requireAdmin, async (req, res): Promise<void> => {
     .selectDistinct({ grade: playerGradeStatsTable.grade })
     .from(playerGradeStatsTable)
     .where(eq(playerGradeStatsTable.playerId, params.data.id));
-  await db.transaction(async (tx) => {
-    const [player] = await tx
-      .delete(playersTable)
-      .where(eq(playersTable.id, params.data.id))
-      .returning();
-    if (!player) {
-      throw new Error("__NOT_FOUND__");
-    }
-    // Clear the junior→senior profile cross-reference (a link-only column with
-    // no FK; never carries stats) so junior profiles don't point at a ghost.
-    await tx
-      .update(juniorParticipantsTable)
-      .set({ seniorPlayerId: null })
-      .where(eq(juniorParticipantsTable.seniorPlayerId, params.data.id));
-    if (grades.length > 0) {
-      await recomputeAggregates(tx, grades.map((g) => g.grade));
-    }
-  }).then(
-    () => res.sendStatus(204),
-    (err) => {
-      if (err?.message === "__NOT_FOUND__") {
-        res.status(404).json({ error: "Player not found" });
-      } else {
-        throw err;
+  await db
+    .transaction(async (tx) => {
+      const [player] = await tx
+        .delete(playersTable)
+        .where(eq(playersTable.id, params.data.id))
+        .returning();
+      if (!player) {
+        throw new Error("__NOT_FOUND__");
       }
-    },
-  );
+      // Clear the junior→senior profile cross-reference (a link-only column with
+      // no FK; never carries stats) so junior profiles don't point at a ghost.
+      await tx
+        .update(juniorParticipantsTable)
+        .set({ seniorPlayerId: null })
+        .where(eq(juniorParticipantsTable.seniorPlayerId, params.data.id));
+      if (grades.length > 0) {
+        await recomputeAggregates(
+          tx,
+          grades.map((g) => g.grade),
+        );
+      }
+    })
+    .then(
+      () => res.sendStatus(204),
+      (err) => {
+        if (err?.message === "__NOT_FOUND__") {
+          res.status(404).json({ error: "Player not found" });
+        } else {
+          throw err;
+        }
+      },
+    );
 });
 
 // --- Player photo gallery -------------------------------------------------
@@ -649,24 +631,22 @@ router.get("/players/:id/images", async (req, res): Promise<void> => {
   res.json(images);
 });
 
-router.post(
-  "/players/:id/images",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const params = AddPlayerImageParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
-      return;
-    }
-    const parsed = AddPlayerImageBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    const playerId = params.data.id;
-    const { imageUrl, makeDefault } = parsed.data;
+router.post("/players/:id/images", requireAdmin, async (req, res): Promise<void> => {
+  const params = AddPlayerImageParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = AddPlayerImageBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const playerId = params.data.id;
+  const { imageUrl, makeDefault } = parsed.data;
 
-    const created = await db.transaction(async (tx) => {
+  const created = await db
+    .transaction(async (tx) => {
       const [player] = await tx
         .select({ id: playersTable.id })
         .from(playersTable)
@@ -681,9 +661,7 @@ router.post(
         .where(eq(playerImagesTable.playerId, playerId));
 
       const nextSort =
-        existing.length === 0
-          ? 0
-          : Math.max(...existing.map((r) => r.sortOrder)) + 1;
+        existing.length === 0 ? 0 : Math.max(...existing.map((r) => r.sortOrder)) + 1;
       // First image is always the default; otherwise honour makeDefault.
       const shouldBeDefault = existing.length === 0 || makeDefault === true;
 
@@ -706,85 +684,78 @@ router.post(
           .update(playerImagesTable)
           .set({ isDefault: true })
           .where(eq(playerImagesTable.id, row.id));
-        await tx
-          .update(playersTable)
-          .set({ imageUrl })
-          .where(eq(playersTable.id, playerId));
+        await tx.update(playersTable).set({ imageUrl }).where(eq(playersTable.id, playerId));
         row.isDefault = true;
       }
       return row;
-    }).catch((err) => {
+    })
+    .catch((err) => {
       if (err?.message === "__NOT_FOUND__") return null;
       throw err;
     });
 
-    if (!created) {
-      res.status(404).json({ error: "Player not found" });
-      return;
-    }
-    res.status(201).json(created);
-  },
-);
+  if (!created) {
+    res.status(404).json({ error: "Player not found" });
+    return;
+  }
+  res.status(201).json(created);
+});
 
-router.delete(
-  "/players/:id/images/:imageId",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const params = DeletePlayerImageParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
-      return;
-    }
-    const { id: playerId, imageId } = params.data;
+router.delete("/players/:id/images/:imageId", requireAdmin, async (req, res): Promise<void> => {
+  const params = DeletePlayerImageParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const { id: playerId, imageId } = params.data;
 
-    await db
-      .transaction(async (tx) => {
-        const [deleted] = await tx
-          .delete(playerImagesTable)
-          .where(
-            sql`${playerImagesTable.id} = ${imageId} AND ${playerImagesTable.playerId} = ${playerId}`,
-          )
-          .returning();
-        if (!deleted) {
-          throw new Error("__NOT_FOUND__");
+  await db
+    .transaction(async (tx) => {
+      const [deleted] = await tx
+        .delete(playerImagesTable)
+        .where(
+          sql`${playerImagesTable.id} = ${imageId} AND ${playerImagesTable.playerId} = ${playerId}`,
+        )
+        .returning();
+      if (!deleted) {
+        throw new Error("__NOT_FOUND__");
+      }
+      if (deleted.isDefault) {
+        // Promote the next remaining image, or clear the pointer entirely.
+        const [next] = await tx
+          .select()
+          .from(playerImagesTable)
+          .where(eq(playerImagesTable.playerId, playerId))
+          .orderBy(asc(playerImagesTable.sortOrder), asc(playerImagesTable.id))
+          .limit(1);
+        if (next) {
+          await tx
+            .update(playerImagesTable)
+            .set({ isDefault: true })
+            .where(eq(playerImagesTable.id, next.id));
+          await tx
+            .update(playersTable)
+            .set({ imageUrl: next.imageUrl })
+            .where(eq(playersTable.id, playerId));
+        } else {
+          await tx
+            .update(playersTable)
+            .set({ imageUrl: null })
+            .where(eq(playersTable.id, playerId));
         }
-        if (deleted.isDefault) {
-          // Promote the next remaining image, or clear the pointer entirely.
-          const [next] = await tx
-            .select()
-            .from(playerImagesTable)
-            .where(eq(playerImagesTable.playerId, playerId))
-            .orderBy(asc(playerImagesTable.sortOrder), asc(playerImagesTable.id))
-            .limit(1);
-          if (next) {
-            await tx
-              .update(playerImagesTable)
-              .set({ isDefault: true })
-              .where(eq(playerImagesTable.id, next.id));
-            await tx
-              .update(playersTable)
-              .set({ imageUrl: next.imageUrl })
-              .where(eq(playersTable.id, playerId));
-          } else {
-            await tx
-              .update(playersTable)
-              .set({ imageUrl: null })
-              .where(eq(playersTable.id, playerId));
-          }
+      }
+    })
+    .then(
+      () => res.sendStatus(204),
+      (err) => {
+        if (err?.message === "__NOT_FOUND__") {
+          res.status(404).json({ error: "Image not found" });
+        } else {
+          throw err;
         }
-      })
-      .then(
-        () => res.sendStatus(204),
-        (err) => {
-          if (err?.message === "__NOT_FOUND__") {
-            res.status(404).json({ error: "Image not found" });
-          } else {
-            throw err;
-          }
-        },
-      );
-  },
-);
+      },
+    );
+});
 
 router.post(
   "/players/:id/images/:imageId/default",

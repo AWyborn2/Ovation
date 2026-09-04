@@ -10,11 +10,7 @@ import {
   type ScorecardTeam,
   type TeamColors,
 } from "@workspace/scorecard";
-import {
-  useGetPlayer,
-  getGetPlayerQueryKey,
-  type Stat,
-} from "@workspace/api-client-react";
+import { useGetPlayer, getGetPlayerQueryKey, type Stat } from "@workspace/api-client-react";
 
 import { Body } from "@/components/ui";
 
@@ -127,7 +123,11 @@ function CardHeaderRow({
     >
       <CardLogo team={team} c={c} />
       <View style={{ flex: 1 }}>
-        <Body bold size={15} style={{ color: c.text, letterSpacing: 0.5, textTransform: "uppercase" }}>
+        <Body
+          bold
+          size={15}
+          style={{ color: c.text, letterSpacing: 0.5, textTransform: "uppercase" }}
+        >
           {team.name}
         </Body>
       </View>
@@ -163,7 +163,13 @@ function HeaderCell({
   c: TeamColors;
 }) {
   return (
-    <View style={{ flex, width, alignItems: align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center" }}>
+    <View
+      style={{
+        flex,
+        width,
+        alignItems: align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center",
+      }}
+    >
       <Body size={9} bold style={{ color: c.text, opacity: 0.8, letterSpacing: 0.5 }}>
         {children}
       </Body>
@@ -191,7 +197,13 @@ function DataCell({
   dim?: boolean;
 }) {
   return (
-    <View style={{ flex, width, alignItems: align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center" }}>
+    <View
+      style={{
+        flex,
+        width,
+        alignItems: align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center",
+      }}
+    >
       <Body size={size} bold={bold} style={{ color: c.rowText, opacity: dim ? 0.7 : 1 }}>
         {children}
       </Body>
@@ -214,17 +226,37 @@ export function BattingBlock({
     <View style={{ borderRadius: 4, overflow: "hidden" }}>
       <CardHeaderRow team={team} inningsLabel={innings.inningsLabel} c={c} />
 
-      <View style={{ flexDirection: "row", backgroundColor: c.primary, paddingHorizontal: 10, paddingVertical: 5, opacity: 0.9 }}>
-        <HeaderCell flex={3} align="left" c={c}>BATSMAN</HeaderCell>
-        <HeaderCell flex={4} c={c}>DISMISSAL</HeaderCell>
-        <HeaderCell width={34} c={c}>R</HeaderCell>
-        <HeaderCell width={30} c={c}>B</HeaderCell>
-        <HeaderCell width={42} c={c}>SR</HeaderCell>
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: c.primary,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
+          opacity: 0.9,
+        }}
+      >
+        <HeaderCell flex={3} align="left" c={c}>
+          BATSMAN
+        </HeaderCell>
+        <HeaderCell flex={4} c={c}>
+          DISMISSAL
+        </HeaderCell>
+        <HeaderCell width={34} c={c}>
+          R
+        </HeaderCell>
+        <HeaderCell width={30} c={c}>
+          B
+        </HeaderCell>
+        <HeaderCell width={42} c={c}>
+          SR
+        </HeaderCell>
       </View>
 
       {innings.batsmen.length === 0 ? (
         <View style={{ backgroundColor: c.rowOdd, padding: 12 }}>
-          <Body size={12} style={{ color: c.rowText, opacity: 0.6, fontStyle: "italic" }}>No batting recorded.</Body>
+          <Body size={12} style={{ color: c.rowText, opacity: 0.6, fontStyle: "italic" }}>
+            No batting recorded.
+          </Body>
         </View>
       ) : (
         innings.batsmen.map((row, idx) => {
@@ -233,45 +265,94 @@ export function BattingBlock({
           return (
             <View
               key={`${row.name}-${idx}`}
-              style={{ flexDirection: "row", alignItems: "center", backgroundColor: bg, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: c.borderColor }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: bg,
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+                borderTopWidth: 1,
+                borderTopColor: c.borderColor,
+              }}
             >
               <View style={{ flex: 3 }}>
                 {clickable ? (
                   <Pressable onPress={() => onPlayer?.(row.playerId!, row.name)}>
                     <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>
-                      {row.name}{row.notOut ? <Body bold size={13} style={{ color: c.secondary }}> *</Body> : null}
+                      {row.name}
+                      {row.notOut ? (
+                        <Body bold size={13} style={{ color: c.secondary }}>
+                          {" "}
+                          *
+                        </Body>
+                      ) : null}
                     </Body>
                   </Pressable>
                 ) : (
                   <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>
-                    {row.name}{row.notOut ? <Body bold size={13} style={{ color: c.secondary }}> *</Body> : null}
+                    {row.name}
+                    {row.notOut ? (
+                      <Body bold size={13} style={{ color: c.secondary }}>
+                        {" "}
+                        *
+                      </Body>
+                    ) : null}
                   </Body>
                 )}
               </View>
-              <DataCell flex={4} c={c} size={11} dim>{row.dismissal || "—"}</DataCell>
-              <DataCell width={34} c={c} bold size={14}>{row.runs ?? 0}</DataCell>
-              <DataCell width={30} c={c} size={12} dim>{row.balls ?? "—"}</DataCell>
-              <DataCell width={42} c={c} size={12} dim>{row.strikeRate != null ? row.strikeRate.toFixed(1) : "—"}</DataCell>
+              <DataCell flex={4} c={c} size={11} dim>
+                {row.dismissal || "—"}
+              </DataCell>
+              <DataCell width={34} c={c} bold size={14}>
+                {row.runs ?? 0}
+              </DataCell>
+              <DataCell width={30} c={c} size={12} dim>
+                {row.balls ?? "—"}
+              </DataCell>
+              <DataCell width={42} c={c} size={12} dim>
+                {row.strikeRate != null ? row.strikeRate.toFixed(1) : "—"}
+              </DataCell>
             </View>
           );
         })
       )}
 
       {innings.didNotBat.length > 0 ? (
-        <View style={{ backgroundColor: c.rowEven, paddingHorizontal: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: c.borderColor }}>
+        <View
+          style={{
+            backgroundColor: c.rowEven,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderTopWidth: 1,
+            borderTopColor: c.borderColor,
+          }}
+        >
           <Body size={11} style={{ color: c.rowText, opacity: 0.6, fontStyle: "italic" }}>
             Did not bat: {innings.didNotBat.join(", ")}
           </Body>
         </View>
       ) : null}
 
-      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.totalBg, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 2, borderTopColor: c.secondary }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: c.totalBg,
+          paddingHorizontal: 10,
+          paddingVertical: 7,
+          borderTopWidth: 2,
+          borderTopColor: c.secondary,
+        }}
+      >
         <View style={{ flex: 1 }}>
-          <Body size={11} bold style={{ color: c.totalText }}>OVERS {innings.oversTotal ?? "—"}</Body>
+          <Body size={11} bold style={{ color: c.totalText }}>
+            OVERS {innings.oversTotal ?? "—"}
+          </Body>
         </View>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Body size={11} style={{ color: c.totalText }}>
-            EXTRAS {innings.extras.total}{parts.length > 0 ? ` (${parts.join(" ")})` : ""}
+            EXTRAS {innings.extras.total}
+            {parts.length > 0 ? ` (${parts.join(" ")})` : ""}
           </Body>
         </View>
         <View style={{ flex: 1, alignItems: "flex-end" }}>
@@ -303,18 +384,40 @@ export function BowlingBlock({
     <View style={{ borderRadius: 4, overflow: "hidden" }}>
       <CardHeaderRow team={team} inningsLabel={innings.inningsLabel} c={c} />
 
-      <View style={{ flexDirection: "row", backgroundColor: c.primary, paddingHorizontal: 10, paddingVertical: 5, opacity: 0.9 }}>
-        <HeaderCell flex={3} align="left" c={c}>BOWLER</HeaderCell>
-        <HeaderCell width={44} c={c}>O</HeaderCell>
-        <HeaderCell width={32} c={c}>M</HeaderCell>
-        <HeaderCell width={40} c={c}>R</HeaderCell>
-        <HeaderCell width={36} c={c}>W</HeaderCell>
-        <HeaderCell width={48} c={c}>ECON</HeaderCell>
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: c.primary,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
+          opacity: 0.9,
+        }}
+      >
+        <HeaderCell flex={3} align="left" c={c}>
+          BOWLER
+        </HeaderCell>
+        <HeaderCell width={44} c={c}>
+          O
+        </HeaderCell>
+        <HeaderCell width={32} c={c}>
+          M
+        </HeaderCell>
+        <HeaderCell width={40} c={c}>
+          R
+        </HeaderCell>
+        <HeaderCell width={36} c={c}>
+          W
+        </HeaderCell>
+        <HeaderCell width={48} c={c}>
+          ECON
+        </HeaderCell>
       </View>
 
       {innings.bowlers.length === 0 ? (
         <View style={{ backgroundColor: c.rowOdd, padding: 12 }}>
-          <Body size={12} style={{ color: c.rowText, opacity: 0.6, fontStyle: "italic" }}>No bowling recorded.</Body>
+          <Body size={12} style={{ color: c.rowText, opacity: 0.6, fontStyle: "italic" }}>
+            No bowling recorded.
+          </Body>
         </View>
       ) : (
         innings.bowlers.map((row, idx) => {
@@ -324,36 +427,78 @@ export function BowlingBlock({
           return (
             <View
               key={`${row.name}-${idx}`}
-              style={{ flexDirection: "row", alignItems: "center", backgroundColor: bg, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: c.borderColor }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: bg,
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+                borderTopWidth: 1,
+                borderTopColor: c.borderColor,
+              }}
             >
               <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 5 }}>
                 {clickable ? (
-                  <Pressable onPress={() => onPlayer?.(row.playerId!, row.name)} style={{ flexShrink: 1 }}>
-                    <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>{row.name}</Body>
+                  <Pressable
+                    onPress={() => onPlayer?.(row.playerId!, row.name)}
+                    style={{ flexShrink: 1 }}
+                  >
+                    <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>
+                      {row.name}
+                    </Body>
                   </Pressable>
                 ) : (
-                  <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>{row.name}</Body>
+                  <Body bold size={13} style={{ color: c.rowText, textTransform: "uppercase" }}>
+                    {row.name}
+                  </Body>
                 )}
-                {hasHatTrick ? <Body bold size={12} style={{ color: c.secondary }}>🔥</Body> : null}
+                {hasHatTrick ? (
+                  <Body bold size={12} style={{ color: c.secondary }}>
+                    🔥
+                  </Body>
+                ) : null}
               </View>
-              <DataCell width={44} c={c} size={12} dim>{row.overs ?? "—"}</DataCell>
-              <DataCell width={32} c={c} size={12} dim>{row.maidens ?? "—"}</DataCell>
-              <DataCell width={40} c={c} size={12} dim>{row.runs ?? "—"}</DataCell>
-              <DataCell width={36} c={c} bold size={14}>{row.wickets ?? 0}</DataCell>
-              <DataCell width={48} c={c} size={12} dim>{row.economy != null ? row.economy.toFixed(2) : "—"}</DataCell>
+              <DataCell width={44} c={c} size={12} dim>
+                {row.overs ?? "—"}
+              </DataCell>
+              <DataCell width={32} c={c} size={12} dim>
+                {row.maidens ?? "—"}
+              </DataCell>
+              <DataCell width={40} c={c} size={12} dim>
+                {row.runs ?? "—"}
+              </DataCell>
+              <DataCell width={36} c={c} bold size={14}>
+                {row.wickets ?? 0}
+              </DataCell>
+              <DataCell width={48} c={c} size={12} dim>
+                {row.economy != null ? row.economy.toFixed(2) : "—"}
+              </DataCell>
             </View>
           );
         })
       )}
 
-      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.totalBg, paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: 2, borderTopColor: c.secondary }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: c.totalBg,
+          paddingHorizontal: 10,
+          paddingVertical: 7,
+          borderTopWidth: 2,
+          borderTopColor: c.secondary,
+        }}
+      >
         <View style={{ flex: 1 }}>
           <Body size={11} bold style={{ color: c.totalText }}>
-            EXTRAS {innings.extras.total}{parts.length > 0 ? ` (${parts.join(" ")})` : ""}
+            EXTRAS {innings.extras.total}
+            {parts.length > 0 ? ` (${parts.join(" ")})` : ""}
           </Body>
         </View>
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Body size={11} bold style={{ color: c.totalText }}>OVERS {innings.oversTotal ?? "—"}</Body>
+          <Body size={11} bold style={{ color: c.totalText }}>
+            OVERS {innings.oversTotal ?? "—"}
+          </Body>
         </View>
         <View style={{ flex: 1, alignItems: "flex-end" }}>
           <Body bold size={20} style={{ color: c.totalText }}>
@@ -369,9 +514,22 @@ export function BowlingBlock({
 
 function StatTileSmall({ label, value }: { label: string; value: string | number | null }) {
   return (
-    <View style={{ flexBasis: "31%", flexGrow: 1, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 6, paddingVertical: 8, alignItems: "center" }}>
-      <Body bold size={17} style={{ color: "#e5e7eb" }}>{value ?? "—"}</Body>
-      <Body size={9} style={{ color: "#6b7280", letterSpacing: 0.5, textTransform: "uppercase" }}>{label}</Body>
+    <View
+      style={{
+        flexBasis: "31%",
+        flexGrow: 1,
+        backgroundColor: "rgba(255,255,255,0.05)",
+        borderRadius: 6,
+        paddingVertical: 8,
+        alignItems: "center",
+      }}
+    >
+      <Body bold size={17} style={{ color: "#e5e7eb" }}>
+        {value ?? "—"}
+      </Body>
+      <Body size={9} style={{ color: "#6b7280", letterSpacing: 0.5, textTransform: "uppercase" }}>
+        {label}
+      </Body>
     </View>
   );
 }
@@ -410,43 +568,103 @@ function PlayerStatsModal({
   const hasBowling = wickets > 0 || runsConceded > 0;
   const hasFielding = catches + stumpings + runOuts > 0;
 
-  const name = data ? `${data.givenName} ${data.surname}`.trim() : fallbackName ?? "Player";
+  const name = data ? `${data.givenName} ${data.surname}`.trim() : (fallbackName ?? "Player");
 
   return (
     <Modal visible={playerId != null} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.75)", alignItems: "center", justifyContent: "center", padding: 16 }}
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.75)",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+        }}
         onPress={onClose}
       >
         <Pressable
-          style={{ width: "100%", maxWidth: 460, borderRadius: 10, overflow: "hidden", backgroundColor: "#0c1c33", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" }}
+          style={{
+            width: "100%",
+            maxWidth: 460,
+            borderRadius: 10,
+            overflow: "hidden",
+            backgroundColor: "#0c1c33",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.12)",
+          }}
           onPress={() => {}}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#00305c", paddingHorizontal: 18, paddingVertical: 14 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#00305c",
+              paddingHorizontal: 18,
+              paddingVertical: 14,
+            }}
+          >
             <View style={{ flex: 1 }}>
-              <Body bold size={17} style={{ color: "#f5a623", letterSpacing: 0.5, textTransform: "uppercase" }}>{name}</Body>
-              {data?.gradesPlayed ? <Body size={12} style={{ color: "#9ca3af", marginTop: 2 }}>{data.gradesPlayed}</Body> : null}
+              <Body
+                bold
+                size={17}
+                style={{ color: "#f5a623", letterSpacing: 0.5, textTransform: "uppercase" }}
+              >
+                {name}
+              </Body>
+              {data?.gradesPlayed ? (
+                <Body size={12} style={{ color: "#9ca3af", marginTop: 2 }}>
+                  {data.gradesPlayed}
+                </Body>
+              ) : null}
             </View>
             <Pressable onPress={onClose} hitSlop={10}>
-              <Body size={22} style={{ color: "#9ca3af" }}>×</Body>
+              <Body size={22} style={{ color: "#9ca3af" }}>
+                ×
+              </Body>
             </Pressable>
           </View>
 
           <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 18 }}>
             {isLoading ? (
-              <Body size={13} style={{ color: "#9ca3af" }}>Loading career stats…</Body>
+              <Body size={13} style={{ color: "#9ca3af" }}>
+                Loading career stats…
+              </Body>
             ) : stats.length === 0 ? (
-              <Body size={13} style={{ color: "#9ca3af" }}>No career stats recorded.</Body>
+              <Body size={13} style={{ color: "#9ca3af" }}>
+                No career stats recorded.
+              </Body>
             ) : (
               <>
-                <Body size={10} bold style={{ color: "#6b7280", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
+                <Body
+                  size={10}
+                  bold
+                  style={{
+                    color: "#6b7280",
+                    letterSpacing: 1,
+                    textTransform: "uppercase",
+                    marginBottom: 12,
+                  }}
+                >
                   Career • {games} {games === 1 ? "Game" : "Games"}
                 </Body>
 
                 {hasBatting ? (
                   <>
-                    <Body size={9} bold style={{ color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Batting</Body>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                    <Body
+                      size={9}
+                      bold
+                      style={{
+                        color: "#4b5563",
+                        letterSpacing: 1,
+                        textTransform: "uppercase",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Batting
+                    </Body>
+                    <View
+                      style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}
+                    >
                       <StatTileSmall label="Runs" value={runs.toLocaleString()} />
                       <StatTileSmall label="Average" value={batAvg} />
                       <StatTileSmall label="High Score" value={bestHighScore(stats)} />
@@ -459,8 +677,21 @@ function PlayerStatsModal({
 
                 {hasBowling ? (
                   <>
-                    <Body size={9} bold style={{ color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Bowling</Body>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                    <Body
+                      size={9}
+                      bold
+                      style={{
+                        color: "#4b5563",
+                        letterSpacing: 1,
+                        textTransform: "uppercase",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Bowling
+                    </Body>
+                    <View
+                      style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}
+                    >
                       <StatTileSmall label="Wickets" value={wickets} />
                       <StatTileSmall label="Average" value={bowlAvg} />
                       <StatTileSmall label="Best" value={bestBowling(stats)} />
@@ -471,7 +702,18 @@ function PlayerStatsModal({
 
                 {hasFielding ? (
                   <>
-                    <Body size={9} bold style={{ color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Fielding</Body>
+                    <Body
+                      size={9}
+                      bold
+                      style={{
+                        color: "#4b5563",
+                        letterSpacing: 1,
+                        textTransform: "uppercase",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Fielding
+                    </Body>
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                       <StatTileSmall label="Catches" value={catches} />
                       <StatTileSmall label="Stumpings" value={stumpings} />
@@ -483,10 +725,20 @@ function PlayerStatsModal({
             )}
           </ScrollView>
 
-          <View style={{ paddingHorizontal: 18, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)", alignItems: "center" }}>
+          <View
+            style={{
+              paddingHorizontal: 18,
+              paddingVertical: 12,
+              borderTopWidth: 1,
+              borderTopColor: "rgba(255,255,255,0.06)",
+              alignItems: "center",
+            }}
+          >
             <Link href={`/players/${playerId}` as never} asChild onPress={onClose}>
               <Pressable>
-                <Body size={12} bold style={{ color: "#f5a623" }}>View full profile →</Body>
+                <Body size={12} bold style={{ color: "#f5a623" }}>
+                  View full profile →
+                </Body>
               </Pressable>
             </Link>
           </View>
@@ -516,9 +768,13 @@ export function DigitalScorecard({
 
   if (!hasAnyData) {
     return (
-      <View style={{ backgroundColor: "#0a1626", borderRadius: 8, padding: 24, alignItems: "center" }}>
+      <View
+        style={{ backgroundColor: "#0a1626", borderRadius: 8, padding: 24, alignItems: "center" }}
+      >
         <Body size={13} style={{ color: "#9ca3af", fontStyle: "italic" }}>
-          {match.abandoned ? "Match abandoned — no scorecard recorded." : "No scorecard recorded for this match."}
+          {match.abandoned
+            ? "Match abandoned — no scorecard recorded."
+            : "No scorecard recorded for this match."}
         </Body>
       </View>
     );

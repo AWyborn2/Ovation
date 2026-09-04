@@ -73,13 +73,7 @@ export function Body({
   );
 }
 
-export function Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: ViewStyle;
-}) {
+export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   const colors = useColors();
   return (
     <View
@@ -99,13 +93,7 @@ export function Card({
   );
 }
 
-export function StatTile({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
-}) {
+export function StatTile({ label, value }: { label: string; value: string | number }) {
   const colors = useColors();
   return (
     <Card style={{ flex: 1, padding: 14 }}>
@@ -156,9 +144,7 @@ export function SectionHeader({
         gap: 8,
       }}
     >
-      {icon ? (
-        <Feather name={icon} size={16} color={colors.primary} />
-      ) : null}
+      {icon ? <Feather name={icon} size={16} color={colors.primary} /> : null}
       <Heading size="md" style={{ flex: 1 }}>
         {title}
       </Heading>

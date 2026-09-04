@@ -2,12 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import {
-  db,
-  tenantsTable,
-  adminsTable,
-  honourDisplaySettingsTable,
-} from "@workspace/db";
+import { db, tenantsTable, adminsTable, honourDisplaySettingsTable } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
@@ -75,8 +70,7 @@ describe("entitlement gating: paid admin mutations are plan-gated", () => {
       .send({});
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-entitlements";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-entitlements";
     free = await seedTenant("free", 9201);
     club = await seedTenant("club", 9202);
     pro = await seedTenant("pro", 9203);

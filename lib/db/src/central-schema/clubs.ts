@@ -29,8 +29,6 @@ export type CentralClubRow = typeof centralClubsTable.$inferSelect;
  * `@workspace/db/central`, which re-exports this module) can share one
  * definition without a new cross-package dependency.
  */
-export function isCentralClubProvisionable(
-  club: Pick<CentralClubRow, "activeTo">,
-): boolean {
+export function isCentralClubProvisionable(club: Pick<CentralClubRow, "activeTo">): boolean {
   return club.activeTo == null;
 }

@@ -94,7 +94,15 @@ export function CardBack({ data }: { data: TradingCardData }) {
       <div style={{ padding: "8px 18px 56px", overflow: "hidden" }}>
         <div style={{ textAlign: "center", marginBottom: 14 }}>
           <div style={{ fontSize: 20, fontWeight: 900 }}>{data.name}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: "uppercase", letterSpacing: 1 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: GOLD,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
             {data.role}
           </div>
         </div>
@@ -134,7 +142,13 @@ export function CardBack({ data }: { data: TradingCardData }) {
         {showFielding && (
           <div style={{ marginTop: 16 }}>
             <SectionTitle>Fielding</SectionTitle>
-            <div style={{ display: "grid", gridTemplateColumns: data.role === "Wicket-Keeper" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: data.role === "Wicket-Keeper" ? "1fr 1fr 1fr" : "1fr 1fr",
+                gap: 8,
+              }}
+            >
               <StatTile label="Catches" value={a.catches} />
               {data.role === "Wicket-Keeper" && <StatTile label="Stumpings" value={a.stumpings} />}
               <StatTile label="Run Outs" value={a.runOuts} />
@@ -185,7 +199,15 @@ export function CardBack({ data }: { data: TradingCardData }) {
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <Award size={16} style={{ color: GOLD, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       {award.title}
                     </span>
                   </div>
@@ -215,7 +237,15 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
       <PhaseContent>
         {phase === "intro" && (
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: GOLD, letterSpacing: 2, textTransform: "uppercase" }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: GOLD,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+              }}
+            >
               Official Player Card
             </div>
             {data.rating !== null && (
@@ -224,7 +254,16 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
               </div>
             )}
             {data.debutYear !== null && (
-              <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: 1 }}>
+              <div
+                style={{
+                  marginTop: 14,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.75)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
                 {clubShortLabel(brand)} since {data.debutYear}
               </div>
             )}
@@ -240,9 +279,11 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
           <>
             <PhaseTitle>Career Statistics</PhaseTitle>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {careerStatTiles(data).slice(0, 6).map((m, i) => (
-                <StatTile key={`${m.label}-${i}`} label={m.label} value={m.value} big />
-              ))}
+              {careerStatTiles(data)
+                .slice(0, 6)
+                .map((m, i) => (
+                  <StatTile key={`${m.label}-${i}`} label={m.label} value={m.value} big />
+                ))}
             </div>
           </>
         )}
@@ -275,7 +316,9 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
             <PhaseTitle>Fielding</PhaseTitle>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <StatTile label="Catches" value={a.catches} big />
-              {data.role === "Wicket-Keeper" && <StatTile label="Stumpings" value={a.stumpings} big />}
+              {data.role === "Wicket-Keeper" && (
+                <StatTile label="Stumpings" value={a.stumpings} big />
+              )}
               <StatTile label="Run Outs" value={a.runOuts} big />
             </div>
           </>
@@ -286,12 +329,31 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
             <div style={{ fontSize: 32, fontWeight: 900, color: GOLD, lineHeight: 1 }}>
               {data.achievements.premierships.length}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "rgba(255,255,255,0.7)", marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                color: "rgba(255,255,255,0.7)",
+                marginBottom: 12,
+              }}
+            >
               {data.achievements.premierships.length === 1 ? "Premiership" : "Premierships"}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
               {data.achievements.premierships.map((p, i) => (
-                <span key={`${p.year}-${p.grade}-${i}`} style={{ background: GOLD, color: CHARCOAL, borderRadius: 999, padding: "4px 10px", fontSize: 11.5, fontWeight: 800 }}>
+                <span
+                  key={`${p.year}-${p.grade}-${i}`}
+                  style={{
+                    background: GOLD,
+                    color: CHARCOAL,
+                    borderRadius: 999,
+                    padding: "4px 10px",
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                  }}
+                >
                   {premiershipLabel(p)}
                 </span>
               ))}
@@ -317,7 +379,16 @@ export function CardPhaseFrame({ data, phase }: { data: TradingCardData; phase: 
                 >
                   <Award size={20} style={{ color: GOLD, flexShrink: 0 }} />
                   <div style={{ textAlign: "left", minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        fontWeight: 800,
+                        lineHeight: 1.15,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       {award.title}
                     </div>
                     <div style={{ fontSize: 10, fontWeight: 700, color: GOLD }}>

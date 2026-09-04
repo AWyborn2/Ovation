@@ -67,7 +67,8 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
   if (parsed.data.logoUrl !== undefined) updates.logoUrl = parsed.data.logoUrl;
   if (parsed.data.faviconUrl !== undefined) updates.faviconUrl = parsed.data.faviconUrl;
   if (parsed.data.backgroundUrl !== undefined) updates.backgroundUrl = parsed.data.backgroundUrl;
-  if (parsed.data.backgroundColour !== undefined) updates.backgroundColour = parsed.data.backgroundColour;
+  if (parsed.data.backgroundColour !== undefined)
+    updates.backgroundColour = parsed.data.backgroundColour;
   if (parsed.data.primaryColour !== undefined) updates.primaryColour = parsed.data.primaryColour;
   if (parsed.data.juniorsColour !== undefined) updates.juniorsColour = parsed.data.juniorsColour;
   if (parsed.data.badgeStyle !== undefined) updates.badgeStyle = parsed.data.badgeStyle;

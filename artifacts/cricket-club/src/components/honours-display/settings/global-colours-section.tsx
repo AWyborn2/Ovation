@@ -12,9 +12,8 @@ export function GlobalColoursSection({ form }: { form: HonoursDisplayForm }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Club-wide tweaks layered on top of the active skin. Leave a colour
-          blank to keep the skin's own colour. These apply everywhere on the
-          display and kiosk.
+          Club-wide tweaks layered on top of the active skin. Leave a colour blank to keep the
+          skin's own colour. These apply everywhere on the display and kiosk.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
           <ColourField
@@ -49,9 +48,7 @@ export function GlobalColoursSection({ form }: { form: HonoursDisplayForm }) {
           />
         </div>
         <label className="space-y-1 block max-w-sm">
-          <span className="text-xs font-medium text-muted-foreground">
-            Default title font
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Default title font</span>
           <select
             className="w-full px-2 py-1.5 rounded border bg-card text-sm"
             value={defaultFont}

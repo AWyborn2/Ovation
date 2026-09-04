@@ -77,8 +77,7 @@ async function adminCountsByTenant(): Promise<Map<number, number>> {
  */
 async function centralClubNames(): Promise<Map<number, string>> {
   try {
-    const { centralDb, centralClubsTable } =
-      await import("@workspace/db/central");
+    const { centralDb, centralClubsTable } = await import("@workspace/db/central");
     const clubs = await centralDb
       .select({
         clubId: centralClubsTable.clubId,
@@ -178,47 +177,39 @@ function toProvisioningExclusion(row: {
     clubName: row.clubName,
     visibility: row.visibility,
     reason: row.reason,
-    createdAt:
-      row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
   };
 }
 
 // --- Auth -------------------------------------------------------------------
 
-router.post(
-  "/platform/auth/login",
-  loginRateLimiter,
-  async (req, res): Promise<void> => {
-    const parsed = PlatformAdminLoginBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    const email = parsed.data.email.trim().toLowerCase();
-    const admin = await getPlatformAdminByEmail(email);
-    if (
-      !admin ||
-      !(await verifyPassword(parsed.data.password, admin.passwordHash))
-    ) {
-      res.status(401).json({ error: "Invalid email or password" });
-      return;
-    }
-    res.cookie(
-      PLATFORM_SESSION_COOKIE,
-      encodePlatformSession({
-        platformAdminId: admin.id,
-        issuedAt: Date.now(),
-        epoch: admin.sessionEpoch,
-      }),
-      SESSION_COOKIE_OPTS,
-    );
-    res.json({
-      id: admin.id,
-      email: admin.email,
-      displayName: admin.displayName,
-    });
-  },
-);
+router.post("/platform/auth/login", loginRateLimiter, async (req, res): Promise<void> => {
+  const parsed = PlatformAdminLoginBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+  const admin = await getPlatformAdminByEmail(email);
+  if (!admin || !(await verifyPassword(parsed.data.password, admin.passwordHash))) {
+    res.status(401).json({ error: "Invalid email or password" });
+    return;
+  }
+  res.cookie(
+    PLATFORM_SESSION_COOKIE,
+    encodePlatformSession({
+      platformAdminId: admin.id,
+      issuedAt: Date.now(),
+      epoch: admin.sessionEpoch,
+    }),
+    SESSION_COOKIE_OPTS,
+  );
+  res.json({
+    id: admin.id,
+    email: admin.email,
+    displayName: admin.displayName,
+  });
+});
 
 router.post("/platform/auth/logout", (_req, res): void => {
   res.clearCookie(PLATFORM_SESSION_COOKIE, { path: "/" });
@@ -232,55 +223,37 @@ router.get("/platform/auth/me", requirePlatformAdmin, (req, res): void => {
 
 // --- Tenant oversight + management ------------------------------------------
 
-router.get(
-  "/platform/admin/tenants",
-  requirePlatformAdmin,
-  async (_req, res): Promise<void> => {
-    const [tenants, counts, names] = await Promise.all([
-      db.select().from(tenantsTable),
-      adminCountsByTenant(),
-      centralClubNames(),
-    ]);
-    const out = tenants
-      .map((t) =>
-        toAdminTenant(
-          t,
-          names.get(t.centralClubId) ?? null,
-          counts.get(t.id) ?? 0,
-        ),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-    res.json(out);
-  },
-);
+router.get("/platform/admin/tenants", requirePlatformAdmin, async (_req, res): Promise<void> => {
+  const [tenants, counts, names] = await Promise.all([
+    db.select().from(tenantsTable),
+    adminCountsByTenant(),
+    centralClubNames(),
+  ]);
+  const out = tenants
+    .map((t) => toAdminTenant(t, names.get(t.centralClubId) ?? null, counts.get(t.id) ?? 0))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  res.json(out);
+});
 
-router.get(
-  "/platform/admin/tenants/:id",
-  requirePlatformAdmin,
-  async (req, res): Promise<void> => {
-    const id = parseIdParam(req, res);
-    if (id === null) return;
-    const tenant = await getTenantOrNotFound(id, res);
-    if (!tenant) return;
-    const admins = await db
-      .select({
-        id: adminsTable.id,
-        username: adminsTable.username,
-        displayName: adminsTable.displayName,
-      })
-      .from(adminsTable)
-      .where(eq(adminsTable.tenantId, id));
-    const names = await centralClubNames();
-    res.json({
-      tenant: toAdminTenant(
-        tenant,
-        names.get(tenant.centralClubId) ?? null,
-        admins.length,
-      ),
-      admins,
-    });
-  },
-);
+router.get("/platform/admin/tenants/:id", requirePlatformAdmin, async (req, res): Promise<void> => {
+  const id = parseIdParam(req, res);
+  if (id === null) return;
+  const tenant = await getTenantOrNotFound(id, res);
+  if (!tenant) return;
+  const admins = await db
+    .select({
+      id: adminsTable.id,
+      username: adminsTable.username,
+      displayName: adminsTable.displayName,
+    })
+    .from(adminsTable)
+    .where(eq(adminsTable.tenantId, id));
+  const names = await centralClubNames();
+  res.json({
+    tenant: toAdminTenant(tenant, names.get(tenant.centralClubId) ?? null, admins.length),
+    admins,
+  });
+});
 
 router.patch(
   "/platform/admin/tenants/:id",
@@ -332,13 +305,9 @@ router.patch(
         const [clash] = await db
           .select({ id: tenantsTable.id })
           .from(tenantsTable)
-          .where(
-            and(eq(tenantsTable.customDomain, cd), ne(tenantsTable.id, id)),
-          );
+          .where(and(eq(tenantsTable.customDomain, cd), ne(tenantsTable.id, id)));
         if (clash) {
-          res
-            .status(409)
-            .json({ error: "That custom domain is already in use." });
+          res.status(409).json({ error: "That custom domain is already in use." });
           return;
         }
       }
@@ -480,12 +449,14 @@ router.patch(
     if (parsed.data.tagline !== undefined) updates.tagline = parsed.data.tagline;
     if (parsed.data.logoUrl !== undefined) updates.logoUrl = parsed.data.logoUrl;
     if (parsed.data.faviconUrl !== undefined) updates.faviconUrl = parsed.data.faviconUrl;
-    if (parsed.data.backgroundColour !== undefined) updates.backgroundColour = parsed.data.backgroundColour;
+    if (parsed.data.backgroundColour !== undefined)
+      updates.backgroundColour = parsed.data.backgroundColour;
     if (parsed.data.primaryColour !== undefined) updates.primaryColour = parsed.data.primaryColour;
     if (parsed.data.juniorsColour !== undefined) updates.juniorsColour = parsed.data.juniorsColour;
     if (parsed.data.badgeStyle !== undefined) updates.badgeStyle = parsed.data.badgeStyle;
     if (parsed.data.useNavyBase !== undefined) updates.useNavyBase = parsed.data.useNavyBase;
-    if (parsed.data.themeOverrides !== undefined) updates.themeOverrides = parsed.data.themeOverrides;
+    if (parsed.data.themeOverrides !== undefined)
+      updates.themeOverrides = parsed.data.themeOverrides;
 
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "Nothing to update" });
@@ -520,101 +491,86 @@ router.patch(
       .where(eq(adminsTable.tenantId, id));
     const names = await centralClubNames();
     res.json({
-      tenant: toAdminTenant(
-        row,
-        names.get(row.centralClubId) ?? null,
-        admins.length,
-      ),
+      tenant: toAdminTenant(row, names.get(row.centralClubId) ?? null, admins.length),
       admins,
     });
   },
 );
 
-router.post(
-  "/platform/admin/tenants",
-  requirePlatformAdmin,
-  async (req, res): Promise<void> => {
-    const parsed = ProvisionTenantAsAdminBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    const slug = parsed.data.slug.trim().toLowerCase();
-    const rejection = validateSlug(slug);
-    if (rejection) {
-      res.status(400).json({ error: slugRejectionReason(rejection) });
-      return;
-    }
-    if (isReservedSlug(slug)) {
-      res.status(400).json({ error: "That address is reserved." });
-      return;
-    }
-    if (await slugTaken(slug)) {
-      res.status(409).json({ error: "That address is already taken." });
-      return;
-    }
-    const adminEmail = parsed.data.adminEmail?.trim().toLowerCase();
-    if (adminEmail && !isEmail(adminEmail)) {
-      res.status(400).json({ error: "A valid email is required." });
-      return;
-    }
-    if (adminEmail && !parsed.data.password) {
-      res
-        .status(400)
-        .json({ error: "A password is required to create the first admin." });
-      return;
-    }
+router.post("/platform/admin/tenants", requirePlatformAdmin, async (req, res): Promise<void> => {
+  const parsed = ProvisionTenantAsAdminBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const slug = parsed.data.slug.trim().toLowerCase();
+  const rejection = validateSlug(slug);
+  if (rejection) {
+    res.status(400).json({ error: slugRejectionReason(rejection) });
+    return;
+  }
+  if (isReservedSlug(slug)) {
+    res.status(400).json({ error: "That address is reserved." });
+    return;
+  }
+  if (await slugTaken(slug)) {
+    res.status(409).json({ error: "That address is already taken." });
+    return;
+  }
+  const adminEmail = parsed.data.adminEmail?.trim().toLowerCase();
+  if (adminEmail && !isEmail(adminEmail)) {
+    res.status(400).json({ error: "A valid email is required." });
+    return;
+  }
+  if (adminEmail && !parsed.data.password) {
+    res.status(400).json({ error: "A password is required to create the first admin." });
+    return;
+  }
 
-    const { provisionTenant, ProvisionError } =
-      await import("@workspace/db/provision");
-    try {
-      const result = await provisionTenant({
-        slug,
-        centralClubId: parsed.data.centralClubId,
-        name: parsed.data.name,
-        plan: parsed.data.plan ?? "free",
-        mode: "create",
-        context: "concierge",
+  const { provisionTenant, ProvisionError } = await import("@workspace/db/provision");
+  try {
+    const result = await provisionTenant({
+      slug,
+      centralClubId: parsed.data.centralClubId,
+      name: parsed.data.name,
+      plan: parsed.data.plan ?? "free",
+      mode: "create",
+      context: "concierge",
+    });
+
+    if (adminEmail && parsed.data.password) {
+      const passwordHash = await hashPassword(parsed.data.password);
+      await db.insert(adminsTable).values({
+        tenantId: result.tenant.id,
+        username: adminEmail,
+        displayName: adminEmail.split("@")[0] || "Owner",
+        passwordHash,
       });
+    }
 
-      if (adminEmail && parsed.data.password) {
-        const passwordHash = await hashPassword(parsed.data.password);
-        await db.insert(adminsTable).values({
-          tenantId: result.tenant.id,
-          username: adminEmail,
-          displayName: adminEmail.split("@")[0] || "Owner",
-          passwordHash,
-        });
-      }
+    // A brand-new tenant's slug must resolve on its subdomain immediately, not
+    // after the directory cache's 5-minute TTL (else its first visitors get
+    // the demo tenant's site).
+    invalidateTenantDirectoryCache();
 
-      // A brand-new tenant's slug must resolve on its subdomain immediately, not
-      // after the directory cache's 5-minute TTL (else its first visitors get
-      // the demo tenant's site).
-      invalidateTenantDirectoryCache();
-
-      const counts = await adminCountsByTenant();
-      res
-        .status(201)
-        .json(
-          toAdminTenant(
-            result.tenant,
-            result.centralClub.name,
-            counts.get(result.tenant.id) ?? 0,
-          ),
-        );
-    } catch (e) {
-      if (e instanceof ProvisionError) {
-        if (e.code === "slug_taken" || e.code === "club_claimed") {
-          res.status(409).json({ error: e.message });
-          return;
-        }
-        res.status(400).json({ error: e.message });
+    const counts = await adminCountsByTenant();
+    res
+      .status(201)
+      .json(
+        toAdminTenant(result.tenant, result.centralClub.name, counts.get(result.tenant.id) ?? 0),
+      );
+  } catch (e) {
+    if (e instanceof ProvisionError) {
+      if (e.code === "slug_taken" || e.code === "club_claimed") {
+        res.status(409).json({ error: e.message });
         return;
       }
-      throw e;
+      res.status(400).json({ error: e.message });
+      return;
     }
-  },
-);
+    throw e;
+  }
+});
 
 // --- Admin credential recovery (bootstrap / reset) --------------------------
 
@@ -643,10 +599,7 @@ router.post(
       return;
     }
 
-    const [tenant] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, id));
+    const [tenant] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, id));
     if (!tenant) {
       res.status(404).json({ error: "No such tenant" });
       return;
@@ -657,13 +610,10 @@ router.post(
     let [admin] = await db
       .select()
       .from(adminsTable)
-      .where(
-        and(eq(adminsTable.tenantId, id), eq(adminsTable.username, username)),
-      );
+      .where(and(eq(adminsTable.tenantId, id), eq(adminsTable.username, username)));
     let created = false;
     if (!admin) {
-      const displayName =
-        parsed.data.displayName?.trim() || username.split("@")[0] || "Admin";
+      const displayName = parsed.data.displayName?.trim() || username.split("@")[0] || "Admin";
       // Random, never-disclosed password: the account is reachable only via the
       // reset link until the club admin sets their own.
       const passwordHash = await hashPassword(generateRandomPassword());
@@ -698,11 +648,7 @@ router.post(
     });
 
     // The link must land on the CLUB's host, not the apex console this runs on.
-    const resetUrl = tenantUrl(
-      req,
-      tenant,
-      `/admin/reset?token=${encodeURIComponent(token)}`,
-    );
+    const resetUrl = tenantUrl(req, tenant, `/admin/reset?token=${encodeURIComponent(token)}`);
 
     req.log?.info(
       {

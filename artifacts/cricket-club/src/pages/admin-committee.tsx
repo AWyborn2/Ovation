@@ -81,9 +81,7 @@ export default function AdminCommittee() {
   };
 
   const setPublishedForSeason = (season: number, published: boolean) => {
-    const targets = (roles ?? []).filter(
-      (r) => r.season === season && r.published !== published,
-    );
+    const targets = (roles ?? []).filter((r) => r.season === season && r.published !== published);
     setError(null);
     for (const r of targets) {
       updateRole.mutate(
@@ -103,9 +101,9 @@ export default function AdminCommittee() {
       onRetry={() => refetch()}
       intro={
         <>
-          Record club office bearers and grade captains for each season. Office
-          bearers appear on the public Committee board; grade captains appear on
-          each grade's page. Only published records are shown publicly.
+          Record club office bearers and grade captains for each season. Office bearers appear on
+          the public Committee board; grade captains appear on each grade's page. Only published
+          records are shown publicly.
         </>
       }
       addLabel="Add role"
@@ -126,10 +124,7 @@ export default function AdminCommittee() {
       }
       onDelete={(r) => {
         setError(null);
-        deleteRole.mutate(
-          { id: r.id },
-          { onSuccess: invalidate, onError: onMutationError },
-        );
+        deleteRole.mutate({ id: r.id }, { onSuccess: invalidate, onError: onMutationError });
       }}
       renderNewForm={(close) => (
         <RoleForm
@@ -246,7 +241,7 @@ function RoleForm({
       ...prev,
       kind,
       role: kind === "captain" ? GRADE_CAPTAIN_ROLE : OFFICE_ROLES[0],
-      grade: kind === "captain" ? prev.grade ?? GRADES[0] : null,
+      grade: kind === "captain" ? (prev.grade ?? GRADES[0]) : null,
     }));
   };
 
@@ -332,9 +327,7 @@ function RoleForm({
                 ...prev,
                 playerId: p.id,
                 nonPlayerId: null,
-                name: prev.name.trim()
-                  ? prev.name
-                  : `${p.givenName} ${p.surname}`.trim(),
+                name: prev.name.trim() ? prev.name : `${p.givenName} ${p.surname}`.trim(),
               }));
             } else {
               set("playerId", null);
@@ -347,9 +340,7 @@ function RoleForm({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">
-          Or link a non-player official (optional)
-        </Label>
+        <Label className="text-xs">Or link a non-player official (optional)</Label>
         <select
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
           value={values.nonPlayerId ?? ""}
@@ -366,7 +357,7 @@ function RoleForm({
               ...prev,
               nonPlayerId: personId,
               playerId: null,
-              name: prev.name.trim() ? prev.name : person?.name ?? prev.name,
+              name: prev.name.trim() ? prev.name : (person?.name ?? prev.name),
             }));
           }}
         >
@@ -378,8 +369,7 @@ function RoleForm({
           ))}
         </select>
         <p className="text-xs text-muted-foreground">
-          For club officials who never played. Manage them under Admin ·
-          Non-player people.
+          For club officials who never played. Manage them under Admin · Non-player people.
         </p>
       </div>
 
@@ -393,10 +383,7 @@ function RoleForm({
       </label>
 
       <div className="flex gap-2">
-        <Button
-          disabled={pending || !values.name.trim()}
-          onClick={() => onSubmit(values)}
-        >
+        <Button disabled={pending || !values.name.trim()} onClick={() => onSubmit(values)}>
           {pending ? "Saving…" : submitLabel}
         </Button>
         <Button variant="outline" onClick={onCancel}>

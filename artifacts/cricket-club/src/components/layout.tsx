@@ -13,21 +13,75 @@ import { WelcomeGuide } from "@/components/welcome-guide";
 // Hard-coded fallbacks used until the nav config loads (or if it fails). These
 // mirror the seeded senior/junior menus so the site is never blank.
 const SENIOR_NAV_FALLBACK: ResolvedNavItem[] = [
-  { label: "Honour Boards", target: "/honour-boards", isExternal: false, iconKey: "scrollText", description: "" },
+  {
+    label: "Honour Boards",
+    target: "/honour-boards",
+    isExternal: false,
+    iconKey: "scrollText",
+    description: "",
+  },
   { label: "Players", target: "/players", isExternal: false, iconKey: "users", description: "" },
-  { label: "Matches", target: "/matches", isExternal: false, iconKey: "clipboardList", description: "" },
+  {
+    label: "Matches",
+    target: "/matches",
+    isExternal: false,
+    iconKey: "clipboardList",
+    description: "",
+  },
   { label: "Grades", target: "/grades", isExternal: false, iconKey: "trophy", description: "" },
   { label: "Records", target: "/records", isExternal: false, iconKey: "award", description: "" },
-  { label: "Premierships", target: "/premierships", isExternal: false, iconKey: "crown", description: "" },
-  { label: "Compare", target: "/compare", isExternal: false, iconKey: "gitCompare", description: "" },
+  {
+    label: "Premierships",
+    target: "/premierships",
+    isExternal: false,
+    iconKey: "crown",
+    description: "",
+  },
+  {
+    label: "Compare",
+    target: "/compare",
+    isExternal: false,
+    iconKey: "gitCompare",
+    description: "",
+  },
 ];
 
 const JUNIOR_NAV_FALLBACK: ResolvedNavItem[] = [
-  { label: "Overview", target: "/juniors", isExternal: false, iconKey: "scrollText", description: "" },
-  { label: "Matches", target: "/juniors/matches", isExternal: false, iconKey: "clipboardList", description: "" },
-  { label: "Premierships", target: "/juniors/premierships", isExternal: false, iconKey: "crown", description: "" },
-  { label: "Players", target: "/juniors/players", isExternal: false, iconKey: "users", description: "" },
-  { label: "Office Bearers", target: "/juniors/office-bearers", isExternal: false, iconKey: "award", description: "" },
+  {
+    label: "Overview",
+    target: "/juniors",
+    isExternal: false,
+    iconKey: "scrollText",
+    description: "",
+  },
+  {
+    label: "Matches",
+    target: "/juniors/matches",
+    isExternal: false,
+    iconKey: "clipboardList",
+    description: "",
+  },
+  {
+    label: "Premierships",
+    target: "/juniors/premierships",
+    isExternal: false,
+    iconKey: "crown",
+    description: "",
+  },
+  {
+    label: "Players",
+    target: "/juniors/players",
+    isExternal: false,
+    iconKey: "users",
+    description: "",
+  },
+  {
+    label: "Office Bearers",
+    target: "/juniors/office-bearers",
+    isExternal: false,
+    iconKey: "award",
+    description: "",
+  },
 ];
 
 // Index pages match only on an exact location; everything else also matches its
@@ -163,7 +217,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/90">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-24 gap-4">
-
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link href={isJuniors ? "/juniors" : "/"}>
@@ -182,7 +235,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       : `text-muted-foreground border-transparent ${hoverText} ${hoverBorder}`
                   }`;
                   return item.isExternal ? (
-                    <a key={`${item.target}-${idx}`} href={item.target} target="_blank" rel="noopener noreferrer" className={cls}>
+                    <a
+                      key={`${item.target}-${idx}`}
+                      href={item.target}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cls}
+                    >
                       {item.label}
                     </a>
                   ) : (
@@ -217,9 +276,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Section banner — makes the active side obvious. */}
         <div
           className={`w-full border-t ${
-            isJuniors
-              ? "text-primary"
-              : "bg-primary text-primary-foreground border-primary"
+            isJuniors ? "text-primary" : "bg-primary text-primary-foreground border-primary"
           }`}
           style={
             isJuniors
@@ -276,9 +333,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 w-full relative z-0 overflow-x-clip">
-        <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-          {children}
-        </div>
+        <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">{children}</div>
       </main>
 
       {/* Footer */}
@@ -286,7 +341,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center md:items-start">
-              <img src={logoUrl} alt={brand.name} className="h-24 w-auto mb-4 grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+              <img
+                src={logoUrl}
+                alt={brand.name}
+                className="h-24 w-auto mb-4 grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all"
+              />
               {/* TODO(tenant): a per-tenant address/location field would replace the
                   static club address that used to live here. */}
               <p className="text-muted-foreground text-sm text-center md:text-left">
@@ -301,16 +360,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex flex-col items-center md:items-start">
-              <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">Quick Links</h3>
+              <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">
+                Quick Links
+              </h3>
               <ul className="space-y-2 text-center md:text-left">
                 {(isJuniors ? juniorNav : seniorNav).map((item, idx) => (
                   <li key={`${item.target}-${idx}`}>
                     {item.isExternal ? (
-                      <a href={item.target} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                      <a
+                        href={item.target}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
                         {item.label}
                       </a>
                     ) : (
-                      <Link href={item.target} className="text-muted-foreground hover:text-primary transition-colors">
+                      <Link
+                        href={item.target}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
                         {item.label}
                       </Link>
                     )}
@@ -320,7 +389,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex flex-col items-center md:items-start">
-              <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">Contact</h3>
+              <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">
+                Contact
+              </h3>
               <p className="text-muted-foreground mb-4 text-center md:text-left">
                 For club inquiries, please contact us via our official website.
               </p>

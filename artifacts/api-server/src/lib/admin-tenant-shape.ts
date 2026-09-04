@@ -7,11 +7,7 @@ import type { TenantRow } from "@workspace/db";
  * unit-testable without a database. Both the tenant list and detail handlers
  * feed through this shaper, so they stay in lock-step.
  */
-export function toAdminTenant(
-  t: TenantRow,
-  centralClubName: string | null,
-  adminCount: number,
-) {
+export function toAdminTenant(t: TenantRow, centralClubName: string | null, adminCount: number) {
   return {
     id: t.id,
     slug: t.slug,
@@ -21,8 +17,7 @@ export function toAdminTenant(
     centralClubName,
     customDomain: t.customDomain,
     readsFromCentral: t.readsFromCentral,
-    createdAt:
-      t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
+    createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
     adminCount,
     shortName: t.shortName,
     logoUrl: t.logoUrl,
@@ -32,14 +27,8 @@ export function toAdminTenant(
     juniorsColour: t.juniorsColour,
     badgeStyle: t.badgeStyle,
     themeOverrides: t.themeOverrides,
-    lastActiveAt:
-      t.lastActiveAt instanceof Date
-        ? t.lastActiveAt.toISOString()
-        : t.lastActiveAt,
-    suspendedAt:
-      t.suspendedAt instanceof Date
-        ? t.suspendedAt.toISOString()
-        : t.suspendedAt,
+    lastActiveAt: t.lastActiveAt instanceof Date ? t.lastActiveAt.toISOString() : t.lastActiveAt,
+    suspendedAt: t.suspendedAt instanceof Date ? t.suspendedAt.toISOString() : t.suspendedAt,
     // Branding is "complete" when the tenant set its own logo AND background colour
     // (explicit branding, not defaults / clubs-register fallback). Derived, not
     // stored, so it can't drift from the underlying columns.

@@ -105,10 +105,23 @@ describe("renderPackCard", () => {
     // `newCap` is absent on purpose: retired from the catalogue in favour of
     // `debut`, whose fields are a superset of its own.
     const kinds: ShareCardInput["kind"][] = [
-      "milestone", "player", "record", "gradeLeader", "premiership",
-      "debut", "century", "fiveFor", "matchSummary", "matchDay",
-      "teamList", "weekendWrap", "ladder", "bigMoment", "newSigning",
-      "countdown", "clubLeaderboard",
+      "milestone",
+      "player",
+      "record",
+      "gradeLeader",
+      "premiership",
+      "debut",
+      "century",
+      "fiveFor",
+      "matchSummary",
+      "matchDay",
+      "teamList",
+      "weekendWrap",
+      "ladder",
+      "bigMoment",
+      "newSigning",
+      "countdown",
+      "clubLeaderboard",
     ];
     for (const kind of kinds) {
       expect(packSupportsKind(kind)).toBe(true);
@@ -385,7 +398,12 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     // A data-bearing render with no presenting sponsor → the whole line drops, so
     // neither the sample literals nor an orphan "presented by" prose leaks.
     const data: PackCardData = { presentingSponsorName: null };
-    for (const kind of ["century", "matchSummary", "premiership", "newSigning"] as ShareCardInput["kind"][]) {
+    for (const kind of [
+      "century",
+      "matchSummary",
+      "premiership",
+      "newSigning",
+    ] as ShareCardInput["kind"][]) {
       const input = sampleCardInput(kind);
       for (const size of ["story", "square"] as CardSize[]) {
         const html = renderPackCard(input, size, true, TOKENS, false, data);
@@ -442,7 +460,11 @@ describe("resolvePackTokens (token resolution order)", () => {
   });
 
   it("lets a theme override the brand default", () => {
-    const theme = tokensFromCardTheme({ accent: "#22AA22", bgPanel: "#333333", displayFont: "oswald" });
+    const theme = tokensFromCardTheme({
+      accent: "#22AA22",
+      bgPanel: "#333333",
+      displayFont: "oswald",
+    });
     const resolved = resolvePackTokens({ brand: BRAND, theme });
     expect(resolved.accent).toBe("#22AA22"); // theme wins over brand
     expect(resolved.panel).toBe("#333333"); // bgPanel → panel
@@ -451,7 +473,11 @@ describe("resolvePackTokens (token resolution order)", () => {
   });
 
   it("applies precedence junior > override > theme > brand for every token", () => {
-    const theme: Partial<PackTokens> = { accent: "#THEME0", panel: "#THEMEP", displayFont: "oswald" };
+    const theme: Partial<PackTokens> = {
+      accent: "#THEME0",
+      panel: "#THEMEP",
+      displayFont: "oswald",
+    };
     const override: Partial<PackTokens> = { panel: "#OVERRP", displayFont: "teko" };
 
     // No junior: override beats theme beats brand.
@@ -476,7 +502,12 @@ describe("resolvePackTokens (token resolution order)", () => {
   });
 
   it("tokensFromCardTheme drops null/empty fields so they do not clobber the brand", () => {
-    const partial = tokensFromCardTheme({ accent: "#FF0000", bgPanel: "", bgDark: null, displayFont: null });
+    const partial = tokensFromCardTheme({
+      accent: "#FF0000",
+      bgPanel: "",
+      bgDark: null,
+      displayFont: null,
+    });
     expect(partial).toEqual({ accent: "#FF0000" });
     const resolved = resolvePackTokens({ brand: BRAND, theme: partial });
     expect(resolved.accent).toBe("#FF0000");
@@ -506,7 +537,9 @@ describe("brandDefaultTokens (brand → pack default palette)", () => {
     expect(brandDefaultTokens(undefined)).toEqual(PACK_DEFAULT_TOKENS);
     expect(brandDefaultTokens({ name: "Logo Only", logoUrl: "x" })).toEqual(PACK_DEFAULT_TOKENS);
     // Empty strings are treated as "absent" and keep the fallback.
-    expect(brandDefaultTokens({ primaryColour: "", juniorsColour: "" })).toEqual(PACK_DEFAULT_TOKENS);
+    expect(brandDefaultTokens({ primaryColour: "", juniorsColour: "" })).toEqual(
+      PACK_DEFAULT_TOKENS,
+    );
   });
 
   it("(a) seeds a non-HH brand's colours into the default tokens", () => {
@@ -640,7 +673,13 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
     // #f00 → #FF0000 → darken(0.42) → #940000
     const shortHex = brandDefaultTokens({ juniorsColour: "#f00" });
     expect(shortHex.panel).toBe("#FF0000");
-    const htmlShort = renderPackCard(input, "story", true, resolvePackTokens({ brand: shortHex }), false);
+    const htmlShort = renderPackCard(
+      input,
+      "story",
+      true,
+      resolvePackTokens({ brand: shortHex }),
+      false,
+    );
     expect(htmlShort).toMatch(/--panel:\s*#FF0000/i);
     expect(htmlShort).toContain("--panel-2:#940000");
     expect(htmlShort).not.toContain(HH_PANEL2);
@@ -648,7 +687,13 @@ describe("brandDefaultTokens hardening (S1 injection / S2 --panel-2 derivation)"
     // #0055FFAA → #0055FF → darken(0.42) → #003194
     const alphaHex = brandDefaultTokens({ juniorsColour: "#0055FFAA" });
     expect(alphaHex.panel).toBe("#0055FF");
-    const htmlAlpha = renderPackCard(input, "story", true, resolvePackTokens({ brand: alphaHex }), false);
+    const htmlAlpha = renderPackCard(
+      input,
+      "story",
+      true,
+      resolvePackTokens({ brand: alphaHex }),
+      false,
+    );
     expect(htmlAlpha).toContain("--panel-2:#003194");
     expect(htmlAlpha).not.toContain(HH_PANEL2);
   });
@@ -916,15 +961,7 @@ describe("renderPackCard debut cap number", () => {
   it("renders the real cap number for every pack and size", () => {
     for (const packId of PACK_IDS) {
       for (const size of SIZES) {
-        const html = renderPackCard(
-          debutInput(87),
-          size,
-          true,
-          TOKENS,
-          false,
-          null,
-          packId,
-        );
+        const html = renderPackCard(debutInput(87), size, true, TOKENS, false, null, packId);
         // Every pack ships a debut design, so an empty render would mean the
         // assertions below silently stopped covering that pack.
         expect(html, `${packId}/${size}`).not.toBe("");
@@ -937,15 +974,7 @@ describe("renderPackCard debut cap number", () => {
   it("never fabricates the sample cap number when none resolved", () => {
     for (const packId of PACK_IDS) {
       for (const size of SIZES) {
-        const html = renderPackCard(
-          debutInput(null),
-          size,
-          true,
-          TOKENS,
-          false,
-          null,
-          packId,
-        );
+        const html = renderPackCard(debutInput(null), size, true, TOKENS, false, null, packId);
         expect(html, `${packId}/${size}`).not.toBe("");
         expect(html, `${packId}/${size}`).not.toContain("246");
         // The whole line is dropped rather than leaving an orphan "CAP" label.
@@ -1024,8 +1053,22 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
     // No photo → the wrapper would otherwise stretch a placeholder chip across
     // the whole card, so the geometry switch is gated on a resolved photo.
     const input = sampleCardInput("player");
-    const noPhoto = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed", null));
-    const contained = renderPackCard(input, "story", true, TOKENS, false, withPhoto("contained", null));
+    const noPhoto = renderPackCard(
+      input,
+      "story",
+      true,
+      TOKENS,
+      false,
+      withPhoto("fullBleed", null),
+    );
+    const contained = renderPackCard(
+      input,
+      "story",
+      true,
+      TOKENS,
+      false,
+      withPhoto("contained", null),
+    );
     expect(noPhoto).not.toContain(FULLBLEED_WRAPPER);
     expect(noPhoto).toBe(contained);
   });
@@ -1057,7 +1100,14 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
   it("adds no scrim when full-bleed is chosen but no photo is bound", () => {
     // The scrim rides with the promoted photo; without a photo neither appears.
     const input = sampleCardInput("player");
-    const noPhoto = renderPackCard(input, "story", true, TOKENS, false, withPhoto("fullBleed", null));
+    const noPhoto = renderPackCard(
+      input,
+      "story",
+      true,
+      TOKENS,
+      false,
+      withPhoto("fullBleed", null),
+    );
     expect(noPhoto).not.toContain("data-fullbleed-scrim");
   });
 

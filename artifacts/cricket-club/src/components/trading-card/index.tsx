@@ -11,7 +11,13 @@ import {
   getGetTradingCardSettingsQueryKey,
   useGetTradingCardSettings,
 } from "@workspace/api-client-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { buildTradingCardData } from "@/lib/trading-card";
@@ -69,9 +75,7 @@ export function TradingCardModal({
 
   const data = useMemo(
     () =>
-      player && caps
-        ? buildTradingCardData(player, caps, selectedImageUrl, cardSettings)
-        : null,
+      player && caps ? buildTradingCardData(player, caps, selectedImageUrl, cardSettings) : null,
     [player, caps, selectedImageUrl, cardSettings],
   );
 
@@ -190,7 +194,14 @@ export function TradingCardModal({
                         <CardFront data={data} />
                       </ScaledCard>
                     </div>
-                    <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        backfaceVisibility: "hidden",
+                        transform: "rotateY(180deg)",
+                      }}
+                    >
                       <ScaledCard scale={0.72}>
                         <CardBack data={data} />
                       </ScaledCard>
@@ -212,11 +223,7 @@ export function TradingCardModal({
                           }`}
                           onClick={() => setSelectedImageUrl(img.imageUrl)}
                         >
-                          <img
-                            src={img.imageUrl}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
+                          <img src={img.imageUrl} alt="" className="h-full w-full object-cover" />
                         </button>
                       );
                     })}
@@ -228,11 +235,24 @@ export function TradingCardModal({
                     <RotateCw className="mr-1.5 h-4 w-4" /> Flip
                   </Button>
                   <Button size="sm" onClick={() => handlePng("front")} disabled={pngBusy !== null}>
-                    {pngBusy === "front" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                    {pngBusy === "front" ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-1.5 h-4 w-4" />
+                    )}
                     Front PNG
                   </Button>
-                  <Button variant="secondary" size="sm" onClick={() => handlePng("back")} disabled={pngBusy !== null}>
-                    {pngBusy === "back" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handlePng("back")}
+                    disabled={pngBusy !== null}
+                  >
+                    {pngBusy === "back" ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-1.5 h-4 w-4" />
+                    )}
                     Back PNG
                   </Button>
                 </div>
@@ -247,16 +267,24 @@ export function TradingCardModal({
                 {videoOk ? (
                   <>
                     <Button onClick={handleVideo} disabled={videoBusy} className="w-full">
-                      {videoBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-                      {videoBusy ? `Rendering… ${progress}%` : `Download Video (${videoFormatLabel()})`}
+                      {videoBusy ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="mr-1.5 h-4 w-4" />
+                      )}
+                      {videoBusy
+                        ? `Rendering… ${progress}%`
+                        : `Download Video (${videoFormatLabel()})`}
                     </Button>
                     <p className="text-center text-xs text-muted-foreground">
-                      An ~18 second animated card revealing {data.name.split(" ")[0]}'s career stats.
+                      An ~18 second animated card revealing {data.name.split(" ")[0]}'s career
+                      stats.
                     </p>
                   </>
                 ) : (
                   <p className="text-center text-sm text-muted-foreground">
-                    Video export isn't supported in this browser. The PNG card is available on the Card tab.
+                    Video export isn't supported in this browser. The PNG card is available on the
+                    Card tab.
                   </p>
                 )}
               </div>
@@ -268,7 +296,10 @@ export function TradingCardModal({
 
         {/* Off-screen full-resolution nodes for export */}
         {data && (
-          <div style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", opacity: 0 }} aria-hidden>
+          <div
+            style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", opacity: 0 }}
+            aria-hidden
+          >
             <div ref={frontRef}>
               <CardFront data={data} />
             </div>

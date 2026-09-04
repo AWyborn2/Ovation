@@ -42,16 +42,13 @@ router.post(
     if (!parsed.abandoned && (!parsed.grade || parsed.season == null)) {
       res.status(400).json({
         error:
-          "Could not determine grade and season from the scorecard. " +
-          "Check the file header.",
+          "Could not determine grade and season from the scorecard. " + "Check the file header.",
       });
       return;
     }
 
     // Cap-eligibility for debut detection (A Grade / Female A Grade only).
-    const capCategory = parsed.grade
-      ? (GRADE_TO_CAP_CATEGORY[parsed.grade] ?? null)
-      : null;
+    const capCategory = parsed.grade ? (GRADE_TO_CAP_CATEGORY[parsed.grade] ?? null) : null;
     const cappedIds = capCategory
       ? await getCappedPlayerIds(getTenantId(req), capCategory)
       : new Set<number>();
@@ -68,13 +65,8 @@ router.post(
       if (m.status === "matched") matched++;
       else if (m.status === "suggested") suggested++;
       else created++;
-      const resolvedId =
-        m.status === "matched"
-          ? m.playerId
-          : (m.candidates[0]?.playerId ?? null);
-      const debut =
-        capCategory != null &&
-        (resolvedId == null || !cappedIds.has(resolvedId));
+      const resolvedId = m.status === "matched" ? m.playerId : (m.candidates[0]?.playerId ?? null);
+      const debut = capCategory != null && (resolvedId == null || !cappedIds.has(resolvedId));
       if (debut) debuts++;
       return {
         surname: p.surname,
@@ -105,9 +97,7 @@ router.post(
     // vs. the current baseline/career) so the UI can preview a peel. The commit
     // re-derives the full season total and is authoritative.
     if (parsed.grade != null) {
-      const ids = previewPlayers
-        .map((p) => p.resolvedId)
-        .filter((id): id is number => id != null);
+      const ids = previewPlayers.map((p) => p.resolvedId).filter((id): id is number => id != null);
       const base = await loadBackfillBaseFigures(parsed.grade, ids);
       for (const p of previewPlayers) {
         if (p.resolvedId == null) continue;

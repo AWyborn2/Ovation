@@ -34,12 +34,8 @@ describe("adminWriteRateLimitKey", () => {
   });
 
   it("gives one admin the same bucket across changing IPs", () => {
-    const a = adminWriteRateLimitKey(
-      asReq({ admin: { id: 7 }, ip: "203.0.113.7" }),
-    );
-    const b = adminWriteRateLimitKey(
-      asReq({ admin: { id: 7 }, ip: "198.51.100.4" }),
-    );
+    const a = adminWriteRateLimitKey(asReq({ admin: { id: 7 }, ip: "203.0.113.7" }));
+    const b = adminWriteRateLimitKey(asReq({ admin: { id: 7 }, ip: "198.51.100.4" }));
     expect(a).toBe(b);
   });
 

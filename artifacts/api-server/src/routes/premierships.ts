@@ -1,11 +1,6 @@
 import { Router, type IRouter } from "express";
 import { asc, desc, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  premiershipsTable,
-  premiershipPlayersTable,
-  matchesTable,
-} from "@workspace/db";
+import { db, premiershipsTable, premiershipPlayersTable, matchesTable } from "@workspace/db";
 import {
   CreatePremiershipBody,
   UpdatePremiershipBody,
@@ -27,8 +22,18 @@ interface PlayerInput {
 }
 
 const MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
 };
 
 interface DateParts {
@@ -74,7 +79,15 @@ export function premiershipSeasons(year: number, matchDate: string | null | unde
 }
 
 const OPP_STOP_WORDS = new Set([
-  "GRADE", "SENIOR", "MEN", "T20", "BLUE", "GOLD", "THE", "AND", "CUP",
+  "GRADE",
+  "SENIOR",
+  "MEN",
+  "T20",
+  "BLUE",
+  "GOLD",
+  "THE",
+  "AND",
+  "CUP",
 ]);
 
 /** Heuristic: does the match opponent name appear in the premiership result
@@ -92,9 +105,7 @@ function opponentInResult(
     .replace(/\s+/g, " ")
     .trim();
   if (cleaned && res.includes(cleaned)) return true;
-  const tokens = cleaned
-    .split(/[^A-Z0-9]+/)
-    .filter((t) => t.length >= 4 && !OPP_STOP_WORDS.has(t));
+  const tokens = cleaned.split(/[^A-Z0-9]+/).filter((t) => t.length >= 4 && !OPP_STOP_WORDS.has(t));
   return tokens.some((t) => res.includes(t));
 }
 
@@ -121,13 +132,9 @@ export function linkPremiershipMatch(
   finalsByKey: Map<string, GfMatch[]>,
 ): number | null {
   const seasons = premiershipSeasons(prem.year, prem.matchDate);
-  let candidates = seasons.flatMap(
-    (season) => gfByKey.get(`${prem.grade}|${season}`) ?? [],
-  );
+  let candidates = seasons.flatMap((season) => gfByKey.get(`${prem.grade}|${season}`) ?? []);
   if (candidates.length === 0) {
-    candidates = seasons.flatMap(
-      (season) => finalsByKey.get(`${prem.grade}|${season}`) ?? [],
-    );
+    candidates = seasons.flatMap((season) => finalsByKey.get(`${prem.grade}|${season}`) ?? []);
   }
   return pickGrandFinal(candidates, prem);
 }
@@ -146,10 +153,7 @@ const isUndecidedResult = (r: string | null | undefined): boolean =>
  *   4. opponent name appearing in the premiership result text
  *   5. most recent date, then lowest id
  */
-export function pickGrandFinal(
-  candidates: GfMatch[],
-  prem: PremForLink,
-): number | null {
+export function pickGrandFinal(candidates: GfMatch[], prem: PremForLink): number | null {
   if (candidates.length === 0) return null;
   const premDate = parsePremDateParts(prem.matchDate);
   const premT20 = isT20(prem.competition) || isT20(prem.result);
@@ -213,10 +217,7 @@ router.get("/premierships", async (req, res): Promise<void> => {
     .select()
     .from(premiershipPlayersTable)
     .where(inArray(premiershipPlayersTable.premiershipId, ids))
-    .orderBy(
-      asc(premiershipPlayersTable.premiershipId),
-      asc(premiershipPlayersTable.battingOrder),
-    );
+    .orderBy(asc(premiershipPlayersTable.premiershipId), asc(premiershipPlayersTable.battingOrder));
 
   const byPrem = new Map<number, typeof players>();
   for (const p of players) {
@@ -269,84 +270,35 @@ router.get("/premierships", async (req, res): Promise<void> => {
   );
 });
 
-router.post("/premierships", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const parsed = CreatePremiershipBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const created = await db.transaction(async (tx) => {
-    const [prem] = await tx
-      .insert(premiershipsTable)
-      .values({
-        year: parsed.data.year,
-        grade: parsed.data.grade,
-        competition: parsed.data.competition,
-        venue: parsed.data.venue ?? null,
-        matchDate: parsed.data.matchDate ?? null,
-        result: parsed.data.result ?? null,
-        mom: parsed.data.mom ?? null,
-        notes: parsed.data.notes ?? null,
-      })
-      .returning();
-    const players: PlayerInput[] = parsed.data.players ?? [];
-    if (players.length > 0) {
-      await tx.insert(premiershipPlayersTable).values(
-        players.map((p) => ({
-          premiershipId: prem.id,
-          playerId: p.playerId ?? null,
-          name: p.name,
-          isCaptain: p.isCaptain ?? false,
-          battingOrder: p.battingOrder ?? null,
-        })),
-      );
+router.post(
+  "/premierships",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const parsed = CreatePremiershipBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
     }
-    return prem;
-  });
-  const full = await loadWithPlayers(created.id);
-  res.status(201).json(full);
-});
-
-router.patch("/premierships/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = UpdatePremiershipParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdatePremiershipBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-
-  const { players, ...meta } = body.data;
-  const updated = await db.transaction(async (tx) => {
-    const updateFields: Partial<typeof premiershipsTable.$inferInsert> = {};
-    for (const [k, v] of Object.entries(meta)) {
-      if (v !== undefined) (updateFields as Record<string, unknown>)[k] = v;
-    }
-    if (Object.keys(updateFields).length > 0) {
-      const [row] = await tx
-        .update(premiershipsTable)
-        .set(updateFields)
-        .where(eq(premiershipsTable.id, params.data.id))
+    const created = await db.transaction(async (tx) => {
+      const [prem] = await tx
+        .insert(premiershipsTable)
+        .values({
+          year: parsed.data.year,
+          grade: parsed.data.grade,
+          competition: parsed.data.competition,
+          venue: parsed.data.venue ?? null,
+          matchDate: parsed.data.matchDate ?? null,
+          result: parsed.data.result ?? null,
+          mom: parsed.data.mom ?? null,
+          notes: parsed.data.notes ?? null,
+        })
         .returning();
-      if (!row) throw new Error("__NOT_FOUND__");
-    } else {
-      const [row] = await tx
-        .select()
-        .from(premiershipsTable)
-        .where(eq(premiershipsTable.id, params.data.id));
-      if (!row) throw new Error("__NOT_FOUND__");
-    }
-    if (players !== undefined) {
-      await tx
-        .delete(premiershipPlayersTable)
-        .where(eq(premiershipPlayersTable.premiershipId, params.data.id));
+      const players: PlayerInput[] = parsed.data.players ?? [];
       if (players.length > 0) {
         await tx.insert(premiershipPlayersTable).values(
           players.map((p) => ({
-            premiershipId: params.data.id,
+            premiershipId: prem.id,
             playerId: p.playerId ?? null,
             name: p.name,
             isCaptain: p.isCaptain ?? false,
@@ -354,35 +306,101 @@ router.patch("/premierships/:id", requireAdmin, requireEntitlement("curation"), 
           })),
         );
       }
-    }
-    return true;
-  }).catch((e) => {
-    if ((e as Error).message === "__NOT_FOUND__") return false;
-    throw e;
-  });
-  if (!updated) {
-    res.status(404).json({ error: "Premiership not found" });
-    return;
-  }
-  const full = await loadWithPlayers(params.data.id);
-  res.json(full);
-});
+      return prem;
+    });
+    const full = await loadWithPlayers(created.id);
+    res.status(201).json(full);
+  },
+);
 
-router.delete("/premierships/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = DeletePremiershipParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [row] = await db
-    .delete(premiershipsTable)
-    .where(eq(premiershipsTable.id, params.data.id))
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Premiership not found" });
-    return;
-  }
-  res.sendStatus(204);
-});
+router.patch(
+  "/premierships/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = UpdatePremiershipParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdatePremiershipBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+
+    const { players, ...meta } = body.data;
+    const updated = await db
+      .transaction(async (tx) => {
+        const updateFields: Partial<typeof premiershipsTable.$inferInsert> = {};
+        for (const [k, v] of Object.entries(meta)) {
+          if (v !== undefined) (updateFields as Record<string, unknown>)[k] = v;
+        }
+        if (Object.keys(updateFields).length > 0) {
+          const [row] = await tx
+            .update(premiershipsTable)
+            .set(updateFields)
+            .where(eq(premiershipsTable.id, params.data.id))
+            .returning();
+          if (!row) throw new Error("__NOT_FOUND__");
+        } else {
+          const [row] = await tx
+            .select()
+            .from(premiershipsTable)
+            .where(eq(premiershipsTable.id, params.data.id));
+          if (!row) throw new Error("__NOT_FOUND__");
+        }
+        if (players !== undefined) {
+          await tx
+            .delete(premiershipPlayersTable)
+            .where(eq(premiershipPlayersTable.premiershipId, params.data.id));
+          if (players.length > 0) {
+            await tx.insert(premiershipPlayersTable).values(
+              players.map((p) => ({
+                premiershipId: params.data.id,
+                playerId: p.playerId ?? null,
+                name: p.name,
+                isCaptain: p.isCaptain ?? false,
+                battingOrder: p.battingOrder ?? null,
+              })),
+            );
+          }
+        }
+        return true;
+      })
+      .catch((e) => {
+        if ((e as Error).message === "__NOT_FOUND__") return false;
+        throw e;
+      });
+    if (!updated) {
+      res.status(404).json({ error: "Premiership not found" });
+      return;
+    }
+    const full = await loadWithPlayers(params.data.id);
+    res.json(full);
+  },
+);
+
+router.delete(
+  "/premierships/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = DeletePremiershipParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [row] = await db
+      .delete(premiershipsTable)
+      .where(eq(premiershipsTable.id, params.data.id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Premiership not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 export default router;

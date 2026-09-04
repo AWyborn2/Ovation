@@ -56,10 +56,7 @@ describe("tenant.ts: isTenantSuspended", () => {
   });
 
   it("flips back to false once suspendedAt is cleared and the cache invalidated", async () => {
-    await db
-      .update(tenantsTable)
-      .set({ suspendedAt: null })
-      .where(eq(tenantsTable.id, tenantId));
+    await db.update(tenantsTable).set({ suspendedAt: null }).where(eq(tenantsTable.id, tenantId));
     invalidateTenantConfigCache(tenantId);
     expect(await isTenantSuspended(tenantId)).toBe(false);
   });

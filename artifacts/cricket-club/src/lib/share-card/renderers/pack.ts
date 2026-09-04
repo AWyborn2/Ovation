@@ -1,10 +1,5 @@
 // Pack ("Broadcast Dark") Match Summary renderers — square / portrait / story.
-import {
-  drawFooter,
-  drawImageContain,
-  drawSponsors,
-  loadImage,
-} from "../draw-primitives";
+import { drawFooter, drawImageContain, drawSponsors, loadImage } from "../draw-primitives";
 import { ellipsize, wrapText } from "../text";
 import { defaultHashtag, rgba, type Palette } from "../theme";
 import type {
@@ -251,41 +246,102 @@ const drawPackResultBanner = (
 // ---- Pack Match Summary (unified renderer) ---------------------------------
 type PackMatchSummaryLayout = {
   topPad: number;
-  eyebrowFont: number; eyebrowGap: number;
-  titleFont: number; titleLineH: number; titleGap: number;
-  typeFont: number; typeGap: number;
-  metaFont: number; metaGap: number;
-  crestPreGap: number; crestR: number; vsGap: number; vsFont: number;
-  labelFont: number; labelGapAbove: number; labelGapBelow: number;
-  resultH: number; contentGap: number;
-  blockGap: number; inningsGap: number; performers: number;
+  eyebrowFont: number;
+  eyebrowGap: number;
+  titleFont: number;
+  titleLineH: number;
+  titleGap: number;
+  typeFont: number;
+  typeGap: number;
+  metaFont: number;
+  metaGap: number;
+  crestPreGap: number;
+  crestR: number;
+  vsGap: number;
+  vsFont: number;
+  labelFont: number;
+  labelGapAbove: number;
+  labelGapBelow: number;
+  resultH: number;
+  contentGap: number;
+  blockGap: number;
+  inningsGap: number;
+  performers: number;
   scoreBoxes?: boolean;
 };
 
 const PACK_LAYOUTS: Record<string, PackMatchSummaryLayout> = {
   square: {
-    topPad: 48, eyebrowFont: 18, eyebrowGap: 28,
-    titleFont: 40, titleLineH: 46, titleGap: 4,
-    typeFont: 20, typeGap: 26, metaFont: 18, metaGap: 28,
-    crestPreGap: 6, crestR: 44, vsGap: 96, vsFont: 30,
-    labelFont: 18, labelGapAbove: 8, labelGapBelow: 32,
-    resultH: 68, contentGap: 16, blockGap: 12, inningsGap: 14, performers: 2,
+    topPad: 48,
+    eyebrowFont: 18,
+    eyebrowGap: 28,
+    titleFont: 40,
+    titleLineH: 46,
+    titleGap: 4,
+    typeFont: 20,
+    typeGap: 26,
+    metaFont: 18,
+    metaGap: 28,
+    crestPreGap: 6,
+    crestR: 44,
+    vsGap: 96,
+    vsFont: 30,
+    labelFont: 18,
+    labelGapAbove: 8,
+    labelGapBelow: 32,
+    resultH: 68,
+    contentGap: 16,
+    blockGap: 12,
+    inningsGap: 14,
+    performers: 2,
   },
   portrait: {
-    topPad: 56, eyebrowFont: 20, eyebrowGap: 32,
-    titleFont: 48, titleLineH: 54, titleGap: 6,
-    typeFont: 22, typeGap: 30, metaFont: 20, metaGap: 34,
-    crestPreGap: 10, crestR: 56, vsGap: 110, vsFont: 34,
-    labelFont: 20, labelGapAbove: 10, labelGapBelow: 38,
-    resultH: 76, contentGap: 18, blockGap: 14, inningsGap: 16, performers: 3,
+    topPad: 56,
+    eyebrowFont: 20,
+    eyebrowGap: 32,
+    titleFont: 48,
+    titleLineH: 54,
+    titleGap: 6,
+    typeFont: 22,
+    typeGap: 30,
+    metaFont: 20,
+    metaGap: 34,
+    crestPreGap: 10,
+    crestR: 56,
+    vsGap: 110,
+    vsFont: 34,
+    labelFont: 20,
+    labelGapAbove: 10,
+    labelGapBelow: 38,
+    resultH: 76,
+    contentGap: 18,
+    blockGap: 14,
+    inningsGap: 16,
+    performers: 3,
   },
   story: {
-    topPad: 72, eyebrowFont: 22, eyebrowGap: 36,
-    titleFont: 56, titleLineH: 64, titleGap: 8,
-    typeFont: 26, typeGap: 36, metaFont: 22, metaGap: 40,
-    crestPreGap: 14, crestR: 64, vsGap: 130, vsFont: 40,
-    labelFont: 22, labelGapAbove: 12, labelGapBelow: 42,
-    resultH: 88, contentGap: 20, blockGap: 16, inningsGap: 20, performers: 3,
+    topPad: 72,
+    eyebrowFont: 22,
+    eyebrowGap: 36,
+    titleFont: 56,
+    titleLineH: 64,
+    titleGap: 8,
+    typeFont: 26,
+    typeGap: 36,
+    metaFont: 22,
+    metaGap: 40,
+    crestPreGap: 14,
+    crestR: 64,
+    vsGap: 130,
+    vsFont: 40,
+    labelFont: 22,
+    labelGapAbove: 12,
+    labelGapBelow: 42,
+    resultH: 88,
+    contentGap: 20,
+    blockGap: 16,
+    inningsGap: 20,
+    performers: 3,
     scoreBoxes: true,
   },
 };
@@ -365,8 +421,7 @@ const renderPackMatchSummary = async (
   ctx.fillText(shortOf(input.opposition), rightCx, crestLabelY);
   y = crestLabelY + Math.round(L.labelGapBelow * scale);
 
-  const teamOf = (key: "club" | "opposition") =>
-    key === "club" ? input.club : input.opposition;
+  const teamOf = (key: "club" | "opposition") => (key === "club" ? input.club : input.opposition);
 
   if (L.scoreBoxes) {
     const teamScoreText = (key: "club" | "opposition") =>
@@ -388,7 +443,12 @@ const renderPackMatchSummary = async (
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillStyle = team.primaryColor;
-      ctx.fillRect(x, y + Math.round(14 * scale), Math.round(6 * scale), boxH - Math.round(28 * scale));
+      ctx.fillRect(
+        x,
+        y + Math.round(14 * scale),
+        Math.round(6 * scale),
+        boxH - Math.round(28 * scale),
+      );
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillStyle = p.textMuted;
@@ -396,7 +456,11 @@ const renderPackMatchSummary = async (
       ctx.fillText(shortOf(team), x + Math.round(24 * scale), y + Math.round(18 * scale));
       ctx.fillStyle = p.textLight;
       ctx.font = `700 ${Math.round(36 * scale)}px ${PACK_FONT_SERIF}`;
-      ctx.fillText(teamScoreText(key) || "—", x + Math.round(24 * scale), y + Math.round(50 * scale));
+      ctx.fillText(
+        teamScoreText(key) || "—",
+        x + Math.round(24 * scale),
+        y + Math.round(50 * scale),
+      );
     });
     y += boxH + Math.round(28 * scale);
   }
@@ -417,20 +481,56 @@ const renderPackMatchSummary = async (
     for (let i = 0; i < n; i++) {
       const inn = innings[i];
       const by = inningsAreaTop + i * (blockH + blockGap);
-      drawPackInningsBlock(ctx, padX, by, W - padX * 2, blockH, inn, teamOf(inn.teamKey), scale, p, L.performers);
+      drawPackInningsBlock(
+        ctx,
+        padX,
+        by,
+        W - padX * 2,
+        blockH,
+        inn,
+        teamOf(inn.teamKey),
+        scale,
+        p,
+        L.performers,
+      );
     }
   }
 };
 
 type PackVariantRenderer = (
-  ctx: CanvasRenderingContext2D, W: number, H: number, scale: number,
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
   input: Extract<ShareCardInput, { kind: "matchSummary" }>,
-  opts: RenderOptions, p: Palette,
+  opts: RenderOptions,
+  p: Palette,
 ) => Promise<void>;
 
-export const renderPackSquareMatchSummary: PackVariantRenderer = (ctx, W, H, scale, input, opts, p) =>
-  renderPackMatchSummary(ctx, W, H, scale, input, opts, p, PACK_LAYOUTS.square);
-export const renderPackPortraitMatchSummary: PackVariantRenderer = (ctx, W, H, scale, input, opts, p) =>
-  renderPackMatchSummary(ctx, W, H, scale, input, opts, p, PACK_LAYOUTS.portrait);
-export const renderPackStoryMatchSummary: PackVariantRenderer = (ctx, W, H, scale, input, opts, p) =>
-  renderPackMatchSummary(ctx, W, H, scale, input, opts, p, PACK_LAYOUTS.story);
+export const renderPackSquareMatchSummary: PackVariantRenderer = (
+  ctx,
+  W,
+  H,
+  scale,
+  input,
+  opts,
+  p,
+) => renderPackMatchSummary(ctx, W, H, scale, input, opts, p, PACK_LAYOUTS.square);
+export const renderPackPortraitMatchSummary: PackVariantRenderer = (
+  ctx,
+  W,
+  H,
+  scale,
+  input,
+  opts,
+  p,
+) => renderPackMatchSummary(ctx, W, H, scale, input, opts, p, PACK_LAYOUTS.portrait);
+export const renderPackStoryMatchSummary: PackVariantRenderer = (
+  ctx,
+  W,
+  H,
+  scale,
+  input,
+  opts,
+  p,
+) => renderPackMatchSummary(ctx, W, H, scale, input, opts, p, PACK_LAYOUTS.story);

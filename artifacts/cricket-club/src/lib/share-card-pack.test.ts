@@ -66,12 +66,8 @@ const MATCH_INPUT: Extract<ShareCardInput, { kind: "matchSummary" }> = {
       totalRuns: "143",
       wickets: "10",
       overs: "36.2",
-      topBatters: [
-        { name: "A. Wilson", runs: 38, balls: 45 },
-      ],
-      topBowlers: [
-        { name: "R. Taylor", wickets: 4, runs: 22, overs: "7.2" },
-      ],
+      topBatters: [{ name: "A. Wilson", runs: 38, balls: 45 }],
+      topBowlers: [{ name: "R. Taylor", wickets: 4, runs: 22, overs: "7.2" }],
     },
   ],
 };

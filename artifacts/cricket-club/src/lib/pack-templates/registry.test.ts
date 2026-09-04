@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  DEFAULT_PACK_ID,
-  getPackManifest,
-  isRegisteredPack,
-  listPackManifests,
-} from "./registry";
+import { DEFAULT_PACK_ID, getPackManifest, isRegisteredPack, listPackManifests } from "./registry";
 import { BROADCAST_DARK_PACK } from "./broadcast-dark";
 import { renderPackCard, packSupportsKind, PACK_DEFAULT_TOKENS } from "../pack-render";
 import { sampleCardInput } from "../sample-card-inputs";
@@ -74,13 +69,7 @@ describe("Pack A parity across the packId refactor", () => {
       const input = sampleCardInput(kind as ShareCardInput["kind"]);
       for (const size of SIZES) {
         for (const sponsorsOn of [true, false]) {
-          const omitted = renderPackCard(
-            input,
-            size,
-            sponsorsOn,
-            PACK_DEFAULT_TOKENS,
-            false,
-          );
+          const omitted = renderPackCard(input, size, sponsorsOn, PACK_DEFAULT_TOKENS, false);
           const explicit = renderPackCard(
             input,
             size,

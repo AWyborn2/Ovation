@@ -37,9 +37,15 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
           <Chip label="Games" value={a.games} />
           <Chip label="Runs" value={a.runs} />
           <Chip label="Wickets" value={a.wickets} />
-          <Chip label="Bat Avg" value={a.innings - a.notOuts > 0 ? (a.runs / (a.innings - a.notOuts)).toFixed(2) : "-"} />
+          <Chip
+            label="Bat Avg"
+            value={a.innings - a.notOuts > 0 ? (a.runs / (a.innings - a.notOuts)).toFixed(2) : "-"}
+          />
           <Chip label="High Score" value={a.highScoreDisplay} />
-          <Chip label="Bowl Avg" value={a.wickets > 0 ? (a.runsConceded / a.wickets).toFixed(2) : "-"} />
+          <Chip
+            label="Bowl Avg"
+            value={a.wickets > 0 ? (a.runsConceded / a.wickets).toFixed(2) : "-"}
+          />
           <Chip label="Best Bowling" value={a.bestBowling} />
           <Chip label="Catches" value={a.catches} />
         </div>
@@ -49,30 +55,44 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
           <table className="w-full text-xs sticky-id-col">
             <thead>
               <tr className="bg-black/25">
-                <th className="text-left font-serif uppercase tracking-wider text-primary p-2">Grade</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">Mat</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">Runs</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">HS</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">Wkts</th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">BB</th>
+                <th className="text-left font-serif uppercase tracking-wider text-primary p-2">
+                  Grade
+                </th>
+                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                  Mat
+                </th>
+                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                  Runs
+                </th>
+                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                  HS
+                </th>
+                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                  Wkts
+                </th>
+                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                  BB
+                </th>
               </tr>
             </thead>
             <tbody>
-              {player.stats.filter((s) => s.grade !== "CLUB TOTAL").map((s) => (
-                <tr key={s.id} className="border-t border-border/50">
-                  <td className="p-2">
-                    <div className="flex items-center gap-2">
-                      <GradeBadge grade={s.grade} size="sm" />
-                      <span className="font-semibold text-primary">{s.grade}</span>
-                    </div>
-                  </td>
-                  <td className="p-2 text-right font-mono">{s.games ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.runs ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.highScore ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.wickets ?? "-"}</td>
-                  <td className="p-2 text-right font-mono">{s.bestBowling ?? "-"}</td>
-                </tr>
-              ))}
+              {player.stats
+                .filter((s) => s.grade !== "CLUB TOTAL")
+                .map((s) => (
+                  <tr key={s.id} className="border-t border-border/50">
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        <GradeBadge grade={s.grade} size="sm" />
+                        <span className="font-semibold text-primary">{s.grade}</span>
+                      </div>
+                    </td>
+                    <td className="p-2 text-right font-mono">{s.games ?? "-"}</td>
+                    <td className="p-2 text-right font-mono">{s.runs ?? "-"}</td>
+                    <td className="p-2 text-right font-mono">{s.highScore ?? "-"}</td>
+                    <td className="p-2 text-right font-mono">{s.wickets ?? "-"}</td>
+                    <td className="p-2 text-right font-mono">{s.bestBowling ?? "-"}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

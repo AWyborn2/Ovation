@@ -41,7 +41,11 @@ describe("resolveNavItems", () => {
       row({ label: "A", sortOrder: 0 }),
       row({ label: "B", sortOrder: 1 }),
     ];
-    expect(resolveNavItems("senior_menu", items, fallback).map((i) => i.label)).toEqual(["A", "B", "C"]);
+    expect(resolveNavItems("senior_menu", items, fallback).map((i) => i.label)).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
   });
 
   it("drops hidden rows and rows for another surface", () => {
@@ -65,8 +69,16 @@ describe("resolveNavItems", () => {
 
 describe("toResolvedNavItem", () => {
   it("strips API-only fields", () => {
-    const out = toResolvedNavItem(row({ label: "X", surface: "senior_menu", sortOrder: 3, visible: true }));
-    expect(Object.keys(out).sort()).toEqual(["description", "iconKey", "isExternal", "label", "target"]);
+    const out = toResolvedNavItem(
+      row({ label: "X", surface: "senior_menu", sortOrder: 3, visible: true }),
+    );
+    expect(Object.keys(out).sort()).toEqual([
+      "description",
+      "iconKey",
+      "isExternal",
+      "label",
+      "target",
+    ]);
   });
 });
 
@@ -80,6 +92,11 @@ describe("isExternalNavTarget", () => {
 
 describe("NAV_SURFACES", () => {
   it("lists every admin-configurable surface once", () => {
-    expect([...NAV_SURFACES].sort()).toEqual(["admin_tiles", "junior_menu", "junior_quick_links", "senior_menu"]);
+    expect([...NAV_SURFACES].sort()).toEqual([
+      "admin_tiles",
+      "junior_menu",
+      "junior_quick_links",
+      "senior_menu",
+    ]);
   });
 });

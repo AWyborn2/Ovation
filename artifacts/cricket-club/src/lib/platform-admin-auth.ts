@@ -1,7 +1,4 @@
-import {
-  useGetPlatformAdminMe,
-  getGetPlatformAdminMeQueryKey,
-} from "@workspace/api-client-react";
+import { useGetPlatformAdminMe, getGetPlatformAdminMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 /**

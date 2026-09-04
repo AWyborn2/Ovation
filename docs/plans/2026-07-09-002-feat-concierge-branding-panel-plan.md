@@ -92,7 +92,7 @@ Provisioning writes a club's name and a primary colour from the central register
 ### Dependencies / Assumptions
 
 - The presigned-upload route is gated by tenant-admin auth (`requireAdmin` on `POST /storage/uploads/request-url`, `artifacts/api-server/src/routes/storage.ts:63`); the two session systems are fully independent (`SESSION_COOKIE`+`decodeSession` vs `PLATFORM_SESSION_COOKIE`+`decodePlatformSession`), so a platform session structurally cannot use the existing route — U3 adds a platform-scoped one.
-- Object *serving* routes (`GET /storage/public-objects/*`, `GET /storage/objects/*`) are effectively public today, so uploaded logos render on public sites and in the console without auth changes.
+- Object _serving_ routes (`GET /storage/public-objects/*`, `GET /storage/objects/*`) are effectively public today, so uploaded logos render on public sites and in the console without auth changes.
 - `invalidateTenantBrandCache(tenantId)` is exported and callable from a platform-admin handler (`artifacts/api-server/src/lib/tenant-brand.ts:144`).
 - The self-serve accent picker only writes `secondaryColour`; primary/tertiary pass through untouched — the concierge panel writing all three colour slots is additive (`artifacts/cricket-club/src/pages/admin-branding.tsx:166-181`).
 - The finish-setup banner computes unbranded-ness by field-by-field comparison of the resolved brand to `DEFAULT_BRAND` (`artifacts/cricket-club/src/pages/admin.tsx:23-31`), so swapping the default's logo asset keeps the comparison correct — provided no tenant row stores the old placeholder path as a literal (U5 audits this).
@@ -171,7 +171,7 @@ Both auth systems stay independent; the new platform routes are siblings of the 
   - Error path: non-integer id, id=0, and well-formed nonexistent id → 400/404 respectively.
   - Error path: empty body → 400.
   - Edge case: body containing `plan`, `customDomain`, or `backgroundUrl` alongside valid fields → 200 with those fields stripped by the closed schema; assert the row's `plan`/`customDomain`/`backgroundUrl` unchanged. Covers AE5.
-  - Integration: platform session on a host resolving to a *different* tenant (e.g. `X-Ovation-Host` for tenant A) still brands tenant B by path id — no fallback to request-resolved tenant context.
+  - Integration: platform session on a host resolving to a _different_ tenant (e.g. `X-Ovation-Host` for tenant A) still brands tenant B by path id — no fallback to request-resolved tenant context.
   - Integration: concierge logo-only save does not clobber a concurrent colour-only save through the self-serve endpoint (column-level last-write-wins).
   - Integration (documents KTD8): a tenant with `appClubId` set and a non-null club-register colour — the PATCH persists to the tenant row but the resolved brand still serves the club-register value; assert and document.
 - **Verification:** `vitest run` in `artifacts/api-server` green; manual: brand a dev tenant from curl with a platform cookie and see the public site change.
@@ -225,14 +225,14 @@ Both auth systems stay independent; the new platform routes are siblings of the 
 
 ## Verification Contract
 
-| Scope | Command | Applies to |
-|---|---|---|
-| Backend integration tests | `vitest run` (from `artifacts/api-server`) | U2, U3, U5 |
-| Frontend smoke tests | `vitest run` (from `artifacts/cricket-club`) | U4, U5 |
-| OpenAPI codegen | `orval`/`tsc` run directly (not via `pnpm run` — codegen-toolchain convention) | U1 |
-| Monorepo typecheck | `pnpm run typecheck` | all units |
-| Manual walkthrough | Brand a zero-admin dev tenant end-to-end from the platform console; confirm public site updates immediately | U2, U3, U4 |
-| Manual walkthrough | Halls Head branding unchanged; unbranded tenant shows Ovation placeholder + finish-setup banner | U5 |
+| Scope                     | Command                                                                                                     | Applies to |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------- |
+| Backend integration tests | `vitest run` (from `artifacts/api-server`)                                                                  | U2, U3, U5 |
+| Frontend smoke tests      | `vitest run` (from `artifacts/cricket-club`)                                                                | U4, U5     |
+| OpenAPI codegen           | `orval`/`tsc` run directly (not via `pnpm run` — codegen-toolchain convention)                              | U1         |
+| Monorepo typecheck        | `pnpm run typecheck`                                                                                        | all units  |
+| Manual walkthrough        | Brand a zero-admin dev tenant end-to-end from the platform console; confirm public site updates immediately | U2, U3, U4 |
+| Manual walkthrough        | Halls Head branding unchanged; unbranded tenant shows Ovation placeholder + finish-setup banner             | U5         |
 
 ## Definition of Done
 

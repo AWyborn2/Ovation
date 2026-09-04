@@ -82,7 +82,8 @@ export default function AdminHonourBoards() {
             <CardHeader className="flex flex-row items-start justify-between gap-3">
               <div>
                 <CardTitle>
-                  {b.label} <span className="font-mono text-xs text-muted-foreground">({b.key})</span>
+                  {b.label}{" "}
+                  <span className="font-mono text-xs text-muted-foreground">({b.key})</span>
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">{b.title}</p>
               </div>
@@ -108,10 +109,7 @@ export default function AdminHonourBoards() {
                     )
                       return;
                     setError(null);
-                    deleteBoard.mutate(
-                      { key: b.key },
-                      { onSuccess: invalidate, onError: onErr },
-                    );
+                    deleteBoard.mutate({ key: b.key }, { onSuccess: invalidate, onError: onErr });
                   }}
                 >
                   Delete
@@ -257,7 +255,13 @@ function BoardEditor({
   );
 }
 
-function BoardOverrides({ boardKey, onError }: { boardKey: string; onError: (e: unknown) => void }) {
+function BoardOverrides({
+  boardKey,
+  onError,
+}: {
+  boardKey: string;
+  onError: (e: unknown) => void;
+}) {
   const qc = useQueryClient();
   const { data: overrides } = useListHonourBoardOverrides(boardKey);
   const upsert = useUpsertHonourBoardOverride();
@@ -315,7 +319,10 @@ function BoardOverrides({ boardKey, onError }: { boardKey: string; onError: (e: 
       </div>
       <div className="space-y-1">
         {overrides?.map((o: HonourBoardOverride) => (
-          <div key={o.id} className="flex items-center justify-between text-sm border-b py-1 last:border-0">
+          <div
+            key={o.id}
+            className="flex items-center justify-between text-sm border-b py-1 last:border-0"
+          >
             <span>
               player #{o.playerId}
               {o.pinned && <span className="ml-2 text-xs text-amber-600">pinned</span>}

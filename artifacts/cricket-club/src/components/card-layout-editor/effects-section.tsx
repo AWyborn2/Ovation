@@ -40,7 +40,9 @@ export function EffectsSection({
 
       <EffectPresets
         current={cur}
-        onApply={(eff) => onChange(hasLayerEffects(eff) ? { ...DEFAULT_LAYER_EFFECTS, ...eff } : undefined)}
+        onApply={(eff) =>
+          onChange(hasLayerEffects(eff) ? { ...DEFAULT_LAYER_EFFECTS, ...eff } : undefined)
+        }
       />
 
       {/* Whole-layer transparency. 1 = fully opaque (cleared from effects). */}
@@ -131,10 +133,15 @@ export function EffectsSection({
       {cur.gradient && (
         <div className="space-y-1 pl-4">
           <div className="flex items-center gap-2">
-            <PaletteSwatches value={fx.gradientColor!} onChange={(c) => update({ gradientColor: c })} />
+            <PaletteSwatches
+              value={fx.gradientColor!}
+              onChange={(c) => update({ gradientColor: c })}
+            />
             <select
               value={fx.gradientDir}
-              onChange={(e) => update({ gradientDir: e.target.value as LayerEffects["gradientDir"] })}
+              onChange={(e) =>
+                update({ gradientDir: e.target.value as LayerEffects["gradientDir"] })
+              }
               className="h-7 flex-1 rounded border bg-card px-1 text-xs"
             >
               <option value="top">Top</option>

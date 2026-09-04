@@ -7,3 +7,4 @@ docs/product-review/
 .design-sync/
 .agents/
 lib/api-spec/openapi.yaml
+lib/db/migrations/

@@ -3,15 +3,8 @@ import { eq, and, inArray } from "drizzle-orm";
 import { db, playersTable, matchesTable } from "@workspace/db";
 import type { ParsedMatch, FinalsStage } from "./match-scorecard";
 import { nameKey, type RosterPlayer } from "./name-match";
-import {
-  coerceStage,
-  normalizeRoundStage,
-  type PlayerResolution,
-} from "./import-body-parsers";
-import type {
-  ReconcileMode,
-  NegativeBaselineWarning,
-} from "./baseline-reconcile";
+import { coerceStage, normalizeRoundStage, type PlayerResolution } from "./import-body-parsers";
+import type { ReconcileMode, NegativeBaselineWarning } from "./baseline-reconcile";
 
 /**
  * Shared helpers for the import routes: player-roster resolution, backfill
@@ -110,9 +103,7 @@ export async function resolveMatchPlayers(
     return created.id;
   };
 
-  const resolved: Array<
-    ParsedMatch["players"][number] & { playerId: number }
-  > = [];
+  const resolved: Array<ParsedMatch["players"][number] & { playerId: number }> = [];
   for (const p of players) {
     const key = nameKey(p.surname, p.givenName);
     const resolution = resolutions.get(key);
@@ -177,8 +168,7 @@ export function parseFileResolutions(body: unknown): Map<string, BatchFileResolu
     if (typeof filename !== "string") continue;
     const stage = coerceStage((entry as { stage?: unknown }).stage);
     const r = (entry as { round?: unknown }).round;
-    const roundNum =
-      r == null ? null : typeof r === "number" ? r : parseInt(String(r), 10);
+    const roundNum = r == null ? null : typeof r === "number" ? r : parseInt(String(r), 10);
     const round = Number.isInteger(roundNum as number) ? (roundNum as number) : null;
     const norm = normalizeRoundStage(round, stage);
     map.set(filename, { filename, round: norm.round, stage: norm.stage });
@@ -331,11 +321,7 @@ export async function classifyBatchFiles(
     }
     seenInBatch.add(key);
     const matchExists = existing.has(key);
-    const status: BatchFileStatus = p.abandoned
-      ? "abandoned"
-      : matchExists
-        ? "duplicate"
-        : "ready";
+    const status: BatchFileStatus = p.abandoned ? "abandoned" : matchExists ? "duplicate" : "ready";
     out.push({
       candidate: c,
       status,

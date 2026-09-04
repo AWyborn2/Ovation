@@ -107,9 +107,9 @@ export function MatchUploadForm({
               onChange={(e) => onFile(e.target.files?.[0] ?? null)}
             />
             <p className="text-xs text-muted-foreground">
-              The grade, season and round are read from the scorecard header — you can
-              confirm or correct the round in the preview before committing. Committing
-              adds this match to the running season totals.
+              The grade, season and round are read from the scorecard header — you can confirm or
+              correct the round in the preview before committing. Committing adds this match to the
+              running season totals.
             </p>
           </div>
           <Button type="submit" disabled={uploading}>
@@ -146,8 +146,8 @@ export function BatchUploadForm({
             />
             <p className="text-xs text-muted-foreground">
               Select every match scorecard for the season (or a single .zip of them). The grade,
-              season and round are read from each scorecard's header. Player names are matched
-              once across the whole batch, then all valid matches are committed together.
+              season and round are read from each scorecard's header. Player names are matched once
+              across the whole batch, then all valid matches are committed together.
             </p>
           </div>
           <Button type="submit" disabled={uploading}>

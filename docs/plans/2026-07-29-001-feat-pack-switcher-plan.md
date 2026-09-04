@@ -27,11 +27,11 @@ This plan ships the switcher, fixes the stale-pack-row defect that would silentl
 
 Four problems, verified against the code:
 
-1. **No write path.** `resolvePackIdForKind` (`artifacts/cricket-club/src/lib/card-template.ts:250`) resolves a kind's pack by finding the `source: "pack"` row whose `defaultForKinds` includes that kind. Three call sites honour it — the Studio gallery (`admin-social-studio.tsx:347`), the composer preview (`admin-social-create.tsx:119`) and the carousel (`admin-social-sets.tsx:398`). The only code that *writes* `defaultForKinds` is the layer editor's save handler (`card-layout-editor.tsx:536`), which always writes `source: "layers"`. So a pack row can never claim a kind.
+1. **No write path.** `resolvePackIdForKind` (`artifacts/cricket-club/src/lib/card-template.ts:250`) resolves a kind's pack by finding the `source: "pack"` row whose `defaultForKinds` includes that kind. Three call sites honour it — the Studio gallery (`admin-social-studio.tsx:347`), the composer preview (`admin-social-create.tsx:119`) and the carousel (`admin-social-sets.tsx:398`). The only code that _writes_ `defaultForKinds` is the layer editor's save handler (`card-layout-editor.tsx:536`), which always writes `source: "layers"`. So a pack row can never claim a kind.
 
 2. **Pack rows go stale.** `ensurePackTemplates` (`artifacts/api-server/src/lib/design-packs.ts`) inserts pack rows with `onConflictDoNothing` against the `card_templates_pack_unique` index, and caches per-process in `ensuredTenants`. Existing rows are therefore **never updated**. Every pack's `cardKinds` grew during the catalogue build (Sunset shipped at 1 kind and finished at 18), so any tenant whose rows were materialised mid-build holds rows claiming fewer kinds than the pack now renders. `templateAppliesToKind` gates on exactly that column, so the switcher would offer Sunset for `matchSummary` only — a correct-looking UI over stale data.
 
-3. **`defaultForKinds` is one namespace shared with tenant-authored templates.** `clearDefaultKinds` (`artifacts/api-server/src/lib/social-cards-helpers.ts:127-149`) filters on `tenantId` and array overlap only — it is **source-agnostic**. Writing a pack claim therefore strips that kind's default from the tenant's own `layers` and `background` templates. That is not a cosmetic reset: a `layers` default changes which *renderer* runs (`slideRendersViaPack` returns false when a layout exists, `carousel-slide-render.ts:32`; `isPackCard` is false when a BYO template is selected, `share-card-modal.tsx:394`). Bulk-claiming 18 kinds would silently discard every BYO per-kind assignment a tenant has made.
+3. **`defaultForKinds` is one namespace shared with tenant-authored templates.** `clearDefaultKinds` (`artifacts/api-server/src/lib/social-cards-helpers.ts:127-149`) filters on `tenantId` and array overlap only — it is **source-agnostic**. Writing a pack claim therefore strips that kind's default from the tenant's own `layers` and `background` templates. That is not a cosmetic reset: a `layers` default changes which _renderer_ runs (`slideRendersViaPack` returns false when a layout exists, `carousel-slide-render.ts:32`; `isPackCard` is false when a BYO template is selected, `share-card-modal.tsx:394`). Bulk-claiming 18 kinds would silently discard every BYO per-kind assignment a tenant has made.
 
 4. **The packs are presented as something they aren't.** `bgTemplates = templates.filter(t => t.source !== "layers")` (`admin-social-studio.tsx:308`) sweeps pack rows into the BYO background list. They render "No background" (packs are code-rendered, they carry no `backgroundImageUrl`), sit under a label telling the user to edit them in the Cards tab (they can't be), and expose Delete — which is not durable, since `ensurePackTemplates` re-creates the row on the next server process.
 
@@ -41,16 +41,16 @@ Four problems, verified against the code:
 
 ## Requirements
 
-| ID | Requirement |
-|---|---|
-| R1 | An admin can choose which design pack a card kind uses, from the Social Studio, and see the choice truthfully reflected in that kind's gallery thumbnail — including when a BYO template overrides the pack. |
-| R2 | An admin can apply one pack to every card kind in a single action (the common case), without stepping through 18 selectors. |
-| R3 | A pack is only offered for a kind it can actually render. |
-| R4 | Selection survives a server restart and a pack's coverage growing — pack rows reconcile to the registry instead of ossifying at first materialisation. |
-| R5 | Pack rows stop appearing as uploaded background templates, and stop offering Delete. |
-| R6 | Exactly one code path decides which pack a kind uses; the switcher writes the claim, `resolvePackIdForKind` stays the only reader. |
-| R7 | Writing a pack claim never silently discards a tenant's curated per-kind template assignment — the cost is stated before it lands. |
-| R8 | The follow-ups documentation carries a written review of replacing the existing edit/create-card surfaces with editing pack templates, grounded in current code, with a recommendation, and marks the follow-ups entries this work has superseded as resolved. |
+| ID  | Requirement                                                                                                                                                                                                                                                    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | An admin can choose which design pack a card kind uses, from the Social Studio, and see the choice truthfully reflected in that kind's gallery thumbnail — including when a BYO template overrides the pack.                                                   |
+| R2  | An admin can apply one pack to every card kind in a single action (the common case), without stepping through 18 selectors.                                                                                                                                    |
+| R3  | A pack is only offered for a kind it can actually render.                                                                                                                                                                                                      |
+| R4  | Selection survives a server restart and a pack's coverage growing — pack rows reconcile to the registry instead of ossifying at first materialisation.                                                                                                         |
+| R5  | Pack rows stop appearing as uploaded background templates, and stop offering Delete.                                                                                                                                                                           |
+| R6  | Exactly one code path decides which pack a kind uses; the switcher writes the claim, `resolvePackIdForKind` stays the only reader.                                                                                                                             |
+| R7  | Writing a pack claim never silently discards a tenant's curated per-kind template assignment — the cost is stated before it lands.                                                                                                                             |
+| R8  | The follow-ups documentation carries a written review of replacing the existing edit/create-card surfaces with editing pack templates, grounded in current code, with a recommendation, and marks the follow-ups entries this work has superseded as resolved. |
 
 ---
 
@@ -58,7 +58,7 @@ Four problems, verified against the code:
 
 **KTD1 — Two switcher surfaces, one write path.** A "Design packs" section (pack-level, "Use for all card types") satisfies R2; a per-kind selector on each gallery card satisfies R1 and handles the override case. Both call the same helper and the same existing `updateMut`. The Design packs section is placed **above the Card types gallery** so the bulk path is met first in scroll order — placing it below would put 18 per-kind selectors ahead of the action built for the common case.
 
-**KTD2 — Claim on one canonical row per pack.** A pack materialises three rows (square/portrait/story). `resolvePackIdForKind` only reads `packId`, so any row works — but writing to several is wrong: `clearDefaultKinds` strips the kind from every *other* row on each PATCH, so three sequential writes would leave only the last. The UI claims exactly one deterministic row per pack (the lowest-id active row for that `packId`), chosen by a shared helper so any future caller agrees.
+**KTD2 — Claim on one canonical row per pack.** A pack materialises three rows (square/portrait/story). `resolvePackIdForKind` only reads `packId`, so any row works — but writing to several is wrong: `clearDefaultKinds` strips the kind from every _other_ row on each PATCH, so three sequential writes would leave only the last. The UI claims exactly one deterministic row per pack (the lowest-id active row for that `packId`), chosen by a shared helper so any future caller agrees.
 
 **KTD3 — Selecting a pack is always an explicit claim, including Broadcast Dark.** `resolvePackIdForKind` returns `null` only when no pack row claims the kind **and** no pack row carries the legacy `isDefault` flag (`card-template.ts:258-261`). Nothing sets `isDefault` on a pack row today, but the fallback exists, so U1's `set` clause must leave `isDefault` alone too (KTD4). The switcher always writes a claim to the chosen pack's canonical row; the server clears the kind from the others. The selector renders an explicit leading option for the default pack so the control never holds a value absent from its own option list.
 
@@ -154,6 +154,7 @@ sequenceDiagram
 **Dependencies:** none
 
 **Files:**
+
 - `artifacts/api-server/src/lib/design-packs.ts` (modify)
 - `artifacts/api-server/src/lib/design-packs.test.ts` (modify — call-shape assertions only)
 - `artifacts/api-server/src/routes/pack-reconcile-integration.test.ts` (create — real-DB reconciliation)
@@ -167,10 +168,12 @@ The per-process `ensuredTenants` cache **stays as-is**. `PACKS` is compile-time 
 **Patterns to follow:** `routes/tenant-isolation.test.ts` for real-DB seeding/teardown; the partial-index definition at `lib/db/src/schema/social_cards.ts:170`.
 
 **Test scenarios — `design-packs.test.ts` (call shape):**
+
 - The insert call supplies `target`, a `targetWhere` predicate, and a `set` whose keys are exactly `cardKinds`, `name`, `bgWidth`, `bgHeight`, `backgroundKind`, `motionPreset` — no tenant-owned column appears.
 - The per-process `ensuredTenants` cache still short-circuits a repeat call for the same tenant.
 
 **Test scenarios — integration (real DB):**
+
 - A tenant with no pack rows gets one row per pack per variant, with `cardKinds` matching the registry entry.
 - A tenant whose existing Sunset rows carry `cardKinds: ["matchSummary"]` ends with all 18 kinds after ensure runs — the reconciliation case that unblocks the switcher.
 - A row whose `defaultForKinds` holds `["matchSummary"]` still holds it after reconciliation.
@@ -192,11 +195,13 @@ The per-process `ensuredTenants` cache **stays as-is**. `PACKS` is compile-time 
 **Dependencies:** none
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/card-template.ts` (modify)
 - `artifacts/cricket-club/src/lib/card-template.test.ts` (modify — already has a `resolvePackIdForKind` describe block to sit beside)
 - `artifacts/cricket-club/src/lib/pack-templates/registry.ts` (read-only reference)
 
 **Approach:** Add pure functions next to `resolvePackIdForKind`, sharing its filtering semantics via `templateAppliesToKind`:
+
 - `listSelectablePacksForKind(templates, kind)` → the distinct `packId`s with an active pack row applying to that kind, ordered by `listPackManifests()` from `pack-templates/registry.ts` (registration order), with any unregistered pack row appended by lowest row id.
 - `canonicalPackRowFor(templates, packId)` → the single row a claim is written to (KTD2: lowest-id active row for that `packId`), or `null`.
 - `nextDefaultForKinds(row, kind)` → the row's `defaultForKinds` with `kind` added idempotently.
@@ -207,6 +212,7 @@ Keep `resolvePackIdForKind` untouched — these helpers surround it, they do not
 **Patterns to follow:** the existing `resolvePackIdForKind` / `templateAppliesToKind` pair and their doc-comment style (`card-template.ts:231-262`); `DEFAULT_PACK_ID` and `listPackManifests()` from `pack-templates/registry.ts`.
 
 **Test scenarios:**
+
 - `listSelectablePacksForKind` returns only `source: "pack"` rows — a `layers` or `background` row claiming the kind is never offered as a pack.
 - A pack with three variant rows appears exactly once.
 - A pack whose rows are scoped to other kinds is not offered; an inactive pack row is not offered.
@@ -231,6 +237,7 @@ Keep `resolvePackIdForKind` untouched — these helpers surround it, they do not
 **Dependencies:** U1, U2 — **U1 must land first.** `listSelectablePacksForKind` reads the DB row's `cardKinds` column, so shipping U3 against unreconciled rows delivers a switcher that offers each pack only for its stale subset, and U3's own bulk-apply scenario cannot pass.
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-social-studio.tsx` (modify)
 - `artifacts/cricket-club/src/pages/admin-social-studio.test.tsx` (create — uses `src/test/render.tsx` + `src/test/mock-api.ts`)
 
@@ -244,9 +251,10 @@ Keep `resolvePackIdForKind` untouched — these helpers surround it, they do not
 
 Both write paths reuse the existing `updateMut` (line 206); its `onSuccess` already invalidates the template list.
 
-**Execution note:** The state round-trips are automated (below); the *visual* result is not. Load the Studio for a real tenant and look at it — every layout defect in this codebase's card work was caught by looking at output, never by an assertion.
+**Execution note:** The state round-trips are automated (below); the _visual_ result is not. Load the Studio for a real tenant and look at it — every layout defect in this codebase's card work was caught by looking at output, never by an assertion.
 
 **Test scenarios — `admin-social-studio.test.tsx` (mount, mocked API):**
+
 - Changing a kind's selector issues one PATCH to that pack's canonical row with the kind added to `defaultForKinds`.
 - Selecting a different pack for the same kind produces exactly one claim, not two.
 - Selecting the leading default option writes an explicit Broadcast Dark claim (KTD3), not an empty body.
@@ -270,6 +278,7 @@ Both write paths reuse the existing `updateMut` (line 206); its `onSuccess` alre
 **Dependencies:** U2. **Must ship in the same PR as U3** — U3's writes are what trigger the regression this unit prevents.
 
 **Files:**
+
 - `artifacts/cricket-club/src/components/share-card-modal.tsx` (modify)
 - `artifacts/cricket-club/src/lib/card-template.test.ts` (modify — extend if the skip predicate lands as a helper)
 
@@ -278,6 +287,7 @@ Both write paths reuse the existing `updateMut` (line 206); its `onSuccess` alre
 Exclude `source === "pack"` rows from that effect's candidate list so the modal keeps defaulting to built-in, and let its pack come from `resolvePackIdForKind` as the other three call sites do.
 
 **Test scenarios:**
+
 - With a pack row claiming the card's kind, the modal's pre-selected layout stays built-in rather than the pack variant row.
 - With a `layers` template claiming the kind, the modal still pre-selects it (existing behaviour preserved).
 - The legacy `isDefault` fallback still selects a non-pack template when one is flagged.
@@ -295,15 +305,16 @@ Exclude `source === "pack"` rows from that effect's candidate list so the modal 
 **Dependencies:** none (documentation; independent of U1–U4)
 
 **Files:**
+
 - `docs/follow-ups/2026-07-23-pack-a-social-templates-follow-ups.md` (modify)
 
 **Approach:** Add a dated review section and correct the entries this work overtook. Ground it in these verified findings:
 
-- **The doc's only entry on this is "Per-element style overrides (\"C later\")"** under *Deferred product features* — deferred with "needs its own scoping". Curated token themes (`card_themes`: `bgDark`, `bgPanel`, `accent`, `textLight`, `displayFont`, `backgroundImageUrl`, `logoUrl`) shipped as the "B now" half and are edited in the Cards tab. So **appearance** of pack cards is already editable; **structure** is not editable at all.
+- **The doc's only entry on this is "Per-element style overrides (\"C later\")"** under _Deferred product features_ — deferred with "needs its own scoping". Curated token themes (`card_themes`: `bgDark`, `bgPanel`, `accent`, `textLight`, `displayFont`, `backgroundImageUrl`, `logoUrl`) shipped as the "B now" half and are edited in the Cards tab. So **appearance** of pack cards is already editable; **structure** is not editable at all.
 - **The existing edit/create surfaces do not edit packs — they replace them.** `CardLayoutEditor` writes `source: "layers"`, and a layer template with layers causes the card to bypass the pack entirely (`carousel-slide-render.ts:32`; `share-card-modal.tsx:394`). "New template" and "+ Template" build a parallel design system competing with the catalogue rather than customising it.
 - **The "Packs B–E" roadmap entry is complete** — the four remaining packs shipped across PRs #103–#108, completing the five-pack catalogue alongside the pre-existing Pack A. Mark its two correction notes resolved.
 - **Correct the entry's per-pack table explicitly, don't silently contradict it.** That table claims B–E each had two cards with a non-story branch (Match Result, Club Leaderboard·Wickets). Transcription found only Match Result carries real per-format markup branches; Club Leaderboard·Wickets' apparent branch is script-side (`isNotStory` in the DC runtime), not markup. Record the correction against the table so the arithmetic beside it ("~20 story transcriptions plus ~18 authored reflows") is updated with it rather than left contradicting the prose.
-- **Recommendation:** replace the layer-editor entry points with pack-template editing in two layers — (a) *pack selection*, shipped by U1–U4 here; (b) *pack customisation* via the existing token-theme surface promoted into the Studio beside the switcher, so "edit this card" means "re-token this pack" rather than "author a competing layout". Per-element structural overrides stay deferred, with a now-stronger rationale: five packs × 20 designs × 3 formats is a far larger surface for a free-form editor to break, and the `pack-lint` contract has no equivalent for user-authored layouts.
+- **Recommendation:** replace the layer-editor entry points with pack-template editing in two layers — (a) _pack selection_, shipped by U1–U4 here; (b) _pack customisation_ via the existing token-theme surface promoted into the Studio beside the switcher, so "edit this card" means "re-token this pack" rather than "author a competing layout". Per-element structural overrides stay deferred, with a now-stronger rationale: five packs × 20 designs × 3 formats is a far larger surface for a free-form editor to break, and the `pack-lint` contract has no equivalent for user-authored layouts.
 - **Gate the removal recommendation on evidence, not maintenance cost.** Report the current count of `source: "layers"` templates across live tenants and what they were authored for. Retiring the entry points is only low-risk cleanup if that number is small; if tenants rely on custom layouts, removal is a capability withdrawal and the recommendation must say so. Record the migration question (what happens to saved `layers` templates) as open rather than deciding it.
 
 **Test scenarios:** `Test expectation: none -- documentation-only unit; no behaviour changes.`
@@ -317,14 +328,16 @@ Exclude `source === "pack"` rows from that effect's candidate list so the modal 
 **In scope:** pack selection (per kind and bulk, with the destructive cost surfaced), pack-row reconciliation, the export-modal regression guard, removing the misleading background-list presentation, and the written review.
 
 **Out of scope (true non-goals):**
+
 - **Hiding or deactivating a pack per tenant.** The catalogue is five packs; showing it in full is correct, and the removed Delete was never durable. `isActive` stays preserved by KTD4 as forward-compatibility, not as a control this plan ships.
 - Per-element structural editing of pack cards — remains deferred; U5 records why.
 - Any change to the pack templates themselves, the renderer, or the pack registry.
 - OpenAPI or generated-client changes — the contract already covers this (KTD5).
 
-**Clarification:** a fixed-kind (`matchSummary`) preview on each Design packs card **is** in scope for U3. Only previewing an *arbitrary* kind before selecting is deferred.
+**Clarification:** a fixed-kind (`matchSummary`) preview on each Design packs card **is** in scope for U3. Only previewing an _arbitrary_ kind before selecting is deferred.
 
 ### Deferred to Follow-Up Work
+
 - **Promoting the token-theme editor into the Studio** beside the switcher (the "(b)" half of U5's recommendation). Recommended next; a UI relocation plus copy, not new capability.
 - **Retiring or migrating `source: "layers"` templates** — open question in U5, pending the usage count.
 - **Per-kind pack preview** of an arbitrary kind before selecting.
@@ -344,15 +357,15 @@ Exclude `source === "pack"` rows from that effect's candidate list so the modal 
 
 ## Risks & Dependencies
 
-| Risk | Mitigation |
-|---|---|
-| U1's upsert silently no-ops via 42P10 on the partial index, mimicking the bug it fixes. | KTD4 mandates `targetWhere`; the integration test's idempotence scenario is required to fail without it. |
-| U1's upsert clobbers tenant selection state if the `set` clause is written broadly. | KTD4 names four excluded columns; integration scenarios assert each survives. |
+| Risk                                                                                                  | Mitigation                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| U1's upsert silently no-ops via 42P10 on the partial index, mimicking the bug it fixes.               | KTD4 mandates `targetWhere`; the integration test's idempotence scenario is required to fail without it.                              |
+| U1's upsert clobbers tenant selection state if the `set` clause is written broadly.                   | KTD4 names four excluded columns; integration scenarios assert each survives.                                                         |
 | Bulk apply silently discards tenants' BYO per-kind defaults (`clearDefaultKinds` is source-agnostic). | KTD7 confirm dialog naming the affected templates via `byoDefaultsClearedBy`; U3 scenario covers a tenant holding a `layers` default. |
-| U3's claims change the export modal's pre-selected layout. | U4 excludes pack rows from that effect and ships in the same PR. |
-| Gallery thumbnail confirms a pack the shipped card ignores when a `layers` template overrides. | U3 edit 3 renders an override warning; R1 restated to require truthfulness. |
-| A second "which pack" reader creeps into the page. | R6; U3 edit 4 filters `defaultByKind`; U4 repoints the modal. |
-| U1 mocked tests pass against an upsert that never executes. | U1's execution note splits call-shape assertions from real-DB reconciliation. |
+| U3's claims change the export modal's pre-selected layout.                                            | U4 excludes pack rows from that effect and ships in the same PR.                                                                      |
+| Gallery thumbnail confirms a pack the shipped card ignores when a `layers` template overrides.        | U3 edit 3 renders an override warning; R1 restated to require truthfulness.                                                           |
+| A second "which pack" reader creeps into the page.                                                    | R6; U3 edit 4 filters `defaultByKind`; U4 repoints the modal.                                                                         |
+| U1 mocked tests pass against an upsert that never executes.                                           | U1's execution note splits call-shape assertions from real-DB reconciliation.                                                         |
 
 **Dependencies:** U3 depends on U1 and U2; U4 depends on U2 and ships with U3. U5 is independent.
 

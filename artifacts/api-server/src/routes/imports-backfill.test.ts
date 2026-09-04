@@ -31,11 +31,7 @@ const SURNAME = `Backfilltest${SUFFIX}`;
 const GIVEN = "Casey";
 
 /** A minimal valid PlayCricket "Combined" CSV with one player row. */
-function buildCsv(opts: {
-  games: number;
-  runs: number;
-  wickets: number;
-}): string {
+function buildCsv(opts: { games: number; runs: number; wickets: number }): string {
   const headers = [
     "Player name",
     "Club Name",
@@ -93,8 +89,7 @@ describe("backfill CSV import — peel/add/delete (integration)", () => {
   const SEASON_FIGS = { games: 10, runs: 300, wickets: 6 };
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-backfill-flow";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-backfill-flow";
     const [admin] = await db
       .insert(adminsTable)
       .values({
@@ -143,7 +138,9 @@ describe("backfill CSV import — peel/add/delete (integration)", () => {
     await db
       .delete(baselineAdjustmentsTable)
       .where(eq(baselineAdjustmentsTable.playerId, playerId));
-    await db.delete(playerGradeSeasonStatsTable).where(eq(playerGradeSeasonStatsTable.playerId, playerId));
+    await db
+      .delete(playerGradeSeasonStatsTable)
+      .where(eq(playerGradeSeasonStatsTable.playerId, playerId));
     await db.delete(playersTable).where(eq(playersTable.id, playerId));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   });
@@ -200,9 +197,7 @@ describe("backfill CSV import — peel/add/delete (integration)", () => {
 
   it("preview attaches backfill figures for the matched player", async () => {
     const body = await uploadCsv(SEASON_FIGS);
-    const me = body.players.find(
-      (p: { surname: string }) => p.surname === SURNAME,
-    );
+    const me = body.players.find((p: { surname: string }) => p.surname === SURNAME);
     expect(me).toBeTruthy();
     expect(me.status).toBe("matched");
     expect(me.backfill).toBeTruthy();

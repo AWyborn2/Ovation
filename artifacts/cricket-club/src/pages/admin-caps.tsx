@@ -82,7 +82,8 @@ export default function AdminCaps() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-muted-foreground mt-1">
-            Manage the A Grade cap lists. Changes apply immediately to the public honour boards page.
+            Manage the A Grade cap lists. Changes apply immediately to the public honour boards
+            page.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -110,9 +111,7 @@ export default function AdminCaps() {
         </div>
       </div>
 
-      {notice && (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>
-      )}
+      {notice && <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>}
 
       <AddCapForm
         key={category}
@@ -134,7 +133,9 @@ export default function AdminCaps() {
         <CardHeader>
           <CardTitle>
             {category === "female" ? "A Grade Female" : "A Grade Male"}{" "}
-            <span className="text-muted-foreground text-sm font-normal">({inCategory.length} entries)</span>
+            <span className="text-muted-foreground text-sm font-normal">
+              ({inCategory.length} entries)
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -150,10 +151,7 @@ export default function AdminCaps() {
           ) : isLoading ? (
             <TableSkeleton />
           ) : !filtered.length ? (
-            <EmptyState
-              title="No cap entries"
-              message="No caps match this list or filter yet."
-            />
+            <EmptyState title="No cap entries" message="No caps match this list or filter yet." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -194,7 +192,11 @@ export default function AdminCaps() {
                         <td className="py-2 pr-4 font-mono font-bold">{cap.capNumber}</td>
                         <td className="py-2 pr-4">
                           {cap.name}
-                          {cap.deceased && <span className="ml-1 text-muted-foreground" title="Deceased">✝</span>}
+                          {cap.deceased && (
+                            <span className="ml-1 text-muted-foreground" title="Deceased">
+                              ✝
+                            </span>
+                          )}
                         </td>
                         <td className="py-2 pr-4">
                           {cap.playerId != null ? (
@@ -203,7 +205,9 @@ export default function AdminCaps() {
                             <span className="text-muted-foreground italic">— unmatched —</span>
                           )}
                         </td>
-                        <td className="py-2 pr-4 font-mono">{cap.inStats ? cap.gamesAGrade : "—"}</td>
+                        <td className="py-2 pr-4 font-mono">
+                          {cap.inStats ? cap.gamesAGrade : "—"}
+                        </td>
                         <td className="py-2 pr-4">
                           {cap.playerId != null ? (
                             <span className="text-green-700 dark:text-green-400">✓ matched</span>
@@ -313,7 +317,10 @@ function AddCapForm({
         <CardTitle>Add cap entry</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-[100px_1fr_1fr_120px_auto] md:items-end">
+        <form
+          onSubmit={onSubmit}
+          className="grid gap-4 md:grid-cols-[100px_1fr_1fr_120px_auto] md:items-end"
+        >
           <div className="space-y-2">
             <Label htmlFor="cap-number">Cap #</Label>
             <Input

@@ -52,9 +52,7 @@ function DetailsForm({ club, onBack }: { club: AvailableClub; onBack: () => void
       checkSlugAvailable({ slug: s })
         .then((r) =>
           setSlugState(
-            r.available
-              ? { status: "ok" }
-              : { status: "bad", reason: r.reason ?? "Unavailable" },
+            r.available ? { status: "ok" } : { status: "bad", reason: r.reason ?? "Unavailable" },
           ),
         )
         .catch(() => setSlugState({ status: "idle" }));
@@ -76,9 +74,7 @@ function DetailsForm({ club, onBack }: { club: AvailableClub; onBack: () => void
         data: {
           centralClubId: club.centralClubId,
           slug: slug.trim().toLowerCase(),
-          ...(hasAdmin
-            ? { adminEmail: email.trim().toLowerCase(), password }
-            : {}),
+          ...(hasAdmin ? { adminEmail: email.trim().toLowerCase(), password } : {}),
         },
       },
       {
@@ -186,8 +182,8 @@ export default function ProvisionTenant() {
         Concierge onboarding from the central PCA register.
       </p>
       <p className="mb-6 text-sm text-muted-foreground">
-        Folded or merged clubs aren't available to provision — their history
-        stays in the platform, view-only.
+        Folded or merged clubs aren't available to provision — their history stays in the platform,
+        view-only.
       </p>
       {club ? (
         <DetailsForm club={club} onBack={() => setClub(null)} />

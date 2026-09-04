@@ -50,8 +50,7 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
   let previousAutoseed: boolean | null = null;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-card-sets-autoseed";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-card-sets-autoseed";
 
     const [imp] = await db
       .insert(importsTable)
@@ -67,8 +66,22 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
     const m = await db
       .insert(matchesTable)
       .values([
-        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "Rovers", sourceKey: `c4-${STAMP}-a` },
-        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "United", sourceKey: `c4-${STAMP}-b` },
+        {
+          importId,
+          grade: TEST_GRADE,
+          season: SEASON,
+          round: ROUND,
+          opponent: "Rovers",
+          sourceKey: `c4-${STAMP}-a`,
+        },
+        {
+          importId,
+          grade: TEST_GRADE,
+          season: SEASON,
+          round: ROUND,
+          opponent: "United",
+          sourceKey: `c4-${STAMP}-b`,
+        },
       ])
       .returning({ id: matchesTable.id });
     matchIds = m.map((r) => r.id);
@@ -202,10 +215,7 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
     const firstId: number = set.id;
 
     // Simulate the admin publishing the set.
-    await db
-      .update(cardSetsTable)
-      .set({ isPublished: true })
-      .where(eq(cardSetsTable.id, firstId));
+    await db.update(cardSetsTable).set({ isPublished: true }).where(eq(cardSetsTable.id, firstId));
 
     // Re-run the SAME scope → must update the SAME row (grouping-key idempotency).
     const second = await request(app)

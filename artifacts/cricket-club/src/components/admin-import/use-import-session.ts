@@ -120,8 +120,7 @@ export function useImportSession() {
     if (
       !(await confirm({
         title: "Delete import",
-        description:
-          "Delete this import? Aggregates will be re-derived without its contribution.",
+        description: "Delete this import? Aggregates will be re-derived without its contribution.",
         confirmText: "Delete",
         destructive: true,
       }))
@@ -150,9 +149,7 @@ export function useImportSession() {
             resolve(
               `Removed ${r.matchesDeleted} match${
                 r.matchesDeleted === 1 ? "" : "es"
-              } and ${r.playersRemoved} orphaned player${
-                r.playersRemoved === 1 ? "" : "s"
-              }.`,
+              } and ${r.playersRemoved} orphaned player${r.playersRemoved === 1 ? "" : "s"}.`,
             );
           },
           onError: (e) => {

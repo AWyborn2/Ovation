@@ -37,15 +37,11 @@ import { sql } from "drizzle-orm";
 
 // Resolve from the workspace root regardless of the cwd pnpm runs us in.
 const CSV_PATH = fileURLToPath(
-  new URL(
-    "../../attached_assets/A_Grade_2025.26_season_stats_1780356874929.csv",
-    import.meta.url,
-  ),
+  new URL("../../attached_assets/A_Grade_2025.26_season_stats_1780356874929.csv", import.meta.url),
 );
 const GRADE = "A Grade";
 const SEASON = 2025; // 2025/26 season, keyed by its start year
-const AUDIT_FILENAME =
-  "A_Grade_2025.26_season_stats_1780356874929.csv (baseline reversal)";
+const AUDIT_FILENAME = "A_Grade_2025.26_season_stats_1780356874929.csv (baseline reversal)";
 
 // Club-confirmed 2025/26 A Grade debutants: remove from A Grade AND drop their
 // 2025/26 cap so it can be re-earned during the match-by-match test.
@@ -130,8 +126,7 @@ function parseCsv(text: string): CsvPlayer[] {
     const givenName = gn.join(", ");
     const hsRaw = (o["High Score"] ?? "").trim();
     const notOut = (o["High Score Dismissal Status"] ?? "").trim().toLowerCase() === "true";
-    const highScore =
-      hsRaw === "" || hsRaw === "-" ? null : notOut ? `${hsRaw}*` : hsRaw;
+    const highScore = hsRaw === "" || hsRaw === "-" ? null : notOut ? `${hsRaw}*` : hsRaw;
     return {
       surname,
       givenName,
@@ -199,7 +194,10 @@ async function main() {
            wickets, runs_conceded, five_wickets, catches, stumpings, run_outs
     FROM player_grade_season_stats
     WHERE grade = ${GRADE} AND season IS NULL
-      AND player_id IN (${sql.join(playerIds.map((i) => sql`${i}`), sql`, `)})
+      AND player_id IN (${sql.join(
+        playerIds.map((i) => sql`${i}`),
+        sql`, `,
+      )})
   `);
   const snapsByPlayer = new Map<number, SnapRow[]>();
   for (const r of snapRes.rows as Array<Record<string, number>>) {
@@ -229,8 +227,7 @@ async function main() {
     | { type: "delete"; snapId: number };
   const plan: Array<{ row: (typeof resolved)[number]; action: Action }> = [];
 
-  const exactMatch = (s: SnapRow, c: Counting) =>
-    COUNTING_FIELDS.every((f) => s[f] === c[f]);
+  const exactMatch = (s: SnapRow, c: Counting) => COUNTING_FIELDS.every((f) => s[f] === c[f]);
 
   for (const row of resolved) {
     const snaps = snapsByPlayer.get(row.playerId!) ?? [];
@@ -272,9 +269,7 @@ async function main() {
   await db.transaction(async (tx) => {
     for (const { row, action } of plan) {
       if (action.type === "delete") {
-        await tx.execute(
-          sql`DELETE FROM player_grade_season_stats WHERE id = ${action.snapId}`,
-        );
+        await tx.execute(sql`DELETE FROM player_grade_season_stats WHERE id = ${action.snapId}`);
       } else {
         await tx.execute(sql`
           UPDATE player_grade_season_stats SET
@@ -301,7 +296,10 @@ async function main() {
     await tx.execute(sql`
       DELETE FROM cap_register
       WHERE category = 'male'
-        AND player_id IN (${sql.join([...DEBUTANT_PLAYER_IDS].map((i) => sql`${i}`), sql`, `)})
+        AND player_id IN (${sql.join(
+          [...DEBUTANT_PLAYER_IDS].map((i) => sql`${i}`),
+          sql`, `,
+        )})
     `);
 
     // Re-sync games_a_grade / in_stats for the remaining affected caps from the
@@ -315,7 +313,10 @@ async function main() {
           (SELECT games FROM player_grade_stats g
            WHERE g.grade = ${GRADE} AND g.player_id = c.player_id), 0) > 0
       WHERE c.category = 'male'
-        AND c.player_id IN (${sql.join(playerIds.map((i) => sql`${i}`), sql`, `)})
+        AND c.player_id IN (${sql.join(
+          playerIds.map((i) => sql`${i}`),
+          sql`, `,
+        )})
     `);
 
     // Player-record cleanup for debutants with no remaining stats in any grade,
@@ -379,9 +380,7 @@ async function main() {
  * artifacts/api-server/src/lib/recompute.ts (scoped to A Grade); kept inline
  * because scripts cannot import an artifact package.
  */
-async function recomputeAGrade(tx: {
-  execute: (q: ReturnType<typeof sql>) => Promise<unknown>;
-}) {
+async function recomputeAGrade(tx: { execute: (q: ReturnType<typeof sql>) => Promise<unknown> }) {
   await tx.execute(sql`DELETE FROM player_grade_stats WHERE grade = ${GRADE}`);
   await tx.execute(sql`
     INSERT INTO player_grade_stats
@@ -472,8 +471,13 @@ async function verify(playerIds: number[]) {
   `);
   const c = check.rows[0] as { snap_games: number; agg_games: number; summary_games: number };
   console.log("\nVerification:");
-  console.log(`  snapshot games=${c.snap_games} aggregate games=${c.agg_games} summary games=${c.summary_games}`);
-  if (Number(c.snap_games) !== Number(c.agg_games) || Number(c.agg_games) !== Number(c.summary_games)) {
+  console.log(
+    `  snapshot games=${c.snap_games} aggregate games=${c.agg_games} summary games=${c.summary_games}`,
+  );
+  if (
+    Number(c.snap_games) !== Number(c.agg_games) ||
+    Number(c.agg_games) !== Number(c.summary_games)
+  ) {
     throw new Error("Aggregates do not reconcile with the snapshot source of truth.");
   }
 

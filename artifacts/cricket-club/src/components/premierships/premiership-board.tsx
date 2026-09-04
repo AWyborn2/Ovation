@@ -59,13 +59,18 @@ export function PremiershipBoard<T extends { id: number }>({
     <div
       className="mx-[calc(50%-50vw)] w-screen min-h-screen overflow-x-hidden"
       style={{
-        background:
-          "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
+        background: "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
       }}
     >
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
-          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
+          <img
+            loading="lazy"
+            decoding="async"
+            src={logoUrl}
+            alt={brand.name}
+            className="h-14 md:h-20 w-auto drop-shadow"
+          />
           <div className="text-center text-white">
             {eyebrow}
             <h1
@@ -81,7 +86,13 @@ export function PremiershipBoard<T extends { id: number }>({
               {heading}
             </div>
           </div>
-          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
+          <img
+            loading="lazy"
+            decoding="async"
+            src={logoUrl}
+            alt={brand.name}
+            className="h-14 md:h-20 w-auto drop-shadow"
+          />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">
@@ -96,7 +107,9 @@ export function PremiershipBoard<T extends { id: number }>({
             data-testid={filter.testId}
           >
             {filter.options.map((g) => (
-              <option key={g} value={g} className="text-black">{g}</option>
+              <option key={g} value={g} className="text-black">
+                {g}
+              </option>
             ))}
           </select>
           <span className="text-xs italic ml-auto text-white/70">

@@ -16,7 +16,11 @@ export type Palette = {
 
 export const hexToRgb = (hex: string): [number, number, number] => {
   let h = hex.trim().replace(/^#/, "");
-  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
   const n = parseInt(h, 16);
   if (h.length !== 6 || Number.isNaN(n)) return [251, 208, 57];
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];

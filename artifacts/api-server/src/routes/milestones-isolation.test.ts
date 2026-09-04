@@ -99,10 +99,7 @@ describe("tenant-scoped milestone board", () => {
   it("does not serve a warm cached board across tenants", async () => {
     // Deliberately does NOT clear between the two requests — the point is to
     // exercise a populated cache. Tenant #1 first so its entry is warm...
-    const asT1 = await request(app)
-      .get("/api/milestones")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/milestones").set("x-tenant-id", "1").expect(200);
     expect(asT1.body.recencyWeeks).toBe(T1_RECENCY);
 
     // ...then tenant 2 must miss that entry and build its own.

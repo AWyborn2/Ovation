@@ -262,10 +262,7 @@ export async function buildRecordsLeaderboards(tenantId: number): Promise<Honour
         })
         .from(awardWinnersTable)
         .where(
-          and(
-            inArray(awardWinnersTable.awardId, awardIds),
-            eq(awardWinnersTable.published, true),
-          ),
+          and(inArray(awardWinnersTable.awardId, awardIds), eq(awardWinnersTable.published, true)),
         )
     : [];
   const byAward = new Map<number, { name: string; playerId: number | null; season: number }[]>();
@@ -325,11 +322,7 @@ export async function buildRecordsByGrade(): Promise<HonourBoardOut[]> {
     (a, b) => gradeRank(a[0]) - gradeRank(b[0]) || a[0].localeCompare(b[0]),
   )) {
     const entries: BoardEntry[] = [];
-    const pushTop = (
-      label: string,
-      pick: Row | undefined,
-      value: string | number | null,
-    ) => {
+    const pushTop = (label: string, pick: Row | undefined, value: string | number | null) => {
       if (!pick || value == null || value === "" || value === 0) return;
       entries.push({
         season: "",
@@ -338,8 +331,7 @@ export async function buildRecordsByGrade(): Promise<HonourBoardOut[]> {
         playerId: pick.playerId,
       });
     };
-    const topBy = (sel: (r: Row) => number) =>
-      recs.slice().sort((a, b) => sel(b) - sel(a))[0];
+    const topBy = (sel: (r: Row) => number) => recs.slice().sort((a, b) => sel(b) - sel(a))[0];
 
     const mostGames = topBy((r) => r.games ?? 0);
     const mostRuns = topBy((r) => r.runs ?? 0);

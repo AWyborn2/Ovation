@@ -46,10 +46,7 @@ export async function rosterGamesByParticipant(
       games: sql<number>`count(distinct ${juniorMatchRostersTable.matchId})::int`,
     })
     .from(juniorMatchRostersTable)
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId))
     .where(and(...conds))
     .groupBy(juniorMatchRostersTable.participantId);
   return new Map(
@@ -80,10 +77,7 @@ export async function battingLeaders(limit: number, scope: LeaderScope = {}) {
       juniorParticipantsTable,
       eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
     )
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(and(...conds))
     .groupBy(juniorParticipantsTable.participantId, juniorParticipantsTable.displayName)
     .having(sql`sum(${juniorMatchBattingTable.runs}) > 0`)
@@ -121,10 +115,7 @@ export async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
       juniorParticipantsTable,
       eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
     )
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(and(...conds))
     .groupBy(juniorParticipantsTable.participantId, juniorParticipantsTable.displayName)
     .having(sql`sum(${juniorMatchBowlingTable.wickets}) > 0`)
@@ -139,10 +130,7 @@ export async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
     wickets: r.wickets,
     matches: rosterGames.get(r.participantId) ?? 0,
     bestWickets: r.bestWickets,
-    economy:
-      r.balls > 0
-        ? Math.round((r.runs / (r.balls / BALLS_PER_OVER)) * 100) / 100
-        : null,
+    economy: r.balls > 0 ? Math.round((r.runs / (r.balls / BALLS_PER_OVER)) * 100) / 100 : null,
   }));
 }
 
@@ -164,10 +152,7 @@ export async function highestScoreInnings(limit: number) {
       juniorParticipantsTable,
       eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
     )
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(
       and(
         eq(juniorMatchBattingTable.isHallsHead, true),
@@ -208,10 +193,7 @@ export async function bestBowlingFigures(limit: number) {
       juniorParticipantsTable,
       eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
     )
-    .innerJoin(
-      juniorMatchesTable,
-      eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-    )
+    .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(
       and(
         eq(juniorMatchBowlingTable.isHallsHead, true),
@@ -219,10 +201,7 @@ export async function bestBowlingFigures(limit: number) {
         isNotNull(juniorMatchBowlingTable.wickets),
       ),
     )
-    .orderBy(
-      desc(juniorMatchBowlingTable.wickets),
-      juniorMatchBowlingTable.runs,
-    )
+    .orderBy(desc(juniorMatchBowlingTable.wickets), juniorMatchBowlingTable.runs)
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,

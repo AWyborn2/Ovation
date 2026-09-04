@@ -43,15 +43,12 @@ export default function AdminPeople() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-muted-foreground mt-1">
-            Club officials who served the club but never played (e.g. Secretaries
-            and Treasurers). Add them here, then link them on committee or captain
-            rows so their name becomes a clickable profile.
+            Club officials who served the club but never played (e.g. Secretaries and Treasurers).
+            Add them here, then link them on committee or captain rows so their name becomes a
+            clickable profile.
           </p>
         </div>
-        <Button
-          onClick={() => setShowNew((v) => !v)}
-          variant={showNew ? "outline" : "default"}
-        >
+        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
           {showNew ? "Close form" : "Add person"}
         </Button>
       </div>
@@ -105,10 +102,7 @@ export default function AdminPeople() {
           <CardContent className="space-y-2 pt-6">
             {(people ?? []).map((p: NonPlayerPerson) =>
               editingId === p.id ? (
-                <div
-                  key={p.id}
-                  className="rounded-md border border-border bg-muted/30 p-4"
-                >
+                <div key={p.id} className="rounded-md border border-border bg-muted/30 p-4">
                   <PersonForm
                     initial={{ name: p.name, bio: p.bio ?? "" }}
                     pending={updatePerson.isPending}
@@ -140,22 +134,12 @@ export default function AdminPeople() {
                   <div className="min-w-0">
                     <div className="font-medium truncate">
                       {p.name}
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        #{p.id}
-                      </span>
+                      <span className="ml-2 text-xs text-muted-foreground">#{p.id}</span>
                     </div>
-                    {p.bio && (
-                      <div className="text-sm text-muted-foreground truncate">
-                        {p.bio}
-                      </div>
-                    )}
+                    {p.bio && <div className="text-sm text-muted-foreground truncate">{p.bio}</div>}
                   </div>
                   <div className="space-x-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingId(p.id)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => setEditingId(p.id)}>
                       Edit
                     </Button>
                     <Button

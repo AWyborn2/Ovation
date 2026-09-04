@@ -31,65 +31,57 @@ router.get("/player-curation", requireAdmin, async (req, res): Promise<void> => 
 });
 
 // Upsert curation (rename and/or merge) for one central participant.
-router.put(
-  "/player-curation/:participantId",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const tenantId = getTenantId(req);
-    const participantId = paramStr(req.params.participantId);
-    if (!participantId) {
-      res.status(400).json({ error: "participantId is required" });
-      return;
-    }
-    const parsed = UpsertPlayerCurationBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
-      return;
-    }
-    if (parsed.data.mergedIntoParticipantId === participantId) {
-      res.status(400).json({ error: "A player cannot be merged into itself." });
-      return;
-    }
-    const values = {
-      tenantId,
-      participantId,
-      overrideDisplayName: parsed.data.overrideDisplayName ?? null,
-      mergedIntoParticipantId: parsed.data.mergedIntoParticipantId ?? null,
-      updatedAt: new Date(),
-    };
-    const [row] = await db
-      .insert(playerCurationTable)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [playerCurationTable.tenantId, playerCurationTable.participantId],
-        set: {
-          overrideDisplayName: values.overrideDisplayName,
-          mergedIntoParticipantId: values.mergedIntoParticipantId,
-          updatedAt: values.updatedAt,
-        },
-      })
-      .returning();
-    res.json(row);
-  },
-);
+router.put("/player-curation/:participantId", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const participantId = paramStr(req.params.participantId);
+  if (!participantId) {
+    res.status(400).json({ error: "participantId is required" });
+    return;
+  }
+  const parsed = UpsertPlayerCurationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
+    return;
+  }
+  if (parsed.data.mergedIntoParticipantId === participantId) {
+    res.status(400).json({ error: "A player cannot be merged into itself." });
+    return;
+  }
+  const values = {
+    tenantId,
+    participantId,
+    overrideDisplayName: parsed.data.overrideDisplayName ?? null,
+    mergedIntoParticipantId: parsed.data.mergedIntoParticipantId ?? null,
+    updatedAt: new Date(),
+  };
+  const [row] = await db
+    .insert(playerCurationTable)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [playerCurationTable.tenantId, playerCurationTable.participantId],
+      set: {
+        overrideDisplayName: values.overrideDisplayName,
+        mergedIntoParticipantId: values.mergedIntoParticipantId,
+        updatedAt: values.updatedAt,
+      },
+    })
+    .returning();
+  res.json(row);
+});
 
 // Clear curation for one participant (revert to central defaults).
-router.delete(
-  "/player-curation/:participantId",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const tenantId = getTenantId(req);
-    const participantId = paramStr(req.params.participantId);
-    await db
-      .delete(playerCurationTable)
-      .where(
-        and(
-          eq(playerCurationTable.tenantId, tenantId),
-          eq(playerCurationTable.participantId, participantId),
-        ),
-      );
-    res.status(204).end();
-  },
-);
+router.delete("/player-curation/:participantId", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const participantId = paramStr(req.params.participantId);
+  await db
+    .delete(playerCurationTable)
+    .where(
+      and(
+        eq(playerCurationTable.tenantId, tenantId),
+        eq(playerCurationTable.participantId, participantId),
+      ),
+    );
+  res.status(204).end();
+});
 
 export default router;

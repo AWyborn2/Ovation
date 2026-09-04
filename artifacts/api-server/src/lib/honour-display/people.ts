@@ -6,12 +6,7 @@
  * never on a request object — so every builder is unit-testable.
  */
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  lifeMembersTable,
-  clubRolesTable,
-  playerGradeStatsTable,
-} from "@workspace/db";
+import { db, lifeMembersTable, clubRolesTable, playerGradeStatsTable } from "@workspace/db";
 
 import { seasonLabel } from "./premierships";
 import { composeSeasonGrid, gradeRank } from "./shared";
@@ -20,8 +15,16 @@ import { type GridColumnOptionOut, type HonourBoardOut, type LifeMemberStatsOut 
 // Grade sort order for a life member's "grades played" chips (mirrors the
 // /life-members endpoint so the kiosk lists grades in the same order).
 const LIFE_MEMBER_GRADE_ORDER = [
-  "A Grade", "B Grade", "C Grade", "D Grade", "E Grade", "F Grade",
-  "Female A Grade", "Female B Grade", "PPL", "Colts",
+  "A Grade",
+  "B Grade",
+  "C Grade",
+  "D Grade",
+  "E Grade",
+  "F Grade",
+  "Female A Grade",
+  "Female B Grade",
+  "PPL",
+  "Colts",
 ];
 
 const lmParseHighScore = (hs: string | null | undefined): number => {
@@ -29,9 +32,7 @@ const lmParseHighScore = (hs: string | null | undefined): number => {
   const n = parseInt(String(hs).replace(/[^0-9]/g, ""), 10);
   return isNaN(n) ? 0 : n;
 };
-const lmParseBestBowling = (
-  bb: string | null | undefined,
-): { wkts: number; runs: number } => {
+const lmParseBestBowling = (bb: string | null | undefined): { wkts: number; runs: number } => {
   if (!bb) return { wkts: 0, runs: 0 };
   const m = String(bb).match(/(\d+)\s*\/\s*(\d+)/);
   if (!m) return { wkts: 0, runs: 0 };
@@ -56,9 +57,21 @@ async function aggregateLifeMemberStats(
     let agg = byPlayer.get(s.playerId);
     if (!agg) {
       agg = {
-        games: 0, innings: 0, notOuts: 0, runs: 0, highScore: null,
-        fifties: 0, hundreds: 0, wickets: 0, runsConceded: 0, bestBowling: null,
-        fiveWickets: 0, catches: 0, stumpings: 0, runOuts: 0, gradesPlayed: [],
+        games: 0,
+        innings: 0,
+        notOuts: 0,
+        runs: 0,
+        highScore: null,
+        fifties: 0,
+        hundreds: 0,
+        wickets: 0,
+        runsConceded: 0,
+        bestBowling: null,
+        fiveWickets: 0,
+        catches: 0,
+        stumpings: 0,
+        runOuts: 0,
+        gradesPlayed: [],
       };
       byPlayer.set(s.playerId, agg);
     }
@@ -120,7 +133,7 @@ export async function buildLifeMembers(tenantId: number): Promise<HonourBoardOut
         roles: r.roleLabel ?? null,
         bio: r.blurb || null,
         playing: r.isPlayingMember,
-        stats: r.playerId != null ? statsByPlayer.get(r.playerId) ?? null : null,
+        stats: r.playerId != null ? (statsByPlayer.get(r.playerId) ?? null) : null,
       },
     })),
   };

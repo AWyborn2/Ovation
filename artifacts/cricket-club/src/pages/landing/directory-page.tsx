@@ -34,17 +34,11 @@ function ClubCard({ club }: { club: DirectoryClub }) {
       <div
         className="flex items-center gap-3 border-b p-4"
         style={
-          accent
-            ? { background: `linear-gradient(90deg, ${accent}14, transparent)` }
-            : undefined
+          accent ? { background: `linear-gradient(90deg, ${accent}14, transparent)` } : undefined
         }
       >
         {club.logoUrl ? (
-          <img
-            src={club.logoUrl}
-            alt=""
-            className="h-12 w-12 shrink-0 rounded-md object-contain"
-          />
+          <img src={club.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-md object-contain" />
         ) : (
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md text-sm font-semibold text-white"
@@ -57,9 +51,7 @@ function ClubCard({ club }: { club: DirectoryClub }) {
         <div className="min-w-0">
           <h3 className="truncate font-semibold leading-tight">{club.name}</h3>
           {club.shortName && club.shortName !== club.name ? (
-            <p className="truncate text-xs text-muted-foreground">
-              {club.shortName}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{club.shortName}</p>
           ) : null}
         </div>
       </div>
@@ -101,9 +93,7 @@ export default function DirectoryPage() {
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href="/">
-            <span className="cursor-pointer text-lg font-semibold tracking-tight">
-              Ovation
-            </span>
+            <span className="cursor-pointer text-lg font-semibold tracking-tight">Ovation</span>
           </Link>
           <div className="flex items-center gap-2">
             <Link href="/platform-admin">
@@ -120,12 +110,9 @@ export default function DirectoryPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-12">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Clubs on Ovation
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Clubs on Ovation</h1>
           <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Browse the clubs running their stats and history on Ovation. Pick one
-            to visit its site.
+            Browse the clubs running their stats and history on Ovation. Pick one to visit its site.
           </p>
         </div>
 
@@ -150,20 +137,13 @@ export default function DirectoryPage() {
           ) : isError ? (
             <div className="py-16 text-center">
               <p className="text-muted-foreground">Couldn't load the directory.</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => refetch()}
-              >
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
                 Try again
               </Button>
             </div>
           ) : clubs.length === 0 ? (
             <p className="py-16 text-center text-sm text-muted-foreground">
-              {q.trim()
-                ? `No clubs match “${q}”.`
-                : "No clubs are listed yet — check back soon."}
+              {q.trim() ? `No clubs match “${q}”.` : "No clubs are listed yet — check back soon."}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,12 +155,9 @@ export default function DirectoryPage() {
         </div>
 
         <div className="mt-16 border-t pt-10 text-center">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Don't see your club?
-          </h2>
+          <h2 className="text-xl font-semibold tracking-tight">Don't see your club?</h2>
           <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
-            Any club can join in seconds — your full history is populated
-            automatically.
+            Any club can join in seconds — your full history is populated automatically.
           </p>
           <div className="mt-6">
             <Link href="/signup">
@@ -194,8 +171,7 @@ export default function DirectoryPage() {
 
       <footer className="border-t">
         <div className="mx-auto max-w-5xl px-6 py-8 text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Ovation. A white-label cricket stats
-          platform.
+          © {new Date().getFullYear()} Ovation. A white-label cricket stats platform.
         </div>
       </footer>
     </div>

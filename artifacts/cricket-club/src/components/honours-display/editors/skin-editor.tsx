@@ -35,9 +35,7 @@ export function SkinEditor({
     >
       <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1 flex-1 min-w-[12rem]">
-          <span className="text-xs font-medium text-muted-foreground">
-            Theme name
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Theme name</span>
           <Input
             value={skin.name}
             onChange={(e) => onPatch({ name: e.target.value })}
@@ -79,16 +77,10 @@ export function SkinEditor({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Title font
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Title font</span>
           <select
             className="w-full px-2 py-1.5 rounded border bg-card text-sm"
-            value={
-              FONT_OPTIONS.some((f) => f.value === skin.font)
-                ? skin.font
-                : "Georgia, serif"
-            }
+            value={FONT_OPTIONS.some((f) => f.value === skin.font) ? skin.font : "Georgia, serif"}
             onChange={(e) => onPatch({ font: e.target.value })}
             data-testid={`skin-font-${skin.id}`}
           >
@@ -118,10 +110,7 @@ export function SkinEditor({
         >
           HH
         </span>
-        <div
-          className="flex-1 rounded px-2 py-1.5 text-sm"
-          style={{ background: skin.boardBg }}
-        >
+        <div className="flex-1 rounded px-2 py-1.5 text-sm" style={{ background: skin.boardBg }}>
           <span style={{ fontFamily: skin.font }}>Sample board heading</span>
           <span className="ml-2 text-xs" style={{ color: skin.muted }}>
             subtitle

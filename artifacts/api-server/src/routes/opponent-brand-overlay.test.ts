@@ -2,13 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import {
-  db,
-  tenantsTable,
-  clubsTable,
-  matchesTable,
-  importsTable,
-} from "@workspace/db";
+import { db, tenantsTable, clubsTable, matchesTable, importsTable } from "@workspace/db";
 import {
   getOpponentBrandsByAppClubId,
   getOpponentBrandsByCentralClubId,
@@ -46,8 +40,7 @@ describe("opponent-brand overlay: uploaded brands show as opponent branding", ()
   let matchId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-opponent-brand";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-opponent-brand";
 
     // A shared clubs-register row (the PlayHQ-scraped opponent default).
     const [club] = await db
@@ -152,9 +145,7 @@ describe("opponent-brand overlay: uploaded brands show as opponent branding", ()
   });
 
   it("merges the tenant brand over a native register default (tenant wins per-field)", async () => {
-    const overlay = (await getOpponentBrandsByAppClubId([registerClubId])).get(
-      registerClubId,
-    );
+    const overlay = (await getOpponentBrandsByAppClubId([registerClubId])).get(registerClubId);
     const registerOpp = {
       id: registerClubId,
       name: "Overlay Register Club",

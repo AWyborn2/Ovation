@@ -43,8 +43,7 @@ describe("junior stat corrections", () => {
   let adminBCookie: string;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-junior-corrections";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-junior-corrections";
 
     const [admin] = await db
       .insert(adminsTable)
@@ -145,9 +144,7 @@ describe("junior stat corrections", () => {
   });
 
   afterAll(async () => {
-    await db
-      .delete(juniorMatchesTable)
-      .where(eq(juniorMatchesTable.id, MATCH_ID)); // cascades all lines
+    await db.delete(juniorMatchesTable).where(eq(juniorMatchesTable.id, MATCH_ID)); // cascades all lines
     await db
       .delete(juniorParticipantsTable)
       .where(inArray(juniorParticipantsTable.participantId, [P1, P2]));
@@ -191,17 +188,11 @@ describe("junior stat corrections", () => {
       .orderBy(juniorStatCorrectionsTable.id);
     expect(journalRow).toBeDefined();
     expect(journalRow.op).toBe("update");
-    expect(
-      (journalRow.prevValues as Record<string, unknown>).team1_score,
-    ).toBe("5/100");
-    expect((journalRow.prevValues as Record<string, unknown>).hh_result).toBe(
-      "Won",
-    );
+    expect((journalRow.prevValues as Record<string, unknown>).team1_score).toBe("5/100");
+    expect((journalRow.prevValues as Record<string, unknown>).hh_result).toBe("Won");
 
     // The public match detail reflects the corrected score immediately.
-    const detail = await request(app)
-      .get(`/api/juniors/matches/${MATCH_ID}`)
-      .expect(200);
+    const detail = await request(app).get(`/api/juniors/matches/${MATCH_ID}`).expect(200);
     expect(detail.body.opponentScore).toBe("6/110"); // team1 = opponent side
   });
 
@@ -269,9 +260,7 @@ describe("junior stat corrections", () => {
       .where(eq(juniorStatCorrectionsTable.targetId, String(res.body.id)));
     expect(journalRow.op).toBe("insert");
     expect((journalRow.patch as Record<string, unknown>).id).toBe(res.body.id);
-    expect((journalRow.patch as Record<string, unknown>).is_halls_head).toBe(
-      true,
-    );
+    expect((journalRow.patch as Record<string, unknown>).is_halls_head).toBe(true);
   });
 
   it("deletes a line and revert restores it from the journal pre-image", async () => {
@@ -289,9 +278,9 @@ describe("junior stat corrections", () => {
       .get(`/api/juniors/corrections?matchId=${MATCH_ID}`)
       .set("Cookie", adminCookie)
       .expect(200);
-    const deletion = (
-      list.body as Array<{ id: number; op: string; targetId: string }>
-    ).find((c) => c.op === "delete" && c.targetId === String(BOWL_HH_ID));
+    const deletion = (list.body as Array<{ id: number; op: string; targetId: string }>).find(
+      (c) => c.op === "delete" && c.targetId === String(BOWL_HH_ID),
+    );
     expect(deletion).toBeDefined();
 
     await request(app)
@@ -322,15 +311,11 @@ describe("junior stat corrections", () => {
 
     // The canonical roster-based games figure must agree across the player
     // detail and the players directory (the games-consistency invariant).
-    const detail = await request(app)
-      .get(`/api/juniors/players/${P2}`)
-      .expect(200);
-    const directory = await request(app)
-      .get(`/api/juniors/players?search=Corr Two`)
-      .expect(200);
-    const dirRow = (
-      directory.body as Array<{ participantId: string; matches: number }>
-    ).find((r) => r.participantId === P2);
+    const detail = await request(app).get(`/api/juniors/players/${P2}`).expect(200);
+    const directory = await request(app).get(`/api/juniors/players?search=Corr Two`).expect(200);
+    const dirRow = (directory.body as Array<{ participantId: string; matches: number }>).find(
+      (r) => r.participantId === P2,
+    );
     expect(dirRow?.matches).toBe(1);
     expect(detail.body.batting.matches).toBeGreaterThanOrEqual(1);
   });
@@ -351,9 +336,9 @@ describe("junior stat corrections", () => {
       .get(`/api/juniors/corrections?matchId=${MATCH_ID}`)
       .set("Cookie", adminCookie)
       .expect(200);
-    const updates = (
-      list.body as Array<{ id: number; op: string; targetId: string }>
-    ).filter((c) => c.op === "update" && c.targetId === String(BAT_HH_ID));
+    const updates = (list.body as Array<{ id: number; op: string; targetId: string }>).filter(
+      (c) => c.op === "update" && c.targetId === String(BAT_HH_ID),
+    );
     // Newest first (list is ordered desc by id).
     const newest = updates[0];
     const older = updates[1];

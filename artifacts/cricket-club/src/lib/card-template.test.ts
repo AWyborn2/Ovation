@@ -180,7 +180,7 @@ describe("resolveTextField", () => {
     expect(resolveTextField(input, "leader5Name", CTX)).toBe("");
   });
 
-  it("returns \"\" for fields not present on a kind (multi-kind templates degrade)", () => {
+  it('returns "" for fields not present on a kind (multi-kind templates degrade)', () => {
     const input = sampleCardInput("countdown");
     expect(resolveTextField(input, "playerName", CTX)).toBe("");
     expect(resolveTextField(input, "rows", CTX)).toBe("");
@@ -425,8 +425,9 @@ describe("byoDefaultsClearedBy", () => {
     expect(byoDefaultsClearedBy([], ["milestone"])).toEqual([]);
     expect(byoDefaultsClearedBy(undefined, ["milestone"])).toEqual([]);
     expect(byoDefaultsClearedBy(null, ["milestone"])).toEqual([]);
-    expect(byoDefaultsClearedBy([tpl({ source: "layers", defaultForKinds: ["milestone"] })], []))
-      .toEqual([]);
+    expect(
+      byoDefaultsClearedBy([tpl({ source: "layers", defaultForKinds: ["milestone"] })], []),
+    ).toEqual([]);
   });
 
   it("returns a layers template holding a default for a claimed kind", () => {
@@ -458,7 +459,13 @@ describe("byoDefaultsClearedBy", () => {
 
   it("includes an inactive BYO row — clearDefaultKinds does not filter on isActive", () => {
     const templates = [
-      tpl({ id: 3, source: "layers", packId: null, isActive: false, defaultForKinds: ["milestone"] }),
+      tpl({
+        id: 3,
+        source: "layers",
+        packId: null,
+        isActive: false,
+        defaultForKinds: ["milestone"],
+      }),
     ];
     expect(byoDefaultsClearedBy(templates, ["milestone"]).map((t) => t.id)).toEqual([3]);
   });
@@ -480,7 +487,12 @@ describe("resolveDefaultLayoutTemplate", () => {
   it("stays built-in when a pack row claims the kind", () => {
     const templates = [
       tpl({ id: 1, packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
-      tpl({ id: 2, packId: "gold-foil-v1", packVariant: "portrait", defaultForKinds: ["milestone"] }),
+      tpl({
+        id: 2,
+        packId: "gold-foil-v1",
+        packVariant: "portrait",
+        defaultForKinds: ["milestone"],
+      }),
     ];
     expect(resolveDefaultLayoutTemplate(templates, "milestone")).toBeNull();
     // The pack decision is still readable — it just is not the layout choice.
@@ -496,7 +508,9 @@ describe("resolveDefaultLayoutTemplate", () => {
   });
 
   it("still pre-selects a background template claiming the kind", () => {
-    const templates = [tpl({ id: 5, source: "background", packId: null, defaultForKinds: ["milestone"] })];
+    const templates = [
+      tpl({ id: 5, source: "background", packId: null, defaultForKinds: ["milestone"] }),
+    ];
     expect(resolveDefaultLayoutTemplate(templates, "milestone")?.id).toBe(5);
   });
 
@@ -521,7 +535,15 @@ describe("resolveDefaultLayoutTemplate", () => {
   it("ignores inactive rows and rows scoped to other kinds", () => {
     expect(
       resolveDefaultLayoutTemplate(
-        [tpl({ id: 1, source: "layers", packId: null, isActive: false, defaultForKinds: ["milestone"] })],
+        [
+          tpl({
+            id: 1,
+            source: "layers",
+            packId: null,
+            isActive: false,
+            defaultForKinds: ["milestone"],
+          }),
+        ],
         "milestone",
       ),
     ).toBeNull();

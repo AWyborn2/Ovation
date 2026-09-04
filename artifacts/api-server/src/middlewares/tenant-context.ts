@@ -90,9 +90,11 @@ export function resolveTenantId(req: Request): number {
 // --- Subdomain / custom-domain → tenant -------------------------------------
 
 const DIRECTORY_TTL_MS = 5 * 60 * 1000;
-let directoryCache:
-  | { at: number; bySlug: Map<string, number>; byDomain: Map<string, number> }
-  | null = null;
+let directoryCache: {
+  at: number;
+  bySlug: Map<string, number>;
+  byDomain: Map<string, number>;
+} | null = null;
 
 /**
  * Drop the cached tenant host directory so the next request rebuilds it from the
@@ -160,7 +162,7 @@ export function hostOf(req: Request): string {
   // where it does not, so a direct client cannot pick its tenant by header.
   const trustForwardedHost = env.trustForwardedHost();
   const xfh = trustForwardedHost ? req.headers["x-forwarded-host"] : undefined;
-  const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
+  const forwarded = (Array.isArray(xfh) ? xfh[0] : (xfh ?? "")).split(",")[0]?.trim();
   const raw = forwarded || req.headers.host || "";
   return raw.split(":")[0]?.toLowerCase().trim() ?? "";
 }
@@ -259,8 +261,7 @@ export function classifyNonTenantHost(req: Request): HostMode {
   // `.replit.dev` previews.
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
   const switcherAllowed =
-    isPreviewHost(host) ||
-    (isPublishedReplitHost(host) && env.tenantHeaderOnPublishedHost());
+    isPreviewHost(host) || (isPublishedReplitHost(host) && env.tenantHeaderOnPublishedHost());
   if (headerTenant !== undefined && switcherAllowed) {
     return { mode: "tenant", tenantId: headerTenant };
   }
@@ -312,9 +313,7 @@ export const tenantContext: RequestHandler = (
     // Stamp the request logger so every line for this request can be filtered
     // per club during an incident (plan.md §5.12).
     if (r.log && typeof r.log.child === "function") {
-      r.log = r.log.child(
-        r.platform ? { surface: "platform" } : { tenantId: r.tenantId },
-      );
+      r.log = r.log.child(r.platform ? { surface: "platform" } : { tenantId: r.tenantId });
     }
   };
   resolveHostMode(req)

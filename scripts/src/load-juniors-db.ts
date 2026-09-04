@@ -39,9 +39,7 @@ if (!DATABASE_URL) {
 
 const args = process.argv.slice(2);
 const commit = args.includes("--commit");
-const fileArg = args
-  .find((a) => a.startsWith("--file="))
-  ?.slice("--file=".length);
+const fileArg = args.find((a) => a.startsWith("--file="))?.slice("--file=".length);
 
 /** Public junior_* tables the ETL replaces — used for the preview diff. */
 const TRACKED_TABLES = [
@@ -80,10 +78,7 @@ function psqlFile(path: string, singleTxn = false): void {
   execFileSync("psql", a, { stdio: "inherit", maxBuffer: 64 * 1024 * 1024 });
 }
 
-function counts(
-  schema: string,
-  tables: string[],
-): Record<string, number | null> {
+function counts(schema: string, tables: string[]): Record<string, number | null> {
   const out: Record<string, number | null> = {};
   for (const t of tables) {
     try {
@@ -101,9 +96,7 @@ function pickDump(): string {
     .filter((f) => /^halls_head_juniors_postgres_.*\.sql$/.test(f))
     .sort();
   if (matches.length === 0) {
-    console.error(
-      `No halls_head_juniors_postgres_*.sql found in ${assetsDir}`,
-    );
+    console.error(`No halls_head_juniors_postgres_*.sql found in ${assetsDir}`);
     process.exit(1);
   }
   return join(assetsDir, matches[matches.length - 1]);
@@ -136,13 +129,11 @@ function main(): void {
   buildStaging(dumpPath);
   const staging = counts("juniors_staging", STAGING_TABLES);
   console.log("\nstaging row counts:");
-  for (const [t, n] of Object.entries(staging))
-    console.log(`  ${t.padEnd(28)} ${n ?? "-"}`);
+  for (const [t, n] of Object.entries(staging)) console.log(`  ${t.padEnd(28)} ${n ?? "-"}`);
 
   if (!commit) {
     console.log("\n--- PREVIEW: current public row counts (no changes made) ---");
-    for (const t of TRACKED_TABLES)
-      console.log(`  ${t.padEnd(28)} ${before[t] ?? "-"}`);
+    for (const t of TRACKED_TABLES) console.log(`  ${t.padEnd(28)} ${before[t] ?? "-"}`);
     console.log("\nRe-run with --commit to apply the load.");
     return;
   }
@@ -160,9 +151,7 @@ function main(): void {
     );
   }
 
-  const privateCount = psql(
-    `SELECT count(*) FROM public.junior_participants WHERE is_private`,
-  );
+  const privateCount = psql(`SELECT count(*) FROM public.junior_participants WHERE is_private`);
   const linkCount = psql(
     `SELECT count(*) FROM public.junior_participants WHERE senior_player_id IS NOT NULL`,
   );
@@ -175,9 +164,7 @@ function main(): void {
   // ids, a correction whose target no longer resolves is SKIPPED, not applied
   // to the wrong row. Count and report unresolved corrections loudly — the
   // journal is never deleted, so a skip means "review/re-anchor", not "lost".
-  const correctionCount = psql(
-    `SELECT count(*) FROM public.junior_stat_corrections`,
-  );
+  const correctionCount = psql(`SELECT count(*) FROM public.junior_stat_corrections`);
   const skippedCorrections = psql(`
     SELECT count(*) FROM public.junior_stat_corrections c
     WHERE
@@ -212,9 +199,7 @@ function main(): void {
   // from the new dump is SKIPPED entirely (duplicate temporarily live again)
   // and reported here; the map row remains, so a later dump containing the
   // keeper self-heals.
-  const mergeCount = psql(
-    `SELECT count(*) FROM public.junior_participant_merges`,
-  );
+  const mergeCount = psql(`SELECT count(*) FROM public.junior_participant_merges`);
   const skippedMerges = psql(`
     SELECT count(*) FROM public.junior_participant_merges m
     WHERE NOT EXISTS (

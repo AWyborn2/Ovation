@@ -23,9 +23,7 @@ function harnessUrl(originOverride?: string | null): string {
   const explicitUrl = env.RENDER_HARNESS_URL();
   if (explicitUrl) return explicitUrl;
   const origin =
-    env.RENDER_HARNESS_ORIGIN() ??
-    (originOverride || undefined) ??
-    "http://localhost:80";
+    env.RENDER_HARNESS_ORIGIN() ?? (originOverride || undefined) ?? "http://localhost:80";
   return `${origin.replace(/\/$/, "")}${HARNESS_PATH}`;
 }
 
@@ -53,8 +51,7 @@ export function harnessOriginFromHeaders(
 let cachedChromium: string | null = null;
 function resolveChromiumPath(): string {
   if (cachedChromium) return cachedChromium;
-  const fromEnv =
-    env.PUPPETEER_EXECUTABLE_PATH() ?? env.CHROMIUM_PATH();
+  const fromEnv = env.PUPPETEER_EXECUTABLE_PATH() ?? env.CHROMIUM_PATH();
   if (fromEnv && existsSync(fromEnv)) {
     cachedChromium = fromEnv;
     return fromEnv;
@@ -91,12 +88,7 @@ async function getBrowser(): Promise<Browser> {
     headless: true,
     // The container has no sandbox namespaces and limited /dev/shm; these flags
     // mirror the verified smoke test.
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-gpu",
-      "--disable-dev-shm-usage",
-    ],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
   });
   return browserPromise;
 }
@@ -137,15 +129,9 @@ type StillMeta = {
 };
 type HarnessApi = {
   ready: boolean;
-  init: (payload: {
-    input: unknown;
-    options: unknown;
-  }) => Promise<HarnessMeta>;
+  init: (payload: { input: unknown; options: unknown }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
-  renderStill: (payload: {
-    input: unknown;
-    options: unknown;
-  }) => Promise<StillMeta>;
+  renderStill: (payload: { input: unknown; options: unknown }) => Promise<StillMeta>;
   dispose: () => void;
 };
 type HarnessGlobal = typeof globalThis & {
@@ -165,9 +151,7 @@ function dataUrlToBuffer(dataUrl: string): Buffer {
 
 // Drive the harness frame-by-frame and pipe PNG frames into ffmpeg, producing a
 // guaranteed-compatible H.264/yuv420p MP4 with +faststart (web/social friendly).
-export async function renderCardVideo(
-  params: RenderParams,
-): Promise<RenderResult> {
+export async function renderCardVideo(params: RenderParams): Promise<RenderResult> {
   const { jobId, input, options, onProgress } = params;
   const fps = Math.max(1, Math.min(60, Math.round(params.fps ?? 30)));
 
@@ -192,15 +176,11 @@ export async function renderCardVideo(
 
     // Prepare the animation in-page (preloads every image/font), get its metrics.
     const meta = (await page.evaluate(
-      async (payload) =>
-        (globalThis as HarnessGlobal).__cardRenderHarness!.init(payload),
+      async (payload) => (globalThis as HarnessGlobal).__cardRenderHarness!.init(payload),
       { input, options } as { input: unknown; options: unknown },
     )) as HarnessMeta;
 
-    const totalFrames = Math.max(
-      1,
-      Math.round((meta.durationMs / 1000) * fps),
-    );
+    const totalFrames = Math.max(1, Math.round((meta.durationMs / 1000) * fps));
 
     // Spawn ffmpeg reading a stream of PNGs from stdin.
     const ff = spawn(
@@ -264,9 +244,7 @@ export async function renderCardVideo(
     return { filePath, contentType: "video/mp4", ext: "mp4" };
   } finally {
     try {
-      await page?.evaluate(() =>
-        (globalThis as HarnessGlobal).__cardRenderHarness?.dispose(),
-      );
+      await page?.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
     } catch {
       // page may already be gone
     }
@@ -308,8 +286,7 @@ export async function renderCardStill(
 
     // Mount the pack card at native size in-page (preloads fonts), get its box.
     const meta = (await page.evaluate(
-      async (payload) =>
-        (globalThis as HarnessGlobal).__cardRenderHarness!.renderStill(payload),
+      async (payload) => (globalThis as HarnessGlobal).__cardRenderHarness!.renderStill(payload),
       { input, options } as { input: unknown; options: unknown },
     )) as StillMeta;
 
@@ -337,9 +314,7 @@ export async function renderCardStill(
     };
   } finally {
     try {
-      await page?.evaluate(() =>
-        (globalThis as HarnessGlobal).__cardRenderHarness?.dispose(),
-      );
+      await page?.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
     } catch {
       // page may already be gone
     }

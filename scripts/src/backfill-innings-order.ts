@@ -126,14 +126,11 @@ async function main() {
     }
     battedFirstByMatchId.set(id, val);
   }
-  console.log(
-    `CSV rows: ${battedFirstByMatchId.size} (yes=${yes} no=${no} blank=${blank})`,
-  );
+  console.log(`CSV rows: ${battedFirstByMatchId.size} (yes=${yes} no=${no} blank=${blank})`);
 
   // 2. Dump: match_id -> source_key.
   const dump = readFileSync(dumpPath, "utf8");
-  const insertRe =
-    /INSERT INTO matches \(match_id,source_key,[^)]*\) VALUES \((\d+),'([^']*)'/g;
+  const insertRe = /INSERT INTO matches \(match_id,source_key,[^)]*\) VALUES \((\d+),'([^']*)'/g;
   const sourceKeyByMatchId = new Map<string, string>();
   let m: RegExpExecArray | null;
   while ((m = insertRe.exec(dump)) !== null) {

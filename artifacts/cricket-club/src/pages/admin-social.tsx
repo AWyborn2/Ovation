@@ -59,10 +59,7 @@ export default function AdminSocial() {
           <AudioTracksCard tracks={audioTracksQ.data ?? []} onChanged={invalidateAudioTracks} />
           <TemplatesCard />
           <SponsorsCard sponsors={sponsorsQ.data ?? []} onChanged={invalidate} />
-          <CaptionTemplatesCard
-            templates={bundle.data.captionTemplates}
-            onSaved={invalidate}
-          />
+          <CaptionTemplatesCard templates={bundle.data.captionTemplates} onSaved={invalidate} />
         </>
       ) : (
         <QueryError onRetry={() => bundle.refetch()} />

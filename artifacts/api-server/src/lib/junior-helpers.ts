@@ -84,10 +84,7 @@ export function toOpponentClub(row: OpponentClubRow) {
  */
 export const seasonYear = sql<number>`coalesce(${juniorMatchesTable.seasonStartYear}, nullif(substring(${juniorMatchesTable.season} from 1 for 4), '')::int)`;
 
-export function toMatchSummary(
-  m: MatchRow,
-  club: ReturnType<typeof toOpponentClub> = null,
-) {
+export function toMatchSummary(m: MatchRow, club: ReturnType<typeof toOpponentClub> = null) {
   const { hhScore, opponentScore } = splitScores(m);
   return {
     id: m.id,
@@ -147,10 +144,7 @@ export async function ageGroupsForSeason(season: string | null): Promise<string[
         juniorParticipantsTable,
         eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
       )
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-      )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(and(...battingConds)),
     db
       .selectDistinct({ ageGroup: juniorMatchesTable.ageGroup })
@@ -159,10 +153,7 @@ export async function ageGroupsForSeason(season: string | null): Promise<string[
         juniorParticipantsTable,
         eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
       )
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-      )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(...bowlingConds)),
   ]);
   const set = new Set<string>();
@@ -180,9 +171,7 @@ export const JUNIOR_MILESTONE_TIERS = {
 
 export const JUNIOR_STAT_SINGULAR = { runs: "Run", wickets: "Wicket", games: "Game" } as const;
 
-export function serializeJuniorMatchDisplaySettings(
-  s: JuniorMatchDisplaySettingsRow,
-) {
+export function serializeJuniorMatchDisplaySettings(s: JuniorMatchDisplaySettingsRow) {
   return {
     defaultAgeGroup: s.defaultAgeGroup ?? "",
     defaultSeasonMode: s.defaultSeasonMode ?? "latest",

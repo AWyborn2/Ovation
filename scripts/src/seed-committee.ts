@@ -119,9 +119,7 @@ function buildFinder(players: DbPlayer[]) {
     for (const s of ss) {
       const cands = bySurname.get(s) || [];
       if (cands.length === 1) return cands[0];
-      const fl = cands.filter(
-        (c) => norm(c.givenName)[0] === norm(givenName)[0],
-      );
+      const fl = cands.filter((c) => norm(c.givenName)[0] === norm(givenName)[0]);
       if (fl.length === 1) return fl[0];
     }
     return null;
@@ -130,10 +128,7 @@ function buildFinder(players: DbPlayer[]) {
 
 // A name is linkable only when it is a single "Given Surname" person. Joint
 // captains ("A / B", "A & B", "A and B") stay plain text.
-function resolveName(
-  name: string,
-  find: (g: string, s: string) => DbPlayer | null,
-): number | null {
+function resolveName(name: string, find: (g: string, s: string) => DbPlayer | null): number | null {
   if (/[/&]| and /i.test(name)) return null;
   const parts = name.trim().split(/\s+/);
   if (parts.length < 2) return null;

@@ -33,9 +33,7 @@ const EXTRACTION_TIMEOUT_MS = 8000;
  * to pick". A partial result (1-2 distinct swatches) is still returned as-is;
  * the caller decides how to fill any remaining slot.
  */
-export async function extractBrandPalette(
-  imageUrl: string,
-): Promise<ExtractedPalette> {
+export async function extractBrandPalette(imageUrl: string): Promise<ExtractedPalette> {
   let palette;
   try {
     palette = await Promise.race([

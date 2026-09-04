@@ -3,10 +3,7 @@ import { ScrollView, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useBrand } from "@/lib/tenant-brand";
-import {
-  useGetJuniorMatch,
-  getGetJuniorMatchQueryKey,
-} from "@workspace/api-client-react";
+import { useGetJuniorMatch, getGetJuniorMatchQueryKey } from "@workspace/api-client-react";
 
 import { Body, ErrorView, Heading, Loading, styles } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
@@ -45,7 +42,11 @@ export default function JuniorMatchDetailScreen() {
   const brand = useBrand();
   const { id } = useLocalSearchParams<{ id: string }>();
   const matchId = Number(id);
-  const { data: match, isLoading, isError } = useGetJuniorMatch(matchId, {
+  const {
+    data: match,
+    isLoading,
+    isError,
+  } = useGetJuniorMatch(matchId, {
     query: {
       enabled: Number.isFinite(matchId),
       queryKey: getGetJuniorMatchQueryKey(matchId),
@@ -80,7 +81,10 @@ export default function JuniorMatchDetailScreen() {
 
         {match.hhScore || match.opponentScore ? (
           <Body bold size={16} style={{ marginTop: 8 }}>
-            {match.hhScore ?? "—"} <Body muted size={13}>vs</Body>{" "}
+            {match.hhScore ?? "—"}{" "}
+            <Body muted size={13}>
+              vs
+            </Body>{" "}
             {match.opponentScore ?? "—"}
           </Body>
         ) : null}
@@ -94,16 +98,16 @@ export default function JuniorMatchDetailScreen() {
           {fmtJuniorDate(match.matchDate) ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Feather name="calendar" size={13} color={colors.mutedForeground} />
-              <Body muted size={12}>{fmtJuniorDate(match.matchDate)}</Body>
+              <Body muted size={12}>
+                {fmtJuniorDate(match.matchDate)}
+              </Body>
             </View>
           ) : null}
           {match.venue ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Feather name="map-pin" size={13} color={colors.mutedForeground} />
               <Body muted size={12}>
-                {[match.venueOval, match.venue, match.venueSuburb]
-                  .filter(Boolean)
-                  .join(" · ")}
+                {[match.venueOval, match.venue, match.venueSuburb].filter(Boolean).join(" · ")}
               </Body>
             </View>
           ) : null}

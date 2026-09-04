@@ -87,9 +87,7 @@ function GradeSection({ configId, grade }: { configId: number; grade: VotableGra
         {grade.grade}
       </h4>
       {grade.rounds.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">
-          No imported rounds yet.
-        </p>
+        <p className="text-sm text-muted-foreground italic">No imported rounds yet.</p>
       ) : (
         <div className="space-y-3">
           {grade.rounds
@@ -132,8 +130,7 @@ function RoundBallot({
     pick3: round.ballot?.pick3PlayerId ?? null,
   });
 
-  const nameOf = (id: number | null) =>
-    round.players.find((p) => p.playerId === id)?.name ?? null;
+  const nameOf = (id: number | null) => round.players.find((p) => p.playerId === id)?.name ?? null;
 
   const reset = () => {
     setPicks({
@@ -187,9 +184,7 @@ function RoundBallot({
           <div className="font-semibold">
             Round {round.round}
             {round.opponent && (
-              <span className="ml-2 font-normal text-muted-foreground">
-                vs {round.opponent}
-              </span>
+              <span className="ml-2 font-normal text-muted-foreground">vs {round.opponent}</span>
             )}
           </div>
           {hasBallot && !open ? (
@@ -210,13 +205,15 @@ function RoundBallot({
           )}
         </div>
         {!round.locked && !open && (
-          <Button size="sm" variant={hasBallot ? "outline" : "default"} onClick={() => setOpen(true)}>
+          <Button
+            size="sm"
+            variant={hasBallot ? "outline" : "default"}
+            onClick={() => setOpen(true)}
+          >
             {hasBallot ? "Edit vote" : "Vote"}
           </Button>
         )}
-        {round.locked && (
-          <span className="text-xs text-muted-foreground shrink-0">Locked</span>
-        )}
+        {round.locked && <span className="text-xs text-muted-foreground shrink-0">Locked</span>}
       </div>
 
       {open && (

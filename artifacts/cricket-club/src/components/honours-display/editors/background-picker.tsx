@@ -38,8 +38,7 @@ export function BackgroundPicker({
           onChange={(e) => {
             const k = e.target.value;
             if (k === "none") onChange(null);
-            else if (k === "texture")
-              onChange({ kind: "texture", value: TEXTURES[0]!.id });
+            else if (k === "texture") onChange({ kind: "texture", value: TEXTURES[0]!.id });
             else onChange({ kind: "url", value: value?.kind === "url" ? value.value : "" });
           }}
           data-testid={testId}
@@ -68,9 +67,7 @@ export function BackgroundPicker({
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
                 className="hidden"
                 disabled={upload.isUploading}
-                onChange={(e) =>
-                  e.target.files?.[0] && handleFile(e.target.files[0])
-                }
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
                 data-testid={testId ? `${testId}-file` : undefined}
               />
             </label>

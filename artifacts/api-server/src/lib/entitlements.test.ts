@@ -1,10 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import {
-  entitlementsFor,
-  hasEntitlement,
-  planFromString,
-  billingEnabled,
-} from "./entitlements";
+import { entitlementsFor, hasEntitlement, planFromString, billingEnabled } from "./entitlements";
 
 /** Plan → entitlements mapping + the dormant kill-switch. Pure, runs anywhere. */
 describe("plan entitlements", () => {

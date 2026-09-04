@@ -140,9 +140,7 @@ describe("honour display: Most Games board, display stamps, composites (integrat
         ],
       })
       .expect(200);
-    expect(
-      (patchRes.body.boardConfigs.most_games as BoardDisplay).columns,
-    ).toBe(3);
+    expect((patchRes.body.boardConfigs.most_games as BoardDisplay).columns).toBe(3);
     expect((patchRes.body.composites as unknown[]).length).toBe(1);
 
     const res = await request(app)

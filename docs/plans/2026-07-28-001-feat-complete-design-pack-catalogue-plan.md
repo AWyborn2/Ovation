@@ -12,7 +12,7 @@ depth: deep
 
 **This is a multi-session programme, not a single PR.** ~79 card designs remain, each
 needing a story layout plus a portrait/square layout. The plan's job is to make every
-intermediate state shippable and to put the correctness guardrails in place *before*
+intermediate state shippable and to put the correctness guardrails in place _before_
 the bulk transcription starts.
 
 ---
@@ -42,13 +42,13 @@ Each bundle contains 20 designs on the same `data-card-kind` mapping as Pack A
 designs each). Format coverage, from parsing each card wrapper for
 `<sc-if value="{{ isNotStory }}">`:
 
-| Pack | Cards | Have a non-story branch | Story transcriptions left | Portrait/square to author |
-|---|---|---|---|---|
-| A — Broadcast Dark | 20 | 20 | 0 (complete) | 0 |
-| B — Gold Foil | 20 | 2 | 19 | 18 |
-| C — Bold Type | 20 | 2 | 20 | 18 |
-| D — Neon Night | 20 | 2 | 20 | 18 |
-| E — Sunset | 20 | 2 | 20 | 18 |
+| Pack               | Cards | Have a non-story branch | Story transcriptions left | Portrait/square to author |
+| ------------------ | ----- | ----------------------- | ------------------------- | ------------------------- |
+| A — Broadcast Dark | 20    | 20                      | 0 (complete)              | 0                         |
+| B — Gold Foil      | 20    | 2                       | 19                        | 18                        |
+| C — Bold Type      | 20    | 2                       | 20                        | 18                        |
+| D — Neon Night     | 20    | 2                       | 20                        | 18                        |
+| E — Sunset         | 20    | 2                       | 20                        | 18                        |
 
 **≈79 story transcriptions, ≈7 non-story transcriptions, ≈72 portrait/square layouts to
 author.**
@@ -84,16 +84,16 @@ per-card unit of work is "author the shared middle", not "author a whole layout"
 
 ## Product Contract
 
-| ID | Requirement |
-|----|-------------|
-| R1 | Every registered pack renders every kind it declares, at all three sizes, with no unresolved `{{placeholders}}` |
-| R2 | A pack only ever declares kinds it can actually render; undeclared kinds fall back to Broadcast Dark |
-| R3 | The client manifest and the api-server `PACKS[].cardKinds` agree on coverage, enforced by a test rather than by discipline |
-| R4 | Every pack's design for a kind uses the same field keys as Broadcast Dark's design for that kind |
-| R5 | No pack ships a club-identity literal in a sample default or in hard-coded markup |
-| R6 | Pack A output stays byte-identical throughout |
-| R7 | Each pack's visual identity is preserved — a pack's cards are recognisably that pack, not Broadcast Dark recoloured |
-| R8 | Every intermediate state is shippable: partial coverage never produces a blank or half-rendered card |
+| ID  | Requirement                                                                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Every registered pack renders every kind it declares, at all three sizes, with no unresolved `{{placeholders}}`            |
+| R2  | A pack only ever declares kinds it can actually render; undeclared kinds fall back to Broadcast Dark                       |
+| R3  | The client manifest and the api-server `PACKS[].cardKinds` agree on coverage, enforced by a test rather than by discipline |
+| R4  | Every pack's design for a kind uses the same field keys as Broadcast Dark's design for that kind                           |
+| R5  | No pack ships a club-identity literal in a sample default or in hard-coded markup                                          |
+| R6  | Pack A output stays byte-identical throughout                                                                              |
+| R7  | Each pack's visual identity is preserved — a pack's cards are recognisably that pack, not Broadcast Dark recoloured        |
+| R8  | Every intermediate state is shippable: partial coverage never produces a blank or half-rendered card                       |
 
 ---
 
@@ -104,15 +104,15 @@ Rationale in the Problem Frame: story-only isn't expressible without a renderer 
 and that change would introduce per-pack size gating across the modal, carousel and
 harness. Authoring is bounded work with a known shape; the renderer change is not.
 
-**KTD2 — Per-card work is a story transcription plus a shared *middle*.**
+**KTD2 — Per-card work is a story transcription plus a shared _middle_.**
 Pack-level fragments (background layers, header, sponsor strip, hashtag footer) are
 authored once per pack, as Gold Foil's `fragments.ts` already does. This is what makes
 ~72 layouts tractable.
 
 **KTD3 — Coverage grows card by card; the two manifests are the contract.**
 `packSupportsKind(kind, packId)` already gates rendering and `renderPackCard` returns
-`""` for an unknown kind, so partial coverage is safe today. The risk is *drift between
-the two registries*, which U1 converts from a convention into a test.
+`""` for an unknown kind, so partial coverage is safe today. The risk is _drift between
+the two registries_, which U1 converts from a convention into a test.
 
 **KTD4 — Field-key parity is a test, not a review item.**
 `bindInput` maps a `ShareCardInput` onto placeholder keys per card **kind**, not per
@@ -191,6 +191,7 @@ unit's execution note); the unit boundary is the PR, not the commit.
 **Dependencies:** none
 
 **Files:**
+
 - `artifacts/api-server/src/lib/design-packs.test.ts` (modify), or a new shared test —
   see Approach
 - `artifacts/cricket-club/src/lib/pack-templates/registry.test.ts` (modify)
@@ -204,6 +205,7 @@ Whichever is chosen, the assertion is: for every pack id present in both registr
 declared kind sets are equal; and every pack id appears in both.
 
 **Test scenarios:**
+
 - Every registered client pack id has a matching api-server `PACKS` entry, and vice versa
 - For each pack, client `designs[].kind` set equals server `cardKinds` set
 - A pack declared server-side with a kind the client lacks fails with both the pack id
@@ -225,6 +227,7 @@ Dark's, so real data never silently renders as samples.
 **Dependencies:** none
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/pack-templates/pack-lint.test.ts` (modify)
 - `artifacts/cricket-club/src/lib/pack-templates/gold-foil.test.ts` (modify — fold its
   one-kind version into the general check)
@@ -257,6 +260,7 @@ Gold Foil's match-result — confirm it fails and names the pack, kind and key �
 revert. A parity test that cannot fail is worse than none.
 
 **Test scenarios:**
+
 - Every pack × kind pair passes against the current tree
 - Renaming a key in a non-Pack-A design fails, naming pack, kind and key
 - A pack declaring a key that is neither in Pack A's design nor allowlisted fails
@@ -278,6 +282,7 @@ revert. A parity test that cannot fail is worse than none.
 **Dependencies:** U1, U2
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/pack-templates/gold-foil/*.ts` (19 new card modules)
 - `artifacts/cricket-club/src/lib/pack-templates/gold-foil/fragments.ts` (extend as
   shared shapes emerge)
@@ -295,6 +300,7 @@ hard-coded club literal to the matching placeholder.
 pack lint after each card — it is the fast signal for a bad transcription.
 
 **Test scenarios** (per card, via the existing generalised lint — no new per-card test file):
+
 - `pack-lint.test.ts` passes for the card: no runtime constructs survive, every
   placeholder declared, every declared field used, sponsor variants match markup, no
   club-identity literal, renders non-empty with no unresolved placeholders at all three
@@ -319,6 +325,7 @@ passes; Pack A parity unchanged.
 **Dependencies:** U1, U2 (U3 only as a worked example, not a blocker)
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/pack-templates/bold-type/` (new: `fragments.ts`,
   20 card modules, `index.ts`)
 - `artifacts/cricket-club/src/lib/pack-templates/registry.ts` (register)
@@ -330,6 +337,7 @@ sponsor strip, hashtag footer — from its two dual-format cards (`c-result`,
 chrome. Then per card as in U3.
 
 **Test scenarios:** as U3, plus:
+
 - The pack renders differently from both Pack A and Gold Foil at every size (the control
   that proves `packId` selection is real for a third pack)
 - Registering the pack does not change Pack A or Gold Foil output
@@ -375,6 +383,7 @@ chrome. Then per card as in U3.
 **Dependencies:** U3 (worth building once a second pack is complete enough to choose)
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-social-studio.tsx` (modify)
 - `artifacts/cricket-club/src/pages/admin-social-studio.test.tsx` (new, if a testable
   seam exists — otherwise cover the selection logic at the helper level)
@@ -387,6 +396,7 @@ writing through the existing `defaultForKinds` mechanism. No new persistence.
 Only offer a pack for kinds it declares, so the picker can't select a fallback.
 
 **Test scenarios:**
+
 - Packs list reflects the registry; a pack is offered only for kinds it declares
 - Selecting a pack for a kind sets `defaultForKinds` on that pack's row and clears the
   previous pack's claim on that kind
@@ -422,18 +432,21 @@ link this plan. State plainly that the packs are not reskins.
 ## Scope Boundaries
 
 ### In scope
+
 - Packs B, C, D, E: all 20 designs each, all three formats
 - Coverage-contract and field-key parity tests
 - A Studio pack picker (U7)
 - Correcting the follow-ups doc
 
 ### Non-goals
+
 - Any change to `PackTemplateFormats`, `selectFormatHtml`, or the token pipeline
 - Animated/MP4 card variants — packs stay `motionPreset: "none"`
 - Re-authoring Pack A
 - Per-element style overrides (still deferred from the Pack A work)
 
 ### Deferred to Follow-Up Work
+
 - **`Pack A - Broadcastlight.dc.html`** — a light-mode Pack A variant present in the
   bundle, never scoped. Would follow the same shape as U4–U6.
 - **Visual verification.** No pack has been checked by eye. Structural tests prove
@@ -444,14 +457,14 @@ link this plan. State plainly that the packs are not reskins.
 
 ## Risks & Dependencies
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| **Silent field-key drift** — a pack renames a key and renders samples on real data for its tenants only | High; invisible in review and in gallery previews (samples look correct by definition) | U2, built test-first against a deliberate break |
-| **Coverage drift between registries** — a tenant picks a pack and silently gets Broadcast Dark | High; looks like the pack "doesn't work" | U1 |
-| **No visual verification** — every check is structural | Medium-high; a layout can pass every test and still be broken | Explicit follow-up task; consider a screenshot pass via the existing `/__card-render` harness before offering a pack to tenants |
-| **Transcription fatigue across ~158 blocks** | Medium; late cards get less care than early ones | Per-card commits and a lint that runs per card; batch by pack, not by kind |
-| **Club-identity literals with no `data-field`** — as found in Gold Foil's story wordmark | Medium; a brand leak that the bundle gives no binding hint for | The R6 lint already fails on the known literal set; treat every hard-coded string in a transcription as suspect |
-| **Repeat-bearing kinds are the most error-prone** (ladder, team-list, weekend-wrap, club-leaderboard) | Medium | Named explicitly in U3's test scenarios; transcribe these when fresh, not last |
+| Risk                                                                                                    | Impact                                                                                 | Mitigation                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Silent field-key drift** — a pack renames a key and renders samples on real data for its tenants only | High; invisible in review and in gallery previews (samples look correct by definition) | U2, built test-first against a deliberate break                                                                                 |
+| **Coverage drift between registries** — a tenant picks a pack and silently gets Broadcast Dark          | High; looks like the pack "doesn't work"                                               | U1                                                                                                                              |
+| **No visual verification** — every check is structural                                                  | Medium-high; a layout can pass every test and still be broken                          | Explicit follow-up task; consider a screenshot pass via the existing `/__card-render` harness before offering a pack to tenants |
+| **Transcription fatigue across ~158 blocks**                                                            | Medium; late cards get less care than early ones                                       | Per-card commits and a lint that runs per card; batch by pack, not by kind                                                      |
+| **Club-identity literals with no `data-field`** — as found in Gold Foil's story wordmark                | Medium; a brand leak that the bundle gives no binding hint for                         | The R6 lint already fails on the known literal set; treat every hard-coded string in a transcription as suspect                 |
+| **Repeat-bearing kinds are the most error-prone** (ladder, team-list, weekend-wrap, club-leaderboard)   | Medium                                                                                 | Named explicitly in U3's test scenarios; transcribe these when fresh, not last                                                  |
 
 ---
 

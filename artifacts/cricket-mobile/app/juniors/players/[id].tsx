@@ -15,10 +15,7 @@ import { JUNIOR, fmtJuniorDate, fmtNum } from "@/lib/juniors";
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <Card style={{ flex: 1, minWidth: "30%", padding: 10, alignItems: "center" }}>
-      <Body
-        bold
-        style={{ color: JUNIOR.accentDark, fontFamily: "Oswald_700Bold", fontSize: 18 }}
-      >
+      <Body bold style={{ color: JUNIOR.accentDark, fontFamily: "Oswald_700Bold", fontSize: 18 }}>
         {value}
       </Body>
       <Body
@@ -73,7 +70,11 @@ function JuniorMatchRow({ m }: { m: JuniorPlayerMatchLine }) {
 export default function JuniorPlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const participantId = id ?? "";
-  const { data: player, isLoading, isError } = useGetJuniorPlayer(participantId, {
+  const {
+    data: player,
+    isLoading,
+    isError,
+  } = useGetJuniorPlayer(participantId, {
     query: {
       enabled: !!participantId,
       queryKey: getGetJuniorPlayerQueryKey(participantId),
@@ -108,7 +109,7 @@ export default function JuniorPlayerDetailScreen() {
             <Body muted size={12} style={{ marginTop: 4 }}>
               {player.firstSeason && player.lastSeason
                 ? `${player.firstSeason} – ${player.lastSeason}`
-                : player.firstSeason ?? ""}
+                : (player.firstSeason ?? "")}
               {player.teams ? ` · ${player.teams}` : ""}
             </Body>
 
@@ -146,9 +147,13 @@ export default function JuniorPlayerDetailScreen() {
                   <Card key={i} style={{ marginBottom: 6, padding: 12 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <View style={{ flex: 1 }}>
-                        <Body bold size={13}>{s.season}</Body>
+                        <Body bold size={13}>
+                          {s.season}
+                        </Body>
                         {s.teams ? (
-                          <Body muted size={11} style={{ marginTop: 2 }}>{s.teams}</Body>
+                          <Body muted size={11} style={{ marginTop: 2 }}>
+                            {s.teams}
+                          </Body>
                         ) : null}
                       </View>
                       <Body size={12} muted style={{ width: 56, textAlign: "right" }}>
@@ -166,9 +171,7 @@ export default function JuniorPlayerDetailScreen() {
               </>
             ) : null}
 
-            {hasMatches ? (
-              <SectionHeader icon="clipboard" title="Match Log" />
-            ) : null}
+            {hasMatches ? <SectionHeader icon="clipboard" title="Match Log" /> : null}
           </>
         }
       />

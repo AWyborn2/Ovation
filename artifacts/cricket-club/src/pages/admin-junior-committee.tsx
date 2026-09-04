@@ -47,8 +47,7 @@ type FormValues = {
 export default function AdminJuniorCommittee() {
   const brand = useBrand();
   const queryClient = useQueryClient();
-  const { data: bearers, isLoading, isError, refetch } =
-    useListAllJuniorOfficeBearers();
+  const { data: bearers, isLoading, isError, refetch } = useListAllJuniorOfficeBearers();
   const createBearer = useCreateJuniorOfficeBearer();
   const updateBearer = useUpdateJuniorOfficeBearer();
   const deleteBearer = useDeleteJuniorOfficeBearer();
@@ -69,9 +68,7 @@ export default function AdminJuniorCommittee() {
   };
 
   const setPublishedForSeason = (season: number, published: boolean) => {
-    const targets = (bearers ?? []).filter(
-      (r) => r.season === season && r.published !== published,
-    );
+    const targets = (bearers ?? []).filter((r) => r.season === season && r.published !== published);
     setError(null);
     for (const r of targets) {
       updateBearer.mutate(
@@ -89,9 +86,9 @@ export default function AdminJuniorCommittee() {
       onRetry={() => refetch()}
       intro={
         <>
-          Record {brand.name} junior office bearers for each season.
-          Published seasons appear on the public Juniors → Office Bearers page.
-          This data is kept completely separate from the senior committee.
+          Record {brand.name} junior office bearers for each season. Published seasons appear on the
+          public Juniors → Office Bearers page. This data is kept completely separate from the
+          senior committee.
         </>
       }
       addLabel="Add office bearer"
@@ -107,15 +104,10 @@ export default function AdminJuniorCommittee() {
       deletePending={deleteBearer.isPending}
       onSetSeasonPublished={setPublishedForSeason}
       deleteTitle="Delete office bearer"
-      deleteDescription={(r) =>
-        `Delete "${r.name}" as ${r.role} for ${formatSeason(r.season)}?`
-      }
+      deleteDescription={(r) => `Delete "${r.name}" as ${r.role} for ${formatSeason(r.season)}?`}
       onDelete={(r) => {
         setError(null);
-        deleteBearer.mutate(
-          { id: r.id },
-          { onSuccess: invalidate, onError: onMutationError },
-        );
+        deleteBearer.mutate({ id: r.id }, { onSuccess: invalidate, onError: onMutationError });
       }}
       renderNewForm={(close) => (
         <BearerForm
@@ -236,9 +228,7 @@ function BearerForm({
           {values.roleMode === "preset" ? (
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={
-                OFFICE_ROLES.includes(values.role) ? values.role : "__custom__"
-              }
+              value={OFFICE_ROLES.includes(values.role) ? values.role : "__custom__"}
               onChange={(e) => {
                 if (e.target.value === "__custom__") {
                   setValues((prev) => ({ ...prev, roleMode: "custom", role: "" }));
@@ -267,9 +257,7 @@ function BearerForm({
           <Input
             type="number"
             value={values.displayOrder}
-            onChange={(e) =>
-              set("displayOrder", parseInt(e.target.value, 10) || 0)
-            }
+            onChange={(e) => set("displayOrder", parseInt(e.target.value, 10) || 0)}
           />
         </div>
       </div>

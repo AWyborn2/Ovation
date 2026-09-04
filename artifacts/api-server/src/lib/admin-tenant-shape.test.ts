@@ -38,11 +38,7 @@ describe("admin-tenant-shape: brandingComplete derivation", () => {
   });
 
   it("is false when the logo is missing", () => {
-    const out = toAdminTenant(
-      tenantRow({ logoUrl: null, primaryColour: "#abcdef" }),
-      null,
-      0,
-    );
+    const out = toAdminTenant(tenantRow({ logoUrl: null, primaryColour: "#abcdef" }), null, 0);
     expect(out.brandingComplete).toBe(false);
   });
 
@@ -57,11 +53,7 @@ describe("admin-tenant-shape: brandingComplete derivation", () => {
   });
 
   it("is false when both are missing", () => {
-    const out = toAdminTenant(
-      tenantRow({ logoUrl: null, backgroundColour: null }),
-      null,
-      0,
-    );
+    const out = toAdminTenant(tenantRow({ logoUrl: null, backgroundColour: null }), null, 0);
     expect(out.brandingComplete).toBe(false);
   });
 });

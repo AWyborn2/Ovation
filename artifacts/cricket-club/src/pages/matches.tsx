@@ -19,7 +19,9 @@ function MatchCardCrest({ club }: { club: MatchSummary["opponentClub"] }) {
   const src = club?.logoUrl128 || club?.logoUrl;
   if (!club || !src || errored) return null;
   return (
-    <img loading="lazy" decoding="async"
+    <img
+      loading="lazy"
+      decoding="async"
       src={src}
       alt={`${club.name} logo`}
       title={club.name}
@@ -69,7 +71,12 @@ export default function Matches() {
   );
 
   // Displayed list: filtered by grade + season.
-  const { data: matches, isLoading, isError, refetch } = useListMatches(
+  const {
+    data: matches,
+    isLoading,
+    isError,
+    refetch,
+  } = useListMatches(
     { grade: gradeArg, season: seasonArg },
     {
       query: {
@@ -143,7 +150,9 @@ export default function Matches() {
           >
             <option value="">All grades</option>
             {gradeOptions.map((g) => (
-              <option key={g} value={g}>{g}</option>
+              <option key={g} value={g}>
+                {g}
+              </option>
             ))}
           </select>
         </div>
@@ -159,7 +168,9 @@ export default function Matches() {
           >
             <option value="">All seasons</option>
             {seasonOptions.map((s) => (
-              <option key={s} value={String(s)}>{fmtSeason(s)}</option>
+              <option key={s} value={String(s)}>
+                {fmtSeason(s)}
+              </option>
             ))}
           </select>
         </div>

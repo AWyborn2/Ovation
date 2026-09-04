@@ -2,17 +2,14 @@ import type { ScorecardTeam } from "@workspace/scorecard";
 import { TeamLogo } from "./team-logo";
 
 /** Branded header strip shared by the batting and bowling cards. */
-export function CardHeader({
-  team,
-  inningsLabel,
-}: {
-  team: ScorecardTeam;
-  inningsLabel: string;
-}) {
+export function CardHeader({ team, inningsLabel }: { team: ScorecardTeam; inningsLabel: string }) {
   const c = team.colors;
   const [labelTop, ...labelRest] = inningsLabel.split(" ");
   return (
-    <div className="flex items-stretch" style={{ background: c.primary, borderBottom: `3px solid ${c.secondary}` }}>
+    <div
+      className="flex items-stretch"
+      style={{ background: c.primary, borderBottom: `3px solid ${c.secondary}` }}
+    >
       <div
         className="flex items-center justify-center"
         style={{
@@ -36,24 +33,49 @@ export function CardHeader({
         <div className="text-center">
           <span
             className="tracking-widest uppercase block"
-            style={{ color: c.text, fontSize: "clamp(18px, 3.5vw, 28px)", fontWeight: 800, letterSpacing: "0.14em" }}
+            style={{
+              color: c.text,
+              fontSize: "clamp(18px, 3.5vw, 28px)",
+              fontWeight: 800,
+              letterSpacing: "0.14em",
+            }}
           >
             {team.name}
           </span>
           {team.shortName && (
-            <span className="block" style={{ color: c.text, fontSize: 10, opacity: 0.5, letterSpacing: "0.1em" }}>
+            <span
+              className="block"
+              style={{ color: c.text, fontSize: 10, opacity: 0.5, letterSpacing: "0.1em" }}
+            >
               {team.shortName}
             </span>
           )}
         </div>
       </div>
 
-      <div className="flex items-center justify-center px-3 py-2" style={{ background: c.secondary, minWidth: 80 }}>
+      <div
+        className="flex items-center justify-center px-3 py-2"
+        style={{ background: c.secondary, minWidth: 80 }}
+      >
         <div className="text-center" style={{ color: c.accentText }}>
-          <div style={{ fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1.1 }}>
+          <div
+            style={{
+              fontSize: "clamp(9px, 1.5vw, 12px)",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              lineHeight: 1.1,
+            }}
+          >
             {labelTop}
           </div>
-          <div style={{ fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1.1 }}>
+          <div
+            style={{
+              fontSize: "clamp(9px, 1.5vw, 12px)",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              lineHeight: 1.1,
+            }}
+          >
             {labelRest.join(" ")}
           </div>
         </div>

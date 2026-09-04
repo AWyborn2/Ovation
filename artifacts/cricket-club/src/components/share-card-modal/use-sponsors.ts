@@ -36,7 +36,8 @@ export function useSponsors({
   }, [bundle, includeSponsors]);
 
   const sponsorSig = useMemo(
-    () => `${sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~")}#${presentingSponsorName ?? ""}`,
+    () =>
+      `${sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~")}#${presentingSponsorName ?? ""}`,
     [sponsors, presentingSponsorName],
   );
 

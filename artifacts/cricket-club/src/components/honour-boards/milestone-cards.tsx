@@ -21,10 +21,15 @@ export const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
         </div>
         <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
           {p.surname}
-          <span className="font-sans font-normal text-foreground/80 normal-case"> {p.givenName}</span>
+          <span className="font-sans font-normal text-foreground/80 normal-case">
+            {" "}
+            {p.givenName}
+          </span>
         </div>
         <div className="text-xs text-muted-foreground mt-auto">
-          <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
+          <span className="font-mono font-bold text-foreground">
+            {p.currentValue.toLocaleString()}
+          </span>{" "}
           {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
         </div>
       </Link>
@@ -110,12 +115,19 @@ export const ApproachingCard = ({ entry: p }: { entry: ApproachingEntry }) => {
         </div>
         <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
           {p.surname}
-          <span className="font-sans font-normal text-foreground/80 normal-case"> {p.givenName}</span>
+          <span className="font-sans font-normal text-foreground/80 normal-case">
+            {" "}
+            {p.givenName}
+          </span>
         </div>
         <div className="text-xs text-muted-foreground mt-auto">
-          <span className="font-mono font-bold text-foreground">{p.currentValue.toLocaleString()}</span>{" "}
+          <span className="font-mono font-bold text-foreground">
+            {p.currentValue.toLocaleString()}
+          </span>{" "}
           {p.boardLabel.toLowerCase()} •{" "}
-          <span className="font-bold text-primary whitespace-nowrap">{p.gap.toLocaleString()} to go</span>
+          <span className="font-bold text-primary whitespace-nowrap">
+            {p.gap.toLocaleString()} to go
+          </span>
         </div>
       </Link>
     </div>
@@ -139,7 +151,9 @@ export const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
           {meta.label}
         </span>
         {item.recent && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Recent</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+            Recent
+          </span>
         )}
       </div>
       <div className="font-serif font-bold text-primary leading-tight">{item.playerName}</div>
@@ -148,7 +162,9 @@ export const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {item.grade && <GradeBadge grade={item.grade} size="sm" />}
         {date && (
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{date}</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            {date}
+          </span>
         )}
       </div>
     </Link>

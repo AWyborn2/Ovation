@@ -114,10 +114,16 @@ export function Inspector({
           />
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              <ShapeBtn active={layer.shape === "rect" || !layer.shape} onClick={() => onChange({ shape: "rect" })}>
+              <ShapeBtn
+                active={layer.shape === "rect" || !layer.shape}
+                onClick={() => onChange({ shape: "rect" })}
+              >
                 <Square className="h-3.5 w-3.5" />
               </ShapeBtn>
-              <ShapeBtn active={layer.shape === "circle"} onClick={() => onChange({ shape: "circle" })}>
+              <ShapeBtn
+                active={layer.shape === "circle"}
+                onClick={() => onChange({ shape: "circle" })}
+              >
                 <Circle className="h-3.5 w-3.5" />
               </ShapeBtn>
               <ShapeBtn active={layer.shape === "line"} onClick={() => onChange({ shape: "line" })}>
@@ -197,7 +203,10 @@ export function Inspector({
             <ShapeBtn active={layer.shape !== "circle"} onClick={() => onChange({ shape: "rect" })}>
               <Square className="h-3.5 w-3.5" />
             </ShapeBtn>
-            <ShapeBtn active={layer.shape === "circle"} onClick={() => onChange({ shape: "circle" })}>
+            <ShapeBtn
+              active={layer.shape === "circle"}
+              onClick={() => onChange({ shape: "circle" })}
+            >
               <Circle className="h-3.5 w-3.5" />
             </ShapeBtn>
             <select
@@ -271,9 +280,8 @@ export function Inspector({
       {!isCustom && layer.id === "background" && (
         <>
           <p className="text-[11px] text-muted-foreground">
-            Upload a full-bleed background image, or leave it empty to use the
-            theme/feature photo. Use the effects below to tone, gradient or mask
-            it; it always covers the whole card.
+            Upload a full-bleed background image, or leave it empty to use the theme/feature photo.
+            Use the effects below to tone, gradient or mask it; it always covers the whole card.
           </p>
           {layer.url ? (
             <>
@@ -390,10 +398,7 @@ export function Inspector({
         </p>
       )}
 
-      <EffectsSection
-        effects={layer.effects}
-        onChange={(effects) => onChange({ effects })}
-      />
+      <EffectsSection effects={layer.effects} onChange={(effects) => onChange({ effects })} />
     </div>
   );
 }

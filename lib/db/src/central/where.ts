@@ -29,9 +29,6 @@ export function clubInvolvedWhere(clubId: number): SQL {
  * Callers guard `values.length === 0` before querying, exactly as they did for
  * `inArray`; an empty array here would simply match nothing.
  */
-export function inList(
-  column: AnyColumn | SQL,
-  values: readonly (number | string)[],
-): SQL {
+export function inList(column: AnyColumn | SQL, values: readonly (number | string)[]): SQL {
   return sql`${column} = any(${sql.param(values)})`;
 }

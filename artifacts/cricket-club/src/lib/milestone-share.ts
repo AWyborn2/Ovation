@@ -20,7 +20,11 @@ export interface MilestoneShareInput {
 
 const hexToRgb = (hex: string): [number, number, number] => {
   let h = hex.trim().replace(/^#/, "");
-  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
   const n = parseInt(h, 16);
   if (h.length !== 6 || Number.isNaN(n)) return [251, 172, 39];
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -47,23 +51,26 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-const iconSvgString = (tierIndex: number, color: string, size = 256, strokeWidth = 1.75): string => {
+const iconSvgString = (
+  tierIndex: number,
+  color: string,
+  size = 256,
+  strokeWidth = 1.75,
+): string => {
   const Icon = TIER_ICONS[Math.min(Math.max(tierIndex, 0), TIER_ICONS.length - 1)];
   const node = createElement(Icon, { color, size, strokeWidth, absoluteStrokeWidth: true });
   return renderToStaticMarkup(node as React.ReactElement);
 };
 
-const svgToDataUrl = (svg: string): string =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+const svgToDataUrl = (svg: string): string => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 
 const slugify = (s: string): string =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
-const wrapText = (
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-): string[] => {
+const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
   const words = text.split(/\s+/);
   const lines: string[] = [];
   let current = "";
@@ -295,8 +302,7 @@ export const downloadMilestoneCard = async (
   const a = document.createElement("a");
   const clubSlug = slugify(input.brand?.shortName || input.brand?.name || "") || "card";
   const name =
-    filename ??
-    `${clubSlug}-${slugify(input.playerName)}-${slugify(input.tierLabel)}.png`;
+    filename ?? `${clubSlug}-${slugify(input.playerName)}-${slugify(input.tierLabel)}.png`;
   a.href = url;
   a.download = name;
   document.body.appendChild(a);

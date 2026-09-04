@@ -49,18 +49,13 @@ export function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
     );
   }
 
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="max-w-xs"
-        />
+        <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-xs" />
         <div className="flex items-center gap-2">
           <Label className="text-xs text-muted-foreground">Size</Label>
           <select
@@ -77,18 +72,10 @@ export function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <StatusPill tone={published ? "live" : "neutral"}>
-            {published ? (
-              <Globe className="h-3 w-3" />
-            ) : (
-              <Lock className="h-3 w-3" />
-            )}
+            {published ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
             {published ? "Published" : "Draft"}
           </StatusPill>
-          <Button
-            onClick={() => handleSave()}
-            disabled={update.isPending}
-            variant="secondary"
-          >
+          <Button onClick={() => handleSave()} disabled={update.isPending} variant="secondary">
             {update.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -101,11 +88,7 @@ export function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
             disabled={update.isPending || (!published && !canPublish)}
             variant={published ? "outline" : "default"}
           >
-            {published ? (
-              <Lock className="h-4 w-4 mr-2" />
-            ) : (
-              <Globe className="h-4 w-4 mr-2" />
-            )}
+            {published ? <Lock className="h-4 w-4 mr-2" /> : <Globe className="h-4 w-4 mr-2" />}
             {published ? "Unpublish" : "Publish"}
           </Button>
           <Button onClick={handleExport} disabled={exporting || tooFew}>
@@ -121,8 +104,7 @@ export function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
 
       {tooFew && (
         <p className="text-xs text-amber-600">
-          A carousel needs at least {MIN_SLIDES} slides before it can be exported
-          or published.
+          A carousel needs at least {MIN_SLIDES} slides before it can be exported or published.
         </p>
       )}
 

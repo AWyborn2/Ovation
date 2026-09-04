@@ -63,8 +63,7 @@ describe("POST /card-renders/still — entitlement gate (DB-backed, CI)", () => 
   const billingBefore = process.env.BILLING_ENABLED;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-card-still";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-card-still";
     free = await seedTenant("free", 9401);
     club = await seedTenant("club", 9402);
   });

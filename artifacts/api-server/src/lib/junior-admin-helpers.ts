@@ -87,10 +87,7 @@ export async function tenantMatch(
     .select()
     .from(juniorMatchesTable)
     .where(
-      and(
-        eq(juniorMatchesTable.id, matchId),
-        eq(juniorMatchesTable.tenantId, getTenantId(req)),
-      ),
+      and(eq(juniorMatchesTable.id, matchId), eq(juniorMatchesTable.tenantId, getTenantId(req))),
     );
   return match ?? null;
 }
@@ -230,10 +227,7 @@ export function serializeRosterEntry(l: JuniorMatchRosterRow) {
  * The ETL copies these columns verbatim from the dump and never recomputes
  * them, so after a merge they must be refreshed here. The SQL mirrors ETL
  * step 7f (set-based there, single-GUID here) — keep the two in sync. */
-export async function recomputeParticipantMetadata(
-  tx: Tx,
-  participantId: string,
-): Promise<void> {
+export async function recomputeParticipantMetadata(tx: Tx, participantId: string): Promise<void> {
   await tx.execute(sql`
     UPDATE junior_participants p SET
       scorecard_lines =

@@ -60,7 +60,8 @@ describe("platform self-serve signup", () => {
     const club = before.body[0];
 
     const signup = await request(app)
-      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: club.centralClubId,
         slug: SLUG,
@@ -75,9 +76,9 @@ describe("platform self-serve signup", () => {
     // Signup mints a session immediately (U1) — no separate login call needed.
     const setCookie = signup.headers["set-cookie"];
     expect(setCookie).toBeDefined();
-    const sessionCookieHeader = (
-      Array.isArray(setCookie) ? setCookie : [setCookie]
-    ).find((c: string) => c.startsWith("ovation_session="));
+    const sessionCookieHeader = (Array.isArray(setCookie) ? setCookie : [setCookie]).find(
+      (c: string) => c.startsWith("ovation_session="),
+    );
     expect(sessionCookieHeader).toBeDefined();
 
     // The cookie's domain is scoped to the shared apex, not just the request
@@ -115,7 +116,8 @@ describe("platform self-serve signup", () => {
 
   it.skipIf(process.env.CI_SKIP_DATA_TESTS)("rejects re-claiming the same slug (409)", async () => {
     const dup = await request(app)
-      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: 999999, // irrelevant; slug check should fire
         slug: SLUG,
@@ -127,7 +129,8 @@ describe("platform self-serve signup", () => {
 
   it("rejects a reserved slug (400)", async () => {
     const res = await request(app)
-      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: 1,
         slug: "admin",
@@ -159,7 +162,8 @@ describe("platform self-serve signup", () => {
     ).toBe(false);
 
     const signup = await request(app)
-      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: folded.clubId,
         slug: `folded-${STAMP}`,
@@ -192,7 +196,8 @@ describe("platform self-serve signup", () => {
         ).toBe(false);
 
         const signup = await request(app)
-          .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
+          .post("/api/platform/signup")
+          .set("x-forwarded-for", uniqueIp())
           .send({
             centralClubId: club.centralClubId,
             slug: `excl-${visibility}-${STAMP}`.slice(0, 40),
@@ -213,7 +218,8 @@ describe("platform self-serve signup", () => {
     const clubs = await request(app).get("/api/platform/available-clubs");
     expect(clubs.status).toBe(403);
     const signup = await request(app)
-      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: 1,
         slug: `off-${STAMP}`,

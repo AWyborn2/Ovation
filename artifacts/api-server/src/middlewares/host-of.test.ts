@@ -10,7 +10,7 @@ import { hostOf } from "./tenant-context";
  */
 
 const reqWith = (headers: Record<string, string | string[]>): Request =>
-  ({ headers } as unknown as Request);
+  ({ headers }) as unknown as Request;
 
 describe("hostOf", () => {
   it("prefers X-Forwarded-Host over the internal Host header", () => {

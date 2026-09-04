@@ -7,9 +7,7 @@ import {
   type RenderOptions,
   type CardSize,
 } from "@/lib/share-card";
-import {
-  prepareAnimation,
-} from "@/lib/share-card-animation";
+import { prepareAnimation } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { packNativeSize, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
@@ -47,15 +45,9 @@ type StillMeta = {
 
 type HarnessApi = {
   ready: boolean;
-  init: (payload: {
-    input: ShareCardInput;
-    options: RenderOptions;
-  }) => Promise<HarnessMeta>;
+  init: (payload: { input: ShareCardInput; options: RenderOptions }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
-  renderStill: (payload: {
-    input: ShareCardInput;
-    options: StillOptions;
-  }) => Promise<StillMeta>;
+  renderStill: (payload: { input: ShareCardInput; options: StillOptions }) => Promise<StillMeta>;
   dispose: () => void;
 };
 

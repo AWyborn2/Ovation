@@ -40,9 +40,7 @@ export default function AdminAwards() {
 
   const sorted = useMemo(() => {
     if (!awards) return [];
-    return [...awards].sort(
-      (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-    );
+    return [...awards].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
   }, [awards]);
 
   const moveAward = (index: number, dir: -1 | 1) => {
@@ -69,8 +67,8 @@ export default function AdminAwards() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-muted-foreground mt-1">
-            Create club awards and record their past winners. Each award appears
-            as its own honour board on the website and mobile app.
+            Create club awards and record their past winners. Each award appears as its own honour
+            board on the website and mobile app.
           </p>
         </div>
         <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
@@ -159,8 +157,7 @@ export default function AdminAwards() {
                 </CardTitle>
                 <div className="text-xs text-muted-foreground mt-1">
                   slug: <code>{award.key}</code> · order {award.displayOrder} ·{" "}
-                  {award.winners.length}{" "}
-                  {award.winners.length === 1 ? "winner" : "winners"}
+                  {award.winners.length} {award.winners.length === 1 ? "winner" : "winners"}
                 </div>
               </div>
               <div className="space-x-2 shrink-0">
@@ -266,11 +263,7 @@ export default function AdminAwards() {
                 </p>
               )}
 
-              <WinnersManager
-                award={award}
-                onError={onMutationError}
-                onChanged={invalidate}
-              />
+              <WinnersManager award={award} onError={onMutationError} onChanged={invalidate} />
 
               {award.mechanism === "voted" && (
                 <VotingManager award={award} onAwardChanged={invalidate} />

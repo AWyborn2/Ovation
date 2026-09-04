@@ -78,7 +78,9 @@ export function PlayerStatsModal({ playerId, fallbackName, onClose }: PlayerStat
   const Cell = ({ label, value }: { label: string; value: string | number | null }) => (
     <div className="rounded p-2 text-center" style={{ background: "rgba(255,255,255,0.04)" }}>
       <p style={{ color: "#e5e7eb", fontSize: 18, fontWeight: 800 }}>{value ?? "—"}</p>
-      <p style={{ color: "#6b7280", fontSize: 9, fontWeight: 600, letterSpacing: "0.06em" }}>{label.toUpperCase()}</p>
+      <p style={{ color: "#6b7280", fontSize: 9, fontWeight: 600, letterSpacing: "0.06em" }}>
+        {label.toUpperCase()}
+      </p>
     </div>
   );
 
@@ -91,94 +93,157 @@ export function PlayerStatsModal({ playerId, fallbackName, onClose }: PlayerStat
           className="fixed inset-0 z-50"
           style={{ background: "rgba(0,0,0,0.75)" }}
         />
-      <DialogPrimitive.Content
-        className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg overflow-hidden shadow-2xl outline-none"
-        style={{ background: "#0c1c33", border: "1px solid rgba(255,255,255,0.12)" }}
-        aria-describedby={undefined}
-        data-testid="modal-player-stats"
-      >
-        <div className="flex items-center justify-between px-5 py-4" style={{ background: "#00305c", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="min-w-0">
-            <DialogPrimitive.Title asChild>
-              <p className="uppercase truncate" style={{ color: "#f5a623", fontSize: 18, fontWeight: 800, letterSpacing: "0.06em" }}>
-                {name}
-              </p>
-            </DialogPrimitive.Title>
-            {data?.gradesPlayed && <p style={{ color: "#9ca3af", fontSize: 12, marginTop: 2 }} className="truncate">{data.gradesPlayed}</p>}
+        <DialogPrimitive.Content
+          className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg overflow-hidden shadow-2xl outline-none"
+          style={{ background: "#0c1c33", border: "1px solid rgba(255,255,255,0.12)" }}
+          aria-describedby={undefined}
+          data-testid="modal-player-stats"
+        >
+          <div
+            className="flex items-center justify-between px-5 py-4"
+            style={{ background: "#00305c", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <div className="min-w-0">
+              <DialogPrimitive.Title asChild>
+                <p
+                  className="uppercase truncate"
+                  style={{
+                    color: "#f5a623",
+                    fontSize: 18,
+                    fontWeight: 800,
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {name}
+                </p>
+              </DialogPrimitive.Title>
+              {data?.gradesPlayed && (
+                <p style={{ color: "#9ca3af", fontSize: 12, marginTop: 2 }} className="truncate">
+                  {data.gradesPlayed}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                color: "#9ca3af",
+                background: "none",
+                border: "none",
+                fontSize: 22,
+                cursor: "pointer",
+                lineHeight: 1,
+              }}
+              data-testid="button-close-modal"
+            >
+              ×
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            style={{ color: "#9ca3af", background: "none", border: "none", fontSize: 22, cursor: "pointer", lineHeight: 1 }}
-            data-testid="button-close-modal"
+
+          <div className="p-5">
+            {isLoading ? (
+              <p style={{ color: "#9ca3af", fontSize: 13 }}>Loading career stats…</p>
+            ) : stats.length === 0 ? (
+              <p style={{ color: "#9ca3af", fontSize: 13 }}>No career stats recorded.</p>
+            ) : (
+              <>
+                <p
+                  className="uppercase mb-3"
+                  style={{
+                    color: "#6b7280",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  Career • {games} {games === 1 ? "Game" : "Games"}
+                </p>
+
+                {hasBatting && (
+                  <>
+                    <p
+                      className="uppercase mb-2"
+                      style={{
+                        color: "#4b5563",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      Batting
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <Cell label="Runs" value={runs.toLocaleString()} />
+                      <Cell label="Average" value={batAvg != null ? batAvg.toFixed(1) : null} />
+                      <Cell label="High Score" value={bestHighScore(stats)} />
+                      <Cell label="50s" value={fifties} />
+                      <Cell label="100s" value={hundreds} />
+                      <Cell label="Innings" value={innings} />
+                    </div>
+                  </>
+                )}
+
+                {hasBowling && (
+                  <>
+                    <p
+                      className="uppercase mb-2"
+                      style={{
+                        color: "#4b5563",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      Bowling
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <Cell label="Wickets" value={wickets} />
+                      <Cell label="Average" value={bowlAvg != null ? bowlAvg.toFixed(1) : null} />
+                      <Cell label="Best" value={bestBowling(stats)} />
+                      <Cell label="5 Wkts" value={fiveWickets} />
+                    </div>
+                  </>
+                )}
+
+                {hasFielding && (
+                  <>
+                    <p
+                      className="uppercase mb-2"
+                      style={{
+                        color: "#4b5563",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      Fielding
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Cell label="Catches" value={catches} />
+                      <Cell label="Stumpings" value={stumpings} />
+                      <Cell label="Run Outs" value={runOuts} />
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+
+          <div
+            className="px-5 py-3 text-center"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
           >
-            ×
-          </button>
-        </div>
-
-        <div className="p-5">
-          {isLoading ? (
-            <p style={{ color: "#9ca3af", fontSize: 13 }}>Loading career stats…</p>
-          ) : stats.length === 0 ? (
-            <p style={{ color: "#9ca3af", fontSize: 13 }}>No career stats recorded.</p>
-          ) : (
-            <>
-              <p className="uppercase mb-3" style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em" }}>
-                Career • {games} {games === 1 ? "Game" : "Games"}
-              </p>
-
-              {hasBatting && (
-                <>
-                  <p className="uppercase mb-2" style={{ color: "#4b5563", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em" }}>Batting</p>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <Cell label="Runs" value={runs.toLocaleString()} />
-                    <Cell label="Average" value={batAvg != null ? batAvg.toFixed(1) : null} />
-                    <Cell label="High Score" value={bestHighScore(stats)} />
-                    <Cell label="50s" value={fifties} />
-                    <Cell label="100s" value={hundreds} />
-                    <Cell label="Innings" value={innings} />
-                  </div>
-                </>
-              )}
-
-              {hasBowling && (
-                <>
-                  <p className="uppercase mb-2" style={{ color: "#4b5563", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em" }}>Bowling</p>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <Cell label="Wickets" value={wickets} />
-                    <Cell label="Average" value={bowlAvg != null ? bowlAvg.toFixed(1) : null} />
-                    <Cell label="Best" value={bestBowling(stats)} />
-                    <Cell label="5 Wkts" value={fiveWickets} />
-                  </div>
-                </>
-              )}
-
-              {hasFielding && (
-                <>
-                  <p className="uppercase mb-2" style={{ color: "#4b5563", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em" }}>Fielding</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Cell label="Catches" value={catches} />
-                    <Cell label="Stumpings" value={stumpings} />
-                    <Cell label="Run Outs" value={runOuts} />
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="px-5 py-3 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <Link
-            href={`/players/${playerId}`}
-            onClick={onClose}
-            style={{ color: "#f5a623", fontSize: 12, fontWeight: 600 }}
-            className="hover:underline"
-            data-testid="link-player-profile"
-          >
-            View full profile →
-          </Link>
-        </div>
-      </DialogPrimitive.Content>
+            <Link
+              href={`/players/${playerId}`}
+              onClick={onClose}
+              style={{ color: "#f5a623", fontSize: 12, fontWeight: 600 }}
+              className="hover:underline"
+              data-testid="link-player-profile"
+            >
+              View full profile →
+            </Link>
+          </div>
+        </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );

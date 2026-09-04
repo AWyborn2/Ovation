@@ -55,9 +55,7 @@ export function useLayoutTemplate({
   });
   const applicableTemplates = useMemo<CardTemplate[]>(() => {
     if (!input) return [];
-    return (templatesQ.data ?? []).filter((t) =>
-      templateAppliesToKind(t, input.kind),
-    );
+    return (templatesQ.data ?? []).filter((t) => templateAppliesToKind(t, input.kind));
   }, [templatesQ.data, input]);
   // `null` = built-in layout; otherwise a template id.
   const [layoutId, setLayoutId] = useState<number | null>(null);
@@ -84,7 +82,7 @@ export function useLayoutTemplate({
     () =>
       isJunior || layoutId === null
         ? null
-        : applicableTemplates.find((t) => t.id === layoutId) ?? null,
+        : (applicableTemplates.find((t) => t.id === layoutId) ?? null),
     [isJunior, layoutId, applicableTemplates],
   );
   // A layer-source template feeds the layer pipeline (opts.layout); only a
@@ -111,7 +109,7 @@ export function useLayoutTemplate({
    * exactly as the composer, carousel and gallery use it.
    */
   const packId = isPackTemplate
-    ? selectedTemplate?.packId ?? null
+    ? (selectedTemplate?.packId ?? null)
     : selectedTemplate === null && input
       ? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind)
       : null;
@@ -122,7 +120,7 @@ export function useLayoutTemplate({
     [input, packId],
   );
   const templateLayers = useMemo<CardLayoutLayer[] | null>(
-    () => (isLayerTemplate ? selectedTemplate?.layers ?? [] : null),
+    () => (isLayerTemplate ? (selectedTemplate?.layers ?? []) : null),
     [isLayerTemplate, selectedTemplate],
   );
 
@@ -136,9 +134,7 @@ export function useLayoutTemplate({
   });
   const savedLayout = useMemo<CardLayoutLayer[]>(() => {
     if (!input) return [];
-    const row = (layoutsQ.data as CardLayout[] | undefined)?.find(
-      (l) => l.cardKind === input.kind,
-    );
+    const row = (layoutsQ.data as CardLayout[] | undefined)?.find((l) => l.cardKind === input.kind);
     return row?.layers ?? [];
   }, [layoutsQ.data, input]);
   const layoutSig = useMemo(

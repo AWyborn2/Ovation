@@ -156,12 +156,18 @@ describe("public detail + juniors page smoke tests", () => {
   });
 
   it("renders a player's profile", async () => {
-    const { container } = renderAt(<Route path="/players/:id" component={PlayerDetail} />, "/players/1");
+    const { container } = renderAt(
+      <Route path="/players/:id" component={PlayerDetail} />,
+      "/players/1",
+    );
     await settle(container);
   });
 
   it("renders a non-player person's profile", async () => {
-    const { container } = renderAt(<Route path="/people/:id" component={PersonDetail} />, "/people/1");
+    const { container } = renderAt(
+      <Route path="/people/:id" component={PersonDetail} />,
+      "/people/1",
+    );
     await settle(container);
   });
 
@@ -171,7 +177,10 @@ describe("public detail + juniors page smoke tests", () => {
   });
 
   it("renders a match scorecard", async () => {
-    const { container } = renderAt(<Route path="/matches/:id" component={MatchDetail} />, "/matches/1");
+    const { container } = renderAt(
+      <Route path="/matches/:id" component={MatchDetail} />,
+      "/matches/1",
+    );
     await settle(container);
   });
 

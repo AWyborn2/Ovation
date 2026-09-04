@@ -5,7 +5,6 @@
  */
 import { env } from "../config";
 
-
 const MIN = 2;
 const MAX = 40;
 

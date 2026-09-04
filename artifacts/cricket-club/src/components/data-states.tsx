@@ -41,13 +41,7 @@ export function LoadingState({
 }
 
 /** Skeleton placeholder shaped like a data table. */
-export function TableSkeleton({
-  rows = 6,
-  className,
-}: {
-  rows?: number;
-  className?: string;
-}) {
+export function TableSkeleton({ rows = 6, className }: { rows?: number; className?: string }) {
   return (
     <div className={cn("space-y-2", className)} aria-hidden="true">
       <Skeleton className="h-8 w-full" />
@@ -70,10 +64,7 @@ export function CardGridSkeleton({
 }) {
   return (
     <div
-      className={cn(
-        "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-        className,
-      )}
+      className={cn("grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3", className)}
       aria-hidden="true"
     >
       {Array.from({ length: count }).map((_, i) => (
@@ -157,9 +148,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="text-muted-foreground">
-        {icon ?? <Inbox className="h-8 w-8" />}
-      </div>
+      <div className="text-muted-foreground">{icon ?? <Inbox className="h-8 w-8" />}</div>
       <div className="space-y-1">
         <p className="font-semibold text-foreground">{title}</p>
         {message && <p className="text-sm text-muted-foreground">{message}</p>}

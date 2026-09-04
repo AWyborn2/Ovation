@@ -1,6 +1,10 @@
 import { Link } from "wouter";
 import { useBrand } from "@/lib/brand-context";
-import { useListLifeMembers, type LifeMember, type LifeMemberStats } from "@workspace/api-client-react";
+import {
+  useListLifeMembers,
+  type LifeMember,
+  type LifeMemberStats,
+} from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
 
 const battingAvg = (s: LifeMemberStats) => {
@@ -22,12 +26,8 @@ const StatTile = ({
   sub?: string;
 }) => (
   <div className="bg-background/60 border border-border rounded p-3">
-    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-      {label}
-    </div>
-    <div className="font-mono font-bold text-primary text-lg leading-tight mt-0.5">
-      {value}
-    </div>
+    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+    <div className="font-mono font-bold text-primary text-lg leading-tight mt-0.5">{value}</div>
     {sub && <div className="text-[11px] text-muted-foreground mt-0.5">{sub}</div>}
   </div>
 );
@@ -42,10 +42,7 @@ const StatsGrid = ({ stats }: { stats: LifeMemberStats }) => {
         value={stats.runs.toLocaleString()}
         sub={`Avg ${battingAvg(stats)} • HS ${stats.highScore ?? "-"}`}
       />
-      <StatTile
-        label="50s / 100s"
-        value={`${stats.fifties} / ${stats.hundreds}`}
-      />
+      <StatTile label="50s / 100s" value={`${stats.fifties} / ${stats.hundreds}`} />
       <StatTile
         label="Wickets"
         value={stats.wickets}
@@ -83,9 +80,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
             nameContent
           )}
           {member.roleLabel && (
-            <div className="italic text-sm text-muted-foreground mt-1">
-              {member.roleLabel}
-            </div>
+            <div className="italic text-sm text-muted-foreground mt-1">{member.roleLabel}</div>
           )}
         </div>
         <div className="text-right">
@@ -140,15 +135,12 @@ export function LifeMembersTab() {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
-          Life Members
-        </h2>
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">Life Members</h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          {brand.name}'s highest individual honour — recognising
-          members whose contribution to the club has been exceptional and
-          enduring. {members?.length ?? 0} Life Members inducted since the award
-          was first given.
+          {brand.name}'s highest individual honour — recognising members whose contribution to the
+          club has been exceptional and enduring. {members?.length ?? 0} Life Members inducted since
+          the award was first given.
         </p>
       </div>
 

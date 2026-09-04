@@ -15,14 +15,7 @@ export const CARD_FONT = "'IBM Plex Sans', sans-serif";
 // document.fonts.ready resolves without them) — so ensureCardFonts() explicitly
 // injects the stylesheet and loads every family before any canvas text is drawn
 // in each render path.
-export type CardFontKey =
-  | "sans"
-  | "serif"
-  | "oswald"
-  | "cinzel"
-  | "garamond"
-  | "mono"
-  | "inter";
+export type CardFontKey = "sans" | "serif" | "oswald" | "cinzel" | "garamond" | "mono" | "inter";
 
 const EXTRA_FONT_STACKS: Record<Exclude<CardFontKey, "sans" | "serif">, string> = {
   oswald: "'Oswald', sans-serif",
@@ -36,9 +29,7 @@ const EXTRA_FONT_STACKS: Record<Exclude<CardFontKey, "sans" | "serif">, string> 
 // each call site keeps its own original default (IBM Plex Sans for custom text,
 // Helvetica for summary slots) and unchanged cards render identically.
 export const extraFontStack = (k?: string | null): string | null =>
-  k && k in EXTRA_FONT_STACKS
-    ? EXTRA_FONT_STACKS[k as keyof typeof EXTRA_FONT_STACKS]
-    : null;
+  k && k in EXTRA_FONT_STACKS ? EXTRA_FONT_STACKS[k as keyof typeof EXTRA_FONT_STACKS] : null;
 
 // Font choices surfaced in the Social Studio editor's font dropdown.
 export const CARD_FONT_OPTIONS: { value: CardFontKey; label: string }[] = [

@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { encodeSession, encodeCaptainSession, SESSION_COOKIE, CAPTAIN_SESSION_COOKIE } from "../lib/auth";
+import {
+  encodeSession,
+  encodeCaptainSession,
+  SESSION_COOKIE,
+  CAPTAIN_SESSION_COOKIE,
+} from "../lib/auth";
 import { db, adminsTable, awardBallotsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import {
-  createVotingScenario,
-  getWinners,
-  type VotingScenario,
-} from "../lib/voting.test-helpers";
+import { createVotingScenario, getWinners, type VotingScenario } from "../lib/voting.test-helpers";
 
 const GRADE = "A Grade";
 const SEASON = 2099;
@@ -83,9 +84,7 @@ describe("voting + finalise flow (integration)", () => {
     };
     const tallyRes = await request(app).get("/api/award-tallies");
     expect(tallyRes.status).toBe(200);
-    const mine = (tallyRes.body as PublicTally[]).find(
-      (t) => t.configId === scenario.configId,
-    );
+    const mine = (tallyRes.body as PublicTally[]).find((t) => t.configId === scenario.configId);
     expect(mine).toBeDefined();
     expect(mine!.visible).toBe(true);
     expect(mine!.winnerPlayerIds).toEqual([a]);
@@ -93,9 +92,7 @@ describe("voting + finalise flow (integration)", () => {
     expect(aEntry?.points).toBe(3);
 
     // Rejects an unauthenticated finalise.
-    const noAuth = await request(app).post(
-      `/api/voting-configs/${scenario.configId}/finalise`,
-    );
+    const noAuth = await request(app).post(`/api/voting-configs/${scenario.configId}/finalise`);
     expect(noAuth.status).toBe(401);
 
     // 3. Admin finalises -> winner recorded, voting closed.

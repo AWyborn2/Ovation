@@ -57,7 +57,10 @@ export function SettingsCard({
                       ? "engineRoundUp"
                       : "engineRecap";
               return (
-                <div key={eng.value} className="flex items-start justify-between gap-3 border rounded p-3">
+                <div
+                  key={eng.value}
+                  className="flex items-start justify-between gap-3 border rounded p-3"
+                >
                   <div>
                     <div className="font-medium">{eng.label}</div>
                     <div className="text-xs text-muted-foreground">{eng.desc}</div>
@@ -141,7 +144,11 @@ export function SettingsCard({
         {error && <div className="text-sm text-destructive">{error}</div>}
         <div className="flex justify-end">
           <Button onClick={save} disabled={update.isPending}>
-            {update.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            {update.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
             Save settings
           </Button>
         </div>

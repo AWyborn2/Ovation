@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { useBrand } from "@/lib/brand-context";
-import {
-  useGetPerson,
-  getGetPersonQueryKey,
-  useListClubRoles,
-} from "@workspace/api-client-react";
+import { useGetPerson, getGetPersonQueryKey, useListClubRoles } from "@workspace/api-client-react";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 function formatSeason(year: number): string {
@@ -17,7 +13,12 @@ export default function PersonDetail() {
   const brand = useBrand();
   const params = useParams();
   const id = Number(params.id);
-  const { data: person, isLoading, isError, refetch } = useGetPerson(id, {
+  const {
+    data: person,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetPerson(id, {
     query: { queryKey: getGetPersonQueryKey(id), enabled: Number.isFinite(id) },
   });
   const { data: roles } = useListClubRoles();
@@ -44,10 +45,7 @@ export default function PersonDetail() {
   if (!person) {
     return (
       <div className="space-y-4">
-        <EmptyState
-          title="Person not found"
-          message="This person could not be found."
-        />
+        <EmptyState title="Person not found" message="This person could not be found." />
         <Link href="/honour-boards" className="text-primary hover:underline">
           ← Back to honour boards
         </Link>
@@ -74,9 +72,7 @@ export default function PersonDetail() {
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
               {person.name}
             </h1>
-            <p className="text-muted-foreground italic mt-1 mb-0">
-              Club official · {brand.name}
-            </p>
+            <p className="text-muted-foreground italic mt-1 mb-0">Club official · {brand.name}</p>
           </div>
         </div>
         <div className="w-20 h-[3px] bg-primary mt-4" />
@@ -97,16 +93,11 @@ export default function PersonDetail() {
         </div>
         <div className="p-4 md:p-6">
           {service.length === 0 ? (
-            <p className="text-muted-foreground italic m-0">
-              No published roles recorded yet.
-            </p>
+            <p className="text-muted-foreground italic m-0">No published roles recorded yet.</p>
           ) : (
             <div className="divide-y divide-border/60">
               {service.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0"
-                >
+                <div key={s.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
                   <span className="font-mono font-bold text-primary w-20 shrink-0">
                     {formatSeason(s.season)}
                   </span>

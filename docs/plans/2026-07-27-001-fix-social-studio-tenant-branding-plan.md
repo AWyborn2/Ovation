@@ -48,11 +48,11 @@ loses its colours.
 
 ### The three defects
 
-| # | Site | Defect | Symptom |
-|---|------|--------|---------|
-| D1 | `artifacts/cricket-club/src/pages/admin-social-create.tsx` (`<PackCard>` mount, ~line 156) | No `data` prop; `theme={null}` | **The reported screenshot.** Composer preview shows `HALLS HEAD` / `#HALLSHEAD` / `recruitment by eSA Sport` in Broadcast-Dark gold |
-| D2 | `artifacts/cricket-club/src/pages/admin-social-studio.tsx` (`<PackCard>` mount, ~line 290) | No `data`, no `theme` | All 20 card-kind gallery thumbnails show Halls Head branding for every tenant |
-| D3 | `artifacts/cricket-club/src/pages/admin-social-sets.tsx` (`buildSlidePackData`, ~line 399) | Brand narrowed to `{ name, logoUrl }` | Carousel slides drop `tagline`, `primaryColour`, `backgroundColour`, `juniorsColour` → slides render in **Halls Head gold**, not the tenant accent |
+| #   | Site                                                                                       | Defect                                | Symptom                                                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | `artifacts/cricket-club/src/pages/admin-social-create.tsx` (`<PackCard>` mount, ~line 156) | No `data` prop; `theme={null}`        | **The reported screenshot.** Composer preview shows `HALLS HEAD` / `#HALLSHEAD` / `recruitment by eSA Sport` in Broadcast-Dark gold                |
+| D2  | `artifacts/cricket-club/src/pages/admin-social-studio.tsx` (`<PackCard>` mount, ~line 290) | No `data`, no `theme`                 | All 20 card-kind gallery thumbnails show Halls Head branding for every tenant                                                                      |
+| D3  | `artifacts/cricket-club/src/pages/admin-social-sets.tsx` (`buildSlidePackData`, ~line 399) | Brand narrowed to `{ name, logoUrl }` | Carousel slides drop `tagline`, `primaryColour`, `backgroundColour`, `juniorsColour` → slides render in **Halls Head gold**, not the tenant accent |
 
 D3 was not in the original report. It is the same root cause seen from a different angle:
 each call site hand-rolls its own `PackCardData`, so they drift.
@@ -75,16 +75,16 @@ the `SocialSettingsBundle` as `bundle` (~line 123) and already reads `bundle?.br
 
 ## Product Contract
 
-| ID | Requirement |
-|----|-------------|
-| R1 | The Studio composer preview renders the signed-in tenant's logo, club name, tagline, hashtag, sponsors, presenting sponsor and brand colours — never another tenant's |
-| R2 | The Studio card-type gallery thumbnails render the signed-in tenant's branding, so the gallery previews the tenant's own look |
-| R3 | Carousel slides carry the tenant's full brand (including colours and tagline), matching single-card renders |
-| R4 | All `PackCardData` construction flows through one shared builder, so no call site can silently omit fields |
-| R5 | A tenant with no configured hashtag / tagline / presenting sponsor gets an **empty** value, never a fallback to another club's literal |
-| R6 | Broadcast-Dark template sample defaults contain no club-identifying literals — no "Halls Head", "#HALLSHEAD", "EST 1991", or "eSA Sport" |
-| R7 | A regression guard fails the build if a `PackCard` mount omits tenant data, or if a data-bearing render emits a known Halls Head literal |
-| R8 | Halls Head (tenant #1) **real card** output is unchanged — pixel-identical across all kinds, sizes and sponsor states. Scoped deliberately: U3 neutralises sample *content* fields that `applyPackData` does not overlay (`role`, `formerClub`, `headline`, `inningsLabel`, `resultLine`, ladder team names), so Halls Head's **gallery thumbnails** will show neutral placeholder copy instead of Halls Head prose. That is intended. The invariant is on data-bearing renders, not sample previews |
+| ID  | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | The Studio composer preview renders the signed-in tenant's logo, club name, tagline, hashtag, sponsors, presenting sponsor and brand colours — never another tenant's                                                                                                                                                                                                                                                                                                                                |
+| R2  | The Studio card-type gallery thumbnails render the signed-in tenant's branding, so the gallery previews the tenant's own look                                                                                                                                                                                                                                                                                                                                                                        |
+| R3  | Carousel slides carry the tenant's full brand (including colours and tagline), matching single-card renders                                                                                                                                                                                                                                                                                                                                                                                          |
+| R4  | All `PackCardData` construction flows through one shared builder, so no call site can silently omit fields                                                                                                                                                                                                                                                                                                                                                                                           |
+| R5  | A tenant with no configured hashtag / tagline / presenting sponsor gets an **empty** value, never a fallback to another club's literal                                                                                                                                                                                                                                                                                                                                                               |
+| R6  | Broadcast-Dark template sample defaults contain no club-identifying literals — no "Halls Head", "#HALLSHEAD", "EST 1991", or "eSA Sport"                                                                                                                                                                                                                                                                                                                                                             |
+| R7  | A regression guard fails the build if a `PackCard` mount omits tenant data, or if a data-bearing render emits a known Halls Head literal                                                                                                                                                                                                                                                                                                                                                             |
+| R8  | Halls Head (tenant #1) **real card** output is unchanged — pixel-identical across all kinds, sizes and sponsor states. Scoped deliberately: U3 neutralises sample _content_ fields that `applyPackData` does not overlay (`role`, `formerClub`, `headline`, `inningsLabel`, `resultLine`, ladder team names), so Halls Head's **gallery thumbnails** will show neutral placeholder copy instead of Halls Head prose. That is intended. The invariant is on data-bearing renders, not sample previews |
 
 ---
 
@@ -97,8 +97,8 @@ the sets page wrote its own narrower version; a single builder makes the omissio
 impossible. Keep it a plain function (not a hook) so the server harness path and tests can call
 it without React.
 
-**KTD2 — The gallery renders tenant brand but keeps sample *content*.**
-The gallery's job is "what does a Match Result card look like *for us*". So it passes brand,
+**KTD2 — The gallery renders tenant brand but keeps sample _content_.**
+The gallery's job is "what does a Match Result card look like _for us_". So it passes brand,
 hashtag and colours, but keeps `sampleCardInput(kind)`'s placeholder stats and names — a
 gallery thumbnail is not a real card. This reverses the current `applyPackData` docstring,
 which names "gallery previews" as an intentional sample-default case; that comment must be
@@ -174,6 +174,7 @@ call site can omit a field.
 **Dependencies:** none
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/pack-card-data.ts` (new)
 - `artifacts/cricket-club/src/lib/pack-card-data.test.ts` (new)
 - `artifacts/cricket-club/src/components/share-card-modal.tsx` (modify — delegate to the new builder)
@@ -192,6 +193,7 @@ mapping and the `imagesOverride` "only when non-empty" rule — both exist to ke
 byte-identical.
 
 **Test scenarios** (`pack-card-data.test.ts`):
+
 - Given a full bundle, returns every `PackCardData` field populated from it (brand name,
   tagline, logoUrl, primaryColour, backgroundColour, juniorsColour, hashtag, sponsors,
   presentingSponsorName, photoUrl, photoTransform, photoPlacement)
@@ -216,12 +218,14 @@ and any modal tests still pass with no assertion edits.
 **Dependencies:** U1
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-social-create.tsx` (modify)
 - `artifacts/cricket-club/src/pages/admin-social-studio.tsx` (modify)
 - `artifacts/cricket-club/src/pages/admin-social-sets.tsx` (modify)
 - `artifacts/cricket-club/src/lib/pack-render.ts` (modify — docstring only)
 
 **Approach:**
+
 - **D1 / create page:** the page currently has only `useBrand()`. It needs the social-settings
   bundle for hashtag + sponsors, matching what the modal reads. Load it with the same
   `useGetSocialSettings()` hook the modal (~line 99), studio (~line 122) and sets page
@@ -244,11 +248,12 @@ and any modal tests still pass with no assertion edits.
 `buildPackData` is assembled; `admin-social-sets.tsx` for the per-slide theme pattern.
 
 **Test scenarios:**
-- Composer preview for a tenant whose brand is *not* Halls Head renders that tenant's club
+
+- Composer preview for a tenant whose brand is _not_ Halls Head renders that tenant's club
   name and hashtag, and contains none of `HALLS HEAD` / `#HALLSHEAD` / `EST 1991` / `eSA Sport`
 - Composer preview applies the tenant's `primaryColour` as the pack accent (not Broadcast-Dark gold)
 - Gallery thumbnail for a non-Halls-Head tenant renders that tenant's club name and accent
-- Gallery thumbnail still renders sample card *content* (placeholder stats/names present) — KTD2
+- Gallery thumbnail still renders sample card _content_ (placeholder stats/names present) — KTD2
 - Carousel slide render includes the tenant's `primaryColour`-derived accent (the D3 regression:
   assert a slide built through the new path differs from one built with `{name, logoUrl}` only)
 - A tenant with no configured hashtag renders no hashtag rather than another club's (R5)
@@ -270,6 +275,7 @@ safe by construction (defence in depth behind U2).
 attributable)
 
 **Files** (all under `artifacts/cricket-club/src/lib/pack-templates/broadcast-dark/`):
+
 - `fragments.ts` — `clubName` ("HALLS HEAD"), `clubTagline` ("CRICKET CLUB · EST 1991")
 - `new-signing.ts`, `big-moment.ts`, `century.ts`, `debut.ts`, `five-for.ts`, `record.ts`,
   `milestone.ts`, `new-cap.ts`, `premiership.ts`, `weekend-wrap.ts`, `countdown.ts`,
@@ -278,16 +284,18 @@ attributable)
   `club-leaderboard-wickets.ts` — `clubHashtag`, `hashtags`, `hashtagsExtra`, `sponsorPresentedBy`
 
 Also prose samples naming Halls Head:
+
 - `milestone.ts` (~line 75), `weekend-wrap.ts` (~line 104), `ladder.ts` (~line 106),
   `match-result.ts` (~lines 119, 122), `big-moment.ts` (~line 74)
 - `artifacts/cricket-club/src/lib/sample-card-inputs.ts` (~line 211 — ladder row team name)
 
 Tests to update:
+
 - `artifacts/cricket-club/src/lib/pack-render.test.ts` (~lines 69, 300–301, 361–363 assert the
   Halls Head samples ARE present — these must flip to the neutral placeholders)
 - `artifacts/cricket-club/src/lib/pack-templates/broadcast-dark.test.ts` (check for sample assertions)
 
-**Approach:** Mechanical substitution to neutral placeholders per KTD3. Keep string *shape*
+**Approach:** Mechanical substitution to neutral placeholders per KTD3. Keep string _shape_
 (length, separators like `·`) close to the originals so layouts that were tuned against them
 do not reflow in the gallery. Do not touch the HTML layout strings — only `textField(...)`
 sample arguments and `sample-card-inputs.ts` data.
@@ -298,6 +306,7 @@ identical") before and after and confirm it is untouched; HH renders through rea
 sample-only change must not move it.
 
 **Test scenarios:**
+
 - Every template's sample defaults contain none of: `Halls Head`, `HALLS HEAD`, `HALLSHEAD`,
   `EST 1991`, `eSA Sport`, `PEELPREMIERLEAGUE` (assert across the whole pack manifest, so a
   future template cannot reintroduce one)
@@ -320,10 +329,12 @@ literal set returns only comments, never `textField` samples.
 **Dependencies:** U2, U3
 
 **Files:**
+
 - `artifacts/cricket-club/src/lib/pack-card-mounts.test.ts` (new — source-scan guard)
 - `artifacts/cricket-club/src/lib/pack-render.test.ts` (extend)
 
 **Approach:**
+
 - **Source-scan test (KTD4):** scan `artifacts/cricket-club/src/**` for `<PackCard` JSX mounts
   and assert each includes a `data` prop. Maintain an explicit, empty-by-default allowlist so a
   deliberate sample-only mount must be justified in code review rather than slipping through.
@@ -333,6 +344,7 @@ literal set returns only comments, never `textField` samples.
   data-bearing renders.
 
 **Test scenarios:**
+
 - Guard fails (with the file path in the message) when given a fixture mount missing `data`
 - Guard passes against the real `src/` tree after U2 lands
 - Guard's allowlist mechanism works — an allowlisted path does not fail
@@ -346,12 +358,14 @@ literal set returns only comments, never `textField` samples.
 ## Scope Boundaries
 
 ### In scope
+
 - Wiring tenant data into the two unwired and one narrowed `PackCard` call sites
 - Extracting the shared `PackCardData` builder
 - Neutralising Broadcast-Dark template sample literals
 - The regression guard
 
 ### Non-goals
+
 - Any change to `applyPackData`'s resolution semantics (`override > input > bind`) or token
   precedence (`junior > override > theme > brand`)
 - Any change to Halls Head's rendered output
@@ -391,13 +405,13 @@ explicitly out of scope per the user.
 
 ## Risks & Dependencies
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| U3 accidentally shifts Halls Head's render (R8 breach) | High — HH is the demo tenant | Sample-only edits; HH renders through real data. Run the existing parity test before and after; it must stay green with no assertion edits |
-| Neutral samples reflow gallery layouts tuned to Halls Head string lengths | Medium — cosmetic | KTD3 keeps placeholder shape/length close to the originals; U3 test scenarios check all three sizes for overflow |
-| The create page needs the settings bundle it does not currently load | Medium — could add a loading state to a page that had none | Reuse the exact query the modal and sets page already use; render the preview with brand-only data until the bundle resolves rather than flashing sample literals |
-| Source-scan guard is brittle against formatting (multi-line JSX, prop spreading) | Low — false failures | Match on the mount element across lines rather than a single-line regex; allowlist escape hatch exists |
-| Gallery now issues per-thumbnail brand-aware renders | Low — 20 thumbnails | Tokens are memoised in `PackCard`; brand object is stable per tenant. Watch for a new render loop if the builder returns a fresh object identity each render — memoise the builder result |
+| Risk                                                                             | Impact                                                     | Mitigation                                                                                                                                                                                |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U3 accidentally shifts Halls Head's render (R8 breach)                           | High — HH is the demo tenant                               | Sample-only edits; HH renders through real data. Run the existing parity test before and after; it must stay green with no assertion edits                                                |
+| Neutral samples reflow gallery layouts tuned to Halls Head string lengths        | Medium — cosmetic                                          | KTD3 keeps placeholder shape/length close to the originals; U3 test scenarios check all three sizes for overflow                                                                          |
+| The create page needs the settings bundle it does not currently load             | Medium — could add a loading state to a page that had none | Reuse the exact query the modal and sets page already use; render the preview with brand-only data until the bundle resolves rather than flashing sample literals                         |
+| Source-scan guard is brittle against formatting (multi-line JSX, prop spreading) | Low — false failures                                       | Match on the mount element across lines rather than a single-line regex; allowlist escape hatch exists                                                                                    |
+| Gallery now issues per-thumbnail brand-aware renders                             | Low — 20 thumbnails                                        | Tokens are memoised in `PackCard`; brand object is stable per tenant. Watch for a new render loop if the builder returns a fresh object identity each render — memoise the builder result |
 
 **Note:** the last row is a real trap. `PackCard`'s `html` memo depends on `data`; a builder
 returning a new object every render will defeat it. Memoise the built `PackCardData` at each
@@ -448,7 +462,7 @@ sample literals. The studio gallery already loads `bundle` but currently renders
 without waiting on it — after U2 the 20 thumbnails must not flash neutral placeholders before
 brand arrives. Resolve both during U2 by observing actual load behaviour.
 
-**Q2 — Should the gallery thumbnail use the tenant's *default* theme or no theme?** KTD2 says
+**Q2 — Should the gallery thumbnail use the tenant's _default_ theme or no theme?** KTD2 says
 pass the tenant's default so thumbnails predict the composer output. If no default theme is
 configured, brand-derived tokens are the baseline. Confirm during U2 that `defaultByKind`
 (already computed in the studio page) is the right source.

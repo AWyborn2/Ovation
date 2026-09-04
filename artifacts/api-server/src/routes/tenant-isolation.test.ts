@@ -49,8 +49,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
   const createdLifeMemberIds: number[] = [];
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-tenant-isolation";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-tenant-isolation";
 
     const [tenant2] = await db
       .insert(tenantsTable)
@@ -130,20 +129,14 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     await db.delete(honourBoardsTable).where(eq(honourBoardsTable.tenantId, tenant2Id));
     await db.delete(sponsorsTable).where(eq(sponsorsTable.tenantId, tenant2Id));
     await db.delete(cardThemesTable).where(eq(cardThemesTable.tenantId, tenant2Id));
-    await db
-      .delete(juniorParticipantsTable)
-      .where(eq(juniorParticipantsTable.tenantId, tenant2Id));
+    await db.delete(juniorParticipantsTable).where(eq(juniorParticipantsTable.tenantId, tenant2Id));
     // Rows this suite never inserts but a READ creates: GET /social-settings
     // calls ensureSettings, which lazily provisions the tenant's settings
     // singleton and seeds its default caption templates. Both FK to tenants, so
     // leaving them behind makes the tenant delete below fail — and the failure
     // surfaces as an opaque teardown error, not as a named test.
-    await db
-      .delete(captionTemplatesTable)
-      .where(eq(captionTemplatesTable.tenantId, tenant2Id));
-    await db
-      .delete(socialSettingsTable)
-      .where(eq(socialSettingsTable.tenantId, tenant2Id));
+    await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenant2Id));
+    await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenant2Id));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
     await db.delete(adminsTable).where(eq(adminsTable.id, adminT1Id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant2Id));
@@ -152,10 +145,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
   // ---- Reads: tenant 1 must not see tenant 2's rows, and vice versa ----------
 
   it("life-members: tenant 2's row is hidden from tenant 1 and visible to tenant 2", async () => {
-    const asT1 = await request(app)
-      .get("/api/life-members")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/life-members").set("x-tenant-id", "1").expect(200);
     expect(asT1.body.some((r: { name: string }) => r.name === T2_LM_NAME)).toBe(false);
 
     const asT2 = await request(app)
@@ -166,10 +156,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
   });
 
   it("honour-boards: tenant 2's board is hidden from tenant 1 and visible to tenant 2", async () => {
-    const asT1 = await request(app)
-      .get("/api/honour-boards")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/honour-boards").set("x-tenant-id", "1").expect(200);
     expect(asT1.body.some((r: { key: string }) => r.key === T2_HB_KEY)).toBe(false);
 
     const asT2 = await request(app)
@@ -180,10 +167,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
   });
 
   it("sponsors: tenant 2's sponsor is hidden from tenant 1 and visible to tenant 2", async () => {
-    const asT1 = await request(app)
-      .get("/api/sponsors")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/sponsors").set("x-tenant-id", "1").expect(200);
     expect(asT1.body.some((r: { name: string }) => r.name === T2_SPONSOR_NAME)).toBe(false);
 
     const asT2 = await request(app)
@@ -204,21 +188,18 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
    * correctly scoped; the leak was only on the bundle's read path.
    */
   it("social settings: activeSponsors never carries another tenant's sponsor", async () => {
-    const asT1 = await request(app)
-      .get("/api/social-settings")
-      .set("x-tenant-id", "1")
-      .expect(200);
-    expect(
-      asT1.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME),
-    ).toBe(false);
+    const asT1 = await request(app).get("/api/social-settings").set("x-tenant-id", "1").expect(200);
+    expect(asT1.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME)).toBe(
+      false,
+    );
 
     const asT2 = await request(app)
       .get("/api/social-settings")
       .set("x-tenant-id", String(tenant2Id))
       .expect(200);
-    expect(
-      asT2.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME),
-    ).toBe(true);
+    expect(asT2.body.activeSponsors.some((s: { name: string }) => s.name === T2_SPONSOR_NAME)).toBe(
+      true,
+    );
   });
 
   // Phase 3 U2 regression: PATCH/DELETE on sponsors/card-themes previously had
@@ -243,10 +224,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
   });
 
   it("card-themes: tenant 2's theme is hidden from tenant 1 and visible to tenant 2", async () => {
-    const asT1 = await request(app)
-      .get("/api/card-themes")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/card-themes").set("x-tenant-id", "1").expect(200);
     expect(asT1.body.some((r: { name: string }) => r.name === T2_THEME_NAME)).toBe(false);
 
     const asT2 = await request(app)
@@ -275,10 +253,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
   });
 
   it("juniors players: tenant 2's participant is hidden from tenant 1 and visible to tenant 2", async () => {
-    const asT1 = await request(app)
-      .get("/api/juniors/players")
-      .set("x-tenant-id", "1")
-      .expect(200);
+    const asT1 = await request(app).get("/api/juniors/players").set("x-tenant-id", "1").expect(200);
     expect(
       asT1.body.some((r: { displayName?: string }) => r.displayName === T2_PARTICIPANT_NAME),
     ).toBe(false);

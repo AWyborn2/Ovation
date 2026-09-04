@@ -45,12 +45,7 @@ export default function TabLayout() {
           textTransform: "uppercase",
         },
         tabBarBackground: () => (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: colors.card },
-            ]}
-          />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
         ),
         headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: {
@@ -67,9 +62,7 @@ export default function TabLayout() {
         options={{
           title: "DASHBOARD",
           tabBarLabel: "Home",
-          tabBarIcon: ({ color }) => (
-            <Feather name="home" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
           headerRight: () => <HelpButton />,
         }}
       />
@@ -78,9 +71,7 @@ export default function TabLayout() {
         options={{
           title: "PLAYERS",
           tabBarLabel: "Players",
-          tabBarIcon: ({ color }) => (
-            <Feather name="users" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -88,9 +79,7 @@ export default function TabLayout() {
         options={{
           title: "MATCHES",
           tabBarLabel: "Matches",
-          tabBarIcon: ({ color }) => (
-            <Feather name="clipboard" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="clipboard" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -98,9 +87,7 @@ export default function TabLayout() {
         options={{
           title: "HONOUR BOARDS",
           tabBarLabel: "Honours",
-          tabBarIcon: ({ color }) => (
-            <Feather name="award" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="award" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -108,9 +95,7 @@ export default function TabLayout() {
         options={{
           title: "GRADES",
           tabBarLabel: "Grades",
-          tabBarIcon: ({ color }) => (
-            <Feather name="layers" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="layers" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -118,9 +103,7 @@ export default function TabLayout() {
         options={{
           title: "CAPTAIN VOTING",
           tabBarLabel: "Captain",
-          tabBarIcon: ({ color }) => (
-            <Feather name="check-square" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="check-square" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -129,9 +112,7 @@ export default function TabLayout() {
           title: "JUNIORS",
           tabBarLabel: "Juniors",
           tabBarActiveTintColor: "#059669",
-          tabBarIcon: ({ color }) => (
-            <Feather name="star" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="star" size={22} color={color} />,
         }}
       />
     </Tabs>

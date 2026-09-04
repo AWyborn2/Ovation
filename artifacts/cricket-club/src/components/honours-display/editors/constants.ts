@@ -11,7 +11,7 @@ export const FONT_OPTIONS: { label: string; value: string }[] = [
   { label: "Serif — Georgia", value: 'Georgia, "Times New Roman", serif' },
   { label: "Sans — System", value: "system-ui, -apple-system, sans-serif" },
   { label: "Condensed — Arial Narrow", value: '"Arial Narrow", Arial, sans-serif' },
-  { label: "Slab — Rockwell", value: 'Rockwell, Georgia, serif' },
+  { label: "Slab — Rockwell", value: "Rockwell, Georgia, serif" },
   { label: "Mono — Courier", value: '"Courier New", monospace' },
 ];
 

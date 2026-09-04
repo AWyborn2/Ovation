@@ -51,14 +51,12 @@ export const DEFAULT_TEMPLATES: { engine: string; platform: string; template: st
   {
     engine: "milestone",
     platform: "twitter",
-    template:
-      "🏆 {player.name} • {stat.tier} • {stat.value} {stat.label} {app.link} {hashtag}",
+    template: "🏆 {player.name} • {stat.tier} • {stat.value} {stat.label} {app.link} {hashtag}",
   },
   {
     engine: "roundup",
     platform: "instagram",
-    template:
-      "Round-up — top performers this weekend 👇\n\n{app.link}\n\n{hashtag} #ClubCricket",
+    template: "Round-up — top performers this weekend 👇\n\n{app.link}\n\n{hashtag} #ClubCricket",
   },
   {
     engine: "roundup",
@@ -96,7 +94,11 @@ export async function ensureSettings(tenantId: number) {
       .insert(captionTemplatesTable)
       .values({ ...t, tenantId })
       .onConflictDoNothing({
-        target: [captionTemplatesTable.tenantId, captionTemplatesTable.engine, captionTemplatesTable.platform],
+        target: [
+          captionTemplatesTable.tenantId,
+          captionTemplatesTable.engine,
+          captionTemplatesTable.platform,
+        ],
       });
   }
   return settings;

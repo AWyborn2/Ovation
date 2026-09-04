@@ -18,10 +18,7 @@ export function useInvalidateAdmin() {
   return () => qc.invalidateQueries({ queryKey: getGetCurrentAdminQueryKey() });
 }
 
-export function handleAdminMutationError(
-  e: unknown,
-  onAuthFailed?: () => void,
-): string | null {
+export function handleAdminMutationError(e: unknown, onAuthFailed?: () => void): string | null {
   const status = (e as { status?: number } | null)?.status;
   if (status === 401) {
     onAuthFailed?.();

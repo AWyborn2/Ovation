@@ -6,8 +6,7 @@ import { resolveTenantId, DEFAULT_TENANT_ID } from "../middlewares/tenant-contex
 
 function reqWithHeader(value?: string): Request {
   return {
-    header: (name: string) =>
-      name.toLowerCase() === "x-tenant-id" ? value : undefined,
+    header: (name: string) => (name.toLowerCase() === "x-tenant-id" ? value : undefined),
   } as unknown as Request;
 }
 
@@ -151,9 +150,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
 
   it("still resolves Halls Head's own seeded brand, unaffected by the default swap (U5 regression guard)", () => {
     expect(buildTenantBrand(hhTenantRow, hhClubRow)).toEqual(HALLS_HEAD_WIRE_BRAND);
-    expect(buildTenantBrand(hhTenantRow, hhClubRow).logoUrl).toBe(
-      HALLS_HEAD_BRAND.logoUrl,
-    );
+    expect(buildTenantBrand(hhTenantRow, hhClubRow).logoUrl).toBe(HALLS_HEAD_BRAND.logoUrl);
   });
 
   it("the admin-uploaded tenant logo wins over the clubs-register seed (blank-crest bug)", () => {
@@ -173,10 +170,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
   });
 
   it("an empty-string tenant logo falls back to the register seed, never blank", () => {
-    const brand = buildTenantBrand(
-      { ...hhTenantRow, logoUrl: "" },
-      hhClubRow,
-    );
+    const brand = buildTenantBrand({ ...hhTenantRow, logoUrl: "" }, hhClubRow);
     expect(brand.logoUrl).toBe(HALLS_HEAD_BRAND.logoUrl);
     expect(brand.logoUrl128).toBe(HALLS_HEAD_BRAND.logoUrl128);
   });
@@ -220,9 +214,7 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
 
   it("carries the tenant's tagline through, and null when unset (no cross-tenant leak) (A9)", () => {
     // Halls Head's seeded tagline survives the merge.
-    expect(buildTenantBrand(hhTenantRow, hhClubRow).tagline).toBe(
-      "CRICKET CLUB · EST 1991",
-    );
+    expect(buildTenantBrand(hhTenantRow, hhClubRow).tagline).toBe("CRICKET CLUB · EST 1991");
     // A tenant that has set no tagline resolves to null — never another club's.
     const noTagline = buildTenantBrand(
       {

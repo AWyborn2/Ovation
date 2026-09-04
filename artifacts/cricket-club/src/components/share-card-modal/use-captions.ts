@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createTrackedLink, type SocialSettingsBundle } from "@workspace/api-client-react";
 import type { ShareCardInput } from "@/lib/share-card";
-import {
-  renderCaption,
-  truncateForPlatform,
-  type Platform,
-} from "@/lib/captions";
+import { renderCaption, truncateForPlatform, type Platform } from "@/lib/captions";
 import { PLATFORMS, type EngineKey } from "./constants";
 
 // Owns the tracked-link slug, the per-platform caption drafts (rebuilt from the
@@ -63,9 +59,7 @@ export function useCaptions({
   }, [clubUrl, appPath, effectiveSlug]);
 
   const templateFor = (p: Platform): string => {
-    const tpl = bundle?.captionTemplates.find(
-      (t) => t.engine === engine && t.platform === p,
-    );
+    const tpl = bundle?.captionTemplates.find((t) => t.engine === engine && t.platform === p);
     return tpl?.template ?? `{player.name} • {stat.value} {stat.label} ${appLink} ${hashtag}`;
   };
 

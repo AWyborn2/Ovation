@@ -44,14 +44,8 @@ import {
   MILESTONE_FILTERS,
   MILESTONES_PREVIEW,
 } from "@/components/honour-boards/constants";
-import {
-  SummaryStat,
-  BoardView,
-  QuickLink,
-} from "@/components/honour-boards/board-cards";
-import {
-  DatedMilestoneCard,
-} from "@/components/honour-boards/milestone-cards";
+import { SummaryStat, BoardView, QuickLink } from "@/components/honour-boards/board-cards";
+import { DatedMilestoneCard } from "@/components/honour-boards/milestone-cards";
 import { SearchResultCard } from "@/components/honour-boards/search-result-card";
 
 export type { PremiershipCount } from "@/components/honour-boards/types";
@@ -127,9 +121,7 @@ export default function HonourBoards() {
 
   const filteredMilestones = useMemo(() => {
     const items = milestonesBoard?.items ?? [];
-    return milestoneKind === "all"
-      ? items
-      : items.filter((i) => i.kind === milestoneKind);
+    return milestoneKind === "all" ? items : items.filter((i) => i.kind === milestoneKind);
   }, [milestonesBoard, milestoneKind]);
   const visibleMilestones = milestonesExpanded
     ? filteredMilestones
@@ -142,21 +134,24 @@ export default function HonourBoards() {
     isLoading: isSearchLoading,
     isError: isSearchError,
     refetch: refetchSearch,
-  } = useListPlayers(
-    searchParams,
-    {
-      query: {
-        enabled: activeTab === "search" && searchTerm.trim().length > 0,
-        queryKey: getListPlayersQueryKey(searchParams),
-      },
+  } = useListPlayers(searchParams, {
+    query: {
+      enabled: activeTab === "search" && searchTerm.trim().length > 0,
+      queryKey: getListPlayersQueryKey(searchParams),
     },
-  );
+  });
 
   return (
     <div className="space-y-6">
       {/* Hero header */}
       <div className="bg-card border border-border rounded-md p-6 md:p-8 flex items-center gap-4 md:gap-6 shadow-lg">
-        <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-16 md:h-20 w-auto drop-shadow-lg" />
+        <img
+          loading="lazy"
+          decoding="async"
+          src={logoUrl}
+          alt={brand.name}
+          className="h-16 md:h-20 w-auto drop-shadow-lg"
+        />
         <div>
           <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary m-0 leading-tight">
             {brand.name} — Honour Boards
@@ -180,9 +175,24 @@ export default function HonourBoards() {
 
       {/* Quick links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <QuickLink href="/matches" icon={ClipboardList} title="Matches" desc="Browse senior games and full scorecards." />
-        <QuickLink href="/premierships" icon={Crown} title="Premierships" desc="Senior honour boards and winning rosters." />
-        <QuickLink href="/players" icon={Users} title="Players & Leaders" desc="Runs, wickets and games leaderboards." />
+        <QuickLink
+          href="/matches"
+          icon={ClipboardList}
+          title="Matches"
+          desc="Browse senior games and full scorecards."
+        />
+        <QuickLink
+          href="/premierships"
+          icon={Crown}
+          title="Premierships"
+          desc="Senior honour boards and winning rosters."
+        />
+        <QuickLink
+          href="/players"
+          icon={Users}
+          title="Players & Leaders"
+          desc="Runs, wickets and games leaderboards."
+        />
       </div>
 
       {/* Tabs */}
@@ -191,7 +201,10 @@ export default function HonourBoards() {
         const activeHonourBoard = HONOUR_BOARD_ITEMS.find((h) => h.tab === activeTab);
         return (
           <div className="bg-card border border-border rounded-md p-2 flex flex-wrap items-center gap-2 shadow-md">
-            <button onClick={() => setActiveTab("milestones")} className={tabClass(activeTab === "milestones")}>
+            <button
+              onClick={() => setActiveTab("milestones")}
+              className={tabClass(activeTab === "milestones")}
+            >
               Milestones
             </button>
 
@@ -220,7 +233,9 @@ export default function HonourBoards() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className={tabClass(!!activeHonourBoard)}>
-                  {activeHonourBoard ? `Honour Boards: ${activeHonourBoard.label}` : "Honour Boards"}
+                  {activeHonourBoard
+                    ? `Honour Boards: ${activeHonourBoard.label}`
+                    : "Honour Boards"}
                   <ChevronDown className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
@@ -240,11 +255,17 @@ export default function HonourBoards() {
             <button onClick={() => setActiveTab("caps")} className={tabClass(activeTab === "caps")}>
               A Grade Caps
             </button>
-            <button onClick={() => setActiveTab("life-members")} className={tabClass(activeTab === "life-members")}>
+            <button
+              onClick={() => setActiveTab("life-members")}
+              className={tabClass(activeTab === "life-members")}
+            >
               Life Members
             </button>
 
-            <button onClick={() => setActiveTab("search")} className={tabClass(activeTab === "search")}>
+            <button
+              onClick={() => setActiveTab("search")}
+              className={tabClass(activeTab === "search")}
+            >
               Search
             </button>
           </div>
@@ -254,45 +275,56 @@ export default function HonourBoards() {
       {/* Scope control — only shown for leaderboard (BOARDS) tabs, including
           Games. Hidden for milestones, search, and the curated honour tabs
           (caps / life-members / awards / team-of-decade / committee / records). */}
-      {activeTab !== "milestones" && activeTab !== "search" && activeTab !== "caps" && activeTab !== "life-members" && activeTab !== "awards" && activeTab !== "team-of-decade" && activeTab !== "committee" && activeTab !== "records" && (
-        <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-          <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
-          <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
-            <button
-              onClick={() => setScope("career")}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-                scope === "career" ? "bg-primary text-primary-foreground" : "text-primary hover:bg-primary/15"
-              }`}
-            >
-              Career
-            </button>
-            <button
-              onClick={() => setScope("by-grade")}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-l-2 border-primary ${
-                scope === "by-grade" ? "bg-primary text-primary-foreground" : "text-primary hover:bg-primary/15"
-              }`}
-            >
-              By Grade
-            </button>
-          </div>
-          {scope === "by-grade" && (
-            <div className="flex items-center gap-3 self-start">
-              {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
-              <select
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+      {activeTab !== "milestones" &&
+        activeTab !== "search" &&
+        activeTab !== "caps" &&
+        activeTab !== "life-members" &&
+        activeTab !== "awards" &&
+        activeTab !== "team-of-decade" &&
+        activeTab !== "committee" &&
+        activeTab !== "records" && (
+          <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
+            <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
+            <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
+              <button
+                onClick={() => setScope("career")}
+                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                  scope === "career"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-primary hover:bg-primary/15"
+                }`}
               >
-                {grades.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
+                Career
+              </button>
+              <button
+                onClick={() => setScope("by-grade")}
+                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-l-2 border-primary ${
+                  scope === "by-grade"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-primary hover:bg-primary/15"
+                }`}
+              >
+                By Grade
+              </button>
             </div>
-          )}
-        </div>
-      )}
+            {scope === "by-grade" && (
+              <div className="flex items-center gap-3 self-start">
+                {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
+                <select
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                  className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+                >
+                  {grades.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
 
       {/* Tab content */}
       {activeTab === "milestones" ? (
@@ -333,7 +365,8 @@ export default function HonourBoards() {
             </div>
             {filteredMilestones.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">
-                {!milestonesBoard || (milestonesBoard.items.length === 0 && !milestonesBoard.windowStart)
+                {!milestonesBoard ||
+                (milestonesBoard.items.length === 0 && !milestonesBoard.windowStart)
                   ? "No dated milestones yet — they appear as match scorecards are imported."
                   : milestoneKind === "all"
                     ? "No milestones recorded yet."
@@ -361,7 +394,6 @@ export default function HonourBoards() {
               </div>
             )}
           </div>
-
         </div>
       ) : activeTab === "caps" ? (
         <CapRegisterTab />
@@ -392,10 +424,7 @@ export default function HonourBoards() {
           ) : isSearchLoading ? (
             <LoadingState label="Searching…" />
           ) : !searchResults?.players?.length ? (
-            <EmptyState
-              title="No players found"
-              message={`No players matched "${searchTerm}".`}
-            />
+            <EmptyState title="No players found" message={`No players matched "${searchTerm}".`} />
           ) : (
             <div className="grid gap-3">
               {searchResults.players.map((p) => (
@@ -419,7 +448,11 @@ export default function HonourBoards() {
       <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-card border border-border rounded-md py-4 border-t-4 border-t-primary">
         Last updated:{" "}
         <span className="text-primary font-bold">
-          {new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
+          {new Date().toLocaleDateString("en-AU", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
         </span>{" "}
         • {brand.name}
       </div>

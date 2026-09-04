@@ -30,9 +30,7 @@ export function getPool(): pg.Pool {
   if (poolInstance) return poolInstance;
   const url = process.env.DATABASE_URL;
   if (!url) {
-    throw new Error(
-      "DATABASE_URL must be set. Did you forget to provision a database?",
-    );
+    throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
   }
   poolInstance = new Pool({
     connectionString: url,

@@ -56,9 +56,7 @@ export const loadCardAssets = async (
   const savedBg = opts.layout?.find(
     (l) => l.kind === "element" && l.id === "background" && !!l.url,
   );
-  const customBgImg = savedBg?.url
-    ? await loadImage(savedBg.url).catch(() => null)
-    : null;
+  const customBgImg = savedBg?.url ? await loadImage(savedBg.url).catch(() => null) : null;
   const customBg = customBgImg
     ? {
         img: customBgImg,
@@ -69,16 +67,11 @@ export const loadCardAssets = async (
     : null;
   const placement: PhotoPlacement = opts.photoPlacement ?? "headshot";
   const photoUrl =
-    opts.photoUrl !== undefined
-      ? opts.photoUrl
-      : "photoUrl" in input
-        ? input.photoUrl
-        : null;
+    opts.photoUrl !== undefined ? opts.photoUrl : "photoUrl" in input ? input.photoUrl : null;
   const loadedPhoto = photoUrl ? await loadImage(photoUrl).catch(() => null) : null;
   const featureImg = placement === "feature" ? loadedPhoto : null;
   const photoImg = placement === "feature" ? null : loadedPhoto;
-  const logoSrc =
-    opts.theme?.logoUrl || opts.brand?.logoUrl || DEFAULT_BRAND.logoUrl || "";
+  const logoSrc = opts.theme?.logoUrl || opts.brand?.logoUrl || DEFAULT_BRAND.logoUrl || "";
   const logoImg = logoSrc ? await loadImage(logoSrc).catch(() => null) : null;
   return { bgImg, featureImg, photoImg, logoImg, customBg };
 };
@@ -221,9 +214,7 @@ export const buildLayers = (
   const pad = Math.round(80 * scale);
   const topY = Math.round(80 * scale);
   const logoH = Math.round(110 * scale);
-  const headerEnd = logoImg
-    ? topY + logoH + Math.round(40 * scale)
-    : topY + Math.round(80 * scale);
+  const headerEnd = logoImg ? topY + logoH + Math.round(40 * scale) : topY + Math.round(80 * scale);
   add({
     id: "header",
     editKind: "element",
@@ -324,7 +315,13 @@ export const buildLayers = (
             const svg = iconSvgString(tierIndex, GOLD, 256, 1.75);
             const iconImg = await loadImage(svgToDataUrl(svg));
             const iconSize = Math.round(52 * scale);
-            ctx.drawImage(iconImg, miniCx - iconSize / 2, miniCy - iconSize / 2, iconSize, iconSize);
+            ctx.drawImage(
+              iconImg,
+              miniCx - iconSize / 2,
+              miniCy - iconSize / 2,
+              iconSize,
+              iconSize,
+            );
           } catch {}
         } else {
           ctx.beginPath();
@@ -338,7 +335,13 @@ export const buildLayers = (
             const svg = iconSvgString(tierIndex, GOLD, 256, 1.75);
             const iconImg = await loadImage(svgToDataUrl(svg));
             const iconSize = Math.round(150 * scale);
-            ctx.drawImage(iconImg, W / 2 - iconSize / 2, badgeCy - iconSize / 2, iconSize, iconSize);
+            ctx.drawImage(
+              iconImg,
+              W / 2 - iconSize / 2,
+              badgeCy - iconSize / 2,
+              iconSize,
+              iconSize,
+            );
           } catch {}
         }
       },
@@ -348,7 +351,14 @@ export const buildLayers = (
     const pillTop = y;
     const pillSide = Math.round(24 * scale);
     const pillMaxW = W - Math.round(160 * scale);
-    const pillFp = fitFontSize(m, tierLabel.toUpperCase(), pillMaxW - pillSide * 2, 800, Math.round(22 * scale), CARD_FONT);
+    const pillFp = fitFontSize(
+      m,
+      tierLabel.toUpperCase(),
+      pillMaxW - pillSide * 2,
+      800,
+      Math.round(22 * scale),
+      CARD_FONT,
+    );
     m.font = `800 ${pillFp}px ${CARD_FONT}`;
     const pillW = Math.min(pillMaxW, m.measureText(tierLabel.toUpperCase()).width + pillSide * 2);
     const pillH = Math.round(46 * scale);
@@ -384,7 +394,14 @@ export const buildLayers = (
         ctx.fillStyle = TEXT_LIGHT;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        const px = fitFontSize(ctx, nameUpper, W - mPad * 2, 900, Math.round(64 * scale), CARD_FONT);
+        const px = fitFontSize(
+          ctx,
+          nameUpper,
+          W - mPad * 2,
+          900,
+          Math.round(64 * scale),
+          CARD_FONT,
+        );
         const lh = Math.round(px * 1.08);
         const lines = wrapText(ctx, nameUpper, W - mPad * 2);
         lines.forEach((line, i) => ctx.fillText(line, W / 2, nameTop + i * lh));
@@ -405,9 +422,31 @@ export const buildLayers = (
       resizable: true,
       numeric: true,
       draw: (ctx) =>
-        drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, currentValue, milestoneLabel, scale, p, true),
+        drawStatTile(
+          ctx,
+          W / 2 - tileW / 2,
+          tileTop,
+          tileW,
+          tileH,
+          currentValue,
+          milestoneLabel,
+          scale,
+          p,
+          true,
+        ),
       drawCount: (ctx, frac) =>
-        drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, countValue(currentValue, frac), milestoneLabel, scale, p, true),
+        drawStatTile(
+          ctx,
+          W / 2 - tileW / 2,
+          tileTop,
+          tileW,
+          tileH,
+          countValue(currentValue, frac),
+          milestoneLabel,
+          scale,
+          p,
+          true,
+        ),
     });
     y = tileTop + tileH + Math.round(28 * scale);
 
@@ -426,7 +465,11 @@ export const buildLayers = (
           ctx.font = `500 ${Math.round(24 * scale)}px ${CARD_FONT}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
-          ctx.fillText(`Past the ${fmt(threshold)} ${milestoneLabel.toLowerCase()} mark`, W / 2, capTop);
+          ctx.fillText(
+            `Past the ${fmt(threshold)} ${milestoneLabel.toLowerCase()} mark`,
+            W / 2,
+            capTop,
+          );
         },
       });
     }
@@ -459,7 +502,14 @@ export const buildLayers = (
         ctx.fillStyle = TEXT_LIGHT;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        const px = fitFontSize(ctx, nameUpper, W - padP * 2, 900, Math.round(78 * scale), CARD_FONT);
+        const px = fitFontSize(
+          ctx,
+          nameUpper,
+          W - padP * 2,
+          900,
+          Math.round(78 * scale),
+          CARD_FONT,
+        );
         const lh = Math.round(px * 1.05);
         const lines = wrapText(ctx, nameUpper, W - padP * 2);
         lines.forEach((l, i) => ctx.fillText(l, W / 2, nameTop + i * lh));
@@ -471,9 +521,19 @@ export const buildLayers = (
       const pillTop = y;
       const pillSide = Math.round(24 * scale);
       const pillMaxW = W - Math.round(160 * scale);
-      const pillFp = fitFontSize(m, gradesPlayed.toUpperCase(), pillMaxW - pillSide * 2, 800, Math.round(22 * scale), CARD_FONT);
+      const pillFp = fitFontSize(
+        m,
+        gradesPlayed.toUpperCase(),
+        pillMaxW - pillSide * 2,
+        800,
+        Math.round(22 * scale),
+        CARD_FONT,
+      );
       m.font = `800 ${pillFp}px ${CARD_FONT}`;
-      const pillW = Math.min(pillMaxW, m.measureText(gradesPlayed.toUpperCase()).width + pillSide * 2);
+      const pillW = Math.min(
+        pillMaxW,
+        m.measureText(gradesPlayed.toUpperCase()).width + pillSide * 2,
+      );
       const pillH = Math.round(46 * scale);
       add({
         id: "grades",
@@ -538,7 +598,18 @@ export const buildLayers = (
           numeric: true,
           draw: (ctx) => drawStatTile(ctx, tx, ty, tileW, tileH, s.value, s.label, scale, p, false),
           drawCount: (ctx, frac) =>
-            drawStatTile(ctx, tx, ty, tileW, tileH, countValue(s.value, frac), s.label, scale, p, false),
+            drawStatTile(
+              ctx,
+              tx,
+              ty,
+              tileW,
+              tileH,
+              countValue(s.value, frac),
+              s.label,
+              scale,
+              p,
+              false,
+            ),
         });
       });
     }
@@ -559,7 +630,12 @@ export const buildLayers = (
       id: "title",
       editKind: "element",
       label: "Title",
-      natural: { x: Math.round(80 * scale), y: titleTop, w: W - Math.round(160 * scale), h: Math.round(40 * scale) },
+      natural: {
+        x: Math.round(80 * scale),
+        y: titleTop,
+        w: W - Math.round(160 * scale),
+        h: Math.round(40 * scale),
+      },
       vAnchor: "top",
       selectable: true,
       resizable: false,
@@ -596,12 +672,18 @@ export const buildLayers = (
     m.font = `700 ${Math.round(48 * scale)}px Georgia, 'Times New Roman', serif`;
     const nameLines = wrapText(m, playerName.toUpperCase(), W - Math.round(160 * scale));
     const nameTop = y;
-    const nameBlockH = nameLines.length * Math.round(56 * scale) + (grade ? Math.round(46 * scale) : 0);
+    const nameBlockH =
+      nameLines.length * Math.round(56 * scale) + (grade ? Math.round(46 * scale) : 0);
     add({
       id: "name",
       editKind: "element",
       label: "Name",
-      natural: { x: Math.round(80 * scale), y: nameTop, w: W - Math.round(160 * scale), h: nameBlockH },
+      natural: {
+        x: Math.round(80 * scale),
+        y: nameTop,
+        w: W - Math.round(160 * scale),
+        h: nameBlockH,
+      },
       vAnchor: "top",
       selectable: true,
       resizable: false,
@@ -615,7 +697,11 @@ export const buildLayers = (
         if (grade) {
           ctx.fillStyle = TEXT_MUTED;
           ctx.font = `600 ${Math.round(20 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-          ctx.fillText(grade.toUpperCase(), W / 2, nameTop + lines.length * Math.round(56 * scale) + Math.round(20 * scale));
+          ctx.fillText(
+            grade.toUpperCase(),
+            W / 2,
+            nameTop + lines.length * Math.round(56 * scale) + Math.round(20 * scale),
+          );
         }
       },
     });
@@ -645,7 +731,12 @@ export const buildLayers = (
       id: "title",
       editKind: "element",
       label: "Title",
-      natural: { x: Math.round(80 * scale), y: titleTop, w: W - Math.round(160 * scale), h: Math.round(40 * scale) },
+      natural: {
+        x: Math.round(80 * scale),
+        y: titleTop,
+        w: W - Math.round(160 * scale),
+        h: Math.round(40 * scale),
+      },
       vAnchor: "top",
       selectable: true,
       resizable: false,
@@ -665,7 +756,12 @@ export const buildLayers = (
       id: "name",
       editKind: "element",
       label: "Name",
-      natural: { x: Math.round(80 * scale), y: nameTop, w: W - Math.round(160 * scale), h: nameLines.length * Math.round(76 * scale) },
+      natural: {
+        x: Math.round(80 * scale),
+        y: nameTop,
+        w: W - Math.round(160 * scale),
+        h: nameLines.length * Math.round(76 * scale),
+      },
       vAnchor: "top",
       selectable: true,
       resizable: false,
@@ -779,7 +875,12 @@ export const buildLayers = (
       id: "competition",
       editKind: "element",
       label: "Competition",
-      natural: { x: Math.round(100 * scale), y: compTop, w: W - Math.round(200 * scale), h: compLines.length * Math.round(32 * scale) },
+      natural: {
+        x: Math.round(100 * scale),
+        y: compTop,
+        w: W - Math.round(200 * scale),
+        h: compLines.length * Math.round(32 * scale),
+      },
       vAnchor: "top",
       selectable: true,
       resizable: false,
@@ -801,7 +902,12 @@ export const buildLayers = (
         id: "result",
         editKind: "element",
         label: "Result",
-        natural: { x: Math.round(110 * scale), y: resTop, w: W - Math.round(220 * scale), h: resLines.length * Math.round(30 * scale) },
+        natural: {
+          x: Math.round(110 * scale),
+          y: resTop,
+          w: W - Math.round(220 * scale),
+          h: resLines.length * Math.round(30 * scale),
+        },
         vAnchor: "top",
         selectable: true,
         resizable: false,
@@ -822,7 +928,12 @@ export const buildLayers = (
         id: "mom",
         editKind: "element",
         label: "Player of the match",
-        natural: { x: Math.round(80 * scale), y: momTop, w: W - Math.round(160 * scale), h: Math.round(30 * scale) },
+        natural: {
+          x: Math.round(80 * scale),
+          y: momTop,
+          w: W - Math.round(160 * scale),
+          h: Math.round(30 * scale),
+        },
         vAnchor: "top",
         selectable: true,
         resizable: false,
@@ -835,11 +946,7 @@ export const buildLayers = (
         },
       });
     }
-  } else if (
-    input.kind === "debut" ||
-    input.kind === "century" ||
-    input.kind === "fiveFor"
-  ) {
+  } else if (input.kind === "debut" || input.kind === "century" || input.kind === "fiveFor") {
     const playerName = input.playerName;
     const matchSubtitle = (opponent?: string | null, round?: number | null): string => {
       const parts: string[] = [];
@@ -879,7 +986,9 @@ export const buildLayers = (
       badgeLabel = "Five-Wicket Haul";
       bigValue = input.figures ?? `${input.wickets}/-`;
       caption =
-        input.overs != null ? `${input.wickets} wickets off ${input.overs} overs` : `${input.wickets} wickets`;
+        input.overs != null
+          ? `${input.wickets} wickets off ${input.overs} overs`
+          : `${input.wickets} wickets`;
       subtitle = matchSubtitle(input.opponent, input.round);
       tileLabel = "Figures";
       iconIndex = 2;
@@ -912,7 +1021,13 @@ export const buildLayers = (
             const svg = iconSvgString(iconIndex, GOLD, 256, 1.75);
             const iconImg = await loadImage(svgToDataUrl(svg));
             const iconSize = Math.round(52 * scale);
-            ctx.drawImage(iconImg, miniCx - iconSize / 2, miniCy - iconSize / 2, iconSize, iconSize);
+            ctx.drawImage(
+              iconImg,
+              miniCx - iconSize / 2,
+              miniCy - iconSize / 2,
+              iconSize,
+              iconSize,
+            );
           } catch {}
         } else {
           ctx.beginPath();
@@ -926,7 +1041,13 @@ export const buildLayers = (
             const svg = iconSvgString(iconIndex, GOLD, 256, 1.75);
             const iconImg = await loadImage(svgToDataUrl(svg));
             const iconSize = Math.round(150 * scale);
-            ctx.drawImage(iconImg, W / 2 - iconSize / 2, badgeCy - iconSize / 2, iconSize, iconSize);
+            ctx.drawImage(
+              iconImg,
+              W / 2 - iconSize / 2,
+              badgeCy - iconSize / 2,
+              iconSize,
+              iconSize,
+            );
           } catch {}
         }
       },
@@ -936,7 +1057,14 @@ export const buildLayers = (
     const pillTop = y;
     const pillSide = Math.round(24 * scale);
     const pillMaxW = W - Math.round(160 * scale);
-    const pillFp = fitFontSize(m, badgeLabel.toUpperCase(), pillMaxW - pillSide * 2, 800, Math.round(22 * scale), CARD_FONT);
+    const pillFp = fitFontSize(
+      m,
+      badgeLabel.toUpperCase(),
+      pillMaxW - pillSide * 2,
+      800,
+      Math.round(22 * scale),
+      CARD_FONT,
+    );
     m.font = `800 ${pillFp}px ${CARD_FONT}`;
     const pillW = Math.min(pillMaxW, m.measureText(badgeLabel.toUpperCase()).width + pillSide * 2);
     const pillH = Math.round(46 * scale);
@@ -972,7 +1100,14 @@ export const buildLayers = (
         ctx.fillStyle = TEXT_LIGHT;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        const px = fitFontSize(ctx, nameUpper, W - hPad * 2, 900, Math.round(60 * scale), CARD_FONT);
+        const px = fitFontSize(
+          ctx,
+          nameUpper,
+          W - hPad * 2,
+          900,
+          Math.round(60 * scale),
+          CARD_FONT,
+        );
         const lh = Math.round(px * 1.08);
         const lines = wrapText(ctx, nameUpper, W - hPad * 2);
         lines.forEach((line, i) => ctx.fillText(line, W / 2, nameTop + i * lh));
@@ -992,9 +1127,32 @@ export const buildLayers = (
       selectable: true,
       resizable: true,
       numeric: true,
-      draw: (ctx) => drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, bigValue, tileLabel, scale, p, true),
+      draw: (ctx) =>
+        drawStatTile(
+          ctx,
+          W / 2 - tileW / 2,
+          tileTop,
+          tileW,
+          tileH,
+          bigValue,
+          tileLabel,
+          scale,
+          p,
+          true,
+        ),
       drawCount: (ctx, frac) =>
-        drawStatTile(ctx, W / 2 - tileW / 2, tileTop, tileW, tileH, countValue(bigValue, frac), tileLabel, scale, p, true),
+        drawStatTile(
+          ctx,
+          W / 2 - tileW / 2,
+          tileTop,
+          tileW,
+          tileH,
+          countValue(bigValue, frac),
+          tileLabel,
+          scale,
+          p,
+          true,
+        ),
     });
     y = tileTop + tileH + Math.round(28 * scale);
 
@@ -1049,7 +1207,15 @@ export const buildLayers = (
     selectable: true,
     resizable: false,
     draw: (ctx) =>
-      drawFooter(ctx, W, H, opts.clubUrl ?? "", opts.hashtag ?? defaultHashtag(opts.brand), scale, p),
+      drawFooter(
+        ctx,
+        W,
+        H,
+        opts.clubUrl ?? "",
+        opts.hashtag ?? defaultHashtag(opts.brand),
+        scale,
+        p,
+      ),
   });
 
   return layers;
@@ -1082,7 +1248,7 @@ const buildCustomLayer = (
       : s.kind === "sticker"
         ? "Shape"
         : s.kind === "libsticker"
-          ? getSticker(s.assetId)?.name ?? "Sticker"
+          ? (getSticker(s.assetId)?.name ?? "Sticker")
           : "Text";
   return {
     id: s.id,

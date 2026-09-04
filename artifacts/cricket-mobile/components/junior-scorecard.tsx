@@ -15,9 +15,7 @@ import { BattingBlock, BowlingBlock } from "@/components/scorecard";
 export function JuniorDigitalScorecard({ match }: { match: JuniorMatchDetail }) {
   const scorecard = useMemo(() => buildJuniorScorecard(match), [match]);
 
-  const hasAnyData = scorecard.innings.some(
-    (inn) => inn.batsmen.length + inn.bowlers.length > 0,
-  );
+  const hasAnyData = scorecard.innings.some((inn) => inn.batsmen.length + inn.bowlers.length > 0);
 
   if (!hasAnyData) {
     return (
@@ -37,9 +35,7 @@ export function JuniorDigitalScorecard({ match }: { match: JuniorMatchDetail }) 
   }
 
   return (
-    <View
-      style={{ backgroundColor: "#0a1626", borderRadius: 8, padding: 10, gap: 12 }}
-    >
+    <View style={{ backgroundColor: "#0a1626", borderRadius: 8, padding: 10, gap: 12 }}>
       {scorecard.innings.map((inn, i) => (
         <View key={i} style={{ gap: 8 }}>
           <BattingBlock innings={inn} />

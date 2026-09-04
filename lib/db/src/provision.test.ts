@@ -129,7 +129,12 @@ describe("provisionTenant: exclusion guard", () => {
     // club_excluded ProvisionError -- is the proof the guard let it through.
     let caught: unknown;
     try {
-      await provisionTenant({ slug: "curtin", centralClubId: 55, mode: "create", context: "concierge" });
+      await provisionTenant({
+        slug: "curtin",
+        centralClubId: 55,
+        mode: "create",
+        context: "concierge",
+      });
     } catch (e) {
       caught = e;
     }
@@ -149,7 +154,12 @@ describe("provisionTenant: exclusion guard", () => {
     queuedTenantResults.push([]); // no exclusion row found
     let caught: unknown;
     try {
-      await provisionTenant({ slug: "curtin", centralClubId: 55, mode: "create", context: "self-serve" });
+      await provisionTenant({
+        slug: "curtin",
+        centralClubId: 55,
+        mode: "create",
+        context: "self-serve",
+      });
     } catch (e) {
       caught = e;
     }

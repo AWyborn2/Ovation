@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import {
   useGetTenantBrand,
   getGetTenantBrandQueryKey,
@@ -28,9 +23,7 @@ import { useThemeMode } from "@/lib/theme-context";
 const BrandContext = createContext<ClubBrand>(DEFAULT_BRAND);
 
 /** True when the response is the platform marker rather than a tenant brand. */
-function isPlatformResponse(
-  data: TenantBrand | PlatformBrand | undefined,
-): data is PlatformBrand {
+function isPlatformResponse(data: TenantBrand | PlatformBrand | undefined): data is PlatformBrand {
   return !!data && "platform" in data && data.platform === true;
 }
 
@@ -153,7 +146,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   // rather than always falling back to the DEFAULT_BRAND constants.
   const brand = isPlatform
     ? platformResponseToBrand(q.data as PlatformBrand)
-    : (q.data as TenantBrand | undefined) ?? DEFAULT_BRAND;
+    : ((q.data as TenantBrand | undefined) ?? DEFAULT_BRAND);
   const { mode } = useThemeMode();
   useEffect(() => {
     // Always apply a theme so that switching back to the platform surface resets
@@ -164,15 +157,12 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [brand, isPlatform, mode]);
 
   // Badge style — read from the API response (null / undefined → "diamond").
-  const badgeStyle =
-    (!isPlatform && (q.data as TenantBrand | undefined)?.badgeStyle) || "diamond";
+  const badgeStyle = (!isPlatform && (q.data as TenantBrand | undefined)?.badgeStyle) || "diamond";
 
   return (
     <PlatformContext.Provider value={{ isPlatform, isLoading: q.isLoading }}>
       <BrandContext.Provider value={brand}>
-        <BadgeStyleContext.Provider value={badgeStyle}>
-          {children}
-        </BadgeStyleContext.Provider>
+        <BadgeStyleContext.Provider value={badgeStyle}>{children}</BadgeStyleContext.Provider>
       </BrandContext.Provider>
     </PlatformContext.Provider>
   );

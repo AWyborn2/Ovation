@@ -24,8 +24,7 @@ describe("platform-admin tenant archive/restore", () => {
   let tenantId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-platform-archive";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-platform-archive";
 
     const passwordHash = await hashPassword(PASSWORD);
     await db
@@ -81,9 +80,7 @@ describe("platform-admin tenant archive/restore", () => {
 
   it("drops an archived tenant from the public directory", async () => {
     const dir = await request(app).get("/api/platform/directory-clubs").expect(200);
-    expect(
-      dir.body.some((c: { slug: string }) => c.slug === `pa-archive-${STAMP}`),
-    ).toBe(false);
+    expect(dir.body.some((c: { slug: string }) => c.slug === `pa-archive-${STAMP}`)).toBe(false);
   });
 
   it("re-archiving an already-archived tenant is idempotent (suspendedAt unchanged)", async () => {
@@ -108,9 +105,7 @@ describe("platform-admin tenant archive/restore", () => {
     expect(res.body.suspendedAt).toBeNull();
 
     const dir = await request(app).get("/api/platform/directory-clubs").expect(200);
-    expect(
-      dir.body.some((c: { slug: string }) => c.slug === `pa-archive-${STAMP}`),
-    ).toBe(true);
+    expect(dir.body.some((c: { slug: string }) => c.slug === `pa-archive-${STAMP}`)).toBe(true);
   });
 
   it("restoring an already-active tenant is idempotent (200, no-op)", async () => {

@@ -59,10 +59,7 @@ export default function HonoursDisplay() {
         </Link>
       </div>
 
-      <div
-        className={`hb ${skinClass(skin)} space-y-10`}
-        style={rootStyle(brand, settings)}
-      >
+      <div className={`hb ${skinClass(skin)} space-y-10`} style={rootStyle(brand, settings)}>
         {boards.map((board) => (
           <BoardRenderer
             key={board.id}

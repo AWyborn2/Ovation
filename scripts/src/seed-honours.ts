@@ -15,12 +15,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
-import {
-  db,
-  capRegisterTable,
-  lifeMembersTable,
-  playersTable,
-} from "@workspace/db";
+import { db, capRegisterTable, lifeMembersTable, playersTable } from "@workspace/db";
 
 /**
  * The club being seeded. Both tables are tenant-scoped curated content and this
@@ -33,9 +28,7 @@ import {
  * this script destroys data, so the target must be stated on purpose and not
  * inherited from whatever the running environment happens to be configured for.
  */
-const TENANT_ID = process.env.SEED_TENANT_ID
-  ? Number(process.env.SEED_TENANT_ID)
-  : 1;
+const TENANT_ID = process.env.SEED_TENANT_ID ? Number(process.env.SEED_TENANT_ID) : 1;
 
 interface CapJson {
   capNo: number;
@@ -54,15 +47,7 @@ interface MemberJson {
   blurb: string;
 }
 
-const DATA_DIR = resolve(
-  __dirname,
-  "..",
-  "..",
-  "artifacts",
-  "api-server",
-  "src",
-  "data",
-);
+const DATA_DIR = resolve(__dirname, "..", "..", "artifacts", "api-server", "src", "data");
 
 const GIVEN_VARIANTS: Record<string, string> = {
   matt: "matthew",
@@ -125,12 +110,10 @@ function buildFinder(players: DbPlayer[]) {
   }
   return (givenName: string, surname: string): DbPlayer | null => {
     const gs = new Set([norm(givenName)]);
-    if (GIVEN_VARIANTS[norm(givenName)])
-      gs.add(GIVEN_VARIANTS[norm(givenName)]);
+    if (GIVEN_VARIANTS[norm(givenName)]) gs.add(GIVEN_VARIANTS[norm(givenName)]);
     for (const g of [...gs]) if (GIVEN_VARIANTS[g]) gs.add(GIVEN_VARIANTS[g]);
     const ss = new Set([norm(surname)]);
-    if (SURNAME_VARIANTS[norm(surname)])
-      ss.add(SURNAME_VARIANTS[norm(surname)]);
+    if (SURNAME_VARIANTS[norm(surname)]) ss.add(SURNAME_VARIANTS[norm(surname)]);
     for (const g of gs)
       for (const s of ss) {
         const p = byKey.get(g + "|" + s);
@@ -139,9 +122,7 @@ function buildFinder(players: DbPlayer[]) {
     for (const s of ss) {
       const cands = bySurname.get(s) || [];
       if (cands.length === 1) return cands[0];
-      const fl = cands.filter(
-        (c) => norm(c.givenName)[0] === norm(givenName)[0],
-      );
+      const fl = cands.filter((c) => norm(c.givenName)[0] === norm(givenName)[0]);
       if (fl.length === 1) return fl[0];
     }
     return null;
@@ -149,9 +130,7 @@ function buildFinder(players: DbPlayer[]) {
 }
 
 async function main() {
-  const caps: CapJson[] = JSON.parse(
-    readFileSync(resolve(DATA_DIR, "cap-register.json"), "utf8"),
-  );
+  const caps: CapJson[] = JSON.parse(readFileSync(resolve(DATA_DIR, "cap-register.json"), "utf8"));
   const members: MemberJson[] = JSON.parse(
     readFileSync(resolve(DATA_DIR, "life-members.json"), "utf8"),
   );

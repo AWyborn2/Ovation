@@ -26,9 +26,7 @@ function groupBySeason(winners: AwardWinner[]): SeasonGroup[] {
   return [...bySeason.entries()]
     .map(([season, ws]) => ({
       season,
-      winners: [...ws].sort(
-        (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-      ),
+      winners: [...ws].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id),
     }))
     .sort((a, b) => b.season - a.season);
 }
@@ -63,21 +61,14 @@ const LiveTally = ({ tally }: { tally: AwardTally }) => {
           </span>
           Live {formatSeasonRange(tally.season)} tally
         </span>
-        {tally.finalised && (
-          <span className="text-xs text-muted-foreground">· finalised</span>
-        )}
+        {tally.finalised && <span className="text-xs text-muted-foreground">· finalised</span>}
       </div>
       {top.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">
-          No votes counted yet.
-        </p>
+        <p className="text-sm text-muted-foreground italic">No votes counted yet.</p>
       ) : (
         <div className="divide-y divide-border/60">
           {top.map((e, i) => (
-            <div
-              key={e.playerId}
-              className="flex items-baseline justify-between gap-3 py-1.5"
-            >
+            <div key={e.playerId} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="flex items-baseline gap-3 min-w-0">
                 <span className="font-mono text-xs text-muted-foreground w-5 shrink-0">
                   {i + 1}
@@ -113,21 +104,14 @@ const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
           </span>
           Live {formatSeasonRange(board.season)} leaderboard
         </span>
-        {board.finalised && (
-          <span className="text-xs text-muted-foreground">· finalised</span>
-        )}
+        {board.finalised && <span className="text-xs text-muted-foreground">· finalised</span>}
       </div>
       {top.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">
-          No stats counted yet.
-        </p>
+        <p className="text-sm text-muted-foreground italic">No stats counted yet.</p>
       ) : (
         <div className="divide-y divide-border/60">
           {top.map((e, i) => (
-            <div
-              key={e.playerId}
-              className="flex items-baseline justify-between gap-3 py-1.5"
-            >
+            <div key={e.playerId} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="flex items-baseline gap-3 min-w-0">
                 <span className="font-mono text-xs text-muted-foreground w-5 shrink-0">
                   {i + 1}
@@ -135,9 +119,7 @@ const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
                 <Link
                   href={`/players/${e.playerId}`}
                   className={`truncate hover:underline ${
-                    winners.has(e.playerId)
-                      ? "font-bold text-primary"
-                      : "font-medium"
+                    winners.has(e.playerId) ? "font-bold text-primary" : "font-medium"
                   }`}
                 >
                   {e.name}
@@ -188,10 +170,7 @@ const AwardBoardCard = ({
         <div className="p-4 md:p-6">
           <div className="divide-y divide-border/60">
             {groups.map((g) => (
-              <div
-                key={g.season}
-                className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0"
-              >
+              <div key={g.season} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
                 <span className="font-mono font-bold text-primary w-20 shrink-0">
                   {formatSeason(g.season)}
                 </span>
@@ -199,9 +178,7 @@ const AwardBoardCard = ({
                   {g.winners.map((w, i) => (
                     <span key={w.id}>
                       <WinnerName winner={w} />
-                      {i < g.winners.length - 1 && (
-                        <span className="text-muted-foreground">,</span>
-                      )}
+                      {i < g.winners.length - 1 && <span className="text-muted-foreground">,</span>}
                     </span>
                   ))}
                 </span>
@@ -226,20 +203,15 @@ export function AwardsTab() {
   const boardByAward = new Map<number, PointsLeaderboard>();
   for (const b of boards ?? []) boardByAward.set(b.awardId, b);
 
-  const sorted = [...(awards ?? [])].sort(
-    (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-  );
+  const sorted = [...(awards ?? [])].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
-          Club Awards
-        </h2>
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">Club Awards</h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          {brand.name}'s honour rolls — recognising the players and
-          members awarded each season.
+          {brand.name}'s honour rolls — recognising the players and members awarded each season.
         </p>
       </div>
 

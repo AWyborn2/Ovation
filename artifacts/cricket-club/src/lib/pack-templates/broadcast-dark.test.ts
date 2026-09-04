@@ -89,20 +89,16 @@ describe("broadcast-dark formats", () => {
   it("match-result exposes story + portrait + square", () => {
     const entry = designs.find((d) => d.designKey === "match-result");
     expect(entry).toBeDefined();
-    expect(Object.keys(entry!.template.formats).sort()).toEqual([
-      "portrait",
-      "square",
-      "story",
-    ]);
+    expect(Object.keys(entry!.template.formats).sort()).toEqual(["portrait", "square", "story"]);
   });
 
   it("every other design exposes story + shared", () => {
     for (const entry of designs) {
       if (entry.designKey === "match-result") continue;
-      expect(
-        Object.keys(entry.template.formats).sort(),
-        `${entry.designKey} formats`,
-      ).toEqual(["shared", "story"]);
+      expect(Object.keys(entry.template.formats).sort(), `${entry.designKey} formats`).toEqual([
+        "shared",
+        "story",
+      ]);
     }
   });
 
@@ -141,9 +137,7 @@ describe("broadcast-dark binding contract", () => {
     for (const entry of designs) {
       const declared = new Set(entry.template.fields.map((f) => f.key));
       const rowDeclared = new Set(
-        (entry.template.repeats ?? []).flatMap((r) =>
-          r.fields.map((f) => `row.${f.key}`),
-        ),
+        (entry.template.repeats ?? []).flatMap((r) => r.fields.map((f) => `row.${f.key}`)),
       );
       for (const [formatKey, html] of formatEntries(entry)) {
         for (const key of extractPlaceholders(html)) {
@@ -181,10 +175,9 @@ describe("broadcast-dark binding contract", () => {
     for (const entry of designs) {
       for (const repeat of entry.template.repeats ?? []) {
         expect(repeat.maxRows, `${entry.designKey}.${repeat.key} maxRows`).toBeGreaterThan(0);
-        expect(
-          repeat.fields.length,
-          `${entry.designKey}.${repeat.key} row fields`,
-        ).toBeGreaterThan(0);
+        expect(repeat.fields.length, `${entry.designKey}.${repeat.key} row fields`).toBeGreaterThan(
+          0,
+        );
         const allHtml = formatEntries(entry)
           .map(([, html]) => html)
           .join("\n");

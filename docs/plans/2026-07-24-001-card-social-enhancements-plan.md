@@ -25,7 +25,8 @@ Wave 3 (sequential): **C3 → C4**.
 
 ---
 
-## A7 — Dynamic "presented by" primary sponsor  · Medium
+## A7 — Dynamic "presented by" primary sponsor · Medium
+
 - **Goal:** Replace hard-coded `{{sponsorPresentedBy}}` = "eSA Sport"/"PlayHQ"
   (`big-moment.ts:81`, `century.ts:72`, `premiership.ts:65`, `debut.ts:106`,
   `five-for.ts:75`, `new-signing.ts:81`, `club-leaderboard-runs.ts:76`,
@@ -40,7 +41,8 @@ Wave 3 (sequential): **C3 → C4**.
 - **Tests:** pack-render binding test; sponsor-role admin round-trip.
 - **Depends:** A3 (sponsor threading) merged. **Branch:** `feat/pack-presenting-sponsor`.
 
-## A8 — Bridge tenant brand colours into pack tokens  · Medium
+## A8 — Bridge tenant brand colours into pack tokens · Medium
+
 - **Goal:** A non-Halls-Head tenant's brand colours should seed the pack palette by
   default, instead of everyone inheriting the hard-coded Broadcast-Dark tokens.
 - **Where:** `pack-card.tsx:22-28` `BRAND_DEFAULT_TOKENS` (`--gold`/`--panel`/`--ink`).
@@ -53,7 +55,8 @@ Wave 3 (sequential): **C3 → C4**.
   unchanged.
 - **Depends:** A1 (brand already threaded into pack). **Branch:** `feat/pack-brand-tokens`.
 
-## A9 — Club tagline + competition hashtags  · Medium (new data source)
+## A9 — Club tagline + competition hashtags · Medium (new data source)
+
 - **Goal:** Replace hard-coded "CRICKET CLUB · EST 1991" tagline and
   "#PEELPREMIERLEAGUE"/"LIVE UPDATES" secondary tags with real sources.
 - **Schema:** add `tenants.tagline text` (nullable) + admin-branding field. Derive
@@ -64,7 +67,8 @@ Wave 3 (sequential): **C3 → C4**.
 - **Tests:** branding round-trip; render binding.
 - **Depends:** A2. **Branch:** `feat/pack-tagline-competition`.
 
-## B1 — Per-slot image upload in the card editor  · Larger (the "no upload" fix)
+## B1 — Per-slot image upload in the card editor · Larger (the "no upload" fix)
+
 - **Goal:** Replace free-text "…URL" inputs (`descriptors.ts:85,236,252`) with an
   upload/pick control bound to each template `data-slot` (photo/logo/sponsor).
 - **Approach:** template fields already enumerate every slot with label+type
@@ -76,7 +80,8 @@ Wave 3 (sequential): **C3 → C4**.
 - **Tests:** override precedence in resolveSlots; upload widget wiring (component test).
 - **Depends:** A1–A4 (pack image threading + override plumbing). **Branch:** `feat/pack-slot-image-upload`.
 
-## B2 — Team / squad photo upload  · Medium
+## B2 — Team / squad photo upload · Medium
+
 - **Goal:** Populate `teamPhoto` (`premiership.ts:24`, never bound) and `squadPhoto`
   (`team-list.ts:40`, URL text field only) via upload.
 - **Approach:** store the image against the premiership/team-list source record (or a
@@ -86,7 +91,8 @@ Wave 3 (sequential): **C3 → C4**.
   the lighter one; document in the PR.
 - **Depends:** A4 plumbing. **Branch:** `feat/pack-team-photo-upload`.
 
-## B3 — Action-shot / full-bleed background support  · Medium
+## B3 — Action-shot / full-bleed background support · Medium
+
 - **Goal:** Let an uploaded action shot render full-bleed on player cards (templates
   already scrim the photo, e.g. `player-spotlight.ts:30-32`).
 - **Approach:** extend the canvas "feature vs headshot" placement
@@ -94,7 +100,8 @@ Wave 3 (sequential): **C3 → C4**.
   placement variant to the pack slot geometry (currently fixed).
 - **Depends:** A4. **Branch:** `feat/pack-action-shot`.
 
-## C2 — Carousel slides render through the selected pack  · Medium
+## C2 — Carousel slides render through the selected pack · Medium
+
 - **Goal:** Carousel slides currently bypass the pack (legacy canvas). Render them
   through the tenant's pack template so they match single cards and inherit A1–A4.
 - **Where:** `buildSlideOpts` (`admin-social-sets.tsx:351`) never sets `opts.template`;
@@ -104,19 +111,21 @@ Wave 3 (sequential): **C3 → C4**.
 - **Tests:** slide render uses pack for a supported kind; export parity with single card.
 - **Depends:** A1–A4 merged. **Branch:** `feat/carousel-through-pack`.
 
-## C3 — `POST /card-sets/generate` + grouping metadata  · Larger
+## C3 — `POST /card-sets/generate` + grouping metadata · Larger
+
 - **Goal:** Server-side themed batching with dedupe/refresh (e.g. "rebuild the Round 5
   match-summary set").
 - **Schema:** add `card_sets.sourceKind text`, `sourceRound int`, `season int`,
   `grade text` (nullable) + partial unique index (mirror `social_drafts_match_dedupe`,
   `social_cards.ts:424-426`).
 - **API (OpenAPI-first):** `POST /card-sets/generate { kind, round?, season?, grades?,
-  platformSize }` — gather matching source rows, map via existing input builders,
+platformSize }` — gather matching source rows, map via existing input builders,
   assemble ≤10 slides, upsert one set keyed on grouping columns.
 - **Tests:** generate idempotency; slide cap; dedupe on regenerate.
 - **Depends:** C1 (client batch-add as the cheap precursor). **Branch:** `feat/card-sets-generate`.
 
-## C4 — Auto-seed carousel sets from the `social_drafts` queue  · Larger
+## C4 — Auto-seed carousel sets from the `social_drafts` queue · Larger
+
 - **Goal:** "Make a carousel from this round's approved drafts" — match-summary drafts
   carry `sourceKind`/`sourceMatchId` (`social_cards.ts:407-416`).
 - **Approach:** action that collects approved drafts for a round → feeds C3's generate
@@ -126,6 +135,7 @@ Wave 3 (sequential): **C3 → C4**.
 ---
 
 ## Process per big win
+
 1. Engineer builds on the named worktree branch off latest `main`; OpenAPI-first for
    any spec change; `pnpm run typecheck` + relevant vitest green; commit + push.
 2. Open draft PR; launch an **independent reviewer** agent (correctness, tenant

@@ -75,7 +75,9 @@ function infoCell(label: string, value: string): string {
 /** Frosted GROUND · DATE · START panel (identical bindings in both formats). */
 function infoPanel(extraStyle: string): string {
   return glassPanel(
-    infoCell("GROUND", "{{venue}}") + infoCell("DATE", "{{date}}") + infoCell("START", "{{startTime}}"),
+    infoCell("GROUND", "{{venue}}") +
+      infoCell("DATE", "{{date}}") +
+      infoCell("START", "{{startTime}}"),
     `;display:flex;align-items:center;justify-content:space-around${extraStyle}`,
   );
 }

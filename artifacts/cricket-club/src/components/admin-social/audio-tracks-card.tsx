@@ -92,9 +92,9 @@ export function AudioTracksCard({
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground">
-          Background music for animated video clips. Admins pick a track (with
-          volume + trim) in the share dialog; the exported MP4/WebM includes it.
-          Only upload tracks you are licensed to use.
+          Background music for animated video clips. Admins pick a track (with volume + trim) in the
+          share dialog; the exported MP4/WebM includes it. Only upload tracks you are licensed to
+          use.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6">
           <div className="space-y-3">
@@ -168,7 +168,11 @@ export function AudioTracksCard({
                     {t.durationMs ? `${(t.durationMs / 1000).toFixed(1)}s` : "length unknown"}
                   </div>
                 </div>
-                <audio src={`/api/storage${t.url}`.replace("/api/storage/api/storage", "/api/storage")} controls className="h-8 max-w-[14rem]" />
+                <audio
+                  src={`/api/storage${t.url}`.replace("/api/storage/api/storage", "/api/storage")}
+                  controls
+                  className="h-8 max-w-[14rem]"
+                />
                 <Input
                   type="number"
                   className="w-16"

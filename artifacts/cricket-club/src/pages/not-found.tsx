@@ -8,7 +8,7 @@ export default function NotFound() {
       <div className="bg-muted p-6 rounded-full">
         <AlertCircle className="h-16 w-16 text-muted-foreground" />
       </div>
-      
+
       <div className="space-y-2">
         <h1 className="text-4xl font-serif font-bold text-primary">Given Out!</h1>
         <p className="text-xl text-muted-foreground max-w-md mx-auto">

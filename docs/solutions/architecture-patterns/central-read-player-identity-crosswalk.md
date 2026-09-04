@@ -68,7 +68,7 @@ read-only from the app — no exceptions.
 
 A club site that shows the wrong numbers, dead links, or a rival's merged career
 is unusable regardless of how many features sit behind it — and central-read is
-the platform's top *silent* correctness risk, because a leak or mis-key returns
+the platform's top _silent_ correctness risk, because a leak or mis-key returns
 plausible-looking data with no error. The route-owns-identity rule is not
 stylistic: it is forced by the tenant/central DB separation, and skipping it is
 what left `playerId: 0` on the leaderboard while every other handler resolved it.
@@ -87,7 +87,7 @@ central row was unclickable and look-alikes could re-merge downstream:
 
 ```ts
 // central query projection
-return { id: 0, playerId: 0, surname, givenName, /* ... */ };
+return { id: 0, playerId: 0, surname, givenName /* ... */ };
 ```
 
 After — the query accepts the tenant crosswalk and fills the id; the route builds
@@ -96,7 +96,7 @@ the map (identical to the dashboard/records handlers) and passes it:
 ```ts
 // central query
 const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
-return { id: resolvedPlayerId, playerId: resolvedPlayerId, /* ... */ };
+return { id: resolvedPlayerId, playerId: resolvedPlayerId /* ... */ };
 
 // route
 const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));

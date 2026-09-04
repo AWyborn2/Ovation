@@ -47,8 +47,7 @@ describe("Platform brand → GET /tenant-brand live update (no page reload)", ()
   let prevPlatformHosts: string | undefined;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-platform-brand-live";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-platform-brand-live";
 
     // Register the test host as an apex/platform surface for this suite.
     prevPlatformHosts = process.env.PLATFORM_HOSTS;
@@ -95,22 +94,15 @@ describe("Platform brand → GET /tenant-brand live update (no page reload)", ()
     } else {
       // The upsert in the test created the row; remove it so the DB stays
       // clean for subsequent tests.
-      await db
-        .delete(platformSettingsTable)
-        .where(eq(platformSettingsTable.id, 1));
+      await db.delete(platformSettingsTable).where(eq(platformSettingsTable.id, 1));
     }
     invalidatePlatformBrandCache();
 
-    await db
-      .delete(platformAdminsTable)
-      .where(eq(platformAdminsTable.email, EMAIL));
+    await db.delete(platformAdminsTable).where(eq(platformAdminsTable.email, EMAIL));
   });
 
   it("GET /tenant-brand from the apex host returns { platform: true } (routing check)", async () => {
-    const res = await request(app)
-      .get("/api/tenant-brand")
-      .set("Host", APEX_HOST)
-      .expect(200);
+    const res = await request(app).get("/api/tenant-brand").set("Host", APEX_HOST).expect(200);
     // The apex host must return the platform sentinel, not a tenant brand.
     expect(res.body.platform).toBe(true);
   });
@@ -121,10 +113,7 @@ describe("Platform brand → GET /tenant-brand live update (no page reload)", ()
 
     // Prime the platform brand cache so the test exercises actual cache
     // invalidation (not just a cold-cache hit after the PATCH).
-    await request(app)
-      .get("/api/tenant-brand")
-      .set("Host", APEX_HOST)
-      .expect(200);
+    await request(app).get("/api/tenant-brand").set("Host", APEX_HOST).expect(200);
 
     // Write the new platform brand via the admin endpoint.
     const patchRes = await request(app)
@@ -140,10 +129,7 @@ describe("Platform brand → GET /tenant-brand live update (no page reload)", ()
     // Without cache invalidation the GET would still return the pre-PATCH value
     // cached for up to 5 minutes.  The invalidation in upsertPlatformBrand must
     // clear it so the landing page sees the change on the very next request.
-    const getRes = await request(app)
-      .get("/api/tenant-brand")
-      .set("Host", APEX_HOST)
-      .expect(200);
+    const getRes = await request(app).get("/api/tenant-brand").set("Host", APEX_HOST).expect(200);
     expect(getRes.body.platform).toBe(true);
     expect(getRes.body.name).toBe(testName);
     expect(getRes.body.primaryColour).toBe(testColour);
@@ -158,10 +144,7 @@ describe("Platform brand → GET /tenant-brand live update (no page reload)", ()
       .send({ name: newName })
       .expect(200);
 
-    const res = await request(app)
-      .get("/api/tenant-brand")
-      .set("Host", APEX_HOST)
-      .expect(200);
+    const res = await request(app).get("/api/tenant-brand").set("Host", APEX_HOST).expect(200);
     expect(res.body.name).toBe(newName);
     // The colour set in the previous test must survive a name-only PATCH.
     expect(res.body.primaryColour).toBe("#ab1234");
@@ -182,10 +165,7 @@ describe("Platform brand → GET /tenant-brand live update (no page reload)", ()
       .expect(400);
 
     // The rejected write must not have changed the stored value.
-    const res = await request(app)
-      .get("/api/tenant-brand")
-      .set("Host", APEX_HOST)
-      .expect(200);
+    const res = await request(app).get("/api/tenant-brand").set("Host", APEX_HOST).expect(200);
     expect(res.body.primaryColour).toBe("#ab1234");
   });
 });

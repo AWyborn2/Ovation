@@ -146,7 +146,6 @@ export const adminWriteRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: adminWriteRateLimitKey,
   message: {
-    error:
-      "Too many admin write requests. Please wait a few minutes and try again.",
+    error: "Too many admin write requests. Please wait a few minutes and try again.",
   },
 });

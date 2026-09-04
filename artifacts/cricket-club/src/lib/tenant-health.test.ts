@@ -101,7 +101,13 @@ describe("tenant-health: sortTenants", () => {
 
 describe("tenant-health: nextSort", () => {
   it("flips direction on the same column, resets to asc on a new column", () => {
-    expect(nextSort({ column: "name", direction: "asc" }, "name")).toEqual({ column: "name", direction: "desc" });
-    expect(nextSort({ column: "name", direction: "desc" }, "admins")).toEqual({ column: "admins", direction: "asc" });
+    expect(nextSort({ column: "name", direction: "asc" }, "name")).toEqual({
+      column: "name",
+      direction: "desc",
+    });
+    expect(nextSort({ column: "name", direction: "desc" }, "admins")).toEqual({
+      column: "admins",
+      direction: "asc",
+    });
   });
 });

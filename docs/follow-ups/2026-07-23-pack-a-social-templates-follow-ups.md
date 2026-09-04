@@ -10,6 +10,7 @@ theme, roughly ordered by value within each group.
 ## Next scoped task (already agreed)
 
 ### PlayHQ fixtures & team-list ingest
+
 - **What:** Auto-populate the new `fixtures` and `team_lists` tables (shipped in
   U6, admin-entered today) from PlayHQ via the existing scraper skill or the
   PlayHQ public API, behind the ingest adapter boundary.
@@ -30,8 +31,9 @@ placeholders, image-placeholder intent + upload gap, template-pack/carousel
 integration). **Prioritised backlog is at the end of this section.**
 
 > **Delivery status** (2026-07-24).
-> - **Easy wins — #72:** ✅ A1, ✅ A2, ✅ A3, ✅ A4, ✅ A5 *(wired; inert until match
->   cards carry a POTM headshot source — data-model follow-up)*, ✅ A6, ✅ C1.
+>
+> - **Easy wins — #72:** ✅ A1, ✅ A2, ✅ A3, ✅ A4, ✅ A5 _(wired; inert until match
+>   cards carry a POTM headshot source — data-model follow-up)_, ✅ A6, ✅ C1.
 > - **Wave 1:** ✅ **A8** (brand→tokens, #74), ✅ **B2** (team/squad photo upload, #75),
 >   ✅ **C2** (carousel renders through pack, #76).
 > - **Wave 2:** ✅ **A7** (presenting sponsor, #79), ✅ **A9** (tagline/competition, #80),
@@ -53,6 +55,7 @@ integration). **Prioritised backlog is at the end of this section.**
 > - Big-win plans: [docs/plans/2026-07-24-001-card-social-enhancements-plan.md](../plans/2026-07-24-001-card-social-enhancements-plan.md).
 >
 > **Deploy notes** (for the merged DB changes).
+>
 > - On Replit, `scripts/post-merge.sh` runs `pnpm --filter db push` on pull, which
 >   applies ALL of these schema changes from the Drizzle schema in one shot:
 >   `sponsors.is_presenting` (A7), `tenants.tagline` (A9), the `card_sets` grouping
@@ -94,6 +97,7 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 ### Theme A — Wire the pack renderer to tenant data
 
 #### A1. Bind tenant logo into the top-left `clubLogo` slot ⭐ QUICK WIN
+
 - **What:** Add a `brand` prop to `PackCard`/`renderPackCard`; set
   `images["clubLogo"] = brand.logoUrl` in `bindInput`; pass `bundle.brand` at the two
   call sites (`share-card-modal.tsx:681`, `card-render-harness.tsx:147`).
@@ -104,6 +108,7 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 - **Effort:** Quick. Fixes all 23 kinds in one change.
 
 #### A2. Bind club name + hashtags dynamically ⭐ QUICK WIN (same change as A1)
+
 - **What:** Bind `clubName`, `clubTagline`, `clubHashtag`, `hashtags` from brand/settings.
 - **Why:** Hard-coded "HALLS HEAD" / "#HALLSHEAD" / "#HALLSHEAD · #PEELPREMIERLEAGUE"
   literals across the pack (`fragments.ts:199`, `big-moment.ts:78-80`, `debut.ts:104-105`,
@@ -112,6 +117,7 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 - **Effort:** Quick. (Tagline has no field yet — see A8.)
 
 #### A3. Bind active sponsors into `sponsor1/2/3` slots ⭐ QUICK WIN
+
 - **What:** Thread the resolved `sponsors[]` (already loaded, `share-card-modal.tsx:403`)
   into the pack path; map first N `logoUrl`s → `images["sponsor1..3"]`, filtered by
   `cardKinds` (`sponsorAppliesToKind`, `share-card.ts:336-339`).
@@ -122,6 +128,7 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 - **Effort:** Quick.
 
 #### A4. Feed the modal's uploaded photo into the pack `photo` slot ⭐ QUICK WIN
+
 - **What:** Pass `effectivePhotoUrl` (and ideally `photoTransform`) from
   `use-photo-controls.ts` into `PackCard`/`renderPackStill`; prefer it over
   `input.photoUrl` in `bindInput`/`resolveSlots`.
@@ -131,17 +138,20 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 - **Effort:** Quick–medium (thread focal-point/transform for `cover` slots).
 
 #### A5. Populate `potm.photo` on the match-result card — QUICK
+
 - **What:** Fill `potm.photo` (`match-result.ts:52`) from the player-image lookup in the
   `matchSummary` bind (`pack-render.ts:435-459`), currently never set.
 - **Effort:** Quick (reuses `player_images`).
 
 #### A6. Fix the dead `bigMoment` photo binding — QUICK (correctness)
+
 - **What:** `bindInput` sets `images["photo"]` for `bigMoment` (`pack-render.ts:612`) but
   `big-moment.ts` has **no `data-slot="photo"`** — the image never shows. Either add the
   slot (pairs with A12) or drop the dead assignment.
 - **Effort:** Quick.
 
 #### A7. Dynamic "presented by" primary sponsor — MEDIUM (needs data model)
+
 - **What:** Replace hard-coded `{{sponsorPresentedBy}}` = "eSA Sport"/"PlayHQ"
   (`big-moment.ts:81`, `century.ts:72`, `premiership.ts:65`, others) with a designated
   presenting sponsor.
@@ -149,6 +159,7 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 - **Effort:** Medium.
 
 #### A8. Bridge tenant brand colours into pack tokens — MEDIUM
+
 - **What:** Map tenant primary/accent → `--gold`/`--panel`/`--ink` as the default token
   baseline.
 - **Why:** `pack-card.tsx:22-28` hard-codes the Broadcast-Dark palette as
@@ -157,6 +168,7 @@ DB", "sponsors should be dynamic") is fixed by threading existing data into
 - **Effort:** Medium.
 
 #### A9. `clubTagline` + competition hashtags — MEDIUM (no source yet)
+
 - **What:** "CRICKET CLUB · EST 1991" and "#PEELPREMIERLEAGUE"/"LIVE UPDATES" have no
   tenant/central source. Needs a new tenant setting (tagline) and competition-name
   derivation (from central `matches`).
@@ -172,6 +184,7 @@ storage. The manual card-builder exposes image slots as **free-text URL fields**
 (`descriptors.ts:85,236,252`).
 
 #### B1. Per-slot image upload control in the card editor — LARGER (the real fix)
+
 - **What:** Replace the free-text "…URL" inputs with an upload/pick control bound to each
   `data-slot` (photo/logo/sponsor) the template exposes via its `fields`
   (`fragments.ts:184-190` enumerates every slot with label + type). Thread an
@@ -181,12 +194,14 @@ storage. The manual card-builder exposes image slots as **free-text URL fields**
 - **Effort:** Larger (new UI + override threading). Depends on A1–A4 landing the plumbing first.
 
 #### B2. Premiership team-photo & team-list squad-photo upload — MEDIUM
+
 - **What:** Dedicated uploader for `teamPhoto` (`premiership.ts:24`, never bound) and
   `squadPhoto` (`team-list.ts:40`, text-field only). Store against the match/premiership
   record or a lightweight card-asset table.
 - **Effort:** Medium.
 
 #### B3. Action-shot / full-bleed background support — MEDIUM
+
 - **What:** Extend the canvas "feature vs headshot" placement (`use-photo-controls.ts:67`,
   `share-card.ts` `PhotoPlacement`) to pack cards so an uploaded action shot can go
   full-bleed (templates already scrim the player photo, e.g. `player-spotlight.ts:30-32`).
@@ -203,6 +218,7 @@ motionPreset?}`. **`POST /card-sets` already accepts a full multi-slide array in
 not the backend.
 
 #### C1. Client-side "batch add" from existing sources ⭐ QUICK WIN
+
 - **What:** Add "Add all matches in Round X" / "Add all grade leaderboards" buttons to
   `SlideSourcePicker` (`admin-social-sets.tsx:845`) that loop the existing hooks and append
   slides (respecting the 2–10 cap, `social-cards-helpers.ts:154-155`).
@@ -212,6 +228,7 @@ not the backend.
 - **Effort:** Small.
 
 #### C2. Carousel slides render through the selected pack — MEDIUM
+
 - **What:** Set `opts.template` in `buildSlideOpts` (`admin-social-sets.tsx:351`) to the
   tenant's default pack template per slide kind, and route slide render/export through the
   pack path as the modal does.
@@ -222,6 +239,7 @@ not the backend.
 - **Effort:** Medium.
 
 #### C3. `POST /card-sets/generate` + grouping metadata — LARGER
+
 - **What:** Add grouping columns to `card_sets` (`sourceKind`, `sourceRound`, `season`,
   `grade`, + partial unique index) and a generate endpoint that server-side gathers matching
   source rows, maps via existing input builders, and upserts one set. OpenAPI-first change.
@@ -230,6 +248,7 @@ not the backend.
 - **Effort:** Larger.
 
 #### C4. Auto-seed carousel sets from the `social_drafts` queue — LARGER
+
 - **What:** "Make a carousel from this round's approved drafts" — match-summary drafts already
   carry `sourceKind`/`sourceMatchId` (`social_cards.ts:407-416`).
 - **Why:** Closes detection → carousel loop. Depends on C3.
@@ -237,24 +256,24 @@ not the backend.
 
 ### Prioritised backlog (easy/quick wins first)
 
-| # | Task | Theme | Effort | Depends on |
-|---|------|-------|--------|-----------|
-| 1 | **A1** Tenant logo → `clubLogo` top-left | Dynamic content | ⭐ Quick | — |
-| 2 | **A2** Club name + hashtags dynamic | Dynamic content | ⭐ Quick | A1 (same change) |
-| 3 | **A3** Active sponsors → sponsor slots | Dynamic content | ⭐ Quick | — |
-| 4 | **A4** Uploaded photo → pack `photo` slot | Dynamic content | ⭐ Quick–med | — |
-| 5 | **C1** Client-side "batch add" to carousel sets | Carousel | ⭐ Quick | — |
-| 6 | **A5** Populate `potm.photo` | Dynamic content | Quick | A4 |
-| 7 | **A6** Fix dead `bigMoment` photo binding | Correctness | Quick | — |
-| 8 | **A8** Brand colours → pack tokens | Dynamic content | Medium | — |
-| 9 | **C2** Carousel slides render through pack | Carousel | Medium | A1–A3 |
-| 10 | **A7** Dynamic "presented by" sponsor | Dynamic content | Medium | sponsor role flag |
-| 11 | **A9** Club tagline + competition hashtags | Dynamic content | Medium | new tenant field |
-| 12 | **B2** Team/squad photo upload | Image upload | Medium | — |
-| 13 | **B3** Action-shot / full-bleed background | Image upload | Medium | A4 |
-| 14 | **B1** Per-slot image upload in editor | Image upload | Larger | A1–A4 |
-| 15 | **C3** `/card-sets/generate` + grouping cols | Carousel | Larger | C1 |
-| 16 | **C4** Auto-seed sets from `social_drafts` | Carousel | Larger | C3 |
+| #   | Task                                            | Theme           | Effort       | Depends on        |
+| --- | ----------------------------------------------- | --------------- | ------------ | ----------------- |
+| 1   | **A1** Tenant logo → `clubLogo` top-left        | Dynamic content | ⭐ Quick     | —                 |
+| 2   | **A2** Club name + hashtags dynamic             | Dynamic content | ⭐ Quick     | A1 (same change)  |
+| 3   | **A3** Active sponsors → sponsor slots          | Dynamic content | ⭐ Quick     | —                 |
+| 4   | **A4** Uploaded photo → pack `photo` slot       | Dynamic content | ⭐ Quick–med | —                 |
+| 5   | **C1** Client-side "batch add" to carousel sets | Carousel        | ⭐ Quick     | —                 |
+| 6   | **A5** Populate `potm.photo`                    | Dynamic content | Quick        | A4                |
+| 7   | **A6** Fix dead `bigMoment` photo binding       | Correctness     | Quick        | —                 |
+| 8   | **A8** Brand colours → pack tokens              | Dynamic content | Medium       | —                 |
+| 9   | **C2** Carousel slides render through pack      | Carousel        | Medium       | A1–A3             |
+| 10  | **A7** Dynamic "presented by" sponsor           | Dynamic content | Medium       | sponsor role flag |
+| 11  | **A9** Club tagline + competition hashtags      | Dynamic content | Medium       | new tenant field  |
+| 12  | **B2** Team/squad photo upload                  | Image upload    | Medium       | —                 |
+| 13  | **B3** Action-shot / full-bleed background      | Image upload    | Medium       | A4                |
+| 14  | **B1** Per-slot image upload in editor          | Image upload    | Larger       | A1–A4             |
+| 15  | **C3** `/card-sets/generate` + grouping cols    | Carousel        | Larger       | C1                |
+| 16  | **C4** Auto-seed sets from `social_drafts`      | Carousel        | Larger       | C3                |
 
 **Recommended first sprint (all quick, high impact, reuse existing infra):** A1 → A2 → A3
 → A4 (one PR threading brand+sponsors+photo into the pack renderer answers most of the
@@ -266,6 +285,7 @@ correctness cleanup to fold in.
 ## Design packs roadmap
 
 ### Packs B–E (Gold Foil, Bold Type, Neon Night, Sunset) — ✅ SHIPPED (2026-07-29)
+
 - **What:** Ship the remaining four packs from the same Claude Design bundle using
   the HTML-template pipeline established for Pack A.
 - **✅ Done.** The four remaining packs shipped across PRs **#103–#108**
@@ -293,19 +313,19 @@ correctness cleanup to fold in.
      `packId`/`packVariant`, materialised by `ensurePackTemplates` in
      `artifacts/api-server/src/lib/design-packs.ts`) through `PackCard` →
      `renderPackCard` → `stillOptions` → carousel slides → the render harness.
-  2. **The bundles are nearly story-only.** *(Corrected again 2026-07-27 — the first
+  2. **The bundles are nearly story-only.** _(Corrected again 2026-07-27 — the first
      version of this note said "story format only", which was measured wrong: it
      counted literal `1350px`/`1920px` strings, but the non-story layouts are gated on
-     `<sc-if value="{{ isNotStory }}">` and sized with `--ch`/`--k` variables.)* The
+     `<sc-if value="{{ isNotStory }}">` and sized with `--ch`/`--k` variables.)_ The
      accurate count, per card wrapper:
 
-     | Pack | Cards | With a non-story branch |
-     |---|---|---|
-     | A (Broadcast Dark) | 20 | **20** |
-     | B (Gold Foil) | 20 | **2** — Match Result, Club Leaderboard·Wickets |
-     | C (Bold Type) | 20 | **2** — same two |
-     | D (Neon Night) | 20 | **2** — same two |
-     | E (Sunset) | 20 | **2** — same two |
+     | Pack               | Cards | With a non-story branch                        |
+     | ------------------ | ----- | ---------------------------------------------- |
+     | A (Broadcast Dark) | 20    | **20**                                         |
+     | B (Gold Foil)      | 20    | **2** — Match Result, Club Leaderboard·Wickets |
+     | C (Bold Type)      | 20    | **2** — same two                               |
+     | D (Neon Night)     | 20    | **2** — same two                               |
+     | E (Sunset)         | 20    | **2** — same two                               |
 
      So each of B–E needs ~20 story transcriptions **plus ~18 authored portrait/square
      reflows** (not 20). Pack A had all 40 in the bundle, which is why its
@@ -313,7 +333,7 @@ correctness cleanup to fold in.
 
      > **⚠️ Corrected 2026-07-29 — the "2" in the B–E rows is wrong; it is 1, and
      > the arithmetic beside the table is ~19, not ~18.** Transcription found that
-     > only **Match Result** carries per-format *markup* branches. Club
+     > only **Match Result** carries per-format _markup_ branches. Club
      > Leaderboard · Wickets' apparent branch is **script-side**: the `isNotStory`
      > flag lives in the Claude Design runtime script, not the card markup, and the
      > layout is one fluid column in every format — recorded in the transcription
@@ -327,25 +347,26 @@ correctness cleanup to fold in.
      > declares a distinct `portrait:` format (`match-result.ts`) and the other 19
      > declare a single `shared:` html serving both portrait and square:
      >
-     > | Pack | Designs | `shared:` (one reflow) | distinct `portrait:` |
-     > |---|---|---|---|
-     > | A (Broadcast Dark) | 20 | 19 | 1 |
-     > | B (Gold Foil) | 20 | 19 | 1 |
-     > | C (Bold Type) | 20 | 19 | 1 |
-     > | D (Neon Night) | 20 | 19 | 1 |
-     > | E (Sunset) | 20 | 19 | 1 |
+     > | Pack               | Designs | `shared:` (one reflow) | distinct `portrait:` |
+     > | ------------------ | ------- | ---------------------- | -------------------- |
+     > | A (Broadcast Dark) | 20      | 19                     | 1                    |
+     > | B (Gold Foil)      | 20      | 19                     | 1                    |
+     > | C (Bold Type)      | 20      | 19                     | 1                    |
+     > | D (Neon Night)     | 20      | 19                     | 1                    |
+     > | E (Sunset)         | 20      | 19                     | 1                    |
      >
      > So the per-pack cost for B–E was ~20 story transcriptions **plus ~19
      > authored portrait/square reflows**. The original table's Pack A row (20/20)
-     > describes the *bundle*, which did supply all 40 — but Pack A's own shipped
+     > describes the _bundle_, which did supply all 40 — but Pack A's own shipped
      > transcription collapses to the same 19-`shared`-plus-1 shape, so the
      > shipped structure is identical across all five packs. The direction of the
      > 2026-07-27 correction still stands (B–E were not cheap); only the count in
      > the right-hand column was off.
-  All four bundles do contain exactly the same 20 designs and the same
-  `data-card-kind` mapping as Pack A, so the per-card scope is at least predictable.
-  (`Pack A - Broadcastlight.dc.html`, a light-mode Pack A variant, is also in the
-  bundle and is not yet scoped.)
+     > All four bundles do contain exactly the same 20 designs and the same
+     > `data-card-kind` mapping as Pack A, so the per-card scope is at least predictable.
+     > (`Pack A - Broadcastlight.dc.html`, a light-mode Pack A variant, is also in the
+     > bundle and is not yet scoped.)
+
 - **Effort:** Renderer refactor + ~40 layouts per pack. Recommended sequencing:
   refactor and prove with Pack B end-to-end, then C/D/E.
 - **Note:** when transcribing, the pack-wide guards added in
@@ -363,6 +384,7 @@ correctness cleanup to fold in.
     `broadcast-dark.test.ts` keeps only the Pack A-specific counts.
 
 ### Animated card variants
+
 - **What:** Story-format reveal animations per card kind (score reveal, staggered
   stats), exported as MP4.
 - **Why deferred:** Pack A imports as static compositions exactly as designed; the
@@ -385,9 +407,10 @@ Written for U5 of
 Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
 
 ### R1. Appearance of a pack card is already editable; structure is not editable at all
+
 - **What:** This doc's only entry on the topic is
   [Per-element style overrides ("C later")](#per-element-style-overrides-c-later)
-  under *Deferred product features* — deferred, "needs its own scoping". That
+  under _Deferred product features_ — deferred, "needs its own scoping". That
   entry's "B now" half **did** ship: the curated token themes, `card_themes`
   (`lib/db/src/schema/social_cards.ts:51-68` — `bgDark`, `bgPanel`, `accent`,
   `textLight`, `displayFont`, `backgroundImageUrl`, `logoUrl`), edited in the
@@ -405,6 +428,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   deferred entry's wording implies.
 
 ### R2. The existing edit/create surfaces do not edit packs — they replace them
+
 - **What:** Both Studio entry points — the per-card **"+ Template"**
   (`admin-social-studio.tsx:359-370`, label at :368) and the **"New template"**
   button (`admin-social-studio.tsx:395-401`, label at :400) — set
@@ -426,16 +450,18 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
     `isLayerTemplate` routing to the canvas `layout` pipeline instead
     (`share-card-modal.tsx:270,278,287-290`).
 
-  So "edit this card" today means *author a competing card on the legacy canvas
-  renderer*. The two entry points build a parallel design system alongside the
+  So "edit this card" today means _author a competing card on the legacy canvas
+  renderer_. The two entry points build a parallel design system alongside the
   catalogue rather than a way to customise it: the editor is one click away, but
   nothing it produces reaches a pack design.
+
 - **Notes:** The schema comment says the same thing in different words
   (`lib/db/src/schema/social_cards.ts:132-137`): `"layers"` is consumed "via the renderer's `layout`
   option", `"pack"` is a bundled design pack. They are alternatives, not layers of
   one thing.
 
 ### R3. `source: "layers"` usage across live tenants — NOT VERIFIED
+
 - **What:** The recommendation in R4 is gated on how many `layers` templates
   tenants have actually saved. **That number was not obtained, and is
   deliberately not estimated here.**
@@ -477,6 +503,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   to be scoped and communicated as one.
 
 ### R4. Recommendation — replace the layer-editor entry points with pack-template editing, in two layers
+
 - **What:** Retire "+ Template" / "New template" as the answer to "edit this card",
   and make pack editing the answer instead, in two layers:
   - **(a) Pack selection.** Shipping now in
@@ -514,6 +541,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   make five packs feel like one club's cards.
 
 ### R5. Open question — migration of saved `source: "layers"` templates
+
 - **What:** If the entry points are retired, what happens to `layers` templates a
   tenant has already saved? Options seen but **not chosen**: leave them rendering
   and only remove the authoring entry points (read-only legacy); migrate their
@@ -532,6 +560,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
 ## Data gaps surfaced during implementation
 
 ### Season-scoped ladder (central data limitation)
+
 - **What:** A genuine per-season ladder for the Ladder card.
 - **The gap:** The central `ladder` table is **all-time cumulative** — columns are
   `id, grade, club_id, club, played, won, lost, tied, no_result` only. It has **no
@@ -548,6 +577,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   revisit the points formula against the actual competition rules.
 
 ### Fixture-driven card fields with no data source yet
+
 - Match Day / Countdown promo lines ("BAR & KITCHEN OPEN", hype lines) are
   editorial and stay admin-entered by design — no follow-up needed unless a
   structured source appears.
@@ -557,6 +587,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
 ## Deferred product features
 
 ### Per-element style overrides ("C later")
+
 - **What:** An advanced editor letting admins override colour/font/size on any
   individual element of a pack card (on top of the curated token themes shipped in
   U9).
@@ -569,13 +600,14 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   "B now" half is now the recommended replacement for the layer editor.** See
   [Pack-template editing review (2026-07-29)](#pack-template-editing-review-2026-07-29):
   R1 records that the curated token themes shipped (`card_themes`) so pack
-  *appearance* is editable while *structure* is not; R4 recommends promoting that
+  _appearance_ is editable while _structure_ is not; R4 recommends promoting that
   same token surface into the Studio as the answer to "edit this card", and gives
   the two reasons per-element overrides should stay deferred — the surface is now
   five packs × 20 designs × 3 formats, and `pack-lint.test.ts` has no equivalent
   for user-authored layouts.
 
 ### Auto-draft engines for the 8 new card kinds
+
 - **What:** Extend the auto-draft engine (currently `matchSummary` only) to
   proactively queue any of the new kinds (e.g. auto-draft a Weekend Wrap after a
   round, a Ladder card after standings update).
@@ -588,6 +620,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
 ## Migration / cleanup verification
 
 ### Carousel (`card_sets`) slides on Pack A rendering
+
 - **What:** Confirm existing carousel slides that referenced the deleted built-in
   visuals render correctly on Pack A.
 - **Context:** The U5 retirement migration deletes all `card_layouts` (including
@@ -600,6 +633,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
 ## Pre-existing tech debt (not introduced here, worth a pass)
 
 ### Local typecheck noise
+
 - Full-package `tsc -p` locally is polluted by `TS6305` ("Output file
   `lib/*/dist/index.d.ts` has not been built") because source-only workspace libs
   have no local `dist`, and by pre-existing `TS7006` implicit-any errors in files
@@ -608,6 +642,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   libs before app typechecks, or committing built `dist`, would clean this up.
 
 ### Native-binary dev setup (Windows)
+
 - `pnpm-workspace.yaml` deliberately strips all native platform binaries
   (`rollup`/`esbuild`/`lightningcss`/`tailwind-oxide` win32) via `overrides: '-'`,
   so `vitest` can't run locally without manually reinstating the `@rollup/*` and
@@ -615,6 +650,7 @@ Findings are against `main` at `32639aa`, with the five-pack catalogue complete.
   script or a `.npmrc` `supportedArchitectures` note so contributors aren't blocked.
 
 ### Residual issues from the prior design-packs work (#34–#43)
+
 - Carried over from
   [docs/residual-review-findings/feat-design-packs-auto-draft.md](../residual-review-findings/feat-design-packs-auto-draft.md):
   N+1 in `match-summary-drafter` (#34), drafter tests don't call real fns (#35),

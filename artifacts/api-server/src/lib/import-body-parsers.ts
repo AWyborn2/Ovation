@@ -9,9 +9,7 @@ import { nameKey } from "./name-match";
  * commit/reconcile endpoints against malformed input — no db, no request
  * object — so importing them back into the router cannot create a cycle.
  */
-export type PlayerResolution =
-  | { action: "link"; playerId: number }
-  | { action: "create" };
+export type PlayerResolution = { action: "link"; playerId: number } | { action: "create" };
 
 /**
  * Parse the optional `resolutions` array from a commit request body into a map
@@ -24,10 +22,7 @@ export function buildResolutionMap(body: unknown): Map<string, PlayerResolution>
   if (!Array.isArray(list)) return map;
   for (const r of list) {
     if (!r || typeof r !== "object") continue;
-    const { surname, givenName, action, playerId } = r as Record<
-      string,
-      unknown
-    >;
+    const { surname, givenName, action, playerId } = r as Record<string, unknown>;
     if (typeof surname !== "string" || typeof givenName !== "string") continue;
     const key = nameKey(surname, givenName);
     if (action === "link" && typeof playerId === "number") {

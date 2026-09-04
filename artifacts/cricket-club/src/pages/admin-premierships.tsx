@@ -66,7 +66,9 @@ export default function AdminPremierships() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-end gap-4">
-        <Button onClick={() => setShowNew((v) => !v)}>{showNew ? "Close" : "Add premiership"}</Button>
+        <Button onClick={() => setShowNew((v) => !v)}>
+          {showNew ? "Close" : "Add premiership"}
+        </Button>
       </div>
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -291,7 +293,12 @@ function PremForm({
             onAdd={(p) =>
               setF("players", [
                 ...v.players,
-                { playerId: p?.id ?? null, name: p ? `${p.givenName} ${p.surname}`.trim() : "", isCaptain: false, battingOrder: null },
+                {
+                  playerId: p?.id ?? null,
+                  name: p ? `${p.givenName} ${p.surname}`.trim() : "",
+                  isCaptain: false,
+                  battingOrder: null,
+                },
               ])
             }
           />
@@ -340,7 +347,12 @@ function PremForm({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setF("players", v.players.filter((_, i) => i !== idx))}
+                onClick={() =>
+                  setF(
+                    "players",
+                    v.players.filter((_, i) => i !== idx),
+                  )
+                }
               >
                 Remove
               </Button>

@@ -55,8 +55,8 @@ export default function ProvisioningExclusions() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Provisioning exclusions</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Clubs excluded from provisioning, independent of the central register's
-        own folded/renamed data.
+        Clubs excluded from provisioning, independent of the central register's own folded/renamed
+        data.
       </p>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -133,11 +133,7 @@ function AddExclusionCard() {
       },
       onError: (e) => {
         const status = (e as { status?: number })?.status;
-        setError(
-          status === 409
-            ? "That club is already excluded."
-            : "Couldn't add the exclusion.",
-        );
+        setError(status === 409 ? "That club is already excluded." : "Couldn't add the exclusion.");
       },
     },
   });
@@ -202,12 +198,7 @@ function AddExclusionCard() {
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
           </form>
         ) : (
-          <ClubPicker
-            clubs={clubs}
-            isLoading={isLoading}
-            isError={isError}
-            onPick={setClub}
-          />
+          <ClubPicker clubs={clubs} isLoading={isLoading} isError={isError} onPick={setClub} />
         )}
       </CardContent>
     </Card>

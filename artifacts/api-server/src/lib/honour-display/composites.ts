@@ -18,7 +18,15 @@ import {
 
 import { premiershipSeasons } from "../../routes/premierships";
 import { seasonLabel, tidyCompetition } from "./premierships";
-import { type BoardColumnOut, type BoardEntry, type BoardGridOut, type GridCellEntryOut, type GridColumnOptionOut, type GridRowOut, type HonourBoardOut } from "./types";
+import {
+  type BoardColumnOut,
+  type BoardEntry,
+  type BoardGridOut,
+  type GridCellEntryOut,
+  type GridColumnOptionOut,
+  type GridRowOut,
+  type HonourBoardOut,
+} from "./types";
 
 /** Parse the leading start-year from a season label ("2024/25" -> 2024). */
 export function seasonStartYearFromLabel(label: string): number {
@@ -59,19 +67,14 @@ export function buildComposites(
 
     const canAlign =
       def.seasonAligned &&
-      cols.every(
-        (c) =>
-          c.entries.length > 0 &&
-          c.entries.every((e) => (e.season ?? "") !== ""),
-      );
+      cols.every((c) => c.entries.length > 0 && c.entries.every((e) => (e.season ?? "") !== ""));
 
     let columns: BoardColumnOut[];
     if (canAlign) {
       // Union of all seasons across the columns, newest first.
       const yearByLabel = new Map<string, number>();
       for (const c of cols)
-        for (const e of c.entries)
-          yearByLabel.set(e.season, seasonStartYearFromLabel(e.season));
+        for (const e of c.entries) yearByLabel.set(e.season, seasonStartYearFromLabel(e.season));
       const seasons = [...yearByLabel.entries()]
         .sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))
         .map(([label]) => label);
@@ -228,10 +231,7 @@ export async function buildCustomGrids(
         .select()
         .from(awardWinnersTable)
         .where(
-          and(
-            inArray(awardWinnersTable.awardId, awardIds),
-            eq(awardWinnersTable.published, true),
-          ),
+          and(inArray(awardWinnersTable.awardId, awardIds), eq(awardWinnersTable.published, true)),
         )
     : [];
   const winnersByAward = new Map<number, typeof winners>();

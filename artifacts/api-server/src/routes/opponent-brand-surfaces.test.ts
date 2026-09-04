@@ -39,8 +39,7 @@ describe("opponent-brand overlay: recent-matches + junior surfaces", () => {
   let seniorMatchId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-opponent-surfaces";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-opponent-surfaces";
 
     const [club] = await db
       .insert(clubsTable)
@@ -116,9 +115,25 @@ describe("opponent-brand overlay: recent-matches + junior surfaces", () => {
 
   it("overlayNativeOpponents merges matched clubs and passes null/unmatched through", async () => {
     const out = await overlayNativeOpponents([
-      { id: registerClubId, name: "reg", shortName: "SRF", logoUrl: REGISTER_LOGO, logoUrl128: REGISTER_LOGO, backgroundColour: null, primaryColour: "#111111" },
+      {
+        id: registerClubId,
+        name: "reg",
+        shortName: "SRF",
+        logoUrl: REGISTER_LOGO,
+        logoUrl128: REGISTER_LOGO,
+        backgroundColour: null,
+        primaryColour: "#111111",
+      },
       null,
-      { id: registerClubId + 555111, name: "other", shortName: null, logoUrl: "keep.png", logoUrl128: null, backgroundColour: null, primaryColour: null },
+      {
+        id: registerClubId + 555111,
+        name: "other",
+        shortName: null,
+        logoUrl: "keep.png",
+        logoUrl128: null,
+        backgroundColour: null,
+        primaryColour: null,
+      },
     ]);
     expect(out[0]!.logoUrl).toBe(TENANT_LOGO); // matched → overlaid
     expect(out[0]!.primaryColour).toBe(TENANT_PRIMARY);
@@ -128,7 +143,15 @@ describe("opponent-brand overlay: recent-matches + junior surfaces", () => {
 
   it("overlayCentralOpponents merges by central club id", async () => {
     const out = await overlayCentralOpponents([
-      { id: CENTRAL_CLUB_ID, name: "c", shortName: null, logoUrl: null, logoUrl128: null, primaryColour: "#999999", secondaryColour: null },
+      {
+        id: CENTRAL_CLUB_ID,
+        name: "c",
+        shortName: null,
+        logoUrl: null,
+        logoUrl128: null,
+        primaryColour: "#999999",
+        secondaryColour: null,
+      },
     ]);
     expect(out[0]!.logoUrl).toBe(TENANT_LOGO);
     expect(out[0]!.primaryColour).toBe(TENANT_PRIMARY);
@@ -137,13 +160,13 @@ describe("opponent-brand overlay: recent-matches + junior surfaces", () => {
   // ---- wiring (native, CI-safe) ----
 
   it("/overview recent-matches shows the opponent's uploaded brand", async () => {
-    const res = await request(app)
-      .get("/api/overview")
-      .set("x-tenant-id", "1")
-      .expect(200);
-    const mine = (res.body.recentMatches as Array<{ grade: string; opponentClub: { logoUrl: string; primaryColour: string } | null }>).find(
-      (m) => m.grade === GRADE,
-    );
+    const res = await request(app).get("/api/overview").set("x-tenant-id", "1").expect(200);
+    const mine = (
+      res.body.recentMatches as Array<{
+        grade: string;
+        opponentClub: { logoUrl: string; primaryColour: string } | null;
+      }>
+    ).find((m) => m.grade === GRADE);
     expect(mine).toBeTruthy();
     expect(mine!.opponentClub).toBeTruthy();
     expect(mine!.opponentClub!.logoUrl).toBe(TENANT_LOGO);

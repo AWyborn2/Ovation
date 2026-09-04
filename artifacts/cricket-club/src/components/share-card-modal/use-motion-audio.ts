@@ -80,7 +80,10 @@ export function useMotionAudio({
     () =>
       selectedAudioTrack
         ? {
-            url: `/api/storage${selectedAudioTrack.url}`.replace("/api/storage/api/storage", "/api/storage"),
+            url: `/api/storage${selectedAudioTrack.url}`.replace(
+              "/api/storage/api/storage",
+              "/api/storage",
+            ),
             volume: audioVolume,
             trimStartMs: audioTrimStartMs,
           }

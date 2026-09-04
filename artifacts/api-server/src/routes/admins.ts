@@ -91,9 +91,7 @@ router.patch("/admins/:id", requireAdmin, async (req, res): Promise<void> => {
     const conflict = await db
       .select({ id: adminsTable.id })
       .from(adminsTable)
-      .where(
-        and(eq(adminsTable.tenantId, tenantId), eq(adminsTable.username, patch.username)),
-      );
+      .where(and(eq(adminsTable.tenantId, tenantId), eq(adminsTable.username, patch.username)));
     if (conflict.length > 0 && conflict[0].id !== params.data.id) {
       res.status(409).json({ error: "Username already taken" });
       return;

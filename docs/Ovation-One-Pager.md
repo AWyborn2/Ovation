@@ -30,7 +30,7 @@ Automatic milestone tracking — centuries, five-wicket hauls, and (for native d
 Every player's career across grades and seasons, keyed on stable identities so history follows the player.
 
 **Complete history — pre-digital records merged in**
-The central database only reaches back to the digital scorecard era (MyCricket, then PlayHQ). Many clubs, though, hold decades of earlier stats in handwritten scorebooks, spreadsheets and honour boards. Ovation needs to ingest and merge those manually-kept historical records with the digital data — reconciling players and matches across both — so career totals, club records, milestones and honour boards reflect a club's *complete* history, not just the PlayHQ-era portion.
+The central database only reaches back to the digital scorecard era (MyCricket, then PlayHQ). Many clubs, though, hold decades of earlier stats in handwritten scorebooks, spreadsheets and honour boards. Ovation needs to ingest and merge those manually-kept historical records with the digital data — reconciling players and matches across both — so career totals, club records, milestones and honour boards reflect a club's _complete_ history, not just the PlayHQ-era portion.
 
 **Seniors + juniors, kept separate**
 Junior data is fully isolated from senior stats — never blended — per club, an invariant enforced throughout the platform.

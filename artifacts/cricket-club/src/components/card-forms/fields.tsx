@@ -172,12 +172,7 @@ export function ImageControl({
             alt={`${label} preview`}
             className="h-20 w-28 rounded border object-cover bg-muted"
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange("")}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>
             <X className="h-3.5 w-3.5 mr-1" /> Remove
           </Button>
         </div>
@@ -206,11 +201,7 @@ export function ImageControl({
         </Button>
         <span className="text-xs text-muted-foreground">or paste a URL</span>
       </div>
-      <Input
-        value={value}
-        placeholder="https://…"
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <Input value={value} placeholder="https://…" onChange={(e) => onChange(e.target.value)} />
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
@@ -311,10 +302,7 @@ function RepeatEditor({
   const max = cap?.cap ?? 99;
   const min = cap?.min ?? 1;
 
-  const rows = (Array.isArray(state[spec.key]) ? state[spec.key] : []) as Record<
-    string,
-    unknown
-  >[];
+  const rows = (Array.isArray(state[spec.key]) ? state[spec.key] : []) as Record<string, unknown>[];
 
   const commit = (next: Record<string, unknown>[]) => setState({ [spec.key]: next });
   const setCell = (rowIdx: number, colKey: string, value: unknown) =>
@@ -382,9 +370,7 @@ export function GenericCardForm({
 }) {
   return (
     <div className="space-y-5">
-      {descriptor.playerField && (
-        <PlayerPickRow descriptor={descriptor} setState={setState} />
-      )}
+      {descriptor.playerField && <PlayerPickRow descriptor={descriptor} setState={setState} />}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {descriptor.fields.map((field) => (
           <div key={field.key} className={field.full ? "sm:col-span-2" : undefined}>
