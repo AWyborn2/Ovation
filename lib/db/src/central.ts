@@ -1,7 +1,7 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as centralSchema from "./central-schema";
-import { envInt } from "./env";
+import { envInt, envSsl } from "./env";
 import { lazyProxy } from "./lazy";
 
 const { Pool } = pg;
@@ -86,6 +86,9 @@ function getCentralPool(): pg.Pool {
   }
   centralPoolInstance = new Pool({
     connectionString: url,
+    // Verified TLS to the remote pooler regardless of what the URL says; local
+    // CI databases opt out via CENTRAL_DB_SSL=0 (auto for loopback hosts).
+    ssl: envSsl("CENTRAL_DB_SSL", url),
     max: envInt("CENTRAL_POOL_MAX", 5),
     idleTimeoutMillis: envInt("CENTRAL_POOL_IDLE_TIMEOUT_MS", 30_000),
     connectionTimeoutMillis: envInt("CENTRAL_POOL_CONNECTION_TIMEOUT_MS", 10_000),
