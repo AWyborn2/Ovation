@@ -6,13 +6,13 @@ import {
   getGetHonourDisplayQueryKey,
   getGetKioskDisplayQueryKey,
 } from "@workspace/api-client-react";
-import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
+import { BoardRenderer } from "@/components/honours-display/board-renderer";
 import {
   SponsorStrip,
   SponsorSlide,
   SponsorSlideSingle,
   AdSlide,
-} from "@/components/honours-display/SponsorAds";
+} from "@/components/honours-display/sponsor-ads";
 import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import type { DisplayBoard } from "@/components/honours-display/types";
@@ -20,7 +20,7 @@ import type { Sponsor, KioskAd } from "@workspace/api-client-react";
 import {
   useApproachingBoard,
   applyBoardConfig,
-} from "@/components/honours-display/useApproachingBoard";
+} from "@/components/honours-display/use-approaching-board";
 import "@/styles/honour-boards.css";
 
 /** Stagger the row-reveal animation across a freshly shown board. */

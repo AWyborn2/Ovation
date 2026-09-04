@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMatch,
   getGetMatchQueryKey,
+  getListMatchesQueryKey,
   useUpdateMatchRound,
   useSetMatchHatTrick,
   MatchStage,
@@ -83,7 +84,7 @@ export default function MatchDetail() {
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
-            queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+            queryClient.invalidateQueries({ queryKey: getListMatchesQueryKey() });
             setEditingRound(false);
           },
           onError: (e) => {
@@ -105,7 +106,7 @@ export default function MatchDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
-          queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+          queryClient.invalidateQueries({ queryKey: getListMatchesQueryKey() });
           setEditingRound(false);
         },
         onError: (e) => {

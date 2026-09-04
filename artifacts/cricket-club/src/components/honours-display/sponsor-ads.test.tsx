@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import type { KioskAd } from "@workspace/api-client-react";
-import { AdSlide } from "./SponsorAds";
+import { AdSlide } from "./sponsor-ads";
 
 /** U3 — Kiosk renders MP4 ad creatives full-screen (R4, R5). */
 

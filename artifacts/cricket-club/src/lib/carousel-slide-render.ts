@@ -8,7 +8,7 @@
  * canvas renderer.
  *
  * The single-card modal treats a card as a "pack card" when no BYO template is
- * selected and `packSupportsKind(kind)` (see `share-card-modal.tsx`'s
+ * selected and `packSupportsKind(kind)` (see `share-card-modal/index.tsx`'s
  * `isPackCard`). Carousel slides never carry a BYO template, so the only extra
  * gate is the per-slide custom layout: a saved layout is a canvas-only feature
  * (the pack renderer has no layer pipeline), so a slide the admin has customised

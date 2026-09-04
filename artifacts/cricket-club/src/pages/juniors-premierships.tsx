@@ -1,48 +1,18 @@
 import { useMemo, useState } from "react";
-import { Link } from "wouter";
 import {
   useListJuniorPremierships,
   type JuniorPremiership,
 } from "@workspace/api-client-react";
-import { useBrandLogo } from "@/lib/use-brand";
 import { useBrand } from "@/lib/brand-context";
-import { PlaqueLightbox } from "@/components/plaque-lightbox";
-import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
-
-const PLAQUE_FONT = "'Inter', sans-serif";
-const TRACK = "0.0103em";
-
-const formatDate = (d: string | null | undefined) => {
-  if (!d) return "";
-  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return d;
-  return `${m[3]}/${m[2]}/${m[1]}`;
-};
-
-const titleStyle = {
-  fontSize: "10.9px",
-  letterSpacing: 0,
-  lineHeight: 1.4,
-  fontWeight: 700,
-} as const;
-const metaStyle = {
-  fontSize: "6.4px",
-  letterSpacing: TRACK,
-  lineHeight: 1.4,
-  fontWeight: 700,
-} as const;
-const rosterStyle = {
-  fontSize: "6.7px",
-  letterSpacing: TRACK,
-  lineHeight: 1.0,
-  fontWeight: 700,
-} as const;
-const resultStyle = {
-  fontSize: "6.7px",
-  letterSpacing: TRACK,
-  lineHeight: 1.4,
-  fontWeight: 700,
-} as const;
+import {
+  PLAQUE_STYLES,
+  PlaqueFrame,
+  PlaqueLine,
+  PlaqueMom,
+  PlaqueResult,
+  PremiershipBoard,
+  formatPlaqueDate,
+} from "@/components/premierships";
 
 // Junior premierships carry NO captain or man-of-the-match data in the source
 // dump — admins add them by hand via /admin/junior-premierships, after which the
@@ -53,18 +23,10 @@ const PlayerLine = ({ p }: { p: JuniorPremiership["players"][number] }) => {
   const display = p.playerName.replace(/\s+/g, " ").trim().toUpperCase();
   const label = p.isCaptain ? `${display} (CAPT)` : display;
   return (
-    <li>
-      {p.participantId ? (
-        <Link
-          href={`/juniors/players/${p.participantId}`}
-          className="block whitespace-nowrap text-slate-900 hover:underline font-semibold text-[9px]"
-        >
-          {label}
-        </Link>
-      ) : (
-        <span className="block whitespace-nowrap text-slate-900 font-semibold text-[9px]">{label}</span>
-      )}
-    </li>
+    <PlaqueLine
+      href={p.participantId ? `/juniors/players/${p.participantId}` : null}
+      label={label}
+    />
   );
 };
 
@@ -79,88 +41,51 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
         ? `${prem.hhScore ?? "—"} def ${prem.oppScore ?? "—"}`
         : "");
   return (
-    <div
-      className="relative shadow-md border border-slate-900/60 overflow-hidden"
-      style={{
-        width: "151px",
-        height: "259px",
-        background:
-          "linear-gradient(135deg, #c8ccd1 0%, #e8ebee 20%, #b8bdc4 40%, #d8dce0 60%, #aeb3ba 80%, #c8ccd1 100%)",
-        fontFamily: PLAQUE_FONT,
-        padding: "4px",
-      }}
-    >
-      <div className="h-full border-slate-800" style={{ borderWidth: "1px", padding: "1px" }}>
-        <div
-          className="h-full text-center flex flex-col border border-slate-800 overflow-hidden"
-          style={{ color: "#0f172a", fontFamily: PLAQUE_FONT, paddingInline: "5px", paddingBlock: "6px" }}
-        >
-          <div style={titleStyle} className="text-[12px] font-bold uppercase">{title}</div>
+    <PlaqueFrame>
+      <div style={PLAQUE_STYLES.title} className="text-[12px] font-bold uppercase">{title}</div>
 
-          {(prem.association || prem.competition) && (
-            <div style={{ ...metaStyle, marginTop: "2px" }} className="text-[10px]">
-              {(prem.association || prem.competition)!.toUpperCase()}
-            </div>
-          )}
-
-          {prem.matchDate && (
-            <div style={{ ...metaStyle, marginTop: "2px" }} className="text-[10px]">
-              {formatDate(prem.matchDate)}
-            </div>
-          )}
-
-          {(prem.venueOval || prem.venue) && (
-            <div style={{ ...metaStyle, marginTop: "1px" }} className="text-[9px]">
-              {prem.venueOval || prem.venue}
-            </div>
-          )}
-
-          {prem.players.length > 0 && (
-            <ul className="list-none p-0 m-0" style={{ ...rosterStyle, marginTop: "4px" }}>
-              {prem.players.map((p, i) => (
-                <PlayerLine key={i} p={p} />
-              ))}
-            </ul>
-          )}
-
-          <div className="flex-1" />
-
-          {prem.mom && (
-            <div
-              style={{ ...resultStyle, marginBottom: "4px" }}
-              className="text-[10px] pt-[10px] pb-[10px] text-center font-bold"
-            >
-              M.O.M - {prem.mom.toUpperCase()}
-            </div>
-          )}
-
-          {result &&
-            (prem.matchId != null ? (
-              <Link
-                href={`/juniors/matches/${prem.matchId}`}
-                style={{ ...resultStyle, whiteSpace: "pre-line" }}
-                className="text-[12px] font-bold block hover:underline cursor-pointer"
-                title="View deciding scorecard"
-              >
-                {result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
-              </Link>
-            ) : (
-              <div style={{ ...resultStyle, whiteSpace: "pre-line" }} className="text-[12px] font-bold">
-                {result.replace(/\s+def\s+/i, "\nDEF\n").toUpperCase()}
-              </div>
-            ))}
+      {(prem.association || prem.competition) && (
+        <div style={{ ...PLAQUE_STYLES.meta, marginTop: "2px" }} className="text-[10px]">
+          {(prem.association || prem.competition)!.toUpperCase()}
         </div>
-      </div>
-    </div>
+      )}
+
+      {prem.matchDate && (
+        <div style={{ ...PLAQUE_STYLES.meta, marginTop: "2px" }} className="text-[10px]">
+          {formatPlaqueDate(prem.matchDate)}
+        </div>
+      )}
+
+      {(prem.venueOval || prem.venue) && (
+        <div style={{ ...PLAQUE_STYLES.meta, marginTop: "1px" }} className="text-[9px]">
+          {prem.venueOval || prem.venue}
+        </div>
+      )}
+
+      {prem.players.length > 0 && (
+        <ul className="list-none p-0 m-0" style={{ ...PLAQUE_STYLES.roster, marginTop: "4px" }}>
+          {prem.players.map((p, i) => (
+            <PlayerLine key={i} p={p} />
+          ))}
+        </ul>
+      )}
+
+      <div className="flex-1" />
+
+      <PlaqueMom mom={prem.mom} />
+      <PlaqueResult
+        result={result}
+        href={prem.matchId != null ? `/juniors/matches/${prem.matchId}` : null}
+        title="View deciding scorecard"
+      />
+    </PlaqueFrame>
   );
 };
 
+/** Juniors premiership wall — reads only `/api/juniors/*` (juniors isolation). */
 export default function JuniorsPremierships() {
-  const logoUrl = useBrandLogo();
-  const brand = useBrand();
   const { data, isLoading, isError, refetch } = useListJuniorPremierships();
   const [ageGroup, setAgeGroup] = useState("All");
-  const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
 
   const ageGroups = useMemo(() => {
     const set = new Set<string>();
@@ -180,101 +105,41 @@ export default function JuniorsPremierships() {
   }, [data, ageGroup]);
 
   return (
-    <div
-      className="mx-[calc(50%-50vw)] w-screen min-h-screen overflow-x-hidden"
-      style={{
-        background:
-          "radial-gradient(ellipse at center, #3a4654 0%, #2a3540 60%, #1f2832 100%)",
+    <PremiershipBoard
+      heading="JUNIOR PREMIERSHIPS"
+      eyebrow={
+        <div className="text-xs font-bold uppercase tracking-[0.3em] text-[#e7c9b1] mb-1">
+          Juniors
+        </div>
+      }
+      filter={{
+        label: "Age Group",
+        value: ageGroup,
+        options: ageGroups,
+        onChange: setAgeGroup,
+        testId: "select-age-group",
       }}
-    >
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
-        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
-          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
-          <div className="text-center text-white">
-            <div className="text-xs font-bold uppercase tracking-[0.3em] text-[#e7c9b1] mb-1">
-              Juniors
-            </div>
-            <h1
-              className="m-0 font-bold tracking-[0.08em] leading-tight text-xl md:text-3xl lg:text-4xl"
-              style={{ fontFamily: PLAQUE_FONT }}
-            >
-              {brand.name.toUpperCase()}
-            </h1>
-            <div
-              className="mt-1 font-semibold tracking-[0.25em] text-sm md:text-base lg:text-lg text-white/90"
-              style={{ fontFamily: PLAQUE_FONT }}
-            >
-              JUNIOR PREMIERSHIPS
-            </div>
-          </div>
-          <img loading="lazy" decoding="async" src={logoUrl} alt={brand.name} className="h-14 md:h-20 w-auto drop-shadow" />
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap mb-4 text-white/90">
-          <span className="text-xs font-bold uppercase tracking-widest">Age Group</span>
-          <select
-            value={ageGroup}
-            onChange={(e) => {
-              setAgeGroup(e.target.value);
-              setEnlargedIndex(null);
-            }}
-            className="px-3 py-1.5 rounded border border-white/30 bg-black/30 text-white text-sm font-medium"
-            data-testid="select-age-group"
-          >
-            {ageGroups.map((a) => (
-              <option key={a} value={a} className="text-black">{a}</option>
-            ))}
-          </select>
-          <span className="text-xs italic ml-auto text-white/70">
-            {filtered.length} of {data?.length ?? 0} shown
-          </span>
-        </div>
-
-        {isError ? (
-          <QueryError onRetry={() => refetch()} />
-        ) : isLoading ? (
-          <CardGridSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState title="No junior premierships found" message="There are no junior premierships to show for this filter." />
-        ) : (
-          <div
-            className="grid gap-[3px] justify-center"
-            style={{ gridTemplateColumns: "repeat(auto-fill, 151px)" }}
-          >
-            {filtered.map((p, i) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setEnlargedIndex(i)}
-                aria-label={`Enlarge ${[p.ageGroup, p.season].filter(Boolean).join(" ")} premiership plaque`}
-                className="block p-0 m-0 bg-transparent border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                data-testid={`button-plaque-${p.id}`}
-              >
-                <div className="pointer-events-none">
-                  <Plaque prem={p} />
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {enlargedIndex !== null && (
-        <PlaqueLightbox
-          theme="gold"
-          items={filtered}
-          index={enlargedIndex}
-          onIndexChange={setEnlargedIndex}
-          onClose={() => setEnlargedIndex(null)}
-          renderItem={(p) => <Plaque prem={p} />}
-          exportFileName={(p) =>
-            `hhcc-junior-${p.ageGroup ?? "premiership"}-${p.season ?? ""}`
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "")
-          }
-        />
-      )}
-    </div>
+      total={data?.length ?? 0}
+      items={filtered}
+      isLoading={isLoading}
+      isError={isError}
+      onRetry={() => refetch()}
+      empty={{
+        title: "No junior premierships found",
+        message: "There are no junior premierships to show for this filter.",
+      }}
+      renderPlaque={(p) => <Plaque prem={p} />}
+      plaqueLabel={(p) =>
+        `Enlarge ${[p.ageGroup, p.season].filter(Boolean).join(" ")} premiership plaque`
+      }
+      focusRingClass="focus-visible:ring-primary"
+      lightboxTheme="gold"
+      exportFileName={(p) =>
+        `hhcc-junior-${p.ageGroup ?? "premiership"}-${p.season ?? ""}`
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "")
+      }
+    />
   );
 }

@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { useGetHonourDisplay } from "@workspace/api-client-react";
-import { BoardRenderer } from "@/components/honours-display/BoardRenderer";
+import { BoardRenderer } from "@/components/honours-display/board-renderer";
 import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import {
   useApproachingBoard,
   applyBoardConfig,
-} from "@/components/honours-display/useApproachingBoard";
+} from "@/components/honours-display/use-approaching-board";
 import { QueryError } from "@/components/data-states";
 import "@/styles/honour-boards.css";
 

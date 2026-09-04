@@ -12,7 +12,7 @@ import AdminHonoursDisplay from "./admin-honours-display";
  * endpoints, so every test here supplies an explicit override for
  * "uploads/request-url" — otherwise the request falls through to the
  * default `[]` payload and the upload flow can't resolve a usable
- * objectPath (see admin-honours-display.tsx `AdEditor`).
+ * objectPath (see components/honours-display/editors/ad-editor.tsx).
  */
 
 const BUNDLE: HonourDisplayBundle = {
