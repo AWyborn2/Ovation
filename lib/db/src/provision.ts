@@ -202,6 +202,8 @@ export async function provisionTenant(
             .onConflictDoUpdate({ target: tenantsTable.slug, set: identityOnly })
             .returning();
 
+    if (!row) throw new Error(`provisioning: tenant upsert for "${values.slug}" returned no row`);
+
     // Mint the player identity crosswalk (idempotent) via the shared helper so the
     // provisioning path and the backfill script (scripts/backfill-player-id-map)
     // mint identically.

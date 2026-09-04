@@ -43,9 +43,9 @@ function parseScore(
   if (!m) {
     // A bare number is treated as runs.
     const n = /^\s*(\d+)\s*$/.exec(score);
-    return { wickets: null, runs: n ? parseInt(n[1], 10) : null };
+    return { wickets: null, runs: n ? parseInt(n[1] ?? "0", 10) : null };
   }
-  return { runs: parseInt(m[1], 10), wickets: parseInt(m[2], 10) };
+  return { runs: parseInt(m[1] ?? "0", 10), wickets: parseInt(m[2] ?? "0", 10) };
 }
 
 function strikeRate(

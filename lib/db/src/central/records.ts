@@ -533,8 +533,7 @@ async function centralMilestonesImpl(
         const now = prev + contrib[spec.key];
         totals[spec.key] = now;
         if (!meta?.grade || meta.season === null) continue;
-        for (let i = 0; i < spec.tiers.length; i++) {
-          const tier = spec.tiers[i];
+        for (const [i, tier] of spec.tiers.entries()) {
           if (prev < tier && now >= tier) {
             out.push({
               kind: "career",

@@ -423,12 +423,14 @@ async function centralWeekendWrapImpl(
     .map((m) => formatWrapDate(m.matchDate))
     .filter((d): d is { label: string; sort: string } => d != null)
     .sort((a, b) => (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0));
+  const firstDate = dates[0];
+  const lastDate = dates[dates.length - 1];
   const dateRange =
-    dates.length === 0
+    !firstDate || !lastDate
       ? ""
-      : dates[0].label === dates[dates.length - 1].label
-        ? dates[0].label
-        : `${dates[0].label} – ${dates[dates.length - 1].label}`;
+      : firstDate.label === lastDate.label
+        ? firstDate.label
+        : `${firstDate.label} – ${lastDate.label}`;
 
   const matches: CentralWeekendWrapMatch[] = picked.map((m) => {
     const outcome: "WON" | "LOST" | "" =

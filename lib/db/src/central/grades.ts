@@ -97,7 +97,7 @@ export function classifyCentralGrade(
   // ("A Grade", "A Grade: Wyllie Cup", "D Grade Ritchie Cup", "T20: B Grade").
   const labelled = /\b([a-f])\s*grade\b/.exec(lower);
   if (labelled) {
-    return { appGrade: `${labelled[1].toUpperCase()} Grade`, note: formatNote };
+    return { appGrade: `${(labelled[1] ?? "").toUpperCase()} Grade`, note: formatNote };
   }
   // Bare single-letter grade code ("A", "B", …) with no "Grade" word.
   if (/^[a-f]$/.test(lower)) {

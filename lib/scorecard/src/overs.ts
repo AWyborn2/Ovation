@@ -11,7 +11,7 @@ export function oversToBalls(overs: string | null | undefined): number | null {
   if (!s) return null;
   const m = /^(\d+)(?:\.(\d))?$/.exec(s);
   if (!m) return null;
-  const whole = parseInt(m[1], 10);
+  const whole = parseInt(m[1] ?? "0", 10);
   const balls = m[2] ? parseInt(m[2], 10) : 0;
   if (balls > 5) return null;
   return whole * 6 + balls;

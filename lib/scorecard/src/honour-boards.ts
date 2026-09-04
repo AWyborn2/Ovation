@@ -324,7 +324,7 @@ const parseBestBowling = (bb: string | null | undefined): { wkts: number; runs: 
   if (!bb) return { wkts: 0, runs: 0 };
   const m = String(bb).match(/(\d+)\s*\/\s*(\d+)/);
   if (!m) return { wkts: 0, runs: 0 };
-  return { wkts: parseInt(m[1], 10), runs: parseInt(m[2], 10) };
+  return { wkts: parseInt(m[1] ?? "0", 10), runs: parseInt(m[2] ?? "0", 10) };
 };
 
 const isBetterBowling = (a: { wkts: number; runs: number }, b: { wkts: number; runs: number }): boolean => {
@@ -551,19 +551,22 @@ export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): Mileston
   let nextLabel: string | null = null;
   let nextThreshold: number | null = null;
 
-  if (currentIdx > 0) {
+  const topTier = tiers[0];
+  const bottomTier = tiers[tiers.length - 1];
+  const nextUp = tiers[currentIdx - 1];
+  if (currentIdx > 0 && nextUp) {
     nextIdx = currentIdx - 1;
-    nextLabel = tiers[nextIdx].label;
-    nextThreshold = tiers[nextIdx].min;
-  } else if (currentIdx === 0 && cfg.kind === "extendable") {
-    const synthMin = tiers[0].min + cfg.step;
+    nextLabel = nextUp.label;
+    nextThreshold = nextUp.min;
+  } else if (currentIdx === 0 && cfg.kind === "extendable" && topTier) {
+    const synthMin = topTier.min + cfg.step;
     nextIdx = 0;
     nextLabel = `${synthMin.toLocaleString()} ${cfg.noun} Club`;
     nextThreshold = synthMin;
-  } else if (currentIdx === -1 && tiers.length > 0) {
+  } else if (currentIdx === -1 && bottomTier) {
     nextIdx = tiers.length - 1;
-    nextLabel = tiers[nextIdx].label;
-    nextThreshold = tiers[nextIdx].min;
+    nextLabel = bottomTier.label;
+    nextThreshold = bottomTier.min;
   }
 
   return {
@@ -571,7 +574,7 @@ export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): Mileston
     boardLabel: board.label,
     currentValue: value,
     currentTierIndex: currentIdx >= 0 ? currentIdx : null,
-    currentTierLabel: currentIdx >= 0 ? tiers[currentIdx].label : null,
+    currentTierLabel: tiers[currentIdx]?.label ?? null,
     nextTierIndex: nextIdx,
     nextTierLabel: nextLabel,
     nextTierThreshold: nextThreshold,
@@ -600,8 +603,7 @@ export const getSeasonCrossings = (
     const bVal = milestoneValue(before, key);
     const aVal = milestoneValue(after, key);
     const board = BOARDS.find((b) => b.key === key)!;
-    for (let i = 0; i < tiers.length; i++) {
-      const t = tiers[i];
+    for (const [i, t] of tiers.entries()) {
       if (t.min <= 0) continue;
       if (!isSignificant(key, t.min, thresholds)) continue;
       if (t.min > bVal && t.min <= aVal) {
@@ -742,8 +744,8 @@ export const getRecentPromotions = (
       const tiers = tiersByKey.get(key)!;
       const value = milestoneValue(p, key);
       const idx = tiers.findIndex((t) => value >= t.min && (t.max === undefined || value <= t.max));
-      if (idx === -1) continue;
       const tier = tiers[idx];
+      if (idx === -1 || !tier) continue;
       if (tier.min <= 0) continue;
       if (!isSignificant(key, tier.min, thresholds)) continue;
       const excess = value - tier.min;
@@ -851,9 +853,10 @@ export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardT
   for (const { p, v } of enriched) {
     if (seen.has(p.playerId)) continue;
     const tierIdx = tiers.findIndex((t) => v.tierValue >= t.min && (t.max === undefined || v.tierValue <= t.max));
-    if (tierIdx === -1) continue;
+    const target = tierResults[tierIdx];
+    if (tierIdx === -1 || !target) continue;
     seen.add(p.playerId);
-    tierResults[tierIdx].rows.push({
+    target.rows.push({
       playerId: p.playerId,
       surname: p.surname,
       givenName: p.givenName,
@@ -865,8 +868,7 @@ export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardT
   }
   const populated = tierResults.filter((t) => t.rows.length > 0);
   let running = 1;
-  for (let i = 0; i < populated.length; i++) {
-    const t = populated[i];
+  for (const [i, t] of populated.entries()) {
     t.tierIndex = i;
     t.startRank = running;
     running += t.rows.length;

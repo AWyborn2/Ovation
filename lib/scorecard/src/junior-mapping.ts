@@ -57,9 +57,10 @@ function parseJuniorScore(raw: string | null | undefined): {
   if (!raw) return { runs: null, wickets: null };
   const nums = raw.match(/\d+/g);
   if (!nums || nums.length === 0) return { runs: null, wickets: null };
-  if (nums.length === 1) return { runs: parseInt(nums[0], 10), wickets: null };
-  const a = parseInt(nums[0], 10);
-  const b = parseInt(nums[1], 10);
+  const [n0 = "0", n1 = "0"] = nums;
+  if (nums.length === 1) return { runs: parseInt(n0, 10), wickets: null };
+  const a = parseInt(n0, 10);
+  const b = parseInt(n1, 10);
   const runs = Math.max(a, b);
   const small = Math.min(a, b);
   return { runs, wickets: small <= 10 ? small : null };
