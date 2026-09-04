@@ -10,7 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
-import { tenantReadsFromCentral } from "./tenant";
+import { tenantIsCentral } from "./tenant";
 
 // Fill-ins (playerId >= 90000) are excluded from every stats derivation.
 const FILL_IN_FLOOR = 90000;
@@ -188,7 +188,7 @@ export async function generateRoundUpDrafts(
   // Round-ups are computed from the native (Halls Head) stats tables. A central
   // tenant has no native data of its own — generating here would celebrate the
   // demo club's players under that tenant, so bail rather than leak.
-  if (await tenantReadsFromCentral(tenantId)) return [];
+  if (await tenantIsCentral(tenantId)) return [];
   const stats = await queryPerformers(grade, { season });
   const innings = await queryInningsRows(grade, season);
   const created: SocialDraft[] = [];
@@ -380,7 +380,7 @@ export async function generateRecapDrafts(
   season: number,
 ): Promise<SocialDraft[]> {
   // Native-derived (see generateRoundUpDrafts) — no recap for central tenants.
-  if (await tenantReadsFromCentral(tenantId)) return [];
+  if (await tenantIsCentral(tenantId)) return [];
   const stats = await queryPerformers(grade, { season });
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Season Recap`;

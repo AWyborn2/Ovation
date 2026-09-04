@@ -24,6 +24,12 @@ export const pool = new Pool({
   connectionTimeoutMillis: envInt("POOL_CONNECTION_TIMEOUT_MS", 10_000),
   statement_timeout: envInt("STATEMENT_TIMEOUT_MS", 30_000),
 });
+// An idle client can be dropped by the server or a network blip; without a
+// listener that is an unhandled 'error' event on the pool and crashes the process.
+pool.on("error", (err) => {
+  console.error("[tenant-db] idle client error", err);
+});
+
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";

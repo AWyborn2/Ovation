@@ -55,8 +55,28 @@ const centralPool = new Pool({
 
 type CentralSchema = typeof centralSchema;
 
-/** Drizzle methods that mutate; blocked at both the type and runtime level. */
-const BLOCKED_WRITE_METHODS = new Set(["insert", "update", "delete"]);
+// A remote pooler can drop an idle client at any time. Without a listener that
+// surfaces as an unhandled 'error' event on the pool and takes the process down.
+centralPool.on("error", (err) => {
+  console.error("[central-db] idle client error", err);
+});
+
+/**
+ * Drizzle members that can mutate or hand out the raw connection; blocked at
+ * both the type and runtime level. `transaction` is blocked because a callback
+ * receives a full (writable) transaction handle; `$client` because it is the
+ * raw pg pool. Read-only raw SQL goes through `execute`, which stays open and
+ * is additionally protected by the read-only database role documented in
+ * plan.md §2.6.
+ */
+const BLOCKED_WRITE_METHODS = new Set([
+  "insert",
+  "update",
+  "delete",
+  "transaction",
+  "refreshMaterializedView",
+  "$client",
+]);
 
 /**
  * Read-only Drizzle handle for the central DB. The write builders are removed
@@ -65,7 +85,7 @@ const BLOCKED_WRITE_METHODS = new Set(["insert", "update", "delete"]);
  */
 export type CentralDb = Omit<
   NodePgDatabase<CentralSchema>,
-  "insert" | "update" | "delete"
+  "insert" | "update" | "delete" | "transaction" | "refreshMaterializedView" | "$client"
 >;
 
 const rawCentralDb = drizzle(centralPool, { schema: centralSchema });

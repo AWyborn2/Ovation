@@ -1,4 +1,5 @@
 import type { Request, RequestHandler, NextFunction, Response } from "express";
+import { timingSafeEqual } from "node:crypto";
 import { db, tenantsTable } from "@workspace/db";
 
 /**
@@ -143,18 +144,31 @@ async function tenantDirectory() {
 export function hostOf(req: Request): string {
   const proxyKey = process.env.PROXY_SHARED_SECRET;
   const ovationHost = req.headers["x-ovation-host"];
+  const presentedKey = req.headers["x-ovation-proxy-key"];
   if (
     proxyKey &&
     typeof ovationHost === "string" &&
     ovationHost &&
-    req.headers["x-ovation-proxy-key"] === proxyKey
+    typeof presentedKey === "string" &&
+    secretsMatch(presentedKey, proxyKey)
   ) {
     return ovationHost.split(":")[0]?.toLowerCase().trim() ?? "";
   }
-  const xfh = req.headers["x-forwarded-host"];
+  // `X-Forwarded-Host` is client-controlled unless a trusted proxy rewrites
+  // it. Replit's edge does; set TRUST_FORWARDED_HOST=0 on any deployment
+  // where it does not, so a direct client cannot pick its tenant by header.
+  const trustForwardedHost = process.env.TRUST_FORWARDED_HOST !== "0";
+  const xfh = trustForwardedHost ? req.headers["x-forwarded-host"] : undefined;
   const forwarded = (Array.isArray(xfh) ? xfh[0] : xfh ?? "").split(",")[0]?.trim();
   const raw = forwarded || req.headers.host || "";
   return raw.split(":")[0]?.toLowerCase().trim() ?? "";
+}
+
+/** Constant-time comparison of a presented secret against the configured one. */
+function secretsMatch(presented: string, expected: string): boolean {
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /**
@@ -237,8 +251,16 @@ export function classifyNonTenantHost(req: Request): HostMode {
   // chain instead). These hosts are also platform hosts, so this must come
   // before the platform check. Inert on real tenant hosts: the
   // subdomain/custom-domain match wins first and the header is never consulted.
+  //
+  // On the PUBLISHED `.replit.app` host this is a public tenant switcher: any
+  // client can render any tenant's public data by header. It is therefore
+  // opt-in there (`TENANT_HEADER_ON_PUBLISHED_HOST=1`) and always on for
+  // `.replit.dev` previews.
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
-  if (headerTenant !== undefined && (isPreviewHost(host) || isPublishedReplitHost(host))) {
+  const switcherAllowed =
+    isPreviewHost(host) ||
+    (isPublishedReplitHost(host) && process.env.TENANT_HEADER_ON_PUBLISHED_HOST === "1");
+  if (headerTenant !== undefined && switcherAllowed) {
     return { mode: "tenant", tenantId: headerTenant };
   }
 

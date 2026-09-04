@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
 import { LoadingState } from "@/components/data-states";
+import { RouteErrorBoundary } from "@/components/route-error-boundary";
 import { BrandProvider, usePlatform } from "@/lib/brand-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { createAppQueryClient } from "@/lib/query-client";
@@ -86,12 +87,25 @@ function RouteFallback() {
   return <LoadingState label="Loading page…" />;
 }
 
+/**
+ * Every route tree mounts through this: a render error in one page is caught
+ * and shown inline (the Layout chrome stays up), and a lazy chunk shows the
+ * shared fallback while it downloads.
+ */
+function RouteSuspense({ children }: { children: ReactNode }) {
+  return (
+    <RouteErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </RouteErrorBoundary>
+  );
+}
+
 function PublicRoutes() {
   return (
     <Layout>
       {/* Suspense sits inside Layout so the header/footer chrome stays put
           while a lazy page chunk loads. */}
-      <Suspense fallback={<RouteFallback />}>
+      <RouteSuspense>
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/honour-boards" component={HonourBoards} />
@@ -118,7 +132,7 @@ function PublicRoutes() {
           />
           <Route component={NotFound} />
         </Switch>
-      </Suspense>
+      </RouteSuspense>
     </Layout>
   );
 }
@@ -127,7 +141,7 @@ function AdminRoutes() {
   return (
     <Layout>
       <AdminShell>
-        <Suspense fallback={<RouteFallback />}>
+        <RouteSuspense>
           <Switch>
             <Route path="/admin" component={AdminHub} />
             <Route path="/admin/users" component={AdminUsers} />
@@ -204,7 +218,7 @@ function AdminRoutes() {
 
             <Route component={NotFound} />
           </Switch>
-        </Suspense>
+        </RouteSuspense>
       </AdminShell>
     </Layout>
   );
@@ -213,9 +227,9 @@ function AdminRoutes() {
 function CaptainRoutes() {
   return (
     <Layout>
-      <Suspense fallback={<RouteFallback />}>
+      <RouteSuspense>
         <CaptainPage />
-      </Suspense>
+      </RouteSuspense>
     </Layout>
   );
 }
@@ -266,9 +280,9 @@ export function Router() {
   const [isCardRenderHarness] = useRoute("/__card-render");
   if (isCardRenderHarness) {
     return (
-      <Suspense fallback={<RouteFallback />}>
+      <RouteSuspense>
         <CardRenderHarness />
-      </Suspense>
+      </RouteSuspense>
     );
   }
 
@@ -278,7 +292,7 @@ export function Router() {
     // Top-level boundary for the lazy full-screen/special routes (kiosk, honour
     // display, captain, card harness, admin reset). PublicRoutes/AdminRoutes
     // carry their own inner boundaries so the Layout chrome doesn't unmount.
-    <Suspense fallback={<RouteFallback />}>
+    <RouteSuspense>
       <Switch>
         <Route path="/__card-render" component={CardRenderHarness} />
         {/* Short, easy-to-type clubroom-TV link. The token in the path gates it
@@ -306,7 +320,7 @@ export function Router() {
         <Route path="/captain" component={CaptainRoutes} />
         <Route component={PublicRoutes} />
       </Switch>
-    </Suspense>
+    </RouteSuspense>
   );
 }
 

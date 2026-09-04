@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Loader2, Check } from "lucide-react";
+import { QueryError } from "@/components/data-states";
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -91,7 +92,7 @@ async function resizeImageFile(
  */
 export default function PlatformBrand() {
   const qc = useQueryClient();
-  const { data, isLoading } = useGetPlatformBrand();
+  const { data, isLoading, isError, refetch } = useGetPlatformBrand();
 
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
@@ -188,6 +189,15 @@ export default function PlatformBrand() {
 
   const validAccent = HEX_RE.test(accentColour) ? accentColour : null;
   const accentFg = validAccent ? getContrastFg(validAccent) : "#ffffff";
+
+  if (isError) {
+    return (
+      <QueryError
+        message="Couldn’t load the platform brand settings."
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (isLoading) {
     return (

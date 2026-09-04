@@ -150,14 +150,71 @@ export async function getRequestEntitlements(
 }
 
 /**
+ * Central reads are switched off platform-wide (`CENTRAL_READS=0`) and this
+ * tenant has no native data to fall back to. Surfaces as a 503 so the client
+ * shows "temporarily unavailable" — never another club's stats.
+ */
+export class CentralReadsDisabledError extends Error {
+  readonly status = 503;
+  constructor(readonly tenantId: number) {
+    super(
+      `Central stats reads are disabled (CENTRAL_READS=0) and tenant ${tenantId} ` +
+        `has no native stats tables to fall back to.`,
+    );
+    this.name = "CentralReadsDisabledError";
+  }
+}
+
+/**
+ * The single fail-closed decision every stats read goes through.
+ *
+ * - Tenant #1 (the only tenant whose history lives in the native tables) reads
+ *   native unless configured otherwise.
+ * - Any other tenant MUST read central. If its row says otherwise the native
+ *   tables would serve tenant #1's history under this tenant's brand, so we
+ *   throw {@link NativeStatsUnavailableError} (409) instead of returning false.
+ * - `CENTRAL_READS=0` is an incident kill-switch for the central DB. It forces
+ *   tenant #1 native, and makes every central tenant fail with
+ *   {@link CentralReadsDisabledError} (503) — it must never turn into "serve
+ *   everyone Halls Head's data".
+ */
+function decideReadsFromCentral(tenantId: number, readsFromCentral: boolean): boolean {
+  const killSwitch = process.env.CENTRAL_READS === "0";
+  if (tenantId === NATIVE_STATS_TENANT_ID) {
+    return killSwitch ? false : readsFromCentral;
+  }
+  if (!readsFromCentral) throw new NativeStatsUnavailableError(tenantId);
+  if (killSwitch) throw new CentralReadsDisabledError(tenantId);
+  return true;
+}
+
+/**
+ * The raw `reads_from_central` flag, WITHOUT the fail-closed guard. For
+ * surfaces whose native tables are already tenant-scoped (juniors, curated
+ * premierships, social round-ups), where "not central" simply means "this
+ * tenant keeps its own rows" and can never expose tenant #1's data. Stats-core
+ * reads must use {@link shouldReadCentral} / {@link tenantReadsFromCentral}.
+ */
+export async function tenantIsCentral(tenantId: number): Promise<boolean> {
+  return (await getTenantConfig(tenantId)).readsFromCentral;
+}
+
+/** Request form of {@link tenantIsCentral}. */
+export async function isCentralTenant(req: Request): Promise<boolean> {
+  return tenantIsCentral(getTenantId(req));
+}
+
+/**
  * Whether a tenant reads its stats from the central PCA DB (vs native tables).
  * The by-id form of {@link shouldReadCentral} for pipeline code that has a
  * tenant id but no request (e.g. round-up generation). Honours the
- * `CENTRAL_READS=0` global kill-switch.
+ * `CENTRAL_READS=0` global kill-switch and fails closed for any tenant other
+ * than #1 that is not configured for central reads (see
+ * {@link decideReadsFromCentral}).
  */
 export async function tenantReadsFromCentral(tenantId: number): Promise<boolean> {
-  if (process.env.CENTRAL_READS === "0") return false;
-  return (await getTenantConfig(tenantId)).readsFromCentral;
+  const cfg = await getTenantConfig(tenantId);
+  return decideReadsFromCentral(tenantId, cfg.readsFromCentral);
 }
 
 export async function getTenantCentralClubId(tenantId: number): Promise<number> {
@@ -181,6 +238,5 @@ export async function getRequestCentralClubId(req: Request): Promise<number> {
  * kill-switch (force native everywhere) for incident response.
  */
 export async function shouldReadCentral(req: Request): Promise<boolean> {
-  if (process.env.CENTRAL_READS === "0") return false;
-  return (await getTenantConfig(getTenantId(req))).readsFromCentral;
+  return tenantReadsFromCentral(getTenantId(req));
 }

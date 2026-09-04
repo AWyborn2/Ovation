@@ -97,8 +97,9 @@ app.post(
 // multipart handling in `imports.ts`, so neither is affected. Raising this is a
 // relaxation, not hardening — if a route ever needs a larger body, give that
 // route its own limit instead of widening the global one.
+// JSON only. No route reads a form-encoded body, and leaving the urlencoded
+// parser mounted would let a cross-site HTML form POST reach a handler.
 app.use(express.json({ limit: "100kb" }));
-app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).

@@ -28,7 +28,7 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - `artifacts/cricket-club/src/` — React frontend (pages, components, hooks)
 - `lib/api-client-react/src/generated/` — generated React Query hooks (do not hand-edit)
 - `lib/api-zod/src/generated/` — generated Zod schemas for server validation (do not hand-edit)
-- `scripts/src/seed.ts` — DB seed script (run via executeSql, not pnpm directly)
+- `scripts/src/` — maintenance and seed scripts (see `scripts/README.md`); single-tenant relics live in `scripts/legacy/` and must not be run against the shared DB
 - `attached_assets/Halls Head Cricket Club Stats and Honours.xlsx` — original data source
 
 ## Data model
@@ -95,7 +95,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 - Re-run `pnpm --filter @workspace/api-spec run codegen` after any OpenAPI spec change.
 - Don't add query params to `getGradeLeaderboard` — Orval naming collision.
 - The spreadsheet's "CLUB TOTAL" summary row must be filtered out during seeding (null given_name).
-- Seeding via `pnpm --filter @workspace/scripts run seed` fails (drizzle-orm not at runtime); use executeSql or add drizzle-orm to scripts deps.
+- Seed scripts require `--tenant=<id>` and refuse a non-local `DATABASE_URL` without `--yes` (see `scripts/src/lib/cli.ts`). The old tenant-blind `seed.ts` was removed.
 - **Don't re-add the `cap_register` composite unique to the Drizzle schema.** drizzle-kit 0.31 can't detect the existing `(category, cap_number)` unique, re-proposes it every `push`, and the truncate prompt has no TTY in post-merge → silent migration failure. It's left out on purpose and re-created idempotently by `scripts/src/ensure-constraints.ts` (run from `post-merge.sh` after `db push`). Add any future un-manageable constraint there, not the schema.
 - **One ingestion method per (grade, season).** Match commit re-derives the season snapshot by DELETE+INSERT of `player_grade_season_stats` rows with `import_id IS NULL`; a whole-season CSV writes the same kind of rows. Mixing both for the SAME grade+season lets one clobber the other. Different grades/seasons are independent.
 - **Master `career_stats` is hand-kept and gappy; match scorecards are the authoritative match-era record.** When bulk-loading match history, we chose **Option A (user-approved): let match history fill the gaps — career/season totals rise** rather than capping at stale master figures (~1,555 extra appearances are HHCC players' own missing games, NOT opposition). The ETL peels each match-era (grade,season) out of the `season=NULL` baseline with a floor (careers never go negative), recording `baseline_adjustments` for reversal.

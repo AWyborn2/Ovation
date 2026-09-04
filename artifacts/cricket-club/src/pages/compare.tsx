@@ -9,6 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { QueryError } from "@/components/data-states";
 
 type Side = "a" | "b";
 
@@ -166,8 +167,11 @@ export default function Compare() {
     }
   }, [a, b, location, search, setLocation]);
 
-  const { data: playerA } = useGetPlayer(a ?? 0, { query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) } });
-  const { data: playerB } = useGetPlayer(b ?? 0, { query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) } });
+  const queryA = useGetPlayer(a ?? 0, { query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) } });
+  const queryB = useGetPlayer(b ?? 0, { query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) } });
+  const playerA = queryA.data;
+  const playerB = queryB.data;
+  const failed = queryA.isError ? queryA : queryB.isError ? queryB : null;
 
   const careerA = aggregateCareer(playerA?.stats);
   const careerB = aggregateCareer(playerB?.stats);
@@ -224,6 +228,11 @@ export default function Compare() {
         <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
           Select two players to see a head-to-head comparison.
         </div>
+      ) : failed ? (
+        <QueryError
+          message="One of the players couldn’t be loaded. Please try again."
+          onRetry={() => void failed.refetch()}
+        />
       ) : (
         <>
           <div className="bg-card border rounded-lg shadow-sm overflow-hidden">

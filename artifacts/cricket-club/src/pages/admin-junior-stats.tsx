@@ -38,6 +38,7 @@ import {
 import { ListSkeleton, QueryError, EmptyState, LoadingState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { fmtJuniorDate } from "@/lib/juniors";
+import { useClubShortName } from "@/lib/brand-context";
 
 /**
  * Admin editor for junior scorecards. Junior stats are loaded read-only from
@@ -298,6 +299,7 @@ function MatchMetaForm({
   onError: (e: unknown) => void;
   clearError: () => void;
 }) {
+  const clubShort = useClubShortName();
   const update = useUpdateJuniorMatch();
   const [team1Score, setTeam1Score] = useState(match.team1Score ?? "");
   const [team2Score, setTeam2Score] = useState(match.team2Score ?? "");
@@ -320,7 +322,7 @@ function MatchMetaForm({
   }[] = [
     { label: `${match.team1 ?? "Team 1"} score`, value: team1Score, set: setTeam1Score },
     { label: `${match.team2 ?? "Team 2"} score`, value: team2Score, set: setTeam2Score },
-    { label: "Result (Halls Head)", value: hhResult, set: setHhResult },
+    { label: `Result (${clubShort})`, value: hhResult, set: setHhResult },
     { label: "Winner", value: winner, set: setWinner },
     { label: "Toss winner", value: tossWinner, set: setTossWinner },
     { label: "Status", value: status, set: setStatus },
@@ -347,7 +349,7 @@ function MatchMetaForm({
             </div>
           ))}
           <div className="space-y-1">
-            <Label>Halls Head batted first</Label>
+            <Label>{clubShort} batted first</Label>
             <select
               value={battedFirst}
               onChange={(e) => setBattedFirst(e.target.value)}
@@ -697,6 +699,7 @@ function AddBattingForm({
     },
   ) => void;
 }) {
+  const clubShort = useClubShortName();
   const [player, setPlayer] = useState<SelectedJuniorPlayer | null>(null);
   const [runs, setRuns] = useState("");
   const [balls, setBalls] = useState("");
@@ -705,7 +708,7 @@ function AddBattingForm({
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-border p-3">
       <div className="space-y-1 min-w-64">
-        <Label>Halls Head junior</Label>
+        <Label>{clubShort} junior</Label>
         <JuniorPlayerTypeahead value={player} onChange={setPlayer} />
       </div>
       <div className="space-y-1">
@@ -996,6 +999,7 @@ function AddBowlingForm({
     },
   ) => void;
 }) {
+  const clubShort = useClubShortName();
   const [player, setPlayer] = useState<SelectedJuniorPlayer | null>(null);
   const [overs, setOvers] = useState("");
   const [runs, setRuns] = useState("");
@@ -1004,7 +1008,7 @@ function AddBowlingForm({
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-border p-3">
       <div className="space-y-1 min-w-64">
-        <Label>Halls Head junior</Label>
+        <Label>{clubShort} junior</Label>
         <JuniorPlayerTypeahead value={player} onChange={setPlayer} />
       </div>
       <div className="space-y-1">
@@ -1052,6 +1056,7 @@ function RosterEditor({
   onError: (e: unknown) => void;
   clearError: () => void;
 }) {
+  const clubShort = useClubShortName();
   const confirm = useConfirm();
   const add = useAddJuniorRosterEntry();
   const remove = useRemoveJuniorRosterEntry();
@@ -1061,7 +1066,7 @@ function RosterEditor({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Halls Head roster</CardTitle>
+        <CardTitle>{clubShort} roster</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">

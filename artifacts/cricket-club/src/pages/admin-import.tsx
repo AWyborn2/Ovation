@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { useClubShortName } from "@/lib/brand-context";
 
 type Mode = "csv" | "match" | "batch";
 
@@ -331,6 +332,7 @@ function NetEffectPanel({
 }
 
 export default function AdminImport() {
+  const clubShort = useClubShortName();
   const queryClient = useQueryClient();
   const invalidateAdmin = useInvalidateAdmin();
   const confirm = useConfirm();
@@ -1076,7 +1078,7 @@ export default function AdminImport() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="rounded-md border p-3">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Halls Head
+                  {clubShort}
                 </div>
                 <div className="font-medium">{matchPreview.hhccScore ?? "—"}</div>
               </div>

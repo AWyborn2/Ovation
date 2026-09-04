@@ -24,9 +24,13 @@ import fs from "node:fs";
 import path from "node:path";
 import * as XLSX from "xlsx";
 import { db, awardsTable, awardWinnersTable, playersTable } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { confirmDatabaseTarget, isDryRun, requireTenantArg } from "./lib/cli";
 
-const DRY_RUN = process.env.DRY_RUN === "1";
+const DRY_RUN = isDryRun();
+// Winners attach to the target tenant's awards only; the delete below is scoped
+// through those award ids, so another club's award history is never touched.
+const TENANT_ID = requireTenantArg();
 const FILE = path.resolve(
   process.cwd(),
   "../attached_assets/HHCC_history_1780463450215.xlsx",
@@ -263,7 +267,8 @@ async function main() {
   // Map award keys -> ids.
   const awardRows = await db
     .select({ id: awardsTable.id, key: awardsTable.key })
-    .from(awardsTable);
+    .from(awardsTable)
+    .where(eq(awardsTable.tenantId, TENANT_ID));
   const idByKey = new Map(awardRows.map((a) => [a.key, a.id]));
   const missingAwards = [...new Set(resolved.map((r) => r.awardKey))].filter(
     (k) => !idByKey.has(k),
@@ -276,6 +281,7 @@ async function main() {
     console.log("\nDRY_RUN=1 — no rows written.");
     return;
   }
+  confirmDatabaseTarget();
 
   const awardIds = [...new Set(resolved.map((r) => idByKey.get(r.awardKey)!))];
   await db.delete(awardWinnersTable).where(inArray(awardWinnersTable.awardId, awardIds));

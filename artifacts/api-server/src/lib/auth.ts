@@ -21,8 +21,8 @@ import { platformBaseDomain } from "./tenant-url";
 /** Halls Head is tenant #1 — the seed admin's tenant and the dev/default tenant. */
 const DEFAULT_TENANT_ID = 1;
 
-const COOKIE_NAME = "hhcc_session";
-const CAPTAIN_COOKIE_NAME = "hhcc_captain_session";
+const COOKIE_NAME = "ovation_session";
+const CAPTAIN_COOKIE_NAME = "ovation_captain_session";
 const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function getSessionSecret(): string {

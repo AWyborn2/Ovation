@@ -14,7 +14,8 @@
  * Run with: pnpm --filter @workspace/scripts run seed-nav-items
  */
 import { db, navItemsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { confirmDatabaseTarget, isDryRun, requireTenantArg } from "./lib/cli";
 
 type Seed = {
   label: string;
@@ -91,18 +92,25 @@ const SURFACES: { surface: string; items: Seed[] }[] = [
 ];
 
 async function main() {
+  const tenantId = requireTenantArg();
+  confirmDatabaseTarget();
   for (const { surface, items } of SURFACES) {
     const existing = await db
       .select({ id: navItemsTable.id })
       .from(navItemsTable)
-      .where(eq(navItemsTable.surface, surface));
+      .where(and(eq(navItemsTable.tenantId, tenantId), eq(navItemsTable.surface, surface)));
     if (existing.length > 0) {
       // eslint-disable-next-line no-console
       console.log(`• ${surface}: ${existing.length} rows already present — skipped`);
       continue;
     }
+    if (isDryRun()) {
+      console.log(`DRY RUN: would seed ${items.length} ${surface} nav items for tenant ${tenantId}.`);
+      continue;
+    }
     await db.insert(navItemsTable).values(
       items.map((it, idx) => ({
+        tenantId,
         surface,
         label: it.label,
         description: it.description ?? "",

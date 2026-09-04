@@ -61,7 +61,7 @@ import {
   serializeCorrection,
   SNAKE_TO_TABLE,
 } from "../lib/junior-admin-helpers";
-import { shouldReadCentral } from "../lib/tenant";
+import { isCentralTenant } from "../lib/tenant";
 import {
   isValidOversNotation,
   strikeRateOf,
@@ -102,7 +102,7 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -170,7 +170,7 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -265,7 +265,7 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -371,7 +371,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -451,7 +451,7 @@ router.post(
       });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -550,7 +550,7 @@ router.patch(
       });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -652,7 +652,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -726,7 +726,7 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -810,7 +810,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
@@ -876,7 +876,7 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Participant not found" });
       return;
     }
@@ -1022,7 +1022,7 @@ router.post(
       res.status(400).json({ error: "Cannot merge a profile into itself" });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Participant not found" });
       return;
     }
@@ -1275,7 +1275,7 @@ router.get(
       res.status(400).json({ error: query.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.json([]);
       return;
     }
@@ -1304,7 +1304,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Correction not found" });
       return;
     }

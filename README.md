@@ -30,7 +30,7 @@ central association database, filtered per tenant.
 ## Prerequisites
 
 - Node 22
-- pnpm 9 (this repo is pnpm-only; npm/yarn are blocked by a preinstall hook)
+- pnpm 10 (this repo is pnpm-only; npm/yarn are blocked by a preinstall hook; `packageManager` in `package.json` pins the exact version)
 - A Postgres database (for the API server) — set `DATABASE_URL`
 
 ## Setup

@@ -11,6 +11,7 @@ import {
 } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
+import { publicWriteRateLimiter } from "../middlewares/rate-limit";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
@@ -226,13 +227,27 @@ router.post("/social-drafts/sweep", requireAdmin, requireEntitlement("socialStud
 // open redirect.
 const ALLOWED_APP_PATHS = /^\/(players|grades|records|premierships|stats|)(\/[A-Za-z0-9%\-_ ]+)?\/?$/;
 
-router.post("/tracked-links", async (req, res): Promise<void> => {
+/** Upper bounds for the caller-supplied text on a tracked link. */
+const TRACKED_LINK_MAX = { targetUrl: 512, engine: 64, platform: 64, label: 200 } as const;
+
+router.post("/tracked-links", publicWriteRateLimiter, async (req, res): Promise<void> => {
   const targetUrl = String(req.body?.targetUrl ?? "");
   const engine = String(req.body?.engine ?? "ondemand");
   const platform = String(req.body?.platform ?? "");
   const label = String(req.body?.label ?? "");
   if (!targetUrl.startsWith("/") || !ALLOWED_APP_PATHS.test(targetUrl)) {
     res.status(400).json({ error: "targetUrl must be an in-app path" });
+    return;
+  }
+  // Public, unauthenticated write: bound every free-text field so a client
+  // cannot store arbitrarily large strings against the tenant.
+  if (
+    targetUrl.length > TRACKED_LINK_MAX.targetUrl ||
+    engine.length > TRACKED_LINK_MAX.engine ||
+    platform.length > TRACKED_LINK_MAX.platform ||
+    label.length > TRACKED_LINK_MAX.label
+  ) {
+    res.status(400).json({ error: "Tracked link fields exceed the allowed length" });
     return;
   }
   const slug = randomSlug();

@@ -22,7 +22,9 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { eq } from "drizzle-orm";
 import { db, clubRolesTable, playersTable } from "@workspace/db";
+import { confirmDatabaseTarget, isDryRun, requireTenantArg } from "./lib/cli";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -143,13 +145,23 @@ function resolveName(
 }
 
 async function main() {
+  // Tenant-scoped: club_roles carries tenant_id, so the replace below must only
+  // ever touch the target tenant's rows (a bare delete once wiped every club).
+  const tenantId = requireTenantArg();
+  confirmDatabaseTarget();
   const roles: RoleJson[] = JSON.parse(readFileSync(DATA_FILE, "utf8"));
   const players = await db.select().from(playersTable);
   const find = buildFinder(players);
 
-  await db.delete(clubRolesTable);
+  if (isDryRun()) {
+    console.log(`DRY RUN: would replace ${roles.length} club roles for tenant ${tenantId}.`);
+    return;
+  }
+
+  await db.delete(clubRolesTable).where(eq(clubRolesTable.tenantId, tenantId));
 
   const rows = roles.map((r) => ({
+    tenantId,
     season: r.season,
     role: r.role,
     grade: r.grade,

@@ -60,6 +60,7 @@ export function getJob(id: string): CardVideoJob | undefined {
 function deriveMeta(
   input: unknown,
   options: unknown,
+  filePrefix: string,
 ): { filename: string; sizeCode: string } {
   const opts = (options ?? {}) as { size?: string };
   const size = typeof opts.size === "string" ? opts.size : "square";
@@ -67,7 +68,9 @@ function deriveMeta(
     size === "portrait" ? "4x5" : size === "story" ? "9x16" : "1x1";
   const inp = (input ?? {}) as { kind?: string; junior?: boolean };
   const kind = typeof inp.kind === "string" ? inp.kind : "card";
-  const prefix = inp.junior ? "hhcc-junior" : "hhcc";
+  // The download name carries the tenant's own slug (e.g. "mandurah-junior-…"),
+  // never the demo club's initials.
+  const prefix = inp.junior ? `${filePrefix}-junior` : filePrefix;
   return { filename: `${prefix}-${kind}-${sizeCode}.mp4`, sizeCode };
 }
 
@@ -77,10 +80,12 @@ export function createJob(
   options: unknown,
   fps?: number,
   harnessOrigin?: string | null,
+  /** Tenant slug used as the download filename prefix; falls back to "ovation". */
+  filePrefix: string = "ovation",
 ): CardVideoJob {
   prune();
   const id = randomUUID();
-  const { filename, sizeCode } = deriveMeta(input, options);
+  const { filename, sizeCode } = deriveMeta(input, options, filePrefix);
   const job: CardVideoJob = {
     id,
     tenantId,

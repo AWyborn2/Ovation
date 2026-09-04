@@ -31,6 +31,7 @@ import {
 } from "../lib/name-match";
 import { deriveSeasonSnapshotFromMatches } from "../lib/match-aggregate";
 import { getTenantId } from "../middlewares/tenant-context";
+import { shouldReadCentral } from "../lib/tenant";
 import {
   snapshotCareerTotals,
   snapshotGradeGames,
@@ -109,7 +110,15 @@ function logSkippedCapMints(
   }
 }
 
-router.get("/imports", async (_req, res): Promise<void> => {
+// The import log is admin-only: filenames, grades and seasons of every upload
+// are operational detail, not public stats. It also lives in the native
+// (tenant #1) tables, so a central tenant gets an empty list rather than the
+// demo club's history.
+router.get("/imports", requireAdmin, async (req, res): Promise<void> => {
+  if (await shouldReadCentral(req)) {
+    res.json([]);
+    return;
+  }
   const rows = await db
     .select({
       id: importsTable.id,

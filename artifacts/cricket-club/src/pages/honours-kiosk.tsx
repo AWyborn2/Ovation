@@ -151,7 +151,7 @@ export default function HonoursKiosk() {
       },
     },
   );
-  const { data, refetch, dataUpdatedAt } = kioskToken ? tokenQ : adminQ;
+  const { data, refetch, dataUpdatedAt, isError } = kioskToken ? tokenQ : adminQ;
   const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
@@ -390,6 +390,25 @@ export default function HonoursKiosk() {
   }, [index, frames]);
 
   if (!data || !settings || !brand || !frames.length) {
+    // An unattended TV must never sit on "Preparing…" forever after a failed
+    // fetch: say so, and keep retrying in the background.
+    if (isError && !data) {
+      return (
+        <div
+          role="alert"
+          className="hb-kiosk flex flex-col items-center justify-center gap-3 text-white"
+        >
+          <div className="text-sm opacity-80">Couldn’t load the honour boards.</div>
+          <button
+            type="button"
+            className="rounded border border-white/40 px-3 py-1 text-sm opacity-90 hover:opacity-100"
+            onClick={() => void refetch()}
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="hb-kiosk flex items-center justify-center text-white">
         <div className="text-sm opacity-70">Preparing honour boards…</div>

@@ -70,7 +70,7 @@ describe("platform self-serve signup", () => {
     expect(setCookie).toBeDefined();
     const sessionCookieHeader = (
       Array.isArray(setCookie) ? setCookie : [setCookie]
-    ).find((c: string) => c.startsWith("hhcc_session="));
+    ).find((c: string) => c.startsWith("ovation_session="));
     expect(sessionCookieHeader).toBeDefined();
 
     // The cookie's domain is scoped to the shared apex, not just the request

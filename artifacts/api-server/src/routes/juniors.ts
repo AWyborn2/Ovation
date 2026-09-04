@@ -59,7 +59,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { shouldReadCentral } from "../lib/tenant";
+import { isCentralTenant } from "../lib/tenant";
 import {
   BALLS_PER_OVER,
   oversToBalls,
@@ -103,7 +103,7 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
   // Junior data is tenant-local and central is seniors-only, so a central tenant
   // has no junior history of its own — return the empty overview rather than the
   // demo tenant's (Halls Head) juniors.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json({
       totals: { matches: 0, players: 0, premierships: 0, seasons: 0, ageGroups: 0 },
       latestSeason: null,
@@ -204,7 +204,7 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   // Junior data is tenant-local (the native junior_* tables hold only the demo
   // tenant's juniors) — a central tenant gets the empty shape, never another
   // club's junior players.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json({ season: null, availableAgeGroups: [], topRunScorers: [], topWicketTakers: [] });
     return;
   }
@@ -250,7 +250,7 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 router.get("/juniors/filters", async (req, res): Promise<void> => {
   // Central tenants have no native junior history — empty filters, no leak.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json({ seasons: [], ageGroups: [] });
     return;
   }
@@ -281,7 +281,7 @@ router.get("/juniors/matches", async (req, res): Promise<void> => {
     return;
   }
   // Central tenants have no native junior matches — empty list, no leak.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json([]);
     return;
   }
@@ -313,7 +313,7 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
   const matchId = params.data.id;
 
   // Central tenants have no native junior matches — 404, never the demo club's.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.status(404).json({ error: "Match not found" });
     return;
   }
@@ -467,7 +467,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const { search, season, ageGroup, includePrivate } = query.data;
 
   // Central tenants have no native junior participants — empty list, no leak.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json([]);
     return;
   }
@@ -606,7 +606,7 @@ router.get(
     }
 
     // Central tenants have no native junior participants — empty list, no leak.
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.json([]);
       return;
     }
@@ -665,7 +665,7 @@ router.put(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Participant not found" });
       return;
     }
@@ -711,7 +711,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await shouldReadCentral(req)) {
+    if (await isCentralTenant(req)) {
       res.status(404).json({ error: "Participant not found" });
       return;
     }
@@ -746,7 +746,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
   let pid = params.data.id;
 
   // Central tenants have no native junior participants — 404, never the demo club's.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.status(404).json({ error: "Player not found" });
     return;
   }
@@ -1025,7 +1025,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 router.get("/juniors/leaderboards", async (req, res): Promise<void> => {
   // Central tenants have no native junior lines — empty boards, no leak.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json({ mostRuns: [], mostWickets: [], highestScores: [], bestBowling: [] });
     return;
   }
@@ -1053,7 +1053,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   const { season, ageGroup } = parsed.data;
 
   // Central tenants have no native junior lines — empty leaderboard, no leak.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json([]);
     return;
   }
@@ -1212,7 +1212,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
   // Central tenants have no native junior lines — no milestones, no leak.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json([]);
     return;
   }
@@ -1388,7 +1388,7 @@ router.patch(
 // ---------------------------------------------------------------------------
 router.get("/juniors/premierships", async (req, res): Promise<void> => {
   // Junior data is tenant-local / seniors-only in central — empty for central tenants.
-  if (await shouldReadCentral(req)) {
+  if (await isCentralTenant(req)) {
     res.json([]);
     return;
   }

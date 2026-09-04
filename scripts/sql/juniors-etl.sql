@@ -1,3 +1,7 @@
+-- SINGLE-TENANT LOADER (tenant #1 / Halls Head only). Runs against a staging schema
+-- built by scripts/src/load-*-db.ts. It contains wholesale DELETEs with no tenant
+-- predicate and must never be run directly against the shared multi-tenant DB.
+
 -- juniors-etl.sql — load the staged JUNIORS export (schema juniors_staging)
 -- into the app's public junior_* tables.
 --
