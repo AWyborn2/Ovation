@@ -35,7 +35,11 @@ const MODES: { value: DisplayMode; label: string; desc: string }[] = [
   },
 ];
 
-const THRESHOLDS: { key: "gamesThreshold" | "runsThreshold" | "wicketsThreshold"; label: string; hint: string }[] = [
+const THRESHOLDS: {
+  key: "gamesThreshold" | "runsThreshold" | "wicketsThreshold";
+  label: string;
+  hint: string;
+}[] = [
   { key: "gamesThreshold", label: "Games", hint: "Default 100" },
   { key: "runsThreshold", label: "Runs", hint: "Default 1,000" },
   { key: "wicketsThreshold", label: "Wickets", hint: "Default 100" },
@@ -92,9 +96,7 @@ export default function AdminMilestoneBoard() {
       ) : settingsQ.data ? (
         <SettingsCard
           settings={settingsQ.data}
-          onSaved={() =>
-            qc.invalidateQueries({ queryKey: getGetMilestoneBoardSettingsQueryKey() })
-          }
+          onSaved={() => qc.invalidateQueries({ queryKey: getGetMilestoneBoardSettingsQueryKey() })}
         />
       ) : (
         <QueryError onRetry={() => settingsQ.refetch()} />

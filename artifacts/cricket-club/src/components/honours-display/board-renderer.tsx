@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import type {
-  DisplayBoard,
-  HonourBrand,
-  BoardDisplayConfig,
-  HonourSkin,
-} from "./types";
+import type { DisplayBoard, HonourBrand, BoardDisplayConfig, HonourSkin } from "./types";
 import { LIST_PAGE_SIZE, skinClass } from "./types";
 import { boardStyle, boardClasses, boardSkinStyle } from "./theme";
 import {
@@ -36,13 +31,7 @@ interface BoardRendererProps {
  * via classes). Boards with no admin config render exactly as before (no
  * wrapper), so built-in skins stay pixel-identical.
  */
-export function BoardRenderer({
-  board,
-  brand,
-  kiosk,
-  cfg,
-  skins,
-}: BoardRendererProps) {
+export function BoardRenderer({ board, brand, kiosk, cfg, skins }: BoardRendererProps) {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -78,29 +67,19 @@ export function BoardRenderer({
   };
 
   if (board.layout === "premiership") {
-    return wrap(
-      <PremiershipBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
-    );
+    return wrap(<PremiershipBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
   if (board.layout === "teamOfDecade") {
-    return wrap(
-      <TeamOfDecadeBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
-    );
+    return wrap(<TeamOfDecadeBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
   if (board.layout === "columns") {
-    return wrap(
-      <ColumnsBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
-    );
+    return wrap(<ColumnsBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
   if (board.layout === "grid") {
-    return wrap(
-      <GridBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
-    );
+    return wrap(<GridBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
   if (board.layout === "lifeMembers") {
-    return wrap(
-      <LifeMembersBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />,
-    );
+    return wrap(<LifeMembersBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
 
   // List layout: paginate ~80 rows in interactive mode; show all in kiosk.
@@ -112,9 +91,7 @@ export function BoardRenderer({
       ? board.entries
       : board.entries.slice(safePage * LIST_PAGE_SIZE, (safePage + 1) * LIST_PAGE_SIZE);
 
-  const list = (
-    <ListBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} entries={entries} />
-  );
+  const list = <ListBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} entries={entries} />;
 
   if (kiosk || pageCount <= 1) return wrap(list);
 
@@ -128,10 +105,7 @@ export function BoardRenderer({
         <span>
           Page {safePage + 1} of {pageCount}
         </span>
-        <button
-          onClick={() => setPage(safePage + 1)}
-          disabled={safePage >= pageCount - 1}
-        >
+        <button onClick={() => setPage(safePage + 1)} disabled={safePage >= pageCount - 1}>
           Next ›
         </button>
       </div>

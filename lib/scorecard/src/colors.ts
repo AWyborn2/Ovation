@@ -91,8 +91,7 @@ export function deriveOppositionColors(
   const primary = backgroundColour ? hexToRgb(backgroundColour) : null;
   if (!primary) return NEUTRAL_OPPOSITION;
 
-  const secondary = (primaryColour && hexToRgb(primaryColour)) ||
-    mix(primary, WHITE, 0.55);
+  const secondary = (primaryColour && hexToRgb(primaryColour)) || mix(primary, WHITE, 0.55);
 
   const primaryHex = toHex(primary);
   const secondaryHex = toHex(secondary);

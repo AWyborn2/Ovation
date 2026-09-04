@@ -15,7 +15,10 @@
 import { provisionTenant, ProvisionError } from "@workspace/db/provision";
 
 const arg = (n: string): string | undefined =>
-  process.argv.slice(2).find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+  process.argv
+    .slice(2)
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.slice(n.length + 3);
 
 // PlayHQ logos from attached_assets/PCA_PlayHQ_Logos_and_URLs_*.csv.
 const KNOWN_LOGOS: Record<string, string> = {

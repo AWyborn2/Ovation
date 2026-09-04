@@ -10,19 +10,13 @@ import {
   useDeleteTeamOfDecadeMember,
   getListAdminTeamOfDecadeBoardsQueryKey,
 } from "@workspace/api-client-react";
-import type {
-  TeamOfDecadeBoard,
-  TeamOfDecadeMember,
-} from "@workspace/api-client-react";
+import type { TeamOfDecadeBoard, TeamOfDecadeMember } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import {
-  PlayerTypeahead,
-  type SelectedPlayer,
-} from "@/components/player-typeahead";
+import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { GripVertical } from "lucide-react";
@@ -47,8 +41,7 @@ type BoardFormValues = {
 export default function AdminTeamOfDecade() {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
-  const { data: boards, isLoading, isError, refetch } =
-    useListAdminTeamOfDecadeBoards();
+  const { data: boards, isLoading, isError, refetch } = useListAdminTeamOfDecadeBoards();
   const createBoard = useCreateTeamOfDecadeBoard();
   const updateBoard = useUpdateTeamOfDecadeBoard();
   const deleteBoard = useDeleteTeamOfDecadeBoard();
@@ -68,9 +61,7 @@ export default function AdminTeamOfDecade() {
 
   const sorted = useMemo(() => {
     if (!boards) return [];
-    return [...boards].sort(
-      (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-    );
+    return [...boards].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
   }, [boards]);
 
   const moveBoard = (index: number, dir: -1 | 1) => {
@@ -97,15 +88,11 @@ export default function AdminTeamOfDecade() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-muted-foreground mt-1">
-            Curate best-XI honour boards. Each board appears as its own card on
-            the Honour Boards page once published. Drafts stay hidden from the
-            public.
+            Curate best-XI honour boards. Each board appears as its own card on the Honour Boards
+            page once published. Drafts stay hidden from the public.
           </p>
         </div>
-        <Button
-          onClick={() => setShowNew((v) => !v)}
-          variant={showNew ? "outline" : "default"}
-        >
+        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
           {showNew ? "Close form" : "New board"}
         </Button>
       </div>
@@ -130,8 +117,7 @@ export default function AdminTeamOfDecade() {
                 periodLabel: "",
                 subtitle: "",
                 published: false,
-                displayOrder:
-                  (sorted[sorted.length - 1]?.displayOrder ?? -1) + 1,
+                displayOrder: (sorted[sorted.length - 1]?.displayOrder ?? -1) + 1,
               }}
               autoKey
               pending={createBoard.isPending}
@@ -183,16 +169,9 @@ export default function AdminTeamOfDecade() {
                 </CardTitle>
                 <div className="text-xs text-muted-foreground mt-1">
                   slug: <code>{board.key}</code> · order {board.displayOrder} ·{" "}
-                  {board.members.length}{" "}
-                  {board.members.length === 1 ? "player" : "players"}
+                  {board.members.length} {board.members.length === 1 ? "player" : "players"}
                   {(board.teamLabel || board.periodLabel) && (
-                    <>
-                      {" "}
-                      ·{" "}
-                      {[board.teamLabel, board.periodLabel]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </>
+                    <> · {[board.teamLabel, board.periodLabel].filter(Boolean).join(" · ")}</>
                   )}
                 </div>
               </div>
@@ -222,9 +201,7 @@ export default function AdminTeamOfDecade() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={
-                    index === sorted.length - 1 || updateBoard.isPending
-                  }
+                  disabled={index === sorted.length - 1 || updateBoard.isPending}
                   onClick={() => moveBoard(index, 1)}
                 >
                   ↓
@@ -232,9 +209,7 @@ export default function AdminTeamOfDecade() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() =>
-                    setEditingId(editingId === board.id ? null : board.id)
-                  }
+                  onClick={() => setEditingId(editingId === board.id ? null : board.id)}
                 >
                   {editingId === board.id ? "Close" : "Edit"}
                 </Button>
@@ -302,11 +277,7 @@ export default function AdminTeamOfDecade() {
                 </p>
               )}
 
-              <MembersManager
-                board={board}
-                onError={onMutationError}
-                onChanged={invalidate}
-              />
+              <MembersManager board={board} onError={onMutationError} onChanged={invalidate} />
             </CardContent>
           </Card>
         ))
@@ -392,9 +363,7 @@ function BoardForm({
           <Input
             type="number"
             value={displayOrder}
-            onChange={(e) =>
-              setDisplayOrder(parseInt(e.target.value, 10) || 0)
-            }
+            onChange={(e) => setDisplayOrder(parseInt(e.target.value, 10) || 0)}
           />
         </div>
         <label className="flex items-center gap-2 text-sm self-end pb-2">
@@ -458,16 +427,11 @@ function MembersManager({
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const members = [...board.members].sort(
-    (a, b) =>
-      a.battingOrder - b.battingOrder ||
-      a.displayOrder - b.displayOrder ||
-      a.id - b.id,
+    (a, b) => a.battingOrder - b.battingOrder || a.displayOrder - b.displayOrder || a.id - b.id,
   );
 
   const commitOrder = async (ordered: TeamOfDecadeMember[]) => {
-    const changed = ordered.filter(
-      (m, i) => m.battingOrder !== i + 1 || m.displayOrder !== i,
-    );
+    const changed = ordered.filter((m, i) => m.battingOrder !== i + 1 || m.displayOrder !== i);
     if (changed.length === 0) return;
     try {
       await Promise.all(
@@ -505,8 +469,7 @@ function MembersManager({
     if (idx !== overIndex) setOverIndex(idx);
   };
   const handleDrop = () => {
-    if (dragIndex !== null && overIndex !== null)
-      reorderByDrag(dragIndex, overIndex);
+    if (dragIndex !== null && overIndex !== null) reorderByDrag(dragIndex, overIndex);
     setDragIndex(null);
     setOverIndex(null);
   };
@@ -516,9 +479,7 @@ function MembersManager({
   };
 
   const add = () => {
-    const resolvedName = player
-      ? `${player.givenName} ${player.surname}`.trim()
-      : name.trim();
+    const resolvedName = player ? `${player.givenName} ${player.surname}`.trim() : name.trim();
     if (!resolvedName) return;
     createMember.mutate(
       {
@@ -545,20 +506,16 @@ function MembersManager({
 
   return (
     <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4">
-      <h4 className="text-sm font-bold uppercase tracking-wide text-primary">
-        Lineup
-      </h4>
+      <h4 className="text-sm font-bold uppercase tracking-wide text-primary">Lineup</h4>
       {members.length > 1 && (
         <p className="text-xs text-muted-foreground">
-          Drag the <GripVertical className="inline h-3 w-3 align-text-bottom" />{" "}
-          handle to reorder the batting lineup.
+          Drag the <GripVertical className="inline h-3 w-3 align-text-bottom" /> handle to reorder
+          the batting lineup.
         </p>
       )}
 
       {members.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">
-          No players in this XI yet.
-        </p>
+        <p className="text-sm text-muted-foreground italic">No players in this XI yet.</p>
       ) : (
         <div className="space-y-2">
           {members.map((m, idx) => (
@@ -569,9 +526,7 @@ function MembersManager({
               onError={onError}
               onChanged={onChanged}
               isDragging={dragIndex === idx}
-              isDropTarget={
-                dragIndex !== null && overIndex === idx && dragIndex !== idx
-              }
+              isDropTarget={dragIndex !== null && overIndex === idx && dragIndex !== idx}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
@@ -588,9 +543,7 @@ function MembersManager({
             <PlayerTypeahead value={player} onChange={setPlayer} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">
-              Or plain-text name (if not linking)
-            </Label>
+            <Label className="text-xs">Or plain-text name (if not linking)</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -609,10 +562,7 @@ function MembersManager({
         </div>
         <Button
           size="sm"
-          disabled={
-            createMember.isPending ||
-            (!player && !name.trim())
-          }
+          disabled={createMember.isPending || (!player && !name.trim())}
           onClick={add}
         >
           {createMember.isPending ? "Adding…" : "Add player"}
@@ -657,10 +607,7 @@ function MemberRow({
   const [battingOrder, setBattingOrder] = useState(member.battingOrder);
 
   const patch = (data: Parameters<typeof update.mutate>[0]["data"]) => {
-    update.mutate(
-      { id: member.id, data },
-      { onSuccess: onChanged, onError },
-    );
+    update.mutate({ id: member.id, data }, { onSuccess: onChanged, onError });
   };
 
   const badges: string[] = [];
@@ -703,9 +650,7 @@ function MemberRow({
           </span>
           <span className="font-semibold truncate">{member.name}</span>
           {member.playerId == null && (
-            <span className="text-xs text-muted-foreground italic">
-              (unlinked)
-            </span>
+            <span className="text-xs text-muted-foreground italic">(unlinked)</span>
           )}
           {badges.map((b) => (
             <span
@@ -716,17 +661,11 @@ function MemberRow({
             </span>
           ))}
           {member.role && (
-            <span className="text-xs text-muted-foreground italic truncate">
-              {member.role}
-            </span>
+            <span className="text-xs text-muted-foreground italic truncate">{member.role}</span>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setEditing((v) => !v)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setEditing((v) => !v)}>
             {editing ? "Close" : "Edit"}
           </Button>
           <Button
@@ -743,10 +682,7 @@ function MemberRow({
                 }))
               )
                 return;
-              remove.mutate(
-                { id: member.id },
-                { onSuccess: onChanged, onError },
-              );
+              remove.mutate({ id: member.id }, { onSuccess: onChanged, onError });
             }}
           >
             Remove
@@ -809,9 +745,7 @@ function MemberRow({
             <Input
               type="number"
               value={battingOrder}
-              onChange={(e) =>
-                setBattingOrder(parseInt(e.target.value, 10) || 0)
-              }
+              onChange={(e) => setBattingOrder(parseInt(e.target.value, 10) || 0)}
             />
           </div>
           <div className="md:col-span-2 flex gap-2">
@@ -841,11 +775,7 @@ function MemberRow({
             >
               Save player
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEditing(false)}
-            >
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
               Cancel
             </Button>
           </div>

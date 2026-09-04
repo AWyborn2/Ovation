@@ -2,13 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
-import {
-  db,
-  platformAdminsTable,
-  tenantsTable,
-  adminsTable,
-  clubsTable,
-} from "@workspace/db";
+import { db, platformAdminsTable, tenantsTable, adminsTable, clubsTable } from "@workspace/db";
 import { hashPassword, encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
@@ -37,8 +31,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
   let registerClubId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-platform-brand";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-platform-brand";
 
     const passwordHash = await hashPassword(PASSWORD);
     await db
@@ -143,10 +136,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
     expect(res.body.tenant.adminCount).toBe(0);
     expect(res.body.admins).toEqual([]);
 
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantAId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
     expect(row.logoUrl).toBe("/objects/uploads/pab-logo.png");
     expect(row.backgroundColour).toBe("#112233");
     expect(row.primaryColour).toBe("#445566");
@@ -171,10 +161,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .send({ logoUrl: "/objects/uploads/pab-logo-v2.png" })
       .expect(200);
 
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantAId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
     expect(row.logoUrl).toBe("/objects/uploads/pab-logo-v2.png");
     // Colours set by the previous test and the seeded favicon are unaffected.
     expect(row.backgroundColour).toBe("#112233");
@@ -188,10 +175,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .send({ faviconUrl: null })
       .expect(200);
 
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantAId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
     expect(row.faviconUrl).toBeNull();
     // ...and only that field: the logo from the previous test survives.
     expect(row.logoUrl).toBe("/objects/uploads/pab-logo-v2.png");
@@ -224,10 +208,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .send({ primaryColour: "red" })
       .expect(400);
 
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantAId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
     expect(row.backgroundColour).toBe("#112233");
   });
 
@@ -272,10 +253,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
     expect(res.body.tenant.plan).toBe("free");
     expect(res.body.tenant.customDomain).toBeNull();
 
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantAId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
     expect(row.shortName).toBe("PAB");
     expect(row.plan).toBe("free");
     expect(row.customDomain).toBeNull();
@@ -293,15 +271,9 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
       .send({ juniorsColour: "#abcdef" })
       .expect(200);
 
-    const [rowA] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantAId));
+    const [rowA] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
     expect(rowA.juniorsColour).toBe("#abcdef");
-    const [rowB] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantBId));
+    const [rowB] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantBId));
     expect(rowB.juniorsColour).toBeNull();
   });
 
@@ -323,10 +295,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
         .expect(200),
     ]);
 
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantBId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantBId));
     expect(row.logoUrl).toBe("/objects/uploads/pab-concierge-logo.png");
     expect(row.primaryColour).toBe("#224466");
   });
@@ -345,10 +314,7 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
     expect(res.body.tenant.id).toBe(tenantCId);
 
     // Persisted on the tenant row...
-    const [row] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, tenantCId));
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantCId));
     expect(row.primaryColour).toBe("#ff0000");
 
     // ...and the resolved brand serves the tenant-row value, not the register's.

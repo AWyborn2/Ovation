@@ -48,18 +48,14 @@ describe("billing adapter (dormant)", () => {
   });
 
   it("checkout requires an admin session", async () => {
-    const res = await request(app)
-      .post("/api/billing/checkout")
-      .send({ plan: "club" });
+    const res = await request(app).post("/api/billing/checkout").send({ plan: "club" });
     expect(res.status).toBe(401);
   });
 
   it("checkout validates the requested plan", async () => {
     // Even unauthenticated callers are rejected first; this documents the contract
     // that only club/pro are acceptable plan targets.
-    const res = await request(app)
-      .post("/api/billing/checkout")
-      .send({ plan: "free" });
+    const res = await request(app).post("/api/billing/checkout").send({ plan: "free" });
     expect([400, 401]).toContain(res.status);
   });
 });

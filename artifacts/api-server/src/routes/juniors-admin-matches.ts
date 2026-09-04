@@ -147,9 +147,7 @@ router.post(
         ),
       );
     if (existing) {
-      res
-        .status(409)
-        .json({ error: "Participant is already on this match roster" });
+      res.status(409).json({ error: "Participant is already on this match roster" });
       return;
     }
 
@@ -225,9 +223,7 @@ router.delete(
     }
 
     await db.transaction(async (tx) => {
-      await tx
-        .delete(juniorMatchRostersTable)
-        .where(eq(juniorMatchRostersTable.id, line.id));
+      await tx.delete(juniorMatchRostersTable).where(eq(juniorMatchRostersTable.id, line.id));
       await journal(tx, {
         tenantId: getTenantId(req),
         targetTable: "junior_match_rosters",

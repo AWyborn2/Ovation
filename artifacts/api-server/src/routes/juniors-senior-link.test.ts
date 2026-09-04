@@ -34,8 +34,7 @@ describe("junior↔senior profile link", () => {
   const playerIds: number[] = [];
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-junior-senior-link";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-junior-senior-link";
 
     const [admin] = await db
       .insert(adminsTable)
@@ -86,9 +85,7 @@ describe("junior↔senior profile link", () => {
   afterAll(async () => {
     await db
       .delete(juniorParticipantsTable)
-      .where(
-        inArray(juniorParticipantsTable.participantId, [P1, P2, P_PRIVATE]),
-      );
+      .where(inArray(juniorParticipantsTable.participantId, [P1, P2, P_PRIVATE]));
     if (playerIds.length > 0) {
       await db.delete(playersTable).where(inArray(playersTable.id, playerIds));
     }
@@ -102,9 +99,7 @@ describe("junior↔senior profile link", () => {
       .put(`/api/juniors/participants/${P1}/senior-link`)
       .send({ seniorPlayerId: seniorId })
       .expect(401);
-    await request(app)
-      .delete(`/api/juniors/participants/${P1}/senior-link`)
-      .expect(401);
+    await request(app).delete(`/api/juniors/participants/${P1}/senior-link`).expect(401);
   });
 
   it("404s on an unknown participant and an unknown senior player", async () => {
@@ -138,9 +133,7 @@ describe("junior↔senior profile link", () => {
     const bySenior = await request(app)
       .get(`/api/juniors/players/by-senior/${seniorId}`)
       .expect(200);
-    const ids = (bySenior.body as Array<{ participantId: string }>).map(
-      (r) => r.participantId,
-    );
+    const ids = (bySenior.body as Array<{ participantId: string }>).map((r) => r.participantId);
     expect(ids).toContain(P1);
     expect(ids).toContain(P2);
 
@@ -156,9 +149,7 @@ describe("junior↔senior profile link", () => {
       .get(`/api/juniors/players/by-senior/${seniorId}`)
       .expect(200);
     expect(
-      (afterClear.body as Array<{ participantId: string }>).map(
-        (r) => r.participantId,
-      ),
+      (afterClear.body as Array<{ participantId: string }>).map((r) => r.participantId),
     ).toEqual([P1]);
   });
 
@@ -209,10 +200,7 @@ describe("junior↔senior profile link", () => {
       .send({ seniorPlayerId: doomed.id })
       .expect(200);
 
-    await request(app)
-      .delete(`/api/players/${doomed.id}`)
-      .set("Cookie", adminCookie)
-      .expect(204);
+    await request(app).delete(`/api/players/${doomed.id}`).set("Cookie", adminCookie).expect(204);
 
     const [row] = await db
       .select()

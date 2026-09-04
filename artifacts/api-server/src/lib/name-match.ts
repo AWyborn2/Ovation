@@ -252,8 +252,7 @@ export function buildNameMatcher(roster: RosterPlayer[]): NameMatcher {
       if (givScore < 0) continue;
 
       const reason =
-        [surReason, givReason].filter(Boolean).join("; ") ||
-        `${it.p.surname}, ${it.p.givenName}`;
+        [surReason, givReason].filter(Boolean).join("; ") || `${it.p.surname}, ${it.p.givenName}`;
       candidates.push({
         playerId: it.p.id,
         surname: it.p.surname,
@@ -267,9 +266,7 @@ export function buildNameMatcher(roster: RosterPlayer[]): NameMatcher {
       return { status: "new", playerId: null, candidates: [] };
     }
 
-    candidates.sort(
-      (a, b) => b.score - a.score || a.surname.localeCompare(b.surname),
-    );
+    candidates.sort((a, b) => b.score - a.score || a.surname.localeCompare(b.surname));
     return {
       status: "suggested",
       playerId: null,

@@ -72,9 +72,8 @@ export function CsvPreviewCard({
         </div>
         {preview.capCategory && (
           <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
-            This is a cap-eligible grade ({preview.capCategory}). Players earning
-            their first cap are flagged{" "}
-            <DebutBadge /> below.
+            This is a cap-eligible grade ({preview.capCategory}). Players earning their first cap
+            are flagged <DebutBadge /> below.
           </div>
         )}
 
@@ -118,8 +117,8 @@ export function CsvPreviewCard({
           <h3 className="font-semibold mb-2">Players in this CSV</h3>
           {preview.suggestedPlayers > 0 && (
             <p className="text-sm text-muted-foreground mb-2">
-              Some names look like existing players. Confirm a link or choose to
-              create a new player for each suggestion before applying.
+              Some names look like existing players. Confirm a link or choose to create a new player
+              for each suggestion before applying.
             </p>
           )}
           <div className="max-h-96 overflow-y-auto rounded-md border divide-y">
@@ -153,26 +152,21 @@ export function CsvPreviewCard({
           reconcileMode={reconcileMode}
           setReconcileMode={setReconcileMode}
         />
-        {isBackfill && (
-          <NetEffectPanel players={preview.players} reconcileMode={reconcileMode} />
-        )}
+        {isBackfill && <NetEffectPanel players={preview.players} reconcileMode={reconcileMode} />}
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         {unresolvedSuggestions(preview.players, resolutions) > 0 && (
           <p className="text-sm text-amber-600 dark:text-amber-400">
-            {unresolvedSuggestions(preview.players, resolutions)} suggested name(s)
-            still need a decision before you can apply.
+            {unresolvedSuggestions(preview.players, resolutions)} suggested name(s) still need a
+            decision before you can apply.
           </p>
         )}
 
         <div className="flex gap-3">
           <Button
             onClick={onConfirm}
-            disabled={
-              committing ||
-              unresolvedSuggestions(preview.players, resolutions) > 0
-            }
+            disabled={committing || unresolvedSuggestions(preview.players, resolutions) > 0}
           >
             {committing ? "Applying…" : "Confirm & Apply"}
           </Button>
@@ -305,8 +299,8 @@ export function MatchPreviewCard({
 
         {matchPreview.capCategory && (
           <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
-            This is a cap-eligible grade ({matchPreview.capCategory}). Players
-            earning their first cap are flagged <DebutBadge /> below.
+            This is a cap-eligible grade ({matchPreview.capCategory}). Players earning their first
+            cap are flagged <DebutBadge /> below.
           </div>
         )}
 
@@ -315,21 +309,17 @@ export function MatchPreviewCard({
             <h3 className="font-semibold mb-2">Player lines</h3>
             {matchPreview.suggestedPlayers > 0 && (
               <p className="text-sm text-muted-foreground mb-2">
-                Some names look like existing players. Confirm a link or choose to
-                create a new player for each suggestion before applying.
+                Some names look like existing players. Confirm a link or choose to create a new
+                player for each suggestion before applying.
               </p>
             )}
             <div className="max-h-96 overflow-y-auto rounded-md border divide-y">
               {matchPreview.players.map((p, i) => {
                 const bat = p.batted
-                  ? `${p.runs ?? 0}${p.notOut ? "*" : ""}${
-                      p.balls != null ? ` (${p.balls})` : ""
-                    }`
+                  ? `${p.runs ?? 0}${p.notOut ? "*" : ""}${p.balls != null ? ` (${p.balls})` : ""}`
                   : null;
                 const bowl = p.bowled
-                  ? `${p.wickets ?? 0}/${p.runsConceded ?? 0}${
-                      p.overs ? ` (${p.overs})` : ""
-                    }`
+                  ? `${p.wickets ?? 0}/${p.runsConceded ?? 0}${p.overs ? ` (${p.overs})` : ""}`
                   : null;
                 const field =
                   p.catches + p.stumpings + p.runOuts > 0
@@ -349,9 +339,7 @@ export function MatchPreviewCard({
                     status={p.status}
                     candidates={p.candidates}
                     resolution={resolutions[rowKey(p.surname, p.givenName)]}
-                    onChange={(r) =>
-                      setRowResolution(rowKey(p.surname, p.givenName), r)
-                    }
+                    onChange={(r) => setRowResolution(rowKey(p.surname, p.givenName), r)}
                     meta={
                       <span className="text-xs text-muted-foreground">
                         {[
@@ -387,28 +375,22 @@ export function MatchPreviewCard({
           setReconcileMode={setReconcileMode}
         />
         {isBackfill && (
-          <NetEffectPanel
-            players={matchPreview.players}
-            reconcileMode={reconcileMode}
-          />
+          <NetEffectPanel players={matchPreview.players} reconcileMode={reconcileMode} />
         )}
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         {unresolvedSuggestions(matchPreview.players, resolutions) > 0 && (
           <p className="text-sm text-amber-600 dark:text-amber-400">
-            {unresolvedSuggestions(matchPreview.players, resolutions)} suggested
-            name(s) still need a decision before you can apply.
+            {unresolvedSuggestions(matchPreview.players, resolutions)} suggested name(s) still need
+            a decision before you can apply.
           </p>
         )}
 
         <div className="flex gap-3">
           <Button
             onClick={onConfirm}
-            disabled={
-              committing ||
-              unresolvedSuggestions(matchPreview.players, resolutions) > 0
-            }
+            disabled={committing || unresolvedSuggestions(matchPreview.players, resolutions) > 0}
           >
             {committing
               ? "Applying…"
@@ -471,12 +453,10 @@ export function BatchPreviewCard({
         <div>
           <h3 className="font-semibold mb-2">Matches in this batch</h3>
           <p className="text-xs text-muted-foreground mb-2">
-            Files flagged{" "}
-            <span className="font-medium">Replaces existing</span> or{" "}
-            <span className="font-medium">Duplicate in batch</span> collide
-            with another match. Give one a different round or final below to
-            import both as separate matches — statuses and the committable
-            count update automatically.
+            Files flagged <span className="font-medium">Replaces existing</span> or{" "}
+            <span className="font-medium">Duplicate in batch</span> collide with another match. Give
+            one a different round or final below to import both as separate matches — statuses and
+            the committable count update automatically.
           </p>
           <div className="max-h-96 overflow-y-auto rounded-md border">
             <table className="w-full text-sm">
@@ -495,9 +475,7 @@ export function BatchPreviewCard({
                 {batchPreview.files.map((f, i) => (
                   <tr
                     key={i}
-                    className={`border-b last:border-0 ${
-                      f.committable ? "" : "opacity-60"
-                    }`}
+                    className={`border-b last:border-0 ${f.committable ? "" : "opacity-60"}`}
                   >
                     <td className="py-2 px-3 max-w-[16rem] truncate" title={f.filename}>
                       {f.filename}
@@ -544,8 +522,8 @@ export function BatchPreviewCard({
             <h3 className="font-semibold mb-2">Players across the batch</h3>
             {batchPreview.suggestedPlayers > 0 && (
               <p className="text-sm text-muted-foreground mb-2">
-                Some names look like existing players. Confirm a link or choose to
-                create a new player for each suggestion before applying.
+                Some names look like existing players. Confirm a link or choose to create a new
+                player for each suggestion before applying.
               </p>
             )}
             <div className="max-h-96 overflow-y-auto rounded-md border divide-y">
@@ -557,9 +535,7 @@ export function BatchPreviewCard({
                   status={p.status}
                   candidates={p.candidates}
                   resolution={resolutions[rowKey(p.surname, p.givenName)]}
-                  onChange={(r) =>
-                    setRowResolution(rowKey(p.surname, p.givenName), r)
-                  }
+                  onChange={(r) => setRowResolution(rowKey(p.surname, p.givenName), r)}
                   debut={isDebut(
                     p.capCategory ?? null,
                     new Set(batchPreview.cappedPlayerIds),
@@ -583,18 +559,15 @@ export function BatchPreviewCard({
           setReconcileMode={setReconcileMode}
         />
         {isBackfill && (
-          <NetEffectPanel
-            players={batchPreview.players}
-            reconcileMode={reconcileMode}
-          />
+          <NetEffectPanel players={batchPreview.players} reconcileMode={reconcileMode} />
         )}
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         {unresolvedSuggestions(batchPreview.players, resolutions) > 0 && (
           <p className="text-sm text-amber-600 dark:text-amber-400">
-            {unresolvedSuggestions(batchPreview.players, resolutions)} suggested
-            name(s) still need a decision before you can apply.
+            {unresolvedSuggestions(batchPreview.players, resolutions)} suggested name(s) still need
+            a decision before you can apply.
           </p>
         )}
 

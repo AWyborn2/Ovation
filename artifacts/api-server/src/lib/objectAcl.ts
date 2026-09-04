@@ -36,10 +36,7 @@ export interface ObjectAclPolicy {
   aclRules?: Array<ObjectAclRule>;
 }
 
-function isPermissionAllowed(
-  requested: ObjectPermission,
-  granted: ObjectPermission,
-): boolean {
+function isPermissionAllowed(requested: ObjectPermission, granted: ObjectPermission): boolean {
   if (requested === ObjectPermission.READ) {
     return [ObjectPermission.READ, ObjectPermission.WRITE].includes(granted);
   }
@@ -55,9 +52,7 @@ abstract class BaseObjectAccessGroup implements ObjectAccessGroup {
   public abstract hasMember(userId: string): Promise<boolean>;
 }
 
-function createObjectAccessGroup(
-  group: ObjectAccessGroup,
-): BaseObjectAccessGroup {
+function createObjectAccessGroup(group: ObjectAccessGroup): BaseObjectAccessGroup {
   switch (group.type) {
     // Implement per access group type, e.g.:
     // case "USER_LIST":
@@ -83,9 +78,7 @@ export async function setObjectAclPolicy(
   });
 }
 
-export async function getObjectAclPolicy(
-  objectFile: File,
-): Promise<ObjectAclPolicy | null> {
+export async function getObjectAclPolicy(objectFile: File): Promise<ObjectAclPolicy | null> {
   const [metadata] = await objectFile.getMetadata();
   const aclPolicy = metadata?.metadata?.[ACL_POLICY_METADATA_KEY];
   if (!aclPolicy) {
@@ -108,10 +101,7 @@ export async function canAccessObject({
     return false;
   }
 
-  if (
-    aclPolicy.visibility === "public" &&
-    requestedPermission === ObjectPermission.READ
-  ) {
+  if (aclPolicy.visibility === "public" && requestedPermission === ObjectPermission.READ) {
     return true;
   }
 

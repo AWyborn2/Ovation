@@ -10,8 +10,7 @@ export function initials(name: string): string {
 export function gradeBadge(g: string): string {
   if (g.startsWith("Female")) return g.replace("Female ", "F-");
   if (g === "U21 Colts") return "U21";
-  if (g.startsWith("Mid-Year"))
-    return g.replace("Mid-Year T20 ", "T20 ").replace("Female ", "F-");
+  if (g.startsWith("Mid-Year")) return g.replace("Mid-Year T20 ", "T20 ").replace("Female ", "F-");
   return g;
 }
 

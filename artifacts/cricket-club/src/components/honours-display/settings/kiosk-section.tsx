@@ -42,9 +42,7 @@ export function KioskSection({ form }: { form: HonoursDisplayForm }) {
                 data-testid={`seq-row-${idx}`}
               >
                 <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
-                <span className="flex-1 text-sm font-medium">
-                  {seqLabel(id)}
-                </span>
+                <span className="flex-1 text-sm font-medium">{seqLabel(id)}</span>
                 <Button
                   type="button"
                   variant="outline"
@@ -130,8 +128,8 @@ export function KioskSection({ form }: { form: HonoursDisplayForm }) {
             )}
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
-            You can drop a sponsor slide or an ad creative anywhere in the
-            order. The same sponsor slide / ad can appear more than once.
+            You can drop a sponsor slide or an ad creative anywhere in the order. The same sponsor
+            slide / ad can appear more than once.
           </p>
         </div>
 
@@ -148,9 +146,7 @@ export function KioskSection({ form }: { form: HonoursDisplayForm }) {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Scroll speed (px/sec)
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Scroll speed (px/sec)</span>
             <Input
               type="number"
               value={speed}

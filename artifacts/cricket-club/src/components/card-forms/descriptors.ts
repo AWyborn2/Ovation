@@ -285,7 +285,13 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     fields: [
       { key: "competitionName", label: "Competition name", type: "text" },
       { key: "gradeLabel", label: "Grade label", type: "text" },
-      { key: "asOfLabel", label: "As-of label", type: "text", placeholder: "AFTER ROUND 8", full: true },
+      {
+        key: "asOfLabel",
+        label: "As-of label",
+        type: "text",
+        placeholder: "AFTER ROUND 8",
+        full: true,
+      },
     ],
     repeat: {
       key: "rows",

@@ -38,12 +38,7 @@ async function configTenantOk(configId: number, tenantId: number): Promise<boole
     .select({ id: awardsTable.id })
     .from(awardPointsConfigTable)
     .innerJoin(awardsTable, eq(awardsTable.id, awardPointsConfigTable.awardId))
-    .where(
-      and(
-        eq(awardPointsConfigTable.id, configId),
-        eq(awardsTable.tenantId, tenantId),
-      ),
-    );
+    .where(and(eq(awardPointsConfigTable.id, configId), eq(awardsTable.tenantId, tenantId)));
   return !!row;
 }
 
@@ -310,10 +305,7 @@ router.post("/points-configs/:id/finalise", requireAdmin, async (req, res): Prom
   await db
     .delete(awardWinnersTable)
     .where(
-      and(
-        eq(awardWinnersTable.awardId, award.id),
-        eq(awardWinnersTable.season, config.season),
-      ),
+      and(eq(awardWinnersTable.awardId, award.id), eq(awardWinnersTable.season, config.season)),
     );
   if (winnerPlayerIds.length > 0) {
     await db.insert(awardWinnersTable).values(

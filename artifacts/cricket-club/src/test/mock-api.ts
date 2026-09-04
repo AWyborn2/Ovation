@@ -67,11 +67,7 @@ export function installApiMock(overrides: Record<string, unknown> = {}): Install
     "fetch",
     vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
       const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
       calls.push(url);
 
       // Per-test overrides win over the standard table.

@@ -14,13 +14,21 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
   const parts = extrasParts(innings.extras);
 
   return (
-    <div className="w-full overflow-hidden rounded-sm shadow-lg" style={{ fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
+    <div
+      className="w-full overflow-hidden rounded-sm shadow-lg"
+      style={{ fontFamily: "'Arial Narrow', Arial, sans-serif" }}
+    >
       <CardHeader team={team} inningsLabel={innings.inningsLabel} />
 
       {/* Column headers */}
       <div
         className="grid"
-        style={{ gridTemplateColumns: GRID, background: c.primary, borderBottom: `1px solid ${c.borderColor}`, opacity: 0.85 }}
+        style={{
+          gridTemplateColumns: GRID,
+          background: c.primary,
+          borderBottom: `1px solid ${c.borderColor}`,
+          opacity: 0.85,
+        }}
       >
         {["BATSMAN", "DISMISSAL", "R", "B", "SR"].map((h, i) => (
           <div
@@ -43,7 +51,9 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
       {/* Batsmen */}
       {innings.batsmen.length === 0 ? (
         <div className="px-3 py-3" style={{ background: c.rowOdd }}>
-          <span style={{ color: c.rowText, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>No batting recorded.</span>
+          <span style={{ color: c.rowText, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>
+            No batting recorded.
+          </span>
         </div>
       ) : (
         innings.batsmen.map((row, idx) => {
@@ -53,7 +63,11 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
             <div
               key={`${row.name}-${idx}`}
               className="grid items-center"
-              style={{ gridTemplateColumns: GRID, background: rowBg, borderBottom: `1px solid ${c.borderColor}` }}
+              style={{
+                gridTemplateColumns: GRID,
+                background: rowBg,
+                borderBottom: `1px solid ${c.borderColor}`,
+              }}
             >
               <div className="px-2 py-[5px]">
                 {clickable ? (
@@ -77,7 +91,12 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
                 ) : (
                   <span
                     className="uppercase"
-                    style={{ color: c.rowText, fontSize: "clamp(10px, 1.8vw, 14px)", fontWeight: 700, letterSpacing: "0.04em" }}
+                    style={{
+                      color: c.rowText,
+                      fontSize: "clamp(10px, 1.8vw, 14px)",
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                    }}
                   >
                     {row.name}
                   </span>
@@ -87,22 +106,48 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
 
               <div
                 className="px-2 py-[5px] text-center"
-                style={{ color: c.rowText, fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 400, opacity: 0.9 }}
+                style={{
+                  color: c.rowText,
+                  fontSize: "clamp(9px, 1.5vw, 12px)",
+                  fontWeight: 400,
+                  opacity: 0.9,
+                }}
               >
                 {row.dismissal ? (
-                  <span style={{ fontStyle: row.notOut ? "italic" : "normal" }}>{row.dismissal}</span>
+                  <span style={{ fontStyle: row.notOut ? "italic" : "normal" }}>
+                    {row.dismissal}
+                  </span>
                 ) : (
                   <span style={{ opacity: 0.5 }}>—</span>
                 )}
               </div>
 
-              <div className="text-center py-[5px]" style={{ color: c.rowText, fontSize: "clamp(11px, 2vw, 15px)", fontWeight: 800 }}>
+              <div
+                className="text-center py-[5px]"
+                style={{ color: c.rowText, fontSize: "clamp(11px, 2vw, 15px)", fontWeight: 800 }}
+              >
                 {row.runs ?? 0}
               </div>
-              <div className="text-center py-[5px]" style={{ color: c.rowText, fontSize: "clamp(10px, 1.6vw, 13px)", fontWeight: 400, opacity: 0.7 }}>
+              <div
+                className="text-center py-[5px]"
+                style={{
+                  color: c.rowText,
+                  fontSize: "clamp(10px, 1.6vw, 13px)",
+                  fontWeight: 400,
+                  opacity: 0.7,
+                }}
+              >
                 {row.balls ?? "—"}
               </div>
-              <div className="text-center py-[5px]" style={{ color: c.rowText, fontSize: "clamp(10px, 1.6vw, 13px)", fontWeight: 400, opacity: 0.7 }}>
+              <div
+                className="text-center py-[5px]"
+                style={{
+                  color: c.rowText,
+                  fontSize: "clamp(10px, 1.6vw, 13px)",
+                  fontWeight: 400,
+                  opacity: 0.7,
+                }}
+              >
                 {row.strikeRate != null ? row.strikeRate.toFixed(1) : "—"}
               </div>
             </div>
@@ -112,8 +157,18 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
 
       {/* DNB */}
       {innings.didNotBat.length > 0 && (
-        <div className="px-2 py-[4px]" style={{ background: c.rowEven, borderBottom: `1px solid ${c.borderColor}` }}>
-          <span style={{ color: c.rowText, fontSize: "clamp(9px, 1.4vw, 12px)", opacity: 0.6, fontStyle: "italic" }}>
+        <div
+          className="px-2 py-[4px]"
+          style={{ background: c.rowEven, borderBottom: `1px solid ${c.borderColor}` }}
+        >
+          <span
+            style={{
+              color: c.rowText,
+              fontSize: "clamp(9px, 1.4vw, 12px)",
+              opacity: 0.6,
+              fontStyle: "italic",
+            }}
+          >
             Did not bat: {innings.didNotBat.join(", ")}
           </span>
         </div>
@@ -122,16 +177,37 @@ export function BattingCard({ innings, onPlayerClick }: BattingCardProps) {
       {/* Totals */}
       <div
         className="grid items-center"
-        style={{ gridTemplateColumns: "1fr 1fr 1fr", background: c.totalBg, borderTop: `2px solid ${c.secondary}`, padding: "6px 8px" }}
+        style={{
+          gridTemplateColumns: "1fr 1fr 1fr",
+          background: c.totalBg,
+          borderTop: `2px solid ${c.secondary}`,
+          padding: "6px 8px",
+        }}
       >
         <div style={{ color: c.totalText, fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 700 }}>
           OVERS {innings.oversTotal ?? "—"}
         </div>
-        <div className="text-center" style={{ color: c.totalText, fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 400 }}>
+        <div
+          className="text-center"
+          style={{ color: c.totalText, fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 400 }}
+        >
           EXTRAS {innings.extras.total}
-          {parts.length > 0 && <span style={{ opacity: 0.7, fontSize: "clamp(7px, 1.1vw, 10px)" }}> ({parts.join(" ")})</span>}
+          {parts.length > 0 && (
+            <span style={{ opacity: 0.7, fontSize: "clamp(7px, 1.1vw, 10px)" }}>
+              {" "}
+              ({parts.join(" ")})
+            </span>
+          )}
         </div>
-        <div className="text-right" style={{ color: c.totalText, fontSize: "clamp(16px, 3vw, 24px)", fontWeight: 900, letterSpacing: "0.02em" }}>
+        <div
+          className="text-right"
+          style={{
+            color: c.totalText,
+            fontSize: "clamp(16px, 3vw, 24px)",
+            fontWeight: 900,
+            letterSpacing: "0.02em",
+          }}
+        >
           {innings.totalRuns != null ? `${innings.totalRuns}/${innings.wickets ?? 0}` : "—"}
         </div>
       </div>

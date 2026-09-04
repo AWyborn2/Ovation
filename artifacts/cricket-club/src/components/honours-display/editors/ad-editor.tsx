@@ -60,24 +60,25 @@ export function AdEditor({
           data-testid={`ad-file-${ad.id}`}
         />
       </label>
-      {ad.imageUrl && (ad.mediaType === "video" ? (
-        <video
-          src={ad.imageUrl}
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="h-9 w-16 object-cover rounded border bg-white"
-          data-testid={`ad-preview-${ad.id}`}
-        />
-      ) : (
-        <img
-          src={ad.imageUrl}
-          alt={ad.name}
-          className="h-9 w-16 object-cover rounded border bg-white"
-          data-testid={`ad-preview-${ad.id}`}
-        />
-      ))}
+      {ad.imageUrl &&
+        (ad.mediaType === "video" ? (
+          <video
+            src={ad.imageUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="h-9 w-16 object-cover rounded border bg-white"
+            data-testid={`ad-preview-${ad.id}`}
+          />
+        ) : (
+          <img
+            src={ad.imageUrl}
+            alt={ad.name}
+            className="h-9 w-16 object-cover rounded border bg-white"
+            data-testid={`ad-preview-${ad.id}`}
+          />
+        ))}
       <Button
         type="button"
         variant="ghost"

@@ -15,16 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import {
-  Trash2,
-  Upload,
-  Loader2,
-  Plus,
-  Type,
-  ImageIcon,
-  Pencil,
-  X,
-} from "lucide-react";
+import { Trash2, Upload, Loader2, Plus, Type, ImageIcon, Pencil, X } from "lucide-react";
 import { CARD_FONT_OPTIONS } from "@/lib/share-card";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import type { CardFontKey, CardKind, MotionPreset } from "@/lib/share-card";
@@ -99,8 +90,7 @@ export function TemplatesCard() {
   }, []);
   const templatesQ = useListCardTemplates();
   const templates = templatesQ.data ?? [];
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });
 
   const update = useUpdateCardTemplate({ mutation: { onSuccess: invalidate } });
   const remove = useDeleteCardTemplate({ mutation: { onSuccess: invalidate } });
@@ -112,20 +102,16 @@ export function TemplatesCard() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>Custom tile templates</CardTitle>
         {!editing && (
-          <Button
-            size="sm"
-            onClick={() => setEditing(blankDraft(templates.length))}
-          >
+          <Button size="sm" onClick={() => setEditing(blankDraft(templates.length))}>
             <Plus className="h-4 w-4 mr-1" /> New template
           </Button>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Upload a flattened design from Canva or Figma, then drop labelled slots
-          on top and bind each to a data field. Templates show up in the share
-          dialog for the card types you choose; otherwise the built-in design is
-          used.
+          Upload a flattened design from Canva or Figma, then drop labelled slots on top and bind
+          each to a data field. Templates show up in the share dialog for the card types you choose;
+          otherwise the built-in design is used.
         </p>
 
         {editing ? (
@@ -272,7 +258,9 @@ function TemplateEditor({
             resolve({
               w: v.videoWidth,
               h: v.videoHeight,
-              durationMs: Number.isFinite(v.duration) ? Math.round(v.duration * 1000) : DEFAULT_ANIM_MS,
+              durationMs: Number.isFinite(v.duration)
+                ? Math.round(v.duration * 1000)
+                : DEFAULT_ANIM_MS,
             });
           v.onerror = () => resolve(null);
           v.src = URL.createObjectURL(file);
@@ -280,7 +268,11 @@ function TemplateEditor({
       : await new Promise<{ w: number; h: number; durationMs: number | null } | null>((resolve) => {
           const img = new Image();
           img.onload = () =>
-            resolve({ w: img.naturalWidth, h: img.naturalHeight, durationMs: isGif ? DEFAULT_ANIM_MS : null });
+            resolve({
+              w: img.naturalWidth,
+              h: img.naturalHeight,
+              durationMs: isGif ? DEFAULT_ANIM_MS : null,
+            });
           img.onerror = () => resolve(null);
           img.src = URL.createObjectURL(file);
         });
@@ -412,8 +404,8 @@ function TemplateEditor({
             )}
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Still images up to 10MB. Animated GIF/MP4/WebM up to 50MB — keep clips
-            short (≈4s) and looping. MP4 (H.264) plays most widely.
+            Still images up to 10MB. Animated GIF/MP4/WebM up to 50MB — keep clips short (≈4s) and
+            looping. MP4 (H.264) plays most widely.
             {draft.backgroundKind !== "image" && (
               <>
                 {" "}
@@ -434,7 +426,9 @@ function TemplateEditor({
           <select
             id={`${fileId}-motion`}
             value={draft.motionPreset}
-            onChange={(e) => setDraft((d) => ({ ...d, motionPreset: e.target.value as MotionPreset }))}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, motionPreset: e.target.value as MotionPreset }))
+            }
             className="w-full px-2 py-1.5 rounded border bg-card text-foreground text-sm"
           >
             <option value="none">None (static slots)</option>
@@ -443,8 +437,8 @@ function TemplateEditor({
             <option value="countUp">Count up numbers</option>
           </select>
           <p className="text-[11px] text-muted-foreground">
-            Applies an entrance animation to the bound slots. Works on top of a
-            still or animated background. Clubs can still override this per share.
+            Applies an entrance animation to the bound slots. Works on top of a still or animated
+            background. Clubs can still override this per share.
           </p>
         </div>
       </div>
@@ -467,10 +461,20 @@ function TemplateEditor({
           />
           <div className="space-y-3">
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => addSlot("text")}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => addSlot("text")}
+              >
                 <Type className="h-3.5 w-3.5 mr-1" /> Text
               </Button>
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => addSlot("photo")}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => addSlot("photo")}
+              >
                 <ImageIcon className="h-3.5 w-3.5 mr-1" /> Photo
               </Button>
             </div>
@@ -484,14 +488,16 @@ function TemplateEditor({
               />
             ) : (
               <p className="text-xs text-muted-foreground">
-                Select a slot to edit it, or add one above. Drag a slot to move it;
-                drag its corner handle to resize.
+                Select a slot to edit it, or add one above. Drag a slot to move it; drag its corner
+                handle to resize.
               </p>
             )}
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Upload a background design to start placing slots.</p>
+        <p className="text-sm text-muted-foreground">
+          Upload a background design to start placing slots.
+        </p>
       )}
 
       <div className="flex items-center justify-between border-t pt-3">
@@ -539,25 +545,20 @@ function SlotCanvas({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
-  const drag = useRef<
-    | {
-        mode: "move" | "resize";
-        px: number;
-        py: number;
-        x: number;
-        y: number;
-        w: number;
-        h: number;
-      }
-    | null
-  >(null);
+  const drag = useRef<{
+    mode: "move" | "resize";
+    px: number;
+    py: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() =>
-      setBox({ w: el.clientWidth, h: el.clientHeight }),
-    );
+    const ro = new ResizeObserver(() => setBox({ w: el.clientWidth, h: el.clientHeight }));
     ro.observe(el);
     setBox({ w: el.clientWidth, h: el.clientHeight });
     return () => ro.disconnect();
@@ -776,9 +777,7 @@ function SlotInspector({
               <Label className="text-xs">Align</Label>
               <select
                 value={slot.align ?? "left"}
-                onChange={(e) =>
-                  onChange({ align: e.target.value as "left" | "center" | "right" })
-                }
+                onChange={(e) => onChange({ align: e.target.value as "left" | "center" | "right" })}
                 className="w-full px-2 py-1 rounded border bg-card text-sm"
               >
                 <option value="left">Left</option>
@@ -798,8 +797,7 @@ function SlotInspector({
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            Bound to the card's player photo (or the photo chosen in the share
-            dialog).
+            Bound to the card's player photo (or the photo chosen in the share dialog).
           </p>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">

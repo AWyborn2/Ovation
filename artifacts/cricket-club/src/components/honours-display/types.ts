@@ -60,17 +60,7 @@ export type BoardLayout =
   | "lifeMembers";
 
 /** The built-in skin ids (admin skins use "custom:<uuid>"). */
-export type TemplateId =
-  | "p1"
-  | "p2"
-  | "p3"
-  | "p4"
-  | "p5"
-  | "p6"
-  | "p7"
-  | "p8"
-  | "p9"
-  | "p10";
+export type TemplateId = "p1" | "p2" | "p3" | "p4" | "p5" | "p6" | "p7" | "p8" | "p9" | "p10";
 
 export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p1", label: "P1 · Heritage Timber" },

@@ -200,9 +200,7 @@ export function snapHexToAccentToken(hex?: string | null): AccentToken {
   if (hue == null) return "amber";
   let best: AccentToken = "amber";
   let bestDist = Infinity;
-  for (const [token, accentHue] of Object.entries(ACCENT_HUES) as Array<
-    [AccentToken, number]
-  >) {
+  for (const [token, accentHue] of Object.entries(ACCENT_HUES) as Array<[AccentToken, number]>) {
     const raw = Math.abs(hue - accentHue);
     const dist = Math.min(raw, 360 - raw);
     if (dist < bestDist) {
@@ -246,9 +244,7 @@ export function deriveClubColors(
 ): TeamColors {
   const background =
     (backgroundColour && hexToRgb(backgroundColour)) || hexToRgb(FALLBACK_BACKGROUND)!;
-  const primary =
-    (primaryColour && hexToRgb(primaryColour)) ||
-    hexToRgb(FALLBACK_PRIMARY)!;
+  const primary = (primaryColour && hexToRgb(primaryColour)) || hexToRgb(FALLBACK_PRIMARY)!;
   const backgroundHex = toHex(background);
   const primaryHex = toHex(primary);
   return {

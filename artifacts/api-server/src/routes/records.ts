@@ -1,11 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  awardsTable,
-  awardWinnersTable,
-  clubRolesTable,
-} from "@workspace/db";
+import { db, awardsTable, awardWinnersTable, clubRolesTable } from "@workspace/db";
 import { shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 
@@ -122,33 +117,19 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
       grade: clubRolesTable.grade,
     })
     .from(clubRolesTable)
-    .where(
-      and(
-        eq(clubRolesTable.published, true),
-        eq(clubRolesTable.tenantId, tenantId),
-      ),
-    );
+    .where(and(eq(clubRolesTable.published, true), eq(clubRolesTable.tenantId, tenantId)));
 
-  const byRole = new Map<
-    string,
-    { name: string; playerId: number | null; season: number }[]
-  >();
+  const byRole = new Map<string, { name: string; playerId: number | null; season: number }[]>();
   for (const r of roleRows) {
     if (r.grade != null) continue; // grade captains are surfaced per grade
     if (!byRole.has(r.role)) byRole.set(r.role, []);
-    byRole
-      .get(r.role)!
-      .push({ name: r.name, playerId: r.playerId, season: r.season });
+    byRole.get(r.role)!.push({ name: r.name, playerId: r.playerId, season: r.season });
   }
 
   const roleRecords: RecordLeaderboard[] = [...byRole.entries()]
-    .map(([role, recs]) =>
-      buildLeaderboard(role, `Most Seasons as ${role}`, "seasons", recs),
-    )
+    .map(([role, recs]) => buildLeaderboard(role, `Most Seasons as ${role}`, "seasons", recs))
     .filter((lb) => (lb.entries[0]?.count ?? 0) >= 2)
-    .sort(
-      (a, b) => roleRank(a.key) - roleRank(b.key) || a.key.localeCompare(b.key),
-    );
+    .sort((a, b) => roleRank(a.key) - roleRank(b.key) || a.key.localeCompare(b.key));
 
   // --- Award win-count leaderboards (published winners of published awards) ---
   const awards = await db
@@ -176,26 +157,14 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
         )
     : [];
 
-  const byAward = new Map<
-    number,
-    { name: string; playerId: number | null; season: number }[]
-  >();
+  const byAward = new Map<number, { name: string; playerId: number | null; season: number }[]>();
   for (const w of winners) {
     if (!byAward.has(w.awardId)) byAward.set(w.awardId, []);
-    byAward
-      .get(w.awardId)!
-      .push({ name: w.name, playerId: w.playerId, season: w.season });
+    byAward.get(w.awardId)!.push({ name: w.name, playerId: w.playerId, season: w.season });
   }
 
   const awardRecords: RecordLeaderboard[] = awards
-    .map((a) =>
-      buildLeaderboard(
-        a.key,
-        `Most ${a.title} Wins`,
-        "awards",
-        byAward.get(a.id) ?? [],
-      ),
-    )
+    .map((a) => buildLeaderboard(a.key, `Most ${a.title} Wins`, "awards", byAward.get(a.id) ?? []))
     .filter((lb) => (lb.entries[0]?.count ?? 0) >= 2);
 
   res.json({ roleRecords, awardRecords });

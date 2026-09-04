@@ -48,11 +48,7 @@ describe.skipIf(!HAS_DB)("clearDefaultKinds (real Postgres)", () => {
   let otherTenantId: number;
 
   /** Insert a plain (non-pack) template holding `defaultForKinds`. */
-  async function seedTemplate(
-    name: string,
-    defaultForKinds: string[],
-    forTenant?: number,
-  ) {
+  async function seedTemplate(name: string, defaultForKinds: string[], forTenant?: number) {
     const [row] = await D.db
       .insert(D.cardTemplatesTable)
       .values({
@@ -106,18 +102,14 @@ describe.skipIf(!HAS_DB)("clearDefaultKinds (real Postgres)", () => {
 
   beforeEach(async () => {
     for (const id of [tenantId, otherTenantId]) {
-      await D.db
-        .delete(D.cardTemplatesTable)
-        .where(eq(D.cardTemplatesTable.tenantId, id));
+      await D.db.delete(D.cardTemplatesTable).where(eq(D.cardTemplatesTable.tenantId, id));
     }
   });
 
   afterAll(async () => {
     for (const id of [tenantId, otherTenantId]) {
       if (!id) continue;
-      await D.db
-        .delete(D.cardTemplatesTable)
-        .where(eq(D.cardTemplatesTable.tenantId, id));
+      await D.db.delete(D.cardTemplatesTable).where(eq(D.cardTemplatesTable.tenantId, id));
       await D.db.delete(D.tenantsTable).where(eq(D.tenantsTable.id, id));
     }
   });
@@ -136,12 +128,7 @@ describe.skipIf(!HAS_DB)("clearDefaultKinds (real Postgres)", () => {
     // The "Use for all card types" path. Two or more kinds rendered
     // `($1, $2, …)::text[]`, which is a syntax error rather than a bad cast —
     // a different failure from the single-kind case, hence its own test.
-    const prev = await seedTemplate("Previous owner", [
-      "century",
-      "record",
-      "debut",
-      "milestone",
-    ]);
+    const prev = await seedTemplate("Previous owner", ["century", "record", "debut", "milestone"]);
 
     await clear(["century", "record", "debut"]);
 

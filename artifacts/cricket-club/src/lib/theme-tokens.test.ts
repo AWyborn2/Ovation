@@ -98,9 +98,7 @@ describe("snapHexToAccentToken / resolveAccentToken", () => {
   });
 
   it("an explicit accentToken wins over any stored hex", () => {
-    expect(
-      resolveAccentToken({ ...HALLS_HEAD_LEGACY, accentToken: "purple" }),
-    ).toBe("purple");
+    expect(resolveAccentToken({ ...HALLS_HEAD_LEGACY, accentToken: "purple" })).toBe("purple");
   });
 
   it("the default brand resolves to amber", () => {
@@ -173,9 +171,9 @@ describe("deriveThemeTokens: surfaces derived from backgroundColour", () => {
   it("Halls Head (dark) derives surfaces from its background hue", () => {
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
     expect(tokens["--background"]).toBe("206 17% 8%");
-    expect(tokens["--card"]).toBe("206 15% 11%");   // Math.round(17*0.9)=15
-    expect(tokens["--muted"]).toBe("206 14% 16%");   // Math.round(17*0.85)=14
-    expect(tokens["--border"]).toBe("206 12% 21%");  // Math.round(17*0.7)=12
+    expect(tokens["--card"]).toBe("206 15% 11%"); // Math.round(17*0.9)=15
+    expect(tokens["--muted"]).toBe("206 14% 16%"); // Math.round(17*0.85)=14
+    expect(tokens["--border"]).toBe("206 12% 21%"); // Math.round(17*0.7)=12
     // Foreground and accent are unaffected by the surface derivation.
     expect(tokens["--foreground"]).toBe("220 20% 96%");
     expect(tokens["--primary"]).toBe(hexToHslTriplet(HALLS_HEAD_LEGACY.primaryColour)!);
@@ -185,19 +183,23 @@ describe("deriveThemeTokens: surfaces derived from backgroundColour", () => {
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "light");
     expect(tokens["--background"]).toBe("206 17% 97%");
     expect(tokens["--card"]).toBe("0 0% 100%");
-    expect(tokens["--muted"]).toBe("206 15% 94%");   // Math.round(17*0.9)=15
-    expect(tokens["--border"]).toBe("206 14% 88%");  // Math.round(17*0.85)=14
+    expect(tokens["--muted"]).toBe("206 15% 94%"); // Math.round(17*0.9)=15
+    expect(tokens["--border"]).toBe("206 14% 88%"); // Math.round(17*0.85)=14
     expect(tokens["--foreground"]).toBe("222 30% 12%");
   });
 
   // Wild #7A2E4C → hexToHsl: {h:336, s:45, l:33}; s_dark clamped to 35
   it("wild brand (dark) clamps saturation at 35 and uses its hue", () => {
-    const wild: ClubBrand = { name: "Wild FC", backgroundColour: "#7A2E4C", primaryColour: "#2E7A5C" };
+    const wild: ClubBrand = {
+      name: "Wild FC",
+      backgroundColour: "#7A2E4C",
+      primaryColour: "#2E7A5C",
+    };
     const tokens = deriveThemeTokens(wild, "dark");
     expect(tokens["--background"]).toBe("336 35% 8%");
-    expect(tokens["--card"]).toBe("336 32% 11%");    // Math.round(35*0.9)=32
-    expect(tokens["--muted"]).toBe("336 30% 16%");   // Math.round(35*0.85)=30
-    expect(tokens["--border"]).toBe("336 25% 21%");  // Math.round(35*0.7)=25
+    expect(tokens["--card"]).toBe("336 32% 11%"); // Math.round(35*0.9)=32
+    expect(tokens["--muted"]).toBe("336 30% 16%"); // Math.round(35*0.85)=30
+    expect(tokens["--border"]).toBe("336 25% 21%"); // Math.round(35*0.7)=25
   });
 
   it("useNavyBase=true overrides a valid dark backgroundColour and restores navy", () => {
@@ -319,7 +321,10 @@ describe("theme overrides", () => {
     const base = deriveThemeTokens(DEFAULT_BRAND, "dark");
     expect(base["--radius"]).toBeUndefined();
     const tokens = deriveThemeTokens(
-      { ...DEFAULT_BRAND, themeOverrides: { "--radius": "0.75rem", "--app-font-sans": "Georgia, serif" } },
+      {
+        ...DEFAULT_BRAND,
+        themeOverrides: { "--radius": "0.75rem", "--app-font-sans": "Georgia, serif" },
+      },
       "dark",
     );
     expect(tokens["--radius"]).toBe("0.75rem");

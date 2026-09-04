@@ -99,9 +99,7 @@ type Detected = {
  * and used to de-duplicate, so re-imports and undo→re-import cycles (which leave
  * milestone_events in place) never emit a moment twice.
  */
-export async function detectAndQueueMatchMilestones(
-  ctx: MatchMilestoneContext,
-): Promise<void> {
+export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext): Promise<void> {
   const {
     tenantId,
     importId,
@@ -121,10 +119,7 @@ export async function detectAndQueueMatchMilestones(
   const isCapGrade = capCategory != null && !abandoned;
 
   const involvedIds = Array.from(
-    new Set<number>([
-      ...lines.map((l) => l.playerId),
-      ...createdCaps.map((c) => c.playerId),
-    ]),
+    new Set<number>([...lines.map((l) => l.playerId), ...createdCaps.map((c) => c.playerId)]),
   );
   if (involvedIds.length === 0) return;
 
@@ -238,9 +233,7 @@ export async function detectAndQueueMatchMilestones(
             createdCaps.find((c) => c.playerId === l.playerId)?.capNumber ??
             null,
           season:
-            season != null
-              ? `${season}/${String((season + 1) % 100).padStart(2, "0")}`
-              : null,
+            season != null ? `${season}/${String((season + 1) % 100).padStart(2, "0")}` : null,
           opponent: opponent ?? null,
           round: round ?? null,
           photoUrl: photoFor(l.playerId),

@@ -100,10 +100,7 @@ function pruneCentralCache(ttl: number): void {
  * 2026-07-09 central_perf_indexes_club_and_match migration, but still whole-
  * history reads over the network), so a stampede is expensive.
  */
-export async function withCentralCache<T>(
-  key: string,
-  fn: () => Promise<T>,
-): Promise<T> {
+export async function withCentralCache<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const ttl = centralCacheTtlMs();
   if (ttl <= 0) return fn();
   const hit = centralCache.get(key);

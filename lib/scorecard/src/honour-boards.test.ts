@@ -61,7 +61,14 @@ const mkPlayer = (over: Partial<AggregatedPlayer> & { playerId: number }): Aggre
 describe("DEFAULT_BOARDS", () => {
   it("lists the eight boards in display order and BOARDS aliases it", () => {
     expect(DEFAULT_BOARDS.map((b) => b.key)).toEqual([
-      "games", "runs", "wickets", "dismissals", "highscores", "bestbowling", "centurions", "fivefers",
+      "games",
+      "runs",
+      "wickets",
+      "dismissals",
+      "highscores",
+      "bestbowling",
+      "centurions",
+      "fivefers",
     ]);
     expect(BOARDS).toBe(DEFAULT_BOARDS);
   });
@@ -101,16 +108,36 @@ describe("mergeBoardsMeta", () => {
 describe("HONOUR_TIER_CONFIG / buildTiers", () => {
   it("has a policy entry for every board", () => {
     expect(Object.keys(HONOUR_TIER_CONFIG).sort()).toEqual(DEFAULT_BOARDS.map((b) => b.key).sort());
-    expect(HONOUR_TIER_CONFIG.games).toMatchObject({ kind: "extendable", step: 50, anchorMin: 350 });
-    expect(HONOUR_TIER_CONFIG.runs).toMatchObject({ kind: "extendable", step: 500, anchorMin: 10000 });
-    expect(HONOUR_TIER_CONFIG.wickets).toMatchObject({ kind: "extendable", step: 50, anchorMin: 500 });
-    expect(HONOUR_TIER_CONFIG.dismissals).toMatchObject({ kind: "extendable", step: 25, anchorMin: 100 });
+    expect(HONOUR_TIER_CONFIG.games).toMatchObject({
+      kind: "extendable",
+      step: 50,
+      anchorMin: 350,
+    });
+    expect(HONOUR_TIER_CONFIG.runs).toMatchObject({
+      kind: "extendable",
+      step: 500,
+      anchorMin: 10000,
+    });
+    expect(HONOUR_TIER_CONFIG.wickets).toMatchObject({
+      kind: "extendable",
+      step: 50,
+      anchorMin: 500,
+    });
+    expect(HONOUR_TIER_CONFIG.dismissals).toMatchObject({
+      kind: "extendable",
+      step: 25,
+      anchorMin: 100,
+    });
   });
 
   it("returns static tiers verbatim", () => {
     const tiers = buildTiers("highscores", []);
     expect(tiers.map((t) => t.label)).toEqual([
-      "Double Century Club (200+)", "150 Run Club", "Century Club (100+)", "75 Run Club", "Half Century Club (50+)",
+      "Double Century Club (200+)",
+      "150 Run Club",
+      "Century Club (100+)",
+      "75 Run Club",
+      "Half Century Club (50+)",
     ]);
     expect(tiers[0].max).toBeUndefined();
     expect(buildTiers("bestbowling", [])).toHaveLength(4);
@@ -130,7 +157,10 @@ describe("HONOUR_TIER_CONFIG / buildTiers", () => {
   });
 
   it("extendable boards grow to cover the record holder in whole steps", () => {
-    const tiers = buildTiers("games", [mkPlayer({ playerId: 1, games: 460 }), mkPlayer({ playerId: 2, games: 10 })]);
+    const tiers = buildTiers("games", [
+      mkPlayer({ playerId: 1, games: 460 }),
+      mkPlayer({ playerId: 2, games: 10 }),
+    ]);
     expect(tiers.slice(0, 3)).toEqual([
       { label: "450 Games Club", min: 450 },
       { label: "400 Games Club", min: 400, max: 449 },
@@ -147,9 +177,37 @@ describe("HONOUR_TIER_CONFIG / buildTiers", () => {
 describe("aggregateCareer", () => {
   it("sums a player's rows across grades and tracks best high score / bowling", () => {
     const [p] = aggregateCareer([
-      mkStat({ playerId: 7, grade: "A Grade", games: 10, innings: 9, notOuts: 1, runs: 300, highScore: "45*", bestBowling: "3/20", catches: 2 }),
-      mkStat({ playerId: 7, grade: "B Grade", games: 5, innings: 5, runs: 200, highScore: "112", bestBowling: "5/60", hundreds: 1, stumpings: 1, runOuts: 1 }),
-      mkStat({ playerId: 7, grade: "C Grade", games: 1, bestBowling: "5/30", wickets: 5, runsConceded: 30 }),
+      mkStat({
+        playerId: 7,
+        grade: "A Grade",
+        games: 10,
+        innings: 9,
+        notOuts: 1,
+        runs: 300,
+        highScore: "45*",
+        bestBowling: "3/20",
+        catches: 2,
+      }),
+      mkStat({
+        playerId: 7,
+        grade: "B Grade",
+        games: 5,
+        innings: 5,
+        runs: 200,
+        highScore: "112",
+        bestBowling: "5/60",
+        hundreds: 1,
+        stumpings: 1,
+        runOuts: 1,
+      }),
+      mkStat({
+        playerId: 7,
+        grade: "C Grade",
+        games: 1,
+        bestBowling: "5/30",
+        wickets: 5,
+        runsConceded: 30,
+      }),
     ]);
     expect(p.games).toBe(16);
     expect(p.innings).toBe(14);
@@ -175,8 +233,17 @@ describe("aggregateCareer", () => {
   });
 
   it("statToAggregated mirrors a single row", () => {
-    const p = statToAggregated(mkStat({ playerId: 3, grade: "B Grade", runs: 50, highScore: "50*", bestBowling: "2/9" }));
-    expect(p).toMatchObject({ playerId: 3, runs: 50, highScore: 50, highScoreDisplay: "50*", bestBowlingWkts: 2, bestBowlingRuns: 9 });
+    const p = statToAggregated(
+      mkStat({ playerId: 3, grade: "B Grade", runs: 50, highScore: "50*", bestBowling: "2/9" }),
+    );
+    expect(p).toMatchObject({
+      playerId: 3,
+      runs: 50,
+      highScore: 50,
+      highScoreDisplay: "50*",
+      bestBowlingWkts: 2,
+      bestBowlingRuns: 9,
+    });
     expect([...p.grades]).toEqual(["B Grade"]);
   });
 });
@@ -200,23 +267,39 @@ describe("getAvailableSeasons", () => {
 describe("computeBoard", () => {
   it("places players in bands, ranks across bands and re-indexes populated tiers", () => {
     const players = [
-      mkPlayer({ playerId: 1, surname: "Zed", games: 120, runs: 900, grades: new Set(["A Grade", "CLUB TOTAL"]) }),
+      mkPlayer({
+        playerId: 1,
+        surname: "Zed",
+        games: 120,
+        runs: 900,
+        grades: new Set(["A Grade", "CLUB TOTAL"]),
+      }),
       mkPlayer({ playerId: 2, surname: "Bee", games: 55 }),
       mkPlayer({ playerId: 3, surname: "Ay", games: 130 }),
       mkPlayer({ playerId: 4, surname: "None", games: 0 }),
     ];
     const board = computeBoard(players, "games");
-    expect(board.map((t) => [t.label, t.startRank, t.tierIndex, t.rows.map((r) => r.playerId)])).toEqual([
+    expect(
+      board.map((t) => [t.label, t.startRank, t.tierIndex, t.rows.map((r) => r.playerId)]),
+    ).toEqual([
       ["100 Games Club", 1, 0, [3, 1]],
       ["50 Games Club", 3, 1, [2]],
     ]);
     const zed = board[0].rows[1];
-    expect(zed).toMatchObject({ headline: "120", supporting: "900", sortValue: 120, gradesPlayed: ["A Grade"] });
+    expect(zed).toMatchObject({
+      headline: "120",
+      supporting: "900",
+      sortValue: 120,
+      gradesPlayed: ["A Grade"],
+    });
   });
 
   it("ties on value fall back to surname order", () => {
     const board = computeBoard(
-      [mkPlayer({ playerId: 1, surname: "Smith", games: 100 }), mkPlayer({ playerId: 2, surname: "Jones", games: 100 })],
+      [
+        mkPlayer({ playerId: 1, surname: "Smith", games: 100 }),
+        mkPlayer({ playerId: 2, surname: "Jones", games: 100 }),
+      ],
       "games",
     );
     expect(board[0].rows.map((r) => r.surname)).toEqual(["Jones", "Smith"]);
@@ -224,10 +307,34 @@ describe("computeBoard", () => {
 
   it("best bowling sorts by wickets then fewest runs", () => {
     const players = [
-      mkPlayer({ playerId: 1, surname: "A", bestBowlingWkts: 5, bestBowlingRuns: 30, bestBowling: "5/30" }),
-      mkPlayer({ playerId: 2, surname: "B", bestBowlingWkts: 5, bestBowlingRuns: 20, bestBowling: "5/20" }),
-      mkPlayer({ playerId: 3, surname: "C", bestBowlingWkts: 7, bestBowlingRuns: 45, bestBowling: "7/45" }),
-      mkPlayer({ playerId: 4, surname: "D", bestBowlingWkts: 4, bestBowlingRuns: 10, bestBowling: "4/10" }),
+      mkPlayer({
+        playerId: 1,
+        surname: "A",
+        bestBowlingWkts: 5,
+        bestBowlingRuns: 30,
+        bestBowling: "5/30",
+      }),
+      mkPlayer({
+        playerId: 2,
+        surname: "B",
+        bestBowlingWkts: 5,
+        bestBowlingRuns: 20,
+        bestBowling: "5/20",
+      }),
+      mkPlayer({
+        playerId: 3,
+        surname: "C",
+        bestBowlingWkts: 7,
+        bestBowlingRuns: 45,
+        bestBowling: "7/45",
+      }),
+      mkPlayer({
+        playerId: 4,
+        surname: "D",
+        bestBowlingWkts: 4,
+        bestBowlingRuns: 10,
+        bestBowling: "4/10",
+      }),
     ];
     const board = computeBoard(players, "bestbowling");
     expect(board.map((t) => [t.label, t.rows.map((r) => r.headline)])).toEqual([
@@ -238,10 +345,14 @@ describe("computeBoard", () => {
   });
 
   it("runs / wickets boards carry averages as supporting text", () => {
-    const players = [mkPlayer({ playerId: 1, runs: 600, innings: 12, notOuts: 2, wickets: 30, runsConceded: 600 })];
+    const players = [
+      mkPlayer({ playerId: 1, runs: 600, innings: 12, notOuts: 2, wickets: 30, runsConceded: 600 }),
+    ];
     expect(computeBoard(players, "runs")[0].rows[0].supporting).toBe("60.00");
     expect(computeBoard(players, "wickets")[0].rows[0].supporting).toBe("20.00");
-    expect(computeBoard([mkPlayer({ playerId: 2, runs: 600 })], "runs")[0].rows[0].supporting).toBe("-");
+    expect(computeBoard([mkPlayer({ playerId: 2, runs: 600 })], "runs")[0].rows[0].supporting).toBe(
+      "-",
+    );
   });
 });
 
@@ -294,7 +405,10 @@ describe("getSeasonCrossings", () => {
     expect(out.map((c) => [c.key, c.tierLabel, c.threshold, c.beforeValue, c.afterValue])).toEqual([
       ["games", "100 Games Club", 100, 95, 105],
     ]);
-    const relaxed = getSeasonCrossings(before, after, { ...DEFAULT_MILESTONE_THRESHOLDS, wickets: 50 });
+    const relaxed = getSeasonCrossings(before, after, {
+      ...DEFAULT_MILESTONE_THRESHOLDS,
+      wickets: 50,
+    });
     expect(relaxed.map((c) => c.tierLabel)).toEqual(["100 Games Club", "50 Wickets Club"]);
   });
 
@@ -317,7 +431,9 @@ describe("getSeasonPromotions / getPlayerSeasonCrossings", () => {
 
   it("ranks the season's crossings by how narrowly they were reached", () => {
     const out = getSeasonPromotions(stats, 2024);
-    expect(out.map((e) => [e.surname, e.tierLabel, e.currentValue, e.excess, e.recencyScore])).toEqual([
+    expect(
+      out.map((e) => [e.surname, e.tierLabel, e.currentValue, e.excess, e.recencyScore]),
+    ).toEqual([
       ["New", "100 Games Club", 100, 0, 0],
       ["Old", "100 Games Club", 105, 5, 0.05],
     ]);
@@ -327,7 +443,9 @@ describe("getSeasonPromotions / getPlayerSeasonCrossings", () => {
 
   it("getPlayerSeasonCrossings works from a single player's rows", () => {
     const mine = stats.filter((s) => s.playerId === 1);
-    expect(getPlayerSeasonCrossings(mine, 2024).map((c) => c.tierLabel)).toEqual(["100 Games Club"]);
+    expect(getPlayerSeasonCrossings(mine, 2024).map((c) => c.tierLabel)).toEqual([
+      "100 Games Club",
+    ]);
     expect(getPlayerSeasonCrossings(mine, 2023)).toEqual([]);
     expect(getPlayerSeasonCrossings([], 2024)).toEqual([]);
   });

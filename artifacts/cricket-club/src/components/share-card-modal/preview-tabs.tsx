@@ -91,7 +91,11 @@ export function PreviewTabs({
             ) : rendering && !previewUrls[s] ? (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             ) : previewUrls[s] ? (
-              <img src={previewUrls[s]!} alt="Card preview" className="w-full h-full object-contain" />
+              <img
+                src={previewUrls[s]!}
+                alt="Card preview"
+                className="w-full h-full object-contain"
+              />
             ) : (
               <span className="text-xs text-muted-foreground">Preparing preview…</span>
             )}

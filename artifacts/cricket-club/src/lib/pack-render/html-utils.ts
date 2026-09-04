@@ -96,9 +96,7 @@ export function dropEmptyImageBlocks(html: string, images: Record<string, string
     const key = m[1];
     if (images[key]) {
       // Keep the block; remove the marker so the next exec moves past it.
-      out =
-        out.slice(0, m.index) +
-        out.slice(m.index).replace(` data-drop-if-empty="${key}"`, "");
+      out = out.slice(0, m.index) + out.slice(m.index).replace(` data-drop-if-empty="${key}"`, "");
     } else {
       out = out.slice(0, m.index) + out.slice(divBounds(out, m.index).end);
     }
@@ -129,7 +127,7 @@ export function substituteRow(
   defaults: Record<string, string>,
 ): string {
   return template.replace(/\{\{\s*row\.([\w.]+)\s*\}\}/g, (_all, key: string) => {
-    const raw = key in values ? values[key] : defaults[key] ?? "";
+    const raw = key in values ? values[key] : (defaults[key] ?? "");
     return escapeHtml(raw);
   });
 }
@@ -208,9 +206,7 @@ export function initialsOf(name: string): string {
  * it is intentionally ignored here (canvas path still honours it). A centred
  * focal point yields no override so untransformed renders are byte-identical.
  */
-export function photoPositionStyle(
-  transform?: { focalX: number; focalY: number } | null,
-): string {
+export function photoPositionStyle(transform?: { focalX: number; focalY: number } | null): string {
   if (!transform) return "";
   const clamp = (n: number) => Math.round(Math.max(0, Math.min(1, n)) * 100);
   const fx = clamp(transform.focalX);
@@ -291,8 +287,7 @@ export function makePhotoSlotFullBleed(html: string): string {
     // `</div>` is the second `</div>` after the placeholder (first closes the
     // slot itself). Inject the full-card scrim as the wrapper's next sibling.
     const slotClose = out.indexOf("</div>", photoIdx);
-    const wrapperCloseStart =
-      slotClose >= 0 ? out.indexOf("</div>", slotClose + 6) : -1;
+    const wrapperCloseStart = slotClose >= 0 ? out.indexOf("</div>", slotClose + 6) : -1;
     const wrapperCloseEnd = wrapperCloseStart >= 0 ? wrapperCloseStart + 6 : -1;
     if (wrapperCloseEnd < 0) {
       // Malformed wrapper (shouldn't happen) — just rewrite the geometry.
@@ -300,8 +295,7 @@ export function makePhotoSlotFullBleed(html: string): string {
       searchFrom = wrapperOpen + newTag.length + PHOTO_SLOT_OPEN.length;
       continue;
     }
-    const rebuilt =
-      newTag + out.slice(wrapperGt + 1, wrapperCloseEnd) + FULL_BLEED_SCRIM;
+    const rebuilt = newTag + out.slice(wrapperGt + 1, wrapperCloseEnd) + FULL_BLEED_SCRIM;
     out = out.slice(0, wrapperOpen) + rebuilt + out.slice(wrapperCloseEnd);
     // Advance past the rewritten wrapper AND the injected scrim so neither the
     // same slot nor the scrim markup is re-scanned (the scrim carries no
@@ -319,8 +313,7 @@ export function resolveSlots(
   photoFullBleed = false,
 ): string {
   if (photoFullBleed) html = makePhotoSlotFullBleed(html);
-  const slotRe =
-    /<div data-slot="([^"]+)" data-slot-type="([^"]+)"([^>]*)><\/div>/g;
+  const slotRe = /<div data-slot="([^"]+)" data-slot-type="([^"]+)"([^>]*)><\/div>/g;
   return html.replace(slotRe, (_all, key: string, type: string, rest: string) => {
     const url = images[key];
     // Sponsor logos are contained (never cropped) even without an explicit

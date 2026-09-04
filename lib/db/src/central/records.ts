@@ -10,11 +10,7 @@ import {
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows } from "./club-matches";
-import {
-  appGradeFromCentral,
-  parseSeasonStartYear,
-  seasonLabelFromStartYear,
-} from "./grades";
+import { appGradeFromCentral, parseSeasonStartYear, seasonLabelFromStartYear } from "./grades";
 import { centralPlayerNames, isPrivateRow } from "./privacy";
 import { classifyFieldingKind, classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
@@ -68,79 +64,159 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
   // catch regex runs per distinct kind instead of per row.
   const matchRows = await getClubMatchRows(clubId);
   const empty: CentralClubRecords = {
-    mostGames: null, mostRuns: null, mostWickets: null, mostCatches: null,
-    mostFifties: null, mostHundreds: null, highestScore: null, bestBowling: null,
+    mostGames: null,
+    mostRuns: null,
+    mostWickets: null,
+    mostCatches: null,
+    mostFifties: null,
+    mostHundreds: null,
+    highestScore: null,
+    bestBowling: null,
   };
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return empty;
   const matchGrade = new Map(matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]));
 
   const [batting, bowling, rosters, fielding] = await Promise.all([
-    centralDb.select({
-      participantId: centralMatchBattingTable.participantId,
-      matchId: centralMatchBattingTable.matchId,
-      runs: centralMatchBattingTable.runs,
-      dismissal: centralMatchBattingTable.dismissal,
-      dismissalType: centralMatchBattingTable.dismissalType,
-    }).from(centralMatchBattingTable).where(and(eq(centralMatchBattingTable.clubId, clubId), inList(centralMatchBattingTable.matchId, matchIds))),
-    centralDb.select({
-      participantId: centralMatchBowlingTable.participantId,
-      matchId: centralMatchBowlingTable.matchId,
-      wickets: centralMatchBowlingTable.wickets,
-      runs: centralMatchBowlingTable.runs,
-    }).from(centralMatchBowlingTable).where(and(eq(centralMatchBowlingTable.clubId, clubId), inList(centralMatchBowlingTable.matchId, matchIds))),
-    centralDb.select({
-      participantId: centralMatchRostersTable.participantId,
-      matchId: centralMatchRostersTable.matchId,
-    }).from(centralMatchRostersTable).where(and(eq(centralMatchRostersTable.clubId, clubId), inList(centralMatchRostersTable.matchId, matchIds))),
-    centralDb.select({
-      participantId: centralFieldingTable.participantId,
-      kind: centralFieldingTable.kind,
-      n: sql<number>`count(*)::int`,
-    }).from(centralFieldingTable).where(and(eq(centralFieldingTable.clubId, clubId), inList(centralFieldingTable.matchId, matchIds)))
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+        dismissal: centralMatchBattingTable.dismissal,
+        dismissalType: centralMatchBattingTable.dismissalType,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inList(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+        runs: centralMatchBowlingTable.runs,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inList(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inList(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralFieldingTable.participantId,
+        kind: centralFieldingTable.kind,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(centralFieldingTable)
+      .where(
+        and(
+          eq(centralFieldingTable.clubId, clubId),
+          inList(centralFieldingTable.matchId, matchIds),
+        ),
+      )
       .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
   ]);
 
   interface Agg {
-    games: Set<number>; runs: number; wickets: number; catches: number;
-    fifties: number; hundreds: number; grades: Set<string>;
+    games: Set<number>;
+    runs: number;
+    wickets: number;
+    catches: number;
+    fifties: number;
+    hundreds: number;
+    grades: Set<string>;
   }
   const agg = new Map<string, Agg>();
   const get = (pid: string): Agg => {
     let a = agg.get(pid);
-    if (!a) { a = { games: new Set(), runs: 0, wickets: 0, catches: 0, fifties: 0, hundreds: 0, grades: new Set() }; agg.set(pid, a); }
+    if (!a) {
+      a = {
+        games: new Set(),
+        runs: 0,
+        wickets: 0,
+        catches: 0,
+        fifties: 0,
+        hundreds: 0,
+        grades: new Set(),
+      };
+      agg.set(pid, a);
+    }
     return a;
   };
-  const addGrade = (a: Agg, matchId: number) => { const g = matchGrade.get(matchId); if (g) a.grades.add(g); };
+  const addGrade = (a: Agg, matchId: number) => {
+    const g = matchGrade.get(matchId);
+    if (g) a.grades.add(g);
+  };
 
-  let bestScore: { participantId: string; grade: string | null; runs: number; notOut: boolean } | null = null;
+  let bestScore: {
+    participantId: string;
+    grade: string | null;
+    runs: number;
+    notOut: boolean;
+  } | null = null;
   for (const b of batting) {
     if (!b.participantId || b.matchId === null) continue;
     const a = get(b.participantId);
-    a.games.add(b.matchId); addGrade(a, b.matchId);
+    a.games.add(b.matchId);
+    addGrade(a, b.matchId);
     const kind = classifyInnings(b.dismissalType, b.dismissal);
     if (kind === "dnb") continue;
     const runs = b.runs ?? 0;
     a.runs += runs;
-    if (runs >= 100) a.hundreds += 1; else if (runs >= 50) a.fifties += 1;
+    if (runs >= 100) a.hundreds += 1;
+    else if (runs >= 50) a.fifties += 1;
     if (!bestScore || runs > bestScore.runs) {
-      bestScore = { participantId: b.participantId, grade: matchGrade.get(b.matchId) ?? null, runs, notOut: kind === "notout" };
+      bestScore = {
+        participantId: b.participantId,
+        grade: matchGrade.get(b.matchId) ?? null,
+        runs,
+        notOut: kind === "notout",
+      };
     }
   }
-  let bestBowl: { participantId: string; grade: string | null; wkts: number; runs: number } | null = null;
+  let bestBowl: { participantId: string; grade: string | null; wkts: number; runs: number } | null =
+    null;
   for (const b of bowling) {
     if (!b.participantId || b.matchId === null) continue;
     const a = get(b.participantId);
-    a.games.add(b.matchId); addGrade(a, b.matchId);
-    const w = b.wickets ?? 0; const r = b.runs ?? 0;
+    a.games.add(b.matchId);
+    addGrade(a, b.matchId);
+    const w = b.wickets ?? 0;
+    const r = b.runs ?? 0;
     a.wickets += w;
     if (!bestBowl || w > bestBowl.wkts || (w === bestBowl.wkts && w > 0 && r < bestBowl.runs)) {
-      if (w > 0) bestBowl = { participantId: b.participantId, grade: matchGrade.get(b.matchId) ?? null, wkts: w, runs: r };
+      if (w > 0)
+        bestBowl = {
+          participantId: b.participantId,
+          grade: matchGrade.get(b.matchId) ?? null,
+          wkts: w,
+          runs: r,
+        };
     }
   }
   for (const r of rosters) {
     if (!r.participantId || r.matchId === null) continue;
-    const a = get(r.participantId); a.games.add(r.matchId); addGrade(a, r.matchId);
+    const a = get(r.participantId);
+    a.games.add(r.matchId);
+    addGrade(a, r.matchId);
   }
   for (const f of fielding) {
     if (!f.participantId) continue;
@@ -150,11 +226,14 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
   // Every participant the club ever fielded — bind as one array parameter.
   const ids = [...agg.keys()];
   const players = ids.length
-    ? await centralDb.select({
-        participantId: centralPlayersTable.participantId,
-        displayName: centralPlayersTable.displayName,
-        isPrivate: centralPlayersTable.isPrivate,
-      }).from(centralPlayersTable).where(inList(centralPlayersTable.participantId, ids))
+    ? await centralDb
+        .select({
+          participantId: centralPlayersTable.participantId,
+          displayName: centralPlayersTable.displayName,
+          isPrivate: centralPlayersTable.isPrivate,
+        })
+        .from(centralPlayersTable)
+        .where(inList(centralPlayersTable.participantId, ids))
     : [];
   const byId = new Map(players.map((p) => [p.participantId, p]));
   const isPrivate = (pid: string) => isPrivateRow(byId.get(pid));
@@ -169,7 +248,12 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
       if (!best || value > best.value) best = { pid, value, a };
     }
     return best
-      ? { participantId: best.pid, displayName: nameOf(best.pid), value: best.value, grades: [...best.a.grades].sort() }
+      ? {
+          participantId: best.pid,
+          displayName: nameOf(best.pid),
+          value: best.value,
+          grades: [...best.a.grades].sort(),
+        }
       : null;
   };
 
@@ -182,11 +266,21 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
     mostHundreds: topBy((a) => a.hundreds),
     highestScore:
       bestScore && !isPrivate(bestScore.participantId)
-        ? { participantId: bestScore.participantId, displayName: nameOf(bestScore.participantId), grade: bestScore.grade, value: `${bestScore.runs}${bestScore.notOut ? "*" : ""}` }
+        ? {
+            participantId: bestScore.participantId,
+            displayName: nameOf(bestScore.participantId),
+            grade: bestScore.grade,
+            value: `${bestScore.runs}${bestScore.notOut ? "*" : ""}`,
+          }
         : null,
     bestBowling:
       bestBowl && !isPrivate(bestBowl.participantId)
-        ? { participantId: bestBowl.participantId, displayName: nameOf(bestBowl.participantId), grade: bestBowl.grade, value: `${bestBowl.wkts}/${bestBowl.runs}` }
+        ? {
+            participantId: bestBowl.participantId,
+            displayName: nameOf(bestBowl.participantId),
+            grade: bestBowl.grade,
+            value: `${bestBowl.wkts}/${bestBowl.runs}`,
+          }
         : null,
   };
 }
@@ -223,7 +317,12 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
-  const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
+  const metaOf = new Map(
+    matchRows.map((m) => [
+      m.matchId,
+      { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) },
+    ]),
+  );
 
   // Threshold pushed into SQL: only the century lines travel over the wire
   // (was: every batting line the club ever recorded, filtered in JS). SQL
@@ -246,7 +345,9 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
     );
 
   const hundreds = batting.filter((b) => b.participantId);
-  const names = await centralPlayerNames([...new Set(hundreds.map((b) => b.participantId as string))]);
+  const names = await centralPlayerNames([
+    ...new Set(hundreds.map((b) => b.participantId as string)),
+  ]);
 
   const rows: CentralCentury[] = [];
   for (const b of hundreds) {
@@ -264,7 +365,7 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
       season: seasonLabelFromStartYear(meta.season),
     });
   }
-  rows.sort((a, b) => a.grade.localeCompare(b.grade) || (b.season).localeCompare(a.season));
+  rows.sort((a, b) => a.grade.localeCompare(b.grade) || b.season.localeCompare(a.season));
   return rows;
 }
 
@@ -368,7 +469,12 @@ async function centralMilestonesImpl(
         runs: centralMatchBattingTable.runs,
       })
       .from(centralMatchBattingTable)
-      .where(and(eq(centralMatchBattingTable.clubId, clubId), inList(centralMatchBattingTable.matchId, matchIds))),
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inList(centralMatchBattingTable.matchId, matchIds),
+        ),
+      ),
     centralDb
       .select({
         participantId: centralMatchBowlingTable.participantId,
@@ -376,7 +482,12 @@ async function centralMilestonesImpl(
         wickets: centralMatchBowlingTable.wickets,
       })
       .from(centralMatchBowlingTable)
-      .where(and(eq(centralMatchBowlingTable.clubId, clubId), inList(centralMatchBowlingTable.matchId, matchIds))),
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inList(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      ),
     centralDb
       .select({
         participantId: centralMatchRostersTable.participantId,
@@ -404,8 +515,12 @@ async function centralMilestonesImpl(
       ),
   ]);
 
-  const centuries = batting.filter((b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null);
-  const fivers = bowling.filter((b) => (b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null);
+  const centuries = batting.filter(
+    (b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null,
+  );
+  const fivers = bowling.filter(
+    (b) => (b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null,
+  );
 
   // Per-participant running-total inputs: runs and wickets per match, and the
   // set of matches played (rosters unioned with batted/bowled matches).
@@ -516,9 +631,7 @@ async function centralMilestonesImpl(
     // crossings still fire in a match where the player neither batted nor bowled;
     // `games` contrib stays gated on a real appearance so the games tally is
     // unchanged.
-    const ordered = [
-      ...new Set([...acc.matches, ...acc.dismByMatch.keys()]),
-    ].sort(chrono);
+    const ordered = [...new Set([...acc.matches, ...acc.dismByMatch.keys()])].sort(chrono);
     const totals = { games: 0, runs: 0, wickets: 0, dismissals: 0 };
     for (const mId of ordered) {
       const meta = metaOf.get(mId);
@@ -569,7 +682,12 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
-  const metaOf = new Map(matchRows.map((m) => [m.matchId, { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) }]));
+  const metaOf = new Map(
+    matchRows.map((m) => [
+      m.matchId,
+      { grade: appGradeFromCentral(m.grade), season: parseSeasonStartYear(m.season) },
+    ]),
+  );
 
   // Threshold pushed into SQL: only the five-for lines travel over the wire
   // (was: every bowling line, filtered in JS). SQL `wickets >= 5` ≡ the old
@@ -591,7 +709,9 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
     );
 
   const fivers = bowling.filter((b) => b.participantId);
-  const names = await centralPlayerNames([...new Set(fivers.map((b) => b.participantId as string))]);
+  const names = await centralPlayerNames([
+    ...new Set(fivers.map((b) => b.participantId as string)),
+  ]);
 
   const rows: CentralFiveWicketHaul[] = [];
   for (const b of fivers) {
@@ -608,6 +728,6 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
       season: seasonLabelFromStartYear(meta.season),
     });
   }
-  rows.sort((a, b) => a.grade.localeCompare(b.grade) || (b.season).localeCompare(a.season));
+  rows.sort((a, b) => a.grade.localeCompare(b.grade) || b.season.localeCompare(a.season));
   return rows;
 }

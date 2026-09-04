@@ -1,10 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  teamOfDecadeBoardsTable,
-  teamOfDecadeMembersTable,
-} from "@workspace/db";
+import { db, teamOfDecadeBoardsTable, teamOfDecadeMembersTable } from "@workspace/db";
 import {
   CreateTeamOfDecadeBoardBody,
   UpdateTeamOfDecadeBoardBody,
@@ -53,32 +49,27 @@ router.get("/team-of-decade-boards", async (req, res): Promise<void> => {
   const boards = await db
     .select()
     .from(teamOfDecadeBoardsTable)
-    .where(and(eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)), eq(teamOfDecadeBoardsTable.published, true)))
-    .orderBy(
-      asc(teamOfDecadeBoardsTable.displayOrder),
-      asc(teamOfDecadeBoardsTable.id),
-    );
+    .where(
+      and(
+        eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)),
+        eq(teamOfDecadeBoardsTable.published, true),
+      ),
+    )
+    .orderBy(asc(teamOfDecadeBoardsTable.displayOrder), asc(teamOfDecadeBoardsTable.id));
   const byBoard = await loadMembers(boards.map((b) => b.id));
   res.json(withMembers(boards, byBoard));
 });
 
 // Admin: all boards including drafts.
-router.get(
-  "/admin/team-of-decade-boards",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const boards = await db
-      .select()
-      .from(teamOfDecadeBoardsTable)
-      .where(eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)))
-      .orderBy(
-        asc(teamOfDecadeBoardsTable.displayOrder),
-        asc(teamOfDecadeBoardsTable.id),
-      );
-    const byBoard = await loadMembers(boards.map((b) => b.id));
-    res.json(withMembers(boards, byBoard));
-  },
-);
+router.get("/admin/team-of-decade-boards", requireAdmin, async (req, res): Promise<void> => {
+  const boards = await db
+    .select()
+    .from(teamOfDecadeBoardsTable)
+    .where(eq(teamOfDecadeBoardsTable.tenantId, getTenantId(req)))
+    .orderBy(asc(teamOfDecadeBoardsTable.displayOrder), asc(teamOfDecadeBoardsTable.id));
+  const byBoard = await loadMembers(boards.map((b) => b.id));
+  res.json(withMembers(boards, byBoard));
+});
 
 router.post(
   "/team-of-decade-boards",

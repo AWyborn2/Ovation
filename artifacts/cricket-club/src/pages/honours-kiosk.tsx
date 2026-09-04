@@ -26,9 +26,7 @@ import "@/styles/honour-boards.css";
 /** Stagger the row-reveal animation across a freshly shown board. */
 function stagger(root: HTMLElement) {
   root
-    .querySelectorAll<HTMLElement>(
-      ".row, .hb-flag, .hb-lineup-row, .hb-cell, tr",
-    )
+    .querySelectorAll<HTMLElement>(".row, .hb-flag, .hb-lineup-row, .hb-cell, tr")
     .forEach((el, i) => {
       el.style.animation = "none";
       void el.offsetWidth;
@@ -134,9 +132,7 @@ export default function HonoursKiosk() {
   // admin preview.
   const routeParams = useParams<{ token?: string }>();
   const kioskToken = useMemo(
-    () =>
-      routeParams.token ??
-      new URLSearchParams(window.location.search).get("token"),
+    () => routeParams.token ?? new URLSearchParams(window.location.search).get("token"),
     [routeParams.token],
   );
   const adminQ = useGetHonourDisplay({
@@ -170,9 +166,7 @@ export default function HonoursKiosk() {
   const allSponsors = data?.activeSponsors ?? [];
   const chosenIds = settings?.kioskSponsorIds ?? [];
   const activeSponsors =
-    chosenIds.length > 0
-      ? allSponsors.filter((s) => chosenIds.includes(s.id))
-      : allSponsors;
+    chosenIds.length > 0 ? allSponsors.filter((s) => chosenIds.includes(s.id)) : allSponsors;
   const ads = settings?.kioskAds ?? [];
   const slideStyle = settings?.kioskSponsorSlideStyle ?? "grid";
   // Both modes need at least one (chosen) active sponsor to render anything.
@@ -350,10 +344,7 @@ export default function HonoursKiosk() {
       // Refresh the feed on wrap-around, but only when the data is actually
       // old — refetch() ignores staleTime, and a rotation can wrap every few
       // minutes on a small board set.
-      if (
-        index + 1 >= frames.length &&
-        Date.now() - dataUpdatedAt >= KIOSK_REFRESH_MS
-      ) {
+      if (index + 1 >= frames.length && Date.now() - dataUpdatedAt >= KIOSK_REFRESH_MS) {
         refetch();
       }
       setIndex((i) => (i + 1) % frames.length);
@@ -441,9 +432,7 @@ export default function HonoursKiosk() {
     <div
       className="hb-kiosk"
       style={
-        showStrip
-          ? ({ "--kiosk-strip-h": `${KIOSK_STRIP_PX}px` } as CSSProperties)
-          : undefined
+        showStrip ? ({ "--kiosk-strip-h": `${KIOSK_STRIP_PX}px` } as CSSProperties) : undefined
       }
     >
       <div className={`hb ${skinClass(skin)}`} style={rootStyle(brand, settings)}>

@@ -23,10 +23,7 @@ import {
   snapshotGradeGames,
   runPostCommitSocial,
 } from "./post-commit-social";
-import type {
-  CreatedCap,
-  MatchMilestoneContext,
-} from "./match-milestone-detector";
+import type { CreatedCap, MatchMilestoneContext } from "./match-milestone-detector";
 import { reverseCapsAfterRollback, cleanupOrphanPlayers } from "./rollback";
 import {
   reconcileBaseline,
@@ -93,15 +90,7 @@ export const IMPORT_SUMMARY_COLUMNS = {
 
 export type ImportSummary = Pick<
   ImportRecord,
-  | "id"
-  | "filename"
-  | "grade"
-  | "season"
-  | "round"
-  | "kind"
-  | "rowCount"
-  | "status"
-  | "importedAt"
+  "id" | "filename" | "grade" | "season" | "round" | "kind" | "rowCount" | "status" | "importedAt"
 >;
 
 /** Body returned by the CSV and single-match commit endpoints. */
@@ -176,12 +165,8 @@ export async function replaceMatchRow(
       and(
         eq(matchesTable.grade, grade),
         eq(matchesTable.season, season),
-        round == null
-          ? sql`${matchesTable.round} IS NULL`
-          : eq(matchesTable.round, round),
-        stage == null
-          ? sql`${matchesTable.stage} IS NULL`
-          : eq(matchesTable.stage, stage),
+        round == null ? sql`${matchesTable.round} IS NULL` : eq(matchesTable.round, round),
+        stage == null ? sql`${matchesTable.stage} IS NULL` : eq(matchesTable.stage, stage),
       ),
     );
 
@@ -291,11 +276,7 @@ export async function deriveSeasonSnapshots(
   const orderedByGrade = new Map<string, number[]>();
   const seenByGrade = new Map<string, Set<number>>();
   for (const { grade, season } of affected) {
-    const { orderedPlayerIds } = await deriveSeasonSnapshotFromMatches(
-      tx,
-      grade,
-      season,
-    );
+    const { orderedPlayerIds } = await deriveSeasonSnapshotFromMatches(tx, grade, season);
     let order = orderedByGrade.get(grade);
     let seen = seenByGrade.get(grade);
     if (!order || !seen) {
@@ -374,9 +355,7 @@ export function collectCreatedCaps(capsSync: CapSyncResult[]): CreatedCap[] {
 }
 
 /** Project resolved scorecard lines to what the milestone detector reads. */
-export function toMilestoneLines(
-  lines: ResolvedMatchLine[],
-): MatchMilestoneContext["lines"] {
+export function toMilestoneLines(lines: ResolvedMatchLine[]): MatchMilestoneContext["lines"] {
   return lines.map((l) => ({
     playerId: l.playerId,
     runs: l.runs ?? null,
@@ -435,11 +414,8 @@ function resolveMatchTarget(
   const overrideRound = parseCommitRound(body);
   const overrideStage = parseCommitStage(body);
   const rawRound =
-    overrideRound !== undefined
-      ? overrideRound
-      : (parsed.round ?? imp.round ?? null);
-  const rawStage =
-    overrideStage !== undefined ? overrideStage : (parsed.stage ?? null);
+    overrideRound !== undefined ? overrideRound : (parsed.round ?? imp.round ?? null);
+  const rawStage = overrideStage !== undefined ? overrideStage : (parsed.stage ?? null);
   const { round, stage } = normalizeRoundStage(rawRound, rawStage);
   if (!grade || season == null) return null;
   return { grade, season, round, stage };
@@ -478,10 +454,7 @@ export async function commitMatchImport(opts: {
   const reconcileMode = parseReconcileMode(body);
   const isBackfill = reconcileMode != null;
 
-  const resolvedLines = await resolveMatchPlayers(
-    parsed.players,
-    buildResolutionMap(body),
-  );
+  const resolvedLines = await resolveMatchPlayers(parsed.players, buildResolutionMap(body));
 
   const beforeMap = await snapshotCareerTotals();
   // Per-grade game counts before the commit — debut detection compares these to
@@ -511,9 +484,7 @@ export async function commitMatchImport(opts: {
     // Re-derive the season snapshot from every match in this grade+season and
     // recompute the downstream aggregates in the same transaction.
     const orderedByGrade = await deriveSeasonSnapshots(tx, affected);
-    negativeWarnings.push(
-      ...(await reconcileBackfillBaselines(tx, affected, reconcileMode)),
-    );
+    negativeWarnings.push(...(await reconcileBackfillBaselines(tx, affected, reconcileMode)));
     await recomputeAggregates(tx, [grade]);
     const capResult = await syncGradeCaps(
       tx,
@@ -604,12 +575,8 @@ async function loadMatchImportFootprint(importId: number): Promise<{
  * the season snapshot from the remaining matches (if any) and rolls back any
  * caps / orphan players that no longer have a basis.
  */
-export async function deleteMatchImport(
-  tenantId: number,
-  importId: number,
-): Promise<void> {
-  const { matchRows, candidatePlayerIds } =
-    await loadMatchImportFootprint(importId);
+export async function deleteMatchImport(tenantId: number, importId: number): Promise<void> {
+  const { matchRows, candidatePlayerIds } = await loadMatchImportFootprint(importId);
   const affectedGrades = Array.from(new Set(matchRows.map((m) => m.grade)));
 
   await db.transaction(async (tx) => {
@@ -622,12 +589,7 @@ export async function deleteMatchImport(
       await reconcileBaseline(tx, grade, season);
     }
     if (affectedGrades.length > 0) {
-      await rollbackAggregatesAndCaps(
-        tx,
-        tenantId,
-        affectedGrades,
-        candidatePlayerIds,
-      );
+      await rollbackAggregatesAndCaps(tx, tenantId, affectedGrades, candidatePlayerIds);
     }
   });
 }

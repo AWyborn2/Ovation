@@ -1,11 +1,6 @@
 import type { Request, RequestHandler, Response, NextFunction } from "express";
 import type { AdminRow } from "@workspace/db";
-import {
-  SESSION_COOKIE,
-  decodeSession,
-  getAdminById,
-  sessionIsCurrent,
-} from "../lib/auth";
+import { SESSION_COOKIE, decodeSession, getAdminById, sessionIsCurrent } from "../lib/auth";
 import { getTenantId } from "./tenant-context";
 import { touchTenantActivity } from "../lib/tenant-activity";
 import { isTenantSuspended } from "../lib/tenant";

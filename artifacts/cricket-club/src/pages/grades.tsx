@@ -40,47 +40,49 @@ export default function Grades() {
           message="Grade summaries appear here once imports are committed."
         />
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {ordered.map((grade) => (
-          <Link key={grade.grade} href={`/grades/${encodeURIComponent(grade.grade)}`}>
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <CardHeader className="flex flex-row items-center gap-4">
-                <GradeBadge grade={grade.grade} size="lg" />
-                <CardTitle className="group-hover:text-primary transition-colors flex-1">{grade.grade}</CardTitle>
-                <div
-                  className="flex items-center gap-1.5 text-primary font-bold"
-                  title={`${premsByGrade.get(grade.grade) ?? 0} premierships`}
-                >
-                  <Trophy className="h-5 w-5" />
-                  <span className="font-mono text-lg leading-none">
-                    {premsByGrade.get(grade.grade) ?? 0}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Players</div>
-                    <div className="text-xl font-mono font-medium">{grade.players}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {ordered.map((grade) => (
+            <Link key={grade.grade} href={`/grades/${encodeURIComponent(grade.grade)}`}>
+              <Card className="hover:border-primary transition-colors cursor-pointer group">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <GradeBadge grade={grade.grade} size="lg" />
+                  <CardTitle className="group-hover:text-primary transition-colors flex-1">
+                    {grade.grade}
+                  </CardTitle>
+                  <div
+                    className="flex items-center gap-1.5 text-primary font-bold"
+                    title={`${premsByGrade.get(grade.grade) ?? 0} premierships`}
+                  >
+                    <Trophy className="h-5 w-5" />
+                    <span className="font-mono text-lg leading-none">
+                      {premsByGrade.get(grade.grade) ?? 0}
+                    </span>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Games</div>
-                    <div className="text-xl font-mono font-medium">{grade.games}</div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Players</div>
+                      <div className="text-xl font-mono font-medium">{grade.players}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Games</div>
+                      <div className="text-xl font-mono font-medium">{grade.games}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Runs</div>
+                      <div className="text-xl font-mono font-medium">{grade.runs}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Wickets</div>
+                      <div className="text-xl font-mono font-medium">{grade.wickets}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Runs</div>
-                    <div className="text-xl font-mono font-medium">{grade.runs}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Wickets</div>
-                    <div className="text-xl font-mono font-medium">{grade.wickets}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -18,12 +18,7 @@ import { deriveOppositionColors } from "./colors";
 import { formatDismissal } from "./dismissal";
 import { sumOvers } from "./overs";
 
-const INNINGS_LABELS = [
-  "1ST INNINGS",
-  "2ND INNINGS",
-  "3RD INNINGS",
-  "4TH INNINGS",
-];
+const INNINGS_LABELS = ["1ST INNINGS", "2ND INNINGS", "3RD INNINGS", "4TH INNINGS"];
 
 /** A junior line counts as "not out" when no out-dismissal is recorded. */
 function isNotOut(dismissal: string | null | undefined): boolean {
@@ -186,14 +181,7 @@ export function buildJuniorScorecard(
   const oppScore = parseJuniorScore(match.opponentScore);
 
   const innings = (match.innings ?? []).map((inn, i) =>
-    buildInnings(
-      inn,
-      hh,
-      opp,
-      hhScore,
-      oppScore,
-      INNINGS_LABELS[i] ?? `${i + 1} INNINGS`,
-    ),
+    buildInnings(inn, hh, opp, hhScore, oppScore, INNINGS_LABELS[i] ?? `${i + 1} INNINGS`),
   );
 
   // The API orders innings by recorded innings number, so the order is real.

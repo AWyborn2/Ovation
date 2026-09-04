@@ -43,10 +43,7 @@ async function migrateSponsorLogoIfNeeded(
 
     const objectPath = objectStorage.normalizeObjectEntityPath(uploadURL);
     const newUrl = `/api/storage${objectPath}`;
-    await db
-      .update(sponsorsTable)
-      .set({ logoUrl: newUrl })
-      .where(eq(sponsorsTable.id, sponsor.id));
+    await db.update(sponsorsTable).set({ logoUrl: newUrl }).where(eq(sponsorsTable.id, sponsor.id));
 
     log.info(
       { sponsorId: sponsor.id, objectPath },

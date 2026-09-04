@@ -24,8 +24,7 @@ const HEX_RE = /^#[0-9a-fA-F]{6}$/;
  */
 function getContrastFg(hex: string): string {
   if (!HEX_RE.test(hex)) return "#ffffff";
-  const toLinear = (c: number) =>
-    c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
   const r = toLinear(parseInt(hex.slice(1, 3), 16) / 255);
   const g = toLinear(parseInt(hex.slice(3, 5), 16) / 255);
   const b = toLinear(parseInt(hex.slice(5, 7), 16) / 255);
@@ -38,11 +37,7 @@ function getContrastFg(hex: string): string {
  * return a new PNG File. SVGs are passed through unchanged (they're scalable).
  * Falls back to the original file on any canvas error.
  */
-async function resizeImageFile(
-  file: File,
-  maxW = 512,
-  maxH = 512,
-): Promise<File> {
+async function resizeImageFile(file: File, maxW = 512, maxH = 512): Promise<File> {
   if (file.type === "image/svg+xml") return file;
   return new Promise((resolve) => {
     const img = new Image();
@@ -64,17 +59,14 @@ async function resizeImageFile(
         return;
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            resolve(file);
-            return;
-          }
-          const name = file.name.replace(/\.[^.]+$/, "") + ".png";
-          resolve(new File([blob], name, { type: "image/png" }));
-        },
-        "image/png",
-      );
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          resolve(file);
+          return;
+        }
+        const name = file.name.replace(/\.[^.]+$/, "") + ".png";
+        resolve(new File([blob], name, { type: "image/png" }));
+      }, "image/png");
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
@@ -97,9 +89,7 @@ export default function PlatformBrand() {
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoImgBroken, setLogoImgBroken] = useState(false);
-  const [accentColour, setAccentColour] = useState<string>(
-    DEFAULT_BRAND.primaryColour as string,
-  );
+  const [accentColour, setAccentColour] = useState<string>(DEFAULT_BRAND.primaryColour as string);
   const [faviconUrl, setFaviconUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -109,9 +99,7 @@ export default function PlatformBrand() {
     setName(data.name ?? "");
     setLogoUrl(data.logoUrl ?? "");
     setLogoImgBroken(false);
-    setAccentColour(
-      data.primaryColour ?? (DEFAULT_BRAND.primaryColour as string),
-    );
+    setAccentColour(data.primaryColour ?? (DEFAULT_BRAND.primaryColour as string));
     setFaviconUrl(data.faviconUrl ?? "");
   }, [data]);
 
@@ -139,11 +127,10 @@ export default function PlatformBrand() {
     basePath: "/api/platform/admin/storage",
     onError: (e) => setError(e.message),
   });
-  const { uploadFile: uploadFavicon, isUploading: isUploadingFavicon } =
-    useUpload({
-      basePath: "/api/platform/admin/storage",
-      onError: (e) => setError(e.message),
-    });
+  const { uploadFile: uploadFavicon, isUploading: isUploadingFavicon } = useUpload({
+    basePath: "/api/platform/admin/storage",
+    onError: (e) => setError(e.message),
+  });
 
   const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -159,9 +146,7 @@ export default function PlatformBrand() {
     }
   };
 
-  const handleFaviconFile = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFaviconFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -210,12 +195,10 @@ export default function PlatformBrand() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Platform Brand
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Platform Brand</h1>
         <p className="text-sm text-muted-foreground">
-          The Ovation platform's own name, logo, accent colour, and favicon.
-          Changes appear on the landing page immediately — no redeploy needed.
+          The Ovation platform's own name, logo, accent colour, and favicon. Changes appear on the
+          landing page immediately — no redeploy needed.
         </p>
       </div>
 
@@ -261,11 +244,7 @@ export default function PlatformBrand() {
                   </div>
                 ) : null}
                 <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
-                  {isUploadingLogo
-                    ? "Uploading…"
-                    : logoUrl
-                      ? "Change logo"
-                      : "Upload logo"}
+                  {isUploadingLogo ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
@@ -291,13 +270,11 @@ export default function PlatformBrand() {
               </div>
               {logoImgBroken && (
                 <p className="text-xs text-muted-foreground">
-                  Logo is stored privately — it will display correctly on the
-                  live site but can't be previewed here without a public URL.
+                  Logo is stored privately — it will display correctly on the live site but can't be
+                  previewed here without a public URL.
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                Or paste a URL directly:
-              </p>
+              <p className="text-xs text-muted-foreground">Or paste a URL directly:</p>
               <Input
                 value={logoUrl}
                 onChange={(e) => {
@@ -310,8 +287,7 @@ export default function PlatformBrand() {
                 className="font-mono text-xs"
               />
               <p className="text-xs text-muted-foreground">
-                Images wider or taller than 512 px are automatically resized
-                before upload.
+                Images wider or taller than 512 px are automatically resized before upload.
               </p>
             </div>
 
@@ -324,8 +300,7 @@ export default function PlatformBrand() {
                     alt="Favicon"
                     className="h-6 w-6 rounded object-contain border"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}
                   />
                 )}
@@ -357,9 +332,7 @@ export default function PlatformBrand() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Or paste a URL directly:
-              </p>
+              <p className="text-xs text-muted-foreground">Or paste a URL directly:</p>
               <Input
                 value={faviconUrl}
                 onChange={(e) => {
@@ -420,8 +393,7 @@ export default function PlatformBrand() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Button · badge · nav highlight — rendered in the chosen accent
-                  colour.
+                  Button · badge · nav highlight — rendered in the chosen accent colour.
                 </p>
               </div>
             )}

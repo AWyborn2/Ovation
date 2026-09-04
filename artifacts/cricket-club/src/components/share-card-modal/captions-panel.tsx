@@ -33,12 +33,7 @@ export function CaptionsPanel({ captions }: { captions: Captions }) {
         <span>
           {captionDraft.length} / {PLATFORM_LIMITS[platform]}
         </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={handleCopyCaption}
-        >
+        <Button type="button" size="sm" variant="outline" onClick={handleCopyCaption}>
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 mr-1" /> Copied

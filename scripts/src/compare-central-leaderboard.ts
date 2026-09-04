@@ -70,10 +70,7 @@ function fmtAvg(a: number | null): string {
   return a === null ? "—" : a.toFixed(2);
 }
 
-async function tenantRows(
-  grade: string,
-  seasonStartYear: number | undefined,
-): Promise<CompRow[]> {
+async function tenantRows(grade: string, seasonStartYear: number | undefined): Promise<CompRow[]> {
   if (seasonStartYear === undefined) {
     // Exactly the endpoint's flag-off query.
     const rows = await db
@@ -100,10 +97,7 @@ async function tenantRows(
       notOuts: playerGradeSeasonStatsTable.notOuts,
     })
     .from(playerGradeSeasonStatsTable)
-    .innerJoin(
-      playersTable,
-      eq(playersTable.id, playerGradeSeasonStatsTable.playerId),
-    )
+    .innerJoin(playersTable, eq(playersTable.id, playerGradeSeasonStatsTable.playerId))
     .where(
       and(
         eq(playerGradeSeasonStatsTable.grade, grade),
@@ -191,9 +185,7 @@ async function main(): Promise<void> {
       Math.max(cByKey.get(a)?.runs ?? 0, tByKey.get(a)?.runs ?? 0),
   );
 
-  console.log(
-    `\nTENANT rows: ${tenant.length}   CENTRAL rows: ${central.length}\n`,
-  );
+  console.log(`\nTENANT rows: ${tenant.length}   CENTRAL rows: ${central.length}\n`);
   const head =
     "Player".padEnd(26) +
     "│ tenant runs/inn/avg".padEnd(26) +
@@ -211,12 +203,8 @@ async function main(): Promise<void> {
     const t = tByKey.get(key);
     const c = cByKey.get(key);
     const name = (t?.name ?? c?.name ?? key).slice(0, 25);
-    const tCell = t
-      ? `${t.runs}/${t.innings}/${fmtAvg(t.average)}`
-      : "—";
-    const cCell = c
-      ? `${c.runs}/${c.innings}/${fmtAvg(c.average)}`
-      : "—";
+    const tCell = t ? `${t.runs}/${t.innings}/${fmtAvg(t.average)}` : "—";
+    const cCell = c ? `${c.runs}/${c.innings}/${fmtAvg(c.average)}` : "—";
 
     let status: string;
     if (t && !c) {
@@ -232,8 +220,7 @@ async function main(): Promise<void> {
         status = "match";
         matched++;
       } else {
-        status =
-          `DIFF Δruns=${c.runs - t.runs} Δinn=${c.innings - t.innings}`;
+        status = `DIFF Δruns=${c.runs - t.runs} Δinn=${c.innings - t.innings}`;
         differing++;
       }
     } else {
@@ -241,10 +228,7 @@ async function main(): Promise<void> {
     }
 
     console.log(
-      name.padEnd(26) +
-        `│ ${tCell}`.padEnd(26) +
-        `│ ${cCell}`.padEnd(27) +
-        `│ ${status}`,
+      name.padEnd(26) + `│ ${tCell}`.padEnd(26) + `│ ${cCell}`.padEnd(27) + `│ ${status}`,
     );
   }
 
@@ -262,7 +246,7 @@ async function main(): Promise<void> {
       "  • Curated corrections: tenant figures carry manual fixes; central is the\n" +
       "    raw scorecard aggregate.\n" +
       "  • Name matching: keyed on surname+first-initial because central names are\n" +
-      "    often abbreviated (\"J Rudge\"); genuine name-format gaps show as *-ONLY.\n" +
+      '    often abbreviated ("J Rudge"); genuine name-format gaps show as *-ONLY.\n' +
       "  • Grade mapping: only the central labels marked «included above feed the\n" +
       "    central side — an unmapped label that belongs here would understate it.\n" +
       "  • Not-out/DNB handling is heuristic on dismissal text; odd innings counts\n" +

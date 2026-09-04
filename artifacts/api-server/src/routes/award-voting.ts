@@ -49,12 +49,7 @@ async function votingConfigTenantOk(configId: number, tenantId: number): Promise
     .select({ id: awardsTable.id })
     .from(awardVotingConfigTable)
     .innerJoin(awardsTable, eq(awardsTable.id, awardVotingConfigTable.awardId))
-    .where(
-      and(
-        eq(awardVotingConfigTable.id, configId),
-        eq(awardsTable.tenantId, tenantId),
-      ),
-    );
+    .where(and(eq(awardVotingConfigTable.id, configId), eq(awardsTable.tenantId, tenantId)));
   return !!row;
 }
 
@@ -169,10 +164,7 @@ router.post("/awards/:id/voting", requireAdmin, async (req, res): Promise<void> 
   }
   // Keep the award's votingEnabled flag in sync so it shows as a voted award.
   if (values.votingEnabled && !award.votingEnabled) {
-    await db
-      .update(awardsTable)
-      .set({ votingEnabled: true })
-      .where(eq(awardsTable.id, award.id));
+    await db.update(awardsTable).set({ votingEnabled: true }).where(eq(awardsTable.id, award.id));
   }
   res.json(serializeConfig(row));
 });
@@ -390,11 +382,7 @@ router.patch(
       .select({ displayName: captainsTable.displayName })
       .from(captainsTable)
       .where(eq(captainsTable.id, row.captainId));
-    const names = await loadPlayerNames([
-      row.pick1PlayerId,
-      row.pick2PlayerId,
-      row.pick3PlayerId,
-    ]);
+    const names = await loadPlayerNames([row.pick1PlayerId, row.pick2PlayerId, row.pick3PlayerId]);
     const nameOf = (id: number) => names.get(id) ?? `#${id}`;
     res.json({
       id: row.id,
@@ -486,10 +474,7 @@ router.post("/voting-configs/:id/finalise", requireAdmin, async (req, res): Prom
   await db
     .delete(awardWinnersTable)
     .where(
-      and(
-        eq(awardWinnersTable.awardId, award.id),
-        eq(awardWinnersTable.season, config.season),
-      ),
+      and(eq(awardWinnersTable.awardId, award.id), eq(awardWinnersTable.season, config.season)),
     );
   if (winnerPlayerIds.length > 0) {
     await db.insert(awardWinnersTable).values(
@@ -595,8 +580,7 @@ router.get("/captain/voting", requireCaptain, async (req, res): Promise<void> =>
         grade,
         rounds: rounds.map((rd) => {
           const ballot = myBallots.find(
-            (b) =>
-              b.configId === config.id && b.grade === grade && b.round === rd.round,
+            (b) => b.configId === config.id && b.grade === grade && b.round === rd.round,
           );
           return {
             round: rd.round,

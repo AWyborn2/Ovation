@@ -21,7 +21,12 @@ export const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-export const iconSvgString = (tierIndex: number, color: string, size = 256, strokeWidth = 1.75): string => {
+export const iconSvgString = (
+  tierIndex: number,
+  color: string,
+  size = 256,
+  strokeWidth = 1.75,
+): string => {
   const Icon = TIER_ICONS[Math.min(Math.max(tierIndex, 0), TIER_ICONS.length - 1)];
   const node = createElement(Icon, { color, size, strokeWidth, absoluteStrokeWidth: true });
   return renderToStaticMarkup(node as React.ReactElement);
@@ -124,7 +129,17 @@ export const drawBackground = (
   if (bgImg) {
     // Photo background + dark overlay so foreground text stays legible.
     if (feature && transform) {
-      drawImageCoverFocal(ctx, bgImg, 0, 0, W, H, transform.focalX, transform.focalY, transform.zoom);
+      drawImageCoverFocal(
+        ctx,
+        bgImg,
+        0,
+        0,
+        W,
+        H,
+        transform.focalX,
+        transform.focalY,
+        transform.zoom,
+      );
     } else {
       drawImageCover(ctx, bgImg, 0, 0, W, H);
     }
@@ -252,11 +267,7 @@ export const drawFooter = (
   ctx.font = `600 ${Math.round(18 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  ctx.fillText(
-    text,
-    W / 2,
-    H - Math.round(30 * scale),
-  );
+  ctx.fillText(text, W / 2, H - Math.round(30 * scale));
 };
 
 // Draw `img` so it fits inside the rect (object-fit: contain), centred.
@@ -445,7 +456,14 @@ export const drawPill = (
   const label = text.toUpperCase();
   const sidePad = Math.round(24 * scale);
   const maxPillW = ctx.canvas.width - Math.round(160 * scale);
-  const fontPx = fitFontSize(ctx, label, maxPillW - sidePad * 2, 800, Math.round(22 * scale), CARD_FONT);
+  const fontPx = fitFontSize(
+    ctx,
+    label,
+    maxPillW - sidePad * 2,
+    800,
+    Math.round(22 * scale),
+    CARD_FONT,
+  );
   ctx.font = `800 ${fontPx}px ${CARD_FONT}`;
   const tw = ctx.measureText(label).width;
   const h = Math.round(46 * scale);

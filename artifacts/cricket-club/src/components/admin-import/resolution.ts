@@ -14,9 +14,7 @@ import type { SelectedPlayer } from "@/components/player-typeahead";
 export type Mode = "csv" | "match" | "batch";
 
 /** An admin's decision for a previewed name, held in local state. */
-export type RowResolution =
-  | { action: "link"; player: SelectedPlayer }
-  | { action: "create" };
+export type RowResolution = { action: "link"; player: SelectedPlayer } | { action: "create" };
 
 export type ReconcileMode = "peel" | "add";
 
@@ -94,7 +92,12 @@ export function buildResolutions(
     const r = map[rowKey(p.surname, p.givenName)];
     if (!r) continue;
     if (r.action === "link") {
-      out.push({ surname: p.surname, givenName: p.givenName, action: "link", playerId: r.player.id });
+      out.push({
+        surname: p.surname,
+        givenName: p.givenName,
+        action: "link",
+        playerId: r.player.id,
+      });
     } else {
       out.push({ surname: p.surname, givenName: p.givenName, action: "create" });
     }
@@ -108,11 +111,7 @@ export function buildResolutions(
  * already have one but collide, so the admin can remap them onto a distinct
  * round/stage to import them as their own match instead of skipping/replacing.
  */
-export const RESOLVABLE_STATUSES = new Set([
-  "needsResolution",
-  "duplicate",
-  "duplicateInBatch",
-]);
+export const RESOLVABLE_STATUSES = new Set(["needsResolution", "duplicate", "duplicateInBatch"]);
 
 /**
  * Turn the admin's per-file round/stage entries into the wire shape. Only

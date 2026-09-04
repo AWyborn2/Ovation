@@ -82,8 +82,7 @@ export function tourSteps(): TourStep[] {
     },
     {
       title: "Grades",
-      description:
-        "Pick a grade for its full leaderboard and captain history across every season.",
+      description: "Pick a grade for its full leaderboard and captain history across every season.",
       icon: "layers",
       tabIndex: 4,
     },

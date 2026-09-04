@@ -17,16 +17,9 @@ import {
   MergeJuniorParticipantBody,
 } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
-import {
-  juniorEditRateLimiter,
-  juniorMergeRateLimiter,
-} from "../middlewares/rate-limit";
+import { juniorEditRateLimiter, juniorMergeRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import {
-  journal,
-  adminName,
-  recomputeParticipantMetadata,
-} from "../lib/junior-admin-helpers";
+import { journal, adminName, recomputeParticipantMetadata } from "../lib/junior-admin-helpers";
 import { isCentralTenant } from "../lib/tenant";
 
 /**
@@ -103,9 +96,7 @@ router.patch(
       const [row] = await tx
         .update(juniorParticipantsTable)
         .set(set)
-        .where(
-          eq(juniorParticipantsTable.participantId, participant.participantId),
-        )
+        .where(eq(juniorParticipantsTable.participantId, participant.participantId))
         .returning();
       // A display-name change flows onto the participant's stored line names
       // so scorecards/rosters keep matching the directory. Journalled via the
@@ -117,10 +108,7 @@ router.patch(
           .set({ playerName: body.data.displayName })
           .where(
             and(
-              eq(
-                juniorMatchBattingTable.participantId,
-                participant.participantId,
-              ),
+              eq(juniorMatchBattingTable.participantId, participant.participantId),
               eq(juniorMatchBattingTable.isHallsHead, true),
             ),
           );
@@ -129,10 +117,7 @@ router.patch(
           .set({ playerName: body.data.displayName })
           .where(
             and(
-              eq(
-                juniorMatchBowlingTable.participantId,
-                participant.participantId,
-              ),
+              eq(juniorMatchBowlingTable.participantId, participant.participantId),
               eq(juniorMatchBowlingTable.isHallsHead, true),
             ),
           );
@@ -141,10 +126,7 @@ router.patch(
           .set({ playerName: body.data.displayName })
           .where(
             and(
-              eq(
-                juniorMatchRostersTable.participantId,
-                participant.participantId,
-              ),
+              eq(juniorMatchRostersTable.participantId, participant.participantId),
               eq(juniorMatchRostersTable.isHallsHead, true),
             ),
           );
@@ -244,10 +226,7 @@ router.post(
             .where(
               and(
                 eq(juniorParticipantMergesTable.tenantId, tenantId),
-                eq(
-                  juniorParticipantMergesTable.duplicateParticipantId,
-                  keeperId,
-                ),
+                eq(juniorParticipantMergesTable.duplicateParticipantId, keeperId),
               ),
             );
           if (merged) {
@@ -376,10 +355,7 @@ router.post(
           .where(
             and(
               eq(juniorParticipantMergesTable.tenantId, tenantId),
-              eq(
-                juniorParticipantMergesTable.keeperParticipantId,
-                duplicateId,
-              ),
+              eq(juniorParticipantMergesTable.keeperParticipantId, duplicateId),
             ),
           );
 

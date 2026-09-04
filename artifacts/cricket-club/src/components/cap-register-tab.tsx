@@ -24,10 +24,7 @@ export function CapRegisterTab() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return inCategory;
-    return inCategory.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) || String(c.capNumber) === q,
-    );
+    return inCategory.filter((c) => c.name.toLowerCase().includes(q) || String(c.capNumber) === q);
   }, [inCategory, search]);
 
   const deceased = inCategory.filter((c) => c.deceased).length;
@@ -60,9 +57,8 @@ export function CapRegisterTab() {
         </div>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Every player to wear the {categoryLabel} cap for {brand.name}, in
-          chronological order of debut. {inCategory.length}{" "}
-          caps issued, {deceased} since deceased.
+          Every player to wear the {categoryLabel} cap for {brand.name}, in chronological order of
+          debut. {inCategory.length} caps issued, {deceased} since deceased.
         </p>
       </div>
 
@@ -72,14 +68,12 @@ export function CapRegisterTab() {
         </h3>
         <div className="w-12 h-[2px] bg-primary mt-2 mb-3" />
         <p className="text-sm text-foreground/90 leading-relaxed m-0">
-          Cap numbers are assigned in chronological order of A Grade debut for
-          {" "}{brand.name}. Prior to the adoption of the digital scoring
-          platforms <strong>MyCricket</strong> and <strong>PlayHQ</strong>, the
-          club only retained statistics for players who had played 10 or more
-          games. As a result, many of the players in this register —
-          particularly those from the foundational era — have no statistical
-          record despite having earned their A Grade cap. Their place in club
-          history is honoured here regardless.
+          Cap numbers are assigned in chronological order of A Grade debut for {brand.name}. Prior
+          to the adoption of the digital scoring platforms <strong>MyCricket</strong> and{" "}
+          <strong>PlayHQ</strong>, the club only retained statistics for players who had played 10
+          or more games. As a result, many of the players in this register — particularly those from
+          the foundational era — have no statistical record despite having earned their A Grade cap.
+          Their place in club history is honoured here regardless.
         </p>
       </div>
 
@@ -141,9 +135,7 @@ export function CapRegisterTab() {
                           {c.name}
                         </Link>
                       ) : (
-                        <span className="uppercase font-semibold text-primary">
-                          {c.name}
-                        </span>
+                        <span className="uppercase font-semibold text-primary">{c.name}</span>
                       )}
                       {c.deceased && (
                         <span

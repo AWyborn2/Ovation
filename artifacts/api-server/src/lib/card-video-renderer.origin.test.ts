@@ -26,18 +26,12 @@ describe("harnessOriginFromHeaders", () => {
   });
 
   it("defaults a non-local host to https when no forwarded proto is present", () => {
-    expect(harnessOriginFromHeaders({ host: "club.example.com" })).toBe(
-      "https://club.example.com",
-    );
+    expect(harnessOriginFromHeaders({ host: "club.example.com" })).toBe("https://club.example.com");
   });
 
   it("defaults localhost / loopback to http", () => {
-    expect(harnessOriginFromHeaders({ host: "localhost:80" })).toBe(
-      "http://localhost:80",
-    );
-    expect(harnessOriginFromHeaders({ host: "127.0.0.1:3000" })).toBe(
-      "http://127.0.0.1:3000",
-    );
+    expect(harnessOriginFromHeaders({ host: "localhost:80" })).toBe("http://localhost:80");
+    expect(harnessOriginFromHeaders({ host: "127.0.0.1:3000" })).toBe("http://127.0.0.1:3000");
   });
 
   it("takes the first value from comma-lists and array headers", () => {

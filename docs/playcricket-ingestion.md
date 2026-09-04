@@ -16,7 +16,7 @@ CSVs. The answer for now is **no**:
 - PlayHQ's public API does **not** expose per-grade season aggregates for
   cricket — i.e. the exact shape the CSV gives us. The closest public
   endpoint (`GET /v1/grades/{id}/profiles/statistics`) is documented as
-  *"not applicable to Cricket at present"*.
+  _"not applicable to Cricket at present"_.
 - The richer cricket stat endpoints
   (`/partner/v1/profiles/{id}/statistics/...`) are private and gated behind
   a PlayHQ partner agreement.
@@ -32,11 +32,11 @@ practice, and only revisit this if/when the user wants weekly auto-sync.
 
 There are three names that all get confused:
 
-| Name | URL | What it is |
-|---|---|---|
-| **PlayCricket AU** | `play.cricket.com.au` | Cricket Australia's grassroots site. SPA frontend over PlayHQ. |
-| **PlayHQ** | `playhq.com`, `api.playhq.com` | Sports-management platform that powers the above. Owns the data API. |
-| **play-cricket.com** | `play-cricket.com` | UK / ECB platform. Different system, different API. Not relevant here. |
+| Name                 | URL                            | What it is                                                             |
+| -------------------- | ------------------------------ | ---------------------------------------------------------------------- |
+| **PlayCricket AU**   | `play.cricket.com.au`          | Cricket Australia's grassroots site. SPA frontend over PlayHQ.         |
+| **PlayHQ**           | `playhq.com`, `api.playhq.com` | Sports-management platform that powers the above. Owns the data API.   |
+| **play-cricket.com** | `play-cricket.com`             | UK / ECB platform. Different system, different API. Not relevant here. |
 
 So when we say "scrape PlayCricket", in practice we mean "talk to PlayHQ's
 API" — there is no separate AU data API.
@@ -61,7 +61,7 @@ API" — there is no separate AU data API.
     batting/bowling/fielding lines
 - Cricket-relevant public endpoint that **does not** work:
   - `GET /v1/grades/{id}/profiles/statistics` — spec explicitly says
-    *"Please note, this API is not applicable to Cricket at present."*
+    _"Please note, this API is not applicable to Cricket at present."_
     This is the one that would have mapped 1:1 onto the CSV.
 
 So to reproduce the CSV via the public API we would have to:
@@ -106,7 +106,7 @@ login if any data is behind auth, which raises the next concern.
 ## Legal / ToS check
 
 - `https://play.cricket.com.au/robots.txt` — `User-agent: *  Disallow:`
-  (i.e. *allows* all crawlers).
+  (i.e. _allows_ all crawlers).
 - `https://www.playhq.com/robots.txt` — `User-agent: *  Allow: /`.
 - PlayHQ Terms of Use page is a client-rendered SPA that we couldn't
   fetch as static markdown in this spike — re-read in a browser before
@@ -143,7 +143,7 @@ automated access, the answer collapses immediately to "no".
 
 ## Why no prototype was written
 
-The brief said *"Prototype (only if viable)"*. The viable path
+The brief said _"Prototype (only if viable)"_. The viable path
 (option 2) requires a PlayHQ API key that we don't have and can't
 obtain in the time-box, and the per-game-aggregator approach is large
 enough that doing it on speculation would burn most of the import-flow

@@ -51,9 +51,7 @@ export async function listAvailableClubs(opts: {
   return clubs
     .filter(
       (c) =>
-        !claimedIds.has(c.clubId) &&
-        isCentralClubProvisionable(c) &&
-        !excludedIds.has(c.clubId),
+        !claimedIds.has(c.clubId) && isCentralClubProvisionable(c) && !excludedIds.has(c.clubId),
     )
     .map((c) => ({
       centralClubId: c.clubId,

@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
-import {
-  type ShareCardInput,
-  type RenderOptions,
-  type AnimationHandle,
-} from "@/lib/share-card";
-import {
-  prepareAnimation,
-} from "@/lib/share-card-animation";
+import { type ShareCardInput, type RenderOptions, type AnimationHandle } from "@/lib/share-card";
+import { prepareAnimation } from "@/lib/share-card-animation";
 
 // Live, looping canvas preview for animated cards. Prepares the animation once
 // per `sig` change and drives it with requestAnimationFrame; cleans up any
@@ -86,7 +80,9 @@ export function AnimatedCardPreview({
           seekToTrim();
         }
         const elapsed = now - start;
-        const t = a.loop ? (elapsed % a.durationMs) / a.durationMs : Math.min(1, elapsed / a.durationMs);
+        const t = a.loop
+          ? (elapsed % a.durationMs) / a.durationMs
+          : Math.min(1, elapsed / a.durationMs);
         // Loop boundary (t wrapped back down): re-seek the audio to the trim
         // offset so each visual loop restarts from the same musical point.
         if (a.loop && t < prevT) seekToTrim();
@@ -109,13 +105,7 @@ export function AnimatedCardPreview({
     <>
       <canvas ref={canvasRef} className="w-full h-full object-contain" />
       {opts.audio ? (
-        <audio
-          ref={audioRef}
-          src={opts.audio.url}
-          loop
-          preload="auto"
-          className="hidden"
-        />
+        <audio ref={audioRef} src={opts.audio.url} loop preload="auto" className="hidden" />
       ) : null}
     </>
   );

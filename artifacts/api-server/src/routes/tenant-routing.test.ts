@@ -88,18 +88,18 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
     expect(await shouldReadCentral(fakeReq({ tenantId: centralTenantId }))).toBe(true);
     // The native stats tables hold only tenant #1's history, so a non-demo
     // tenant configured for native reads is an error (409), never a read.
-    await expect(
-      shouldReadCentral(fakeReq({ tenantId: nativeTenantId })),
-    ).rejects.toBeInstanceOf(NativeStatsUnavailableError);
+    await expect(shouldReadCentral(fakeReq({ tenantId: nativeTenantId }))).rejects.toBeInstanceOf(
+      NativeStatsUnavailableError,
+    );
     // The raw flag is still readable for tenant-scoped surfaces (juniors etc.).
     expect(await isCentralTenant(fakeReq({ tenantId: nativeTenantId }))).toBe(false);
   });
 
   it("CENTRAL_READS=0 makes central tenants unavailable (503) rather than serving native", async () => {
     process.env.CENTRAL_READS = "0";
-    await expect(
-      shouldReadCentral(fakeReq({ tenantId: centralTenantId })),
-    ).rejects.toBeInstanceOf(CentralReadsDisabledError);
+    await expect(shouldReadCentral(fakeReq({ tenantId: centralTenantId }))).rejects.toBeInstanceOf(
+      CentralReadsDisabledError,
+    );
   });
 
   it("resolves the tenant's central club id", async () => {
@@ -107,15 +107,13 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
   });
 
   it("resolves a tenant from its subdomain label (slug)", async () => {
-    expect(
-      await resolveTenantBySubdomain(fakeReq({ host: `${centralSlug}.ovation.app` })),
-    ).toBe(centralTenantId);
+    expect(await resolveTenantBySubdomain(fakeReq({ host: `${centralSlug}.ovation.app` }))).toBe(
+      centralTenantId,
+    );
   });
 
   it("resolves a tenant from an exact custom-domain match", async () => {
-    expect(
-      await resolveTenantBySubdomain(fakeReq({ host: customDomain })),
-    ).toBe(centralTenantId);
+    expect(await resolveTenantBySubdomain(fakeReq({ host: customDomain }))).toBe(centralTenantId);
   });
 
   it("returns null for a host that matches no tenant", async () => {
@@ -126,9 +124,10 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
 
   it("classifies a tenant host as tenant mode (wins over platform)", async () => {
     process.env.PLATFORM_HOSTS = "ovation.app,www.ovation.app";
-    expect(
-      await resolveHostMode(fakeReq({ host: `${centralSlug}.ovation.app` })),
-    ).toEqual({ mode: "tenant", tenantId: centralTenantId });
+    expect(await resolveHostMode(fakeReq({ host: `${centralSlug}.ovation.app` }))).toEqual({
+      mode: "tenant",
+      tenantId: centralTenantId,
+    });
   });
 
   it("classifies an apex/marketing host as platform mode", async () => {
@@ -171,16 +170,12 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
     try {
       // Default: a public production host never lets a client pick a tenant.
       expect(
-        await resolveHostMode(
-          fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId }),
-        ),
+        await resolveHostMode(fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId })),
       ).toEqual({ mode: "platform" });
       // Opt-in: the dev tenant switcher pins that tenant.
       process.env.TENANT_HEADER_ON_PUBLISHED_HOST = "1";
       expect(
-        await resolveHostMode(
-          fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId }),
-        ),
+        await resolveHostMode(fakeReq({ host: "ovationcc.replit.app", tenantId: nativeTenantId })),
       ).toEqual({ mode: "tenant", tenantId: nativeTenantId });
     } finally {
       if (prev === undefined) delete process.env.TENANT_HEADER_ON_PUBLISHED_HOST;
@@ -197,22 +192,20 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
   });
 
   it("an unmatched *.replit.dev preview host keeps the demo-tenant fallback", async () => {
-    expect(
-      await resolveHostMode(fakeReq({ host: `no-such-${STAMP}.replit.dev` })),
-    ).toEqual({ mode: "fallback" });
+    expect(await resolveHostMode(fakeReq({ host: `no-such-${STAMP}.replit.dev` }))).toEqual({
+      mode: "fallback",
+    });
   });
 
   // Host-capture guard: a tenant whose slug equals a Replit host's first label
   // must NOT capture that host — slugs only match as subdomains of the platform
   // apex. (The native tenant's slug is the first label of this host.)
   it("a tenant slug matching a *.replit.app first label cannot capture the host", async () => {
+    expect(await resolveHostMode(fakeReq({ host: `iso-rt-native-${STAMP}.replit.app` }))).toEqual({
+      mode: "platform",
+    });
     expect(
-      await resolveHostMode(fakeReq({ host: `iso-rt-native-${STAMP}.replit.app` })),
-    ).toEqual({ mode: "platform" });
-    expect(
-      await resolveTenantBySubdomain(
-        fakeReq({ host: `iso-rt-native-${STAMP}.replit.dev` }),
-      ),
+      await resolveTenantBySubdomain(fakeReq({ host: `iso-rt-native-${STAMP}.replit.dev` })),
     ).toBeNull();
   });
 

@@ -14,10 +14,7 @@ import { useColors } from "@/hooks/useColors";
 
 function sortMembers(members: TeamOfDecadeMember[]): TeamOfDecadeMember[] {
   return [...members].sort(
-    (a, b) =>
-      a.battingOrder - b.battingOrder ||
-      a.displayOrder - b.displayOrder ||
-      a.id - b.id,
+    (a, b) => a.battingOrder - b.battingOrder || a.displayOrder - b.displayOrder || a.id - b.id,
   );
 }
 
@@ -48,7 +45,9 @@ function MemberRow({ member, rank }: { member: TeamOfDecadeMember; rank: number 
       <Body bold size={13} style={{ width: 26, color: colors.primary }}>
         {rank}
       </Body>
-      <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+      <View
+        style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}
+      >
         <Body
           bold
           size={14}
@@ -127,7 +126,11 @@ function BoardCard({ board }: { board: TeamOfDecadeBoard }) {
       </View>
 
       {board.subtitle ? (
-        <Body muted size={12} style={{ paddingHorizontal: 14, paddingTop: 12, fontStyle: "italic" }}>
+        <Body
+          muted
+          size={12}
+          style={{ paddingHorizontal: 14, paddingTop: 12, fontStyle: "italic" }}
+        >
           {board.subtitle}
         </Body>
       ) : null}
@@ -152,9 +155,7 @@ export default function TeamOfDecadeScreen() {
   const brand = useBrand();
   const { data: boards, isLoading } = useListTeamOfDecadeBoards();
 
-  const sorted = [...(boards ?? [])].sort(
-    (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-  );
+  const sorted = [...(boards ?? [])].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
   return (
     <>
@@ -165,8 +166,8 @@ export default function TeamOfDecadeScreen() {
       >
         <Heading size="lg">Teams of the Decade</Heading>
         <Body muted size={12} style={{ marginTop: 4, marginBottom: 16 }}>
-          The greatest XIs in {brand.name} history — selected to honour the
-          finest players of each era.
+          The greatest XIs in {brand.name} history — selected to honour the finest players of each
+          era.
         </Body>
 
         {isLoading ? (

@@ -42,8 +42,8 @@ export function CorrectionsPanel({
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Every admin edit to this match is journalled, survives a juniors data
-          reload, and can be reverted (newest first).
+          Every admin edit to this match is journalled, survives a juniors data reload, and can be
+          reverted (newest first).
         </p>
         {isLoading ? (
           <ListSkeleton rows={3} />

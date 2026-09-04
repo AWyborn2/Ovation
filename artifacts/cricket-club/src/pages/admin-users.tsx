@@ -40,7 +40,13 @@ export default function AdminUsers() {
       return;
     }
     createAdmin.mutate(
-      { data: { username: newUsername.trim(), displayName: newDisplay.trim(), password: newPassword } },
+      {
+        data: {
+          username: newUsername.trim(),
+          displayName: newDisplay.trim(),
+          password: newPassword,
+        },
+      },
       {
         onSuccess: () => {
           setNewUsername("");
@@ -77,7 +83,11 @@ export default function AdminUsers() {
             </div>
             <div className="space-y-1">
               <Label>Password</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
             </div>
             <Button type="submit" disabled={createAdmin.isPending}>
               {createAdmin.isPending ? "Adding…" : "Add admin"}
@@ -121,10 +131,7 @@ export default function AdminUsers() {
                     )
                       return;
                     setError(null);
-                    deleteAdmin.mutate(
-                      { id: a.id },
-                      { onSuccess: invalidate, onError: onErr },
-                    );
+                    deleteAdmin.mutate({ id: a.id }, { onSuccess: invalidate, onError: onErr });
                   }}
                   pending={updateAdmin.isPending || deleteAdmin.isPending}
                 />
@@ -160,7 +167,8 @@ function AdminRow({
       <div className="flex items-center justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
         <div>
           <div className="font-medium">
-            {admin.displayName} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
+            {admin.displayName}{" "}
+            {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
           </div>
           <div className="text-xs text-muted-foreground">@{admin.username}</div>
         </div>

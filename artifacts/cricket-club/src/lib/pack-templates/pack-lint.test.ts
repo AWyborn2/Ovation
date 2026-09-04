@@ -117,9 +117,7 @@ describe("field-key parity across packs (R4)", () => {
           );
         }
       }
-      expect(problems, `${pack.packId} field-key drift:\n${problems.join("\n")}`).toEqual(
-        [],
-      );
+      expect(problems, `${pack.packId} field-key drift:\n${problems.join("\n")}`).toEqual([]);
     });
   }
 });
@@ -264,10 +262,9 @@ for (const pack of listPackManifests()) {
       for (const entry of designs) {
         for (const [format, html] of formatEntries(entry)) {
           for (const literal of CLUB_IDENTITY_LITERALS) {
-            expect(
-              html,
-              `${entry.designKey}/${format} html contains "${literal}"`,
-            ).not.toContain(literal);
+            expect(html, `${entry.designKey}/${format} html contains "${literal}"`).not.toContain(
+              literal,
+            );
           }
         }
       }

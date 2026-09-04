@@ -31,10 +31,7 @@ const DRY_RUN = isDryRun();
 // Winners attach to the target tenant's awards only; the delete below is scoped
 // through those award ids, so another club's award history is never touched.
 const TENANT_ID = requireTenantArg();
-const FILE = path.resolve(
-  process.cwd(),
-  "../attached_assets/HHCC_history_1780463450215.xlsx",
-);
+const FILE = path.resolve(process.cwd(), "../attached_assets/HHCC_history_1780463450215.xlsx");
 
 // Awards sheet column -> award key.
 const AWARDS_COLS: Record<number, string> = {
@@ -90,19 +87,11 @@ const CORRECTIONS: Record<string, string> = {
 
 // Names that are deliberately kept as free text (families / couples / non-roster).
 const FREE_TEXT = new Set(
-  [
-    "Luke and Emma Barnes",
-    "Head Family",
-    "Jeffrey Family",
-  ].map((s) => s.toLowerCase()),
+  ["Luke and Emma Barnes", "Head Family", "Jeffrey Family"].map((s) => s.toLowerCase()),
 );
 
 function norm(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[’']/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+  return s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 }
 
 function seasonStartYear(label: string): number | null {
@@ -171,9 +160,7 @@ async function main() {
       cell(r, 0).toUpperCase().startsWith("GRADE CRICKETERS"),
     );
     if (markerIdx >= 0) {
-      const headerIdx = rows.findIndex(
-        (r, idx) => idx > markerIdx && cell(r, 0) === "Season",
-      );
+      const headerIdx = rows.findIndex((r, idx) => idx > markerIdx && cell(r, 0) === "Season");
       for (let i = headerIdx + 1; i < rows.length; i++) {
         const season = seasonStartYear(cell(rows[i], 0));
         if (season == null) continue;

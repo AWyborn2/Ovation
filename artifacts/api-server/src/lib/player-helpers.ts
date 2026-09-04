@@ -48,10 +48,7 @@ export async function centralParticipantFor(
     .select({ participantId: playerIdMapTable.participantId })
     .from(playerIdMapTable)
     .where(
-      and(
-        eq(playerIdMapTable.tenantId, getTenantId(req)),
-        eq(playerIdMapTable.playerId, playerId),
-      ),
+      and(eq(playerIdMapTable.tenantId, getTenantId(req)), eq(playerIdMapTable.playerId, playerId)),
     );
   return mapRow?.participantId ?? null;
 }

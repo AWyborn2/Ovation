@@ -159,9 +159,7 @@ export function OrderList({
           </li>
         );
       })}
-      {items.length === 0 && (
-        <li className="text-xs text-muted-foreground italic">{emptyText}</li>
-      )}
+      {items.length === 0 && <li className="text-xs text-muted-foreground italic">{emptyText}</li>}
     </ul>
   );
 }
@@ -176,7 +174,13 @@ export function moveItem(prev: string[], idx: number, dir: -1 | 1): string[] {
 }
 
 /** Right-aligned "Save settings" button with its pending spinner. */
-export function SaveSettingsButton({ onClick, pending }: { onClick: () => void; pending: boolean }) {
+export function SaveSettingsButton({
+  onClick,
+  pending,
+}: {
+  onClick: () => void;
+  pending: boolean;
+}) {
   return (
     <div className="flex justify-end">
       <Button onClick={onClick} disabled={pending} data-testid="button-save-settings">

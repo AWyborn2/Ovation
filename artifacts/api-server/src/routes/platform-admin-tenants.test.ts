@@ -33,8 +33,7 @@ describe("platform-admin tenant management", () => {
   let provisionedTenantId: number | null = null;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-platform-tenants";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-platform-tenants";
     process.env.SIGNUP_MODE = "pca";
 
     const passwordHash = await hashPassword(PASSWORD);
@@ -76,9 +75,7 @@ describe("platform-admin tenant management", () => {
     await db.delete(tenantsTable).where(eq(tenantsTable.id, throwawayTenantId));
     if (provisionedTenantId != null) {
       await db.delete(adminsTable).where(eq(adminsTable.tenantId, provisionedTenantId));
-      await db
-        .delete(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, provisionedTenantId));
+      await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, provisionedTenantId));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, provisionedTenantId));
     }
     await db.delete(platformAdminsTable).where(eq(platformAdminsTable.email, EMAIL));

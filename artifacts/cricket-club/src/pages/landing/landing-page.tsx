@@ -77,9 +77,9 @@ export default function LandingPage() {
             Your cricket club's stats and history — beautifully, automatically.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Ovation gives any club its full record — stats, premierships, honour
-            boards and milestones — on a branded site that stays current on its
-            own. Pick your club and it's populated in seconds.
+            Ovation gives any club its full record — stats, premierships, honour boards and
+            milestones — on a branded site that stays current on its own. Pick your club and it's
+            populated in seconds.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link href="/signup">
@@ -156,8 +156,8 @@ export default function LandingPage() {
           <div className="mx-auto max-w-5xl px-6 py-16 text-center">
             <h2 className="text-2xl font-semibold tracking-tight">See it in action</h2>
             <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
-              Halls Head Cricket Club runs its full site on Ovation — stats, honour
-              boards and history, kept current automatically.
+              Halls Head Cricket Club runs its full site on Ovation — stats, honour boards and
+              history, kept current automatically.
             </p>
             <div className="mt-6">
               <a href={hallsHeadUrl()} target="_blank" rel="noopener noreferrer">
@@ -175,9 +175,8 @@ export default function LandingPage() {
               Why Ovation over a Facebook page or a spreadsheet?
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-              Your history stays current automatically, drawn from the shared
-              association database — no one has to keep re-entering scores or
-              chasing down old spreadsheets.
+              Your history stays current automatically, drawn from the shared association database —
+              no one has to keep re-entering scores or chasing down old spreadsheets.
             </p>
           </div>
         </section>
@@ -198,8 +197,7 @@ export default function LandingPage() {
 
       <footer className="border-t">
         <div className="mx-auto max-w-5xl px-6 py-8 text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Ovation. A white-label cricket stats
-          platform.
+          © {new Date().getFullYear()} Ovation. A white-label cricket stats platform.
         </div>
       </footer>
     </div>

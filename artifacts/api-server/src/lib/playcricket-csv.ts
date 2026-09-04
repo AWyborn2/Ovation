@@ -14,8 +14,8 @@ export const PLAYCRICKET_GRADE_MAP: Record<string, string> = {
   "F Grade": "F Grade",
   "Female A Grade": "Female A Grade",
   "Female B Grade": "Female B Grade",
-  "PPL": "PPL",
-  "Colts": "Colts",
+  PPL: "PPL",
+  Colts: "Colts",
 };
 
 const EXPECTED_HEADERS = [
@@ -43,21 +43,21 @@ const EXPECTED_HEADERS = [
 const rowSchema = z.object({
   "Player name": z.string().min(1),
   "Matches played": z.string(),
-  "Innings": z.string(),
+  Innings: z.string(),
   "Batting Aggregate": z.string(),
   "Not outs": z.string(),
   "50s scored": z.string(),
   "100s scored": z.string(),
   "High Score": z.string(),
   "High Score Dismissal Status": z.string(),
-  "Wickets": z.string(),
+  Wickets: z.string(),
   "Runs scored": z.string(),
   "5 Wickets": z.string(),
   "Bowling Best Innings": z.string(),
   "Total Catches": z.string(),
   "Run Outs Unassisted": z.string(),
   "Run Outs Assisted": z.string(),
-  "Stumpings": z.string(),
+  Stumpings: z.string(),
   "Grade name": z.string().min(1),
 });
 

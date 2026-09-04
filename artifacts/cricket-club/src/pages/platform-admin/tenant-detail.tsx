@@ -57,9 +57,7 @@ export default function TenantDetail() {
         setSaved(false);
         const status = (e as { status?: number })?.status;
         setError(
-          status === 409
-            ? "That custom domain is already in use."
-            : "Couldn't save changes.",
+          status === 409 ? "That custom domain is already in use." : "Couldn't save changes.",
         );
       },
     },
@@ -73,9 +71,7 @@ export default function TenantDetail() {
     );
   }
   if (isError || !data) {
-    return (
-      <p className="py-16 text-center text-muted-foreground">No such tenant.</p>
-    );
+    return <p className="py-16 text-center text-muted-foreground">No such tenant.</p>;
   }
 
   const { tenant, admins } = data;
@@ -100,8 +96,7 @@ export default function TenantDetail() {
 
       <h1 className="text-2xl font-semibold tracking-tight">{tenant.name}</h1>
       <p className="text-sm text-muted-foreground">
-        {tenant.slug} ·{" "}
-        {tenant.readsFromCentral ? "Central PCA data" : "Native data"}
+        {tenant.slug} · {tenant.readsFromCentral ? "Central PCA data" : "Native data"}
         {tenant.centralClubName ? ` · ${tenant.centralClubName}` : ""}
       </p>
 
@@ -117,9 +112,7 @@ export default function TenantDetail() {
                 <select
                   id="plan"
                   value={plan}
-                  onChange={(e) =>
-                    setPlan(e.target.value as UpdateTenantBodyPlan)
-                  }
+                  onChange={(e) => setPlan(e.target.value as UpdateTenantBodyPlan)}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 >
                   {PLANS.map((p) => (
@@ -145,13 +138,9 @@ export default function TenantDetail() {
                 <Button type="submit" disabled={update.isPending}>
                   {update.isPending ? "Saving…" : "Save changes"}
                 </Button>
-                {saved ? (
-                  <span className="text-sm text-green-600">Saved.</span>
-                ) : null}
+                {saved ? <span className="text-sm text-green-600">Saved.</span> : null}
               </div>
-              {error ? (
-                <p className="text-sm text-destructive">{error}</p>
-              ) : null}
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
             </form>
           </CardContent>
         </Card>
@@ -266,9 +255,7 @@ function StatusCard({
           ) : null}
         </div>
         {tenantId === DEMO_TENANT_ID ? (
-          <p className="text-sm text-muted-foreground">
-            The demo tenant can't be archived.
-          </p>
+          <p className="text-sm text-muted-foreground">The demo tenant can't be archived.</p>
         ) : archived ? (
           <Button
             type="button"
@@ -300,13 +287,7 @@ function StatusCard({
  * reset link. The link is returned here to hand off out-of-band — no password is
  * ever set by platform staff, so there's no silent impersonation vector.
  */
-function AdminAccessCard({
-  tenantId,
-  tenantName,
-}: {
-  tenantId: number;
-  tenantName: string;
-}) {
+function AdminAccessCard({ tenantId, tenantName }: { tenantId: number; tenantName: string }) {
   const qc = useQueryClient();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -369,8 +350,8 @@ function AdminAccessCard({
       </CardHeader>
       <CardContent>
         <p className="mb-4 text-sm text-muted-foreground">
-          Generate a single-use link so a {tenantName} admin can set their own
-          password. If no admin with that email exists yet, one is created.
+          Generate a single-use link so a {tenantName} admin can set their own password. If no admin
+          with that email exists yet, one is created.
         </p>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
@@ -403,16 +384,11 @@ function AdminAccessCard({
           <div className="mt-4 space-y-2 rounded-md border bg-muted/40 p-3">
             <p className="text-sm">
               {issued.created ? "Created " : "Reset link for "}
-              <span className="font-medium">{issued.username}</span>. Share this
-              link securely — it is single-use and expires{" "}
-              {new Date(issued.expiresAt).toLocaleString()}.
+              <span className="font-medium">{issued.username}</span>. Share this link securely — it
+              is single-use and expires {new Date(issued.expiresAt).toLocaleString()}.
             </p>
             <div className="flex items-center gap-2">
-              <Input
-                readOnly
-                value={issued.resetUrl}
-                className="font-mono text-xs"
-              />
+              <Input readOnly value={issued.resetUrl} className="font-mono text-xs" />
               <Button type="button" variant="outline" onClick={copyLink}>
                 {copied ? "Copied" : "Copy"}
               </Button>

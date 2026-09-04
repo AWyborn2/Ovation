@@ -12,7 +12,9 @@ export const SummaryStat = ({ label, value }: { label: string; value: string | n
     <div className="text-3xl md:text-4xl font-serif font-bold text-primary">
       {typeof value === "number" ? value.toLocaleString() : value}
     </div>
-    <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1 font-serif">{label}</div>
+    <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1 font-serif">
+      {label}
+    </div>
   </div>
 );
 
@@ -34,35 +36,67 @@ export const PremiershipBadge = ({ count }: { count: PremiershipCount }) => {
   );
 };
 
-const BoardCard = ({ tier, board, premMap }: { tier: BoardTier; board: (typeof BOARDS)[number]; premMap?: Map<number, PremiershipCount> }) => (
+const BoardCard = ({
+  tier,
+  board,
+  premMap,
+}: {
+  tier: BoardTier;
+  board: (typeof BOARDS)[number];
+  premMap?: Map<number, PremiershipCount>;
+}) => (
   <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
     <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
       <span className="flex items-center gap-2 md:gap-3">
         <TierBadge tierIndex={tier.tierIndex} />
         <span>{tier.label}</span>
       </span>
-      <span className="text-xs whitespace-nowrap">{tier.rows.length} {tier.rows.length === 1 ? "player" : "players"}</span>
+      <span className="text-xs whitespace-nowrap">
+        {tier.rows.length} {tier.rows.length === 1 ? "player" : "players"}
+      </span>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full text-sm sticky-id-col">
         <thead>
           <tr className="bg-black/25">
-            <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-14">#</th>
-            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Surname</th>
-            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">Given Name</th>
-            <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">{board.headlineLabel}</th>
+            <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-14">
+              #
+            </th>
+            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">
+              Surname
+            </th>
+            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">
+              Given Name
+            </th>
+            <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">
+              {board.headlineLabel}
+            </th>
             {board.key === "games" && (
-              <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs">Prem</th>
+              <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs">
+                Prem
+              </th>
             )}
-            <th className={`font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}>{board.key === "games" ? "Grades" : board.supportingLabel}</th>
+            <th
+              className={`font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}
+            >
+              {board.key === "games" ? "Grades" : board.supportingLabel}
+            </th>
           </tr>
         </thead>
         <tbody>
           {tier.rows.map((r, i) => (
-            <tr key={r.playerId} className={`border-t border-border/50 hover:bg-primary/10 transition-colors ${i % 2 ? "bg-black/10" : ""}`}>
-              <td className="p-3 text-center font-mono text-primary font-bold">{tier.startRank + i}</td>
+            <tr
+              key={r.playerId}
+              className={`border-t border-border/50 hover:bg-primary/10 transition-colors ${i % 2 ? "bg-black/10" : ""}`}
+            >
+              <td className="p-3 text-center font-mono text-primary font-bold">
+                {tier.startRank + i}
+              </td>
               <td className="p-3">
-                <Link href={`/players/${r.playerId}`} className="font-semibold text-primary hover:underline uppercase">
+                <Link
+                  href={`/players/${r.playerId}`}
+                  className="font-semibold text-primary hover:underline uppercase"
+                >
                   {r.surname}
                 </Link>
               </td>
@@ -77,7 +111,9 @@ const BoardCard = ({ tier, board, premMap }: { tier: BoardTier; board: (typeof B
                 {board.key === "games" ? (
                   <GradeBadgeList grades={r.gradesPlayed} size="sm" />
                 ) : (
-                  <span className="block text-right font-mono text-muted-foreground">{r.supporting}</span>
+                  <span className="block text-right font-mono text-muted-foreground">
+                    {r.supporting}
+                  </span>
                 )}
               </td>
             </tr>
@@ -88,7 +124,15 @@ const BoardCard = ({ tier, board, premMap }: { tier: BoardTier; board: (typeof B
   </div>
 );
 
-export const BoardView = ({ tiers, board, premMap }: { tiers: BoardTier[]; board: (typeof BOARDS)[number]; premMap?: Map<number, PremiershipCount> }) => (
+export const BoardView = ({
+  tiers,
+  board,
+  premMap,
+}: {
+  tiers: BoardTier[];
+  board: (typeof BOARDS)[number];
+  premMap?: Map<number, PremiershipCount>;
+}) => (
   <div className="space-y-4">
     <div className="bg-card border border-border rounded-md p-6 shadow-md">
       <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">{board.title}</h2>

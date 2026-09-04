@@ -100,10 +100,14 @@ export default function AdminFixtures() {
     const now = Date.now();
     const upcoming = fixtures
       .filter((f: Fixture) => new Date(f.startAt).getTime() >= now)
-      .sort((a: Fixture, b: Fixture) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+      .sort(
+        (a: Fixture, b: Fixture) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+      );
     const past = fixtures
       .filter((f: Fixture) => new Date(f.startAt).getTime() < now)
-      .sort((a: Fixture, b: Fixture) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+      .sort(
+        (a: Fixture, b: Fixture) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime(),
+      );
     return [...upcoming, ...past];
   }, [fixtures]);
 
@@ -122,8 +126,8 @@ export default function AdminFixtures() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-muted-foreground mt-1">
-            Upcoming fixtures and team lists. These feed the Match Day, Team List and
-            Countdown social cards.
+            Upcoming fixtures and team lists. These feed the Match Day, Team List and Countdown
+            social cards.
           </p>
         </div>
         <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
@@ -274,9 +278,7 @@ export default function AdminFixtures() {
                     submitLabel="Save changes"
                   />
                 )}
-                {teamListId === f.id && (
-                  <TeamListEditor fixture={f} onError={onMutationError} />
-                )}
+                {teamListId === f.id && <TeamListEditor fixture={f} onError={onMutationError} />}
                 {editingId !== f.id && teamListId !== f.id && f.notes && (
                   <p className="text-sm text-muted-foreground italic">{f.notes}</p>
                 )}
@@ -317,8 +319,8 @@ function SeasonStartCard({ onError }: { onError: (e: unknown) => void }) {
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-xs text-muted-foreground">
-          Countdown cards count down to the earliest upcoming fixture. Set a date here to
-          override that (e.g. before any fixtures are entered).
+          Countdown cards count down to the earliest upcoming fixture. Set a date here to override
+          that (e.g. before any fixtures are entered).
         </p>
         <div className="flex items-end gap-2">
           <div className="space-y-2">
@@ -338,7 +340,12 @@ function SeasonStartCard({ onError }: { onError: (e: unknown) => void }) {
             {update.isPending ? "Saving…" : "Save"}
           </Button>
           {saved && (
-            <Button size="sm" variant="outline" disabled={update.isPending} onClick={() => save(null)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={update.isPending}
+              onClick={() => save(null)}
+            >
               Clear override
             </Button>
           )}
@@ -390,11 +397,7 @@ function FixtureForm({
         </div>
         <div className="space-y-2">
           <Label>Opponent</Label>
-          <Input
-            value={opponentName}
-            onChange={(e) => setOpponentName(e.target.value)}
-            required
-          />
+          <Input value={opponentName} onChange={(e) => setOpponentName(e.target.value)} required />
         </div>
         <div className="space-y-2">
           <Label>Round label (optional, e.g. "Round 7")</Label>
@@ -461,10 +464,7 @@ function rowsFromPlayers(players: TeamListPlayer[]): TeamListRowState[] {
   const rows = [...players]
     .sort((a, b) => a.order - b.order)
     .map((p) => ({
-      player:
-        p.playerId != null
-          ? { id: p.playerId, surname: p.displayName, givenName: "" }
-          : null,
+      player: p.playerId != null ? { id: p.playerId, surname: p.displayName, givenName: "" } : null,
       freeName: p.playerId == null ? p.displayName : "",
       isCaptain: p.role === "C" || p.role === "C/WK",
       isKeeper: p.role === "WK" || p.role === "C/WK",
@@ -473,13 +473,7 @@ function rowsFromPlayers(players: TeamListPlayer[]): TeamListRowState[] {
   return rows.slice(0, TEAM_LIST_ROWS);
 }
 
-function TeamListEditor({
-  fixture,
-  onError,
-}: {
-  fixture: Fixture;
-  onError: (e: unknown) => void;
-}) {
+function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: unknown) => void }) {
   const queryClient = useQueryClient();
   const listQ = useGetFixtureTeamList(fixture.id);
   const putList = usePutFixtureTeamList();
@@ -540,8 +534,8 @@ function TeamListEditor({
         </label>
       </div>
       <p className="text-xs text-muted-foreground">
-        Pick a player from the register or type a name (e.g. a new signing). Mark the
-        captain (C) and wicket-keeper (WK).
+        Pick a player from the register or type a name (e.g. a new signing). Mark the captain (C)
+        and wicket-keeper (WK).
       </p>
       <div className="space-y-2">
         {shownRows.map((r, i) => (

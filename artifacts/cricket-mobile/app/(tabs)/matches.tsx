@@ -2,11 +2,7 @@ import React, { useMemo, useState } from "react";
 import { FlatList, TouchableOpacity, View } from "react-native";
 import { Link } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import {
-  useListMatches,
-  useListGrades,
-  type MatchSummary,
-} from "@workspace/api-client-react";
+import { useListMatches, useListGrades, type MatchSummary } from "@workspace/api-client-react";
 
 import { Body, Card, ErrorView, Heading, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
@@ -40,11 +36,17 @@ function MatchRow({ match }: { match: MatchSummary }) {
               ) : null}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
                 {fmtDate(match.matchDate) ? (
-                  <Body muted size={11}>{fmtDate(match.matchDate)}</Body>
+                  <Body muted size={11}>
+                    {fmtDate(match.matchDate)}
+                  </Body>
                 ) : null}
-                <Body muted size={11}>{match.playerCount} players</Body>
+                <Body muted size={11}>
+                  {match.playerCount} players
+                </Body>
                 {match.abandoned ? (
-                  <Body size={11} bold style={{ color: colors.primary }}>ABANDONED</Body>
+                  <Body size={11} bold style={{ color: colors.primary }}>
+                    ABANDONED
+                  </Body>
                 ) : null}
               </View>
             </View>
@@ -120,13 +122,22 @@ export default function MatchesScreen() {
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
         <FilterChip label="All grades" active={grade === ""} onPress={() => setGrade("")} />
         {gradeOptions.map((g) => (
-          <FilterChip key={g} label={g} active={grade === g} onPress={() => setGrade(grade === g ? "" : g)} />
+          <FilterChip
+            key={g}
+            label={g}
+            active={grade === g}
+            onPress={() => setGrade(grade === g ? "" : g)}
+          />
         ))}
       </View>
 
       {seasonOptions.length > 0 ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-          <FilterChip label="All seasons" active={season === null} onPress={() => setSeason(null)} />
+          <FilterChip
+            label="All seasons"
+            active={season === null}
+            onPress={() => setSeason(null)}
+          />
           {seasonOptions.map((s) => (
             <FilterChip
               key={s}

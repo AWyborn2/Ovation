@@ -37,14 +37,7 @@ import {
 } from "@/lib/pack-card-data";
 import { slideRendersViaPack } from "@/lib/carousel-slide-render";
 import { resolvePackIdForKind } from "@/lib/card-template";
-import {
-  MAX_SLIDES,
-  MIN_SLIDES,
-  newId,
-  toApiSlide,
-  toWorking,
-  type WorkingSlide,
-} from "./model";
+import { MAX_SLIDES, MIN_SLIDES, newId, toApiSlide, toWorking, type WorkingSlide } from "./model";
 
 /**
  * Editor state for one carousel set: the working slides, per-slide render
@@ -76,8 +69,7 @@ export function useSetEditor(id: number) {
 
   const update = useUpdateCardSet({
     mutation: {
-      onSuccess: () =>
-        qc.invalidateQueries({ queryKey: getListCardSetsQueryKey() }),
+      onSuccess: () => qc.invalidateQueries({ queryKey: getListCardSetsQueryKey() }),
     },
   });
 
@@ -95,9 +87,7 @@ export function useSetEditor(id: number) {
     if (!set || loadedFor.current === set.id) return;
     setName(set.name);
     setPlatformSize(
-      (set.platformSize as CardSize) in SIZES
-        ? (set.platformSize as CardSize)
-        : "square",
+      (set.platformSize as CardSize) in SIZES ? (set.platformSize as CardSize) : "square",
     );
     setSlides(set.slides.map(toWorking));
     setPublished(set.isPublished);
@@ -127,8 +117,7 @@ export function useSetEditor(id: number) {
   const sponsorsOn = !!bundle?.settings.sponsorsEnabled;
 
   const slideIsJunior = (slide: WorkingSlide): boolean =>
-    "junior" in slide.input &&
-    (slide.input as { junior?: boolean }).junior === true;
+    "junior" in slide.input && (slide.input as { junior?: boolean }).junior === true;
 
   // Junior slides are locked to the brown palette (no theme); otherwise the
   // slide's chosen theme (or the default when unset).
@@ -230,10 +219,7 @@ export function useSetEditor(id: number) {
         // canvas (BYO / customised) slides need an offscreen render here.
         if (slideUsesPack(slide)) continue;
         try {
-          const blob = await renderShareCard(
-            slide.input,
-            buildSlideOpts(slide, platformSize),
-          );
+          const blob = await renderShareCard(slide.input, buildSlideOpts(slide, platformSize));
           if (cancelled) return;
           const url = URL.createObjectURL(blob);
           urls.push(url);
@@ -312,9 +298,7 @@ export function useSetEditor(id: number) {
   };
 
   const patchSlide = (sid: string, patch: Partial<WorkingSlide>) =>
-    setSlides((arr) =>
-      arr.map((s) => (s.id === sid ? { ...s, ...patch } : s)),
-    );
+    setSlides((arr) => arr.map((s) => (s.id === sid ? { ...s, ...patch } : s)));
 
   // Native HTML5 drag-and-drop reorder (no extra dnd library).
   const dragFrom = useRef<number | null>(null);
@@ -379,10 +363,7 @@ export function useSetEditor(id: number) {
         });
         if (animated && videoOk) {
           try {
-            const { blob: vblob, ext } = await renderShareCardVideo(
-              slide.input,
-              opts,
-            );
+            const { blob: vblob, ext } = await renderShareCardVideo(slide.input, opts);
             zip.file(`${base}.${ext}`, vblob);
           } catch {
             // still PNG already included; skip the clip on failure

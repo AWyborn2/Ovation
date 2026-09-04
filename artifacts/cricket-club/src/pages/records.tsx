@@ -148,26 +148,45 @@ const useSort = (initial: SortState): [SortState, (col: string) => void] => {
 const computeGradeRecords = (stats: Stat[]): RecordRow[] => {
   if (!stats?.length) {
     return [
-      "Most Games","Most Runs","Highest Score","Most Fifties",
-      "Most Hundreds","Most Wickets","Best Bowling","Most Catches",
+      "Most Games",
+      "Most Runs",
+      "Highest Score",
+      "Most Fifties",
+      "Most Hundreds",
+      "Most Wickets",
+      "Best Bowling",
+      "Most Catches",
     ].map((title) => ({ title, value: "-", stat: null }));
   }
-  const meta = (s: Stat) => ({ playerId: s.playerId, givenName: s.givenName, surname: s.surname, grade: s.grade });
+  const meta = (s: Stat) => ({
+    playerId: s.playerId,
+    givenName: s.givenName,
+    surname: s.surname,
+    grade: s.grade,
+  });
   const max = (key: keyof Stat): RecordRow => {
     let best: Stat | null = null;
     let bestV = -1;
     for (const s of stats) {
       const v = (s[key] as number | null | undefined) ?? 0;
-      if (v > bestV) { bestV = v; best = s; }
+      if (v > bestV) {
+        bestV = v;
+        best = s;
+      }
     }
-    return best ? { title: "", value: bestV, stat: meta(best) } : { title: "", value: 0, stat: null };
+    return best
+      ? { title: "", value: bestV, stat: meta(best) }
+      : { title: "", value: 0, stat: null };
   };
 
   let bestHs: Stat | null = null;
   let bestHsV = -1;
   for (const s of stats) {
     const v = parseHs(s.highScore);
-    if (v > bestHsV) { bestHsV = v; bestHs = s; }
+    if (v > bestHsV) {
+      bestHsV = v;
+      bestHs = s;
+    }
   }
 
   let bestBbStat: Stat | null = null;
@@ -175,7 +194,8 @@ const computeGradeRecords = (stats: Stat[]): RecordRow[] => {
   for (const s of stats) {
     const b = parseBb(s.bestBowling);
     if (b.wkts > bestBb.wkts || (b.wkts === bestBb.wkts && b.runs < bestBb.runs)) {
-      bestBb = b; bestBbStat = s;
+      bestBb = b;
+      bestBbStat = s;
     }
   }
 
@@ -218,7 +238,9 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
   return (
     <Card className="hover:border-primary transition-colors group">
       <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2 space-y-0">
-        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{row.title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          {row.title}
+        </CardTitle>
         {shareInput && (
           <ShareButton
             input={shareInput}
@@ -235,15 +257,15 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
         </div>
         {row.stat ? (
           <>
-            <Link href={`/players/${row.stat.playerId}`} className="text-sm font-medium hover:underline text-foreground">
+            <Link
+              href={`/players/${row.stat.playerId}`}
+              className="text-sm font-medium hover:underline text-foreground"
+            >
               {row.stat.givenName} {row.stat.surname}
             </Link>
             {row.stat.grades && row.stat.grades.length > 0 ? (
               <div className="mt-2">
-                <GradeBadgeList
-                  grades={sortGradesBySeniority(row.stat.grades)}
-                  size="sm"
-                />
+                <GradeBadgeList grades={sortGradesBySeniority(row.stat.grades)} size="sm" />
               </div>
             ) : (
               row.stat.grade && (
@@ -262,13 +284,7 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
   );
 };
 
-const PlayerName = ({
-  playerId,
-  name,
-}: {
-  playerId: number | null | undefined;
-  name: string;
-}) =>
+const PlayerName = ({ playerId, name }: { playerId: number | null | undefined; name: string }) =>
   playerId != null ? (
     <Link href={`/players/${playerId}`} className="font-medium hover:underline text-foreground">
       {name}
@@ -326,7 +342,9 @@ const GradeFilter = ({
       >
         <option value="">{allLabel}</option>
         {grades.map((g) => (
-          <option key={g} value={g}>{g}</option>
+          <option key={g} value={g}>
+            {g}
+          </option>
         ))}
       </select>
     </div>
@@ -346,10 +364,7 @@ const PartnershipsSection = ({
 
   // Grades present across both partnership lists, in seniority order.
   const grades = useMemo(
-    () =>
-      sortGradesBySeniority(
-        new Set([...records, ...fiftyPlus].map((p) => p.grade)),
-      ),
+    () => sortGradesBySeniority(new Set([...records, ...fiftyPlus].map((p) => p.grade))),
     [records, fiftyPlus],
   );
 
@@ -364,13 +379,20 @@ const PartnershipsSection = ({
 
   const getVal = (p: PartnershipRecord, col: string): number | string => {
     switch (col) {
-      case "grade": return gradeRank(p.grade);
-      case "wicket": return wicketOrd(p.wicket);
-      case "runs": return p.runs;
-      case "batsmen": return p.batsmen.toLowerCase();
-      case "opposition": return (p.opposition ?? "").toLowerCase();
-      case "season": return seasonYear(p.season);
-      default: return 0;
+      case "grade":
+        return gradeRank(p.grade);
+      case "wicket":
+        return wicketOrd(p.wicket);
+      case "runs":
+        return p.runs;
+      case "batsmen":
+        return p.batsmen.toLowerCase();
+      case "opposition":
+        return (p.opposition ?? "").toLowerCase();
+      case "season":
+        return seasonYear(p.season);
+      default:
+        return 0;
     }
   };
 
@@ -403,7 +425,9 @@ const PartnershipsSection = ({
 
   const row = (p: PartnershipRecord) => (
     <tr key={p.id} className="hover:bg-muted/30">
-      <td className="px-4 py-3"><GradeBadge grade={p.grade} size="sm" /></td>
+      <td className="px-4 py-3">
+        <GradeBadge grade={p.grade} size="sm" />
+      </td>
       <td className="px-4 py-3 whitespace-nowrap">{p.wicket}</td>
       <td className="px-4 py-3 font-serif font-bold text-primary">{p.runs}</td>
       <td className="px-4 py-3">{p.batsmen}</td>
@@ -413,7 +437,10 @@ const PartnershipsSection = ({
   );
 
   const staticHead = ["Grade", "Wicket", "Runs", "Batsmen", "Opposition", "Season"].map((c) => (
-    <th key={c} className="px-4 py-3 font-bold uppercase tracking-wider text-xs text-muted-foreground">
+    <th
+      key={c}
+      className="px-4 py-3 font-bold uppercase tracking-wider text-xs text-muted-foreground"
+    >
       {c}
     </th>
   ));
@@ -442,7 +469,12 @@ const PartnershipsSection = ({
               <SortHeader label="Wicket" col="wicket" sort={fiftySort} onSort={onFiftySort} />
               <SortHeader label="Runs" col="runs" sort={fiftySort} onSort={onFiftySort} />
               <SortHeader label="Batsmen" col="batsmen" sort={fiftySort} onSort={onFiftySort} />
-              <SortHeader label="Opposition" col="opposition" sort={fiftySort} onSort={onFiftySort} />
+              <SortHeader
+                label="Opposition"
+                col="opposition"
+                sort={fiftySort}
+                onSort={onFiftySort}
+              />
               <SortHeader label="Season" col="season" sort={fiftySort} onSort={onFiftySort} />
             </>
           }
@@ -471,11 +503,16 @@ const CenturiesSection = ({
 
   const getVal = (c: Century, col: string): number | string => {
     switch (col) {
-      case "grade": return gradeRank(c.grade);
-      case "batsman": return c.batsman.toLowerCase();
-      case "score": return parseHs(c.score);
-      case "season": return seasonYear(c.season);
-      default: return 0;
+      case "grade":
+        return gradeRank(c.grade);
+      case "batsman":
+        return c.batsman.toLowerCase();
+      case "score":
+        return parseHs(c.score);
+      case "season":
+        return seasonYear(c.season);
+      default:
+        return 0;
     }
   };
 
@@ -508,8 +545,12 @@ const CenturiesSection = ({
       >
         {rows.map((c: Century) => (
           <tr key={c.id} className="hover:bg-muted/30">
-            <td className="px-4 py-3"><GradeBadge grade={c.grade} size="sm" /></td>
-            <td className="px-4 py-3"><PlayerName playerId={c.playerId} name={c.batsman} /></td>
+            <td className="px-4 py-3">
+              <GradeBadge grade={c.grade} size="sm" />
+            </td>
+            <td className="px-4 py-3">
+              <PlayerName playerId={c.playerId} name={c.batsman} />
+            </td>
             <td className="px-4 py-3 font-serif font-bold text-primary">{c.score ?? "-"}</td>
             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{c.season ?? "-"}</td>
           </tr>
@@ -535,11 +576,16 @@ const FiveForSection = ({
 
   const getVal = (f: FiveWicketHaul, col: string): number | string => {
     switch (col) {
-      case "grade": return gradeRank(f.grade);
-      case "bowler": return f.bowler.toLowerCase();
-      case "figures": return figuresRank(f.figures);
-      case "season": return seasonYear(f.season);
-      default: return 0;
+      case "grade":
+        return gradeRank(f.grade);
+      case "bowler":
+        return f.bowler.toLowerCase();
+      case "figures":
+        return figuresRank(f.figures);
+      case "season":
+        return seasonYear(f.season);
+      default:
+        return 0;
     }
   };
 
@@ -572,8 +618,12 @@ const FiveForSection = ({
       >
         {rows.map((f: FiveWicketHaul) => (
           <tr key={f.id} className="hover:bg-muted/30">
-            <td className="px-4 py-3"><GradeBadge grade={f.grade} size="sm" /></td>
-            <td className="px-4 py-3"><PlayerName playerId={f.playerId} name={f.bowler} /></td>
+            <td className="px-4 py-3">
+              <GradeBadge grade={f.grade} size="sm" />
+            </td>
+            <td className="px-4 py-3">
+              <PlayerName playerId={f.playerId} name={f.bowler} />
+            </td>
             <td className="px-4 py-3 font-serif font-bold text-primary">{f.figures ?? "-"}</td>
             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{f.season ?? "-"}</td>
           </tr>
@@ -592,7 +642,12 @@ export default function Records() {
   const [tabApplied, setTabApplied] = useState(false);
   const [gradeApplied, setGradeApplied] = useState(false);
 
-  const { data: records, isLoading: loadingTotal, isError: errorTotal, refetch: refetchTotal } = useGetRecords();
+  const {
+    data: records,
+    isLoading: loadingTotal,
+    isError: errorTotal,
+    refetch: refetchTotal,
+  } = useGetRecords();
   const { data: gradesList } = useListGrades();
   const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
 
@@ -621,16 +676,37 @@ export default function Records() {
     setGradeApplied(true);
   }, [grades, settingsSettled, settings, gradeApplied]);
 
-  const { data: gradeStats, isLoading: loadingGrade, isError: errorGrade, refetch: refetchGrade } = useGetGradeLeaderboard(selectedGrade, undefined, {
-    query: { enabled: tab === "by-grade" && !!selectedGrade, queryKey: getGetGradeLeaderboardQueryKey(selectedGrade) },
+  const {
+    data: gradeStats,
+    isLoading: loadingGrade,
+    isError: errorGrade,
+    refetch: refetchGrade,
+  } = useGetGradeLeaderboard(selectedGrade, undefined, {
+    query: {
+      enabled: tab === "by-grade" && !!selectedGrade,
+      queryKey: getGetGradeLeaderboardQueryKey(selectedGrade),
+    },
   });
 
   const totalRows: RecordRow[] = useMemo(() => {
     if (!records) return [];
-    const agg = (title: string, r: { playerId: number; givenName: string; surname: string; value: number; grades: string[] }): RecordRow =>
-      ({ title, value: r.value || 0, stat: { playerId: r.playerId, givenName: r.givenName, surname: r.surname, grades: r.grades } });
-    const peak = (title: string, value: string | number, s: { playerId: number; givenName: string; surname: string; grade: string }): RecordRow =>
-      ({ title, value, stat: { playerId: s.playerId, givenName: s.givenName, surname: s.surname, grade: s.grade } });
+    const agg = (
+      title: string,
+      r: { playerId: number; givenName: string; surname: string; value: number; grades: string[] },
+    ): RecordRow => ({
+      title,
+      value: r.value || 0,
+      stat: { playerId: r.playerId, givenName: r.givenName, surname: r.surname, grades: r.grades },
+    });
+    const peak = (
+      title: string,
+      value: string | number,
+      s: { playerId: number; givenName: string; surname: string; grade: string },
+    ): RecordRow => ({
+      title,
+      value,
+      stat: { playerId: s.playerId, givenName: s.givenName, surname: s.surname, grade: s.grade },
+    });
     return [
       agg("Most Games", records.mostGames),
       agg("Most Runs", records.mostRuns),
@@ -703,7 +779,9 @@ export default function Records() {
               className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
             >
               {grades.map((g) => (
-                <option key={g} value={g}>{g}</option>
+                <option key={g} value={g}>
+                  {g}
+                </option>
               ))}
             </select>
           </div>
@@ -722,7 +800,9 @@ export default function Records() {
         <CardGridSkeleton count={8} className="lg:grid-cols-4" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {rows.map((r) => <RecordCard key={r.title} row={r} />)}
+          {rows.map((r) => (
+            <RecordCard key={r.title} row={r} />
+          ))}
         </div>
       )}
     </div>

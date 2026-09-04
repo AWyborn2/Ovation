@@ -18,7 +18,11 @@ function rgbToHex(r: number, g: number, b: number): string {
   return (
     "#" +
     [r, g, b]
-      .map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0"))
+      .map((v) =>
+        Math.max(0, Math.min(255, Math.round(v)))
+          .toString(16)
+          .padStart(2, "0"),
+      )
       .join("")
   );
 }
@@ -88,12 +92,8 @@ export function ColourSlotPicker({ label, description, value, onChange, disabled
 
   return (
     <div className="space-y-2 rounded-md border border-border p-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {label}
-      </p>
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
 
       <div className="flex items-center gap-2">
         <input
@@ -175,9 +175,7 @@ export function ColourSlotPicker({ label, description, value, onChange, disabled
           <p className="text-xs text-destructive">Pantone code not found.</p>
         )}
         {pantoneStatus === "found" && (
-          <p className="text-xs text-green-600 dark:text-green-500">
-            Matched — hex updated.
-          </p>
+          <p className="text-xs text-green-600 dark:text-green-500">Matched — hex updated.</p>
         )}
       </div>
     </div>

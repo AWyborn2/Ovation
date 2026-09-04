@@ -35,9 +35,10 @@ function oppName(line: MatchOppositionLine): string {
 }
 
 /** Parse a stored score string "runs / wickets" (e.g. "187 / 10"). */
-function parseScore(
-  score: string | null | undefined,
-): { wickets: number | null; runs: number | null } {
+function parseScore(score: string | null | undefined): {
+  wickets: number | null;
+  runs: number | null;
+} {
   if (!score) return { wickets: null, runs: null };
   const m = /(\d+)\s*\/\s*(\d+)/.exec(score);
   if (!m) {
@@ -138,10 +139,7 @@ function tenantTeam(brand: ClubBrand | null | undefined): ScorecardTeam {
   };
 }
 
-function oppositionTeam(
-  opponent: string | null,
-  club: OpponentClub | null,
-): ScorecardTeam {
+function oppositionTeam(opponent: string | null, club: OpponentClub | null): ScorecardTeam {
   return {
     name: club?.name ?? opponent ?? "Opposition",
     shortName: club?.shortName ?? null,
@@ -172,9 +170,7 @@ export function buildScorecard(match: MatchDetail): Scorecard {
     .filter((l) => l.batted)
     .map((l) => buildBatsman(hhLinkId(l), hhName(l), l));
   const hhDnb = hhLines.filter((l) => !l.batted).map((l) => hhName(l));
-  const oppBowlers = oppLines
-    .filter((l) => l.bowled)
-    .map((l) => buildBowler(null, oppName(l), l));
+  const oppBowlers = oppLines.filter((l) => l.bowled).map((l) => buildBowler(null, oppName(l), l));
 
   const hhBattingInnings: Omit<ScorecardInnings, "inningsLabel"> = {
     battingTeam: hh,
@@ -189,9 +185,7 @@ export function buildScorecard(match: MatchDetail): Scorecard {
   };
 
   // Opposition batting innings: opposition bat, HH bowl.
-  const oppBatsmen = oppLines
-    .filter((l) => l.batted)
-    .map((l) => buildBatsman(null, oppName(l), l));
+  const oppBatsmen = oppLines.filter((l) => l.batted).map((l) => buildBatsman(null, oppName(l), l));
   const oppDnb = oppLines.filter((l) => !l.batted).map((l) => oppName(l));
   const hhBowlers = hhLines
     .filter((l) => l.bowled)

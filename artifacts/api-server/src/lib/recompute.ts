@@ -15,10 +15,7 @@ interface DbLike {
  * readers never observe a half-applied state, and so all statements run on a
  * single pooled connection (no temp tables / no cross-connection state).
  */
-export async function recomputeAggregates(
-  tx: DbLike,
-  grades: string[],
-): Promise<void> {
+export async function recomputeAggregates(tx: DbLike, grades: string[]): Promise<void> {
   if (grades.length === 0) return;
 
   const gradeList: SQL = sql`(${sql.join(

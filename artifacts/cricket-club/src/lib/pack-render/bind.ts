@@ -36,8 +36,7 @@ export function inningsPerformers(i: MatchSummaryInnings): string {
   const bats = i.topBatters
     .slice(0, 2)
     .map(
-      (b) =>
-        `${b.name} ${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`,
+      (b) => `${b.name} ${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`,
     );
   const bowls = i.topBowlers
     .slice(0, 1)

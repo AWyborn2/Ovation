@@ -57,14 +57,11 @@ export function useCardLayoutEditor({
   const layoutsQ = useListCardLayouts();
   const savedLayers = useMemo<CardLayoutLayer[]>(() => {
     if (controlled) return controlledLayout ?? [];
-    const row = (layoutsQ.data as CardLayout[] | undefined)?.find(
-      (l) => l.cardKind === cardKind,
-    );
+    const row = (layoutsQ.data as CardLayout[] | undefined)?.find((l) => l.cardKind === cardKind);
     return row?.layers ?? [];
   }, [controlled, controlledLayout, layoutsQ.data, cardKind]);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: getListCardLayoutsQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: getListCardLayoutsQueryKey() });
   const upsert = useUpsertCardLayout({
     mutation: {
       onSuccess: () => {
@@ -210,7 +207,15 @@ export function useCardLayoutEditor({
   const handleAddImage = async (file: File) => {
     setError(null);
     const r = await imgUpload.uploadFile(file);
-    if (r) addLayer("image", { url: `/api/storage${r.objectPath}`, shape: "rect", fit: "cover", zoom: 1, focalX: 0.5, focalY: 0.5 });
+    if (r)
+      addLayer("image", {
+        url: `/api/storage${r.objectPath}`,
+        shape: "rect",
+        fit: "cover",
+        zoom: 1,
+        focalX: 0.5,
+        focalY: 0.5,
+      });
   };
 
   // Upload an image and return its public URL (used by the Background layer's
@@ -315,9 +320,7 @@ export function useCardLayoutEditor({
   };
 
   const selected = layers.find((l) => l.id === selectedId) ?? null;
-  const pending = isTemplate
-    ? templateMode!.saving
-    : upsert.isPending || remove.isPending;
+  const pending = isTemplate ? templateMode!.saving : upsert.isPending || remove.isPending;
   const { w: W, h: H } = SIZES[activeSize];
 
   return {

@@ -93,10 +93,7 @@ describe("auth: suspended tenant enforcement", () => {
     // Restore, log in for a fresh valid session, then suspend again — proves
     // an already-signed-in admin loses access on the very next request rather
     // than only being blocked at the login step.
-    await db
-      .update(tenantsTable)
-      .set({ suspendedAt: null })
-      .where(eq(tenantsTable.id, tenantId));
+    await db.update(tenantsTable).set({ suspendedAt: null }).where(eq(tenantsTable.id, tenantId));
     invalidateTenantConfigCache(tenantId);
 
     const login = await request(app)
@@ -126,10 +123,7 @@ describe("auth: suspended tenant enforcement", () => {
       .expect(401);
 
     // Restoring reinstates access on the SAME cookie — no re-login required.
-    await db
-      .update(tenantsTable)
-      .set({ suspendedAt: null })
-      .where(eq(tenantsTable.id, tenantId));
+    await db.update(tenantsTable).set({ suspendedAt: null }).where(eq(tenantsTable.id, tenantId));
     invalidateTenantConfigCache(tenantId);
 
     await request(app)

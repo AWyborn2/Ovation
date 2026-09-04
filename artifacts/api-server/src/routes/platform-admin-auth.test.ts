@@ -17,8 +17,7 @@ const PASSWORD = "correct horse battery";
 
 describe("platform-admin auth", () => {
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-platform-admin";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-platform-admin";
     const passwordHash = await hashPassword(PASSWORD);
     await db
       .insert(platformAdminsTable)
@@ -52,10 +51,7 @@ describe("platform-admin auth", () => {
       .expect(200);
     const cookie = String(login.headers["set-cookie"][0]).split(";")[0];
 
-    const me = await request(app)
-      .get("/api/platform/auth/me")
-      .set("Cookie", cookie)
-      .expect(200);
+    const me = await request(app).get("/api/platform/auth/me").set("Cookie", cookie).expect(200);
     expect(me.body.email).toBe(EMAIL);
   });
 

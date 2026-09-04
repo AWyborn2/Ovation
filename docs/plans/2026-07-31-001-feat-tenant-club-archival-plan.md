@@ -14,7 +14,7 @@ product_contract_source: ce-plan-bootstrap
 
 Add a reversible **archive/restore** lifecycle for tenants so a platform admin can take a club off the live platform — blocking its admin access and removing it from the public directory and future re-signup — without deleting a single row of its curated history, photos, or admin records. Separately, close a provisioning gap: a **folded or renamed central club** (`central.clubs.active_to` set — e.g. Coastal Districts, which folded and no longer fields a team) can currently still be picked in both the self-serve signup wizard and the platform-admin concierge picker; this plan excludes those clubs from provisioning everywhere, with a server-side guard as defense-in-depth.
 
-No data is ever deleted. No database migration is required — the mechanism reuses the existing `suspendedAt` column on `tenants` (`lib/db/src/schema/tenants.ts:80`), which the codebase already displays and filters on but has never had a way to *set*.
+No data is ever deleted. No database migration is required — the mechanism reuses the existing `suspendedAt` column on `tenants` (`lib/db/src/schema/tenants.ts:80`), which the codebase already displays and filters on but has never had a way to _set_.
 
 ## Problem Frame
 
@@ -24,7 +24,7 @@ Two related gaps in tenant lifecycle management, both surfaced by the current pl
 
 2. **Folded clubs are provisionable.** `central.clubs` already models club lineage (`parent_club_id`, `lineage_role`, `active_from`/`active_to` — `lib/db/src/central-schema/clubs.ts:9`): a club whose `active_to` is set has stopped operating under that id, either because it folded or because it renamed/merged into a successor row. Nothing in `/platform/available-clubs` (`artifacts/api-server/src/routes/platform.ts:57`, shared by both self-serve signup and the concierge "Provision a club" picker) or in `provisionTenant()` (`lib/db/src/provision.ts:91`) checks this. A folded club like Coastal Districts can be signed up as a brand-new tenant today, which is exactly what the user wants to prevent.
 
-The screenshots show *Coastal Districts Cricket Club* already provisioned as a tenant (`test-coastal`, plan `FREE`, never active, 1 admin). The fix for that specific row is an **operational action** the platform admin takes with the new Archive button once this ships — not a data migration in this plan (see Scope Boundaries).
+The screenshots show _Coastal Districts Cricket Club_ already provisioned as a tenant (`test-coastal`, plan `FREE`, never active, 1 admin). The fix for that specific row is an **operational action** the platform admin takes with the new Archive button once this ships — not a data migration in this plan (see Scope Boundaries).
 
 ## Requirements
 
@@ -61,11 +61,11 @@ stateDiagram-v2
     Folded --> Folded: excluded from /platform/available-clubs\nprovisionTenant() rejects (club_folded)
 ```
 
-| State | Admin login | Public site | In directory | Re-signup for this club |
-|---|---|---|---|---|
-| Active tenant | ✅ | ✅ full | ✅ | n/a (already claimed) |
-| Archived tenant | ❌ (`resolveAdmin` → null) | ✅ read-only pages ("view stats only") | ❌ (existing `isNull(suspendedAt)` filter) | ❌ (blocked — club still claimed) |
-| Folded central club, never provisioned | n/a | n/a (no tenant exists) | n/a | ❌ (excluded from the picker; `provisionTenant()` rejects) |
+| State                                  | Admin login                | Public site                            | In directory                               | Re-signup for this club                                    |
+| -------------------------------------- | -------------------------- | -------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| Active tenant                          | ✅                         | ✅ full                                | ✅                                         | n/a (already claimed)                                      |
+| Archived tenant                        | ❌ (`resolveAdmin` → null) | ✅ read-only pages ("view stats only") | ❌ (existing `isNull(suspendedAt)` filter) | ❌ (blocked — club still claimed)                          |
+| Folded central club, never provisioned | n/a                        | n/a (no tenant exists)                 | n/a                                        | ❌ (excluded from the picker; `provisionTenant()` rejects) |
 
 ---
 
@@ -74,11 +74,13 @@ stateDiagram-v2
 **In scope:** archive/restore lifecycle for tenants; admin-access enforcement for archived tenants; folded-club exclusion from provisioning (both flows) with a defense-in-depth server guard; platform-admin console UI to trigger archive/restore.
 
 **Out of scope / non-goals:**
+
 - Hard-deleting a tenant or any of its rows — never happens, by design, in this or any future iteration described here.
-- A new public "browse any central club's stats without a tenant" page. "View stats only" for an archived tenant is satisfied by its *existing* public site continuing to serve read routes — building a stats surface for clubs that have *never* had a tenant (fully independent of tenant hosting) is a materially larger feature and is deferred.
+- A new public "browse any central club's stats without a tenant" page. "View stats only" for an archived tenant is satisfied by its _existing_ public site continuing to serve read routes — building a stats surface for clubs that have _never_ had a tenant (fully independent of tenant hosting) is a materially larger feature and is deferred.
 - A visible "this club is archived" banner on the archived tenant's own public pages. Threading a `suspended` signal into `TenantBrand`/`@workspace/scorecard` (the shared web+mobile view-model, explicitly protected in `CLAUDE.md`) would widen this change's blast radius across every brand-consuming renderer for a cosmetic touch. The platform-admin console already shows the "Suspended" state clearly to staff. Can be revisited later as a small, separate change.
 
 ### Deferred to Follow-Up Work
+
 - Manually archiving the existing `test-coastal` tenant row via the new console button — an operational action taken after this ships, not a migration script in this plan.
 - Auditing all ~40 `requireAdmin`-gated route files to confirm none bypass it for a mutating action — out of scope here; flagged as a residual risk below instead of a blocking prerequisite, since `requireAdmin` is already the established, conventionally-applied gate for every admin route added to date.
 
@@ -95,6 +97,7 @@ stateDiagram-v2
 **Dependencies:** none
 
 **Files:**
+
 - `lib/api-spec/openapi.yaml` — add `POST /platform/admin/tenants/{id}/archive` (operationId `archiveAdminTenant`) and `POST /platform/admin/tenants/{id}/restore` (operationId `restoreAdminTenant`) under the existing `/platform/admin/tenants/{id}` path group (near line 5295, alongside the `/brand` sub-path). Both take no request body, return `AdminTenant` (200), and document 400 (guarded tenant, e.g. the demo tenant), 401, and 404.
 
 **Approach:** Mirror the existing `/platform/admin/tenants/{id}/brand` and `/admin-resets` path definitions in shape and response schema (`$ref: "#/components/schemas/AdminTenant"`). No new schema object is needed — both actions return the same `AdminTenant` shape already used by the list/detail/PATCH endpoints.
@@ -102,6 +105,7 @@ stateDiagram-v2
 **Patterns to follow:** `lib/api-spec/openapi.yaml:5295` (`/brand` sub-path), `lib/api-spec/openapi.yaml:5371` (`/admin-resets` sub-path).
 
 **Test scenarios:**
+
 - Test expectation: none -- pure OpenAPI contract addition; correctness is verified indirectly by U3's route tests (server implements the contract) and by the generated TypeScript/Zod compiling cleanly after codegen.
 
 **Verification:** Run the workspace's OpenAPI codegen (`pnpm --filter @workspace/api-spec run codegen`, per `CLAUDE.md`'s "Do not break" rule — never hand-edit the generated files) and confirm `@workspace/api-zod` and `@workspace/api-client-react` regenerate without errors, producing `useArchiveAdminTenant`/`useRestoreAdminTenant`-equivalent hooks.
@@ -117,18 +121,20 @@ stateDiagram-v2
 **Dependencies:** none (reads the existing `suspendedAt` column; independent of U1/U3's write path)
 
 **Files:**
+
 - `artifacts/api-server/src/lib/tenant.ts` — add `suspended: boolean` to the internal `TenantConfig` shape (populate from `tenantsTable.suspendedAt != null` in `getTenantConfig`), and export `isTenantSuspended(tenantId: number): Promise<boolean>`. Update the doc-comment on `invalidateTenantConfigCache` to note it must also be called after archive/restore.
 - `artifacts/api-server/src/middlewares/require-admin.ts` — in `resolveAdmin`, after the existing tenant-match check, also return `null` when `isTenantSuspended(admin.tenantId)` is true. This is the single choke point behind `requireAdmin`, used by ~40 route files, so this one change protects all of them.
-- `artifacts/api-server/src/routes/auth.ts` — in `POST /auth/login`, after successful credential verification, check `isTenantSuspended(getTenantId(req))`; if true, respond `403 { error: "This club's admin access is currently suspended." }` instead of minting a session. (Checked *after* credential verification, not before, so a suspended tenant's login attempt is never used to distinguish a valid vs. invalid username/password.)
+- `artifacts/api-server/src/routes/auth.ts` — in `POST /auth/login`, after successful credential verification, check `isTenantSuspended(getTenantId(req))`; if true, respond `403 { error: "This club's admin access is currently suspended." }` instead of minting a session. (Checked _after_ credential verification, not before, so a suspended tenant's login attempt is never used to distinguish a valid vs. invalid username/password.)
 
 **Approach:** `resolveAdmin` keeps its existing `AdminRow | null` contract — a suspended tenant's admin resolves to `null`, so every `requireAdmin`-gated route responds with the existing generic `401 { error: "Not authenticated" }`. This is a deliberate trade-off (see Key Technical Decisions): broad, uniform protection over a bespoke error message on every route. The login route is the one place that gets a specific, actionable message, since it's the point where a real club admin is most likely to hit this and need to understand why.
 
 **Patterns to follow:** `artifacts/api-server/src/lib/tenant.ts:88` (`getTenantConfig` cache-then-query shape), `artifacts/api-server/src/middlewares/require-admin.ts:19` (`resolveAdmin`).
 
 **Test scenarios:**
+
 - `isTenantSuspended` returns `false` for a tenant with `suspendedAt = null` and `true` once it's set; reflects a change immediately after `invalidateTenantConfigCache(id)` (no stale cache read).
 - `resolveAdmin` returns `null` for a valid session belonging to an admin on a now-suspended tenant (session itself is untouched — no forced logout mechanism needed).
-- `resolveAdmin` continues to return the admin normally once the tenant is restored, using the *same* pre-existing session cookie (no re-login required).
+- `resolveAdmin` continues to return the admin normally once the tenant is restored, using the _same_ pre-existing session cookie (no re-login required).
 - `POST /auth/login` with correct credentials on a suspended tenant returns 403 with the suspended-specific message and does **not** set a session cookie.
 - `POST /auth/login` with correct credentials on an active tenant is unaffected (regression guard).
 - Integration: a `requireAdmin`-gated route (e.g. `PATCH /tenant-brand`) returns 401 for a previously-valid session once its tenant is archived.
@@ -148,10 +154,12 @@ Covers R3. Test files: `artifacts/api-server/src/lib/tenant.test.ts` (new), `art
 **Dependencies:** U1 (contract)
 
 **Files:**
+
 - `artifacts/api-server/src/routes/platform-admin.ts` — add `router.post("/platform/admin/tenants/:id/archive", requirePlatformAdmin, ...)` and the `/restore` counterpart, near the existing tenant PATCH handlers (after line 316).
 - `artifacts/api-server/src/routes/platform-admin-tenant-archive.test.ts` (new) — route-level tests.
 
 **Approach:**
+
 - Both handlers: parse/validate `id` (same pattern as the existing PATCH), 404 if no such tenant.
 - Archive: reject with `400 { error: "The demo tenant can't be archived." }` when `id === 1` (Halls Head / `DEFAULT_TENANT_ID`, per R6 — reference the constant from `artifacts/api-server/src/middlewares/tenant-context.ts` rather than the magic number). Otherwise idempotently set `suspendedAt = now()` (no-op success if already set).
 - Restore: idempotently clear `suspendedAt = null`.
@@ -159,6 +167,7 @@ Covers R3. Test files: `artifacts/api-server/src/lib/tenant.test.ts` (new), `art
 - Both: `invalidateTenantConfigCache(id)` (so U2's `isTenantSuspended` reflects the change immediately) after the write; respond with `toAdminTenant(row, centralClubName, adminCount)` (same shaping as the sibling PATCH handlers, reusing `centralClubNames()`/`adminCountsByTenant()`).
 
 **Technical design:**
+
 ```
 POST .../:id/archive
   tenant := SELECT ... WHERE id = :id            -- 404 if missing
@@ -175,6 +184,7 @@ POST .../:id/restore  -- symmetric, suspended_at = null, log tenant_restored
 **Patterns to follow:** `artifacts/api-server/src/routes/platform-admin.ts:211` (existing PATCH tenant handler — id validation, cache invalidation, response shaping), `artifacts/api-server/src/routes/platform-admin.ts:520` (`admin-resets` audit-log shape).
 
 **Test scenarios:**
+
 - Archiving an active tenant sets `suspendedAt`, returns it in the response, and a follow-up `GET /platform/admin/tenants/:id` reflects it.
 - Restoring an archived tenant clears `suspendedAt`.
 - Archiving an already-archived tenant is idempotent: 200, `suspendedAt` unchanged (not bumped to a new timestamp).
@@ -199,6 +209,7 @@ Covers R1, R2, R4, R6. Test file: `artifacts/api-server/src/routes/platform-admi
 **Dependencies:** none
 
 **Files:**
+
 - `lib/db/src/central-schema/clubs.ts` — add a small pure helper: `isCentralClubProvisionable(club: Pick<CentralClubRow, "activeTo">): boolean` (`club.activeTo == null`). Flows through the existing `export * from "./central-schema"` in `lib/db/src/central.ts`, so both consumers below import it from `@workspace/db/central` (route) or `./central` (same-package) without a new cross-package dependency.
 - `lib/db/src/provision.ts` — in `resolveCentralClub`, after the not-found/ambiguous checks, throw a new `ProvisionError("club_folded", ...)` when `!isCentralClubProvisionable(club)`. Add `"club_folded"` to `ProvisionErrorCode`.
 - `artifacts/api-server/src/routes/platform.ts` — in `GET /platform/available-clubs`, filter out clubs where `!isCentralClubProvisionable(c)` before mapping to `AvailableClub` (alongside the existing `claimedIds` filter at line 71-72).
@@ -209,6 +220,7 @@ Covers R1, R2, R4, R6. Test file: `artifacts/api-server/src/routes/platform-admi
 **Patterns to follow:** `lib/db/src/provision.ts:74` (existing not-found/ambiguous `ProvisionError` throws in `resolveCentralClub`), `artifacts/api-server/src/lib/admin-tenant-shape.ts` (precedent for a small, pure, DB-free helper co-located with its schema for unit-testability), `lib/db/src/central-queries.test.ts:25` (the `vi.mock("./central", ...)` pattern for testing central-DB-dependent code without a real connection).
 
 **Test scenarios:**
+
 - `isCentralClubProvisionable` returns `true` for `activeTo: null` and `false` for any non-null `activeTo` string.
 - `provisionTenant({ centralClubId })` throws `ProvisionError` with code `club_folded` when the resolved central club has `activeTo` set (mocked central DB row), and the message names the club.
 - `provisionTenant` succeeds unchanged for a club with `activeTo: null` (regression guard on the existing happy path).
@@ -230,6 +242,7 @@ Covers R5. Test files: `lib/db/src/provision.test.ts` (new, mocked-central-DB un
 **Dependencies:** U1, U3 (needs the live endpoints + generated hooks)
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/platform-admin/tenant-detail.tsx` — add a "Status" affordance (near the existing "Plan & domain" card) showing Active/Archived state with an Archive or Restore button as appropriate.
 - `lib/api-spec/openapi.yaml` / generated client — already covered by U1; this unit consumes the resulting hooks.
 
@@ -238,6 +251,7 @@ Covers R5. Test files: `lib/db/src/provision.test.ts` (new, mocked-central-DB un
 **Patterns to follow:** `artifacts/cricket-club/src/pages/platform-admin/tenant-detail.tsx:40` (`useUpdateAdminTenant` mutation wiring, query invalidation on success), `artifacts/cricket-club/src/components/confirm-dialog.tsx` (`useConfirm()` usage).
 
 **Test scenarios:**
+
 - Archiving from the detail page shows a confirmation dialog naming the consequence; confirming calls the archive mutation and the page reflects "Archived" without a manual refresh.
 - Cancelling the confirmation dialog fires no request and leaves the tenant active.
 - Restoring an archived tenant requires no confirmation and immediately shows "Active".
@@ -259,6 +273,7 @@ Covers R1, R2. Test file: a component test alongside existing platform-admin fro
 **Dependencies:** U4
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/platform-admin/provision.tsx` — add a short static note under the page's existing subtitle (near line 241), e.g. "Folded or merged clubs aren't available to provision — their history stays in the platform, view-only."
 
 **Approach:** Pure copy addition; no new prop, state, or request. The exclusion itself is entirely server-side (U4), so this list already renders correctly with zero frontend logic changes — this unit only adds the explanatory line.
@@ -266,6 +281,7 @@ Covers R1, R2. Test file: a component test alongside existing platform-admin fro
 **Patterns to follow:** The existing subtitle copy immediately above the insertion point (`artifacts/cricket-club/src/pages/platform-admin/provision.tsx:241`).
 
 **Test scenarios:**
+
 - Test expectation: none -- static copy only, no behavioral change; covered visually by U5's manual browser pass.
 
 **Verification:** Visual check during U5's manual dev-server pass.

@@ -20,7 +20,12 @@ export default function StatDetail() {
   const { id } = useParams<{ id: string }>();
   const statId = parseInt(id, 10);
   const confirm = useConfirm();
-  const { data: stat, isLoading, isError, refetch } = useGetStat(statId, { query: { enabled: !!statId, queryKey: getGetStatQueryKey(statId) } });
+  const {
+    data: stat,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetStat(statId, { query: { enabled: !!statId, queryKey: getGetStatQueryKey(statId) } });
   const queryClient = useQueryClient();
   const updateStat = useUpdateStat();
   const deleteStat = useDeleteStat();
@@ -39,7 +44,7 @@ export default function StatDetail() {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "number" ? (value === "" ? null : Number(value)) : value
+      [name]: type === "number" ? (value === "" ? null : Number(value)) : value,
     }));
   };
 
@@ -48,16 +53,24 @@ export default function StatDetail() {
     // Identity + player-name fields are read-only on the wire. A cleared number
     // input is held as `null` and sent as-is (the server clears the column), so
     // the draft is wider than `StatUpdate` only in that nullability.
-    const { id: _id, playerId: _playerId, surname: _surname, givenName: _givenName, ...rest } =
-      formData;
+    const {
+      id: _id,
+      playerId: _playerId,
+      surname: _surname,
+      givenName: _givenName,
+      ...rest
+    } = formData;
     const updateData = rest as StatUpdate;
 
-    updateStat.mutate({ id: statId, data: updateData }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetStatQueryKey(statId) });
-        alert("Saved successfully");
-      }
-    });
+    updateStat.mutate(
+      { id: statId, data: updateData },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetStatQueryKey(statId) });
+          alert("Saved successfully");
+        },
+      },
+    );
   };
 
   const handleDelete = async () => {
@@ -69,11 +82,14 @@ export default function StatDetail() {
         destructive: true,
       })
     ) {
-      deleteStat.mutate({ id: statId }, {
-        onSuccess: () => {
-          window.history.back();
-        }
-      });
+      deleteStat.mutate(
+        { id: statId },
+        {
+          onSuccess: () => {
+            window.history.back();
+          },
+        },
+      );
     }
   };
 
@@ -94,10 +110,18 @@ export default function StatDetail() {
         <div>
           <h1 className="text-3xl font-serif font-bold text-primary">Edit Record</h1>
           <p className="text-muted-foreground mt-1">
-            <Link href={`/players/${stat.playerId}`} className="hover:underline font-medium text-foreground">{stat.givenName} {stat.surname}</Link> - {stat.grade} Grade
+            <Link
+              href={`/players/${stat.playerId}`}
+              className="hover:underline font-medium text-foreground"
+            >
+              {stat.givenName} {stat.surname}
+            </Link>{" "}
+            - {stat.grade} Grade
           </p>
         </div>
-        <Button variant="destructive" onClick={handleDelete} disabled={deleteStat.isPending}>Delete Record</Button>
+        <Button variant="destructive" onClick={handleDelete} disabled={deleteStat.isPending}>
+          Delete Record
+        </Button>
       </div>
 
       <Card>
@@ -106,68 +130,148 @@ export default function StatDetail() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>Season</Label>
-                <Input type="number" name="season" value={formData.season ?? ""} onChange={handleChange} placeholder="e.g. 2025" />
+                <Input
+                  type="number"
+                  name="season"
+                  value={formData.season ?? ""}
+                  onChange={handleChange}
+                  placeholder="e.g. 2025"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Games</Label>
-                <Input type="number" name="games" value={formData.games || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="games"
+                  value={formData.games || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Innings</Label>
-                <Input type="number" name="innings" value={formData.innings || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="innings"
+                  value={formData.innings || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Not Outs</Label>
-                <Input type="number" name="notOuts" value={formData.notOuts || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="notOuts"
+                  value={formData.notOuts || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Runs</Label>
-                <Input type="number" name="runs" value={formData.runs || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="runs"
+                  value={formData.runs || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>High Score</Label>
-                <Input type="text" name="highScore" value={formData.highScore || ""} onChange={handleChange} />
+                <Input
+                  type="text"
+                  name="highScore"
+                  value={formData.highScore || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>100s</Label>
-                <Input type="number" name="hundreds" value={formData.hundreds || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="hundreds"
+                  value={formData.hundreds || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>50s</Label>
-                <Input type="number" name="fifties" value={formData.fifties || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="fifties"
+                  value={formData.fifties || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Wickets</Label>
-                <Input type="number" name="wickets" value={formData.wickets || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="wickets"
+                  value={formData.wickets || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Runs Conceded</Label>
-                <Input type="number" name="runsConceded" value={formData.runsConceded || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="runsConceded"
+                  value={formData.runsConceded || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Best Bowling</Label>
-                <Input type="text" name="bestBowling" value={formData.bestBowling || ""} onChange={handleChange} />
+                <Input
+                  type="text"
+                  name="bestBowling"
+                  value={formData.bestBowling || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>5WI</Label>
-                <Input type="number" name="fiveWickets" value={formData.fiveWickets || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="fiveWickets"
+                  value={formData.fiveWickets || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Catches</Label>
-                <Input type="number" name="catches" value={formData.catches || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="catches"
+                  value={formData.catches || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Stumpings</Label>
-                <Input type="number" name="stumpings" value={formData.stumpings || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="stumpings"
+                  value={formData.stumpings || ""}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Run Outs</Label>
-                <Input type="number" name="runOuts" value={formData.runOuts || ""} onChange={handleChange} />
+                <Input
+                  type="number"
+                  name="runOuts"
+                  value={formData.runOuts || ""}
+                  onChange={handleChange}
+                />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
-              <Button type="submit" disabled={updateStat.isPending}>Save Changes</Button>
+              <Button type="button" variant="outline" onClick={() => window.history.back()}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateStat.isPending}>
+                Save Changes
+              </Button>
             </div>
           </form>
         </CardContent>

@@ -44,7 +44,7 @@ deployed there**. So every finding below is tagged:
 
 ## Findings (with live evidence)
 
-### 1. Dashboard / top-card totals show Halls Head's numbers  **[FIXED-BY-#7]**
+### 1. Dashboard / top-card totals show Halls Head's numbers **[FIXED-BY-#7]**
 
 **Symptom (your screenshot):** WK senior page top cards read 979 players /
 28,994 games / 329,347 runs / 18,429 wickets / 10 grades, and "Scott Buchholz"
@@ -63,7 +63,7 @@ saw on the records/board view is the same leak surfacing through the records pag
 
 ---
 
-### 2. `player_id_map` is EMPTY for every central tenant  **[STILL-BROKEN]**
+### 2. `player_id_map` is EMPTY for every central tenant **[STILL-BROKEN]**
 
 **Symptom:** every central leaderboard row has `playerId: 0`. No player on a
 Mandurah or WK page is clickable; "view player" links are dead.
@@ -85,7 +85,7 @@ minting a tenant-local int id. Then every central read can resolve a real
 
 ---
 
-### 3. Identity collision: multiple real people merged into one player  **[STILL-BROKEN]**
+### 3. Identity collision: multiple real people merged into one player **[STILL-BROKEN]**
 
 **Symptom:** WK's A-Grade "M Brown" shows **300 games, 214 innings, high score
 64**. 214 innings with a top score of only 64 is statistically impossible for one
@@ -94,10 +94,10 @@ individual — it is clearly several different "M. Brown" players merged.
 **Evidence:** WK A-Grade top row: `M Brown — games 300, innings 214, HS 64,
 playerId 0`. Summing M Brown's per-grade games gives ~346 (A 300, B 14, E 3, F 5)
 — and the A-Grade 300 alone is already implausible. Halls Head's equivalent (Chris
-Phelps 371g/315i/HS 131*) is a real, internally-consistent career.
+Phelps 371g/315i/HS 131\*) is a real, internally-consistent career.
 
 **Root cause:** central `display_name` is just "Initial Surname". Over 24 seasons
-a club has many people who share an initial+surname. Central *should* keep them
+a club has many people who share an initial+surname. Central _should_ keep them
 apart by `participant_id` (GUID), but the data exhibits merging — most likely
 because (a) different real people were issued the **same** GUID in the source, or
 (b) the same person has **multiple** GUIDs and a downstream step name-keys them,
@@ -105,6 +105,7 @@ or (c) a fallback in the aggregation collapses on name when the GUID is absent.
 Needs a direct central-DB query to confirm which (see "Open questions").
 
 **Resolution (proposed):** depends on the confirmed cause:
+
 - If one GUID covers many people → a data-quality issue in the central dataset;
   needs a curation/splitting pass (and is partly unavoidable until the source is
   cleaned).
@@ -115,7 +116,7 @@ Needs a direct central-DB query to confirm which (see "Open questions").
 
 ---
 
-### 4. Milestones board shows Halls Head players  **[FIXED-BY-#7, with a caveat]**
+### 4. Milestones board shows Halls Head players **[FIXED-BY-#7, with a caveat]**
 
 **Symptom (your screenshot, WK page):** "Recent Milestones" lists Timothy Miles,
 Alec Smith, Jarod Little, Jason Young, Matthew Guyton — Halls Head players — plus
@@ -135,7 +136,7 @@ show its own centuries/5-fers and the career/debut/hat-trick cards will
 
 ---
 
-### 5. The five other leaking endpoints  **[FIXED-BY-#7]**
+### 5. The five other leaking endpoints **[FIXED-BY-#7]**
 
 `/grades`, `/records-leaderboards`, `/partnerships`, `/centuries`,
 `/five-wicket-hauls`, `/juniors/overview`, `/juniors/premierships` all leaked
@@ -146,7 +147,7 @@ render with `playerId: 0` (names show, links dead) until the crosswalk is built.
 
 ---
 
-### 6. Logo falls back to Halls Head  **[STILL-BROKEN — separate from the data fix]**
+### 6. Logo falls back to Halls Head **[STILL-BROKEN — separate from the data fix]**
 
 **Symptom:** the WK page header shows the **Halls Head** logo even though
 `/tenant-brand` reports a `logoUrl` is "set" for WK.
@@ -158,7 +159,7 @@ fallback. Not touched by PR #7.
 
 ---
 
-### 7. `/players` directory is capped at 20 rows  **[VERIFY — likely by design]**
+### 7. `/players` directory is capped at 20 rows **[VERIFY — likely by design]**
 
 `GET /api/players` returns 20 players for WK. This is probably pagination, not a
 bug — but worth confirming the directory page paginates correctly for central
@@ -168,17 +169,18 @@ tenants (and that the count/search works against central data).
 
 ## Severity & sequencing (proposed)
 
-| # | Issue | Severity | Status | Depends on |
-|---|---|---|---|---|
-| 1 | Dashboard/totals leak | High | FIXED-BY-#7 | pull main |
-| 5 | Other endpoint leaks | High | FIXED-BY-#7 | pull main |
-| 2 | `player_id_map` empty | **High** | STILL-BROKEN | — (do first) |
-| 3 | Identity collision (M Brown) | **High** | STILL-BROKEN | #2 + central-DB diagnosis |
-| 4 | Milestones content (career cards) | Medium | design decision | confirm intent |
-| 6 | Logo fallback | Medium | STILL-BROKEN | brand resolver review |
-| 7 | Players pagination | Low | verify | — |
+| #   | Issue                             | Severity | Status          | Depends on                |
+| --- | --------------------------------- | -------- | --------------- | ------------------------- |
+| 1   | Dashboard/totals leak             | High     | FIXED-BY-#7     | pull main                 |
+| 5   | Other endpoint leaks              | High     | FIXED-BY-#7     | pull main                 |
+| 2   | `player_id_map` empty             | **High** | STILL-BROKEN    | — (do first)              |
+| 3   | Identity collision (M Brown)      | **High** | STILL-BROKEN    | #2 + central-DB diagnosis |
+| 4   | Milestones content (career cards) | Medium   | design decision | confirm intent            |
+| 6   | Logo fallback                     | Medium   | STILL-BROKEN    | brand resolver review     |
+| 7   | Players pagination                | Low      | verify          | —                         |
 
 **Recommended order tomorrow:**
+
 1. Pull `main` in Replit + restart → clears findings 1, 4, 5 (the leaks). Re-probe
    to confirm.
 2. Build `player_id_map` for central tenants (#2) — provisioning step + backfill.

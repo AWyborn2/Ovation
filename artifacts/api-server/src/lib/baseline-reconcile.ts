@@ -105,10 +105,7 @@ export async function reconcileBaseline(
     .select()
     .from(baselineAdjustmentsTable)
     .where(
-      and(
-        eq(baselineAdjustmentsTable.grade, grade),
-        eq(baselineAdjustmentsTable.season, season),
-      ),
+      and(eq(baselineAdjustmentsTable.grade, grade), eq(baselineAdjustmentsTable.season, season)),
     );
   const hadPriorPeel = prior.length > 0;
 
@@ -132,10 +129,7 @@ export async function reconcileBaseline(
     await tx
       .delete(baselineAdjustmentsTable)
       .where(
-        and(
-          eq(baselineAdjustmentsTable.grade, grade),
-          eq(baselineAdjustmentsTable.season, season),
-        ),
+        and(eq(baselineAdjustmentsTable.grade, grade), eq(baselineAdjustmentsTable.season, season)),
       );
   }
 
@@ -294,11 +288,7 @@ export async function loadBackfillBaseFigures(
 }
 
 /** Sum a player's season=NULL baseline counting stats for a grade. */
-async function baselineTotal(
-  tx: CapSyncTx,
-  grade: string,
-  playerId: number,
-): Promise<Counting> {
+async function baselineTotal(tx: CapSyncTx, grade: string, playerId: number): Promise<Counting> {
   const rows = await tx
     .select()
     .from(playerGradeSeasonStatsTable)

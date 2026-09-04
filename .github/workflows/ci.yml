@@ -65,6 +65,9 @@ jobs:
       - uses: ./.github/actions/setup
       - name: ESLint
         run: pnpm run lint
+      - name: Prettier
+        # The whole tree is formatted (repo-wide pass); keep it that way.
+        run: pnpm run format:check
 
   # ───────────────────────────────────────────────────────────────────────────
   # Production build of everything that ships from CI (api-server bundle and

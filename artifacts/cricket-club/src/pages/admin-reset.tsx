@@ -21,10 +21,7 @@ const MIN_PASSWORD = 8;
  * see it. Redeeming is single-use, so a refresh after success shows the link spent.
  */
 export default function AdminReset() {
-  const token = useMemo(
-    () => new URLSearchParams(window.location.search).get("token") ?? "",
-    [],
-  );
+  const token = useMemo(() => new URLSearchParams(window.location.search).get("token") ?? "", []);
   const [, navigate] = useLocation();
 
   const info = useGetPasswordReset(token, {
@@ -85,31 +82,24 @@ export default function AdminReset() {
           <CardContent>
             {info.isLoading && token ? (
               <div className="flex items-center py-6 text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking your
-                link…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking your link…
               </div>
             ) : done ? (
               <div className="space-y-4">
-                <p className="text-sm text-green-700">
-                  Your password is set. You can now sign in.
-                </p>
-                <Button onClick={() => navigate("/admin")}>
-                  Go to sign-in
-                </Button>
+                <p className="text-sm text-green-700">Your password is set. You can now sign in.</p>
+                <Button onClick={() => navigate("/admin")}>Go to sign-in</Button>
               </div>
             ) : invalid ? (
               <p className="text-sm text-destructive">
-                This link is invalid, expired, or already used. Ask your
-                platform admin to send a fresh reset link.
+                This link is invalid, expired, or already used. Ask your platform admin to send a
+                fresh reset link.
               </p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Setting the password for{" "}
-                  <span className="font-medium text-foreground">
-                    {info.data?.username}
-                  </span>{" "}
-                  at {info.data?.tenantName}.
+                  <span className="font-medium text-foreground">{info.data?.username}</span> at{" "}
+                  {info.data?.tenantName}.
                 </p>
                 <div className="space-y-2">
                   <Label htmlFor="password">New password</Label>
@@ -135,9 +125,7 @@ export default function AdminReset() {
                 <Button type="submit" disabled={submit.isPending}>
                   {submit.isPending ? "Saving…" : "Set password"}
                 </Button>
-                {error ? (
-                  <p className="text-sm text-destructive">{error}</p>
-                ) : null}
+                {error ? <p className="text-sm text-destructive">{error}</p> : null}
               </form>
             )}
           </CardContent>

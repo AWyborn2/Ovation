@@ -16,13 +16,21 @@ export function BowlingCard({ innings, hatTrickIds, onPlayerClick }: BowlingCard
   const parts = extrasParts(innings.extras);
 
   return (
-    <div className="w-full overflow-hidden rounded-sm shadow-lg" style={{ fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
+    <div
+      className="w-full overflow-hidden rounded-sm shadow-lg"
+      style={{ fontFamily: "'Arial Narrow', Arial, sans-serif" }}
+    >
       <CardHeader team={team} inningsLabel={innings.inningsLabel} />
 
       {/* Column headers */}
       <div
         className="grid"
-        style={{ gridTemplateColumns: GRID, background: c.primary, borderBottom: `1px solid ${c.borderColor}`, opacity: 0.85 }}
+        style={{
+          gridTemplateColumns: GRID,
+          background: c.primary,
+          borderBottom: `1px solid ${c.borderColor}`,
+          opacity: 0.85,
+        }}
       >
         {["BOWLER", "OVERS", "MAIDENS", "RUNS", "WICKETS", "ECON"].map((h, i) => (
           <div
@@ -45,7 +53,9 @@ export function BowlingCard({ innings, hatTrickIds, onPlayerClick }: BowlingCard
       {/* Bowlers */}
       {innings.bowlers.length === 0 ? (
         <div className="px-3 py-3" style={{ background: c.rowOdd }}>
-          <span style={{ color: c.rowText, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>No bowling recorded.</span>
+          <span style={{ color: c.rowText, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>
+            No bowling recorded.
+          </span>
         </div>
       ) : (
         innings.bowlers.map((row, idx) => {
@@ -56,7 +66,11 @@ export function BowlingCard({ innings, hatTrickIds, onPlayerClick }: BowlingCard
             <div
               key={`${row.name}-${idx}`}
               className="grid items-center"
-              style={{ gridTemplateColumns: GRID, background: rowBg, borderBottom: `1px solid ${c.borderColor}` }}
+              style={{
+                gridTemplateColumns: GRID,
+                background: rowBg,
+                borderBottom: `1px solid ${c.borderColor}`,
+              }}
             >
               <div className="px-2 py-[5px] flex items-center gap-1.5 min-w-0">
                 {clickable ? (
@@ -80,13 +94,22 @@ export function BowlingCard({ innings, hatTrickIds, onPlayerClick }: BowlingCard
                 ) : (
                   <span
                     className="uppercase truncate"
-                    style={{ color: c.rowText, fontSize: "clamp(10px, 1.8vw, 14px)", fontWeight: 700, letterSpacing: "0.04em" }}
+                    style={{
+                      color: c.rowText,
+                      fontSize: "clamp(10px, 1.8vw, 14px)",
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                    }}
                   >
                     {row.name}
                   </span>
                 )}
                 {hasHatTrick && (
-                  <Flame className="h-3 w-3 shrink-0" style={{ color: c.secondary }} aria-label="Hat-trick" />
+                  <Flame
+                    className="h-3 w-3 shrink-0"
+                    style={{ color: c.secondary }}
+                    aria-label="Hat-trick"
+                  />
                 )}
               </div>
 
@@ -120,12 +143,24 @@ export function BowlingCard({ innings, hatTrickIds, onPlayerClick }: BowlingCard
         <div className="flex items-center justify-between px-2 py-[6px]">
           <div style={{ color: c.totalText, fontSize: "clamp(9px, 1.4vw, 12px)", fontWeight: 700 }}>
             EXTRAS {innings.extras.total}
-            {parts.length > 0 && <span style={{ opacity: 0.7, fontSize: "clamp(7px, 1.1vw, 10px)" }}> ({parts.join(" ")})</span>}
+            {parts.length > 0 && (
+              <span style={{ opacity: 0.7, fontSize: "clamp(7px, 1.1vw, 10px)" }}>
+                {" "}
+                ({parts.join(" ")})
+              </span>
+            )}
           </div>
           <div style={{ color: c.totalText, fontSize: "clamp(9px, 1.5vw, 12px)", fontWeight: 700 }}>
             OVERS {innings.oversTotal ?? "—"}
           </div>
-          <div style={{ color: c.totalText, fontSize: "clamp(16px, 3vw, 24px)", fontWeight: 900, letterSpacing: "0.02em" }}>
+          <div
+            style={{
+              color: c.totalText,
+              fontSize: "clamp(16px, 3vw, 24px)",
+              fontWeight: 900,
+              letterSpacing: "0.02em",
+            }}
+          >
             {innings.totalRuns != null ? `${innings.totalRuns}/${innings.wickets ?? 0}` : "—"}
           </div>
         </div>

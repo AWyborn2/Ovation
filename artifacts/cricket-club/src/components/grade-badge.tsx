@@ -10,26 +10,76 @@ interface GradeMeta {
 }
 
 const META: Record<string, GradeMeta> = {
-  "A Grade":        { full: "A Grade",        abbr: "A",   bannerShort: "A GRADE",  bannerLong: "A GRADE",   sortOrder: 1 },
-  "B Grade":        { full: "B Grade",        abbr: "B",   bannerShort: "B GRADE",  bannerLong: "B GRADE",   sortOrder: 2 },
-  "C Grade":        { full: "C Grade",        abbr: "C",   bannerShort: "C GRADE",  bannerLong: "C GRADE",   sortOrder: 3 },
-  "D Grade":        { full: "D Grade",        abbr: "D",   bannerShort: "D GRADE",  bannerLong: "D GRADE",   sortOrder: 4 },
-  "E Grade":        { full: "E Grade",        abbr: "E",   bannerShort: "E GRADE",  bannerLong: "E GRADE",   sortOrder: 5 },
-  "F Grade":        { full: "F Grade",        abbr: "F",   bannerShort: "F GRADE",  bannerLong: "F GRADE",   sortOrder: 6 },
-  "Female A Grade": { full: "Female A Grade", abbr: "FA",  bannerShort: "FEM A",    bannerLong: "FEMALE A",  sortOrder: 7 },
-  "Female B Grade": { full: "Female B Grade", abbr: "FB",  bannerShort: "FEM B",    bannerLong: "FEMALE B",  sortOrder: 8 },
-  "PPL":            { full: "PPL",            abbr: "PPL", bannerShort: "PPL",      bannerLong: "PPL",       sortOrder: 9 },
-  "Colts":          { full: "Colts",          abbr: "Co",  bannerShort: "COLTS",    bannerLong: "COLTS",     sortOrder: 10 },
+  "A Grade": {
+    full: "A Grade",
+    abbr: "A",
+    bannerShort: "A GRADE",
+    bannerLong: "A GRADE",
+    sortOrder: 1,
+  },
+  "B Grade": {
+    full: "B Grade",
+    abbr: "B",
+    bannerShort: "B GRADE",
+    bannerLong: "B GRADE",
+    sortOrder: 2,
+  },
+  "C Grade": {
+    full: "C Grade",
+    abbr: "C",
+    bannerShort: "C GRADE",
+    bannerLong: "C GRADE",
+    sortOrder: 3,
+  },
+  "D Grade": {
+    full: "D Grade",
+    abbr: "D",
+    bannerShort: "D GRADE",
+    bannerLong: "D GRADE",
+    sortOrder: 4,
+  },
+  "E Grade": {
+    full: "E Grade",
+    abbr: "E",
+    bannerShort: "E GRADE",
+    bannerLong: "E GRADE",
+    sortOrder: 5,
+  },
+  "F Grade": {
+    full: "F Grade",
+    abbr: "F",
+    bannerShort: "F GRADE",
+    bannerLong: "F GRADE",
+    sortOrder: 6,
+  },
+  "Female A Grade": {
+    full: "Female A Grade",
+    abbr: "FA",
+    bannerShort: "FEM A",
+    bannerLong: "FEMALE A",
+    sortOrder: 7,
+  },
+  "Female B Grade": {
+    full: "Female B Grade",
+    abbr: "FB",
+    bannerShort: "FEM B",
+    bannerLong: "FEMALE B",
+    sortOrder: 8,
+  },
+  PPL: { full: "PPL", abbr: "PPL", bannerShort: "PPL", bannerLong: "PPL", sortOrder: 9 },
+  Colts: { full: "Colts", abbr: "Co", bannerShort: "COLTS", bannerLong: "COLTS", sortOrder: 10 },
 };
 
 const getMeta = (grade: string): GradeMeta => {
-  return META[grade] ?? {
-    full: grade,
-    abbr: grade.slice(0, 2).toUpperCase(),
-    bannerShort: grade.toUpperCase().slice(0, 8),
-    bannerLong: grade.toUpperCase(),
-    sortOrder: 99,
-  };
+  return (
+    META[grade] ?? {
+      full: grade,
+      abbr: grade.slice(0, 2).toUpperCase(),
+      bannerShort: grade.toUpperCase().slice(0, 8),
+      bannerLong: grade.toUpperCase(),
+      sortOrder: 99,
+    }
+  );
 };
 
 export const sortGradesBySeniority = (grades: Iterable<string>): string[] =>
@@ -126,7 +176,12 @@ interface GradeBadgeProps {
  * An explicit `badgeStyle` prop overrides the context — used by the admin
  * badge-style picker for live preview of each shape.
  */
-export const GradeBadge = ({ grade, size = "sm", className, badgeStyle: badgeStyleProp }: GradeBadgeProps) => {
+export const GradeBadge = ({
+  grade,
+  size = "sm",
+  className,
+  badgeStyle: badgeStyleProp,
+}: GradeBadgeProps) => {
   const contextStyle = useContext(BadgeStyleContext);
   const activeStyle: BadgeStyle = (badgeStyleProp ?? contextStyle) as BadgeStyle;
 
@@ -134,8 +189,7 @@ export const GradeBadge = ({ grade, size = "sm", className, badgeStyle: badgeSty
   const px = SIZE_PX[size];
 
   const diamondLabel = size === "lg" ? meta.bannerLong : meta.bannerShort;
-  const diamondScale =
-    diamondLabel.length > 7 ? 0.075 : diamondLabel.length > 5 ? 0.09 : 0.11;
+  const diamondScale = diamondLabel.length > 7 ? 0.075 : diamondLabel.length > 5 ? 0.09 : 0.11;
   const diamondFontPx = Math.max(7, px * diamondScale);
 
   const renderBadge = BADGE_STYLES[activeStyle] ?? BADGE_STYLES.diamond;

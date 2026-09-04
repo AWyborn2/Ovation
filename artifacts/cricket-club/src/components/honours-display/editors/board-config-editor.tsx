@@ -42,10 +42,7 @@ export function BoardConfigEditor({
   };
 
   return (
-    <div
-      className="border rounded bg-card"
-      data-testid={`board-config-${board.id}`}
-    >
+    <div className="border rounded bg-card" data-testid={`board-config-${board.id}`}>
       <div className="flex flex-wrap items-center gap-3 px-3 py-2">
         <button
           type="button"
@@ -68,9 +65,7 @@ export function BoardConfigEditor({
             className="px-2 py-1 rounded border bg-background text-sm disabled:opacity-40"
             value={isList ? cols : 1}
             disabled={!isList}
-            title={
-              isList ? undefined : "Only list boards support multi-column flow"
-            }
+            title={isList ? undefined : "Only list boards support multi-column flow"}
             onChange={(e) => onPatch({ columns: Number(e.target.value) })}
             data-testid={`board-columns-${board.id}`}
           >
@@ -117,9 +112,7 @@ export function BoardConfigEditor({
             <select
               className="px-2 py-1 rounded border bg-background text-sm"
               value={sort}
-              onChange={(e) =>
-                onPatch({ sort: e.target.value as "asc" | "desc" })
-              }
+              onChange={(e) => onPatch({ sort: e.target.value as "asc" | "desc" })}
               data-testid={`board-sort-${board.id}`}
             >
               <option value="desc">Newest first</option>
@@ -142,35 +135,25 @@ export function BoardConfigEditor({
         <div className="border-t px-3 py-3 space-y-3 bg-muted/20">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Heading override
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Heading override</span>
               <Input
                 value={cfg?.heading ?? ""}
                 placeholder={board.title}
-                onChange={(e) =>
-                  onPatch({ heading: e.target.value || null })
-                }
+                onChange={(e) => onPatch({ heading: e.target.value || null })}
                 data-testid={`board-heading-${board.id}`}
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Subtitle override
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Subtitle override</span>
               <Input
                 value={cfg?.subtitle ?? ""}
                 placeholder={board.subtitle ?? "—"}
-                onChange={(e) =>
-                  onPatch({ subtitle: e.target.value || null })
-                }
+                onChange={(e) => onPatch({ subtitle: e.target.value || null })}
                 data-testid={`board-subtitle-${board.id}`}
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Skin override
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Skin override</span>
               <select
                 className="w-full px-2 py-1.5 rounded border bg-card text-sm"
                 value={cfg?.skin ?? ""}
@@ -186,9 +169,7 @@ export function BoardConfigEditor({
               </select>
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Footnote
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Footnote</span>
               <Input
                 value={cfg?.footnote ?? ""}
                 placeholder="e.g. Premiers 2018/19, 2024/25"
@@ -272,8 +253,8 @@ export function BoardConfigEditor({
                 <Grid3x3 className="h-3.5 w-3.5" /> Season-grid columns
               </span>
               <p className="text-[11px] text-muted-foreground">
-                Pick columns to render this board as a season grid (rows ×
-                columns). Leave all unchecked to keep its natural layout.
+                Pick columns to render this board as a season grid (rows × columns). Leave all
+                unchecked to keep its natural layout.
               </p>
               <div className="flex flex-wrap gap-2">
                 {grid.options.map((opt) => {
@@ -284,9 +265,7 @@ export function BoardConfigEditor({
                       type="button"
                       onClick={() => toggleGridCol(opt.key)}
                       className={`text-xs px-2 py-1 rounded border transition ${
-                        on
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "hover:border-primary/50"
+                        on ? "border-primary bg-primary/10 text-primary" : "hover:border-primary/50"
                       }`}
                       data-testid={`board-gridcol-${board.id}-${opt.key}`}
                     >

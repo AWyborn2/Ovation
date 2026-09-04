@@ -21,8 +21,7 @@ const TEMPLATE_BLURB: Record<TemplateId, string> = {
 
 /** Skin picker — built-in templates + admin-authored themes. */
 export function SkinSection({ form }: { form: HonoursDisplayForm }) {
-  const { defaultTemplate, setDefaultTemplate, skins, addSkin, patchSkin, removeSkin } =
-    form;
+  const { defaultTemplate, setDefaultTemplate, skins, addSkin, patchSkin, removeSkin } = form;
   return (
     <Card>
       <CardHeader>
@@ -32,9 +31,9 @@ export function SkinSection({ form }: { form: HonoursDisplayForm }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          The one skin every board renders in. Each board still uses its own natural
-          layout (premierships, team of the decade, lists) — only the look changes.
-          Pick a built-in or author your own theme below.
+          The one skin every board renders in. Each board still uses its own natural layout
+          (premierships, team of the decade, lists) — only the look changes. Pick a built-in or
+          author your own theme below.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {TEMPLATES.map((t) => (
@@ -50,9 +49,7 @@ export function SkinSection({ form }: { form: HonoursDisplayForm }) {
               data-testid={`template-${t.id}`}
             >
               <div className="text-sm font-semibold">{t.label}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {TEMPLATE_BLURB[t.id]}
-              </div>
+              <div className="text-xs text-muted-foreground mt-1">{TEMPLATE_BLURB[t.id]}</div>
             </button>
           ))}
           {skins.map((sk) => (
@@ -68,15 +65,10 @@ export function SkinSection({ form }: { form: HonoursDisplayForm }) {
               data-testid={`skin-${sk.id}`}
             >
               <div className="flex items-center gap-2">
-                <span
-                  className="h-4 w-4 rounded-full border"
-                  style={{ background: sk.accent }}
-                />
+                <span className="h-4 w-4 rounded-full border" style={{ background: sk.accent }} />
                 <div className="text-sm font-semibold truncate">{sk.name}</div>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Custom theme
-              </div>
+              <div className="text-xs text-muted-foreground mt-1">Custom theme</div>
             </button>
           ))}
         </div>

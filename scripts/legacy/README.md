@@ -4,11 +4,11 @@ Everything in this directory was written when the database held **one club**
 (Halls Head, before the white-label transition) and none of it knows about
 `tenant_id`:
 
-| File | What it did | Why it is dangerous today |
-|---|---|---|
+| File                            | What it did                           | Why it is dangerous today                  |
+| ------------------------------- | ------------------------------------- | ------------------------------------------ |
 | `fix-a-grade-cap-duplicates.ts` | One-off cap register repair (2025/26) | Grade-wide deletes on `player_grade_stats` |
-| `remove-a-grade-2025-26.ts` | One-off season reversal | Grade-wide deletes on the stats core |
-| `add-a-grade-2025-26-debuts.ts` | One-off companion to the above | Inserts assume the single-tenant shape |
+| `remove-a-grade-2025-26.ts`     | One-off season reversal               | Grade-wide deletes on the stats core       |
+| `add-a-grade-2025-26-debuts.ts` | One-off companion to the above        | Inserts assume the single-tenant shape     |
 
 **Do not run any of these against the shared multi-tenant database.** They are
 kept for provenance of tenant #1's data. If one is ever needed again, port it to

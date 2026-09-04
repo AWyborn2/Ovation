@@ -66,8 +66,7 @@ export function renderPackCard(
   // Full-bleed only makes sense once there is an actual photo bound to the hero
   // slot; without one the wrapper would just stretch an initials placeholder
   // across the whole card. Gate on both the placement flag and a resolved photo.
-  const photoFullBleed =
-    data?.photoPlacement === "fullBleed" && Boolean(bound.images["photo"]);
+  const photoFullBleed = data?.photoPlacement === "fullBleed" && Boolean(bound.images["photo"]);
 
   let html = selectFormatHtml(template.formats, size);
   html = selectSponsorVariant(html, sponsorsOn);

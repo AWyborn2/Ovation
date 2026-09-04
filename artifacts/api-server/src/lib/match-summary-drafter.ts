@@ -23,15 +23,10 @@ import {
 } from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
-import {
-  matchToSummaryInput,
-  juniorMatchToSummaryInput,
-} from "@workspace/scorecard";
+import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
 import { getTenantBrand } from "./tenant-brand";
 import { loadMatchDetail } from "./match-detail";
-import {
-  overlayNativeOpponents,
-} from "./club-brand";
+import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
 
 // ---------------------------------------------------------------------------
@@ -46,9 +41,7 @@ type SocialSettings = typeof socialSettingsTable.$inferSelect;
 // Settings
 // ---------------------------------------------------------------------------
 
-async function loadSocialSettings(
-  tenantId: number,
-): Promise<SocialSettings | null> {
+async function loadSocialSettings(tenantId: number): Promise<SocialSettings | null> {
   const [row] = await db
     .select()
     .from(socialSettingsTable)
@@ -184,10 +177,7 @@ async function loadJuniorMatchDetail(matchId: number, tenantId: number, privateI
   };
 
   const inningsNums = Array.from(
-    new Set([
-      ...battingRows.map((b) => b.innings ?? 1),
-      ...bowlingRows.map((b) => b.innings ?? 1),
-    ]),
+    new Set([...battingRows.map((b) => b.innings ?? 1), ...bowlingRows.map((b) => b.innings ?? 1)]),
   ).sort((a, b) => a - b);
 
   const innings = inningsNums.map((n) => {
@@ -326,11 +316,19 @@ export async function generateMatchSummaryDrafts(
     const outcomes = await Promise.allSettled(
       batch.map(async (matchId) => {
         const detail = await loadMatchDetail(matchId, tenantId);
-        if (!detail) { result.skipped++; return; }
-        if (!shouldDraftGrade(settings, detail.grade, false)) { result.skipped++; return; }
+        if (!detail) {
+          result.skipped++;
+          return;
+        }
+        if (!shouldDraftGrade(settings, detail.grade, false)) {
+          result.skipped++;
+          return;
+        }
         const cardInput = matchToSummaryInput(detail as MatchDetail);
         const outcome = await upsertDraft(
-          tenantId, matchId, false,
+          tenantId,
+          matchId,
+          false,
           cardInput as Record<string, unknown>,
           `/matches/${matchId}`,
         );
@@ -340,9 +338,7 @@ export async function generateMatchSummaryDrafts(
     );
     for (const o of outcomes) {
       if (o.status === "rejected") {
-        result.errors.push(
-          o.reason instanceof Error ? o.reason.message : String(o.reason),
-        );
+        result.errors.push(o.reason instanceof Error ? o.reason.message : String(o.reason));
       }
     }
   }
@@ -378,12 +374,20 @@ export async function generateJuniorMatchSummaryDrafts(
     const outcomes = await Promise.allSettled(
       batch.map(async (matchId) => {
         const detail = await loadJuniorMatchDetail(matchId, tenantId, privateIds);
-        if (!detail) { result.skipped++; return; }
+        if (!detail) {
+          result.skipped++;
+          return;
+        }
         const grade = detail.ageGroup ?? detail.grade;
-        if (!shouldDraftGrade(settings, grade, true)) { result.skipped++; return; }
+        if (!shouldDraftGrade(settings, grade, true)) {
+          result.skipped++;
+          return;
+        }
         const cardInput = juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand);
         const outcome = await upsertDraft(
-          tenantId, matchId, true,
+          tenantId,
+          matchId,
+          true,
           cardInput as Record<string, unknown>,
           `/juniors/matches/${matchId}`,
         );
@@ -393,9 +397,7 @@ export async function generateJuniorMatchSummaryDrafts(
     );
     for (const o of outcomes) {
       if (o.status === "rejected") {
-        result.errors.push(
-          o.reason instanceof Error ? o.reason.message : String(o.reason),
-        );
+        result.errors.push(o.reason instanceof Error ? o.reason.message : String(o.reason));
       }
     }
   }

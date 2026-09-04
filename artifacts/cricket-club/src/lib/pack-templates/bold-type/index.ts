@@ -49,9 +49,29 @@ export const BOLD_TYPE_PACK: PackManifest = {
     { designKey: "century", kind: "century", template: century },
     { designKey: "five-for", kind: "fiveFor", template: fiveFor },
     { designKey: "big-moment", kind: "bigMoment", template: bigMoment },
-    { designKey: "grade-leader-runs", kind: "gradeLeader", categoryPreset: "Runs", template: gradeLeaderRuns },
-    { designKey: "grade-leader-wickets", kind: "gradeLeader", categoryPreset: "Wickets", template: gradeLeaderWickets },
-    { designKey: "club-leaderboard-runs", kind: "clubLeaderboard", categoryPreset: "Runs", template: clubLeaderboardRuns },
-    { designKey: "club-leaderboard-wickets", kind: "clubLeaderboard", categoryPreset: "Wickets", template: clubLeaderboardWickets },
+    {
+      designKey: "grade-leader-runs",
+      kind: "gradeLeader",
+      categoryPreset: "Runs",
+      template: gradeLeaderRuns,
+    },
+    {
+      designKey: "grade-leader-wickets",
+      kind: "gradeLeader",
+      categoryPreset: "Wickets",
+      template: gradeLeaderWickets,
+    },
+    {
+      designKey: "club-leaderboard-runs",
+      kind: "clubLeaderboard",
+      categoryPreset: "Runs",
+      template: clubLeaderboardRuns,
+    },
+    {
+      designKey: "club-leaderboard-wickets",
+      kind: "clubLeaderboard",
+      categoryPreset: "Wickets",
+      template: clubLeaderboardWickets,
+    },
   ],
 };

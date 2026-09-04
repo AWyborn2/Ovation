@@ -45,15 +45,13 @@ describe("admin mutation isolation: one tenant cannot mutate another's curated r
     tenantId: number,
     cookie: string,
     body: Record<string, unknown> = {},
-  ) =>
-    request(app)[method](path)
-      .set("Cookie", cookie)
-      .set("x-tenant-id", String(tenantId))
-      .send(body);
+  ) => {
+    const req = request(app);
+    return req[method](path).set("Cookie", cookie).set("x-tenant-id", String(tenantId)).send(body);
+  };
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-admin-mutation-iso";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-admin-mutation-iso";
 
     const [a] = await db
       .insert(tenantsTable)
@@ -68,12 +66,22 @@ describe("admin mutation isolation: one tenant cannot mutate another's curated r
 
     const [adminA] = await db
       .insert(adminsTable)
-      .values({ tenantId: tenantAId, username: `iso_am_a_${STAMP}`, displayName: "A", passwordHash: "x" })
+      .values({
+        tenantId: tenantAId,
+        username: `iso_am_a_${STAMP}`,
+        displayName: "A",
+        passwordHash: "x",
+      })
       .returning();
     adminACookie = `${SESSION_COOKIE}=${encodeSession({ adminId: adminA.id, issuedAt: Date.now() })}`;
     const [adminB] = await db
       .insert(adminsTable)
-      .values({ tenantId: tenantBId, username: `iso_am_b_${STAMP}`, displayName: "B", passwordHash: "x" })
+      .values({
+        tenantId: tenantBId,
+        username: `iso_am_b_${STAMP}`,
+        displayName: "B",
+        passwordHash: "x",
+      })
       .returning();
     adminBCookie = `${SESSION_COOKIE}=${encodeSession({ adminId: adminB.id, issuedAt: Date.now() })}`;
 

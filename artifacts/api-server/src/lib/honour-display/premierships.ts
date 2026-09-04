@@ -6,12 +6,7 @@
  * never on a request object — so every builder is unit-testable.
  */
 import { asc, desc, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  premiershipsTable,
-  premiershipPlayersTable,
-  matchesTable,
-} from "@workspace/db";
+import { db, premiershipsTable, premiershipPlayersTable, matchesTable } from "@workspace/db";
 
 import { linkPremiershipMatch, premiershipSeasons } from "../../routes/premierships";
 import { composeSeasonGrid } from "./shared";

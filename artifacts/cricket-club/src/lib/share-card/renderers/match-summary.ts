@@ -1,11 +1,6 @@
 // The bespoke two-innings Match Summary scorecard (the built-in, non-pack
 // design). Painted onto the single "scorecard" base layer by compose.ts.
-import {
-  drawFooter,
-  drawImageContain,
-  drawSponsors,
-  loadImage,
-} from "../draw-primitives";
+import { drawFooter, drawImageContain, drawSponsors, loadImage } from "../draw-primitives";
 import { ellipsize, wrapText } from "../text";
 import { defaultHashtag, rgba, type Palette } from "../theme";
 import type {
@@ -53,18 +48,9 @@ export const renderMatchSummaryCard = async (
   // --- Sponsor strip + footer (drawn first; content stays above) -----------
   const sponsors = opts.sponsors ?? [];
   const sponsorsTop = await drawSponsors(ctx, W, H, sponsors, scale, p);
-  drawFooter(
-    ctx,
-    W,
-    H,
-    opts.clubUrl ?? "",
-    opts.hashtag ?? defaultHashtag(opts.brand),
-    scale,
-    p,
-  );
+  drawFooter(ctx, W, H, opts.clubUrl ?? "", opts.hashtag ?? defaultHashtag(opts.brand), scale, p);
 
-  const teamOf = (key: "club" | "opposition") =>
-    key === "club" ? input.club : input.opposition;
+  const teamOf = (key: "club" | "opposition") => (key === "club" ? input.club : input.opposition);
   const shortOf = (t: MatchSummaryTeam) => (t.shortName || t.name).toUpperCase();
   const teamScoreText = (key: "club" | "opposition") =>
     input.innings
@@ -73,12 +59,7 @@ export const renderMatchSummaryCard = async (
       .join(" & ");
 
   // --- Team crest: white-backed logo, else a coloured initials chip --------
-  const drawTeamCrest = async (
-    team: MatchSummaryTeam,
-    cx: number,
-    cy: number,
-    r: number,
-  ) => {
+  const drawTeamCrest = async (team: MatchSummaryTeam, cx: number, cy: number, r: number) => {
     if (team.logoUrl) {
       try {
         const img = await loadImage(team.logoUrl);
@@ -283,7 +264,12 @@ export const renderMatchSummaryCard = async (
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillStyle = team.primaryColor;
-      ctx.fillRect(x, y + Math.round(14 * scale), Math.round(6 * scale), boxH - Math.round(28 * scale));
+      ctx.fillRect(
+        x,
+        y + Math.round(14 * scale),
+        Math.round(6 * scale),
+        boxH - Math.round(28 * scale),
+      );
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillStyle = p.textMuted;
@@ -291,7 +277,11 @@ export const renderMatchSummaryCard = async (
       ctx.fillText(shortOf(team), x + Math.round(24 * scale), y + Math.round(22 * scale));
       ctx.fillStyle = p.textLight;
       ctx.font = `800 ${Math.round(40 * scale)}px ${serif}`;
-      ctx.fillText(teamScoreText(key) || "—", x + Math.round(24 * scale), y + Math.round(52 * scale));
+      ctx.fillText(
+        teamScoreText(key) || "—",
+        x + Math.round(24 * scale),
+        y + Math.round(52 * scale),
+      );
     });
     y += boxH + Math.round(28 * scale);
   }

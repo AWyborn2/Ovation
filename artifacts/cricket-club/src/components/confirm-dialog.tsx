@@ -72,9 +72,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             </AlertDialogCancel>
             <AlertDialogAction
               className={
-                options?.destructive
-                  ? cn(buttonVariants({ variant: "destructive" }))
-                  : undefined
+                options?.destructive ? cn(buttonVariants({ variant: "destructive" })) : undefined
               }
               onClick={() => settle(true)}
             >

@@ -25,9 +25,11 @@ describe("/__card-render route", () => {
     renderAt(<AppRouter />, "/__card-render");
     // The harness page renders <div data-testid="card-render-harness">…</div>
     // as soon as it mounts and installs window.__cardRenderHarness.
-    await waitFor(() =>
-      expect(screen.getByTestId("card-render-harness")).toBeTruthy(),
-    );
+    // The harness page is a lazy route chunk; on a cold transform cache the
+    // import alone can exceed waitFor's default 1s, so allow the lazy load time.
+    await waitFor(() => expect(screen.getByTestId("card-render-harness")).toBeTruthy(), {
+      timeout: 10_000,
+    });
     expect(window.__cardRenderHarness?.ready).toBe(true);
   });
 });

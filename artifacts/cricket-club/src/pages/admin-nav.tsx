@@ -37,19 +37,21 @@ import {
 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { navIcon, NAV_ICON_MAP } from "@/lib/nav-icons";
-import {
-  ListSkeleton,
-  LoadingState,
-  QueryError,
-  EmptyState,
-} from "@/components/data-states";
+import { ListSkeleton, LoadingState, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 
-const SURFACES: { surface: NavSurface; title: string; blurb: string; hasDescription: boolean; section: "senior" | "junior" | "admin" }[] = [
+const SURFACES: {
+  surface: NavSurface;
+  title: string;
+  blurb: string;
+  hasDescription: boolean;
+  section: "senior" | "junior" | "admin";
+}[] = [
   {
     surface: "senior_menu",
     title: "Senior top menu",
-    blurb: 'Links in the main (senior) navigation bar. The "Admin" link is added automatically for signed-in admins and is not listed here.',
+    blurb:
+      'Links in the main (senior) navigation bar. The "Admin" link is added automatically for signed-in admins and is not listed here.',
     hasDescription: false,
     section: "senior",
   },
@@ -63,14 +65,16 @@ const SURFACES: { surface: NavSurface; title: string; blurb: string; hasDescript
   {
     surface: "junior_quick_links",
     title: "Junior dashboard cards",
-    blurb: "The quick-link cards on the Juniors landing page. These show an icon, a title and a short description.",
+    blurb:
+      "The quick-link cards on the Juniors landing page. These show an icon, a title and a short description.",
     hasDescription: true,
     section: "junior",
   },
   {
     surface: "admin_tiles",
     title: "Admin hub tiles",
-    blurb: "The shortcut cards on this Admin hub. These show an icon, a title and a short description.",
+    blurb:
+      "The shortcut cards on this Admin hub. These show an icon, a title and a short description.",
     hasDescription: true,
     section: "admin",
   },
@@ -83,9 +87,9 @@ export default function AdminNav() {
     <div className="space-y-6">
       <div>
         <p className="text-muted-foreground mt-1">
-          Add, rename, reorder, hide or remove items across the site's menus and card grids.
-          Each item can link to an internal page or an external website (external links open in a
-          new tab). Changes take effect immediately on the public site.
+          Add, rename, reorder, hide or remove items across the site's menus and card grids. Each
+          item can link to an internal page or an external website (external links open in a new
+          tab). Changes take effect immediately on the public site.
         </p>
       </div>
 
@@ -452,11 +456,18 @@ function NavItemEditor({
       <div className="grid gap-3 md:grid-cols-2">
         <div>
           <Label className="text-xs">Label</Label>
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Sponsors" />
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="e.g. Sponsors"
+          />
         </div>
         <div>
           <Label className="text-xs">Icon</Label>
-          <Select value={iconKey || "__none__"} onValueChange={(v) => setIconKey(v === "__none__" ? "" : v)}>
+          <Select
+            value={iconKey || "__none__"}
+            onValueChange={(v) => setIconKey(v === "__none__" ? "" : v)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="None" />
             </SelectTrigger>
@@ -478,7 +489,14 @@ function NavItemEditor({
       </div>
 
       <div className="flex items-center gap-2">
-        <Switch checked={isExternal} onCheckedChange={(v) => { setIsExternal(v); setTarget(""); }} id={`ext-${existing?.id ?? "new"}`} />
+        <Switch
+          checked={isExternal}
+          onCheckedChange={(v) => {
+            setIsExternal(v);
+            setTarget("");
+          }}
+          id={`ext-${existing?.id ?? "new"}`}
+        />
         <Label htmlFor={`ext-${existing?.id ?? "new"}`} className="text-xs">
           External link (opens in a new tab)
         </Label>
@@ -487,7 +505,11 @@ function NavItemEditor({
       {isExternal ? (
         <div>
           <Label className="text-xs">URL</Label>
-          <Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://example.com" />
+          <Input
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            placeholder="https://example.com"
+          />
         </div>
       ) : (
         <div>

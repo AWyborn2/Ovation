@@ -1,28 +1,10 @@
 import { Router, type IRouter, type Request } from "express";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import {
-  db,
-  importsTable,
-  playersTable,
-  matchesTable,
-  matchPlayerLinesTable,
-} from "@workspace/db";
-import {
-  parseMatchScorecard,
-  type ParsedMatch,
-  type FinalsStage,
-} from "../lib/match-scorecard";
+import { db, importsTable, playersTable, matchesTable, matchPlayerLinesTable } from "@workspace/db";
+import { parseMatchScorecard, type ParsedMatch, type FinalsStage } from "../lib/match-scorecard";
 import { recomputeAggregates } from "../lib/recompute";
-import {
-  getCappedPlayerIds,
-  GRADE_TO_CAP_CATEGORY,
-  type CapSyncResult,
-} from "../lib/cap-sync";
-import {
-  buildNameMatcher,
-  nameKey,
-  type NameCandidate,
-} from "../lib/name-match";
+import { getCappedPlayerIds, GRADE_TO_CAP_CATEGORY, type CapSyncResult } from "../lib/cap-sync";
+import { buildNameMatcher, nameKey, type NameCandidate } from "../lib/name-match";
 import { getTenantId } from "../middlewares/tenant-context";
 import {
   snapshotCareerTotals,
@@ -194,8 +176,7 @@ router.post(
         const resolvedId =
           m.status === "matched" ? m.playerId : (m.candidates[0]?.playerId ?? null);
         const cappedSet = capCategory === "male" ? cappedMale : cappedFemale;
-        const debut =
-          capCategory != null && (resolvedId == null || !cappedSet.has(resolvedId));
+        const debut = capCategory != null && (resolvedId == null || !cappedSet.has(resolvedId));
         if (debut) debuts++;
         const grades = gradesByKey.get(key);
         previewPlayers.push({
@@ -307,10 +288,7 @@ router.post(
       res.status(400).json({ error: "Invalid id" });
       return;
     }
-    const [imp] = await db
-      .select()
-      .from(importsTable)
-      .where(eq(importsTable.id, id));
+    const [imp] = await db.select().from(importsTable).where(eq(importsTable.id, id));
     if (!imp || imp.kind !== "match-batch") {
       res.status(404).json({ error: "Batch import not found" });
       return;
@@ -341,10 +319,7 @@ router.post(
       res.status(400).json({ error: "Invalid id" });
       return;
     }
-    const [imp] = await db
-      .select()
-      .from(importsTable)
-      .where(eq(importsTable.id, id));
+    const [imp] = await db.select().from(importsTable).where(eq(importsTable.id, id));
     if (!imp || imp.kind !== "match-batch") {
       res.status(404).json({ error: "Batch import not found" });
       return;
@@ -398,9 +373,7 @@ router.post(
     // Snapshot career + per-grade game counts BEFORE writing anything so social
     // milestone detection can see crossings and debuts for the whole batch.
     const beforeMap = await snapshotCareerTotals();
-    const distinctGrades = Array.from(
-      new Set(committables.map((c) => c.grade!)),
-    );
+    const distinctGrades = Array.from(new Set(committables.map((c) => c.grade!)));
     const gradeGamesBefore = new Map<string, Map<number, number>>();
     for (const grade of distinctGrades) {
       gradeGamesBefore.set(grade, await snapshotGradeGames(grade));
@@ -438,8 +411,7 @@ router.post(
     }
     // Order: regular rounds (ascending) first, then finals after them so cap
     // numbering proceeds chronologically. A null round sorts last.
-    const roundOrder = (r: number | null): number =>
-      r == null ? Number.MAX_SAFE_INTEGER : r;
+    const roundOrder = (r: number | null): number => (r == null ? Number.MAX_SAFE_INTEGER : r);
     prepared.sort(
       (a, b) =>
         a.grade.localeCompare(b.grade) ||
@@ -521,9 +493,7 @@ router.post(
 
       // Backfill: reconcile each affected (grade, season) baseline BEFORE the
       // recompute so career totals stay invariant (peel) or additive (add).
-      negativeWarnings.push(
-        ...(await reconcileBackfillBaselines(tx, affected, reconcileMode)),
-      );
+      negativeWarnings.push(...(await reconcileBackfillBaselines(tx, affected, reconcileMode)));
 
       // Recompute downstream aggregates for every affected grade once.
       await recomputeAggregates(tx, affectedGrades);
@@ -565,8 +535,7 @@ router.post(
         opponent: pm.parsed.opponent ?? null,
         abandoned: pm.parsed.abandoned,
         lines: toMilestoneLines(pm.resolvedLines),
-        createdCaps:
-          isEarliest && cat ? createdCaps.filter((c) => c.category === cat) : [],
+        createdCaps: isEarliest && cat ? createdCaps.filter((c) => c.category === cat) : [],
         gradeGamesBefore: gradeGamesBefore.get(pm.grade) ?? new Map(),
       };
     });
@@ -604,12 +573,9 @@ router.post(
   async (req, res): Promise<void> => {
     const grade = typeof req.body?.grade === "string" ? req.body.grade : "";
     const seasonRaw = req.body?.season;
-    const season =
-      seasonRaw != null ? parseInt(String(seasonRaw), 10) : NaN;
+    const season = seasonRaw != null ? parseInt(String(seasonRaw), 10) : NaN;
     if (!grade || !Number.isInteger(season)) {
-      res
-        .status(400)
-        .json({ error: "grade (string) and season (year) are required" });
+      res.status(400).json({ error: "grade (string) and season (year) are required" });
       return;
     }
 
@@ -619,9 +585,7 @@ router.post(
       .where(and(eq(matchesTable.grade, grade), eq(matchesTable.season, season)));
 
     if (matchRows.length === 0) {
-      res
-        .status(404)
-        .json({ error: `No matches found for ${grade} ${season}` });
+      res.status(404).json({ error: `No matches found for ${grade} ${season}` });
       return;
     }
 

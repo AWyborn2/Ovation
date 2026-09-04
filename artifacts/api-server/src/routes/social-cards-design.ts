@@ -1,11 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq } from "drizzle-orm";
-import {
-  db,
-  cardTemplatesTable,
-  cardLayoutsTable,
-  cardEffectPresetsTable,
-} from "@workspace/db";
+import { db, cardTemplatesTable, cardLayoutsTable, cardEffectPresetsTable } from "@workspace/db";
 import {
   CreateCardTemplateBody,
   UpdateCardTemplateBody,
@@ -56,99 +51,127 @@ router.get("/card-templates", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-templates", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const parsed = CreateCardTemplateBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const row = await db.transaction(async (tx) => {
-    if (parsed.data.isDefault) {
-      await tx.update(cardTemplatesTable).set({ isDefault: false }).where(eq(cardTemplatesTable.tenantId, tenantId));
+router.post(
+  "/card-templates",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateCardTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
     }
-    const defaultForKinds = parsed.data.defaultForKinds ?? [];
-    if (defaultForKinds.length > 0) {
-      await clearDefaultKinds(tx, tenantId, defaultForKinds);
-    }
-    const [created] = await tx
-      .insert(cardTemplatesTable)
-      .values({
-        tenantId,
-        name: parsed.data.name,
-        cardKinds: parsed.data.cardKinds ?? [],
-        source: parsed.data.source ?? "background",
-        baseKind: parsed.data.baseKind ?? null,
-        layers: parsed.data.layers ?? [],
-        defaultForKinds,
-        backgroundImageUrl: parsed.data.backgroundImageUrl ?? null,
-        backgroundKind: parsed.data.backgroundKind ?? "image",
-        backgroundDurationMs: parsed.data.backgroundDurationMs ?? null,
-        motionPreset: parsed.data.motionPreset ?? "none",
-        bgWidth: parsed.data.bgWidth ?? 1080,
-        bgHeight: parsed.data.bgHeight ?? 1080,
-        slots: parsed.data.slots ?? [],
-        isActive: parsed.data.isActive ?? true,
-        isDefault: parsed.data.isDefault ?? false,
-        displayOrder: parsed.data.displayOrder ?? 0,
-      })
-      .returning();
-    return created;
-  });
-  res.status(201).json(row);
-});
+    const tenantId = getTenantId(req);
+    const row = await db.transaction(async (tx) => {
+      if (parsed.data.isDefault) {
+        await tx
+          .update(cardTemplatesTable)
+          .set({ isDefault: false })
+          .where(eq(cardTemplatesTable.tenantId, tenantId));
+      }
+      const defaultForKinds = parsed.data.defaultForKinds ?? [];
+      if (defaultForKinds.length > 0) {
+        await clearDefaultKinds(tx, tenantId, defaultForKinds);
+      }
+      const [created] = await tx
+        .insert(cardTemplatesTable)
+        .values({
+          tenantId,
+          name: parsed.data.name,
+          cardKinds: parsed.data.cardKinds ?? [],
+          source: parsed.data.source ?? "background",
+          baseKind: parsed.data.baseKind ?? null,
+          layers: parsed.data.layers ?? [],
+          defaultForKinds,
+          backgroundImageUrl: parsed.data.backgroundImageUrl ?? null,
+          backgroundKind: parsed.data.backgroundKind ?? "image",
+          backgroundDurationMs: parsed.data.backgroundDurationMs ?? null,
+          motionPreset: parsed.data.motionPreset ?? "none",
+          bgWidth: parsed.data.bgWidth ?? 1080,
+          bgHeight: parsed.data.bgHeight ?? 1080,
+          slots: parsed.data.slots ?? [],
+          isActive: parsed.data.isActive ?? true,
+          isDefault: parsed.data.isDefault ?? false,
+          displayOrder: parsed.data.displayOrder ?? 0,
+        })
+        .returning();
+      return created;
+    });
+    res.status(201).json(row);
+  },
+);
 
-router.patch("/card-templates/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = UpdateCardTemplateParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateCardTemplateBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const row = await db.transaction(async (tx) => {
-    if (body.data.isDefault === true) {
-      await tx.update(cardTemplatesTable).set({ isDefault: false }).where(eq(cardTemplatesTable.tenantId, tenantId));
+router.patch(
+  "/card-templates/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = UpdateCardTemplateParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
     }
-    // Per-asset default: a kind may be the default for at most one template, so
-    // claiming a kind here strips it from every OTHER template first.
-    if (body.data.defaultForKinds && body.data.defaultForKinds.length > 0) {
-      await clearDefaultKinds(tx, tenantId, body.data.defaultForKinds, params.data.id);
+    const body = UpdateCardTemplateBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
     }
-    const [updated] = await tx
-      .update(cardTemplatesTable)
-      .set(body.data)
-      .where(and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, tenantId)))
-      .returning();
-    return updated;
-  });
-  if (!row) {
-    res.status(404).json({ error: "Card template not found" });
-    return;
-  }
-  res.json(row);
-});
+    const tenantId = getTenantId(req);
+    const row = await db.transaction(async (tx) => {
+      if (body.data.isDefault === true) {
+        await tx
+          .update(cardTemplatesTable)
+          .set({ isDefault: false })
+          .where(eq(cardTemplatesTable.tenantId, tenantId));
+      }
+      // Per-asset default: a kind may be the default for at most one template, so
+      // claiming a kind here strips it from every OTHER template first.
+      if (body.data.defaultForKinds && body.data.defaultForKinds.length > 0) {
+        await clearDefaultKinds(tx, tenantId, body.data.defaultForKinds, params.data.id);
+      }
+      const [updated] = await tx
+        .update(cardTemplatesTable)
+        .set(body.data)
+        .where(
+          and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, tenantId)),
+        )
+        .returning();
+      return updated;
+    });
+    if (!row) {
+      res.status(404).json({ error: "Card template not found" });
+      return;
+    }
+    res.json(row);
+  },
+);
 
-router.delete("/card-templates/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = DeleteCardTemplateParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const result = await db
-    .delete(cardTemplatesTable)
-    .where(and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, getTenantId(req))))
-    .returning({ id: cardTemplatesTable.id });
-  if (result.length === 0) {
-    res.status(404).json({ error: "Card template not found" });
-    return;
-  }
-  res.status(204).end();
-});
+router.delete(
+  "/card-templates/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = DeleteCardTemplateParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const result = await db
+      .delete(cardTemplatesTable)
+      .where(
+        and(
+          eq(cardTemplatesTable.id, params.data.id),
+          eq(cardTemplatesTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning({ id: cardTemplatesTable.id });
+    if (result.length === 0) {
+      res.status(404).json({ error: "Card template not found" });
+      return;
+    }
+    res.status(204).end();
+  },
+);
 
 // --- Layer-based card layouts ----------------------------------------------
 // Custom layouts for BUILT-IN card kinds. Reading is public (the public card
@@ -162,51 +185,61 @@ router.get("/card-layouts", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.put("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = UpsertCardLayoutParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpsertCardLayoutBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const layers = body.data.layers as CardLayoutLayer[];
-  const tenantId = getTenantId(req);
-  const [row] = await db
-    .insert(cardLayoutsTable)
-    .values({ tenantId, cardKind: params.data.cardKind, layers, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: [cardLayoutsTable.tenantId, cardLayoutsTable.cardKind],
-      set: { layers, updatedAt: new Date() },
-    })
-    .returning();
-  res.json(row);
-});
+router.put(
+  "/card-layouts/:cardKind",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = UpsertCardLayoutParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpsertCardLayoutBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const layers = body.data.layers as CardLayoutLayer[];
+    const tenantId = getTenantId(req);
+    const [row] = await db
+      .insert(cardLayoutsTable)
+      .values({ tenantId, cardKind: params.data.cardKind, layers, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [cardLayoutsTable.tenantId, cardLayoutsTable.cardKind],
+        set: { layers, updatedAt: new Date() },
+      })
+      .returning();
+    res.json(row);
+  },
+);
 
-router.delete("/card-layouts/:cardKind", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = DeleteCardLayoutParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const result = await db
-    .delete(cardLayoutsTable)
-    .where(
-      and(
-        eq(cardLayoutsTable.cardKind, params.data.cardKind),
-        eq(cardLayoutsTable.tenantId, getTenantId(req)),
-      ),
-    )
-    .returning({ id: cardLayoutsTable.id });
-  if (result.length === 0) {
-    res.status(404).json({ error: "Card layout not found" });
-    return;
-  }
-  res.status(204).end();
-});
+router.delete(
+  "/card-layouts/:cardKind",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = DeleteCardLayoutParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const result = await db
+      .delete(cardLayoutsTable)
+      .where(
+        and(
+          eq(cardLayoutsTable.cardKind, params.data.cardKind),
+          eq(cardLayoutsTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning({ id: cardLayoutsTable.id });
+    if (result.length === 0) {
+      res.status(404).json({ error: "Card layout not found" });
+      return;
+    }
+    res.status(204).end();
+  },
+);
 
 // Reusable layer effect presets. Built-in presets ship in the client; these
 // rows are admin-saved additions. Reading is public (the editor merges them in);
@@ -220,44 +253,54 @@ router.get("/card-effect-presets", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-effect-presets", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const parsed = CreateCardEffectPresetBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db
-    .insert(cardEffectPresetsTable)
-    .values({
-      tenantId: getTenantId(req),
-      name: parsed.data.name,
-      effects: parsed.data.effects as Record<string, unknown>,
-      displayOrder: parsed.data.displayOrder ?? 0,
-    })
-    .returning();
-  res.status(201).json(row);
-});
+router.post(
+  "/card-effect-presets",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateCardEffectPresetBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [row] = await db
+      .insert(cardEffectPresetsTable)
+      .values({
+        tenantId: getTenantId(req),
+        name: parsed.data.name,
+        effects: parsed.data.effects as Record<string, unknown>,
+        displayOrder: parsed.data.displayOrder ?? 0,
+      })
+      .returning();
+    res.status(201).json(row);
+  },
+);
 
-router.delete("/card-effect-presets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = DeleteCardEffectPresetParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const result = await db
-    .delete(cardEffectPresetsTable)
-    .where(
-      and(
-        eq(cardEffectPresetsTable.id, params.data.id),
-        eq(cardEffectPresetsTable.tenantId, getTenantId(req)),
-      ),
-    )
-    .returning({ id: cardEffectPresetsTable.id });
-  if (result.length === 0) {
-    res.status(404).json({ error: "Card effect preset not found" });
-    return;
-  }
-  res.status(204).end();
-});
+router.delete(
+  "/card-effect-presets/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = DeleteCardEffectPresetParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const result = await db
+      .delete(cardEffectPresetsTable)
+      .where(
+        and(
+          eq(cardEffectPresetsTable.id, params.data.id),
+          eq(cardEffectPresetsTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning({ id: cardEffectPresetsTable.id });
+    if (result.length === 0) {
+      res.status(404).json({ error: "Card effect preset not found" });
+      return;
+    }
+    res.status(204).end();
+  },
+);
 
 export default router;

@@ -23,7 +23,6 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useBrand } from "@/lib/tenant-brand";
 
-
 const fmtDate = (d: string | null | undefined) => {
   if (!d) return null;
   const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -76,10 +75,16 @@ function RecentMatchRow({ match }: { match: MatchSummary }) {
         <Card style={{ marginBottom: 8, padding: 14 }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View style={{ flex: 1 }}>
-              <Body size={11} bold style={{ color: colors.primary, textTransform: "uppercase", letterSpacing: 1 }}>
+              <Body
+                size={11}
+                bold
+                style={{ color: colors.primary, textTransform: "uppercase", letterSpacing: 1 }}
+              >
                 {match.grade}
               </Body>
-              <Heading size="sm" style={{ marginTop: 2 }}>vs {match.opponent ?? "Unknown"}</Heading>
+              <Heading size="sm" style={{ marginTop: 2 }}>
+                vs {match.opponent ?? "Unknown"}
+              </Heading>
               {match.clubScore || match.opponentScore ? (
                 <Body size={12} style={{ marginTop: 4 }}>
                   {match.clubScore ?? "—"} vs {match.opponentScore ?? "—"}
@@ -91,7 +96,9 @@ function RecentMatchRow({ match }: { match: MatchSummary }) {
                 </Body>
               ) : null}
               {fmtDate(match.matchDate) ? (
-                <Body muted size={11} style={{ marginTop: 4 }}>{fmtDate(match.matchDate)}</Body>
+                <Body muted size={11} style={{ marginTop: 4 }}>
+                  {fmtDate(match.matchDate)}
+                </Body>
               ) : null}
             </View>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -158,8 +165,7 @@ export default function DashboardScreen() {
 
   // Top performers drive BOTH the leader rows AND the grade chips: the response
   // carries availableGrades for the resolved season (or all grades, all-time).
-  const seasonParams =
-    season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
+  const seasonParams = season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
   const { data: tp } = useGetSeniorSeasonTopPerformers({
     ...(gradeFilter ? { grade: gradeFilter } : {}),
     ...seasonParams,
@@ -194,11 +200,7 @@ export default function DashboardScreen() {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.scroll}
       refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          tintColor={colors.primary}
-        />
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
       }
     >
       <View>
@@ -206,7 +208,9 @@ export default function DashboardScreen() {
           {brand.name}
           {brand.tagline ? ` · ${brand.tagline}` : ""}
         </Body>
-        <Heading size="xl" style={{ marginTop: 4 }}>Club Totals</Heading>
+        <Heading size="xl" style={{ marginTop: 4 }}>
+          Club Totals
+        </Heading>
       </View>
 
       <View style={[styles.row, { marginTop: 16 }]}>
@@ -223,7 +227,11 @@ export default function DashboardScreen() {
         <>
           <SectionHeader
             icon="clipboard"
-            title={data.latestSeasonLabel ? `Recent Matches · ${data.latestSeasonLabel}` : "Recent Matches"}
+            title={
+              data.latestSeasonLabel
+                ? `Recent Matches · ${data.latestSeasonLabel}`
+                : "Recent Matches"
+            }
           />
           {data.recentMatches.map((m) => (
             <RecentMatchRow key={m.id} match={m} />
@@ -245,7 +253,11 @@ export default function DashboardScreen() {
         <FilterChip label="All time" active={season === "all"} onPress={() => setSeason("all")} />
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-        <FilterChip label="All grades" active={gradeFilter === ""} onPress={() => setGradeFilter("")} />
+        <FilterChip
+          label="All grades"
+          active={gradeFilter === ""}
+          onPress={() => setGradeFilter("")}
+        />
         {gradeOptions.map((g) => (
           <FilterChip
             key={g}
@@ -263,18 +275,10 @@ export default function DashboardScreen() {
       ) : (
         <>
           {topRunScorers.length > 0 ? (
-            <LeaderRow
-              label="Most Runs"
-              leader={topRunScorers[0]}
-              icon="trending-up"
-            />
+            <LeaderRow label="Most Runs" leader={topRunScorers[0]} icon="trending-up" />
           ) : null}
           {topWicketTakers.length > 0 ? (
-            <LeaderRow
-              label="Most Wickets"
-              leader={topWicketTakers[0]}
-              icon="target"
-            />
+            <LeaderRow label="Most Wickets" leader={topWicketTakers[0]} icon="target" />
           ) : null}
         </>
       )}
@@ -299,7 +303,12 @@ export default function DashboardScreen() {
                     {(g.wickets ?? 0).toLocaleString()} wickets
                   </Body>
                 </View>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
+                <Feather
+                  name="chevron-right"
+                  size={18}
+                  color={colors.mutedForeground}
+                  style={{ marginLeft: 8 }}
+                />
               </View>
             </Card>
           </TouchableOpacity>

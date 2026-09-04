@@ -4,14 +4,28 @@ import { useListPlayers, useGetPlayer, getGetPlayerQueryKey } from "@workspace/a
 import type { Stat } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 import { QueryError } from "@/components/data-states";
 
-
-function PlayerPicker({ value, onChange, label }: { value: number | null; onChange: (id: number | null) => void; label: string }) {
+function PlayerPicker({
+  value,
+  onChange,
+  label,
+}: {
+  value: number | null;
+  onChange: (id: number | null) => void;
+  label: string;
+}) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const { data } = useListPlayers({ search, page: 1, limit: 20 });
@@ -27,14 +41,25 @@ function PlayerPicker({ value, onChange, label }: { value: number | null; onChan
       <div className="flex gap-2">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" role="combobox" aria-expanded={open} className="flex-1 justify-between font-normal">
-              <span className={cn("truncate", !selected && "text-muted-foreground")}>{buttonLabel}</span>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="flex-1 justify-between font-normal"
+            >
+              <span className={cn("truncate", !selected && "text-muted-foreground")}>
+                {buttonLabel}
+              </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[320px] p-0" align="start">
             <Command shouldFilter={false}>
-              <CommandInput placeholder="Search players..." value={search} onValueChange={setSearch} />
+              <CommandInput
+                placeholder="Search players..."
+                value={search}
+                onValueChange={setSearch}
+              />
               <CommandList>
                 <CommandEmpty>No players found.</CommandEmpty>
                 <CommandGroup>
@@ -47,8 +72,12 @@ function PlayerPicker({ value, onChange, label }: { value: number | null; onChan
                         setOpen(false);
                       }}
                     >
-                      <Check className={cn("mr-2 h-4 w-4", value === p.id ? "opacity-100" : "opacity-0")} />
-                      <span className="flex-1">{p.surname}, {p.givenName}</span>
+                      <Check
+                        className={cn("mr-2 h-4 w-4", value === p.id ? "opacity-100" : "opacity-0")}
+                      />
+                      <span className="flex-1">
+                        {p.surname}, {p.givenName}
+                      </span>
                       <span className="ml-2 flex flex-wrap gap-1">
                         {sortGradesBySeniority(
                           (p.gradesPlayed || "")
@@ -104,16 +133,29 @@ function StatRow({ row }: { row: Row }) {
   const bClass = winner === "b" ? "bg-primary/15 text-primary font-bold" : "";
   return (
     <tr className="border-b last:border-0">
-      <td className={cn("p-3 text-right font-mono w-1/3", aClass)}>{formatVal(row.aValue, row.format)}</td>
+      <td className={cn("p-3 text-right font-mono w-1/3", aClass)}>
+        {formatVal(row.aValue, row.format)}
+      </td>
       <td className="p-3 text-center text-sm text-muted-foreground w-1/3">{row.label}</td>
-      <td className={cn("p-3 text-left font-mono w-1/3", bClass)}>{formatVal(row.bValue, row.format)}</td>
+      <td className={cn("p-3 text-left font-mono w-1/3", bClass)}>
+        {formatVal(row.bValue, row.format)}
+      </td>
     </tr>
   );
 }
 
 function aggregateCareer(stats: Stat[] | undefined) {
   if (!stats) return null;
-  let games = 0, innings = 0, runs = 0, wickets = 0, catches = 0, stumpings = 0, runOuts = 0, hundreds = 0, fifties = 0, fiveWickets = 0;
+  let games = 0,
+    innings = 0,
+    runs = 0,
+    wickets = 0,
+    catches = 0,
+    stumpings = 0,
+    runOuts = 0,
+    hundreds = 0,
+    fifties = 0,
+    fiveWickets = 0;
   for (const s of stats) {
     games += s.games ?? 0;
     innings += s.innings ?? 0;
@@ -126,10 +168,26 @@ function aggregateCareer(stats: Stat[] | undefined) {
     fifties += s.fifties ?? 0;
     fiveWickets += s.fiveWickets ?? 0;
   }
-  return { games, innings, runs, wickets, catches, stumpings, runOuts, hundreds, fifties, fiveWickets };
+  return {
+    games,
+    innings,
+    runs,
+    wickets,
+    catches,
+    stumpings,
+    runOuts,
+    hundreds,
+    fifties,
+    fiveWickets,
+  };
 }
 
-const STAT_FIELDS: Array<{ key: keyof Stat; label: string; higherIsBetter?: boolean; format?: (v: number) => string }> = [
+const STAT_FIELDS: Array<{
+  key: keyof Stat;
+  label: string;
+  higherIsBetter?: boolean;
+  format?: (v: number) => string;
+}> = [
   { key: "games", label: "Matches" },
   { key: "innings", label: "Innings" },
   { key: "notOuts", label: "Not Outs" },
@@ -165,8 +223,12 @@ export default function Compare() {
     }
   }, [a, b, location, search, setLocation]);
 
-  const queryA = useGetPlayer(a ?? 0, { query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) } });
-  const queryB = useGetPlayer(b ?? 0, { query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) } });
+  const queryA = useGetPlayer(a ?? 0, {
+    query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) },
+  });
+  const queryB = useGetPlayer(b ?? 0, {
+    query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) },
+  });
   const playerA = queryA.data;
   const playerB = queryB.data;
   const failed = queryA.isError ? queryA : queryB.isError ? queryB : null;
@@ -176,12 +238,20 @@ export default function Compare() {
 
   const careerRows: Row[] = useMemo(() => {
     if (!careerA && !careerB) return [];
-    const safe = (o: ReturnType<typeof aggregateCareer> | null, k: keyof NonNullable<ReturnType<typeof aggregateCareer>>) =>
-      o ? o[k] : null;
+    const safe = (
+      o: ReturnType<typeof aggregateCareer> | null,
+      k: keyof NonNullable<ReturnType<typeof aggregateCareer>>,
+    ) => (o ? o[k] : null);
     const batAvgA = careerA && (careerA.innings ?? 0) > 0 ? careerA.runs / careerA.innings : null;
     const batAvgB = careerB && (careerB.innings ?? 0) > 0 ? careerB.runs / careerB.innings : null;
-    const bowlAvgA = careerA && careerA.wickets > 0 ? (playerA?.stats.reduce((s, x) => s + (x.runsConceded ?? 0), 0) ?? 0) / careerA.wickets : null;
-    const bowlAvgB = careerB && careerB.wickets > 0 ? (playerB?.stats.reduce((s, x) => s + (x.runsConceded ?? 0), 0) ?? 0) / careerB.wickets : null;
+    const bowlAvgA =
+      careerA && careerA.wickets > 0
+        ? (playerA?.stats.reduce((s, x) => s + (x.runsConceded ?? 0), 0) ?? 0) / careerA.wickets
+        : null;
+    const bowlAvgB =
+      careerB && careerB.wickets > 0
+        ? (playerB?.stats.reduce((s, x) => s + (x.runsConceded ?? 0), 0) ?? 0) / careerB.wickets
+        : null;
     return [
       { label: "Matches", aValue: safe(careerA, "games"), bValue: safe(careerB, "games") },
       { label: "Innings", aValue: safe(careerA, "innings"), bValue: safe(careerB, "innings") },
@@ -190,10 +260,20 @@ export default function Compare() {
       { label: "100s", aValue: safe(careerA, "hundreds"), bValue: safe(careerB, "hundreds") },
       { label: "50s", aValue: safe(careerA, "fifties"), bValue: safe(careerB, "fifties") },
       { label: "Wickets", aValue: safe(careerA, "wickets"), bValue: safe(careerB, "wickets") },
-      { label: "Bowling Avg", aValue: bowlAvgA, bValue: bowlAvgB, format: (v) => v.toFixed(2), higherIsBetter: false },
+      {
+        label: "Bowling Avg",
+        aValue: bowlAvgA,
+        bValue: bowlAvgB,
+        format: (v) => v.toFixed(2),
+        higherIsBetter: false,
+      },
       { label: "5WI", aValue: safe(careerA, "fiveWickets"), bValue: safe(careerB, "fiveWickets") },
       { label: "Catches", aValue: safe(careerA, "catches"), bValue: safe(careerB, "catches") },
-      { label: "Stumpings", aValue: safe(careerA, "stumpings"), bValue: safe(careerB, "stumpings") },
+      {
+        label: "Stumpings",
+        aValue: safe(careerA, "stumpings"),
+        bValue: safe(careerB, "stumpings"),
+      },
       { label: "Run Outs", aValue: safe(careerA, "runOuts"), bValue: safe(careerB, "runOuts") },
     ];
   }, [careerA, careerB, playerA, playerB]);
@@ -214,7 +294,9 @@ export default function Compare() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-serif font-bold text-primary">Head-to-Head</h1>
-        <p className="text-muted-foreground mt-1">Pick any two players and compare their careers side-by-side.</p>
+        <p className="text-muted-foreground mt-1">
+          Pick any two players and compare their careers side-by-side.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card border rounded-lg p-4 shadow-sm">

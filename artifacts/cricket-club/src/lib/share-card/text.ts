@@ -3,7 +3,10 @@
 import type { ShareCardInput } from "./types";
 
 export const slugify = (s: string): string =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
 export const wrapText = (
   ctx: CanvasRenderingContext2D,
@@ -89,11 +92,7 @@ export const fitFontSize = (
 };
 
 // Truncate `text` to fit `maxW` at the current ctx.font, appending an ellipsis.
-export const ellipsize = (
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxW: number,
-): string => {
+export const ellipsize = (ctx: CanvasRenderingContext2D, text: string, maxW: number): string => {
   if (maxW <= 0) return "";
   if (ctx.measureText(text).width <= maxW) return text;
   let t = text;

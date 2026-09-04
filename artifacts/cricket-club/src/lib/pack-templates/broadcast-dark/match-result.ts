@@ -84,13 +84,9 @@ const storyHtml = columnRoot(
 );
 
 // Shared pieces for the two non-story layouts (header + footers are common).
-const nonStoryHeader = sharedHeader(
-  goldChip("RESULT", "shared") + headerTag("{{matchTitle}}"),
-);
+const nonStoryHeader = sharedHeader(goldChip("RESULT", "shared") + headerTag("{{matchTitle}}"));
 
-const nonStoryFooters =
-  sponsorStripShared() +
-  hashtagFooterShared();
+const nonStoryFooters = sponsorStripShared() + hashtagFooterShared();
 
 const tallMiddle =
   `<div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:20px;padding:calc(var(--k,1.4)*16px) 0">` +
@@ -116,15 +112,9 @@ const squareMiddle =
   `</div>` +
   `</div>`;
 
-const portraitHtml = sharedColumnRoot(
-  bgLayers(),
-  nonStoryHeader + tallMiddle + nonStoryFooters,
-);
+const portraitHtml = sharedColumnRoot(bgLayers(), nonStoryHeader + tallMiddle + nonStoryFooters);
 
-const squareHtml = sharedColumnRoot(
-  bgLayers(),
-  nonStoryHeader + squareMiddle + nonStoryFooters,
-);
+const squareHtml = sharedColumnRoot(bgLayers(), nonStoryHeader + squareMiddle + nonStoryFooters);
 
 export const matchResult: PackCardTemplate = {
   kind: "matchSummary",
@@ -145,7 +135,11 @@ export const matchResult: PackCardTemplate = {
     textField("opposition.name", "Opposition name", "Rockingham Hornets"),
     textField("opposition.score", "Opposition score", "9/97"),
     textField("opposition.oversLabel", "Opposition overs label", "20 OVERS"),
-    textField("opposition.performers", "Opposition top performers", "E. Smith 33 (28) · A. Beattie 2/9 (4)"),
+    textField(
+      "opposition.performers",
+      "Opposition top performers",
+      "E. Smith 33 (28) · A. Beattie 2/9 (4)",
+    ),
     logoField("opposition.logo", "Opposition logo", "Logo"),
     textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),

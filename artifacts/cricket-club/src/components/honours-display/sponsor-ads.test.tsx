@@ -37,9 +37,7 @@ describe("AdSlide", () => {
 
   it("calls onError when the video fails to load", () => {
     const onError = vi.fn();
-    const { container } = render(
-      <AdSlide ad={ad({ mediaType: "video" })} onError={onError} />,
-    );
+    const { container } = render(<AdSlide ad={ad({ mediaType: "video" })} onError={onError} />);
     const video = container.querySelector("video")!;
     fireEvent.error(video);
     expect(onError).toHaveBeenCalledTimes(1);

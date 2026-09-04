@@ -60,25 +60,24 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
     return;
   }
 
-  const [[matchCount], [playerCount], [premCount], [seasonCount], [ageCount]] =
-    await Promise.all([
-      db.select({ n: sql<number>`count(*)::int` }).from(juniorMatchesTable),
-      db
-        .select({ n: sql<number>`count(*)::int` })
-        .from(juniorParticipantsTable)
-        .where(eq(juniorParticipantsTable.isPrivate, false)),
-      db.select({ n: sql<number>`count(*)::int` }).from(juniorPremiershipsTable),
-      db
-        .select({
-          n: sql<number>`count(distinct ${juniorMatchesTable.season})::int`,
-        })
-        .from(juniorMatchesTable),
-      db
-        .select({
-          n: sql<number>`count(distinct ${juniorMatchesTable.ageGroup})::int`,
-        })
-        .from(juniorMatchesTable),
-    ]);
+  const [[matchCount], [playerCount], [premCount], [seasonCount], [ageCount]] = await Promise.all([
+    db.select({ n: sql<number>`count(*)::int` }).from(juniorMatchesTable),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(juniorParticipantsTable)
+      .where(eq(juniorParticipantsTable.isPrivate, false)),
+    db.select({ n: sql<number>`count(*)::int` }).from(juniorPremiershipsTable),
+    db
+      .select({
+        n: sql<number>`count(distinct ${juniorMatchesTable.season})::int`,
+      })
+      .from(juniorMatchesTable),
+    db
+      .select({
+        n: sql<number>`count(distinct ${juniorMatchesTable.ageGroup})::int`,
+      })
+      .from(juniorMatchesTable),
+  ]);
 
   // Latest season = the season string with the newest parsed start year.
   const [latest] = await db
@@ -250,10 +249,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
         juniorParticipantsTable,
         eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
       )
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId),
-      )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(and(eq(juniorParticipantsTable.isPrivate, false), ...matchConds)),
     db
       .select({
@@ -267,10 +263,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
         juniorParticipantsTable,
         eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
       )
-      .innerJoin(
-        juniorMatchesTable,
-        eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId),
-      )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(eq(juniorParticipantsTable.isPrivate, false), ...bowlConds)),
   ]);
 
@@ -357,14 +350,12 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
     notOuts: a.notOuts,
     runs: a.runs,
     highScore: a.highScore,
-    battingAverage:
-      a.outs > 0 ? Math.round((a.runs / a.outs) * 100) / 100 : null,
+    battingAverage: a.outs > 0 ? Math.round((a.runs / a.outs) * 100) / 100 : null,
     hundreds: a.hundreds,
     fifties: a.fifties,
     wickets: a.wickets,
     runsConceded: a.runsConceded,
-    bowlingAverage:
-      a.wickets > 0 ? Math.round((a.runsConceded / a.wickets) * 100) / 100 : null,
+    bowlingAverage: a.wickets > 0 ? Math.round((a.runsConceded / a.wickets) * 100) / 100 : null,
     bestBowling: a.hasBowled && a.bestWickets >= 0 ? `${a.bestWickets}/${a.bestRuns}` : null,
     fiveWickets: a.fiveWickets,
   }));
@@ -508,9 +499,7 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
   // Most impressive first: higher threshold, then higher tally, then name.
   milestones.sort(
     (a, b) =>
-      b.threshold - a.threshold ||
-      b.value - a.value ||
-      a.playerName.localeCompare(b.playerName),
+      b.threshold - a.threshold || b.value - a.value || a.playerName.localeCompare(b.playerName),
   );
   res.json(milestones);
 });

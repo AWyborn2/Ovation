@@ -46,12 +46,9 @@ export function JuniorSeniorLinkDialog({
   const [error, setError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<SelectedJuniorPlayer | null>(null);
 
-  const { data: links, isLoading } = useListJuniorPlayersBySenior(
-    seniorPlayerId,
-    {
-      query: { queryKey: getListJuniorPlayersBySeniorQueryKey(seniorPlayerId) },
-    },
-  );
+  const { data: links, isLoading } = useListJuniorPlayersBySenior(seniorPlayerId, {
+    query: { queryKey: getListJuniorPlayersBySeniorQueryKey(seniorPlayerId) },
+  });
   const setLink = useSetJuniorSeniorLink();
   const clearLink = useClearJuniorSeniorLink();
 
@@ -69,106 +66,101 @@ export function JuniorSeniorLinkDialog({
         <DialogHeader>
           <DialogTitle>Junior profile link</DialogTitle>
           <DialogDescription>
-            Link <strong className="text-foreground">{seniorName}</strong> to
-            their junior profile. This is a cross-reference only — junior and
-            senior stats stay separate and are never combined; both profile
-            pages simply show a link to the other career.
+            Link <strong className="text-foreground">{seniorName}</strong> to their junior profile.
+            This is a cross-reference only — junior and senior stats stay separate and are never
+            combined; both profile pages simply show a link to the other career.
           </DialogDescription>
         </DialogHeader>
 
-          {error && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+        {error && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label>Linked junior profiles</Label>
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          ) : !links?.length ? (
+            <div className="text-sm text-muted-foreground">No junior profile linked.</div>
+          ) : (
+            <div className="space-y-1">
+              {links.map((l) => (
+                <div
+                  key={l.participantId}
+                  className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                >
+                  <span>
+                    {l.displayName}
+                    {l.firstSeason && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {l.firstSeason}
+                        {l.lastSeason && l.lastSeason !== l.firstSeason ? ` – ${l.lastSeason}` : ""}
+                      </span>
+                    )}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (
+                        !(await confirm({
+                          title: "Unlink junior profile?",
+                          description: `Remove the link between ${l.displayName} and ${seniorName}? No stats are affected.`,
+                          confirmText: "Unlink",
+                          destructive: true,
+                        }))
+                      )
+                        return;
+                      setError(null);
+                      clearLink.mutate(
+                        { id: l.participantId },
+                        { onSuccess: invalidate, onError: onErr },
+                      );
+                    }}
+                  >
+                    Unlink
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
+        </div>
 
-          <div className="space-y-2">
-            <Label>Linked junior profiles</Label>
-            {isLoading ? (
-              <div className="text-sm text-muted-foreground">Loading…</div>
-            ) : !links?.length ? (
-              <div className="text-sm text-muted-foreground">
-                No junior profile linked.
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {links.map((l) => (
-                  <div
-                    key={l.participantId}
-                    className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
-                  >
-                    <span>
-                      {l.displayName}
-                      {l.firstSeason && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {l.firstSeason}
-                          {l.lastSeason && l.lastSeason !== l.firstSeason
-                            ? ` – ${l.lastSeason}`
-                            : ""}
-                        </span>
-                      )}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={async () => {
-                        if (
-                          !(await confirm({
-                            title: "Unlink junior profile?",
-                            description: `Remove the link between ${l.displayName} and ${seniorName}? No stats are affected.`,
-                            confirmText: "Unlink",
-                            destructive: true,
-                          }))
-                        )
-                          return;
-                        setError(null);
-                        clearLink.mutate(
-                          { id: l.participantId },
-                          { onSuccess: invalidate, onError: onErr },
-                        );
-                      }}
-                    >
-                      Unlink
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="space-y-1">
+          <Label>Add a junior profile</Label>
+          <JuniorPlayerTypeahead value={candidate} onChange={setCandidate} />
+        </div>
 
-          <div className="space-y-1">
-            <Label>Add a junior profile</Label>
-            <JuniorPlayerTypeahead value={candidate} onChange={setCandidate} />
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              disabled={busy || !candidate}
-              onClick={() => {
-                if (!candidate) return;
-                setError(null);
-                setLink.mutate(
-                  {
-                    id: candidate.participantId,
-                    data: { seniorPlayerId },
+        <div className="flex gap-2">
+          <Button
+            disabled={busy || !candidate}
+            onClick={() => {
+              if (!candidate) return;
+              setError(null);
+              setLink.mutate(
+                {
+                  id: candidate.participantId,
+                  data: { seniorPlayerId },
+                },
+                {
+                  onSuccess: () => {
+                    setCandidate(null);
+                    invalidate();
                   },
-                  {
-                    onSuccess: () => {
-                      setCandidate(null);
-                      invalidate();
-                    },
-                    onError: onErr,
-                  },
-                );
-              }}
-            >
-              {setLink.isPending ? "Linking…" : "Link"}
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-          </div>
+                  onError: onErr,
+                },
+              );
+            }}
+          >
+            {setLink.isPending ? "Linking…" : "Link"}
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

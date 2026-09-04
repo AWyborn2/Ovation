@@ -57,9 +57,9 @@ export default function AdminMatchDisplay() {
       <div>
         <h1 className="text-3xl font-serif font-bold">Matches page display</h1>
         <p className="text-muted-foreground mt-1">
-          Control how the public Matches page behaves by default: which grade and season
-          load first, the order grades appear in the dropdown, and the round order within a
-          season. Visitors can still change the filters themselves after the page loads.
+          Control how the public Matches page behaves by default: which grade and season load first,
+          the order grades appear in the dropdown, and the round order within a season. Visitors can
+          still change the filters themselves after the page loads.
         </p>
       </div>
 
@@ -71,9 +71,7 @@ export default function AdminMatchDisplay() {
         <SettingsCard
           settings={settingsQ.data}
           allGrades={allGrades}
-          onSaved={() =>
-            qc.invalidateQueries({ queryKey: getGetMatchDisplaySettingsQueryKey() })
-          }
+          onSaved={() => qc.invalidateQueries({ queryKey: getGetMatchDisplaySettingsQueryKey() })}
         />
       ) : (
         <QueryError onRetry={() => settingsQ.refetch()} />
@@ -120,8 +118,7 @@ function SettingsCard({
     setGradeOrder(mergeOrder(settings.gradeOrder, allGrades));
   }, [settings, allGrades]);
 
-  const move = (idx: number, dir: -1 | 1) =>
-    setGradeOrder((prev) => moveItem(prev, idx, dir));
+  const move = (idx: number, dir: -1 | 1) => setGradeOrder((prev) => moveItem(prev, idx, dir));
 
   const save = () => {
     setError(null);
@@ -169,8 +166,8 @@ function SettingsCard({
           title="Default season"
           description={
             <>
-              Which season loads first. "Latest available" always tracks the newest season as
-              new matches are imported.
+              Which season loads first. "Latest available" always tracks the newest season as new
+              matches are imported.
             </>
           }
         >

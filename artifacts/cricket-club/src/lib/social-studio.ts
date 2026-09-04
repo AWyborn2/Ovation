@@ -1,8 +1,5 @@
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
-import {
-  listPackManifests,
-  DEFAULT_PACK_ID,
-} from "@/lib/pack-templates/registry";
+import { listPackManifests, DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 
 /**

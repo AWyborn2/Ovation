@@ -25,43 +25,35 @@ import { serializeAdmin } from "../lib/serialize-principals";
 
 const router: IRouter = Router();
 
-router.post(
-  "/auth/login",
-  loginRateLimiter,
-  async (req, res): Promise<void> => {
-    const parsed = LoginBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    // Authenticate against the admins of the request's tenant (resolved from the
-    // host); a Mandurah login on Mandurah's host can't match a Halls Head admin.
-    const tenantId = getTenantId(req);
-    const admin = await getAdminByUsernameForTenant(
-      tenantId,
-      parsed.data.username,
-    );
-    if (
-      !admin ||
-      !(await verifyPassword(parsed.data.password, admin.passwordHash))
-    ) {
-      res.status(401).json({ error: "Invalid username or password" });
-      return;
-    }
-    // Checked only after credentials verify, so a suspended tenant's login
-    // attempt can never be used to distinguish a valid from an invalid
-    // username/password.
-    if (await isTenantSuspended(tenantId)) {
-      res
-        .status(403)
-        .json({ error: "This club's admin access is currently suspended." });
-      return;
-    }
-    const token = encodeSession({ adminId: admin.id, issuedAt: Date.now(), epoch: admin.sessionEpoch });
-    res.cookie(SESSION_COOKIE, token, SESSION_COOKIE_OPTS);
-    res.json(serializeAdmin(admin));
-  },
-);
+router.post("/auth/login", loginRateLimiter, async (req, res): Promise<void> => {
+  const parsed = LoginBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  // Authenticate against the admins of the request's tenant (resolved from the
+  // host); a Mandurah login on Mandurah's host can't match a Halls Head admin.
+  const tenantId = getTenantId(req);
+  const admin = await getAdminByUsernameForTenant(tenantId, parsed.data.username);
+  if (!admin || !(await verifyPassword(parsed.data.password, admin.passwordHash))) {
+    res.status(401).json({ error: "Invalid username or password" });
+    return;
+  }
+  // Checked only after credentials verify, so a suspended tenant's login
+  // attempt can never be used to distinguish a valid from an invalid
+  // username/password.
+  if (await isTenantSuspended(tenantId)) {
+    res.status(403).json({ error: "This club's admin access is currently suspended." });
+    return;
+  }
+  const token = encodeSession({
+    adminId: admin.id,
+    issuedAt: Date.now(),
+    epoch: admin.sessionEpoch,
+  });
+  res.cookie(SESSION_COOKIE, token, SESSION_COOKIE_OPTS);
+  res.json(serializeAdmin(admin));
+});
 
 router.post("/auth/logout", (_req, res): void => {
   res.clearCookie(SESSION_COOKIE, { path: "/" });
@@ -85,10 +77,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
  * redeemed on (defence-in-depth: a link for club A cannot be redeemed on club B's
  * host even though the token alone identifies the admin). Returns null otherwise.
  */
-async function liveReset(
-  req: Request,
-  token: string,
-): Promise<AdminPasswordResetRow | null> {
+async function liveReset(req: Request, token: string): Promise<AdminPasswordResetRow | null> {
   if (!token) return null;
   const [row] = await db
     .select()
@@ -107,9 +96,7 @@ async function liveReset(
 router.get("/auth/password-reset/:token", async (req, res): Promise<void> => {
   const reset = await liveReset(req, String(req.params.token ?? ""));
   if (!reset) {
-    res
-      .status(410)
-      .json({ error: "This link is invalid, expired, or already used." });
+    res.status(410).json({ error: "This link is invalid, expired, or already used." });
     return;
   }
   const [[admin], [tenant]] = await Promise.all([
@@ -117,9 +104,7 @@ router.get("/auth/password-reset/:token", async (req, res): Promise<void> => {
     db.select().from(tenantsTable).where(eq(tenantsTable.id, reset.tenantId)),
   ]);
   if (!admin || !tenant) {
-    res
-      .status(410)
-      .json({ error: "This link is invalid, expired, or already used." });
+    res.status(410).json({ error: "This link is invalid, expired, or already used." });
     return;
   }
   res.json({
@@ -130,49 +115,43 @@ router.get("/auth/password-reset/:token", async (req, res): Promise<void> => {
   });
 });
 
-router.post(
-  "/auth/password-reset/:token",
-  loginRateLimiter,
-  async (req, res): Promise<void> => {
-    const parsed = SubmitPasswordResetBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    const reset = await liveReset(req, String(req.params.token ?? ""));
-    if (!reset) {
-      res
-        .status(410)
-        .json({ error: "This link is invalid, expired, or already used." });
-      return;
-    }
-    const passwordHash = await hashPassword(parsed.data.password);
-    const now = new Date();
-    // A reset also revokes every session the old password may have minted.
-    await db
-      .update(adminsTable)
-      .set({ passwordHash, sessionEpoch: sql`${adminsTable.sessionEpoch} + 1` })
-      .where(eq(adminsTable.id, reset.adminId));
-    // Spend this token AND any siblings so the link is strictly single-use.
-    await db
-      .update(adminPasswordResetsTable)
-      .set({ usedAt: now })
-      .where(
-        and(
-          eq(adminPasswordResetsTable.adminId, reset.adminId),
-          isNull(adminPasswordResetsTable.usedAt),
-        ),
-      );
-    req.log?.info(
-      {
-        event: "admin_password_reset_redeemed",
-        tenantId: reset.tenantId,
-        adminId: reset.adminId,
-      },
-      "club admin redeemed a password-reset link",
+router.post("/auth/password-reset/:token", loginRateLimiter, async (req, res): Promise<void> => {
+  const parsed = SubmitPasswordResetBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const reset = await liveReset(req, String(req.params.token ?? ""));
+  if (!reset) {
+    res.status(410).json({ error: "This link is invalid, expired, or already used." });
+    return;
+  }
+  const passwordHash = await hashPassword(parsed.data.password);
+  const now = new Date();
+  // A reset also revokes every session the old password may have minted.
+  await db
+    .update(adminsTable)
+    .set({ passwordHash, sessionEpoch: sql`${adminsTable.sessionEpoch} + 1` })
+    .where(eq(adminsTable.id, reset.adminId));
+  // Spend this token AND any siblings so the link is strictly single-use.
+  await db
+    .update(adminPasswordResetsTable)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(adminPasswordResetsTable.adminId, reset.adminId),
+        isNull(adminPasswordResetsTable.usedAt),
+      ),
     );
-    res.sendStatus(204);
-  },
-);
+  req.log?.info(
+    {
+      event: "admin_password_reset_redeemed",
+      tenantId: reset.tenantId,
+      adminId: reset.adminId,
+    },
+    "club admin redeemed a password-reset link",
+  );
+  res.sendStatus(204);
+});
 
 export default router;

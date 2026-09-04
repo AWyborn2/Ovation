@@ -2,12 +2,7 @@ import type { Request } from "express";
 import { eq } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import { getTenantId } from "../middlewares/tenant-context";
-import {
-  planFromString,
-  entitlementsFor,
-  type Plan,
-  type Entitlements,
-} from "./entitlements";
+import { planFromString, entitlementsFor, type Plan, type Entitlements } from "./entitlements";
 import { env } from "../config";
 
 /**

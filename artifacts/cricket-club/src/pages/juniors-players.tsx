@@ -37,19 +37,110 @@ type LbCol = {
 };
 
 const LB_COLS: LbCol[] = [
-  { key: "matches", label: "Games", title: "Games played (team appearances)", group: "bat", num: (r) => r.matches, render: (r) => r.matches },
-  { key: "innings", label: "Inns", title: "Innings batted", group: "bat", num: (r) => r.innings, render: (r) => r.innings },
-  { key: "notOuts", label: "NO", title: "Not outs", group: "bat", num: (r) => r.notOuts, render: (r) => r.notOuts },
-  { key: "runs", label: "Runs", title: "Runs scored", group: "bat", num: (r) => r.runs, render: (r) => <span className="font-bold">{r.runs}</span> },
-  { key: "highScore", label: "HS", title: "Highest score", group: "bat", num: (r) => r.highScore ?? null, render: (r) => r.highScore ?? "—" },
-  { key: "battingAverage", label: "Avg", title: "Batting average", group: "bat", num: (r) => r.battingAverage ?? null, render: (r) => fmtNum(r.battingAverage, 2) },
-  { key: "hundreds", label: "100s", title: "Hundreds", group: "bat", num: (r) => r.hundreds, render: (r) => r.hundreds },
-  { key: "fifties", label: "50s", title: "Fifties", group: "bat", num: (r) => r.fifties, render: (r) => r.fifties },
-  { key: "wickets", label: "Wkts", title: "Wickets", group: "bowl", num: (r) => r.wickets, render: (r) => <span className="font-bold">{r.wickets}</span> },
-  { key: "runsConceded", label: "Runs", title: "Runs conceded", group: "bowl", num: (r) => r.runsConceded, render: (r) => r.runsConceded },
-  { key: "bowlingAverage", label: "Avg", title: "Bowling average", group: "bowl", num: (r) => r.bowlingAverage ?? null, render: (r) => fmtNum(r.bowlingAverage, 2) },
-  { key: "bestBowling", label: "BB", title: "Best bowling", group: "bowl", num: (r) => r.bestBowling ? parseInt(r.bestBowling.split("/")[0] ?? "0", 10) : null, render: (r) => r.bestBowling ?? "—" },
-  { key: "fiveWickets", label: "5WI", title: "Five-wicket hauls", group: "bowl", num: (r) => r.fiveWickets, render: (r) => r.fiveWickets },
+  {
+    key: "matches",
+    label: "Games",
+    title: "Games played (team appearances)",
+    group: "bat",
+    num: (r) => r.matches,
+    render: (r) => r.matches,
+  },
+  {
+    key: "innings",
+    label: "Inns",
+    title: "Innings batted",
+    group: "bat",
+    num: (r) => r.innings,
+    render: (r) => r.innings,
+  },
+  {
+    key: "notOuts",
+    label: "NO",
+    title: "Not outs",
+    group: "bat",
+    num: (r) => r.notOuts,
+    render: (r) => r.notOuts,
+  },
+  {
+    key: "runs",
+    label: "Runs",
+    title: "Runs scored",
+    group: "bat",
+    num: (r) => r.runs,
+    render: (r) => <span className="font-bold">{r.runs}</span>,
+  },
+  {
+    key: "highScore",
+    label: "HS",
+    title: "Highest score",
+    group: "bat",
+    num: (r) => r.highScore ?? null,
+    render: (r) => r.highScore ?? "—",
+  },
+  {
+    key: "battingAverage",
+    label: "Avg",
+    title: "Batting average",
+    group: "bat",
+    num: (r) => r.battingAverage ?? null,
+    render: (r) => fmtNum(r.battingAverage, 2),
+  },
+  {
+    key: "hundreds",
+    label: "100s",
+    title: "Hundreds",
+    group: "bat",
+    num: (r) => r.hundreds,
+    render: (r) => r.hundreds,
+  },
+  {
+    key: "fifties",
+    label: "50s",
+    title: "Fifties",
+    group: "bat",
+    num: (r) => r.fifties,
+    render: (r) => r.fifties,
+  },
+  {
+    key: "wickets",
+    label: "Wkts",
+    title: "Wickets",
+    group: "bowl",
+    num: (r) => r.wickets,
+    render: (r) => <span className="font-bold">{r.wickets}</span>,
+  },
+  {
+    key: "runsConceded",
+    label: "Runs",
+    title: "Runs conceded",
+    group: "bowl",
+    num: (r) => r.runsConceded,
+    render: (r) => r.runsConceded,
+  },
+  {
+    key: "bowlingAverage",
+    label: "Avg",
+    title: "Bowling average",
+    group: "bowl",
+    num: (r) => r.bowlingAverage ?? null,
+    render: (r) => fmtNum(r.bowlingAverage, 2),
+  },
+  {
+    key: "bestBowling",
+    label: "BB",
+    title: "Best bowling",
+    group: "bowl",
+    num: (r) => (r.bestBowling ? parseInt(r.bestBowling.split("/")[0] ?? "0", 10) : null),
+    render: (r) => r.bestBowling ?? "—",
+  },
+  {
+    key: "fiveWickets",
+    label: "5WI",
+    title: "Five-wicket hauls",
+    group: "bowl",
+    num: (r) => r.fiveWickets,
+    render: (r) => r.fiveWickets,
+  },
 ];
 
 export default function JuniorsPlayers() {
@@ -73,25 +164,36 @@ export default function JuniorsPlayers() {
   const listSeason = inDirectory ? seasonArg : undefined;
   const listAge = inDirectory ? ageArg : undefined;
 
-  const { data: players, isLoading: playersLoading, isError: playersError, refetch: refetchPlayers } = useListJuniorPlayers(
+  const {
+    data: players,
+    isLoading: playersLoading,
+    isError: playersError,
+    refetch: refetchPlayers,
+  } = useListJuniorPlayers(
     { search: listSearch, season: listSeason, ageGroup: listAge },
     {
       query: {
         enabled: inDirectory || inGames,
-        queryKey: getListJuniorPlayersQueryKey({ search: listSearch, season: listSeason, ageGroup: listAge }),
+        queryKey: getListJuniorPlayersQueryKey({
+          search: listSearch,
+          season: listSeason,
+          ageGroup: listAge,
+        }),
       },
     },
   );
 
   const gamesRanked = useMemo(
-    () =>
-      [...(players ?? [])]
-        .sort((a, b) => (b.matches ?? 0) - (a.matches ?? 0))
-        .slice(0, 50),
+    () => [...(players ?? [])].sort((a, b) => (b.matches ?? 0) - (a.matches ?? 0)).slice(0, 50),
     [players],
   );
 
-  const { data: leaderboards, isLoading: lbLoading, isError: lbError, refetch: refetchLb } = useGetJuniorLeaderboards({
+  const {
+    data: leaderboards,
+    isLoading: lbLoading,
+    isError: lbError,
+    refetch: refetchLb,
+  } = useGetJuniorLeaderboards({
     query: {
       enabled: tab !== "directory" && tab !== "games" && tab !== "leaderboard",
       queryKey: getGetJuniorLeaderboardsQueryKey(),
@@ -102,7 +204,12 @@ export default function JuniorsPlayers() {
   // and name search happen client-side over that result set.
   const inLeaderboard = tab === "leaderboard";
   const richParams = { season: seasonArg, ageGroup: ageArg };
-  const { data: richRows, isLoading: richLoading, isError: richError, refetch: refetchRich } = useListJuniorLeaderboard(richParams, {
+  const {
+    data: richRows,
+    isLoading: richLoading,
+    isError: richError,
+    refetch: refetchRich,
+  } = useListJuniorLeaderboard(richParams, {
     query: { enabled: inLeaderboard, queryKey: getListJuniorLeaderboardQueryKey(richParams) },
   });
 
@@ -145,7 +252,9 @@ export default function JuniorsPlayers() {
           Juniors
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary">Junior Players & Leaders</h1>
-        <p className="text-muted-foreground mt-1">Junior runs, wickets and games — names shown as recorded.</p>
+        <p className="text-muted-foreground mt-1">
+          Junior runs, wickets and games — names shown as recorded.
+        </p>
       </div>
 
       {/* Tabs */}
@@ -170,7 +279,9 @@ export default function JuniorsPlayers() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Search</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                Search
+              </label>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -180,7 +291,9 @@ export default function JuniorsPlayers() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Age Group</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                Age Group
+              </label>
               <select
                 value={ageGroup}
                 onChange={(e) => setAgeGroup(e.target.value)}
@@ -189,12 +302,16 @@ export default function JuniorsPlayers() {
               >
                 <option value="">All age groups</option>
                 {(filters?.ageGroups ?? []).map((a) => (
-                  <option key={a} value={a}>{a}</option>
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                Season
+              </label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
@@ -203,7 +320,9 @@ export default function JuniorsPlayers() {
               >
                 <option value="">All seasons</option>
                 {(filters?.seasons ?? []).map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -214,7 +333,10 @@ export default function JuniorsPlayers() {
           ) : playersLoading ? (
             <TableSkeleton />
           ) : !players || players.length === 0 ? (
-            <EmptyState title="No junior players found" message="No junior players match these filters." />
+            <EmptyState
+              title="No junior players found"
+              message="No junior players match these filters."
+            />
           ) : (
             <div className="overflow-x-auto bg-card border border-border rounded-md">
               <table className="w-full text-sm">
@@ -229,16 +351,21 @@ export default function JuniorsPlayers() {
                 </thead>
                 <tbody>
                   {players.map((p) => (
-                    <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-primary/5">
+                    <tr
+                      key={p.participantId}
+                      className="border-b border-border/60 last:border-0 hover:bg-primary/5"
+                    >
                       <td className="px-3 py-2">
                         <Link href={`/juniors/players/${p.participantId}`}>
-                          <span className="font-medium text-primary hover:text-primary cursor-pointer">{p.displayName}</span>
+                          <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                            {p.displayName}
+                          </span>
                         </Link>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground text-xs">
                         {p.firstSeason && p.lastSeason && p.firstSeason !== p.lastSeason
                           ? `${p.firstSeason} – ${p.lastSeason}`
-                          : p.firstSeason ?? "—"}
+                          : (p.firstSeason ?? "—")}
                       </td>
                       <td className="px-3 py-2 text-right font-mono">{p.matches ?? 0}</td>
                       <td className="px-3 py-2 text-right font-mono">{p.runs ?? 0}</td>
@@ -254,7 +381,9 @@ export default function JuniorsPlayers() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Search</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">
+                Search
+              </label>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -264,7 +393,9 @@ export default function JuniorsPlayers() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Age Group</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">
+                Age Group
+              </label>
               <select
                 value={ageGroup}
                 onChange={(e) => setAgeGroup(e.target.value)}
@@ -273,12 +404,16 @@ export default function JuniorsPlayers() {
               >
                 <option value="">All age groups</option>
                 {(filters?.ageGroups ?? []).map((a) => (
-                  <option key={a} value={a}>{a}</option>
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">Season</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">
+                Season
+              </label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
@@ -287,7 +422,9 @@ export default function JuniorsPlayers() {
               >
                 <option value="">All seasons</option>
                 {(filters?.seasons ?? []).map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -298,7 +435,10 @@ export default function JuniorsPlayers() {
           ) : richLoading ? (
             <TableSkeleton />
           ) : sortedRich.length === 0 ? (
-            <EmptyState title="No leaderboard data" message="No junior leaderboard data for this filter." />
+            <EmptyState
+              title="No leaderboard data"
+              message="No junior leaderboard data for this filter."
+            />
           ) : (
             <div className="overflow-x-auto bg-card border border-border rounded-md">
               <table className="w-full text-sm whitespace-nowrap">
@@ -306,10 +446,16 @@ export default function JuniorsPlayers() {
                   <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="px-2 py-1 border-b border-border" />
                     <th className="px-2 py-1 border-b border-border" />
-                    <th className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 border-x border-x-border text-[#bc8c6b]" colSpan={LB_COLS.filter((c) => c.group === "bat").length}>
+                    <th
+                      className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 border-x border-x-border text-[#bc8c6b]"
+                      colSpan={LB_COLS.filter((c) => c.group === "bat").length}
+                    >
                       Batting
                     </th>
-                    <th className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 text-[#bc8c6b]" colSpan={LB_COLS.filter((c) => c.group === "bowl").length}>
+                    <th
+                      className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 text-[#bc8c6b]"
+                      colSpan={LB_COLS.filter((c) => c.group === "bowl").length}
+                    >
                       Bowling
                     </th>
                   </tr>
@@ -338,11 +484,16 @@ export default function JuniorsPlayers() {
                 </thead>
                 <tbody>
                   {sortedRich.map((r, i) => (
-                    <tr key={r.participantId} className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5">
+                    <tr
+                      key={r.participantId}
+                      className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5"
+                    >
                       <td className="px-2 py-2 text-muted-foreground font-mono">{i + 1}</td>
                       <td className="px-3 py-2">
                         <Link href={`/juniors/players/${r.participantId}`}>
-                          <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">{r.displayName}</span>
+                          <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">
+                            {r.displayName}
+                          </span>
                         </Link>
                       </td>
                       {LB_COLS.map((c, ci) => {
@@ -371,7 +522,10 @@ export default function JuniorsPlayers() {
         ) : playersLoading ? (
           <TableSkeleton />
         ) : gamesRanked.length === 0 ? (
-          <EmptyState title="No leaderboard data" message="No junior games data is available yet." />
+          <EmptyState
+            title="No leaderboard data"
+            message="No junior games data is available yet."
+          />
         ) : (
           <div className="overflow-x-auto bg-card border border-border rounded-md">
             <table className="w-full text-sm">
@@ -386,11 +540,16 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {gamesRanked.map((p, i) => (
-                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-primary/5">
+                  <tr
+                    key={p.participantId}
+                    className="border-b border-border/60 last:border-0 hover:bg-primary/5"
+                  >
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                          {p.displayName}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.matches ?? 0}</td>
@@ -407,7 +566,10 @@ export default function JuniorsPlayers() {
       ) : lbLoading ? (
         <TableSkeleton />
       ) : !leaderboards ? (
-        <EmptyState title="No leaderboard data" message="No junior leaderboard data is available yet." />
+        <EmptyState
+          title="No leaderboard data"
+          message="No junior leaderboard data is available yet."
+        />
       ) : (
         <div className="overflow-x-auto bg-card border border-border rounded-md">
           {tab === "runs" && (
@@ -424,11 +586,16 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.mostRuns.map((p, i) => (
-                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-primary/5">
+                  <tr
+                    key={p.participantId}
+                    className="border-b border-border/60 last:border-0 hover:bg-primary/5"
+                  >
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                          {p.displayName}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.runs}</td>
@@ -455,16 +622,23 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.mostWickets.map((p, i) => (
-                  <tr key={p.participantId} className="border-b border-border/60 last:border-0 hover:bg-primary/5">
+                  <tr
+                    key={p.participantId}
+                    className="border-b border-border/60 last:border-0 hover:bg-primary/5"
+                  >
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                          {p.displayName}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">{p.wickets}</td>
                     <td className="px-3 py-2 text-right font-mono">{p.matches}</td>
-                    <td className="px-3 py-2 text-right font-mono">{p.bestWickets != null ? p.bestWickets : "—"}</td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {p.bestWickets != null ? p.bestWickets : "—"}
+                    </td>
                     <td className="px-3 py-2 text-right font-mono">{fmtNum(p.economy, 2)}</td>
                   </tr>
                 ))}
@@ -485,19 +659,29 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.highestScores.map((p, i) => (
-                  <tr key={`${p.participantId}-${p.matchId}-${i}`} className="border-b border-border/60 last:border-0 hover:bg-primary/5">
+                  <tr
+                    key={`${p.participantId}-${p.matchId}-${i}`}
+                    className="border-b border-border/60 last:border-0 hover:bg-primary/5"
+                  >
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                          {p.displayName}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold">
-                      {p.runs}{p.balls != null ? <span className="text-xs text-muted-foreground"> ({p.balls})</span> : null}
+                      {p.runs}
+                      {p.balls != null ? (
+                        <span className="text-xs text-muted-foreground"> ({p.balls})</span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/matches/${p.matchId}`}>
-                        <span className="hover:text-primary cursor-pointer">{p.opponentName ?? "—"}</span>
+                        <span className="hover:text-primary cursor-pointer">
+                          {p.opponentName ?? "—"}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">
@@ -522,17 +706,26 @@ export default function JuniorsPlayers() {
               </thead>
               <tbody>
                 {leaderboards.bestBowling.map((p, i) => (
-                  <tr key={`${p.participantId}-${p.matchId}-${i}`} className="border-b border-border/60 last:border-0 hover:bg-primary/5">
+                  <tr
+                    key={`${p.participantId}-${p.matchId}-${i}`}
+                    className="border-b border-border/60 last:border-0 hover:bg-primary/5"
+                  >
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">{p.displayName}</span>
+                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                          {p.displayName}
+                        </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold">{p.wickets}/{p.runs}</td>
+                    <td className="px-3 py-2 text-right font-mono font-bold">
+                      {p.wickets}/{p.runs}
+                    </td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/matches/${p.matchId}`}>
-                        <span className="hover:text-primary cursor-pointer">{p.opponentName ?? "—"}</span>
+                        <span className="hover:text-primary cursor-pointer">
+                          {p.opponentName ?? "—"}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">

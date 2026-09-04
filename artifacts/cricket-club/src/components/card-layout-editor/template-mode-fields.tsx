@@ -40,8 +40,7 @@ export function TemplateModeFields({
           }}
         />
         <p className="text-[10px] text-muted-foreground">
-          Card types this template can be applied to. Empty = available for
-          all types.
+          Card types this template can be applied to. Empty = available for all types.
         </p>
       </div>
       {tplKinds.length > 0 && (
@@ -50,16 +49,13 @@ export function TemplateModeFields({
           <div className="flex flex-wrap gap-1.5">
             {tplKinds.map((k) => {
               const active = tplDefaults.includes(k);
-              const label =
-                CARD_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k;
+              const label = CARD_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k;
               return (
                 <button
                   key={k}
                   type="button"
                   onClick={() =>
-                    setTplDefaults((d) =>
-                      active ? d.filter((x) => x !== k) : [...d, k],
-                    )
+                    setTplDefaults((d) => (active ? d.filter((x) => x !== k) : [...d, k]))
                   }
                   className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
                     active
@@ -73,8 +69,8 @@ export function TemplateModeFields({
             })}
           </div>
           <p className="text-[10px] text-muted-foreground">
-            A default template is applied automatically to that card type.
-            Only one default per type — setting this one replaces any other.
+            A default template is applied automatically to that card type. Only one default per type
+            — setting this one replaces any other.
           </p>
         </div>
       )}

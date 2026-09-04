@@ -31,7 +31,10 @@ import {
 } from "@workspace/db/central";
 
 const arg = (n: string): string | undefined =>
-  process.argv.slice(2).find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+  process.argv
+    .slice(2)
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.slice(n.length + 3);
 
 interface PidAgg {
   participantId: string;
@@ -56,10 +59,7 @@ async function main(): Promise<void> {
     .select({ matchId: centralMatchesTable.matchId })
     .from(centralMatchesTable)
     .where(
-      or(
-        eq(centralMatchesTable.homeClubId, clubId),
-        eq(centralMatchesTable.awayClubId, clubId),
-      ),
+      or(eq(centralMatchesTable.homeClubId, clubId), eq(centralMatchesTable.awayClubId, clubId)),
     );
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) {
@@ -91,15 +91,13 @@ async function main(): Promise<void> {
   const byPid = new Map<string, PidAgg>();
   for (const l of lines) {
     if (!l.participantId) continue;
-    const a =
-      byPid.get(l.participantId) ??
-      {
-        participantId: l.participantId,
-        innings: 0,
-        matches: new Set<number>(),
-        highScore: 0,
-        displayName: null,
-      };
+    const a = byPid.get(l.participantId) ?? {
+      participantId: l.participantId,
+      innings: 0,
+      matches: new Set<number>(),
+      highScore: 0,
+      displayName: null,
+    };
     a.innings += 1;
     if (l.matchId !== null) a.matches.add(l.matchId);
     if ((l.runs ?? 0) > a.highScore) a.highScore = l.runs ?? 0;

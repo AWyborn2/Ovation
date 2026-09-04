@@ -17,12 +17,7 @@ import { ShareCardModal } from "@/components/share-card-modal";
 import { juniorMatchToSummaryInput } from "@/lib/junior-match-summary";
 import { useBrand } from "@/lib/brand-context";
 import type { ShareCardInput } from "@/lib/share-card";
-import {
-  LoadingState,
-  CardGridSkeleton,
-  QueryError,
-  EmptyState,
-} from "@/components/data-states";
+import { LoadingState, CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -40,9 +35,9 @@ export default function AdminJuniorSocial() {
     <div className="space-y-6">
       <div>
         <p className="text-muted-foreground mt-1">
-          Generate brown-branded junior milestone and match-summary cards for
-          Instagram, Facebook, TikTok and X. Private junior players are never
-          shown. Junior stats stay completely separate from the senior side.
+          Generate brown-branded junior milestone and match-summary cards for Instagram, Facebook,
+          TikTok and X. Private junior players are never shown. Junior stats stay completely
+          separate from the senior side.
         </p>
       </div>
 
@@ -98,9 +93,7 @@ function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
   const filtered = useMemo(
     () =>
       matches.filter(
-        (m) =>
-          (!season || m.season === season) &&
-          (!ageGroup || m.ageGroup === ageGroup),
+        (m) => (!season || m.season === season) && (!ageGroup || m.ageGroup === ageGroup),
       ),
     [matches, season, ageGroup],
   );
@@ -170,13 +163,9 @@ function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
               className={selectClass}
               value={matchId ?? ""}
               disabled={filtered.length === 0}
-              onChange={(e) =>
-                setMatchId(e.target.value ? Number(e.target.value) : null)
-              }
+              onChange={(e) => setMatchId(e.target.value ? Number(e.target.value) : null)}
             >
-              <option value="">
-                {filtered.length === 0 ? "No matches" : "Select a match…"}
-              </option>
+              <option value="">{filtered.length === 0 ? "No matches" : "Select a match…"}</option>
               {filtered.map((m) => (
                 <option key={m.id} value={m.id}>
                   {matchLabel(m)}
@@ -193,10 +182,7 @@ function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
         ) : null}
 
         <div className="flex justify-end">
-          <Button
-            onClick={build}
-            disabled={matchId == null || detailQ.isLoading || !detailQ.data}
-          >
+          <Button onClick={build} disabled={matchId == null || detailQ.isLoading || !detailQ.data}>
             {detailQ.isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -241,9 +227,7 @@ function JuniorMilestones({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return all.filter(
-      (m) =>
-        (!stat || m.statKey === stat) &&
-        (!q || m.playerName.toLowerCase().includes(q)),
+      (m) => (!stat || m.statKey === stat) && (!q || m.playerName.toLowerCase().includes(q)),
     );
   }, [all, stat, search]);
 
@@ -256,11 +240,7 @@ function JuniorMilestones({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Stat</Label>
-            <select
-              className={selectClass}
-              value={stat}
-              onChange={(e) => setStat(e.target.value)}
-            >
+            <select className={selectClass} value={stat} onChange={(e) => setStat(e.target.value)}>
               {STAT_FILTERS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
@@ -283,10 +263,7 @@ function JuniorMilestones({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
         ) : milestonesQ.isLoading ? (
           <CardGridSkeleton />
         ) : filtered.length === 0 ? (
-          <EmptyState
-            title="No milestones found"
-            message="No milestones match your filters."
-          />
+          <EmptyState title="No milestones found" message="No milestones match your filters." />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {filtered.map((m) => (
@@ -299,9 +276,7 @@ function JuniorMilestones({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
                   <Trophy className="h-4 w-4 text-primary shrink-0" />
                   <span className="font-medium truncate">{m.playerName}</span>
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {m.tierLabel}
-                </div>
+                <div className="text-sm text-muted-foreground mt-1">{m.tierLabel}</div>
                 <div className="text-xs text-muted-foreground">
                   {m.value} {m.statLabel.toLowerCase()}
                 </div>

@@ -27,8 +27,7 @@ describe("player curation: tenant-scoped, admin-only", () => {
   let adminCookie: string;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-curation";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-curation";
 
     const [tenant2] = await db
       .insert(tenantsTable)
@@ -102,9 +101,9 @@ describe("player curation: tenant-scoped, admin-only", () => {
       .expect((r) => {
         // Either 200 with no leak, or 401 if the tenant-1 mismatch is rejected.
         if (r.status === 200) {
-          expect(
-            r.body.some((row: { participantId: string }) => row.participantId === GUID),
-          ).toBe(false);
+          expect(r.body.some((row: { participantId: string }) => row.participantId === GUID)).toBe(
+            false,
+          );
         }
       });
     expect([200, 401]).toContain(asT1.status);

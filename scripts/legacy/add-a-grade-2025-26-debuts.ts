@@ -129,9 +129,7 @@ async function main() {
         continue;
       }
 
-      const name =
-        `${d.given_name ?? ""} ${d.surname ?? ""}`.trim() ||
-        `Player #${d.player_id}`;
+      const name = `${d.given_name ?? ""} ${d.surname ?? ""}`.trim() || `Player #${d.player_id}`;
       await tx.execute(sql`
         INSERT INTO cap_register
           (cap_number, category, name, in_stats, games_a_grade, auto_created, player_id)

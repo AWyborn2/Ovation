@@ -9,11 +9,7 @@ import {
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, type CentralClubMatchRow } from "./club-matches";
-import {
-  appGradeFromCentral,
-  classifyCentralGrade,
-  parseSeasonStartYear,
-} from "./grades";
+import { appGradeFromCentral, classifyCentralGrade, parseSeasonStartYear } from "./grades";
 import { centralPlayerCareers } from "./players";
 import { battingInningsKindSql } from "./scoring";
 import { inList } from "./where";
@@ -116,9 +112,7 @@ async function centralClubTotalsImpl(
     return { players: 0, games: 0, runs: 0, wickets: 0, grades: 0 };
   }
   const grades = new Set(
-    matchRows
-      .map((m) => appGradeFromCentral(m.grade))
-      .filter((g): g is string => Boolean(g)),
+    matchRows.map((m) => appGradeFromCentral(m.grade)).filter((g): g is string => Boolean(g)),
   ).size;
 
   // Roster counts, batting sum and bowling sum are independent given matchIds —
@@ -225,10 +219,7 @@ export async function centralLadder(
   );
 }
 
-async function centralLadderImpl(
-  clubId: number,
-  grade: string,
-): Promise<CentralLadderCardRow[]> {
+async function centralLadderImpl(clubId: number, grade: string): Promise<CentralLadderCardRow[]> {
   const rows = await centralDb
     .select({
       grade: centralLadderTable.grade,
@@ -351,7 +342,12 @@ async function centralGradeSummariesImpl(
         runs: sql<number>`coalesce(sum(coalesce(${centralMatchBattingTable.runs}, 0)) filter (where ${battingInningsKindSql} <> 'dnb'), 0)::int`,
       })
       .from(centralMatchBattingTable)
-      .where(and(eq(centralMatchBattingTable.clubId, clubId), inList(centralMatchBattingTable.matchId, matchIds)))
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inList(centralMatchBattingTable.matchId, matchIds),
+        ),
+      )
       .groupBy(centralMatchBattingTable.participantId, centralMatchBattingTable.matchId),
     centralDb
       .select({
@@ -359,7 +355,12 @@ async function centralGradeSummariesImpl(
         wickets: sql<number>`coalesce(sum(coalesce(${centralMatchBowlingTable.wickets}, 0)), 0)::int`,
       })
       .from(centralMatchBowlingTable)
-      .where(and(eq(centralMatchBowlingTable.clubId, clubId), inList(centralMatchBowlingTable.matchId, matchIds)))
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inList(centralMatchBowlingTable.matchId, matchIds),
+        ),
+      )
       .groupBy(centralMatchBowlingTable.matchId),
     centralDb
       .select({
@@ -367,7 +368,12 @@ async function centralGradeSummariesImpl(
         matchId: centralMatchRostersTable.matchId,
       })
       .from(centralMatchRostersTable)
-      .where(and(eq(centralMatchRostersTable.clubId, clubId), inList(centralMatchRostersTable.matchId, matchIds))),
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inList(centralMatchRostersTable.matchId, matchIds),
+        ),
+      ),
     centralDb
       .select({
         matchId: centralFieldingTable.matchId,
@@ -375,7 +381,12 @@ async function centralGradeSummariesImpl(
         n: sql<number>`count(*)::int`,
       })
       .from(centralFieldingTable)
-      .where(and(eq(centralFieldingTable.clubId, clubId), inList(centralFieldingTable.matchId, matchIds)))
+      .where(
+        and(
+          eq(centralFieldingTable.clubId, clubId),
+          inList(centralFieldingTable.matchId, matchIds),
+        ),
+      )
       .groupBy(centralFieldingTable.matchId, centralFieldingTable.kind),
   ]);
 
@@ -393,7 +404,16 @@ async function centralGradeSummariesImpl(
   const grp = (grade: string): G => {
     let a = byGrade.get(grade);
     if (!a) {
-      a = { players: new Set(), games: new Set(), innings: 0, runs: 0, wickets: 0, catches: 0, stumpings: 0, runOuts: 0 };
+      a = {
+        players: new Set(),
+        games: new Set(),
+        innings: 0,
+        runs: 0,
+        wickets: 0,
+        catches: 0,
+        stumpings: 0,
+        runOuts: 0,
+      };
       byGrade.set(grade, a);
     }
     return a;
@@ -482,9 +502,17 @@ async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
     centralPlayerCareers(clubId, matchRows),
     matchIds.length
       ? centralDb
-          .select({ participantId: centralFieldingTable.participantId, kind: centralFieldingTable.kind })
+          .select({
+            participantId: centralFieldingTable.participantId,
+            kind: centralFieldingTable.kind,
+          })
           .from(centralFieldingTable)
-          .where(and(eq(centralFieldingTable.clubId, clubId), inList(centralFieldingTable.matchId, matchIds)))
+          .where(
+            and(
+              eq(centralFieldingTable.clubId, clubId),
+              inList(centralFieldingTable.matchId, matchIds),
+            ),
+          )
       : Promise.resolve([]),
   ]);
   const catchesByPid = new Map<string, number>();
@@ -510,7 +538,13 @@ async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
       if (v <= 0) continue;
       if (!best || v > best.value) best = { participantId: pid, value: v };
     }
-    return best ? { participantId: best.participantId, displayName: nameById.get(best.participantId) ?? null, value: best.value } : null;
+    return best
+      ? {
+          participantId: best.participantId,
+          displayName: nameById.get(best.participantId) ?? null,
+          value: best.value,
+        }
+      : null;
   };
 
   const runsByPid = new Map(careers.map((c) => [c.participantId, c.runs]));

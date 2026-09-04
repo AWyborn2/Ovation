@@ -47,10 +47,18 @@ function shieldPath(size: number, scale = 1): string {
  * crest derived from the team's colour scheme (so opposition clubs without a
  * stored logo still get a branded mark).
  */
-export function TeamLogo({ logoUrl, teamName, primaryColor, secondaryColor, size = 56 }: TeamLogoProps) {
+export function TeamLogo({
+  logoUrl,
+  teamName,
+  primaryColor,
+  secondaryColor,
+  size = 56,
+}: TeamLogoProps) {
   if (logoUrl) {
     return (
-      <img loading="lazy" decoding="async"
+      <img
+        loading="lazy"
+        decoding="async"
         src={logoUrl}
         alt={`${teamName} logo`}
         style={{ width: size, height: size, objectFit: "contain", display: "block" }}
@@ -70,8 +78,19 @@ export function TeamLogo({ logoUrl, teamName, primaryColor, secondaryColor, size
       xmlns="http://www.w3.org/2000/svg"
       aria-label={`${teamName} crest`}
     >
-      <path d={shieldPath(size)} fill={primaryColor} stroke={secondaryColor} strokeWidth={strokeW} />
-      <path d={shieldPath(size, 0.82)} fill="none" stroke={secondaryColor} strokeWidth={strokeW * 0.6} opacity={0.5} />
+      <path
+        d={shieldPath(size)}
+        fill={primaryColor}
+        stroke={secondaryColor}
+        strokeWidth={strokeW}
+      />
+      <path
+        d={shieldPath(size, 0.82)}
+        fill="none"
+        stroke={secondaryColor}
+        strokeWidth={strokeW * 0.6}
+        opacity={0.5}
+      />
       <text
         x={r}
         y={r * 1.15}

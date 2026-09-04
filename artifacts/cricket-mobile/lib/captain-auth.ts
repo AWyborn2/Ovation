@@ -1,7 +1,4 @@
-import {
-  useGetCurrentCaptain,
-  getGetCurrentCaptainQueryKey,
-} from "@workspace/api-client-react";
+import { useGetCurrentCaptain, getGetCurrentCaptainQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useCurrentCaptain() {
@@ -20,10 +17,7 @@ export function useInvalidateCaptain() {
   return () => qc.invalidateQueries({ queryKey: getGetCurrentCaptainQueryKey() });
 }
 
-export function handleCaptainMutationError(
-  e: unknown,
-  onAuthFailed?: () => void,
-): string {
+export function handleCaptainMutationError(e: unknown, onAuthFailed?: () => void): string {
   const status = (e as { status?: number } | null)?.status;
   if (status === 401) {
     onAuthFailed?.();

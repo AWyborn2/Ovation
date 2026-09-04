@@ -34,7 +34,7 @@ export type LeaderCategory = "Runs" | "Wickets";
 
 /** The ranked value for a leaderboard row in the chosen category. */
 export function leaderValue(row: PlayerGradeStat, category: LeaderCategory): number {
-  return category === "Runs" ? row.runs ?? 0 : row.wickets ?? 0;
+  return category === "Runs" ? (row.runs ?? 0) : (row.wickets ?? 0);
 }
 
 /**
@@ -142,9 +142,7 @@ export type AutoseedGroup = {
  * rather than churning them.
  */
 export function deriveAutoseedGroups(drafts: AutoseedDraft[]): AutoseedGroup[] {
-  const ordered = [...drafts].sort(
-    (a, b) => a.sourceMatchId - b.sourceMatchId || a.id - b.id,
-  );
+  const ordered = [...drafts].sort((a, b) => a.sourceMatchId - b.sourceMatchId || a.id - b.id);
   const groups = new Map<string, AutoseedGroup>();
   for (const d of ordered) {
     const key = `${d.junior ? "J" : "S"}|${d.season}|${d.round}|${d.grade}`;

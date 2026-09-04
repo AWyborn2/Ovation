@@ -44,46 +44,35 @@ router.post(
 );
 
 // Poll a render job's status/progress.
-router.get(
-  "/card-video/jobs/:id",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const job = getJob(String(req.params.id));
-    // Scope by tenant so a job UUID leaked from another club (logs, a shared
-    // screenshot) can't be polled or downloaded across tenants.
-    if (!job || job.tenantId !== getTenantId(req)) {
-      res.status(404).json({ error: "Unknown job" });
-      return;
-    }
-    res.json(publicJob(job));
-  },
-);
+router.get("/card-video/jobs/:id", requireAdmin, async (req, res): Promise<void> => {
+  const job = getJob(String(req.params.id));
+  // Scope by tenant so a job UUID leaked from another club (logs, a shared
+  // screenshot) can't be polled or downloaded across tenants.
+  if (!job || job.tenantId !== getTenantId(req)) {
+    res.status(404).json({ error: "Unknown job" });
+    return;
+  }
+  res.json(publicJob(job));
+});
 
 // Stream the finished MP4.
-router.get(
-  "/card-video/jobs/:id/download",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const job = getJob(String(req.params.id));
-    if (!job || job.tenantId !== getTenantId(req) || job.status !== "done" || !job.filePath) {
-      res.status(404).json({ error: "Unknown job or not yet finished" });
-      return;
-    }
-    let size: number;
-    try {
-      size = (await stat(job.filePath)).size;
-    } catch {
-      res.status(404).json({ error: "Rendered file is no longer available" });
-      return;
-    }
-    res.setHeader("Content-Type", "video/mp4");
-    res.setHeader("Content-Length", String(size));
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${job.filename ?? `${job.id}.mp4`}"`,
-    );
-    createReadStream(job.filePath).pipe(res);
-  },
-);
+router.get("/card-video/jobs/:id/download", requireAdmin, async (req, res): Promise<void> => {
+  const job = getJob(String(req.params.id));
+  if (!job || job.tenantId !== getTenantId(req) || job.status !== "done" || !job.filePath) {
+    res.status(404).json({ error: "Unknown job or not yet finished" });
+    return;
+  }
+  let size: number;
+  try {
+    size = (await stat(job.filePath)).size;
+  } catch {
+    res.status(404).json({ error: "Rendered file is no longer available" });
+    return;
+  }
+  res.setHeader("Content-Type", "video/mp4");
+  res.setHeader("Content-Length", String(size));
+  res.setHeader("Content-Disposition", `attachment; filename="${job.filename ?? `${job.id}.mp4`}"`);
+  createReadStream(job.filePath).pipe(res);
+});
 
 export default router;

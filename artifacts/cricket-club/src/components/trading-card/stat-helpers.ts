@@ -93,7 +93,9 @@ export function perfBars(data: TradingCardData): { label: string; value: number;
   }
 }
 
-export function careerStatTiles(data: TradingCardData): { label: string; value: number | string }[] {
+export function careerStatTiles(
+  data: TradingCardData,
+): { label: string; value: number | string }[] {
   return data.configuredStats ?? mainStats(data);
 }
 

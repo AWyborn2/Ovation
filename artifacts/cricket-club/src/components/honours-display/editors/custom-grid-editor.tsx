@@ -38,21 +38,14 @@ export function CustomGridEditor({
   onPatch: (patch: Partial<CustomGridDef>) => void;
   onRemove: () => void;
 }) {
-  const catalogById = useMemo(
-    () => new Map(catalog.map((c) => [c.id, c])),
-    [catalog],
-  );
+  const catalogById = useMemo(() => new Map(catalog.map((c) => [c.id, c])), [catalog]);
   const optionsFor = (source: CustomGridColumn["source"]) =>
-    source === "manual"
-      ? []
-      : catalogById.get(SOURCE_CATALOG_ID[source] ?? "")?.options ?? [];
+    source === "manual" ? [] : (catalogById.get(SOURCE_CATALOG_ID[source] ?? "")?.options ?? []);
 
   const fillMode = gridDef.fillMode ?? "wrap";
   const setCol = (i: number, patch: Partial<CustomGridColumn>) =>
     onPatch({
-      columns: gridDef.columns.map((c, idx) =>
-        idx === i ? { ...c, ...patch } : c,
-      ),
+      columns: gridDef.columns.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
     });
   const addCol = () =>
     onPatch({
@@ -101,9 +94,7 @@ export function CustomGridEditor({
           />
         </label>
         <label className="space-y-1 flex-1 min-w-[12rem]">
-          <span className="text-xs font-medium text-muted-foreground">
-            Subtitle (optional)
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Subtitle (optional)</span>
           <Input
             value={gridDef.subtitle ?? ""}
             onChange={(e) => onPatch({ subtitle: e.target.value })}
@@ -124,9 +115,7 @@ export function CustomGridEditor({
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            First season (year)
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">First season (year)</span>
           <Input
             type="number"
             className="w-28"
@@ -141,9 +130,7 @@ export function CustomGridEditor({
           />
         </label>
         <label className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Last season (year)
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Last season (year)</span>
           <Input
             type="number"
             className="w-28"
@@ -174,9 +161,7 @@ export function CustomGridEditor({
           </select>
         </label>
         <label className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Fill mode
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Fill mode</span>
           <select
             className="px-2 py-1.5 rounded border bg-card text-sm"
             value={fillMode}
@@ -194,9 +179,7 @@ export function CustomGridEditor({
         </label>
         {fillMode === "wrap" && (
           <label className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Blocks
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Blocks</span>
             <select
               className="px-2 py-1.5 rounded border bg-card text-sm"
               value={gridDef.wrapBlocks ?? 2}
@@ -212,9 +195,7 @@ export function CustomGridEditor({
       </div>
 
       <label className="space-y-1 block">
-        <span className="text-xs font-medium text-muted-foreground">
-          Footnote (optional)
-        </span>
+        <span className="text-xs font-medium text-muted-foreground">Footnote (optional)</span>
         <Input
           value={gridDef.footnote ?? ""}
           placeholder="e.g. Premiers 2007, 2009 · *2020/21 cancelled"
@@ -230,9 +211,7 @@ export function CustomGridEditor({
           return (
             <div key={col.key} className="space-y-1.5 border rounded p-2 bg-background">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground w-5">
-                  {i + 1}
-                </span>
+                <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
                 <Input
                   className="flex-1 min-w-[9rem]"
                   value={col.label}
@@ -314,9 +293,7 @@ export function CustomGridEditor({
                   rows={3}
                   value={manualText(col)}
                   placeholder={"2024/25 = J. Smith\n2023/24 = A. Brown"}
-                  onChange={(e) =>
-                    setCol(i, { manualValues: parseManual(e.target.value) })
-                  }
+                  onChange={(e) => setCol(i, { manualValues: parseManual(e.target.value) })}
                   data-testid={`customgrid-col-manual-${gridDef.id}-${i}`}
                 />
               )}

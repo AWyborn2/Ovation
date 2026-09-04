@@ -1,10 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, isNull } from "drizzle-orm";
-import {
-  db,
-  honourBoardsTable,
-  honourBoardOverridesTable,
-} from "@workspace/db";
+import { db, honourBoardsTable, honourBoardOverridesTable } from "@workspace/db";
 import {
   CreateHonourBoardBody,
   UpdateHonourBoardBody,
@@ -26,87 +22,99 @@ router.get("/honour-boards", async (req, res): Promise<void> => {
     .select()
     .from(honourBoardsTable)
     .where(
-      and(
-        eq(honourBoardsTable.tenantId, getTenantId(req)),
-        isNull(honourBoardsTable.deletedAt),
-      ),
+      and(eq(honourBoardsTable.tenantId, getTenantId(req)), isNull(honourBoardsTable.deletedAt)),
     )
     .orderBy(asc(honourBoardsTable.displayOrder), asc(honourBoardsTable.id));
   res.json(rows);
 });
 
-router.post("/honour-boards", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const parsed = CreateHonourBoardBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db
-    .insert(honourBoardsTable)
-    .values({
-      tenantId: getTenantId(req),
-      key: parsed.data.key,
-      label: parsed.data.label,
-      title: parsed.data.title,
-      subtitle: parsed.data.subtitle ?? "",
-      headlineLabel: parsed.data.headlineLabel ?? "",
-      supportingLabel: parsed.data.supportingLabel ?? "",
-      displayOrder: parsed.data.displayOrder ?? 0,
-    })
-    .returning();
-  res.status(201).json(row);
-});
+router.post(
+  "/honour-boards",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateHonourBoardBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [row] = await db
+      .insert(honourBoardsTable)
+      .values({
+        tenantId: getTenantId(req),
+        key: parsed.data.key,
+        label: parsed.data.label,
+        title: parsed.data.title,
+        subtitle: parsed.data.subtitle ?? "",
+        headlineLabel: parsed.data.headlineLabel ?? "",
+        supportingLabel: parsed.data.supportingLabel ?? "",
+        displayOrder: parsed.data.displayOrder ?? 0,
+      })
+      .returning();
+    res.status(201).json(row);
+  },
+);
 
-router.patch("/honour-boards/:key", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = UpdateHonourBoardParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateHonourBoardBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const [row] = await db
-    .update(honourBoardsTable)
-    .set(body.data)
-    .where(
-      and(
-        eq(honourBoardsTable.tenantId, getTenantId(req)),
-        eq(honourBoardsTable.key, params.data.key),
-      ),
-    )
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Honour board not found" });
-    return;
-  }
-  res.json(row);
-});
+router.patch(
+  "/honour-boards/:key",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = UpdateHonourBoardParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateHonourBoardBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const [row] = await db
+      .update(honourBoardsTable)
+      .set(body.data)
+      .where(
+        and(
+          eq(honourBoardsTable.tenantId, getTenantId(req)),
+          eq(honourBoardsTable.key, params.data.key),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Honour board not found" });
+      return;
+    }
+    res.json(row);
+  },
+);
 
-router.delete("/honour-boards/:key", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = DeleteHonourBoardParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [row] = await db
-    .update(honourBoardsTable)
-    .set({ deletedAt: new Date() })
-    .where(
-      and(
-        eq(honourBoardsTable.tenantId, getTenantId(req)),
-        eq(honourBoardsTable.key, params.data.key),
-      ),
-    )
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Honour board not found" });
-    return;
-  }
-  res.sendStatus(204);
-});
+router.delete(
+  "/honour-boards/:key",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = DeleteHonourBoardParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [row] = await db
+      .update(honourBoardsTable)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(honourBoardsTable.tenantId, getTenantId(req)),
+          eq(honourBoardsTable.key, params.data.key),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Honour board not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 router.get("/honour-boards/:key/overrides", async (req, res): Promise<void> => {
   const params = ListHonourBoardOverridesParams.safeParse(req.params);
@@ -153,10 +161,7 @@ router.post(
       .insert(honourBoardOverridesTable)
       .values(values)
       .onConflictDoUpdate({
-        target: [
-          honourBoardOverridesTable.boardKey,
-          honourBoardOverridesTable.playerId,
-        ],
+        target: [honourBoardOverridesTable.boardKey, honourBoardOverridesTable.playerId],
         set: {
           pinned: values.pinned,
           hidden: values.hidden,

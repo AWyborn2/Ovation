@@ -174,7 +174,9 @@ function main(): void {
   const after = counts("public", TRACKED_TABLES);
   console.log("\n--- table row counts: before -> after ---");
   for (const t of TRACKED_TABLES) {
-    console.log(`  ${t.padEnd(28)} ${String(before[t] ?? "-").padStart(6)} -> ${String(after[t] ?? "-").padStart(6)}`);
+    console.log(
+      `  ${t.padEnd(28)} ${String(before[t] ?? "-").padStart(6)} -> ${String(after[t] ?? "-").padStart(6)}`,
+    );
   }
 
   console.log("\n--- verification ---");

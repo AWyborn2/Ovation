@@ -16,11 +16,7 @@ export interface TenantHealthRow {
   brandingComplete: boolean;
 }
 
-export type HealthFilter =
-  | "all"
-  | "never-active"
-  | "branding-incomplete"
-  | "suspended";
+export type HealthFilter = "all" | "never-active" | "branding-incomplete" | "suspended";
 
 export type SortColumn = "name" | "lastActive" | "admins";
 export type SortDirection = "asc" | "desc";
@@ -46,10 +42,7 @@ const DAY = 24 * HOUR;
  * "2 days ago"), or "never" when the tenant has never been active (null). `now`
  * is injectable so the formatting is deterministic under test.
  */
-export function formatLastActive(
-  iso: string | null | undefined,
-  now: number = Date.now(),
-): string {
+export function formatLastActive(iso: string | null | undefined, now: number = Date.now()): string {
   if (iso == null) return "never";
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "never";
@@ -68,10 +61,7 @@ export function formatLastActive(
 }
 
 /** Whether a tenant passes the active health filter. */
-export function passesHealthFilter(
-  t: TenantHealthRow,
-  filter: HealthFilter,
-): boolean {
+export function passesHealthFilter(t: TenantHealthRow, filter: HealthFilter): boolean {
   switch (filter) {
     case "never-active":
       return t.lastActiveAt == null;

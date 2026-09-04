@@ -25,15 +25,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "bowling", label: "Best Bowling" },
 ];
 
-function Chip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const colors = useColors();
   return (
     <TouchableOpacity
@@ -163,10 +155,7 @@ export default function JuniorPlayersScreen() {
   );
 
   const gamesRanked = useMemo(
-    () =>
-      [...(players ?? [])]
-        .sort((a, b) => (b.matches ?? 0) - (a.matches ?? 0))
-        .slice(0, 50),
+    () => [...(players ?? [])].sort((a, b) => (b.matches ?? 0) - (a.matches ?? 0)).slice(0, 50),
     [players],
   );
 
@@ -407,9 +396,7 @@ export default function JuniorPlayersScreen() {
             </View>
 
             {(filters?.ageGroups?.length ?? 0) > 0 ? (
-              <View
-                style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}
-              >
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                 <Chip label="All ages" active={ageGroup === ""} onPress={() => setAgeGroup("")} />
                 {(filters?.ageGroups ?? []).map((a) => (
                   <Chip
@@ -423,9 +410,7 @@ export default function JuniorPlayersScreen() {
             ) : null}
 
             {(filters?.seasons?.length ?? 0) > 0 ? (
-              <View
-                style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}
-              >
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                 <Chip label="All seasons" active={season === ""} onPress={() => setSeason("")} />
                 {(filters?.seasons ?? []).map((s) => (
                   <Chip

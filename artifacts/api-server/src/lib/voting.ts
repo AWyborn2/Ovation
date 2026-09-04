@@ -45,10 +45,7 @@ export async function loadPlayerNames(ids: number[]): Promise<Map<number, string
 }
 
 /** Distinct imported (non-abandoned) round numbers for the tracked grades+season. */
-export async function countRoundsPlayed(
-  grades: string[],
-  season: number,
-): Promise<number> {
+export async function countRoundsPlayed(grades: string[], season: number): Promise<number> {
   if (grades.length === 0) return 0;
   const rows = await db
     .select({ round: matchesTable.round })
@@ -97,9 +94,7 @@ export async function computeTally(config: AwardVotingConfigRow): Promise<Comput
     .map((a) => ({ ...a, name: names.get(a.playerId) ?? `#${a.playerId}` }))
     .sort(
       (x, y) =>
-        y.points - x.points ||
-        y.firstPlaces - x.firstPlaces ||
-        x.name.localeCompare(y.name),
+        y.points - x.points || y.firstPlaces - x.firstPlaces || x.name.localeCompare(y.name),
     );
 
   const top = entries.length > 0 ? entries[0].points : 0;
@@ -129,10 +124,7 @@ export type MatchRound = {
 };
 
 /** Imported (non-abandoned) rounds for a grade+season with their players. */
-export async function loadRoundsForGrade(
-  grade: string,
-  season: number,
-): Promise<MatchRound[]> {
+export async function loadRoundsForGrade(grade: string, season: number): Promise<MatchRound[]> {
   const matches = await db
     .select({
       id: matchesTable.id,
@@ -170,9 +162,7 @@ export async function loadRoundsForGrade(
   const playersByMatch = new Map<number, EligiblePlayer[]>();
   for (const l of lines) {
     if (!playersByMatch.has(l.matchId)) playersByMatch.set(l.matchId, []);
-    playersByMatch
-      .get(l.matchId)!
-      .push({ playerId: l.playerId, name: playerName(l) });
+    playersByMatch.get(l.matchId)!.push({ playerId: l.playerId, name: playerName(l) });
   }
   for (const arr of playersByMatch.values()) {
     arr.sort((a, b) => a.name.localeCompare(b.name));

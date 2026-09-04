@@ -53,9 +53,7 @@ export function StickerPicker({ onPick }: { onPick: (asset: StickerAsset) => voi
             type="button"
             onClick={() => setCat(c.id as StickerCategory | "all")}
             className={`rounded px-1.5 py-0.5 text-[10px] ${
-              cat === c.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
+              cat === c.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
             {c.label}

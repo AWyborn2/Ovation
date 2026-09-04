@@ -11,19 +11,9 @@ import {
 import type { PlayerGradeStat } from "../schema";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, type CentralClubMatchRow } from "./club-matches";
-import {
-  appGradeFromCentral,
-  parseRound,
-  parseSeasonStartYear,
-  parseStage,
-} from "./grades";
+import { appGradeFromCentral, parseRound, parseSeasonStartYear, parseStage } from "./grades";
 import { isPrivateParticipant, isPrivateRow } from "./privacy";
-import {
-  classifyFieldingKind,
-  classifyInnings,
-  emptyFieldingTally,
-  round2,
-} from "./scoring";
+import { classifyFieldingKind, classifyInnings, emptyFieldingTally, round2 } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
 
 /**
@@ -286,9 +276,8 @@ export async function centralPlayerDetail(
   clubId: number,
   participantId: string,
 ): Promise<CentralPlayerDetail | null> {
-  return withCentralCache(
-    cacheKey("centralPlayerDetail", [clubId, participantId]),
-    () => centralPlayerDetailImpl(clubId, participantId),
+  return withCentralCache(cacheKey("centralPlayerDetail", [clubId, participantId]), () =>
+    centralPlayerDetailImpl(clubId, participantId),
   );
 }
 
@@ -299,9 +288,7 @@ async function centralPlayerDetailImpl(
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return null;
-  const matchGrade = new Map(
-    matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]),
-  );
+  const matchGrade = new Map(matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]));
 
   const [batting, bowling, rosters, players] = await Promise.all([
     centralDb
@@ -512,9 +499,8 @@ export async function centralPlayerSeasons(
   clubId: number,
   participantId: string,
 ): Promise<CentralPlayerSeasonRow[]> {
-  return withCentralCache(
-    cacheKey("centralPlayerSeasons", [clubId, participantId]),
-    () => centralPlayerSeasonsImpl(clubId, participantId),
+  return withCentralCache(cacheKey("centralPlayerSeasons", [clubId, participantId]), () =>
+    centralPlayerSeasonsImpl(clubId, participantId),
   );
 }
 
@@ -759,9 +745,8 @@ export async function centralPlayerMatchLog(
   clubId: number,
   participantId: string,
 ): Promise<CentralPlayerMatchRow[]> {
-  return withCentralCache(
-    cacheKey("centralPlayerMatchLog", [clubId, participantId]),
-    () => centralPlayerMatchLogImpl(clubId, participantId),
+  return withCentralCache(cacheKey("centralPlayerMatchLog", [clubId, participantId]), () =>
+    centralPlayerMatchLogImpl(clubId, participantId),
   );
 }
 
@@ -840,12 +825,7 @@ async function centralPlayerMatchLogImpl(
   const matches = await centralDb
     .select()
     .from(centralMatchesTable)
-    .where(
-      and(
-        clubInvolvedWhere(clubId),
-        inList(centralMatchesTable.matchId, [...playedIds]),
-      ),
-    );
+    .where(and(clubInvolvedWhere(clubId), inList(centralMatchesTable.matchId, [...playedIds])));
 
   const out: CentralPlayerMatchRow[] = [];
   for (const m of matches) {
@@ -857,9 +837,7 @@ async function centralPlayerMatchLogImpl(
     const batLines = batting
       .filter((b) => b.matchId === m.matchId)
       .sort((a, b) => (a.innings ?? 0) - (b.innings ?? 0));
-    const played = batLines.filter(
-      (b) => classifyInnings(b.dismissalType, b.dismissal) !== "dnb",
-    );
+    const played = batLines.filter((b) => classifyInnings(b.dismissalType, b.dismissal) !== "dnb");
     const bowlLines = bowling.filter((b) => b.matchId === m.matchId);
     const fld = emptyFieldingTally();
     for (const f of fielding) {
@@ -906,7 +884,11 @@ async function centralPlayerMatchLogImpl(
       notOut:
         lastBat !== undefined &&
         classifyInnings(lastBat.dismissalType, lastBat.dismissal) === "notout",
-      dismissal: played.map((b) => b.dismissal).filter(Boolean).join("; ") || null,
+      dismissal:
+        played
+          .map((b) => b.dismissal)
+          .filter(Boolean)
+          .join("; ") || null,
       bowled: bowlLines.length > 0,
       overs: totalOvers === null ? null : String(totalOvers),
       maidens: sumOf(bowlLines, (b) => b.maidens),

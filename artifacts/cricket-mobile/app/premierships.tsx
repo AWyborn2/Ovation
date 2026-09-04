@@ -82,7 +82,9 @@ function ResultBlock({ prem }: { prem: Premiership }) {
         borderColor: colors.border,
       }}
     >
-      <Body bold size={12}>{text}</Body>
+      <Body bold size={12}>
+        {text}
+      </Body>
     </View>
   );
 }
@@ -91,54 +93,64 @@ function PremiershipCard({ prem, onOpen }: { prem: Premiership; onOpen: () => vo
   const colors = useColors();
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onOpen}>
-    <Card style={{ marginBottom: 10, padding: 14 }}>
-      <View
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 4,
-          zIndex: 1,
-        }}
-      >
-        <Feather name="maximize-2" size={13} color={colors.mutedForeground} />
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <View style={{ flex: 1 }}>
-          <Heading size="sm">{prem.grade}</Heading>
-          <Body muted size={11} style={{ marginTop: 4 }}>
-            {fmtSeason(prem.year)}
-            {prem.competition ? ` · ${prem.competition}` : ""}
+      <Card style={{ marginBottom: 10, padding: 14 }}>
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            zIndex: 1,
+          }}
+        >
+          <Feather name="maximize-2" size={13} color={colors.mutedForeground} />
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flex: 1 }}>
+            <Heading size="sm">{prem.grade}</Heading>
+            <Body muted size={11} style={{ marginTop: 4 }}>
+              {fmtSeason(prem.year)}
+              {prem.competition ? ` · ${prem.competition}` : ""}
+            </Body>
+          </View>
+        </View>
+
+        {prem.venue || prem.matchDate ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 }}>
+            {prem.venue ? (
+              <Body muted size={11}>
+                {prem.venue}
+              </Body>
+            ) : null}
+            {fmtDate(prem.matchDate) ? (
+              <Body muted size={11}>
+                {fmtDate(prem.matchDate)}
+              </Body>
+            ) : null}
+          </View>
+        ) : null}
+
+        {prem.players.length > 0 ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            {prem.players.map((p) => (
+              <PlayerName key={p.id} p={p} />
+            ))}
+          </View>
+        ) : null}
+
+        {prem.mom ? (
+          <Body size={12} style={{ marginTop: 10 }}>
+            <Body size={12} muted bold>
+              M.O.M ·{" "}
+            </Body>
+            {prem.mom}
           </Body>
-        </View>
-      </View>
+        ) : null}
 
-      {(prem.venue || prem.matchDate) ? (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 }}>
-          {prem.venue ? <Body muted size={11}>{prem.venue}</Body> : null}
-          {fmtDate(prem.matchDate) ? <Body muted size={11}>{fmtDate(prem.matchDate)}</Body> : null}
-        </View>
-      ) : null}
-
-      {prem.players.length > 0 ? (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-          {prem.players.map((p) => (
-            <PlayerName key={p.id} p={p} />
-          ))}
-        </View>
-      ) : null}
-
-      {prem.mom ? (
-        <Body size={12} style={{ marginTop: 10 }}>
-          <Body size={12} muted bold>M.O.M · </Body>
-          {prem.mom}
-        </Body>
-      ) : null}
-
-      <ResultBlock prem={prem} />
-    </Card>
+        <ResultBlock prem={prem} />
+      </Card>
     </TouchableOpacity>
   );
 }
@@ -247,10 +259,7 @@ export default function PremiershipsScreen() {
           onClose={() => setActive(null)}
           variant="senior"
           title={active.grade}
-          subtitle={[
-            fmtSeason(active.year),
-            active.competition ?? undefined,
-          ]
+          subtitle={[fmtSeason(active.year), active.competition ?? undefined]
             .filter(Boolean)
             .join(" · ")}
           meta={[active.venue ?? undefined, fmtDate(active.matchDate) ?? undefined]}

@@ -138,7 +138,8 @@ describe("pack coverage contract (client manifest ↔ api-server PACKS)", () => 
         );
       }
     }
-    expect(problems, `pack coverage drift:\n${problems.map((p) => `  - ${p}`).join("\n")}`)
-      .toEqual([]);
+    expect(problems, `pack coverage drift:\n${problems.map((p) => `  - ${p}`).join("\n")}`).toEqual(
+      [],
+    );
   });
 });

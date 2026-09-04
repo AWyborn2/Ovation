@@ -40,11 +40,7 @@ export type BakedLayer = {
 
 // Render a single layer onto its own full-frame canvas and snapshot it. Returns
 // a null bitmap if the layer is empty/zero-sized (composited as a no-op).
-export const bakeLayer = async (
-  l: RenderLayer,
-  W: number,
-  H: number,
-): Promise<BakedLayer> => {
+export const bakeLayer = async (l: RenderLayer, W: number, H: number): Promise<BakedLayer> => {
   const rect = l.rect;
   const meta = {
     cx: rect.x + rect.w / 2,
@@ -97,9 +93,12 @@ const buildMatchSummaryLayers = async (
     // If a pack template is applied, dispatch to the pack variant renderer
     if (opts.template?.source === "pack" && opts.template.packVariant) {
       const variant = opts.template.packVariant;
-      if (variant === "square") await renderPackSquareMatchSummary(offCtx, W, H, scale, input, opts, p);
-      else if (variant === "portrait") await renderPackPortraitMatchSummary(offCtx, W, H, scale, input, opts, p);
-      else if (variant === "story") await renderPackStoryMatchSummary(offCtx, W, H, scale, input, opts, p);
+      if (variant === "square")
+        await renderPackSquareMatchSummary(offCtx, W, H, scale, input, opts, p);
+      else if (variant === "portrait")
+        await renderPackPortraitMatchSummary(offCtx, W, H, scale, input, opts, p);
+      else if (variant === "story")
+        await renderPackStoryMatchSummary(offCtx, W, H, scale, input, opts, p);
       else await renderMatchSummaryCard(offCtx, W, H, scale, input, opts, p);
     } else {
       await renderMatchSummaryCard(offCtx, W, H, scale, input, opts, p);
@@ -211,7 +210,7 @@ export const computeCardLayers = async (
             : s.kind === "sticker"
               ? "Shape"
               : s.kind === "libsticker"
-                ? getSticker(s.assetId)?.name ?? "Sticker"
+                ? (getSticker(s.assetId)?.name ?? "Sticker")
                 : "Text",
         selectable: true,
         resizable: true,

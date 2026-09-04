@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dimensions,
-  Modal,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Dimensions, Modal, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -63,13 +58,10 @@ export function CoachTour({
   const back = () => setIndex((i) => Math.max(0, i - 1));
 
   const { height } = Dimensions.get("window");
-  const target =
-    step.tabIndex != null ? tabRect(step.tabIndex, insets.bottom) : null;
+  const target = step.tabIndex != null ? tabRect(step.tabIndex, insets.bottom) : null;
 
   // Card sits above a spotlit tab; otherwise it's centred on screen.
-  const cardBottom = target
-    ? height - target.y + PAD + 14
-    : undefined;
+  const cardBottom = target ? height - target.y + PAD + 14 : undefined;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={finish}>
@@ -133,9 +125,7 @@ export function CoachTour({
             />
           </>
         ) : (
-          <View
-            style={{ position: "absolute", inset: 0, backgroundColor: OVERLAY }}
-          />
+          <View style={{ position: "absolute", inset: 0, backgroundColor: OVERLAY }} />
         )}
 
         {/* Popover card */}
@@ -165,9 +155,7 @@ export function CoachTour({
               padding: 20,
             }}
           >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View
                 style={{
                   width: 36,
@@ -178,11 +166,7 @@ export function CoachTour({
                   justifyContent: "center",
                 }}
               >
-                <Feather
-                  name={step.icon}
-                  size={18}
-                  color={colors.primaryForeground}
-                />
+                <Feather name={step.icon} size={18} color={colors.primaryForeground} />
               </View>
               <Heading size="md" style={{ flex: 1 }}>
                 {step.title}
@@ -200,11 +184,7 @@ export function CoachTour({
                 marginTop: 18,
               }}
             >
-              <Body
-                muted
-                size={12}
-                style={{ letterSpacing: 1, flex: 1 }}
-              >
+              <Body muted size={12} style={{ letterSpacing: 1, flex: 1 }}>
                 {index + 1} / {steps.length}
               </Body>
 
@@ -220,11 +200,7 @@ export function CoachTour({
                     marginRight: 8,
                   }}
                 >
-                  <Body
-                    bold
-                    size={13}
-                    style={{ textTransform: "uppercase", letterSpacing: 1 }}
-                  >
+                  <Body bold size={13} style={{ textTransform: "uppercase", letterSpacing: 1 }}>
                     Back
                   </Body>
                 </TouchableOpacity>

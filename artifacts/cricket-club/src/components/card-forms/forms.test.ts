@@ -5,12 +5,7 @@ import { CARD_KINDS } from "@/lib/share-card";
 import { renderPackCard, type PackTokens } from "@/lib/pack-render";
 import { GenericCardForm } from "./fields";
 import { DESCRIPTORS } from "./descriptors";
-import {
-  initialCardState,
-  buildCardInput,
-  JUNIOR_CAPABLE,
-  ROW_CAPS,
-} from "./logic";
+import { initialCardState, buildCardInput, JUNIOR_CAPABLE, ROW_CAPS } from "./logic";
 import {
   ladderRowsToState,
   teamListPlayersToState,
@@ -286,11 +281,19 @@ describe("card-forms: prefill mappers", () => {
     const runs = clubSeasonTotalsToState(2024, "Runs", grades);
     expect(runs.category).toBe("Runs");
     expect(runs.season).toBe("2024/25");
-    expect(runs.leaders?.[0]).toMatchObject({ gradeLabel: "A GRADE", playerName: "Jack Manuel", value: "428" });
+    expect(runs.leaders?.[0]).toMatchObject({
+      gradeLabel: "A GRADE",
+      playerName: "Jack Manuel",
+      value: "428",
+    });
     const wickets = clubSeasonTotalsToState(2024, "Wickets", grades);
     expect(wickets.leaders?.[0]).toMatchObject({ playerName: "Tom Burrage", value: "24" });
     // Empty grade renders as a blank-but-present row (still editable).
-    expect(wickets.leaders?.[1]).toMatchObject({ gradeLabel: "B GRADE", playerName: "", value: "" });
+    expect(wickets.leaders?.[1]).toMatchObject({
+      gradeLabel: "B GRADE",
+      playerName: "",
+      value: "",
+    });
   });
 
   it("teamListPlayersToState excludes fill-in ids (>= 90000)", () => {

@@ -91,9 +91,7 @@ export function WinnersManager({
       )}
 
       {winners.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">
-          No winners recorded yet.
-        </p>
+        <p className="text-sm text-muted-foreground italic">No winners recorded yet.</p>
       ) : (
         <div className="divide-y divide-border rounded-md border border-border">
           {winners.map((w, index) =>
@@ -126,23 +124,14 @@ export function WinnersManager({
                 />
               </div>
             ) : (
-              <div
-                key={w.id}
-                className="flex items-center justify-between gap-3 p-3"
-              >
+              <div key={w.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
-                  <span className="font-mono font-bold text-primary">
-                    {formatSeason(w.season)}
-                  </span>
+                  <span className="font-mono font-bold text-primary">{formatSeason(w.season)}</span>
                   <span className="ml-3 font-semibold">{w.name}</span>
                   {w.playerId != null ? (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      linked #{w.playerId}
-                    </span>
+                    <span className="ml-2 text-xs text-muted-foreground">linked #{w.playerId}</span>
                   ) : (
-                    <span className="ml-2 text-xs text-muted-foreground italic">
-                      free text
-                    </span>
+                    <span className="ml-2 text-xs text-muted-foreground italic">free text</span>
                   )}
                   {!w.published && (
                     <span className="ml-2 text-xs rounded bg-muted text-muted-foreground px-1.5 py-0.5">
@@ -167,11 +156,7 @@ export function WinnersManager({
                   >
                     ↓
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditingId(w.id)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => setEditingId(w.id)}>
                     Edit
                   </Button>
                   <Button
@@ -188,10 +173,7 @@ export function WinnersManager({
                         }))
                       )
                         return;
-                      deleteWinner.mutate(
-                        { id: w.id },
-                        { onSuccess: onChanged, onError },
-                      );
+                      deleteWinner.mutate({ id: w.id }, { onSuccess: onChanged, onError });
                     }}
                   >
                     Delete

@@ -31,19 +31,13 @@ export function isValidOversNotation(overs: number): boolean {
 }
 
 /** Strike rate from runs/balls, rounded to 2dp; null when balls is 0/null. */
-export function strikeRateOf(
-  runs: number | null,
-  balls: number | null,
-): number | null {
+export function strikeRateOf(runs: number | null, balls: number | null): number | null {
   if (!balls || balls <= 0) return null;
   return Math.round(((runs ?? 0) / balls) * 100 * 100) / 100;
 }
 
 /** Economy from runs conceded + overs (ball notation); null when no balls. */
-export function economyOf(
-  runs: number | null,
-  overs: number | null,
-): number | null {
+export function economyOf(runs: number | null, overs: number | null): number | null {
   const balls = oversToBalls(overs);
   if (balls <= 0) return null;
   return Math.round(((runs ?? 0) / (balls / BALLS_PER_OVER)) * 100) / 100;

@@ -11,12 +11,7 @@
  */
 
 import { and, eq, isNull } from "drizzle-orm";
-import {
-  db,
-  cardSetsTable,
-  type CardSetRow,
-  type CardSetSlide,
-} from "@workspace/db";
+import { db, cardSetsTable, type CardSetRow, type CardSetSlide } from "@workspace/db";
 import { assembleSlides } from "./social-cards-generate";
 import { CARD_SET_MAX_SLIDES } from "./social-cards-helpers";
 
@@ -60,15 +55,11 @@ export async function upsertGeneratedCardSet(
         and(
           eq(cardSetsTable.tenantId, tenantId),
           eq(cardSetsTable.sourceKind, key.sourceKind),
-          key.season == null
-            ? isNull(cardSetsTable.season)
-            : eq(cardSetsTable.season, key.season),
+          key.season == null ? isNull(cardSetsTable.season) : eq(cardSetsTable.season, key.season),
           key.sourceRound == null
             ? isNull(cardSetsTable.sourceRound)
             : eq(cardSetsTable.sourceRound, key.sourceRound),
-          key.grade == null
-            ? isNull(cardSetsTable.grade)
-            : eq(cardSetsTable.grade, key.grade),
+          key.grade == null ? isNull(cardSetsTable.grade) : eq(cardSetsTable.grade, key.grade),
         ),
       )
       .limit(1);

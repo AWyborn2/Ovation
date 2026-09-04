@@ -29,9 +29,7 @@ export function AwardForm({
   const [displayOrder, setDisplayOrder] = useState(initial.displayOrder);
   const [mechanism, setMechanism] = useState<AwardMechanism>(initial.mechanism);
   const [published, setPublished] = useState(initial.published);
-  const [pointsGrade, setPointsGrade] = useState<string>(
-    initial.pointsGrade ?? GRADES[0],
-  );
+  const [pointsGrade, setPointsGrade] = useState<string>(initial.pointsGrade ?? GRADES[0]);
 
   const effectiveKey = autoKey && !keyTouched ? slugify(title) : key;
   // 3-2-1 voting attaches only to voted awards.

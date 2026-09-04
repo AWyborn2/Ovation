@@ -65,7 +65,12 @@ describe("deriveWinner", () => {
 // topBatters
 // ---------------------------------------------------------------------------
 
-function bat(name: string, runs: number | null, balls?: number | null, notOut = false): ScorecardBatsman {
+function bat(
+  name: string,
+  runs: number | null,
+  balls?: number | null,
+  notOut = false,
+): ScorecardBatsman {
   return {
     playerId: null,
     name,
@@ -81,13 +86,7 @@ function bat(name: string, runs: number | null, balls?: number | null, notOut = 
 
 describe("topBatters", () => {
   it("returns at most 3 batters sorted by runs descending", () => {
-    const batsmen = [
-      bat("A", 10),
-      bat("B", 50),
-      bat("C", 30),
-      bat("D", 20),
-      bat("E", 40),
-    ];
+    const batsmen = [bat("A", 10), bat("B", 50), bat("C", 30), bat("D", 20), bat("E", 40)];
     const result = topBatters(batsmen);
     expect(result).toHaveLength(3);
     expect(result[0].name).toBe("B");

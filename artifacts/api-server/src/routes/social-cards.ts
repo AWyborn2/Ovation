@@ -19,14 +19,8 @@ import { getTenantBrand } from "../lib/tenant-brand";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
-import {
-  renderCardStill,
-  harnessOriginFromHeaders,
-} from "../lib/card-video-renderer";
-import {
-  DEFAULT_TEMPLATES,
-  ensureSettings,
-} from "../lib/social-cards-helpers";
+import { renderCardStill, harnessOriginFromHeaders } from "../lib/card-video-renderer";
+import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
 
 import assetsRouter from "./social-cards-assets";
 import designRouter from "./social-cards-design";
@@ -73,21 +67,26 @@ router.get("/social-settings", async (req, res): Promise<void> => {
   });
 });
 
-router.patch("/social-settings", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const parsed = UpdateSocialSettingsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  await ensureSettings(tenantId);
-  const [row] = await db
-    .update(socialSettingsTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(socialSettingsTable.tenantId, tenantId))
-    .returning();
-  res.json(row);
-});
+router.patch(
+  "/social-settings",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = UpdateSocialSettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    await ensureSettings(tenantId);
+    const [row] = await db
+      .update(socialSettingsTable)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(socialSettingsTable.tenantId, tenantId))
+      .returning();
+    res.json(row);
+  },
+);
 
 router.get("/milestone-board-settings", async (req, res): Promise<void> => {
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, getTenantId(req));
@@ -103,51 +102,65 @@ router.get("/milestone-board-settings", async (req, res): Promise<void> => {
   });
 });
 
-router.patch("/milestone-board-settings", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const parsed = UpdateMilestoneBoardSettingsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
-  const [row] = await db
-    .update(milestoneBoardSettingsTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(milestoneBoardSettingsTable.tenantId, tenantId))
-    .returning();
-  // The milestone board is cached per tenant and these settings drive it, so
-  // without this the admin sees a successful save and an unchanged board.
-  invalidateMilestonesCache(tenantId);
-  res.json({
-    displayMode: row.displayMode,
-    gamesThreshold: row.gamesThreshold,
-    runsThreshold: row.runsThreshold,
-    wicketsThreshold: row.wicketsThreshold,
-    recencyWeeks: row.recencyWeeks,
-    gamesTiers: row.gamesTiers,
-    runsTiers: row.runsTiers,
-    wicketsTiers: row.wicketsTiers,
-  });
-});
-
-router.put("/caption-templates", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const parsed = UpsertCaptionTemplateBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const { engine, platform, template } = parsed.data;
-  await db
-    .insert(captionTemplatesTable)
-    .values({ tenantId, engine, platform, template })
-    .onConflictDoUpdate({
-      target: [captionTemplatesTable.tenantId, captionTemplatesTable.engine, captionTemplatesTable.platform],
-      set: { template, updatedAt: new Date() },
+router.patch(
+  "/milestone-board-settings",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const parsed = UpdateMilestoneBoardSettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
+    const [row] = await db
+      .update(milestoneBoardSettingsTable)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(milestoneBoardSettingsTable.tenantId, tenantId))
+      .returning();
+    // The milestone board is cached per tenant and these settings drive it, so
+    // without this the admin sees a successful save and an unchanged board.
+    invalidateMilestonesCache(tenantId);
+    res.json({
+      displayMode: row.displayMode,
+      gamesThreshold: row.gamesThreshold,
+      runsThreshold: row.runsThreshold,
+      wicketsThreshold: row.wicketsThreshold,
+      recencyWeeks: row.recencyWeeks,
+      gamesTiers: row.gamesTiers,
+      runsTiers: row.runsTiers,
+      wicketsTiers: row.wicketsTiers,
     });
-  res.json({ engine, platform, template });
-});
+  },
+);
+
+router.put(
+  "/caption-templates",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = UpsertCaptionTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const { engine, platform, template } = parsed.data;
+    await db
+      .insert(captionTemplatesTable)
+      .values({ tenantId, engine, platform, template })
+      .onConflictDoUpdate({
+        target: [
+          captionTemplatesTable.tenantId,
+          captionTemplatesTable.engine,
+          captionTemplatesTable.platform,
+        ],
+        set: { template, updatedAt: new Date() },
+      });
+    res.json({ engine, platform, template });
+  },
+);
 
 // --- Static (pack) PNG render ----------------------------------------------
 // Standard "Broadcast Dark" pack cards are rendered pixel-true through the
@@ -186,6 +199,5 @@ router.post(
     }
   },
 );
-
 
 export default router;

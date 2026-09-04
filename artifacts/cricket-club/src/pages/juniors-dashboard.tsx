@@ -20,9 +20,27 @@ import { navIcon } from "@/lib/nav-icons";
 import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
-  { label: "Matches", target: "/juniors/matches", isExternal: false, iconKey: "clipboardList", description: "Browse junior games and full scorecards." },
-  { label: "Premierships", target: "/juniors/premierships", isExternal: false, iconKey: "crown", description: "Junior honour boards and winning rosters." },
-  { label: "Players & Leaders", target: "/juniors/players", isExternal: false, iconKey: "users", description: "Runs, wickets and games leaderboards." },
+  {
+    label: "Matches",
+    target: "/juniors/matches",
+    isExternal: false,
+    iconKey: "clipboardList",
+    description: "Browse junior games and full scorecards.",
+  },
+  {
+    label: "Premierships",
+    target: "/juniors/premierships",
+    isExternal: false,
+    iconKey: "crown",
+    description: "Junior honour boards and winning rosters.",
+  },
+  {
+    label: "Players & Leaders",
+    target: "/juniors/players",
+    isExternal: false,
+    iconKey: "users",
+    description: "Runs, wickets and games leaderboards.",
+  },
 ];
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
@@ -41,12 +59,16 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
   const inner = (
     <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
       {Icon && <Icon className="h-7 w-7 text-primary mb-3" />}
-      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">{item.label}</div>
+      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
+        {item.label}
+      </div>
       {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
     </div>
   );
   return item.isExternal ? (
-    <a href={item.target} target="_blank" rel="noopener noreferrer">{inner}</a>
+    <a href={item.target} target="_blank" rel="noopener noreferrer">
+      {inner}
+    </a>
   ) : (
     <Link href={item.target}>{inner}</Link>
   );
@@ -67,12 +89,7 @@ export default function JuniorsDashboard() {
 
   // Top performers drive BOTH the leader lists AND the age-group chips: the
   // response carries availableAgeGroups for the resolved season (or all-time).
-  const seasonParams =
-    season === "all"
-      ? { allTime: true }
-      : season === "latest"
-        ? {}
-        : { season };
+  const seasonParams = season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
   const { data: tp } = useGetJuniorSeasonTopPerformers({
     ...(ageFilter ? { ageGroup: ageFilter } : {}),
     ...seasonParams,
@@ -92,13 +109,9 @@ export default function JuniorsDashboard() {
   const topWicketTakers = tp?.topWicketTakers ?? [];
 
   // Header label for the resolved season ("All time" when aggregating).
-  const seasonLabel = season === "all" ? "All time" : tp?.season ?? null;
+  const seasonLabel = season === "all" ? "All time" : (tp?.season ?? null);
   const seasonValue =
-    season === "latest"
-      ? data?.latestSeason ?? "latest"
-      : season === "all"
-        ? "all"
-        : season;
+    season === "latest" ? (data?.latestSeason ?? "latest") : season === "all" ? "all" : season;
 
   return (
     <div className="space-y-8">
@@ -117,7 +130,10 @@ export default function JuniorsDashboard() {
       ) : isLoading ? (
         <CardGridSkeleton />
       ) : !data ? (
-        <EmptyState title="No junior data yet" message="There's no junior data available to show yet." />
+        <EmptyState
+          title="No junior data yet"
+          message="There's no junior data available to show yet."
+        />
       ) : (
         <>
           {/* Totals */}
@@ -155,11 +171,13 @@ export default function JuniorsDashboard() {
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                        {m.season ?? ""}{m.round ? ` · ${m.round}` : ""}
+                        {m.season ?? ""}
+                        {m.round ? ` · ${m.round}` : ""}
                       </div>
                       {(m.hhScore || m.opponentScore) && (
                         <div className="text-sm font-mono text-foreground/90">
-                          {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span> {m.opponentScore ?? "—"}
+                          {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span>{" "}
+                          {m.opponentScore ?? "—"}
                         </div>
                       )}
                       {m.hhResult && <div className="text-sm text-foreground/80">{m.hhResult}</div>}
@@ -179,10 +197,7 @@ export default function JuniorsDashboard() {
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
-              <Select
-                value={seasonValue}
-                onValueChange={(v) => setSeason(v)}
-              >
+              <Select value={seasonValue} onValueChange={(v) => setSeason(v)}>
                 <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
                   <SelectValue placeholder="Season" />
                 </SelectTrigger>

@@ -6,7 +6,14 @@
  * never on a request object — so every builder is unit-testable.
  */
 import { type BoardDisplayConfigJson } from "@workspace/db";
-import { type BoardDisplayOut, type BoardGridOut, type BoardLayout, type GridCellEntryOut, type GridColumnOptionOut, type GridRowOut } from "./types";
+import {
+  type BoardDisplayOut,
+  type BoardGridOut,
+  type BoardLayout,
+  type GridCellEntryOut,
+  type GridColumnOptionOut,
+  type GridRowOut,
+} from "./types";
 
 // Seniority order for grade-grouped boards (captains, records-by-grade) so they
 // roll A Grade → Colts.
@@ -88,10 +95,7 @@ export function resolveDisplay(
   override: BoardDisplayConfigJson | undefined,
 ): BoardDisplayOut {
   // Multi-column flow only makes sense for plain lists; other layouts stay 1.
-  const cols =
-    layout === "list"
-      ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1)))
-      : 1;
+  const cols = layout === "list" ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1))) : 1;
   // "wrap" only applies to grid boards; other layouts fall back to a slideshow.
   let transition = override?.transition ?? DEFAULT_DISPLAY.transition;
   if (transition === "wrap" && layout !== "grid") transition = "slide";

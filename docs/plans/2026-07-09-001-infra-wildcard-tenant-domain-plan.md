@@ -68,6 +68,7 @@ a true wildcard:
    `ovationcc.replit.app` as SNI/Host or Replit's edge resets it (same failure as
    the bug). Host-header override via Origin Rules is Cloudflare Enterprise-only;
    the Worker is the free-plan mechanism.
+
 3. New tenant subdomains work instantly with no DNS/Replit changes.
 
 Caveats: the Worker sits in every request path (latency + Workers free-tier

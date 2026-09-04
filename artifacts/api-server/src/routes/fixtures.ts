@@ -48,82 +48,99 @@ router.get("/fixtures", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/fixtures", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const parsed = CreateFixtureBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db
-    .insert(fixturesTable)
-    .values({
-      tenantId: getTenantId(req),
-      grade: parsed.data.grade,
-      roundLabel: parsed.data.roundLabel ?? null,
-      opponentName: parsed.data.opponentName,
-      opponentClubId: parsed.data.opponentClubId ?? null,
-      opponentLogoUrl: parsed.data.opponentLogoUrl ?? null,
-      venue: parsed.data.venue ?? null,
-      startAt: parsed.data.startAt,
-      isHome: parsed.data.isHome ?? true,
-      notes: parsed.data.notes ?? null,
-      // `source` stays the schema default "manual" — the admin API never
-      // writes "playhq"; that value is reserved for the follow-up ingest.
-    })
-    .returning();
-  res.status(201).json(row);
-});
+router.post(
+  "/fixtures",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateFixtureBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [row] = await db
+      .insert(fixturesTable)
+      .values({
+        tenantId: getTenantId(req),
+        grade: parsed.data.grade,
+        roundLabel: parsed.data.roundLabel ?? null,
+        opponentName: parsed.data.opponentName,
+        opponentClubId: parsed.data.opponentClubId ?? null,
+        opponentLogoUrl: parsed.data.opponentLogoUrl ?? null,
+        venue: parsed.data.venue ?? null,
+        startAt: parsed.data.startAt,
+        isHome: parsed.data.isHome ?? true,
+        notes: parsed.data.notes ?? null,
+        // `source` stays the schema default "manual" — the admin API never
+        // writes "playhq"; that value is reserved for the follow-up ingest.
+      })
+      .returning();
+    res.status(201).json(row);
+  },
+);
 
-router.patch("/fixtures/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = UpdateFixtureParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateFixtureBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  if (Object.keys(body.data).length === 0) {
-    const existing = await findFixture(tenantId, params.data.id);
-    if (!existing) {
+router.patch(
+  "/fixtures/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = UpdateFixtureParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateFixtureBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    if (Object.keys(body.data).length === 0) {
+      const existing = await findFixture(tenantId, params.data.id);
+      if (!existing) {
+        res.status(404).json({ error: "Fixture not found" });
+        return;
+      }
+      res.json(existing);
+      return;
+    }
+    const [row] = await db
+      .update(fixturesTable)
+      .set(body.data)
+      .where(and(eq(fixturesTable.id, params.data.id), eq(fixturesTable.tenantId, tenantId)))
+      .returning();
+    if (!row) {
       res.status(404).json({ error: "Fixture not found" });
       return;
     }
-    res.json(existing);
-    return;
-  }
-  const [row] = await db
-    .update(fixturesTable)
-    .set(body.data)
-    .where(and(eq(fixturesTable.id, params.data.id), eq(fixturesTable.tenantId, tenantId)))
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Fixture not found" });
-    return;
-  }
-  res.json(row);
-});
+    res.json(row);
+  },
+);
 
-router.delete("/fixtures/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = DeleteFixtureParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  // The team list cascades via the fixture FK.
-  const deleted = await db
-    .delete(fixturesTable)
-    .where(and(eq(fixturesTable.id, params.data.id), eq(fixturesTable.tenantId, getTenantId(req))))
-    .returning({ id: fixturesTable.id });
-  if (deleted.length === 0) {
-    res.status(404).json({ error: "Fixture not found" });
-    return;
-  }
-  res.status(204).end();
-});
+router.delete(
+  "/fixtures/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = DeleteFixtureParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    // The team list cascades via the fixture FK.
+    const deleted = await db
+      .delete(fixturesTable)
+      .where(
+        and(eq(fixturesTable.id, params.data.id), eq(fixturesTable.tenantId, getTenantId(req))),
+      )
+      .returning({ id: fixturesTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Fixture not found" });
+      return;
+    }
+    res.status(204).end();
+  },
+);
 
 router.get("/fixtures/:id/team-list", async (req, res): Promise<void> => {
   const params = GetFixtureTeamListParams.safeParse(req.params);
@@ -144,58 +161,63 @@ router.get("/fixtures/:id/team-list", async (req, res): Promise<void> => {
   res.json(row ?? null);
 });
 
-router.put("/fixtures/:id/team-list", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = PutFixtureTeamListParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = PutFixtureTeamListBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const fillIns = body.data.players.filter(
-    (p: ApiTeamListPlayer) => p.playerId != null && p.playerId >= FILL_IN_THRESHOLD,
-  );
-  if (fillIns.length > 0) {
-    res.status(400).json({
-      error: `Fill-in player ids (>= ${FILL_IN_THRESHOLD}) cannot appear on a team list`,
-    });
-    return;
-  }
-  const tenantId = getTenantId(req);
-  const fixture = await findFixture(tenantId, params.data.id);
-  if (!fixture) {
-    res.status(404).json({ error: "Fixture not found" });
-    return;
-  }
-  // Store entries exactly as submitted (order preserved); drop null playerIds
-  // so free-typed names serialise without a playerId key.
-  const players: TeamListPlayer[] = body.data.players.map((p: ApiTeamListPlayer) => ({
-    order: p.order,
-    ...(p.playerId != null ? { playerId: p.playerId } : {}),
-    displayName: p.displayName,
-    ...(p.role != null ? { role: p.role } : {}),
-  }));
-  // One XI per fixture: upsert on the (tenantId, fixtureId) unique index.
-  const [row] = await db
-    .insert(teamListsTable)
-    .values({
-      tenantId,
-      fixtureId: fixture.id,
-      players,
-      isPublished: body.data.isPublished ?? false,
-    })
-    .onConflictDoUpdate({
-      target: [teamListsTable.tenantId, teamListsTable.fixtureId],
-      set: {
+router.put(
+  "/fixtures/:id/team-list",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = PutFixtureTeamListParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = PutFixtureTeamListBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const fillIns = body.data.players.filter(
+      (p: ApiTeamListPlayer) => p.playerId != null && p.playerId >= FILL_IN_THRESHOLD,
+    );
+    if (fillIns.length > 0) {
+      res.status(400).json({
+        error: `Fill-in player ids (>= ${FILL_IN_THRESHOLD}) cannot appear on a team list`,
+      });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const fixture = await findFixture(tenantId, params.data.id);
+    if (!fixture) {
+      res.status(404).json({ error: "Fixture not found" });
+      return;
+    }
+    // Store entries exactly as submitted (order preserved); drop null playerIds
+    // so free-typed names serialise without a playerId key.
+    const players: TeamListPlayer[] = body.data.players.map((p: ApiTeamListPlayer) => ({
+      order: p.order,
+      ...(p.playerId != null ? { playerId: p.playerId } : {}),
+      displayName: p.displayName,
+      ...(p.role != null ? { role: p.role } : {}),
+    }));
+    // One XI per fixture: upsert on the (tenantId, fixtureId) unique index.
+    const [row] = await db
+      .insert(teamListsTable)
+      .values({
+        tenantId,
+        fixtureId: fixture.id,
         players,
-        ...(body.data.isPublished !== undefined ? { isPublished: body.data.isPublished } : {}),
-      },
-    })
-    .returning();
-  res.json(row);
-});
+        isPublished: body.data.isPublished ?? false,
+      })
+      .onConflictDoUpdate({
+        target: [teamListsTable.tenantId, teamListsTable.fixtureId],
+        set: {
+          players,
+          ...(body.data.isPublished !== undefined ? { isPublished: body.data.isPublished } : {}),
+        },
+      })
+      .returning();
+    res.json(row);
+  },
+);
 
 export default router;

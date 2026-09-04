@@ -12,11 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus } from "lucide-react";
-import type {
-  CardKind,
-  MatchSummaryTeam,
-  MatchSummaryInnings,
-} from "@/lib/share-card";
+import type { CardKind, MatchSummaryTeam, MatchSummaryInnings } from "@/lib/share-card";
 import type { CardFormState } from "./logic";
 import { DESCRIPTORS } from "./descriptors";
 import { GenericCardForm, selectClass } from "./fields";
@@ -36,12 +32,7 @@ export function CardFormRouter({
     return <MatchSummaryForm state={state} setState={setState} />;
   }
   return (
-    <GenericCardForm
-      kind={kind}
-      descriptor={DESCRIPTORS[kind]}
-      state={state}
-      setState={setState}
-    />
+    <GenericCardForm kind={kind} descriptor={DESCRIPTORS[kind]} state={state} setState={setState} />
   );
 }
 
@@ -51,13 +42,7 @@ function str(v: unknown): string {
   return v == null ? "" : String(v);
 }
 
-function MatchSummaryForm({
-  state,
-  setState,
-}: {
-  state: CardFormState;
-  setState: SetState;
-}) {
+function MatchSummaryForm({ state, setState }: { state: CardFormState; setState: SetState }) {
   const club = (state.club ?? {}) as MatchSummaryTeam;
   const opposition = (state.opposition ?? {}) as MatchSummaryTeam;
   const innings = (Array.isArray(state.innings) ? state.innings : []) as MatchSummaryInnings[];
@@ -73,11 +58,36 @@ function MatchSummaryForm({
           <CardTitle>Match details</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <TextField label="Title" value={str(state.matchTitle)} onChange={(v) => setState({ matchTitle: v })} placeholder="A Grade • Round 5" />
-          <TextField label="Type / competition" value={str(state.matchType)} onChange={(v) => setState({ matchType: v || null })} placeholder="One Day" />
-          <TextField label="Date" value={str(state.date)} onChange={(v) => setState({ date: v || null })} placeholder="5 Apr 2025" />
-          <TextField label="Venue" value={str(state.venue)} onChange={(v) => setState({ venue: v || null })} placeholder="Sample Oval" />
-          <TextField label="Result text" value={str(state.result)} onChange={(v) => setState({ result: v })} placeholder="Won by 5 wickets" />
+          <TextField
+            label="Title"
+            value={str(state.matchTitle)}
+            onChange={(v) => setState({ matchTitle: v })}
+            placeholder="A Grade • Round 5"
+          />
+          <TextField
+            label="Type / competition"
+            value={str(state.matchType)}
+            onChange={(v) => setState({ matchType: v || null })}
+            placeholder="One Day"
+          />
+          <TextField
+            label="Date"
+            value={str(state.date)}
+            onChange={(v) => setState({ date: v || null })}
+            placeholder="5 Apr 2025"
+          />
+          <TextField
+            label="Venue"
+            value={str(state.venue)}
+            onChange={(v) => setState({ venue: v || null })}
+            placeholder="Sample Oval"
+          />
+          <TextField
+            label="Result text"
+            value={str(state.result)}
+            onChange={(v) => setState({ result: v })}
+            placeholder="Won by 5 wickets"
+          />
           <div className="space-y-1">
             <Label>Winner</Label>
             <select
@@ -95,7 +105,11 @@ function MatchSummaryForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TeamCard title={club.name || "Club"} team={club} onChange={(t) => setState({ club: t })} />
-        <TeamCard title="Opposition" team={opposition} onChange={(t) => setState({ opposition: t })} />
+        <TeamCard
+          title="Opposition"
+          team={opposition}
+          onChange={(t) => setState({ opposition: t })}
+        />
       </div>
 
       <Card>
@@ -184,10 +198,7 @@ function TeamCard({
 }) {
   const set = <K extends keyof MatchSummaryTeam>(k: K, v: MatchSummaryTeam[K]) =>
     onChange({ ...team, [k]: v });
-  const colorField = (
-    key: "primaryColor" | "secondaryColor" | "textColor",
-    label: string,
-  ) => (
+  const colorField = (key: "primaryColor" | "secondaryColor" | "textColor", label: string) => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
       <div className="flex items-center gap-2">
@@ -273,7 +284,10 @@ function InningsEditor({
         </div>
         <div className="space-y-1 w-20">
           <Label className="text-xs">Runs</Label>
-          <Input value={innings.totalRuns} onChange={(e) => onChange({ totalRuns: e.target.value })} />
+          <Input
+            value={innings.totalRuns}
+            onChange={(e) => onChange({ totalRuns: e.target.value })}
+          />
         </div>
         <div className="space-y-1 w-20">
           <Label className="text-xs">Wickets</Label>
@@ -300,14 +314,19 @@ function InningsEditor({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Top batters</Label>
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+              Top batters
+            </Label>
             {innings.topBatters.length < 5 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() =>
                   onChange({
-                    topBatters: [...innings.topBatters, { name: "", runs: 0, balls: null, notOut: false }],
+                    topBatters: [
+                      ...innings.topBatters,
+                      { name: "", runs: 0, balls: null, notOut: false },
+                    ],
                   })
                 }
               >
@@ -333,7 +352,9 @@ function InningsEditor({
                 placeholder="B"
                 className="w-14"
                 value={b.balls ?? ""}
-                onChange={(e) => setBatter(i, { balls: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) =>
+                  setBatter(i, { balls: e.target.value ? Number(e.target.value) : null })
+                }
               />
               <div className="flex items-center gap-1 px-1">
                 <Switch
@@ -357,14 +378,19 @@ function InningsEditor({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Top bowlers</Label>
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+              Top bowlers
+            </Label>
             {innings.topBowlers.length < 5 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() =>
                   onChange({
-                    topBowlers: [...innings.topBowlers, { name: "", wickets: 0, runs: 0, overs: "" }],
+                    topBowlers: [
+                      ...innings.topBowlers,
+                      { name: "", wickets: 0, runs: 0, overs: "" },
+                    ],
                   })
                 }
               >

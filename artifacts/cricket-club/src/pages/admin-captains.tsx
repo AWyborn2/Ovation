@@ -46,8 +46,7 @@ export default function AdminCaptains() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: getListCaptainsQueryKey() });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getListCaptainsQueryKey() });
 
   const onMutationError = (e: unknown) => {
     const status = (e as { status?: number } | null)?.status;
@@ -59,18 +58,15 @@ export default function AdminCaptains() {
     if (msg) setError(msg);
   };
 
-  const sorted = [...(captains ?? [])].sort((a, b) =>
-    a.username.localeCompare(b.username),
-  );
+  const sorted = [...(captains ?? [])].sort((a, b) => a.username.localeCompare(b.username));
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-muted-foreground mt-1">
-            Create grade captain logins and grant each one the grades they vote
-            for. Captains sign in at <code>/captain</code> to submit their 3-2-1
-            votes each round.
+            Create grade captain logins and grant each one the grades they vote for. Captains sign
+            in at <code>/captain</code> to submit their 3-2-1 votes each round.
           </p>
         </div>
         <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
@@ -131,9 +127,7 @@ export default function AdminCaptains() {
                 <CardTitle className="text-xl">{captain.displayName}</CardTitle>
                 <div className="text-xs text-muted-foreground mt-1">
                   @{captain.username} ·{" "}
-                  {captain.grades.length > 0
-                    ? captain.grades.join(", ")
-                    : "no grades assigned"}
+                  {captain.grades.length > 0 ? captain.grades.join(", ") : "no grades assigned"}
                 </div>
               </div>
               <div className="space-x-2 shrink-0">
@@ -298,9 +292,7 @@ function CaptainForm({
           autoComplete="new-password"
           required={requirePassword}
         />
-        {passwordHint && (
-          <p className="text-xs text-muted-foreground">{passwordHint}</p>
-        )}
+        {passwordHint && <p className="text-xs text-muted-foreground">{passwordHint}</p>}
       </div>
 
       <div className="space-y-2">
@@ -308,11 +300,7 @@ function CaptainForm({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {GRADES.map((g) => (
             <label key={g} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={grades.includes(g)}
-                onChange={() => toggleGrade(g)}
-              />
+              <input type="checkbox" checked={grades.includes(g)} onChange={() => toggleGrade(g)} />
               {g}
             </label>
           ))}
@@ -323,10 +311,7 @@ function CaptainForm({
         <Button
           type="submit"
           disabled={
-            pending ||
-            !username.trim() ||
-            !displayName.trim() ||
-            (requirePassword && !password)
+            pending || !username.trim() || !displayName.trim() || (requirePassword && !password)
           }
         >
           {pending ? "Saving…" : submitLabel}

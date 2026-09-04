@@ -20,8 +20,7 @@ const STAMP = Date.now();
 
 function reqFor(tenantId: number, sessionToken?: string): Request {
   return {
-    header: (name: string) =>
-      name.toLowerCase() === "x-tenant-id" ? String(tenantId) : undefined,
+    header: (name: string) => (name.toLowerCase() === "x-tenant-id" ? String(tenantId) : undefined),
     headers: {},
     cookies: sessionToken ? { [SESSION_COOKIE]: sessionToken } : {},
   } as unknown as Request;

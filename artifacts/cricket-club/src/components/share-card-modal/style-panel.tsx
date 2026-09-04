@@ -128,9 +128,7 @@ export function StylePanel({ style, hashtag }: { style: ThemeStyle; hashtag: str
           />
           Set as tenant default
         </label>
-        {saveThemeError && (
-          <p className="text-xs text-destructive">{saveThemeError}</p>
-        )}
+        {saveThemeError && <p className="text-xs text-destructive">{saveThemeError}</p>}
         <Button
           type="button"
           size="sm"

@@ -51,10 +51,7 @@ router.get("/grades", async (req, res): Promise<void> => {
     return;
   }
 
-  const grades = await db
-    .select()
-    .from(gradeSummariesTable)
-    .orderBy(gradeSummariesTable.grade);
+  const grades = await db.select().from(gradeSummariesTable).orderBy(gradeSummariesTable.grade);
   // The A Grade card reports "players" as the size of the club's cap list, so
   // this count must be tenant-scoped — unfiltered it showed every club's caps
   // added together.
@@ -62,18 +59,13 @@ router.get("/grades", async (req, res): Promise<void> => {
     .select({ value: count() })
     .from(capRegisterTable)
     .where(
-      and(
-        eq(capRegisterTable.tenantId, getTenantId(req)),
-        eq(capRegisterTable.category, "male"),
-      ),
+      and(eq(capRegisterTable.tenantId, getTenantId(req)), eq(capRegisterTable.category, "male")),
     );
   res.json(
     grades
       .filter((g) => g.grade !== "CLUB TOTAL")
       .map((g) =>
-        g.grade === "A Grade"
-          ? { ...g, players: aGradeCapCount?.value ?? g.players }
-          : g,
+        g.grade === "A Grade" ? { ...g, players: aGradeCapCount?.value ?? g.players } : g,
       ),
   );
 });
@@ -114,7 +106,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     const [dash, mapRows] = await Promise.all([
       centralDashboard(source.clubId),
       db
-        .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+        .select({
+          participantId: playerIdMapTable.participantId,
+          playerId: playerIdMapTable.playerId,
+        })
         .from(playerIdMapTable)
         .where(eq(playerIdMapTable.tenantId, tenantId)),
     ]);
@@ -223,7 +218,8 @@ router.get("/overview", async (req, res): Promise<void> => {
     const latestSeason = seasons[0] ?? null;
 
     let recentMatches: Awaited<ReturnType<typeof central.centralClubMatches>> = [];
-    let topRunScorers: { playerId: number; givenName: string; surname: string; value: number }[] = [];
+    let topRunScorers: { playerId: number; givenName: string; surname: string; value: number }[] =
+      [];
     let topWicketTakers: typeof topRunScorers = [];
 
     if (latestSeason !== null) {
@@ -236,9 +232,7 @@ router.get("/overview", async (req, res): Promise<void> => {
       });
       // Show an opponent's own uploaded brand (crest/colours) where that club is
       // a tenant — central.clubs has no logo, so this is its source.
-      const overlaid = await overlayCentralOpponents(
-        recentMatches.map((m) => m.opponentClub),
-      );
+      const overlaid = await overlayCentralOpponents(recentMatches.map((m) => m.opponentClub));
       recentMatches = recentMatches.map((m, i) => ({ ...m, opponentClub: overlaid[i] }));
       const splitName = (dn: string | null) => {
         const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
@@ -246,7 +240,11 @@ router.get("/overview", async (req, res): Promise<void> => {
         if (parts.length === 1) return { givenName: parts[0], surname: "" };
         return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
       };
-      const toLeader = (l: { participantId: string; displayName: string | null; value: number }) => ({
+      const toLeader = (l: {
+        participantId: string;
+        displayName: string | null;
+        value: number;
+      }) => ({
         playerId: intByGuid.get(l.participantId) ?? 0,
         ...splitName(l.displayName),
         value: l.value,
@@ -335,9 +333,7 @@ router.get("/overview", async (req, res): Promise<void> => {
       .map(toRecentMatch);
 
     // Overlay uploaded brands for opponent clubs that are themselves tenants.
-    const overlaid = await overlayNativeOpponents(
-      recentMatches.map((m) => m.opponentClub),
-    );
+    const overlaid = await overlayNativeOpponents(recentMatches.map((m) => m.opponentClub));
     recentMatches = recentMatches.map((m, i) => ({ ...m, opponentClub: overlaid[i] }));
 
     [topRunScorers, topWicketTakers] = await Promise.all([
@@ -522,10 +518,29 @@ router.get("/records", async (req, res): Promise<void> => {
       if (parts.length === 1) return { givenName: parts[0], surname: "" };
       return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
     };
-    const holder = (h: { participantId: string; displayName: string | null; value: number; grades: string[] } | null) =>
-      h ? { playerId: intByGuid.get(h.participantId) ?? 0, ...split(h.displayName), value: h.value, grades: h.grades } : null;
+    const holder = (
+      h: {
+        participantId: string;
+        displayName: string | null;
+        value: number;
+        grades: string[];
+      } | null,
+    ) =>
+      h
+        ? {
+            playerId: intByGuid.get(h.participantId) ?? 0,
+            ...split(h.displayName),
+            value: h.value,
+            grades: h.grades,
+          }
+        : null;
     const innings = (
-      h: { participantId: string; displayName: string | null; grade: string | null; value: string } | null,
+      h: {
+        participantId: string;
+        displayName: string | null;
+        grade: string | null;
+        value: string;
+      } | null,
       field: "highScore" | "bestBowling",
     ) =>
       h
@@ -534,11 +549,22 @@ router.get("/records", async (req, res): Promise<void> => {
             playerId: intByGuid.get(h.participantId) ?? 0,
             ...split(h.displayName),
             grade: h.grade,
-            games: null, innings: null, notOuts: null, runs: null, batAvg: null,
+            games: null,
+            innings: null,
+            notOuts: null,
+            runs: null,
+            batAvg: null,
             highScore: field === "highScore" ? h.value : null,
-            fifties: null, hundreds: null, wickets: null, runsConceded: null, bowlAvg: null,
+            fifties: null,
+            hundreds: null,
+            wickets: null,
+            runsConceded: null,
+            bowlAvg: null,
             bestBowling: field === "bestBowling" ? h.value : null,
-            fiveWickets: null, catches: null, stumpings: null, runOuts: null,
+            fiveWickets: null,
+            catches: null,
+            stumpings: null,
+            runOuts: null,
           }
         : null;
     res.json({
@@ -589,10 +615,7 @@ router.get("/records", async (req, res): Promise<void> => {
       .selectDistinct({ grade: playerGradeStatsTable.grade })
       .from(playerGradeStatsTable)
       .where(
-        and(
-          eq(playerGradeStatsTable.playerId, row.playerId),
-          gt(playerGradeStatsTable.games, 0),
-        ),
+        and(eq(playerGradeStatsTable.playerId, row.playerId), gt(playerGradeStatsTable.games, 0)),
       );
     return {
       playerId: row.playerId,
@@ -647,13 +670,15 @@ router.get("/records", async (req, res): Promise<void> => {
     return parseInt(parts[0], 10) || 0;
   }
 
-  const highestScoreStat = allStats
-    .filter((s) => s.highScore)
-    .sort((a, b) => parseHighScore(b.highScore) - parseHighScore(a.highScore))[0] ?? null;
+  const highestScoreStat =
+    allStats
+      .filter((s) => s.highScore)
+      .sort((a, b) => parseHighScore(b.highScore) - parseHighScore(a.highScore))[0] ?? null;
 
-  const bestBowlingStat = allStats
-    .filter((s) => s.bestBowling && s.bestBowling !== "")
-    .sort((a, b) => parseBestBowling(b.bestBowling) - parseBestBowling(a.bestBowling))[0] ?? null;
+  const bestBowlingStat =
+    allStats
+      .filter((s) => s.bestBowling && s.bestBowling !== "")
+      .sort((a, b) => parseBestBowling(b.bestBowling) - parseBestBowling(a.bestBowling))[0] ?? null;
 
   res.json({
     mostGames: mostGames ?? null,
@@ -672,40 +697,30 @@ router.get("/records-display-settings", async (req, res): Promise<void> => {
   res.json(serializeRecordsDisplaySettings(settings));
 });
 
-router.patch(
-  "/records-display-settings",
-  requireAdmin,
-  async (req, res): Promise<void> => {
-    const parsed = UpdateRecordsDisplaySettingsBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    const CENTURIES_SORT = /^(grade|batsman|score|season)-(asc|desc)$/;
-    const FIVE_FOR_SORT = /^(grade|bowler|figures|season)-(asc|desc)$/;
-    if (
-      parsed.data.centuriesSort !== undefined &&
-      !CENTURIES_SORT.test(parsed.data.centuriesSort)
-    ) {
-      res.status(400).json({ error: "Invalid centuriesSort value" });
-      return;
-    }
-    if (
-      parsed.data.fiveForSort !== undefined &&
-      !FIVE_FOR_SORT.test(parsed.data.fiveForSort)
-    ) {
-      res.status(400).json({ error: "Invalid fiveForSort value" });
-      return;
-    }
-    const tenantId = getTenantId(req);
-    await getOrCreateSettings(recordsDisplaySettingsTable, tenantId);
-    const [row] = await db
-      .update(recordsDisplaySettingsTable)
-      .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(recordsDisplaySettingsTable.tenantId, tenantId))
-      .returning();
-    res.json(serializeRecordsDisplaySettings(row));
-  },
-);
+router.patch("/records-display-settings", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = UpdateRecordsDisplaySettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const CENTURIES_SORT = /^(grade|batsman|score|season)-(asc|desc)$/;
+  const FIVE_FOR_SORT = /^(grade|bowler|figures|season)-(asc|desc)$/;
+  if (parsed.data.centuriesSort !== undefined && !CENTURIES_SORT.test(parsed.data.centuriesSort)) {
+    res.status(400).json({ error: "Invalid centuriesSort value" });
+    return;
+  }
+  if (parsed.data.fiveForSort !== undefined && !FIVE_FOR_SORT.test(parsed.data.fiveForSort)) {
+    res.status(400).json({ error: "Invalid fiveForSort value" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  await getOrCreateSettings(recordsDisplaySettingsTable, tenantId);
+  const [row] = await db
+    .update(recordsDisplaySettingsTable)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(eq(recordsDisplaySettingsTable.tenantId, tenantId))
+    .returning();
+  res.json(serializeRecordsDisplaySettings(row));
+});
 
 export default router;

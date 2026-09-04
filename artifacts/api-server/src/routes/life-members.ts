@@ -50,9 +50,7 @@ const parseHighScore = (hs: string | null | undefined): number => {
   return isNaN(n) ? 0 : n;
 };
 
-const parseBestBowling = (
-  bb: string | null | undefined,
-): { wkts: number; runs: number } => {
+const parseBestBowling = (bb: string | null | undefined): { wkts: number; runs: number } => {
   if (!bb) return { wkts: 0, runs: 0 };
   const m = String(bb).match(/(\d+)\s*\/\s*(\d+)/);
   if (!m) return { wkts: 0, runs: 0 };
@@ -66,9 +64,7 @@ router.get("/life-members", async (req, res): Promise<void> => {
     .where(eq(lifeMembersTable.tenantId, getTenantId(req)))
     .orderBy(asc(lifeMembersTable.inductionYear), asc(lifeMembersTable.name));
 
-  const playerIds = rows
-    .map((r) => r.playerId)
-    .filter((id): id is number => id !== null);
+  const playerIds = rows.map((r) => r.playerId).filter((id): id is number => id !== null);
 
   const statsByPlayer = new Map<number, AggregatedStats>();
   if (playerIds.length > 0) {
@@ -119,10 +115,7 @@ router.get("/life-members", async (req, res): Promise<void> => {
 
       const bb = parseBestBowling(s.bestBowling);
       const cur = parseBestBowling(agg.bestBowling);
-      if (
-        bb.wkts > cur.wkts ||
-        (bb.wkts === cur.wkts && bb.wkts > 0 && bb.runs < cur.runs)
-      ) {
+      if (bb.wkts > cur.wkts || (bb.wkts === cur.wkts && bb.wkts > 0 && bb.runs < cur.runs)) {
         agg.bestBowling = s.bestBowling ?? null;
       }
 
@@ -141,80 +134,95 @@ router.get("/life-members", async (req, res): Promise<void> => {
   res.json(
     rows.map((r) => ({
       ...r,
-      stats: r.playerId !== null ? statsByPlayer.get(r.playerId) ?? null : null,
+      stats: r.playerId !== null ? (statsByPlayer.get(r.playerId) ?? null) : null,
     })),
   );
 });
 
-router.post("/life-members", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const parsed = CreateLifeMemberBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db
-    .insert(lifeMembersTable)
-    .values({
-      tenantId: getTenantId(req),
-      name: parsed.data.name,
-      inductionYear: parsed.data.inductionYear,
-      isPlayingMember: parsed.data.isPlayingMember ?? true,
-      playerId: parsed.data.playerId ?? null,
-      roleLabel: parsed.data.roleLabel ?? null,
-      blurb: parsed.data.blurb ?? "",
-    })
-    .returning();
-  res.status(201).json(row);
-});
+router.post(
+  "/life-members",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateLifeMemberBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [row] = await db
+      .insert(lifeMembersTable)
+      .values({
+        tenantId: getTenantId(req),
+        name: parsed.data.name,
+        inductionYear: parsed.data.inductionYear,
+        isPlayingMember: parsed.data.isPlayingMember ?? true,
+        playerId: parsed.data.playerId ?? null,
+        roleLabel: parsed.data.roleLabel ?? null,
+        blurb: parsed.data.blurb ?? "",
+      })
+      .returning();
+    res.status(201).json(row);
+  },
+);
 
-router.patch("/life-members/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = UpdateLifeMemberParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateLifeMemberBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const [row] = await db
-    .update(lifeMembersTable)
-    .set(body.data)
-    .where(
-      and(
-        eq(lifeMembersTable.id, params.data.id),
-        eq(lifeMembersTable.tenantId, getTenantId(req)),
-      ),
-    )
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Life member not found" });
-    return;
-  }
-  res.json(row);
-});
+router.patch(
+  "/life-members/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = UpdateLifeMemberParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateLifeMemberBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const [row] = await db
+      .update(lifeMembersTable)
+      .set(body.data)
+      .where(
+        and(
+          eq(lifeMembersTable.id, params.data.id),
+          eq(lifeMembersTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Life member not found" });
+      return;
+    }
+    res.json(row);
+  },
+);
 
-router.delete("/life-members/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = DeleteLifeMemberParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [row] = await db
-    .delete(lifeMembersTable)
-    .where(
-      and(
-        eq(lifeMembersTable.id, params.data.id),
-        eq(lifeMembersTable.tenantId, getTenantId(req)),
-      ),
-    )
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Life member not found" });
-    return;
-  }
-  res.sendStatus(204);
-});
+router.delete(
+  "/life-members/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = DeleteLifeMemberParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [row] = await db
+      .delete(lifeMembersTable)
+      .where(
+        and(
+          eq(lifeMembersTable.id, params.data.id),
+          eq(lifeMembersTable.tenantId, getTenantId(req)),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Life member not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 export default router;

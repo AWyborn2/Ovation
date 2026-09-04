@@ -129,7 +129,9 @@ export async function buildMilestones(
   const runsTiers = (settings?.runsTiers?.length ? settings.runsTiers : DEFAULT_RUNS_TIERS)
     .slice()
     .sort((a, b) => a - b);
-  const wicketsTiers = (settings?.wicketsTiers?.length ? settings.wicketsTiers : DEFAULT_WICKETS_TIERS)
+  const wicketsTiers = (
+    settings?.wicketsTiers?.length ? settings.wicketsTiers : DEFAULT_WICKETS_TIERS
+  )
     .slice()
     .sort((a, b) => a - b);
 
@@ -150,9 +152,7 @@ export async function buildMilestones(
   // the parser cannot read doesn't just drop one row — it can shift what
   // "recent" means for the whole board. Surface those instead of swallowing
   // them; a blank date is ordinary missing data and is not reported.
-  const { parsed: parsedDates, unparsed } = partitionMatchDates(
-    matches.map((m) => m.matchDate),
-  );
+  const { parsed: parsedDates, unparsed } = partitionMatchDates(matches.map((m) => m.matchDate));
   if (unparsed.length > 0) {
     logger.warn(
       {
@@ -197,10 +197,7 @@ export async function buildMilestones(
     })
     .from(playersTable);
   const nameById = new Map<number, string>();
-  const careerById = new Map<
-    number,
-    { games: number; runs: number; wickets: number }
-  >();
+  const careerById = new Map<number, { games: number; runs: number; wickets: number }>();
   for (const p of players) {
     nameById.set(p.id, `${p.givenName} ${p.surname}`.trim());
     careerById.set(p.id, {
@@ -378,7 +375,10 @@ async function buildCentralMilestones(
       [] as Awaited<ReturnType<typeof centralMilestones>>,
     ),
     db
-      .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+      .select({
+        participantId: playerIdMapTable.participantId,
+        playerId: playerIdMapTable.playerId,
+      })
       .from(playerIdMapTable)
       .where(eq(playerIdMapTable.tenantId, tenantId)),
     resolveCuration(tenantId),
@@ -451,9 +451,7 @@ async function buildCentralMilestones(
  * Shared by the `/milestones` route and the honour-display board so both honour
  * the tenant boundary instead of leaking tenant #1's players.
  */
-export async function buildMilestonesForSource(
-  source: DataSource,
-): Promise<MilestonesResult> {
+export async function buildMilestonesForSource(source: DataSource): Promise<MilestonesResult> {
   const tenantId = source.tenantId;
   const central = source.kind === "central";
   // Key on every input that varies the board: the tenant (its settings row
@@ -473,9 +471,7 @@ export async function buildMilestonesForSource(
 }
 
 /** Request-flavoured wrapper: resolves the tenant's data source first. */
-export async function buildMilestonesForRequest(
-  req: Request,
-): Promise<MilestonesResult> {
+export async function buildMilestonesForRequest(req: Request): Promise<MilestonesResult> {
   return buildMilestonesForSource(await dataSource(req));
 }
 
@@ -515,9 +511,7 @@ async function appendDebuts(
       playerId: capRegisterTable.playerId,
     })
     .from(capRegisterTable)
-    .where(
-      and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)),
-    );
+    .where(and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)));
 
   const capLines = await db
     .select({
@@ -531,19 +525,12 @@ async function appendDebuts(
     .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
     .where(inArray(matchesTable.grade, grades));
 
-  const earliest = new Map<
-    string,
-    { season: number; round: number; matchId: number }
-  >();
+  const earliest = new Map<string, { season: number; round: number; matchId: number }>();
   for (const l of capLines) {
     if (l.season == null || l.round == null) continue;
     const key = `${l.playerId}|${l.grade}`;
     const cur = earliest.get(key);
-    if (
-      !cur ||
-      l.season < cur.season ||
-      (l.season === cur.season && l.round < cur.round)
-    ) {
+    if (!cur || l.season < cur.season || (l.season === cur.season && l.round < cur.round)) {
       earliest.set(key, { season: l.season, round: l.round, matchId: l.matchId });
     }
   }
@@ -633,16 +620,8 @@ function appendCareerCrossings(
     wicketsTiers: number[];
   },
 ): void {
-  const {
-    lines,
-    matchById,
-    careerById,
-    nameFor,
-    inWindow,
-    gamesTiers,
-    runsTiers,
-    wicketsTiers,
-  } = ctx;
+  const { lines, matchById, careerById, nameFor, inWindow, gamesTiers, runsTiers, wicketsTiers } =
+    ctx;
 
   type WindowLine = {
     matchId: number;
@@ -677,11 +656,7 @@ function appendCareerCrossings(
     const career = careerById.get(playerId);
     if (!career) continue;
     windowLines.sort((a, b) =>
-      a.matchDate === b.matchDate
-        ? a.matchId - b.matchId
-        : a.matchDate < b.matchDate
-          ? -1
-          : 1,
+      a.matchDate === b.matchDate ? a.matchId - b.matchId : a.matchDate < b.matchDate ? -1 : 1,
     );
 
     for (const stat of stats) {

@@ -42,7 +42,8 @@ function neonFlex(
 }
 
 /** Cyan floodlight ring + halo for the photo frame (both formats). */
-const PHOTO_FRAME_SHADOW = "box-shadow:0 0 0 2px rgba(55,207,230,.5),0 0 44px -10px rgba(55,207,230,.5)";
+const PHOTO_FRAME_SHADOW =
+  "box-shadow:0 0 0 2px rgba(55,207,230,.5),0 0 44px -10px rgba(55,207,230,.5)";
 
 /** Inner bottom scrim so type near the frame stays legible over the photo. */
 const PHOTO_SCRIM = `<div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -80px 90px -50px rgba(4,7,13,.9)"></div>`;
@@ -76,7 +77,12 @@ const storyHtml = storyColumnRoot(
     `</div>` +
     `<div>` +
     flourish("64px") +
-    neonText("{{playerFirstName}} {{playerLastName}}", 90, "gold", ";margin-top:12px;line-height:.9") +
+    neonText(
+      "{{playerFirstName}} {{playerLastName}}",
+      90,
+      "gold",
+      ";margin-top:12px;line-height:.9",
+    ) +
     `</div>` +
     `<div style="display:flex;flex-direction:column;gap:10px;align-items:center">` +
     `<div style="font-weight:700;font-size:23px;color:#fff">{{role}}</div>` +
@@ -96,7 +102,12 @@ const sharedHtml = sharedColumnRoot(
     `<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:calc(var(--k,1.4)*18px)">` +
     `<div>` +
     flourish("calc(var(--k,1.4)*46px)") +
-    neonFlex("{{playerFirstName}}<br>{{playerLastName}}", 64, "gold", ";margin-top:14px;line-height:.92") +
+    neonFlex(
+      "{{playerFirstName}}<br>{{playerLastName}}",
+      64,
+      "gold",
+      ";margin-top:14px;line-height:.92",
+    ) +
     `</div>` +
     `<div style="display:flex;flex-direction:column;gap:12px">` +
     `<div style="font-weight:700;font-size:26px;color:#fff">{{role}}</div>` +

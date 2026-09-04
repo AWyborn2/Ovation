@@ -8,10 +8,7 @@ import {
 
 function sortMembers(members: TeamOfDecadeMember[]): TeamOfDecadeMember[] {
   return [...members].sort(
-    (a, b) =>
-      a.battingOrder - b.battingOrder ||
-      a.displayOrder - b.displayOrder ||
-      a.id - b.id,
+    (a, b) => a.battingOrder - b.battingOrder || a.displayOrder - b.displayOrder || a.id - b.id,
   );
 }
 
@@ -46,9 +43,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
           </div>
           {(board.teamLabel || board.periodLabel) && (
             <div className="text-xs opacity-90 mt-0.5">
-              {[board.teamLabel, board.periodLabel]
-                .filter(Boolean)
-                .join(" · ")}
+              {[board.teamLabel, board.periodLabel].filter(Boolean).join(" · ")}
             </div>
           )}
         </div>
@@ -71,10 +66,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
             {members.map((m, i) => {
               const badges = memberBadges(m);
               return (
-                <div
-                  key={m.id}
-                  className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0"
-                >
+                <div key={m.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
                   <span className="font-mono font-bold text-primary w-6 shrink-0 text-right">
                     {i + 1}
                   </span>
@@ -89,9 +81,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
                       </span>
                     ))}
                     {m.role && (
-                      <span className="text-xs text-muted-foreground italic">
-                        {m.role}
-                      </span>
+                      <span className="text-xs text-muted-foreground italic">{m.role}</span>
                     )}
                   </span>
                 </div>
@@ -108,9 +98,7 @@ export function TeamOfDecadeTab() {
   const brand = useBrand();
   const { data: boards, isLoading } = useListTeamOfDecadeBoards();
 
-  const sorted = [...(boards ?? [])].sort(
-    (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-  );
+  const sorted = [...(boards ?? [])].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
   return (
     <div className="space-y-4">
@@ -120,8 +108,8 @@ export function TeamOfDecadeTab() {
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          The greatest XIs in {brand.name} history — selected to
-          honour the finest players of each era.
+          The greatest XIs in {brand.name} history — selected to honour the finest players of each
+          era.
         </p>
       </div>
 

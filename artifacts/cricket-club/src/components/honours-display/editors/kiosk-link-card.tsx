@@ -1,9 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Copy, Link2, Loader2, Trash2, Tv } from "lucide-react";
-import {
-  useGenerateKioskToken,
-  useRevokeKioskToken,
-} from "@workspace/api-client-react";
+import { useGenerateKioskToken, useRevokeKioskToken } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,10 +23,7 @@ export function KioskLinkCard({
 
   const kioskUrl = useMemo(() => {
     if (!token) return null;
-    const base = `${window.location.origin}${import.meta.env.BASE_URL}`.replace(
-      /\/+$/,
-      "/",
-    );
+    const base = `${window.location.origin}${import.meta.env.BASE_URL}`.replace(/\/+$/, "/");
     return `${base}tv/${encodeURIComponent(token)}`;
   }, [token]);
 
@@ -83,12 +77,11 @@ export function KioskLinkCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Generate a private <strong>short link</strong> that loads <em>only</em>{" "}
-          the rotating kiosk — no admin sign-in needed. It's a brief{" "}
-          <code>/tv/&lt;code&gt;</code> address that's easy to type straight into a
-          wall-mounted TV or Raspberry Pi browser (it auto-runs the rotation). The
-          link doesn't expose any other admin page. Revoke it any time to stop a
-          lost or shared link working.
+          Generate a private <strong>short link</strong> that loads <em>only</em> the rotating kiosk
+          — no admin sign-in needed. It's a brief <code>/tv/&lt;code&gt;</code> address that's easy
+          to type straight into a wall-mounted TV or Raspberry Pi browser (it auto-runs the
+          rotation). The link doesn't expose any other admin page. Revoke it any time to stop a lost
+          or shared link working.
         </p>
 
         {token && kioskUrl ? (
@@ -147,9 +140,7 @@ export function KioskLinkCard({
             </div>
             <div className="flex flex-wrap items-end gap-2 border-t pt-3">
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Set a custom code
-                </span>
+                <span className="text-xs font-medium text-muted-foreground">Set a custom code</span>
                 <Input
                   value={customCode}
                   placeholder="e.g. clubroom-tv"
@@ -172,8 +163,8 @@ export function KioskLinkCard({
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Regenerating, setting a new code, or revoking immediately stops the
-              current link from working — re-open the kiosk on the TV afterwards.
+              Regenerating, setting a new code, or revoking immediately stops the current link from
+              working — re-open the kiosk on the TV afterwards.
             </p>
           </div>
         ) : (

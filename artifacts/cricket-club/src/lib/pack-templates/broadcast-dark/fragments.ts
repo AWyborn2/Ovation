@@ -1,10 +1,4 @@
-import {
-  CLUB_LOGO_SLOT,
-  columnRoot,
-  slot,
-  sponsorsOff,
-  sponsorsOn,
-} from "../shared";
+import { CLUB_LOGO_SLOT, columnRoot, slot, sponsorsOff, sponsorsOn } from "../shared";
 
 /**
  * Shared markup fragments for the Broadcast Dark pack, transcribed verbatim
@@ -57,11 +51,7 @@ export function bgLayers(beamPct = 13): string {
 // ---------------------------------------------------------------------------
 
 /** Shared (non-story) root: background layers + fluid flex column. */
-export function sharedColumnRoot(
-  layers: string,
-  columnInner: string,
-  rootStyle = "",
-): string {
+export function sharedColumnRoot(layers: string, columnInner: string, rootStyle = ""): string {
   return columnRoot(layers, columnInner, "58px 66px 52px", rootStyle);
 }
 
@@ -139,20 +129,12 @@ export function presentedBy(verb: string, extraStyle = ""): string {
 }
 
 /** Story footer row: club hashtag left + right-hand content. */
-export function footerRowStory(
-  bottom: number,
-  rightHtml: string,
-  hashtagExtraStyle = "",
-): string {
+export function footerRowStory(bottom: number, rightHtml: string, hashtagExtraStyle = ""): string {
   return `<div style="position:absolute;bottom:${bottom}px;left:70px;right:70px;display:flex;align-items:center;justify-content:space-between"><div style="font-weight:700;font-size:24px;letter-spacing:.1em;color:var(--gold,#F5B21A)${hashtagExtraStyle}">{{clubHashtag}}</div>${rightHtml}</div>`;
 }
 
 /** Shared footer row: club hashtag left + right-hand content (flex:none row). */
-export function footerRowShared(
-  rightHtml: string,
-  marginTop = "",
-  hashtagExtraStyle = "",
-): string {
+export function footerRowShared(rightHtml: string, marginTop = "", hashtagExtraStyle = ""): string {
   return `<div style="flex:none;display:flex;align-items:center;justify-content:space-between${marginTop}"><div style="font-weight:700;font-size:24px;letter-spacing:.1em;color:var(--gold,#FBAC27)${hashtagExtraStyle}">{{clubHashtag}}</div>${rightHtml}</div>`;
 }
 

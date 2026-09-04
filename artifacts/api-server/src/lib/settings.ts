@@ -10,9 +10,10 @@ import type { PgTable, PgColumn } from "drizzle-orm/pg-core";
  * isolation: honour-display, match-display, records-display, trading-card,
  * junior-match-display, social, milestone-board settings).
  */
-export async function getOrCreateSettings<
-  Table extends PgTable & { tenantId: PgColumn },
->(table: Table, tenantId: number): Promise<Table["$inferSelect"]> {
+export async function getOrCreateSettings<Table extends PgTable & { tenantId: PgColumn }>(
+  table: Table,
+  tenantId: number,
+): Promise<Table["$inferSelect"]> {
   const [existing] = await db
     .select()
     .from(table as PgTable)

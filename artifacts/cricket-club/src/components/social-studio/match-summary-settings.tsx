@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  useUpdateSocialSettings,
-  type SocialSettings,
-} from "@workspace/api-client-react";
+import { useUpdateSocialSettings, type SocialSettings } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -16,14 +13,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 /** Per-grade match summary config shape (matches the OpenAPI schema). */
 type MatchSummaryGradeConfig = Record<string, { enabled: boolean }>;
 
-const SENIOR_GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "One Day",
-  "T20",
-];
+const SENIOR_GRADES = ["A Grade", "B Grade", "C Grade", "D Grade", "One Day", "T20"];
 const JUNIOR_GRADES = ["Under 10", "Under 12", "Under 14", "Under 16"];
 const ALL_DEFAULT_GRADES = [...SENIOR_GRADES, ...JUNIOR_GRADES];
 
@@ -38,9 +28,7 @@ export function MatchSummarySettings({
   settings: SocialSettings;
   onSaved: () => void;
 }) {
-  const [masterEnabled, setMasterEnabled] = useState<boolean>(
-    settings.engineMatchSummary === true,
-  );
+  const [masterEnabled, setMasterEnabled] = useState<boolean>(settings.engineMatchSummary === true);
   const [autoseedEnabled, setAutoseedEnabled] = useState<boolean>(
     settings.autoseedCarousels === true,
   );
@@ -103,14 +91,10 @@ export function MatchSummarySettings({
             <div>
               <div className="font-medium">Match Summary Auto-Draft</div>
               <div className="text-xs text-muted-foreground">
-                Automatically draft match summary cards when results are
-                committed
+                Automatically draft match summary cards when results are committed
               </div>
             </div>
-            <Switch
-              checked={masterEnabled}
-              onCheckedChange={setMasterEnabled}
-            />
+            <Switch checked={masterEnabled} onCheckedChange={setMasterEnabled} />
           </div>
 
           {/* Per-grade config — visible only when master switch is on */}
@@ -121,8 +105,8 @@ export function MatchSummarySettings({
                   Grade Configuration
                 </h3>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Control which grades auto-draft match summary cards. Senior
-                  grades default to ON, junior grades default to OFF.
+                  Control which grades auto-draft match summary cards. Senior grades default to ON,
+                  junior grades default to OFF.
                 </p>
               </div>
 
@@ -144,9 +128,7 @@ export function MatchSummarySettings({
                         )}
                         <span className="font-medium text-sm">{grade}</span>
                         {junior && (
-                          <span className="text-[10px] text-muted-foreground">
-                            Junior
-                          </span>
+                          <span className="text-[10px] text-muted-foreground">Junior</span>
                         )}
                       </div>
                       <Switch
@@ -166,14 +148,11 @@ export function MatchSummarySettings({
             <div>
               <div className="font-medium">Auto-Seed Round Carousels</div>
               <div className="text-xs text-muted-foreground">
-                When a round's match-summary drafts are approved, assemble them
-                into one carousel set (re-running updates the same set)
+                When a round's match-summary drafts are approved, assemble them into one carousel
+                set (re-running updates the same set)
               </div>
             </div>
-            <Switch
-              checked={autoseedEnabled}
-              onCheckedChange={setAutoseedEnabled}
-            />
+            <Switch checked={autoseedEnabled} onCheckedChange={setAutoseedEnabled} />
           </div>
 
           {error && <div className="text-sm text-destructive">{error}</div>}

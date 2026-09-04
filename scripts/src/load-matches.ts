@@ -217,7 +217,9 @@ function main(): void {
     WHERE COALESCE(games,0) < 0 OR COALESCE(runs,0) < 0 OR COALESCE(wickets,0) < 0`);
   console.log(`  negative baseline rows after peel: ${negative} (expect 0)`);
 
-  const dated = psql(`SELECT count(*) FROM public.matches WHERE source_key IS NOT NULL AND match_date IS NOT NULL`);
+  const dated = psql(
+    `SELECT count(*) FROM public.matches WHERE source_key IS NOT NULL AND match_date IS NOT NULL`,
+  );
   console.log(`  bulk matches with a match_date (drive milestones): ${dated}`);
 
   console.log("\nDone.");

@@ -108,9 +108,15 @@ function MatchRow({ match }: { match: JuniorMatchSummary }) {
               ) : null}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
                 {fmtJuniorDate(match.matchDate) ? (
-                  <Body muted size={11}>{fmtJuniorDate(match.matchDate)}</Body>
+                  <Body muted size={11}>
+                    {fmtJuniorDate(match.matchDate)}
+                  </Body>
                 ) : null}
-                {match.status ? <Body muted size={11}>{match.status}</Body> : null}
+                {match.status ? (
+                  <Body muted size={11}>
+                    {match.status}
+                  </Body>
+                ) : null}
               </View>
             </View>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -145,14 +151,8 @@ export default function JuniorMatchesScreen() {
       <Stack.Screen options={{ title: "JUNIOR MATCHES" }} />
       <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
         {(filters?.ageGroups?.length ?? 0) > 0 ? (
-          <View
-            style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}
-          >
-            <FilterChip
-              label="All ages"
-              active={ageGroup === ""}
-              onPress={() => setAgeGroup("")}
-            />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            <FilterChip label="All ages" active={ageGroup === ""} onPress={() => setAgeGroup("")} />
             {(filters?.ageGroups ?? []).map((a) => (
               <FilterChip
                 key={a}
@@ -165,14 +165,8 @@ export default function JuniorMatchesScreen() {
         ) : null}
 
         {(filters?.seasons?.length ?? 0) > 0 ? (
-          <View
-            style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}
-          >
-            <FilterChip
-              label="All seasons"
-              active={season === ""}
-              onPress={() => setSeason("")}
-            />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+            <FilterChip label="All seasons" active={season === ""} onPress={() => setSeason("")} />
             {(filters?.seasons ?? []).map((s) => (
               <FilterChip
                 key={s}

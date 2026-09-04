@@ -18,34 +18,34 @@ read-only by construction.
 
 ## Recurring (post-merge on Replit — `scripts/post-merge.sh`)
 
-| Script | Purpose |
-|---|---|
-| `ensure-constraints` | Read-only verifier: asserts every constraint/index the migrations own exists (composite and partial uniques, CHECKs, performance and tenant indexes) and exits 1 otherwise. Runs in CI and post-merge after `pnpm --filter @workspace/db run migrate`. `--apply` re-creates them idempotently (legacy path). |
-| `reconcile-caps` | Cap register ↔ stats reconciliation. |
-| `backfill-player-images` | Player photo backfill. |
+| Script                   | Purpose                                                                                                                                                                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ensure-constraints`     | Read-only verifier: asserts every constraint/index the migrations own exists (composite and partial uniques, CHECKs, performance and tenant indexes) and exits 1 otherwise. Runs in CI and post-merge after `pnpm --filter @workspace/db run migrate`. `--apply` re-creates them idempotently (legacy path). |
+| `reconcile-caps`         | Cap register ↔ stats reconciliation.                                                                                                                                                                                                                                                                         |
+| `backfill-player-images` | Player photo backfill.                                                                                                                                                                                                                                                                                       |
 
 ## Central-model tooling (multi-tenant aware)
 
-| Script | Purpose |
-|---|---|
-| `compare-central-leaderboard` | Proof harness comparing native vs central leaderboards. |
-| `diagnose-central-identity` | Read-only central identity diagnostics. |
-| `backfill-player-id-map` | Mints the int↔GUID crosswalk for a tenant (`--dry-run`). |
-| `seed-tenants`, `seed-mandurah-tenant`, `seed-mandurah-premierships` | Concierge tenant seeding. |
-| `topup-clubs` | PCA club branding top-up (`src/data/pca-clubs.ts`; tested). |
-| `null-legacy-placeholder-logos` | Clears placeholder logos (`--live` gate). |
-| `rebrand-seeded-card-themes` | Rebrands seeded card themes. |
+| Script                                                               | Purpose                                                     |
+| -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `compare-central-leaderboard`                                        | Proof harness comparing native vs central leaderboards.     |
+| `diagnose-central-identity`                                          | Read-only central identity diagnostics.                     |
+| `backfill-player-id-map`                                             | Mints the int↔GUID crosswalk for a tenant (`--dry-run`).    |
+| `seed-tenants`, `seed-mandurah-tenant`, `seed-mandurah-premierships` | Concierge tenant seeding.                                   |
+| `topup-clubs`                                                        | PCA club branding top-up (`src/data/pca-clubs.ts`; tested). |
+| `null-legacy-placeholder-logos`                                      | Clears placeholder logos (`--live` gate).                   |
+| `rebrand-seeded-card-themes`                                         | Rebrands seeded card themes.                                |
 
 ## Tenant #1 (Halls Head) curated seeds and loaders
 
 These carry Halls Head content by design (the demo tenant). They now take
 `--tenant` and refuse a non-local database without `--yes`.
 
-| Script | Purpose |
-|---|---|
-| `seed-honours`, `seed-committee`, `seed-awards`, `load-award-history`, `seed-nav-items`, `seed-card-audio` | Curated content seeds (`seed-card-audio` seeds the platform-wide curated audio library, so it has no tenant argument). |
-| `load-master-db`, `load-matches`, `load-juniors-db` | Rebuild tenant #1's stats from the master dumps via `sql/master-etl.sql`, `sql/matches-etl.sql`, `sql/juniors-etl.sql`. Single-tenant by design (banner comments in each SQL file); the dumps are no longer in git — fetch them from object storage before running. |
-| `backfill-innings-order`, `backfill-season-snapshots` | Stats-core backfills for tenant #1. |
+| Script                                                                                                     | Purpose                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `seed-honours`, `seed-committee`, `seed-awards`, `load-award-history`, `seed-nav-items`, `seed-card-audio` | Curated content seeds (`seed-card-audio` seeds the platform-wide curated audio library, so it has no tenant argument).                                                                                                                                              |
+| `load-master-db`, `load-matches`, `load-juniors-db`                                                        | Rebuild tenant #1's stats from the master dumps via `sql/master-etl.sql`, `sql/matches-etl.sql`, `sql/juniors-etl.sql`. Single-tenant by design (banner comments in each SQL file); the dumps are no longer in git — fetch them from object storage before running. |
+| `backfill-innings-order`, `backfill-season-snapshots`                                                      | Stats-core backfills for tenant #1.                                                                                                                                                                                                                                 |
 
 ## Legacy one-offs
 

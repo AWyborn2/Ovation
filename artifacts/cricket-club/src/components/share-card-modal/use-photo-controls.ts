@@ -39,8 +39,8 @@ export function usePhotoControls({
   // The player's saved profile photo (when present) is the default, falling back
   // to whatever photo the input was built with.
   const profilePhotoUrl: string | null =
-    (showPhotoControls ? playerQ.data?.imageUrl ?? null : null) ??
-    (input && "photoUrl" in input ? input.photoUrl ?? null : null);
+    (showPhotoControls ? (playerQ.data?.imageUrl ?? null) : null) ??
+    (input && "photoUrl" in input ? (input.photoUrl ?? null) : null);
 
   // The player's photo gallery. Each image is selectable; the default image is
   // pre-selected. Falls back to the single profile photo when the gallery is
@@ -96,18 +96,20 @@ export function usePhotoControls({
   // Once the gallery is known (it loads async), default to the player's default
   // image — unless the club has already interacted with the photo control.
   useEffect(() => {
-    if (open && !photoTouched && photoSource === "none" && uploadedUrl === null && defaultGalleryUrl) {
+    if (
+      open &&
+      !photoTouched &&
+      photoSource === "none" &&
+      uploadedUrl === null &&
+      defaultGalleryUrl
+    ) {
       setPhotoSource("gallery");
       setGalleryUrl(defaultGalleryUrl);
     }
   }, [open, photoTouched, photoSource, uploadedUrl, defaultGalleryUrl]);
 
   const effectivePhotoUrl: string | null =
-    photoSource === "gallery"
-      ? galleryUrl
-      : photoSource === "uploaded"
-        ? uploadedUrl
-        : null;
+    photoSource === "gallery" ? galleryUrl : photoSource === "uploaded" ? uploadedUrl : null;
 
   // A different photo means a fresh crop — re-centre the focal point + zoom.
   useEffect(() => {

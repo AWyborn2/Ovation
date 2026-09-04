@@ -17,7 +17,6 @@
  */
 import { env } from "../config";
 
-
 const DEFAULT_TTL_MS = 60_000;
 
 function ttlMs(): number {

@@ -48,7 +48,10 @@ router.get("/awards", async (req, res): Promise<void> => {
     .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.published, true)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
-  const byAward = await loadWinners(awards.map((a) => a.id), true);
+  const byAward = await loadWinners(
+    awards.map((a) => a.id),
+    true,
+  );
   res.json(awards.map((a) => ({ ...a, winners: byAward.get(a.id) ?? [] })));
 });
 
@@ -61,73 +64,91 @@ router.get("/admin/awards", requireAdmin, async (req, res): Promise<void> => {
     .where(eq(awardsTable.tenantId, getTenantId(req)))
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
-  const byAward = await loadWinners(awards.map((a) => a.id), false);
+  const byAward = await loadWinners(
+    awards.map((a) => a.id),
+    false,
+  );
   res.json(awards.map((a) => ({ ...a, winners: byAward.get(a.id) ?? [] })));
 });
 
-router.post("/awards", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const parsed = CreateAwardBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db
-    .insert(awardsTable)
-    .values({
-      tenantId: getTenantId(req),
-      key: parsed.data.key,
-      title: parsed.data.title,
-      description: parsed.data.description ?? "",
-      displayOrder: parsed.data.displayOrder ?? 0,
-      votingEnabled: parsed.data.votingEnabled ?? false,
-      mechanism: parsed.data.mechanism ?? "manual",
-      published: parsed.data.published ?? false,
-      pointsGrade: parsed.data.pointsGrade ?? null,
-    })
-    .returning();
-  res.status(201).json({ ...row, winners: [] });
-});
+router.post(
+  "/awards",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateAwardBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [row] = await db
+      .insert(awardsTable)
+      .values({
+        tenantId: getTenantId(req),
+        key: parsed.data.key,
+        title: parsed.data.title,
+        description: parsed.data.description ?? "",
+        displayOrder: parsed.data.displayOrder ?? 0,
+        votingEnabled: parsed.data.votingEnabled ?? false,
+        mechanism: parsed.data.mechanism ?? "manual",
+        published: parsed.data.published ?? false,
+        pointsGrade: parsed.data.pointsGrade ?? null,
+      })
+      .returning();
+    res.status(201).json({ ...row, winners: [] });
+  },
+);
 
-router.patch("/awards/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = UpdateAwardParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateAwardBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const [row] = await db
-    .update(awardsTable)
-    .set(body.data)
-    .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.id, params.data.id)))
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Award not found" });
-    return;
-  }
-  const byAward = await loadWinners([row.id], false);
-  res.json({ ...row, winners: byAward.get(row.id) ?? [] });
-});
+router.patch(
+  "/awards/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = UpdateAwardParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateAwardBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const [row] = await db
+      .update(awardsTable)
+      .set(body.data)
+      .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.id, params.data.id)))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Award not found" });
+      return;
+    }
+    const byAward = await loadWinners([row.id], false);
+    res.json({ ...row, winners: byAward.get(row.id) ?? [] });
+  },
+);
 
-router.delete("/awards/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = DeleteAwardParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [row] = await db
-    .delete(awardsTable)
-    .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.id, params.data.id)))
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Award not found" });
-    return;
-  }
-  res.sendStatus(204);
-});
+router.delete(
+  "/awards/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = DeleteAwardParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [row] = await db
+      .delete(awardsTable)
+      .where(and(eq(awardsTable.tenantId, getTenantId(req)), eq(awardsTable.id, params.data.id)))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Award not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 router.post(
   "/awards/:id/winners",

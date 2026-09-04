@@ -1,11 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import type { AwardVotingConfigRow } from "@workspace/db";
 import { computeTally, isTallyVisible } from "./voting";
-import {
-  createVotingScenario,
-  insertBallot,
-  type VotingScenario,
-} from "./voting.test-helpers";
+import { createVotingScenario, insertBallot, type VotingScenario } from "./voting.test-helpers";
 
 function fakeConfig(overrides: Partial<AwardVotingConfigRow>): AwardVotingConfigRow {
   return {
@@ -192,9 +188,7 @@ describe("computeTally", () => {
     });
 
     const tally = await computeTally(scenario.config);
-    expect([...tally.winnerPlayerIds].sort((x, y) => x - y)).toEqual(
-      [a, b].sort((x, y) => x - y),
-    );
+    expect([...tally.winnerPlayerIds].sort((x, y) => x - y)).toEqual([a, b].sort((x, y) => x - y));
   });
 
   it("has no winners and no entries when no ballots exist", async () => {

@@ -43,19 +43,11 @@ export type SponsorSlideStyle = "grid" | "single";
  * composite source boards, active sponsors). The sections under `./settings/`
  * are presentational over this object.
  */
-export function useHonoursDisplaySettings(
-  bundle: HonourDisplayBundle,
-  onSaved: () => void,
-) {
+export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: () => void) {
   const { boards, settings, brand } = bundle;
-  const boardTitle = useMemo(
-    () => new Map(boards.map((b) => [b.id, b.title])),
-    [boards],
-  );
+  const boardTitle = useMemo(() => new Map(boards.map((b) => [b.id, b.title])), [boards]);
 
-  const [defaultTemplate, setDefaultTemplate] = useState<string>(
-    settings.defaultTemplate,
-  );
+  const [defaultTemplate, setDefaultTemplate] = useState<string>(settings.defaultTemplate);
   const [sequence, setSequence] = useState<string[]>(settings.kioskSequence ?? []);
   const [dwell, setDwell] = useState(String(settings.kioskDwellMs));
   const [speed, setSpeed] = useState(String(settings.kioskScrollSpeed));
@@ -68,26 +60,18 @@ export function useHonoursDisplaySettings(
   const [sponsorSlideStyle, setSponsorSlideStyle] = useState<SponsorSlideStyle>(
     settings.kioskSponsorSlideStyle ?? "grid",
   );
-  const [sponsorIds, setSponsorIds] = useState<number[]>(
-    settings.kioskSponsorIds ?? [],
-  );
+  const [sponsorIds, setSponsorIds] = useState<number[]>(settings.kioskSponsorIds ?? []);
   const [kioskAds, setKioskAds] = useState<KioskAd[]>(settings.kioskAds ?? []);
-  const [boardConfigs, setBoardConfigs] = useState<
-    Record<string, BoardDisplayConfig>
-  >(settings.boardConfigs ?? {});
-  const [composites, setComposites] = useState<CompositeDef[]>(
-    settings.composites ?? [],
+  const [boardConfigs, setBoardConfigs] = useState<Record<string, BoardDisplayConfig>>(
+    settings.boardConfigs ?? {},
   );
-  const [customGrids, setCustomGrids] = useState<CustomGridDef[]>(
-    settings.customGrids ?? [],
-  );
+  const [composites, setComposites] = useState<CompositeDef[]>(settings.composites ?? []);
+  const [customGrids, setCustomGrids] = useState<CustomGridDef[]>(settings.customGrids ?? []);
   const [skins, setSkins] = useState<HonourSkin[]>(settings.skins ?? []);
   const [colourOverrides, setColourOverrides] = useState<HonourColourOverrides>(
     settings.colourOverrides ?? {},
   );
-  const [defaultFont, setDefaultFont] = useState<string>(
-    settings.defaultFont ?? "",
-  );
+  const [defaultFont, setDefaultFont] = useState<string>(settings.defaultFont ?? "");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -129,11 +113,7 @@ export function useHonoursDisplaySettings(
   // dates compare lexically as YYYY-MM-DD. Ordered by displayOrder like the feed.
   const today = new Date().toISOString().slice(0, 10);
   const activeSponsors = sponsors
-    .filter(
-      (s) =>
-        (!s.activeFrom || s.activeFrom <= today) &&
-        (!s.activeTo || s.activeTo >= today),
-    )
+    .filter((s) => (!s.activeFrom || s.activeFrom <= today) && (!s.activeTo || s.activeTo >= today))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
   const moveSeq = (idx: number, dir: -1 | 1) => {
@@ -145,8 +125,7 @@ export function useHonoursDisplaySettings(
       return next;
     });
   };
-  const removeSeq = (idx: number) =>
-    setSequence((prev) => prev.filter((_, i) => i !== idx));
+  const removeSeq = (idx: number) => setSequence((prev) => prev.filter((_, i) => i !== idx));
   const addToSeq = (id: string) => {
     if (id) setSequence((prev) => [...prev, id]);
   };
@@ -166,21 +145,16 @@ export function useHonoursDisplaySettings(
     }
     // Slides off → a stale/invalid value in the (hidden) input must not block
     // saving unrelated settings; fall back to the persisted value.
-    const safeEvery =
-      !isNaN(every) && every >= 1 ? every : settings.kioskSponsorSlideEvery;
+    const safeEvery = !isNaN(every) && every >= 1 ? every : settings.kioskSponsorSlideEvery;
     for (const c of composites) {
       if (!c.title.trim()) {
         return setError("Every composite board needs a title.");
       }
       if (c.columns.length < 2) {
-        return setError(
-          `Composite "${c.title || "Untitled"}" needs at least 2 columns.`,
-        );
+        return setError(`Composite "${c.title || "Untitled"}" needs at least 2 columns.`);
       }
       if (c.columns.some((col) => !col.boardId || !col.heading.trim())) {
-        return setError(
-          `Composite "${c.title}" has a column missing a source board or heading.`,
-        );
+        return setError(`Composite "${c.title}" has a column missing a source board or heading.`);
       }
     }
     for (const sk of skins) {
@@ -189,31 +163,18 @@ export function useHonoursDisplaySettings(
     for (const g of customGrids) {
       if (!g.title.trim()) return setError("Every custom grid board needs a title.");
       if (g.columns.length < 1) {
-        return setError(
-          `Custom grid "${g.title || "Untitled"}" needs at least one column.`,
-        );
+        return setError(`Custom grid "${g.title || "Untitled"}" needs at least one column.`);
       }
       if (g.columns.some((c) => !c.label.trim())) {
         return setError(`Custom grid "${g.title}" has a column missing a heading.`);
       }
-      if (
-        g.columns.some(
-          (c) => c.source !== "manual" && !(c.sourceKey ?? "").trim(),
-        )
-      ) {
-        return setError(
-          `Custom grid "${g.title}" has a column missing its data source selection.`,
-        );
+      if (g.columns.some((c) => c.source !== "manual" && !(c.sourceKey ?? "").trim())) {
+        return setError(`Custom grid "${g.title}" has a column missing its data source selection.`);
       }
     }
     // Guard against saving a default that points at a deleted custom skin.
-    if (
-      !isBuiltinSkin(defaultTemplate) &&
-      !skins.some((s) => s.id === defaultTemplate)
-    ) {
-      return setError(
-        "The selected default theme no longer exists — pick another.",
-      );
+    if (!isBuiltinSkin(defaultTemplate) && !skins.some((s) => s.id === defaultTemplate)) {
+      return setError("The selected default theme no longer exists — pick another.");
     }
     const data: HonourDisplaySettingsUpdate = {
       defaultTemplate,
@@ -276,10 +237,7 @@ export function useHonoursDisplaySettings(
   // List-layout boards eligible to be a composite column source (no composites,
   // no approaching — the server refuses both as column refs).
   const sourceBoards = boards.filter(
-    (b) =>
-      b.layout === "list" &&
-      !b.id.startsWith("composite:") &&
-      b.id !== "approaching",
+    (b) => b.layout === "list" && !b.id.startsWith("composite:") && b.id !== "approaching",
   );
 
   const setConfig = (id: string, patch: Partial<BoardDisplayConfig>) =>
@@ -299,11 +257,8 @@ export function useHonoursDisplaySettings(
       },
     ]);
   const patchComposite = (id: string, patch: Partial<CompositeDef>) =>
-    setComposites((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-    );
-  const removeComposite = (id: string) =>
-    setComposites((prev) => prev.filter((c) => c.id !== id));
+    setComposites((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const removeComposite = (id: string) => setComposites((prev) => prev.filter((c) => c.id !== id));
 
   // ---- Custom grid boards ------------------------------------------------
   const addCustomGrid = () =>
@@ -323,9 +278,7 @@ export function useHonoursDisplaySettings(
       },
     ]);
   const patchCustomGrid = (id: string, patch: Partial<CustomGridDef>) =>
-    setCustomGrids((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, ...patch } : g)),
-    );
+    setCustomGrids((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   const removeCustomGrid = (id: string) => {
     setCustomGrids((prev) => prev.filter((g) => g.id !== id));
     setSequence((prev) => prev.filter((s) => s !== id));
@@ -341,9 +294,7 @@ export function useHonoursDisplaySettings(
   };
 
   const toggleSponsorId = (id: number) =>
-    setSponsorIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setSponsorIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   // ---- Admin skins -------------------------------------------------------
   const addSkin = () => {
@@ -377,10 +328,7 @@ export function useHonoursDisplaySettings(
 
   // Grid-capable boards keyed by id → their selectable column options.
   const gridCatalog: GridCatalogEntry[] = bundle.gridCatalog ?? [];
-  const gridById = useMemo(
-    () => new Map(gridCatalog.map((g) => [g.id, g])),
-    [gridCatalog],
-  );
+  const gridById = useMemo(() => new Map(gridCatalog.map((g) => [g.id, g])), [gridCatalog]);
 
   return {
     settings,

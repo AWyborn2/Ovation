@@ -33,9 +33,11 @@ type CapMismatchRow = {
   stat_games: number;
 };
 
-describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("club-wide player game totals stay consistent", () => {
-  it("players.total_games equals SUM(player_grade_stats.games) for every real player", async () => {
-    const res = await db.execute(sql`
+describe.skipIf(process.env.CI_SKIP_DATA_TESTS)(
+  "club-wide player game totals stay consistent",
+  () => {
+    it("players.total_games equals SUM(player_grade_stats.games) for every real player", async () => {
+      const res = await db.execute(sql`
       SELECT p.id,
              p.surname,
              p.given_name,
@@ -52,40 +54,40 @@ describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("club-wide player game totals st
       ORDER BY p.id
     `);
 
-    const mismatches = res.rows as unknown as MismatchRow[];
+      const mismatches = res.rows as unknown as MismatchRow[];
 
-    // Sanity: there is real data to check, so a silently-empty players table
-    // can't make this pass by vacuous truth.
-    const [{ real_players }] = (
-      await db.execute(sql`
+      // Sanity: there is real data to check, so a silently-empty players table
+      // can't make this pass by vacuous truth.
+      const [{ real_players }] = (
+        await db.execute(sql`
         SELECT COUNT(*)::int AS real_players FROM players WHERE id < 90000
       `)
-    ).rows as unknown as { real_players: number }[];
-    expect(real_players, "there should be real players to validate").toBeGreaterThan(0);
+      ).rows as unknown as { real_players: number }[];
+      expect(real_players, "there should be real players to validate").toBeGreaterThan(0);
 
-    const detail = mismatches
-      .map(
-        (m) =>
-          `#${m.id} ${m.given_name ?? ""} ${m.surname ?? ""}`.trim() +
-          ` — total_games=${m.player_total} but SUM(grades)=${m.grade_sum}`,
-      )
-      .join("\n");
+      const detail = mismatches
+        .map(
+          (m) =>
+            `#${m.id} ${m.given_name ?? ""} ${m.surname ?? ""}`.trim() +
+            ` — total_games=${m.player_total} but SUM(grades)=${m.grade_sum}`,
+        )
+        .join("\n");
 
-    expect(
-      mismatches.length,
-      mismatches.length
-        ? `players.total_games drifted from the sum of player_grade_stats.games:\n${detail}`
-        : "",
-    ).toBe(0);
-  });
+      expect(
+        mismatches.length,
+        mismatches.length
+          ? `players.total_games drifted from the sum of player_grade_stats.games:\n${detail}`
+          : "",
+      ).toBe(0);
+    });
 
-  it("every linked A Grade cap's cached games match that player's per-grade total", async () => {
-    // For each cap linked to a player, games_a_grade must equal the player's
-    // games in the cap's grade (A Grade for 'male', Female A Grade for
-    // 'female'), and in_stats must reflect whether that figure is > 0. Unlinked
-    // (pre-digital) caps are intentionally left out — they keep hand-entered
-    // state and are never recomputed.
-    const res = await db.execute(sql`
+    it("every linked A Grade cap's cached games match that player's per-grade total", async () => {
+      // For each cap linked to a player, games_a_grade must equal the player's
+      // games in the cap's grade (A Grade for 'male', Female A Grade for
+      // 'female'), and in_stats must reflect whether that figure is > 0. Unlinked
+      // (pre-digital) caps are intentionally left out — they keep hand-entered
+      // state and are never recomputed.
+      const res = await db.execute(sql`
       SELECT c.cap_number,
              c.category,
              c.name,
@@ -108,22 +110,23 @@ describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("club-wide player game totals st
       ORDER BY c.category, c.cap_number
     `);
 
-    const mismatches = res.rows as unknown as CapMismatchRow[];
+      const mismatches = res.rows as unknown as CapMismatchRow[];
 
-    const detail = mismatches
-      .map(
-        (m) =>
-          `cap #${m.cap_number} (${m.category}) ${m.name ?? ""} player=${m.player_id}` +
-          ` — games_a_grade=${m.cap_games}/in_stats=${m.in_stats}` +
-          ` but per-grade games=${m.stat_games}`,
-      )
-      .join("\n");
+      const detail = mismatches
+        .map(
+          (m) =>
+            `cap #${m.cap_number} (${m.category}) ${m.name ?? ""} player=${m.player_id}` +
+            ` — games_a_grade=${m.cap_games}/in_stats=${m.in_stats}` +
+            ` but per-grade games=${m.stat_games}`,
+        )
+        .join("\n");
 
-    expect(
-      mismatches.length,
-      mismatches.length
-        ? `linked cap game counts drifted from player_grade_stats:\n${detail}`
-        : "",
-    ).toBe(0);
-  });
-});
+      expect(
+        mismatches.length,
+        mismatches.length
+          ? `linked cap game counts drifted from player_grade_stats:\n${detail}`
+          : "",
+      ).toBe(0);
+    });
+  },
+);

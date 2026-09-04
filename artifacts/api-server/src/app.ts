@@ -1,9 +1,4 @@
-import express, {
-  type Express,
-  type Request,
-  type Response,
-  type NextFunction,
-} from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -118,24 +113,21 @@ app.use(tenantContext, goRedirectRouter);
 // instead of Express's default 500. This is how "fail closed" tenant resolution
 // reaches the client — a request for an unprovisioned/misconfigured tenant gets
 // a 404, never another tenant's data. Anything else is a genuine 500.
-app.use(
-  (err: unknown, req: Request, res: Response, next: NextFunction): void => {
-    if (res.headersSent) {
-      next(err);
-      return;
-    }
-    const status =
-      typeof (err as { status?: unknown }).status === "number"
-        ? (err as { status: number }).status
-        : 500;
-    if (status >= 500) {
-      req.log?.error?.({ err }, "unhandled request error");
-    }
-    const message =
-      err instanceof Error ? err.message : "Internal Server Error";
-    res.status(status).json({ error: status >= 500 ? "Internal Server Error" : message });
-  },
-);
+app.use((err: unknown, req: Request, res: Response, next: NextFunction): void => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+  const status =
+    typeof (err as { status?: unknown }).status === "number"
+      ? (err as { status: number }).status
+      : 500;
+  if (status >= 500) {
+    req.log?.error?.({ err }, "unhandled request error");
+  }
+  const message = err instanceof Error ? err.message : "Internal Server Error";
+  res.status(status).json({ error: status >= 500 ? "Internal Server Error" : message });
+});
 
 // Seed the demo tenant's first admin from ADMIN_PASSWORD if it has none, and the
 // platform super-admin from PLATFORM_ADMIN_EMAIL/PASSWORD (both no-ops if unset).

@@ -35,10 +35,20 @@ export default function GradeLeaderboard() {
 
   const isValid = decodedGrade !== "CLUB TOTAL";
   const isAGrade = decodedGrade === "A Grade";
-  const { data: stats, isLoading, isError, refetch } = useGetGradeLeaderboard(decodedGrade, undefined, {
-    query: { enabled: !!decodedGrade && isValid, queryKey: getGetGradeLeaderboardQueryKey(decodedGrade) },
+  const {
+    data: stats,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetGradeLeaderboard(decodedGrade, undefined, {
+    query: {
+      enabled: !!decodedGrade && isValid,
+      queryKey: getGetGradeLeaderboardQueryKey(decodedGrade),
+    },
   });
-  const { data: caps } = useListCaps({ query: { enabled: isAGrade, queryKey: getListCapsQueryKey() } });
+  const { data: caps } = useListCaps({
+    query: { enabled: isAGrade, queryKey: getListCapsQueryKey() },
+  });
   const { data: clubRoles } = useListClubRoles();
 
   const captainHistory = useMemo(() => {
@@ -56,9 +66,7 @@ export default function GradeLeaderboard() {
         const { givenName, surname } = splitCapName(c.name);
         return { id: c.id, capNumber: c.capNumber, givenName, surname, playerId: c.playerId };
       })
-      .sort((a, b) =>
-        a.surname.localeCompare(b.surname) || a.givenName.localeCompare(b.givenName),
-      );
+      .sort((a, b) => a.surname.localeCompare(b.surname) || a.givenName.localeCompare(b.givenName));
   }, [isAGrade, caps, stats]);
 
   if (!isValid) return <div className="p-8 text-center text-muted-foreground">Redirecting…</div>;
@@ -108,10 +116,16 @@ export default function GradeLeaderboard() {
             </tr>
           </thead>
           <tbody>
-            {stats?.map(stat => (
-              <tr key={stat.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+            {stats?.map((stat) => (
+              <tr
+                key={stat.id}
+                className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+              >
                 <td className="p-4">
-                  <Link href={`/players/${stat.playerId}`} className="font-semibold text-foreground hover:text-primary hover:underline">
+                  <Link
+                    href={`/players/${stat.playerId}`}
+                    className="font-semibold text-foreground hover:text-primary hover:underline"
+                  >
                     {stat.surname}, {stat.givenName}
                   </Link>
                 </td>
@@ -135,7 +149,10 @@ export default function GradeLeaderboard() {
                       grade: decodedGrade,
                       category: (stat.wickets ?? 0) >= (stat.runs ?? 0) / 10 ? "Wickets" : "Runs",
                       playerName: `${stat.givenName} ${stat.surname}`.trim(),
-                      value: (stat.wickets ?? 0) >= (stat.runs ?? 0) / 10 ? stat.wickets ?? 0 : stat.runs ?? 0,
+                      value:
+                        (stat.wickets ?? 0) >= (stat.runs ?? 0) / 10
+                          ? (stat.wickets ?? 0)
+                          : (stat.runs ?? 0),
                     }}
                     appPath={`/players/${stat.playerId}`}
                     playerId={stat.playerId}
@@ -159,7 +176,10 @@ export default function GradeLeaderboard() {
                 </span>
               );
               return (
-                <tr key={`cap-${c.id}`} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                <tr
+                  key={`cap-${c.id}`}
+                  className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                >
                   <td className="p-4">{nameNode}</td>
                   <td colSpan={STAT_COLUMN_COUNT + 1} className="p-4 text-center">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold uppercase tracking-wider">
@@ -181,10 +201,7 @@ export default function GradeLeaderboard() {
           <div className="p-4 md:p-6">
             <div className="divide-y divide-border/60">
               {captainHistory.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0"
-                >
+                <div key={c.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
                   <span className="font-mono font-bold text-primary w-20 shrink-0">
                     {formatSeasonRange(c.season)}
                   </span>
@@ -192,9 +209,7 @@ export default function GradeLeaderboard() {
                     {c.playerId != null || c.nonPlayerId != null ? (
                       <Link
                         href={
-                          c.playerId != null
-                            ? `/players/${c.playerId}`
-                            : `/people/${c.nonPlayerId}`
+                          c.playerId != null ? `/players/${c.playerId}` : `/people/${c.nonPlayerId}`
                         }
                         className="font-semibold text-primary hover:underline"
                       >

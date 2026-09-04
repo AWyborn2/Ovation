@@ -45,7 +45,12 @@ import {
 
 const leaderRow = glassPanel(
   `<div style="width:100px;flex:none;text-align:center">` +
-    neonText("{{row.gradeLabel}}", 54, "gold", ";font-size:calc(var(--k,1.4)*54px);line-height:.9") +
+    neonText(
+      "{{row.gradeLabel}}",
+      54,
+      "gold",
+      ";font-size:calc(var(--k,1.4)*54px);line-height:.9",
+    ) +
     `<div style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:rgba(255,255,255,.5);margin-top:4px">{{row.gradeSub}}</div></div>` +
     `<div style="flex:1;font-weight:700;font-size:34px;color:#fff">{{row.playerName}}</div>` +
     neonText("{{row.value}}", 60, "cyan", ";font-size:calc(var(--k,1.4)*60px);line-height:.9"),
@@ -120,7 +125,12 @@ const sharedHtml = sharedColumnRoot(
   sharedHeader("{{category}}", "{{season}}") +
     `<div style="flex:none;margin-top:calc(var(--k,1.4)*10px)">` +
     `<div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#FBAC27)">{{subtitle}}</div>` +
-    neonText("{{title}}", 96, "cyan", ";font-size:calc(var(--k,1.4)*96px);line-height:.94;margin-top:10px") +
+    neonText(
+      "{{title}}",
+      96,
+      "cyan",
+      ";font-size:calc(var(--k,1.4)*96px);line-height:.94;margin-top:10px",
+    ) +
     `</div>` +
     leaderRows +
     sharedFooterRow,

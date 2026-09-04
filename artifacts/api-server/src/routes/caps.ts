@@ -7,12 +7,7 @@ import {
   matchPlayerLinesTable,
   playerGradeSeasonStatsTable,
 } from "@workspace/db";
-import {
-  CreateCapBody,
-  UpdateCapBody,
-  UpdateCapParams,
-  DeleteCapParams,
-} from "@workspace/api-zod";
+import { CreateCapBody, UpdateCapBody, UpdateCapParams, DeleteCapParams } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -47,10 +42,7 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
     })
     .from(capRegisterTable)
     .where(
-      and(
-        eq(capRegisterTable.tenantId, getTenantId(req)),
-        isNotNull(capRegisterTable.playerId),
-      ),
+      and(eq(capRegisterTable.tenantId, getTenantId(req)), isNotNull(capRegisterTable.playerId)),
     );
 
   const grades = Object.values(CAP_CATEGORY_TO_GRADE);
@@ -72,11 +64,7 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
     if (l.season == null || l.round == null) continue;
     const key = `${l.playerId}|${l.grade}`;
     const cur = earliest.get(key);
-    if (
-      !cur ||
-      l.season < cur.season ||
-      (l.season === cur.season && l.round < cur.round)
-    ) {
+    if (!cur || l.season < cur.season || (l.season === cur.season && l.round < cur.round)) {
       earliest.set(key, { season: l.season, round: l.round });
     }
   }
@@ -95,10 +83,7 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
     .from(playerGradeSeasonStatsTable)
     .where(inArray(playerGradeSeasonStatsTable.grade, grades));
 
-  const snapsByKey = new Map<
-    string,
-    { season: number | null; games: number }[]
-  >();
+  const snapsByKey = new Map<string, { season: number | null; games: number }[]>();
   for (const s of snapshots) {
     const key = `${s.playerId}|${s.grade}`;
     const arr = snapsByKey.get(key) ?? [];
@@ -117,9 +102,7 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
   };
 
   const entries = caps.map((c) => {
-    const category = (c.category === "female" ? "female" : "male") as
-      | "male"
-      | "female";
+    const category = (c.category === "female" ? "female" : "male") as "male" | "female";
     const grade = CAP_CATEGORY_TO_GRADE[category];
     const key = c.playerId != null ? `${c.playerId}|${grade}` : "";
     const debut = key ? earliest.get(key) : undefined;
@@ -151,156 +134,175 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
   res.json(entries);
 });
 
-router.post("/caps", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const parsed = CreateCapBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  try {
-    const category = parsed.data.category ?? "male";
-    const playerId = parsed.data.playerId ?? null;
-    const row = await db.transaction(async (tx) => {
-      const [created] = await tx
-        .insert(capRegisterTable)
-        .values({
-          tenantId: getTenantId(req),
-          capNumber: parsed.data.capNumber,
-          category,
-          name: parsed.data.name,
-          deceased: parsed.data.deceased ?? false,
-          inStats: parsed.data.inStats ?? false,
-          gamesAGrade: parsed.data.gamesAGrade ?? 0,
-          playerId,
-        })
-        .returning();
-
-      // A cap created already linked to a player should immediately reflect that
-      // player's real grade games / on-record status from the existing stats,
-      // rather than the (often 0) hand-entered values.
-      if (playerId != null) {
-        await recomputeCapsFromStats(tx, getTenantId(req), [
-          category === "female" ? "female" : "male",
-        ]);
-        const [fresh] = await tx
-          .select()
-          .from(capRegisterTable)
-          .where(eq(capRegisterTable.id, created.id));
-        return fresh ?? created;
-      }
-
-      return created;
-    });
-    res.status(201).json(row);
-  } catch (e) {
-    const msg = (e as Error).message ?? "Insert failed";
-    if (/duplicate|unique/i.test(msg)) {
+router.post(
+  "/caps",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateCapBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    try {
       const category = parsed.data.category ?? "male";
-      const label = category === "female" ? "Female A Grade" : "A Grade Male";
-      res.status(409).json({ error: `Cap #${parsed.data.capNumber} already exists in the ${label} list.` });
-      return;
-    }
-    res.status(500).json({ error: msg });
-  }
-});
+      const playerId = parsed.data.playerId ?? null;
+      const row = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(capRegisterTable)
+          .values({
+            tenantId: getTenantId(req),
+            capNumber: parsed.data.capNumber,
+            category,
+            name: parsed.data.name,
+            deceased: parsed.data.deceased ?? false,
+            inStats: parsed.data.inStats ?? false,
+            gamesAGrade: parsed.data.gamesAGrade ?? 0,
+            playerId,
+          })
+          .returning();
 
-router.patch("/caps/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = UpdateCapParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateCapBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  try {
-    const row = await db.transaction(async (tx) => {
-      const [updatedRow] = await tx
-        .update(capRegisterTable)
-        .set(body.data)
-        .where(
-          and(
-            eq(capRegisterTable.tenantId, getTenantId(req)),
-            eq(capRegisterTable.id, params.data.id),
-          ),
-        )
-        .returning();
-      if (!updatedRow) return null;
-
-      // When the player link is part of this update, refresh the cap's cached
-      // games / on-record status from the existing stats so a manual link picks
-      // up the linked player's real grade games (and an unlink clears them).
-      if (body.data.playerId !== undefined) {
-        if (updatedRow.playerId == null) {
-          await tx
-            .update(capRegisterTable)
-            .set({ inStats: false, gamesAGrade: 0 })
-            .where(eq(capRegisterTable.id, updatedRow.id));
-        } else {
-          const category =
-            updatedRow.category === "female" ? "female" : "male";
-          await recomputeCapsFromStats(tx, getTenantId(req), [category]);
+        // A cap created already linked to a player should immediately reflect that
+        // player's real grade games / on-record status from the existing stats,
+        // rather than the (often 0) hand-entered values.
+        if (playerId != null) {
+          await recomputeCapsFromStats(tx, getTenantId(req), [
+            category === "female" ? "female" : "male",
+          ]);
+          const [fresh] = await tx
+            .select()
+            .from(capRegisterTable)
+            .where(eq(capRegisterTable.id, created.id));
+          return fresh ?? created;
         }
-        const [fresh] = await tx
-          .select()
-          .from(capRegisterTable)
-          .where(eq(capRegisterTable.id, updatedRow.id));
-        return fresh ?? updatedRow;
+
+        return created;
+      });
+      res.status(201).json(row);
+    } catch (e) {
+      const msg = (e as Error).message ?? "Insert failed";
+      if (/duplicate|unique/i.test(msg)) {
+        const category = parsed.data.category ?? "male";
+        const label = category === "female" ? "Female A Grade" : "A Grade Male";
+        res
+          .status(409)
+          .json({ error: `Cap #${parsed.data.capNumber} already exists in the ${label} list.` });
+        return;
       }
+      res.status(500).json({ error: msg });
+    }
+  },
+);
 
-      return updatedRow;
-    });
-
-    if (!row) {
-      res.status(404).json({ error: "Cap entry not found" });
+router.patch(
+  "/caps/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = UpdateCapParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
       return;
     }
-    res.json(row);
-  } catch (e) {
-    const msg = (e as Error).message ?? "Update failed";
-    if (/duplicate|unique/i.test(msg)) {
-      res.status(409).json({ error: `Cap number already in use.` });
+    const body = UpdateCapBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
       return;
     }
-    res.status(500).json({ error: msg });
-  }
-});
+    try {
+      const row = await db.transaction(async (tx) => {
+        const [updatedRow] = await tx
+          .update(capRegisterTable)
+          .set(body.data)
+          .where(
+            and(
+              eq(capRegisterTable.tenantId, getTenantId(req)),
+              eq(capRegisterTable.id, params.data.id),
+            ),
+          )
+          .returning();
+        if (!updatedRow) return null;
+
+        // When the player link is part of this update, refresh the cap's cached
+        // games / on-record status from the existing stats so a manual link picks
+        // up the linked player's real grade games (and an unlink clears them).
+        if (body.data.playerId !== undefined) {
+          if (updatedRow.playerId == null) {
+            await tx
+              .update(capRegisterTable)
+              .set({ inStats: false, gamesAGrade: 0 })
+              .where(eq(capRegisterTable.id, updatedRow.id));
+          } else {
+            const category = updatedRow.category === "female" ? "female" : "male";
+            await recomputeCapsFromStats(tx, getTenantId(req), [category]);
+          }
+          const [fresh] = await tx
+            .select()
+            .from(capRegisterTable)
+            .where(eq(capRegisterTable.id, updatedRow.id));
+          return fresh ?? updatedRow;
+        }
+
+        return updatedRow;
+      });
+
+      if (!row) {
+        res.status(404).json({ error: "Cap entry not found" });
+        return;
+      }
+      res.json(row);
+    } catch (e) {
+      const msg = (e as Error).message ?? "Update failed";
+      if (/duplicate|unique/i.test(msg)) {
+        res.status(409).json({ error: `Cap number already in use.` });
+        return;
+      }
+      res.status(500).json({ error: msg });
+    }
+  },
+);
 
 /**
  * Admin: recompute every linked cap's games + on-record status from the current
  * stats, across both A Grade lists. Import-independent reconciliation so manual
  * cap additions/links can be refreshed in one click.
  */
-router.post("/caps/recompute", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const categories = await db.transaction((tx) =>
-    recomputeCapsFromStats(tx, getTenantId(req)),
-  );
-  const updated = categories.reduce((sum, c) => sum + c.updated, 0);
-  res.json({ updated, categories });
-});
+router.post(
+  "/caps/recompute",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const categories = await db.transaction((tx) => recomputeCapsFromStats(tx, getTenantId(req)));
+    const updated = categories.reduce((sum, c) => sum + c.updated, 0);
+    res.json({ updated, categories });
+  },
+);
 
-router.delete("/caps/:id", requireAdmin, requireEntitlement("curation"), async (req, res): Promise<void> => {
-  const params = DeleteCapParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [row] = await db
-    .delete(capRegisterTable)
-    .where(
-      and(
-        eq(capRegisterTable.tenantId, getTenantId(req)),
-        eq(capRegisterTable.id, params.data.id),
-      ),
-    )
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Cap entry not found" });
-    return;
-  }
-  res.sendStatus(204);
-});
+router.delete(
+  "/caps/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = DeleteCapParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const [row] = await db
+      .delete(capRegisterTable)
+      .where(
+        and(
+          eq(capRegisterTable.tenantId, getTenantId(req)),
+          eq(capRegisterTable.id, params.data.id),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Cap entry not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
 
 export default router;

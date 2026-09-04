@@ -48,8 +48,7 @@ export function PhotoControls({
       {galleryPhotos.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {galleryPhotos.map((p) => {
-            const selected =
-              photoSource === "gallery" && galleryUrl === p.url;
+            const selected = photoSource === "gallery" && galleryUrl === p.url;
             return (
               <button
                 key={p.url}
@@ -60,11 +59,7 @@ export function PhotoControls({
                 }`}
                 onClick={() => selectGalleryPhoto(p.url)}
               >
-                <img
-                  src={p.url}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+                <img src={p.url} alt="" className="h-full w-full object-cover" />
                 {p.isDefault && (
                   <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-center text-[8px] font-semibold leading-tight text-primary-foreground">
                     Default

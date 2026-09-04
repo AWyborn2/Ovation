@@ -1,20 +1,11 @@
-import type {
-  PlayerDetail,
-  CapEntry,
-  TradingCardSettings,
-} from "@workspace/api-client-react";
+import type { PlayerDetail, CapEntry, TradingCardSettings } from "@workspace/api-client-react";
 import { aggregateCareer, type AggregatedPlayer } from "@/lib/honour-boards";
 import avatarMale from "@/assets/card-avatar-male.png";
 import avatarFemale from "@/assets/card-avatar-female.png";
 
 export type CardRole = "Batsman" | "Bowler" | "All-Rounder" | "Wicket-Keeper";
 
-export const CARD_ROLES: CardRole[] = [
-  "Batsman",
-  "Bowler",
-  "All-Rounder",
-  "Wicket-Keeper",
-];
+export const CARD_ROLES: CardRole[] = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
 
 export interface CardPremiership {
   year: number;

@@ -13,7 +13,12 @@ export default function JuniorsMatchDetail() {
   const id = Number(params.id);
   const me = useCurrentAdmin();
   const isAdmin = !!me.data;
-  const { data: match, isLoading, isError, refetch } = useGetJuniorMatch(id, {
+  const {
+    data: match,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetJuniorMatch(id, {
     query: { enabled: Number.isFinite(id), queryKey: getGetJuniorMatchQueryKey(id) },
   });
 
@@ -56,7 +61,8 @@ export default function JuniorsMatchDetail() {
               )}
             </div>
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary">
-              {brand.name} <span className="text-muted-foreground font-normal">vs</span> {match.opponentName ?? "Unknown"}
+              {brand.name} <span className="text-muted-foreground font-normal">vs</span>{" "}
+              {match.opponentName ?? "Unknown"}
             </h1>
             <div className="text-sm text-muted-foreground uppercase tracking-wider">
               {match.season ?? ""}
@@ -66,10 +72,13 @@ export default function JuniorsMatchDetail() {
             </div>
             {(match.hhScore || match.opponentScore) && (
               <div className="text-lg font-mono text-foreground">
-                {match.hhScore ?? "—"} <span className="text-muted-foreground text-sm">vs</span> {match.opponentScore ?? "—"}
+                {match.hhScore ?? "—"} <span className="text-muted-foreground text-sm">vs</span>{" "}
+                {match.opponentScore ?? "—"}
               </div>
             )}
-            {match.hhResult && <div className="text-base font-semibold text-primary">{match.hhResult}</div>}
+            {match.hhResult && (
+              <div className="text-base font-semibold text-primary">{match.hhResult}</div>
+            )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
               {fmtJuniorDate(match.matchDate) && (
                 <span className="inline-flex items-center gap-1">
@@ -79,9 +88,7 @@ export default function JuniorsMatchDetail() {
               {match.venue && (
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
-                  {[match.venueOval, match.venue, match.venueSuburb]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  {[match.venueOval, match.venue, match.venueSuburb].filter(Boolean).join(" · ")}
                 </span>
               )}
             </div>

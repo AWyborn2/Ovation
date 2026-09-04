@@ -1,6 +1,20 @@
 import { useParams, Link } from "wouter";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, useListCaps, useGetPlayerMatches, getGetPlayerMatchesQueryKey, useGetPlayerSeasons, getGetPlayerSeasonsQueryKey, useListJuniorPlayersBySenior, getListJuniorPlayersBySeniorQueryKey, useGetJuniorPlayer, getGetJuniorPlayerQueryKey } from "@workspace/api-client-react";
+import {
+  useGetPlayer,
+  getGetPlayerQueryKey,
+  useDeletePlayer,
+  useUpdatePlayer,
+  useListCaps,
+  useGetPlayerMatches,
+  getGetPlayerMatchesQueryKey,
+  useGetPlayerSeasons,
+  getGetPlayerSeasonsQueryKey,
+  useListJuniorPlayersBySenior,
+  getListJuniorPlayersBySeniorQueryKey,
+  useGetJuniorPlayer,
+  getGetJuniorPlayerQueryKey,
+} from "@workspace/api-client-react";
 import type { PlayerSeasonStat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -28,7 +42,15 @@ import { useConfirm } from "@/components/confirm-dialog";
 
 const fmtNum = (n: number) => n.toLocaleString();
 
-const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStatus; playerName: string; photoUrl?: string | null }) => {
+const MilestoneCard = ({
+  status,
+  playerName,
+  photoUrl,
+}: {
+  status: MilestoneStatus;
+  playerName: string;
+  photoUrl?: string | null;
+}) => {
   const hasNext = status.nextTierLabel !== null && status.gap !== null;
   const inAnyTier = status.currentTierIndex !== null;
   const [sharing, setSharing] = useState(false);
@@ -57,12 +79,19 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
   return (
     <div className="bg-card border border-border rounded-md p-4 shadow-sm flex flex-col gap-3 relative">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground font-serif">{status.boardLabel}</div>
-        <div className="font-mono font-bold text-primary text-lg">{fmtNum(status.currentValue)}</div>
+        <div className="text-xs uppercase tracking-widest text-muted-foreground font-serif">
+          {status.boardLabel}
+        </div>
+        <div className="font-mono font-bold text-primary text-lg">
+          {fmtNum(status.currentValue)}
+        </div>
       </div>
       {inAnyTier && status.currentTierLabel && (
         <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2">
-          <TierBadge tierIndex={status.currentTierIndex!} className="h-4 w-4 text-primary shrink-0" />
+          <TierBadge
+            tierIndex={status.currentTierIndex!}
+            className="h-4 w-4 text-primary shrink-0"
+          />
           <span className="text-xs font-semibold uppercase tracking-wider text-primary truncate flex-1">
             {status.currentTierLabel}
           </span>
@@ -80,7 +109,10 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
       )}
       {hasNext ? (
         <div className="flex items-start gap-2 mt-auto">
-          <TierBadge tierIndex={status.nextTierIndex!} className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+          <TierBadge
+            tierIndex={status.nextTierIndex!}
+            className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5"
+          />
           <div className="text-xs leading-snug">
             <span className="font-mono font-bold text-primary">{fmtNum(status.gap!)}</span>{" "}
             <span className="text-muted-foreground">
@@ -90,7 +122,9 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
           </div>
         </div>
       ) : (
-        <div className="text-xs italic text-muted-foreground mt-auto">Top of the honour board — every milestone unlocked.</div>
+        <div className="text-xs italic text-muted-foreground mt-auto">
+          Top of the honour board — every milestone unlocked.
+        </div>
       )}
     </div>
   );
@@ -99,10 +133,21 @@ const MilestoneCard = ({ status, playerName, photoUrl }: { status: MilestoneStat
 export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
   const playerId = parseInt(id, 10);
-  const { data: player, isLoading, isError, refetch } = useGetPlayer(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) } });
+  const {
+    data: player,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetPlayer(playerId, {
+    query: { enabled: !!playerId, queryKey: getGetPlayerQueryKey(playerId) },
+  });
   const { data: caps } = useListCaps();
-  const { data: matchLines } = useGetPlayerMatches(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerMatchesQueryKey(playerId) } });
-  const { data: seasonStats } = useGetPlayerSeasons(playerId, { query: { enabled: !!playerId, queryKey: getGetPlayerSeasonsQueryKey(playerId) } });
+  const { data: matchLines } = useGetPlayerMatches(playerId, {
+    query: { enabled: !!playerId, queryKey: getGetPlayerMatchesQueryKey(playerId) },
+  });
+  const { data: seasonStats } = useGetPlayerSeasons(playerId, {
+    query: { enabled: !!playerId, queryKey: getGetPlayerSeasonsQueryKey(playerId) },
+  });
 
   const queryClient = useQueryClient();
   const deletePlayer = useDeletePlayer();
@@ -197,8 +242,18 @@ export default function PlayerDetail() {
       map.set(r.grade, list);
     }
     const sumKeys = [
-      "games", "innings", "notOuts", "runs", "fifties", "hundreds",
-      "wickets", "runsConceded", "fiveWickets", "catches", "stumpings", "runOuts",
+      "games",
+      "innings",
+      "notOuts",
+      "runs",
+      "fifties",
+      "hundreds",
+      "wickets",
+      "runsConceded",
+      "fiveWickets",
+      "catches",
+      "stumpings",
+      "runOuts",
     ] as const;
     return Array.from(map.entries()).map(([grade, list]) => {
       const totals: Record<string, number> = {};
@@ -222,11 +277,14 @@ export default function PlayerDetail() {
         destructive: true,
       })
     ) {
-      deletePlayer.mutate({ id: playerId }, {
-        onSuccess: () => {
-          window.location.href = "/players";
-        }
-      });
+      deletePlayer.mutate(
+        { id: playerId },
+        {
+          onSuccess: () => {
+            window.location.href = "/players";
+          },
+        },
+      );
     }
   };
 
@@ -239,13 +297,17 @@ export default function PlayerDetail() {
         onRetry={() => refetch()}
       />
     );
-  if (!player) return <div className="p-8 text-center text-muted-foreground">Player not found.</div>;
+  if (!player)
+    return <div className="p-8 text-center text-muted-foreground">Player not found.</div>;
 
   const aggregated = aggregateCareer(player.stats)[0];
-  const milestones = aggregated ? MILESTONE_BOARDS.map((k) => getMilestoneStatus(aggregated, k)) : [];
+  const milestones = aggregated
+    ? MILESTONE_BOARDS.map((k) => getMilestoneStatus(aggregated, k))
+    : [];
   const premierships = player.premierships ?? [];
   const premsWon = player.premiershipsWon ?? premierships.length;
-  const premsCaptained = player.premiershipsCaptained ?? premierships.filter((p) => p.isCaptain).length;
+  const premsCaptained =
+    player.premiershipsCaptained ?? premierships.filter((p) => p.isCaptain).length;
   const formatPremDate = (d: string | null | undefined) => {
     if (!d) return "";
     const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -261,7 +323,13 @@ export default function PlayerDetail() {
             <div className="relative shrink-0">
               <div className="h-20 w-20 rounded-full overflow-hidden border-2 border-primary/40 bg-muted flex items-center justify-center">
                 {player.imageUrl ? (
-                  <img loading="lazy" decoding="async" src={player.imageUrl} alt={`${player.givenName} ${player.surname}`} className="h-full w-full object-cover" />
+                  <img
+                    loading="lazy"
+                    decoding="async"
+                    src={player.imageUrl}
+                    alt={`${player.givenName} ${player.surname}`}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <ImageOff className="h-7 w-7 text-muted-foreground" />
                 )}
@@ -294,7 +362,9 @@ export default function PlayerDetail() {
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-serif font-bold text-primary">{player.givenName} {player.surname}</h1>
+            <h1 className="text-3xl font-serif font-bold text-primary">
+              {player.givenName} {player.surname}
+            </h1>
             <div className="mt-2">
               <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="md" />
             </div>
@@ -332,13 +402,22 @@ export default function PlayerDetail() {
               stats,
               photoUrl: player.imageUrl,
             };
-            return <ShareButton input={input} appPath={`/players/${player.id}`} playerId={player.id} label="Share profile" />;
+            return (
+              <ShareButton
+                input={input}
+                appPath={`/players/${player.id}`}
+                playerId={player.id}
+                label="Share profile"
+              />
+            );
           })()}
           <Button variant="outline" onClick={() => setCardOpen(true)}>
             <IdCard className="mr-1.5 h-4 w-4" /> Trading Card
           </Button>
           {isAdmin && (
-            <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>Delete Player</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>
+              Delete Player
+            </Button>
           )}
         </div>
       </div>
@@ -351,7 +430,12 @@ export default function PlayerDetail() {
               <Trophy className="h-5 w-5 text-amber-600" />
               Premierships won
             </h2>
-            <Link href="/premierships" className="text-xs uppercase tracking-widest text-primary hover:underline">View board →</Link>
+            <Link
+              href="/premierships"
+              className="text-xs uppercase tracking-widest text-primary hover:underline"
+            >
+              View board →
+            </Link>
           </div>
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -370,16 +454,27 @@ export default function PlayerDetail() {
           </div>
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {premierships.map((p) => (
-              <div key={p.id} className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3">
+              <div
+                key={p.id}
+                className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3"
+              >
                 <div className="text-center shrink-0">
-                  <div className="font-mono font-bold text-primary text-lg leading-none">{p.year}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{p.grade}</div>
+                  <div className="font-mono font-bold text-primary text-lg leading-none">
+                    {p.year}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {p.grade}
+                  </div>
                 </div>
                 <div className="min-w-0 text-xs">
                   {p.competition && p.competition !== p.grade.toUpperCase() && (
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{p.competition}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+                      {p.competition}
+                    </div>
                   )}
-                  {p.result && <div className="font-semibold text-foreground/90 leading-snug">{p.result}</div>}
+                  {p.result && (
+                    <div className="font-semibold text-foreground/90 leading-snug">{p.result}</div>
+                  )}
                   <div className="text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
                     {p.venue && <span>{p.venue}</span>}
                     {p.matchDate && <span>· {formatPremDate(p.matchDate)}</span>}
@@ -400,12 +495,19 @@ export default function PlayerDetail() {
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex items-baseline justify-between gap-3 mb-1">
             <h2 className="text-lg font-serif font-bold text-primary m-0">Milestone tracker</h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">Next honour board target</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">
+              Next honour board target
+            </span>
           </div>
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {milestones.map((m) => (
-              <MilestoneCard key={m.key} status={m} playerName={`${player.givenName} ${player.surname}`.trim()} photoUrl={player.imageUrl} />
+              <MilestoneCard
+                key={m.key}
+                status={m}
+                playerName={`${player.givenName} ${player.surname}`.trim()}
+                photoUrl={player.imageUrl}
+              />
             ))}
           </div>
         </div>
@@ -414,34 +516,54 @@ export default function PlayerDetail() {
       {seasons.length > 0 && selectedSeason !== null && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary m-0">Milestones hit this season</h2>
+            <h2 className="text-lg font-serif font-bold text-primary m-0">
+              Milestones hit this season
+            </h2>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                Season
+              </label>
               <select
                 value={String(selectedSeason)}
                 onChange={(e) => setSelectedSeason(parseInt(e.target.value, 10))}
                 className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
               >
                 {seasons.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <div className="w-12 h-[2px] bg-primary mb-4" />
           {seasonCrossings.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic">No honour board crossed in {selectedSeason}.</div>
+            <div className="text-sm text-muted-foreground italic">
+              No honour board crossed in {selectedSeason}.
+            </div>
           ) : (
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {seasonCrossings.map((c) => (
-                <div key={`${c.key}-${c.threshold}`} className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3">
-                  <TierBadge tierIndex={c.tierIndex} className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <div
+                  key={`${c.key}-${c.threshold}`}
+                  className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3"
+                >
+                  <TierBadge
+                    tierIndex={c.tierIndex}
+                    className="h-6 w-6 text-primary shrink-0 mt-0.5"
+                  />
                   <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">{c.tierLabel}</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+                      {c.tierLabel}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      <span className="font-mono font-bold text-foreground">{fmtNum(c.beforeValue)}</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {fmtNum(c.beforeValue)}
+                      </span>
                       <span> → </span>
-                      <span className="font-mono font-bold text-foreground">{fmtNum(c.afterValue)}</span>{" "}
+                      <span className="font-mono font-bold text-foreground">
+                        {fmtNum(c.afterValue)}
+                      </span>{" "}
                       {c.boardLabel.toLowerCase()}
                     </div>
                   </div>
@@ -455,9 +577,9 @@ export default function PlayerDetail() {
       {showCappedNoStats && capEntry && (
         <div className="bg-muted/40 border-l-4 border-primary/60 rounded-md p-4 text-sm leading-snug">
           <p className="text-foreground/90">
-            <span className="font-semibold">A Grade Cap #{capEntry.capNumber}.</span>{" "}
-            Played between 1 and 9 A Grade games for the club. Individual stats were not recorded
-            prior to MyCricket and PlayHQ for players with fewer than 10 games.
+            <span className="font-semibold">A Grade Cap #{capEntry.capNumber}.</span> Played between
+            1 and 9 A Grade games for the club. Individual stats were not recorded prior to
+            MyCricket and PlayHQ for players with fewer than 10 games.
           </p>
         </div>
       )}
@@ -466,7 +588,9 @@ export default function PlayerDetail() {
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex items-baseline justify-between gap-3 mb-1">
             <h2 className="text-lg font-serif font-bold text-primary m-0">By season</h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">Year-by-year history</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">
+              Year-by-year history
+            </span>
           </div>
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="space-y-6">
@@ -501,7 +625,10 @@ export default function PlayerDetail() {
                     </thead>
                     <tbody>
                       {rows.map((r) => (
-                        <tr key={`${grade}-${r.season ?? "baseline"}`} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                        <tr
+                          key={`${grade}-${r.season ?? "baseline"}`}
+                          className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                        >
                           <td className="p-3 font-mono whitespace-nowrap">
                             {r.season != null ? fmtSeason(r.season) : "Pre-2025"}
                           </td>
@@ -510,12 +637,16 @@ export default function PlayerDetail() {
                           <td className="p-3 text-right font-mono">{r.notOuts || "-"}</td>
                           <td className="p-3 text-right font-mono font-bold">{r.runs || "-"}</td>
                           <td className="p-3 text-right font-mono">{r.highScore || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.batAvg?.toFixed(2) || "-"}</td>
+                          <td className="p-3 text-right font-mono">
+                            {r.batAvg?.toFixed(2) || "-"}
+                          </td>
                           <td className="p-3 text-right font-mono">{r.hundreds || "-"}</td>
                           <td className="p-3 text-right font-mono">{r.fifties || "-"}</td>
                           <td className="p-3 text-right font-mono font-bold">{r.wickets || "-"}</td>
                           <td className="p-3 text-right font-mono">{r.runsConceded || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.bowlAvg?.toFixed(2) || "-"}</td>
+                          <td className="p-3 text-right font-mono">
+                            {r.bowlAvg?.toFixed(2) || "-"}
+                          </td>
                           <td className="p-3 text-right font-mono">{r.bestBowling || "-"}</td>
                           <td className="p-3 text-right font-mono">{r.fiveWickets || "-"}</td>
                           <td className="p-3 text-right font-mono">{r.catches || "-"}</td>
@@ -524,7 +655,9 @@ export default function PlayerDetail() {
                         </tr>
                       ))}
                       <tr className="border-t-2 border-primary/40 bg-muted/30 font-semibold">
-                        <td className="p-3 font-mono uppercase tracking-wider text-xs text-primary">Total</td>
+                        <td className="p-3 font-mono uppercase tracking-wider text-xs text-primary">
+                          Total
+                        </td>
                         <td className="p-3 text-right font-mono">{totals.games || "-"}</td>
                         <td className="p-3 text-right font-mono">{totals.innings || "-"}</td>
                         <td className="p-3 text-right font-mono">{totals.notOuts || "-"}</td>
@@ -533,7 +666,9 @@ export default function PlayerDetail() {
                         <td className="p-3 text-right font-mono">{batAvg?.toFixed(2) || "-"}</td>
                         <td className="p-3 text-right font-mono">{totals.hundreds || "-"}</td>
                         <td className="p-3 text-right font-mono">{totals.fifties || "-"}</td>
-                        <td className="p-3 text-right font-mono font-bold">{totals.wickets || "-"}</td>
+                        <td className="p-3 text-right font-mono font-bold">
+                          {totals.wickets || "-"}
+                        </td>
                         <td className="p-3 text-right font-mono">{totals.runsConceded || "-"}</td>
                         <td className="p-3 text-right font-mono">{bowlAvg?.toFixed(2) || "-"}</td>
                         <td className="p-3 text-right font-mono">-</td>
@@ -564,7 +699,9 @@ export default function PlayerDetail() {
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                Season
+              </label>
               <select
                 value={matchSeasonFilter}
                 onChange={(e) => setMatchSeasonFilter(e.target.value)}
@@ -572,12 +709,16 @@ export default function PlayerDetail() {
               >
                 <option value="all">All seasons</option>
                 {matchSeasonOptions.map((s) => (
-                  <option key={s} value={String(s)}>{fmtSeason(s)}</option>
+                  <option key={s} value={String(s)}>
+                    {fmtSeason(s)}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">Grade</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                Grade
+              </label>
               <select
                 value={matchGradeFilter}
                 onChange={(e) => setMatchGradeFilter(e.target.value)}
@@ -585,67 +726,83 @@ export default function PlayerDetail() {
               >
                 <option value="all">All grades</option>
                 {matchGradeOptions.map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           {filteredMatchLines.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic">No matches for the selected filters.</div>
+            <div className="text-sm text-muted-foreground italic">
+              No matches for the selected filters.
+            </div>
           ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm sticky-id-col">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-left font-medium p-3">Season</th>
-                  <th className="text-left font-medium p-3">Rnd</th>
-                  <th className="text-left font-medium p-3">Grade</th>
-                  <th className="text-left font-medium p-3">Opponent</th>
-                  <th className="text-left font-medium p-3">Batting</th>
-                  <th className="text-left font-medium p-3">Bowling</th>
-                  <th className="text-left font-medium p-3">Field</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMatchLines.map((m) => {
-                  const fieldParts = [
-                    m.catches ? `${m.catches}c` : "",
-                    m.stumpings ? `${m.stumpings}st` : "",
-                    m.runOuts ? `${m.runOuts}ro` : "",
-                  ].filter(Boolean);
-                  return (
-                    <tr key={m.matchId} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => { window.location.href = `/matches/${m.matchId}`; }}>
-                      <td className="p-3 font-mono">
-                        {m.season != null
-                          ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
-                          : "—"}
-                      </td>
-                      <td className="p-3 font-mono">{m.stage ?? (m.round ?? "—")}</td>
-                      <td className="p-3">
-                        <GradeBadge grade={m.grade} size="sm" />
-                      </td>
-                      <td className="p-3">
-                        <Link href={`/matches/${m.matchId}`} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
-                          {m.opponent ?? "—"}
-                        </Link>
-                      </td>
-                      <td className="p-3 font-mono">
-                        {m.batted
-                          ? `${m.runs ?? 0}${m.notOut ? "*" : ""}${m.balls != null ? ` (${m.balls})` : ""}`
-                          : "—"}
-                      </td>
-                      <td className="p-3 font-mono">
-                        {m.bowled
-                          ? `${m.wickets ?? 0}/${m.runsConceded ?? 0}${m.overs ? ` (${m.overs})` : ""}`
-                          : "—"}
-                      </td>
-                      <td className="p-3 font-mono">{fieldParts.length ? fieldParts.join(" ") : "—"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm sticky-id-col">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left font-medium p-3">Season</th>
+                    <th className="text-left font-medium p-3">Rnd</th>
+                    <th className="text-left font-medium p-3">Grade</th>
+                    <th className="text-left font-medium p-3">Opponent</th>
+                    <th className="text-left font-medium p-3">Batting</th>
+                    <th className="text-left font-medium p-3">Bowling</th>
+                    <th className="text-left font-medium p-3">Field</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMatchLines.map((m) => {
+                    const fieldParts = [
+                      m.catches ? `${m.catches}c` : "",
+                      m.stumpings ? `${m.stumpings}st` : "",
+                      m.runOuts ? `${m.runOuts}ro` : "",
+                    ].filter(Boolean);
+                    return (
+                      <tr
+                        key={m.matchId}
+                        className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          window.location.href = `/matches/${m.matchId}`;
+                        }}
+                      >
+                        <td className="p-3 font-mono">
+                          {m.season != null
+                            ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
+                            : "—"}
+                        </td>
+                        <td className="p-3 font-mono">{m.stage ?? m.round ?? "—"}</td>
+                        <td className="p-3">
+                          <GradeBadge grade={m.grade} size="sm" />
+                        </td>
+                        <td className="p-3">
+                          <Link
+                            href={`/matches/${m.matchId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-primary hover:underline"
+                          >
+                            {m.opponent ?? "—"}
+                          </Link>
+                        </td>
+                        <td className="p-3 font-mono">
+                          {m.batted
+                            ? `${m.runs ?? 0}${m.notOut ? "*" : ""}${m.balls != null ? ` (${m.balls})` : ""}`
+                            : "—"}
+                        </td>
+                        <td className="p-3 font-mono">
+                          {m.bowled
+                            ? `${m.wickets ?? 0}/${m.runsConceded ?? 0}${m.overs ? ` (${m.overs})` : ""}`
+                            : "—"}
+                        </td>
+                        <td className="p-3 font-mono">
+                          {fieldParts.length ? fieldParts.join(" ") : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -675,38 +832,50 @@ export default function PlayerDetail() {
             </tr>
           </thead>
           <tbody>
-            {player.stats.filter(s => s.grade !== "CLUB TOTAL").map(stat => (
-              <tr key={stat.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <GradeBadge grade={stat.grade} size="sm" />
-                    <span className="font-semibold text-primary">{stat.grade}</span>
-                  </div>
-                </td>
-                <td className="p-4 text-right font-mono">{stat.games || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.innings || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.notOuts || "-"}</td>
-                <td className="p-4 text-right font-mono font-bold">{stat.runs || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.highScore || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.batAvg?.toFixed(2) || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.hundreds || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.fifties || "-"}</td>
-                <td className="p-4 text-right font-mono font-bold">{stat.wickets || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.runsConceded || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.bowlAvg?.toFixed(2) || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.bestBowling || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.fiveWickets || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.catches || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.stumpings || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.runOuts || "-"}</td>
-                <td className="p-4 text-right">
-                  <Link href={`/stats/${stat.id}`} className="text-sm text-blue-600 hover:underline">Edit</Link>
-                </td>
-              </tr>
-            ))}
+            {player.stats
+              .filter((s) => s.grade !== "CLUB TOTAL")
+              .map((stat) => (
+                <tr
+                  key={stat.id}
+                  className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      <GradeBadge grade={stat.grade} size="sm" />
+                      <span className="font-semibold text-primary">{stat.grade}</span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-right font-mono">{stat.games || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.innings || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.notOuts || "-"}</td>
+                  <td className="p-4 text-right font-mono font-bold">{stat.runs || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.highScore || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.batAvg?.toFixed(2) || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.hundreds || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.fifties || "-"}</td>
+                  <td className="p-4 text-right font-mono font-bold">{stat.wickets || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.runsConceded || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.bowlAvg?.toFixed(2) || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.bestBowling || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.fiveWickets || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.catches || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.stumpings || "-"}</td>
+                  <td className="p-4 text-right font-mono">{stat.runOuts || "-"}</td>
+                  <td className="p-4 text-right">
+                    <Link
+                      href={`/stats/${stat.id}`}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
             {player.stats.length === 0 && (
               <tr>
-                <td colSpan={18} className="p-8 text-center text-muted-foreground">No stats recorded yet.</td>
+                <td colSpan={18} className="p-8 text-center text-muted-foreground">
+                  No stats recorded yet.
+                </td>
               </tr>
             )}
           </tbody>
@@ -735,7 +904,9 @@ function JuniorCareerSection({ playerId }: { playerId: number }) {
     <div className="bg-card border border-border rounded-md p-5 shadow-sm">
       <div className="flex items-baseline justify-between gap-3 mb-1">
         <h2 className="text-lg font-serif font-bold text-primary m-0">Junior career</h2>
-        <span className="text-xs uppercase tracking-widest text-muted-foreground">Kept separate from senior records</span>
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">
+          Kept separate from senior records
+        </span>
       </div>
       <div className="w-12 h-[2px] bg-primary mb-4" />
       <div className="space-y-4">
@@ -744,8 +915,8 @@ function JuniorCareerSection({ playerId }: { playerId: number }) {
         ))}
       </div>
       <p className="text-xs text-muted-foreground mt-4">
-        Junior records are kept completely separate from senior records and are
-        never combined into any career figure.
+        Junior records are kept completely separate from senior records and are never combined into
+        any career figure.
       </p>
     </div>
   );
@@ -777,19 +948,27 @@ function JuniorIdentitySummary({ participantId }: { participantId: string }) {
           <span className="ml-2 text-xs text-muted-foreground">
             {junior.firstSeason && junior.lastSeason
               ? `${junior.firstSeason} – ${junior.lastSeason}`
-              : junior.firstSeason ?? ""}
+              : (junior.firstSeason ?? "")}
             {junior.teams ? ` · ${junior.teams}` : ""}
           </span>
         </div>
-        <Link href={`/juniors/players/${junior.participantId}`} className="text-sm text-primary hover:underline">
+        <Link
+          href={`/juniors/players/${junior.participantId}`}
+          className="text-sm text-primary hover:underline"
+        >
           View junior profile →
         </Link>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {tiles.map((t) => (
-          <div key={t.label} className="bg-background/60 border border-border rounded-md p-2 text-center">
+          <div
+            key={t.label}
+            className="bg-background/60 border border-border rounded-md p-2 text-center"
+          >
             <div className="text-lg font-serif font-bold text-primary">{t.value}</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{t.label}</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
+              {t.label}
+            </div>
           </div>
         ))}
       </div>

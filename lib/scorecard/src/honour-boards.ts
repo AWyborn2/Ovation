@@ -327,7 +327,10 @@ const parseBestBowling = (bb: string | null | undefined): { wkts: number; runs: 
   return { wkts: parseInt(m[1] ?? "0", 10), runs: parseInt(m[2] ?? "0", 10) };
 };
 
-const isBetterBowling = (a: { wkts: number; runs: number }, b: { wkts: number; runs: number }): boolean => {
+const isBetterBowling = (
+  a: { wkts: number; runs: number },
+  b: { wkts: number; runs: number },
+): boolean => {
   if (a.wkts !== b.wkts) return a.wkts > b.wkts;
   return a.runs < b.runs;
 };
@@ -447,7 +450,8 @@ export interface BoardTier {
 }
 
 const fmtNum = (n: number): string => n.toLocaleString();
-const fmtAvg = (runs: number, divisor: number): string => (divisor > 0 ? (runs / divisor).toFixed(2) : "-");
+const fmtAvg = (runs: number, divisor: number): string =>
+  divisor > 0 ? (runs / divisor).toFixed(2) : "-";
 
 const getPlayerValue = (
   p: AggregatedPlayer,
@@ -455,25 +459,65 @@ const getPlayerValue = (
 ): { sortValue: number; tierValue: number; headline: string; supporting: string } => {
   switch (key) {
     case "games":
-      return { sortValue: p.games, tierValue: p.games, headline: fmtNum(p.games), supporting: fmtNum(p.runs) };
+      return {
+        sortValue: p.games,
+        tierValue: p.games,
+        headline: fmtNum(p.games),
+        supporting: fmtNum(p.runs),
+      };
     case "runs":
-      return { sortValue: p.runs, tierValue: p.runs, headline: fmtNum(p.runs), supporting: fmtAvg(p.runs, p.innings - p.notOuts) };
+      return {
+        sortValue: p.runs,
+        tierValue: p.runs,
+        headline: fmtNum(p.runs),
+        supporting: fmtAvg(p.runs, p.innings - p.notOuts),
+      };
     case "wickets":
-      return { sortValue: p.wickets, tierValue: p.wickets, headline: fmtNum(p.wickets), supporting: fmtAvg(p.runsConceded, p.wickets) };
+      return {
+        sortValue: p.wickets,
+        tierValue: p.wickets,
+        headline: fmtNum(p.wickets),
+        supporting: fmtAvg(p.runsConceded, p.wickets),
+      };
     case "dismissals": {
       const d = p.catches + p.stumpings + p.runOuts;
-      return { sortValue: d, tierValue: d, headline: fmtNum(d), supporting: `${p.catches}/${p.stumpings}/${p.runOuts}` };
+      return {
+        sortValue: d,
+        tierValue: d,
+        headline: fmtNum(d),
+        supporting: `${p.catches}/${p.stumpings}/${p.runOuts}`,
+      };
     }
     case "highscores":
-      return { sortValue: p.highScore, tierValue: p.highScore, headline: p.highScoreDisplay, supporting: `${p.innings} inn` };
+      return {
+        sortValue: p.highScore,
+        tierValue: p.highScore,
+        headline: p.highScoreDisplay,
+        supporting: `${p.innings} inn`,
+      };
     case "bestbowling": {
       const sortValue = p.bestBowlingWkts * 10000 - p.bestBowlingRuns;
-      return { sortValue, tierValue: p.bestBowlingWkts, headline: p.bestBowling, supporting: `${p.bestBowlingWkts} wkts` };
+      return {
+        sortValue,
+        tierValue: p.bestBowlingWkts,
+        headline: p.bestBowling,
+        supporting: `${p.bestBowlingWkts} wkts`,
+      };
     }
     case "centurions":
-      return { sortValue: p.highScore, tierValue: p.highScore, headline: p.highScoreDisplay, supporting: `${p.hundreds} 100s` };
+      return {
+        sortValue: p.highScore,
+        tierValue: p.highScore,
+        headline: p.highScoreDisplay,
+        supporting: `${p.hundreds} 100s`,
+      };
     case "fivefers":
-      return { sortValue: p.fiveWickets, tierValue: p.fiveWickets, headline: fmtNum(p.fiveWickets), supporting: p.bestBowling };
+      return {
+        sortValue: p.fiveWickets,
+        tierValue: p.fiveWickets,
+        headline: fmtNum(p.fiveWickets),
+        supporting: p.bestBowling,
+      };
   }
 };
 
@@ -545,7 +589,9 @@ export const getMilestoneStatus = (p: AggregatedPlayer, key: BoardKey): Mileston
   const tiers = buildTiers(key, [p]);
   const value = milestoneValue(p, key);
   const board = BOARDS.find((b) => b.key === key)!;
-  const currentIdx = tiers.findIndex((t) => value >= t.min && (t.max === undefined || value <= t.max));
+  const currentIdx = tiers.findIndex(
+    (t) => value >= t.min && (t.max === undefined || value <= t.max),
+  );
 
   let nextIdx: number | null = null;
   let nextLabel: string | null = null;
@@ -636,12 +682,8 @@ export const getSeasonPromotions = (
   limit = 5,
   thresholds: MilestoneThresholds = DEFAULT_MILESTONE_THRESHOLDS,
 ): PromotionEntry[] => {
-  const beforeStats = allStats.filter(
-    (s) => typeof s.season !== "number" || s.season < season,
-  );
-  const throughStats = allStats.filter(
-    (s) => typeof s.season !== "number" || s.season <= season,
-  );
+  const beforeStats = allStats.filter((s) => typeof s.season !== "number" || s.season < season);
+  const throughStats = allStats.filter((s) => typeof s.season !== "number" || s.season <= season);
   const beforeMap = new Map<number, AggregatedPlayer>();
   for (const p of aggregateCareer(beforeStats)) beforeMap.set(p.playerId, p);
   const throughMap = new Map<number, AggregatedPlayer>();
@@ -839,7 +881,12 @@ export const getApproachingMilestones = (
 
 export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardTier[] => {
   const tiers = buildTiers(key, players);
-  const tierResults: BoardTier[] = tiers.map((t, i) => ({ label: t.label, rows: [], startRank: 1, tierIndex: i }));
+  const tierResults: BoardTier[] = tiers.map((t, i) => ({
+    label: t.label,
+    rows: [],
+    startRank: 1,
+    tierIndex: i,
+  }));
   const seen = new Set<number>();
 
   const enriched = players
@@ -852,7 +899,9 @@ export const computeBoard = (players: AggregatedPlayer[], key: BoardKey): BoardT
 
   for (const { p, v } of enriched) {
     if (seen.has(p.playerId)) continue;
-    const tierIdx = tiers.findIndex((t) => v.tierValue >= t.min && (t.max === undefined || v.tierValue <= t.max));
+    const tierIdx = tiers.findIndex(
+      (t) => v.tierValue >= t.min && (t.max === undefined || v.tierValue <= t.max),
+    );
     const target = tierResults[tierIdx];
     if (tierIdx === -1 || !target) continue;
     seen.add(p.playerId);

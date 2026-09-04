@@ -84,10 +84,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
       .map(([season, rs]) => ({
         season,
         rows: [...rs].sort(
-          (a, b) =>
-            a.displayOrder - b.displayOrder ||
-            a.role.localeCompare(b.role) ||
-            a.id - b.id,
+          (a, b) => a.displayOrder - b.displayOrder || a.role.localeCompare(b.role) || a.id - b.id,
         ),
       }))
       .sort((a, b) => b.season - a.season);
@@ -99,10 +96,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
         <div>
           <p className="text-muted-foreground mt-1">{intro}</p>
         </div>
-        <Button
-          onClick={() => setShowNew((v) => !v)}
-          variant={showNew ? "outline" : "default"}
-        >
+        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
           {showNew ? "Close form" : addLabel}
         </Button>
       </div>
@@ -138,8 +132,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
                 <CardTitle className="text-xl">
                   {formatSeason(group.season)}
                   <span className="ml-2 align-middle text-xs font-normal text-muted-foreground">
-                    {group.rows.length}{" "}
-                    {group.rows.length === 1 ? "record" : "records"}
+                    {group.rows.length} {group.rows.length === 1 ? "record" : "records"}
                   </span>
                 </CardTitle>
                 <div className="space-x-2 shrink-0">
@@ -165,10 +158,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
                 {group.rows.map((r) => {
                   if (editingId === r.id) {
                     return (
-                      <div
-                        key={r.id}
-                        className="rounded-md border border-border bg-muted/30 p-4"
-                      >
+                      <div key={r.id} className="rounded-md border border-border bg-muted/30 p-4">
                         {renderEditForm(r, () => setEditingId(null))}
                       </div>
                     );
@@ -186,9 +176,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
                         <div className="font-medium truncate">
                           {r.name}
                           {linked != null && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              {linked}
-                            </span>
+                            <span className="ml-2 text-xs text-muted-foreground">{linked}</span>
                           )}
                           {!r.published && (
                             <span className="ml-2 text-xs font-normal rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5">
@@ -198,11 +186,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
                         </div>
                       </div>
                       <div className="space-x-2 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingId(r.id)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(r.id)}>
                           Edit
                         </Button>
                         <Button

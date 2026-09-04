@@ -30,7 +30,10 @@ import { opponentClubColumns, toOpponentClub } from "./grades-helpers";
  */
 
 /** Split a central display name into given/surname (surname = last token). */
-export function splitCentralName(displayName: string | null): { givenName: string; surname: string } {
+export function splitCentralName(displayName: string | null): {
+  givenName: string;
+  surname: string;
+} {
   const parts = (displayName ?? "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { givenName: "", surname: "" };
   if (parts.length === 1) return { givenName: parts[0], surname: "" };
@@ -209,10 +212,7 @@ export async function loadCentralMatchDetail(
       return {
         id: i,
         // Private players are masked (no link); otherwise the mapped int id.
-        playerId:
-          l.isPrivate || !l.participantId
-            ? 0
-            : intByGuid.get(l.participantId) ?? 0,
+        playerId: l.isPrivate || !l.participantId ? 0 : (intByGuid.get(l.participantId) ?? 0),
         surname: name.surname,
         givenName: name.givenName,
         batted: l.batted,

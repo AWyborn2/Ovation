@@ -10,11 +10,7 @@ import {
   getListAwardPointsConfigsQueryKey,
   getGetPointsConfigLeaderboardQueryKey,
 } from "@workspace/api-client-react";
-import type {
-  Award,
-  AwardPointsConfig,
-  PointsCategories,
-} from "@workspace/api-client-react";
+import type { Award, AwardPointsConfig, PointsCategories } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -32,8 +28,7 @@ export function PointsManager({
   onAwardChanged: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: configs, isLoading, isError, refetch } =
-    useListAwardPointsConfigs(award.id);
+  const { data: configs, isLoading, isError, refetch } = useListAwardPointsConfigs(award.id);
   const upsert = useUpsertAwardPointsConfig();
   const [showNew, setShowNew] = useState(false);
   const [season, setSeason] = useState(new Date().getFullYear());
@@ -115,8 +110,7 @@ export function PointsManager({
         />
       ) : sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
-          No seasons configured. Add a season to score players from their match
-          stats.
+          No seasons configured. Add a season to score players from their match stats.
         </p>
       ) : (
         <div className="space-y-3">
@@ -254,8 +248,7 @@ function PointsConfigCard({
           })}
         </div>
         <p className="text-xs text-muted-foreground">
-          Each enabled category multiplies the player's season total by its
-          points value.
+          Each enabled category multiplies the player's season total by its points value.
         </p>
       </div>
 
@@ -307,17 +300,10 @@ function PointsConfigCard({
             )
               return;
             setError(null);
-            finalise.mutate(
-              { id: config.id },
-              { onSuccess: onChanged, onError },
-            );
+            finalise.mutate({ id: config.id }, { onSuccess: onChanged, onError });
           }}
         >
-          {finalise.isPending
-            ? "Finalising…"
-            : finalised
-              ? "Re-finalise"
-              : "Finalise winner(s)"}
+          {finalise.isPending ? "Finalising…" : finalised ? "Re-finalise" : "Finalise winner(s)"}
         </Button>
       </div>
 
@@ -328,8 +314,7 @@ function PointsConfigCard({
 
 function PointsBoardView({ configId }: { configId: number }) {
   const { data, isLoading, isError, refetch } = useGetPointsConfigLeaderboard(configId);
-  if (isLoading)
-    return <LoadingState label="Loading leaderboard…" className="py-4" />;
+  if (isLoading) return <LoadingState label="Loading leaderboard…" className="py-4" />;
   if (isError)
     return (
       <QueryError

@@ -3,11 +3,7 @@
 // (t = 1, motion "none") and the animation path share one code path.
 import type { CardTemplate } from "@workspace/api-client-react";
 import { DEFAULT_BRAND } from "@workspace/scorecard";
-import {
-  resolveTextField,
-  resolvePhotoField,
-  type TemplateContext,
-} from "../../card-template";
+import { resolveTextField, resolvePhotoField, type TemplateContext } from "../../card-template";
 import { applyCountUp, clamp01, easeOutBack, easeOutCubic } from "../animation";
 import {
   drawImageContain,
@@ -205,7 +201,17 @@ export const drawTemplateFrame = (
           ctx.arc(ccx, ccy, r, 0, Math.PI * 2);
           ctx.closePath();
           ctx.clip();
-          drawImageCoverFocal(ctx, photoImg, ccx - r, ccy - r, r * 2, r * 2, tr.focalX, tr.focalY, tr.zoom);
+          drawImageCoverFocal(
+            ctx,
+            photoImg,
+            ccx - r,
+            ccy - r,
+            r * 2,
+            r * 2,
+            tr.focalX,
+            tr.focalY,
+            tr.zoom,
+          );
         } else if (slot.photoFit === "contain") {
           drawImageContain(ctx, photoImg, cx, cy, cw, ch);
         } else {

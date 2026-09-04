@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { CoachTour } from "@/components/coach-tour";
 import { WelcomeGuide } from "@/components/welcome-guide";
@@ -29,11 +23,7 @@ export function useOnboarding(): OnboardingContextValue {
 
 const STEPS = tourSteps();
 
-export function OnboardingProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
 
@@ -65,16 +55,8 @@ export function OnboardingProvider({
   return (
     <OnboardingContext.Provider value={{ showWelcome, startTour }}>
       {children}
-      <WelcomeGuide
-        visible={welcomeOpen}
-        onDismiss={dismissWelcome}
-        onStartTour={startTour}
-      />
-      <CoachTour
-        visible={tourOpen}
-        steps={STEPS}
-        onClose={() => setTourOpen(false)}
-      />
+      <WelcomeGuide visible={welcomeOpen} onDismiss={dismissWelcome} onStartTour={startTour} />
+      <CoachTour visible={tourOpen} steps={STEPS} onClose={() => setTourOpen(false)} />
     </OnboardingContext.Provider>
   );
 }

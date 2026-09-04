@@ -10,9 +10,7 @@
  * already-fetched DTOs here, which keeps these testable in isolation.
  */
 
-import type {
-  CardKind,
-} from "@/lib/share-card";
+import type { CardKind } from "@/lib/share-card";
 import type {
   LadderRow,
   TeamListPlayer,
@@ -145,7 +143,8 @@ export function fixtureToCountdownState(fixture: Fixture): CardFormState {
   const venue = fixture.venue ?? "";
   return {
     daysToGo: daysUntil(fixture.startAt),
-    eventLabel: roundLabelOf(fixture) || `${fixture.grade} vs ${fixture.opponentName}`.toUpperCase(),
+    eventLabel:
+      roundLabelOf(fixture) || `${fixture.grade} vs ${fixture.opponentName}`.toUpperCase(),
     dateVenue: [date, venue].filter(Boolean).join(" • "),
     fixtureLine: `${fixture.grade} vs ${fixture.opponentName}`,
   };

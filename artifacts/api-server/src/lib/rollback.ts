@@ -39,12 +39,7 @@ export async function reverseCapsAfterRollback(
     const caps = await tx
       .select()
       .from(capRegisterTable)
-      .where(
-        and(
-          eq(capRegisterTable.tenantId, tenantId),
-          eq(capRegisterTable.category, category),
-        ),
-      );
+      .where(and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.category, category)));
 
     const ownRow = (id: number) =>
       and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.id, id));
@@ -79,10 +74,7 @@ export async function reverseCapsAfterRollback(
  *        considered, so untouched players are never examined.
  * @returns number of orphan players deleted.
  */
-export async function cleanupOrphanPlayers(
-  tx: CapSyncTx,
-  candidateIds: number[],
-): Promise<number> {
+export async function cleanupOrphanPlayers(tx: CapSyncTx, candidateIds: number[]): Promise<number> {
   if (candidateIds.length === 0) return 0;
   const ids = sql`(${sql.join(
     candidateIds.map((id) => sql`${id}`),

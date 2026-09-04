@@ -1,351 +1,1449 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ideation: Concierge Onboarding Tooling</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
-<style>
-:root{
-  --bg:#f7f6f3; --card:#ffffff; --ink:#1c1a17; --muted:#6b675f;
-  --line:#e4e1da; --accent:#b06000; --accent-soft:#fdf3e4; --accent-text:#8a4b00;
-  --good:#1d6b3a; --good-soft:#e8f4ec; --warn:#8a4b00; --warn-soft:#fdf3e4;
-  --info:#1f5a8a; --info-soft:#e9f1f8; --danger:#a3352b; --danger-soft:#faeae8;
-  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
-.page{max-width:920px;margin-inline:auto;padding:48px 28px 80px}
-p,li,dd{max-width:72ch}
-h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em;font-weight:800;letter-spacing:-.02em}
-h2{font-size:1.35rem;margin:2.2em 0 .6em;font-weight:700;letter-spacing:-.01em;border-bottom:2px solid var(--line);padding-bottom:.35em}
-h3{font-size:1.08rem;margin:1.6em 0 .5em;font-weight:700}
-a{color:var(--info)}
-code{font-family:var(--mono);font-size:.86em;background:#efede8;padding:.1em .35em;border-radius:4px}
-.eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text)}
-.meta{display:flex;flex-wrap:wrap;gap:.5em 1.6em;color:var(--muted);font-size:.9rem;margin:.4em 0 0}
-.meta b{color:var(--ink);font-weight:600}
-.stats{display:flex;flex-wrap:wrap;gap:12px;margin:26px 0 4px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;min-width:118px}
-.stat .n{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
-.stat .l{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
-.axes{list-style:none;padding:0;margin:.6em 0;display:grid;gap:8px}
-.axes li{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
-.axes .ax{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--accent-text)}
-.jump{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0 22px}
-.jump ol{margin:.3em 0 0;padding-left:1.4em}
-.jump li{margin:.25em 0}
-article.idea{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin:18px 0}
-.idea-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.idchip{font-family:var(--mono);font-weight:600;font-size:.8rem;background:var(--accent-soft);color:var(--accent-text);border-radius:999px;padding:.2em .7em}
-.chip{font-family:var(--mono);font-size:.74rem;font-weight:600;border-radius:999px;padding:.2em .7em}
-.chip.axis{background:var(--info-soft);color:var(--info)}
-.chip.conf-hi{background:var(--good-soft);color:var(--good)}
-.chip.conf-md{background:var(--warn-soft);color:var(--warn)}
-.chip.cx{background:#efede8;color:#565248}
-.idea h3{margin:.3em 0 .6em;font-size:1.15rem}
-.idea dl{margin:.8em 0 0}
-.idea dt{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.9em}
-.idea dd{margin:.25em 0 0}
-.basis-tag{font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--accent-text)}
-table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.92rem}
-th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-tr:last-child td{border-bottom:none}
-.callout{border-radius:10px;padding:16px 20px;margin:20px 0;background:var(--info-soft)}
-.callout .eyebrow{color:var(--info)}
-figure{margin:1.2em 0;padding:14px;background:#fbfaf8;border:1px solid var(--line);border-radius:10px;overflow-x:auto}
-figcaption{font-size:.82rem;color:var(--muted);margin-top:8px}
-footer.composition-signal{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.82rem}
-.svgwrap svg{max-width:100%;height:auto;display:block}
-@media (prefers-color-scheme: dark){
-  :root{--bg:#191713;--card:#211f1a;--ink:#ece9e2;--muted:#a29d92;--line:#37342c;
-  --accent:#e8a04c;--accent-soft:#37291a;--accent-text:#e8a04c;
-  --good:#7cc79a;--good-soft:#1d2f24;--warn:#e8a04c;--warn-soft:#37291a;
-  --info:#8db9dd;--info-soft:#1c2936;--danger:#e08a80;--danger-soft:#37211e}
-  code{background:#2c2a24}
-  .chip.cx{background:#2c2a24;color:#b5b0a4}
-  figure{background:#1d1b16}
-}
-</style>
-</head>
-<body>
-<div class="page">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ideation: Concierge Onboarding Tooling</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #f7f6f3;
+        --card: #ffffff;
+        --ink: #1c1a17;
+        --muted: #6b675f;
+        --line: #e4e1da;
+        --accent: #b06000;
+        --accent-soft: #fdf3e4;
+        --accent-text: #8a4b00;
+        --good: #1d6b3a;
+        --good-soft: #e8f4ec;
+        --warn: #8a4b00;
+        --warn-soft: #fdf3e4;
+        --info: #1f5a8a;
+        --info-soft: #e9f1f8;
+        --danger: #a3352b;
+        --danger-soft: #faeae8;
+        --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          16px/1.6 "Inter",
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      .page {
+        max-width: 920px;
+        margin-inline: auto;
+        padding: 48px 28px 80px;
+      }
+      p,
+      li,
+      dd {
+        max-width: 72ch;
+      }
+      h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0.2em 0 0.3em;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      h2 {
+        font-size: 1.35rem;
+        margin: 2.2em 0 0.6em;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        border-bottom: 2px solid var(--line);
+        padding-bottom: 0.35em;
+      }
+      h3 {
+        font-size: 1.08rem;
+        margin: 1.6em 0 0.5em;
+        font-weight: 700;
+      }
+      a {
+        color: var(--info);
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        background: #efede8;
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+      .eyebrow {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent-text);
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em 1.6em;
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0.4em 0 0;
+      }
+      .meta b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 26px 0 4px;
+      }
+      .stat {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 18px;
+        min-width: 118px;
+      }
+      .stat .n {
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .stat .l {
+        font-size: 0.76rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+      }
+      .axes {
+        list-style: none;
+        padding: 0;
+        margin: 0.6em 0;
+        display: grid;
+        gap: 8px;
+      }
+      .axes li {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 14px;
+      }
+      .axes .ax {
+        font-family: var(--mono);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--accent-text);
+      }
+      .jump {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin: 14px 0 22px;
+      }
+      .jump ol {
+        margin: 0.3em 0 0;
+        padding-left: 1.4em;
+      }
+      .jump li {
+        margin: 0.25em 0;
+      }
+      article.idea {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 22px 26px;
+        margin: 18px 0;
+      }
+      .idea-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .idchip {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: 0.8rem;
+        background: var(--accent-soft);
+        color: var(--accent-text);
+        border-radius: 999px;
+        padding: 0.2em 0.7em;
+      }
+      .chip {
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        font-weight: 600;
+        border-radius: 999px;
+        padding: 0.2em 0.7em;
+      }
+      .chip.axis {
+        background: var(--info-soft);
+        color: var(--info);
+      }
+      .chip.conf-hi {
+        background: var(--good-soft);
+        color: var(--good);
+      }
+      .chip.conf-md {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .chip.cx {
+        background: #efede8;
+        color: #565248;
+      }
+      .idea h3 {
+        margin: 0.3em 0 0.6em;
+        font-size: 1.15rem;
+      }
+      .idea dl {
+        margin: 0.8em 0 0;
+      }
+      .idea dt {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 0.9em;
+      }
+      .idea dd {
+        margin: 0.25em 0 0;
+      }
+      .basis-tag {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--accent-text);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 13px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .callout {
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin: 20px 0;
+        background: var(--info-soft);
+      }
+      .callout .eyebrow {
+        color: var(--info);
+      }
+      figure {
+        margin: 1.2em 0;
+        padding: 14px;
+        background: #fbfaf8;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow-x: auto;
+      }
+      figcaption {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      footer.composition-signal {
+        margin-top: 56px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .svgwrap svg {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #191713;
+          --card: #211f1a;
+          --ink: #ece9e2;
+          --muted: #a29d92;
+          --line: #37342c;
+          --accent: #e8a04c;
+          --accent-soft: #37291a;
+          --accent-text: #e8a04c;
+          --good: #7cc79a;
+          --good-soft: #1d2f24;
+          --warn: #e8a04c;
+          --warn-soft: #37291a;
+          --info: #8db9dd;
+          --info-soft: #1c2936;
+          --danger: #e08a80;
+          --danger-soft: #37211e;
+        }
+        code {
+          background: #2c2a24;
+        }
+        .chip.cx {
+          background: #2c2a24;
+          color: #b5b0a4;
+        }
+        figure {
+          background: #1d1b16;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="eyebrow">Ideation &middot; Ovation</div>
+        <h1>Concierge Onboarding Tooling</h1>
+        <div class="meta">
+          <span><b>Date:</b> 2026-07-09</span>
+          <span><b>Topic:</b> concierge-onboarding-tooling</span>
+          <span><b>Mode:</b> repo-grounded</span>
+        </div>
+        <p style="color: var(--muted); margin-top: 0.9em">
+          <b>Focus:</b> Full-scoped concierge setup for the platform-admin console — delete existing
+          club tenants, upload their logos and set their club colours, and access their admin panels
+          to help them with onboarding. No scope currently exists for this feature.
+        </p>
+      </header>
 
-<header>
-  <div class="eyebrow">Ideation &middot; Ovation</div>
-  <h1>Concierge Onboarding Tooling</h1>
-  <div class="meta">
-    <span><b>Date:</b> 2026-07-09</span>
-    <span><b>Topic:</b> concierge-onboarding-tooling</span>
-    <span><b>Mode:</b> repo-grounded</span>
-  </div>
-  <p style="color:var(--muted);margin-top:.9em"><b>Focus:</b> Full-scoped concierge setup for the platform-admin console — delete existing club tenants, upload their logos and set their club colours, and access their admin panels to help them with onboarding. No scope currently exists for this feature.</p>
-</header>
+      <div class="stats">
+        <div class="stat">
+          <div class="n">45</div>
+          <div class="l">Raw ideas</div>
+        </div>
+        <div class="stat">
+          <div class="n">26</div>
+          <div class="l">After dedupe</div>
+        </div>
+        <div class="stat">
+          <div class="n">7</div>
+          <div class="l">Survivors</div>
+        </div>
+        <div class="stat">
+          <div class="n">4</div>
+          <div class="l">Topic axes</div>
+        </div>
+        <div class="stat">
+          <div class="n">0</div>
+          <div class="l">Refuted citations</div>
+        </div>
+      </div>
 
-<div class="stats">
-  <div class="stat"><div class="n">45</div><div class="l">Raw ideas</div></div>
-  <div class="stat"><div class="n">26</div><div class="l">After dedupe</div></div>
-  <div class="stat"><div class="n">7</div><div class="l">Survivors</div></div>
-  <div class="stat"><div class="n">4</div><div class="l">Topic axes</div></div>
-  <div class="stat"><div class="n">0</div><div class="l">Refuted citations</div></div>
-</div>
+      <section id="grounding-context">
+        <h2>Grounding Context</h2>
+        <h3>Codebase Context</h3>
+        <p>
+          Ovation is a white-label multi-tenant cricket stats platform: pnpm monorepo with a React
+          19 + Vite web app (<code>artifacts/cricket-club</code>, 58 pages), an Express 5 + Drizzle
+          + Postgres API (<code>artifacts/api-server</code>, 48 route modules), an Expo mobile app,
+          and an OpenAPI-first contract (<code>lib/api-spec/openapi.yaml</code>, 215 operations,
+          generated hooks/Zod). Two data stores: the app Postgres DB (tenant-scoped curated content
+          — the moat) and the read-only central PCA Postgres on Supabase (24 seasons, 27 clubs,
+          11,604 matches). Tenant context resolves per request through a single middleware chain;
+          theming is runtime CSS-token injection from the tenant row.
+        </p>
+        <p>
+          The platform-admin console today can: authenticate platform admins, provision a tenant
+          (resolve central club &rarr; upsert tenant row with a brand snapshot &rarr; mint the
+          <code>player_id_map</code> crosswalk), list/detail tenants, patch
+          <code>plan</code>/<code>customDomain</code>, and issue single-use admin password-reset
+          links. It cannot delete tenants (no <code>router.delete()</code> exists; 30+ tenant-scoped
+          tables have FKs with no cascades), cannot edit tenant branding (<code
+            >PATCH /platform/admin/tenants/:id</code
+          >
+          touches only plan and custom domain, while provisioning hard-codes
+          <code>faviconUrl</code>/<code>secondaryColour</code>/<code>tertiaryColour</code> to null),
+          and cannot access a tenant's admin panel (the concierge workaround is issuing a reset link
+          and waiting for a volunteer to redeem it). There is no audit table — reset-link issuance
+          logs to stdout only. A fully-built self-serve branding editor
+          (<code>admin-branding.tsx</code>: presigned uploads, client-side palette extraction,
+          <code>PATCH /tenant-brand</code>) exists on the tenant side.
+        </p>
+        <p>
+          <b>Institutional learning</b> (<a
+            href="https://github.com/AWyborn2/Ovation/blob/main/docs/solutions/architecture-patterns/central-read-player-identity-crosswalk.md"
+            >central-read-player-identity-crosswalk.md</a
+          >): tenant deletion must sweep the crosswalk as the inverse of provisioning; crosswalk
+          backfill must run idempotently through the shared minting helper; impersonation must be
+          tenant-context substitution, not permission elevation, or central-read pages silently
+          break; never write to the central DB.
+        </p>
+        <p>
+          <b>External context:</b> WorkOS impersonation (required reason, 60-minute auto-expiry,
+          <code>impersonator</code> field driving a UI banner); Shopify's consent-gated "Allow
+          assistance" pattern; impersonation audit events warrant the longest retention tier (~36
+          months); soft-delete plus a 30-day grace window is the dominant SaaS deprovision pattern;
+          Brandfetch and Apify brand-extraction APIs (domain or Facebook page &rarr; logos +
+          semantic colours); TeamLinkt sells a US$795 one-time "launch package" as a concierge
+          onboarding upsell; AWS SaaS Lens treats tenant onboarding as an orchestrated pipeline with
+          per-step state.
+        </p>
+      </section>
 
-<section id="grounding-context">
-<h2>Grounding Context</h2>
-<h3>Codebase Context</h3>
-<p>Ovation is a white-label multi-tenant cricket stats platform: pnpm monorepo with a React 19 + Vite web app (<code>artifacts/cricket-club</code>, 58 pages), an Express 5 + Drizzle + Postgres API (<code>artifacts/api-server</code>, 48 route modules), an Expo mobile app, and an OpenAPI-first contract (<code>lib/api-spec/openapi.yaml</code>, 215 operations, generated hooks/Zod). Two data stores: the app Postgres DB (tenant-scoped curated content — the moat) and the read-only central PCA Postgres on Supabase (24 seasons, 27 clubs, 11,604 matches). Tenant context resolves per request through a single middleware chain; theming is runtime CSS-token injection from the tenant row.</p>
-<p>The platform-admin console today can: authenticate platform admins, provision a tenant (resolve central club &rarr; upsert tenant row with a brand snapshot &rarr; mint the <code>player_id_map</code> crosswalk), list/detail tenants, patch <code>plan</code>/<code>customDomain</code>, and issue single-use admin password-reset links. It cannot delete tenants (no <code>router.delete()</code> exists; 30+ tenant-scoped tables have FKs with no cascades), cannot edit tenant branding (<code>PATCH /platform/admin/tenants/:id</code> touches only plan and custom domain, while provisioning hard-codes <code>faviconUrl</code>/<code>secondaryColour</code>/<code>tertiaryColour</code> to null), and cannot access a tenant's admin panel (the concierge workaround is issuing a reset link and waiting for a volunteer to redeem it). There is no audit table — reset-link issuance logs to stdout only. A fully-built self-serve branding editor (<code>admin-branding.tsx</code>: presigned uploads, client-side palette extraction, <code>PATCH /tenant-brand</code>) exists on the tenant side.</p>
-<p><b>Institutional learning</b> (<a href="https://github.com/AWyborn2/Ovation/blob/main/docs/solutions/architecture-patterns/central-read-player-identity-crosswalk.md">central-read-player-identity-crosswalk.md</a>): tenant deletion must sweep the crosswalk as the inverse of provisioning; crosswalk backfill must run idempotently through the shared minting helper; impersonation must be tenant-context substitution, not permission elevation, or central-read pages silently break; never write to the central DB.</p>
-<p><b>External context:</b> WorkOS impersonation (required reason, 60-minute auto-expiry, <code>impersonator</code> field driving a UI banner); Shopify's consent-gated "Allow assistance" pattern; impersonation audit events warrant the longest retention tier (~36 months); soft-delete plus a 30-day grace window is the dominant SaaS deprovision pattern; Brandfetch and Apify brand-extraction APIs (domain or Facebook page &rarr; logos + semantic colours); TeamLinkt sells a US$795 one-time "launch package" as a concierge onboarding upsell; AWS SaaS Lens treats tenant onboarding as an orchestrated pipeline with per-step state.</p>
-</section>
+      <section id="topic-axes">
+        <h2>Topic Axes</h2>
+        <ul class="axes">
+          <li>
+            <span class="ax">tenant-deletion</span> — deleting/deprovisioning club tenants safely
+          </li>
+          <li>
+            <span class="ax">branding</span> — logo upload and club colours set on the club's behalf
+          </li>
+          <li>
+            <span class="ax">impersonation</span> — platform admin accessing a tenant's admin panel
+          </li>
+          <li>
+            <span class="ax">onboarding-health</span> — provisioning workflow, setup progress,
+            tenant health
+          </li>
+        </ul>
+      </section>
 
-<section id="topic-axes">
-<h2>Topic Axes</h2>
-<ul class="axes">
-  <li><span class="ax">tenant-deletion</span> — deleting/deprovisioning club tenants safely</li>
-  <li><span class="ax">branding</span> — logo upload and club colours set on the club's behalf</li>
-  <li><span class="ax">impersonation</span> — platform admin accessing a tenant's admin panel</li>
-  <li><span class="ax">onboarding-health</span> — provisioning workflow, setup progress, tenant health</li>
-</ul>
-</section>
+      <section id="ranked-ideas">
+        <h2>Ranked Ideas</h2>
+        <div class="jump">
+          <div class="eyebrow">Jump to</div>
+          <ol>
+            <li><a href="#i1">Ghost-session impersonation via tenant-context substitution</a></li>
+            <li><a href="#i2">Concierge branding panel with one-input brand intake</a></li>
+            <li><a href="#i3">Schema-derived deprovision engine with plan/apply</a></li>
+            <li><a href="#i4">Provision-as-pitch: pre-provision all 27 PCA clubs</a></li>
+            <li><a href="#i5">Honour-board seeding from central.premiers</a></li>
+            <li><a href="#i6">Unified tenant lifecycle state machine + certification gate</a></li>
+            <li><a href="#i7">Platform audit ledger as the tenant activity timeline</a></li>
+          </ol>
+        </div>
 
-<section id="ranked-ideas">
-<h2>Ranked Ideas</h2>
-<div class="jump">
-  <div class="eyebrow">Jump to</div>
-  <ol>
-    <li><a href="#i1">Ghost-session impersonation via tenant-context substitution</a></li>
-    <li><a href="#i2">Concierge branding panel with one-input brand intake</a></li>
-    <li><a href="#i3">Schema-derived deprovision engine with plan/apply</a></li>
-    <li><a href="#i4">Provision-as-pitch: pre-provision all 27 PCA clubs</a></li>
-    <li><a href="#i5">Honour-board seeding from central.premiers</a></li>
-    <li><a href="#i6">Unified tenant lifecycle state machine + certification gate</a></li>
-    <li><a href="#i7">Platform audit ledger as the tenant activity timeline</a></li>
-  </ol>
-</div>
+        <article class="idea" id="i1">
+          <div class="idea-head">
+            <span class="idchip">1</span><span class="chip axis">impersonation</span
+            ><span class="chip conf-hi">Confidence 85%</span
+            ><span class="chip cx">Complexity Medium</span>
+          </div>
+          <h3>Ghost-session impersonation via tenant-context substitution</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              A <code>POST /platform/admin/tenants/:id/impersonate</code> endpoint that requires a
+              free-text reason and mints a short-lived <code>ovation_ghost_session</code> cookie
+              carrying <code>{platformAdminId, tenantId, reason, expiresAt}</code>. The admin-auth
+              middleware accepts it as a synthetic admin <em>for that tenant only</em>, and tenant
+              context resolves to the target tenant through the existing resolution chain — so every
+              central read filters by the right club and every crosswalk lookup resolves against the
+              right tenant. Because platform and club sessions already live in different cookies,
+              the ghost cookie coexists with the platform session: exiting is just clearing one
+              cookie. Guardrails follow WorkOS: mandatory reason, 60-minute auto-expiry, a
+              persistent "Ash is assisting — end session" banner in the tenant admin UI, and a
+              durable audit row per mint/exit (see idea 7).
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span> the two session systems are already separate
+              cookies (<code>hhcc_session</code> at <code>lib/auth.ts:24</code>,
+              <code>ovation_platform_session</code> at <code>lib/auth.ts:187</code> — verified); no
+              impersonation endpoint exists; the current workaround is "issue reset link, wait for
+              club admin to log in." <span class="basis-tag">external:</span> WorkOS impersonation
+              (reason + 60-min expiry + impersonator banner). The institutional crosswalk learning
+              mandates substitution over elevation.
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              This is the literal "access their admin panels" ask. Today every assist is synchronous
+              with a volunteer's availability — you cannot fix a club's setup on a Tuesday night
+              unless their secretary is at a laptop. Ghost sessions make assistance instant,
+              credential-free, and time-boxed, and they route through the one seam (tenant-context
+              resolution) that guarantees central-read pages keep working. It is also the substrate
+              that lets the concierge reuse the club's own branding editor and future seeding
+              wizards instead of duplicating those UIs in the platform console.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              It is a deliberate authz bypass in a system whose isolation tests currently guarantee
+              cross-tenant rejection — the guardrail set (reason, expiry, banner, audit) needs
+              explicit sign-off before any code. A counter-proposal exists (build scoped concierge
+              endpoints instead and skip impersonation; see rejection D15) but under-delivers
+              against the ad-hoc, long-tail nature of onboarding help. Ship only after (or with)
+              idea 7's audit ledger.
+            </dd>
+          </dl>
+          <figure class="svgwrap">
+            <svg
+              viewBox="0 0 720 210"
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-label="Ghost session substitutes tenant context rather than elevating permissions"
+            >
+              <defs>
+                <marker id="ar1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                  <path d="M0,0 L7,3 L0,6 z" fill="#8a8578" />
+                </marker>
+              </defs>
+              <rect x="10" y="30" width="190" height="64" rx="10" fill="#fdf3e4" stroke="#d9a45f" />
+              <text
+                x="105"
+                y="56"
+                text-anchor="middle"
+                font-size="13"
+                font-weight="700"
+                fill="#6b4a12"
+              >
+                Platform session
+              </text>
+              <text x="105" y="76" text-anchor="middle" font-size="11" fill="#6b4a12">
+                ovation_platform_session
+              </text>
+              <rect
+                x="10"
+                y="120"
+                width="190"
+                height="64"
+                rx="10"
+                fill="#e9f1f8"
+                stroke="#7fa8c9"
+              />
+              <text
+                x="105"
+                y="146"
+                text-anchor="middle"
+                font-size="13"
+                font-weight="700"
+                fill="#1f4d73"
+              >
+                Ghost session
+              </text>
+              <text x="105" y="166" text-anchor="middle" font-size="11" fill="#1f4d73">
+                + reason &middot; 60-min expiry
+              </text>
+              <line
+                x1="200"
+                y1="152"
+                x2="288"
+                y2="122"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar1)"
+              />
+              <rect
+                x="290"
+                y="76"
+                width="180"
+                height="64"
+                rx="10"
+                fill="#ffffff"
+                stroke="#b8b3a6"
+              />
+              <text
+                x="380"
+                y="102"
+                text-anchor="middle"
+                font-size="13"
+                font-weight="700"
+                fill="#3a372f"
+              >
+                tenant-context
+              </text>
+              <text x="380" y="122" text-anchor="middle" font-size="11" fill="#6b675f">
+                resolves target tenant
+              </text>
+              <line
+                x1="470"
+                y1="96"
+                x2="548"
+                y2="66"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar1)"
+              />
+              <line
+                x1="470"
+                y1="118"
+                x2="548"
+                y2="148"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar1)"
+              />
+              <rect
+                x="550"
+                y="34"
+                width="160"
+                height="56"
+                rx="10"
+                fill="#e8f4ec"
+                stroke="#7bb894"
+              />
+              <text
+                x="630"
+                y="57"
+                text-anchor="middle"
+                font-size="12"
+                font-weight="700"
+                fill="#1d5231"
+              >
+                Central reads
+              </text>
+              <text x="630" y="75" text-anchor="middle" font-size="11" fill="#1d5231">
+                right club_id filter
+              </text>
+              <rect
+                x="550"
+                y="122"
+                width="160"
+                height="56"
+                rx="10"
+                fill="#e8f4ec"
+                stroke="#7bb894"
+              />
+              <text
+                x="630"
+                y="145"
+                text-anchor="middle"
+                font-size="12"
+                font-weight="700"
+                fill="#1d5231"
+              >
+                Crosswalk lookups
+              </text>
+              <text x="630" y="163" text-anchor="middle" font-size="11" fill="#1d5231">
+                right tenant's map
+              </text>
+            </svg>
+            <figcaption>
+              Illustrative only — substitution threads the impersonated tenant through the existing
+              context seam, so downstream reads stay correct. Not a design spec.
+            </figcaption>
+          </figure>
+        </article>
 
-<article class="idea" id="i1">
-  <div class="idea-head"><span class="idchip">1</span><span class="chip axis">impersonation</span><span class="chip conf-hi">Confidence 85%</span><span class="chip cx">Complexity Medium</span></div>
-  <h3>Ghost-session impersonation via tenant-context substitution</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>A <code>POST /platform/admin/tenants/:id/impersonate</code> endpoint that requires a free-text reason and mints a short-lived <code>ovation_ghost_session</code> cookie carrying <code>{platformAdminId, tenantId, reason, expiresAt}</code>. The admin-auth middleware accepts it as a synthetic admin <em>for that tenant only</em>, and tenant context resolves to the target tenant through the existing resolution chain — so every central read filters by the right club and every crosswalk lookup resolves against the right tenant. Because platform and club sessions already live in different cookies, the ghost cookie coexists with the platform session: exiting is just clearing one cookie. Guardrails follow WorkOS: mandatory reason, 60-minute auto-expiry, a persistent "Ash is assisting — end session" banner in the tenant admin UI, and a durable audit row per mint/exit (see idea 7).</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> the two session systems are already separate cookies (<code>hhcc_session</code> at <code>lib/auth.ts:24</code>, <code>ovation_platform_session</code> at <code>lib/auth.ts:187</code> — verified); no impersonation endpoint exists; the current workaround is "issue reset link, wait for club admin to log in." <span class="basis-tag">external:</span> WorkOS impersonation (reason + 60-min expiry + impersonator banner). The institutional crosswalk learning mandates substitution over elevation.</dd>
-    <dt>Rationale</dt>
-    <dd>This is the literal "access their admin panels" ask. Today every assist is synchronous with a volunteer's availability — you cannot fix a club's setup on a Tuesday night unless their secretary is at a laptop. Ghost sessions make assistance instant, credential-free, and time-boxed, and they route through the one seam (tenant-context resolution) that guarantees central-read pages keep working. It is also the substrate that lets the concierge reuse the club's own branding editor and future seeding wizards instead of duplicating those UIs in the platform console.</dd>
-    <dt>Downsides</dt>
-    <dd>It is a deliberate authz bypass in a system whose isolation tests currently guarantee cross-tenant rejection — the guardrail set (reason, expiry, banner, audit) needs explicit sign-off before any code. A counter-proposal exists (build scoped concierge endpoints instead and skip impersonation; see rejection D15) but under-delivers against the ad-hoc, long-tail nature of onboarding help. Ship only after (or with) idea 7's audit ledger.</dd>
-  </dl>
-  <figure class="svgwrap">
-    <svg viewBox="0 0 720 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ghost session substitutes tenant context rather than elevating permissions">
-      <defs><marker id="ar1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#8a8578"/></marker></defs>
-      <rect x="10" y="30" width="190" height="64" rx="10" fill="#fdf3e4" stroke="#d9a45f"/>
-      <text x="105" y="56" text-anchor="middle" font-size="13" font-weight="700" fill="#6b4a12">Platform session</text>
-      <text x="105" y="76" text-anchor="middle" font-size="11" fill="#6b4a12">ovation_platform_session</text>
-      <rect x="10" y="120" width="190" height="64" rx="10" fill="#e9f1f8" stroke="#7fa8c9"/>
-      <text x="105" y="146" text-anchor="middle" font-size="13" font-weight="700" fill="#1f4d73">Ghost session</text>
-      <text x="105" y="166" text-anchor="middle" font-size="11" fill="#1f4d73">+ reason &middot; 60-min expiry</text>
-      <line x1="200" y1="152" x2="288" y2="122" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar1)"/>
-      <rect x="290" y="76" width="180" height="64" rx="10" fill="#ffffff" stroke="#b8b3a6"/>
-      <text x="380" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#3a372f">tenant-context</text>
-      <text x="380" y="122" text-anchor="middle" font-size="11" fill="#6b675f">resolves target tenant</text>
-      <line x1="470" y1="96" x2="548" y2="66" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar1)"/>
-      <line x1="470" y1="118" x2="548" y2="148" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar1)"/>
-      <rect x="550" y="34" width="160" height="56" rx="10" fill="#e8f4ec" stroke="#7bb894"/>
-      <text x="630" y="57" text-anchor="middle" font-size="12" font-weight="700" fill="#1d5231">Central reads</text>
-      <text x="630" y="75" text-anchor="middle" font-size="11" fill="#1d5231">right club_id filter</text>
-      <rect x="550" y="122" width="160" height="56" rx="10" fill="#e8f4ec" stroke="#7bb894"/>
-      <text x="630" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="#1d5231">Crosswalk lookups</text>
-      <text x="630" y="163" text-anchor="middle" font-size="11" fill="#1d5231">right tenant's map</text>
-    </svg>
-    <figcaption>Illustrative only — substitution threads the impersonated tenant through the existing context seam, so downstream reads stay correct. Not a design spec.</figcaption>
-  </figure>
-</article>
+        <article class="idea" id="i2">
+          <div class="idea-head">
+            <span class="idchip">2</span><span class="chip axis">branding</span
+            ><span class="chip conf-hi">Confidence 90%</span
+            ><span class="chip cx">Complexity Medium</span>
+          </div>
+          <h3>Concierge branding panel with one-input brand intake</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              A branding section on the platform-admin tenant-detail page backed by a new
+              <code>PATCH /platform/admin/tenants/:id/brand</code> endpoint that accepts the same
+              <code>UpdateTenantBrandBody</code> shape as the self-serve editor, reusing the proven
+              presigned-URL upload machinery. Layered on top: a one-input intake — paste the club's
+              website or Facebook URL, and the tool fetches logo + colours (Brandfetch, with an
+              Apify-style scrape fallback for Facebook-only clubs), runs the existing
+              <code>extractBrandPalette()</code> logic server-side, previews the derived theme
+              tokens in light and dark modes, and flags WCAG contrast failures before anything is
+              saved. Concierge reviews a suggested brand card and clicks apply.
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span>
+              <code>PATCH /platform/admin/tenants/:id</code> only updates <code>plan</code>/<code
+                >customDomain</code
+              >
+              (verified at <code>platform-admin.ts:220-260</code>); provisioning writes
+              <code>faviconUrl: null, secondaryColour: null, tertiaryColour: null</code>
+              (<code>provision.ts:126-131</code>, verified); palette extraction already ships
+              client-side (<code>admin-branding.tsx:129-134</code>, verified);
+              <code>seed-mandurah-tenant.ts</code> hard-codes a <code>KNOWN_LOGOS</code> map as
+              today's workaround. <span class="basis-tag">external:</span> Brandfetch Brand API
+              (domain &rarr; logos + semantic colour roles, free tier 100 req); Apify Fetch Branding
+              for Facebook-only presences.
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              This is the literal "upload their logos and set their club colours" ask, and it is
+              mostly assembly: the schema, upload pipeline, and palette extraction all exist — the
+              missing pieces are one endpoint, one UI panel, and the fetch assist. Every club
+              provisioned today starts with two of three colours and the favicon literally null, and
+              the only person who can fix it is a club admin who may not exist yet. Volunteer clubs
+              rarely have a logo file at hand; "paste their Facebook URL, approve the card" is the
+              shape of the actual concierge conversation.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              An external API dependency (build-vs-manual tradeoff worth a deliberate call — the
+              free tier likely covers 27 pilot clubs, but scraping heuristics on Facebook pages are
+              brittle). A counter-argument (rejection D11) says skip the platform panel entirely and
+              set branding through the club's own editor via impersonation (idea 1) — one canonical
+              editor, zero duplicated surface. The two compose: the endpoint is small enough to ship
+              regardless, and the fetch assist is useful from either surface.
+            </dd>
+          </dl>
+        </article>
 
-<article class="idea" id="i2">
-  <div class="idea-head"><span class="idchip">2</span><span class="chip axis">branding</span><span class="chip conf-hi">Confidence 90%</span><span class="chip cx">Complexity Medium</span></div>
-  <h3>Concierge branding panel with one-input brand intake</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>A branding section on the platform-admin tenant-detail page backed by a new <code>PATCH /platform/admin/tenants/:id/brand</code> endpoint that accepts the same <code>UpdateTenantBrandBody</code> shape as the self-serve editor, reusing the proven presigned-URL upload machinery. Layered on top: a one-input intake — paste the club's website or Facebook URL, and the tool fetches logo + colours (Brandfetch, with an Apify-style scrape fallback for Facebook-only clubs), runs the existing <code>extractBrandPalette()</code> logic server-side, previews the derived theme tokens in light and dark modes, and flags WCAG contrast failures before anything is saved. Concierge reviews a suggested brand card and clicks apply.</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> <code>PATCH /platform/admin/tenants/:id</code> only updates <code>plan</code>/<code>customDomain</code> (verified at <code>platform-admin.ts:220-260</code>); provisioning writes <code>faviconUrl: null, secondaryColour: null, tertiaryColour: null</code> (<code>provision.ts:126-131</code>, verified); palette extraction already ships client-side (<code>admin-branding.tsx:129-134</code>, verified); <code>seed-mandurah-tenant.ts</code> hard-codes a <code>KNOWN_LOGOS</code> map as today's workaround. <span class="basis-tag">external:</span> Brandfetch Brand API (domain &rarr; logos + semantic colour roles, free tier 100 req); Apify Fetch Branding for Facebook-only presences.</dd>
-    <dt>Rationale</dt>
-    <dd>This is the literal "upload their logos and set their club colours" ask, and it is mostly assembly: the schema, upload pipeline, and palette extraction all exist — the missing pieces are one endpoint, one UI panel, and the fetch assist. Every club provisioned today starts with two of three colours and the favicon literally null, and the only person who can fix it is a club admin who may not exist yet. Volunteer clubs rarely have a logo file at hand; "paste their Facebook URL, approve the card" is the shape of the actual concierge conversation.</dd>
-    <dt>Downsides</dt>
-    <dd>An external API dependency (build-vs-manual tradeoff worth a deliberate call — the free tier likely covers 27 pilot clubs, but scraping heuristics on Facebook pages are brittle). A counter-argument (rejection D11) says skip the platform panel entirely and set branding through the club's own editor via impersonation (idea 1) — one canonical editor, zero duplicated surface. The two compose: the endpoint is small enough to ship regardless, and the fetch assist is useful from either surface.</dd>
-  </dl>
-</article>
+        <article class="idea" id="i3">
+          <div class="idea-head">
+            <span class="idchip">3</span><span class="chip axis">tenant-deletion</span
+            ><span class="chip conf-hi">Confidence 85%</span
+            ><span class="chip cx">Complexity Medium</span>
+          </div>
+          <h3>Schema-derived deprovision engine with plan/apply</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              A <code>DELETE /platform/admin/tenants/:id</code> capability built like
+              <code>terraform destroy</code>: the sweep is <em>derived at runtime</em> by walking
+              the Drizzle schema for every table carrying the shared <code>tenantIdColumn()</code>,
+              ordered FK-safe. A <em>plan</em> mode returns exact per-table row counts ("this will
+              remove 14 honour-board rows, 212 crosswalk rows, 3 admins&hellip;") before anything is
+              touched; <em>apply</em> requires typing the tenant slug to confirm. A completeness
+              test asserts the derived sweep covers every table in the
+              <code>_tenant.ts</code> inventory, so adding a new tenant-scoped table can never
+              silently orphan rows. Optionally, apply exports a signed JSON bundle of all rows to
+              object storage before sweeping (undo artifact, data-portability deliverable, clone
+              seed).
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span> no <code>router.delete()</code> exists in
+              <code>platform-admin.ts</code> (verified); 30+ tenant-scoped tables have
+              <code>tenant_id</code> FKs with <em>no cascades</em> (verified); the only deletion
+              logic anywhere is a manual three-table sweep in test cleanup
+              (<code>platform-admin-tenants.test.ts:72-84</code>, order
+              <code>admins &rarr; playerIdMap &rarr; tenants</code>);
+              <code>_tenant.ts</code> maintains the authoritative inventory +
+              <code>tenantIdColumn()</code> helper (verified). The crosswalk learning requires
+              deletion to sweep <code>player_id_map</code> as the inverse of provisioning.
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              This is the literal "delete existing clubs" ask, and the derivation move is what makes
+              it safe to own long-term: a hand-maintained delete list silently rots the first time a
+              new tenant-scoped table ships, which the schema's own history shows happens regularly.
+              Plan-mode dry runs give the concierge confidence before an irreversible act — the
+              immediate use case (test tenants like <code>test-coastal</code>, mis-provisioned
+              clubs) is exactly the "provision the wrong club and retry" loop the pilot phase
+              generates.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              FK-safe ordering across 30+ tables needs care (or per-table
+              <code>onDelete</code> policy decisions instead); Postgres sequence behaviour means a
+              re-provisioned club may get different per-tenant player ints, so hard delete +
+              re-provision is not identity-stable (the export bundle and idea 6's archive state both
+              mitigate). Should be gated behind the lifecycle state machine (idea 6) so "delete" in
+              the UI is usually a state transition, not a sweep.
+            </dd>
+          </dl>
+        </article>
 
-<article class="idea" id="i3">
-  <div class="idea-head"><span class="idchip">3</span><span class="chip axis">tenant-deletion</span><span class="chip conf-hi">Confidence 85%</span><span class="chip cx">Complexity Medium</span></div>
-  <h3>Schema-derived deprovision engine with plan/apply</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>A <code>DELETE /platform/admin/tenants/:id</code> capability built like <code>terraform destroy</code>: the sweep is <em>derived at runtime</em> by walking the Drizzle schema for every table carrying the shared <code>tenantIdColumn()</code>, ordered FK-safe. A <em>plan</em> mode returns exact per-table row counts ("this will remove 14 honour-board rows, 212 crosswalk rows, 3 admins&hellip;") before anything is touched; <em>apply</em> requires typing the tenant slug to confirm. A completeness test asserts the derived sweep covers every table in the <code>_tenant.ts</code> inventory, so adding a new tenant-scoped table can never silently orphan rows. Optionally, apply exports a signed JSON bundle of all rows to object storage before sweeping (undo artifact, data-portability deliverable, clone seed).</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> no <code>router.delete()</code> exists in <code>platform-admin.ts</code> (verified); 30+ tenant-scoped tables have <code>tenant_id</code> FKs with <em>no cascades</em> (verified); the only deletion logic anywhere is a manual three-table sweep in test cleanup (<code>platform-admin-tenants.test.ts:72-84</code>, order <code>admins &rarr; playerIdMap &rarr; tenants</code>); <code>_tenant.ts</code> maintains the authoritative inventory + <code>tenantIdColumn()</code> helper (verified). The crosswalk learning requires deletion to sweep <code>player_id_map</code> as the inverse of provisioning.</dd>
-    <dt>Rationale</dt>
-    <dd>This is the literal "delete existing clubs" ask, and the derivation move is what makes it safe to own long-term: a hand-maintained delete list silently rots the first time a new tenant-scoped table ships, which the schema's own history shows happens regularly. Plan-mode dry runs give the concierge confidence before an irreversible act — the immediate use case (test tenants like <code>test-coastal</code>, mis-provisioned clubs) is exactly the "provision the wrong club and retry" loop the pilot phase generates.</dd>
-    <dt>Downsides</dt>
-    <dd>FK-safe ordering across 30+ tables needs care (or per-table <code>onDelete</code> policy decisions instead); Postgres sequence behaviour means a re-provisioned club may get different per-tenant player ints, so hard delete + re-provision is not identity-stable (the export bundle and idea 6's archive state both mitigate). Should be gated behind the lifecycle state machine (idea 6) so "delete" in the UI is usually a state transition, not a sweep.</dd>
-  </dl>
-</article>
+        <article class="idea" id="i4">
+          <div class="idea-head">
+            <span class="idchip">4</span><span class="chip axis">onboarding-health</span
+            ><span class="chip conf-md">Confidence 60% — strategic bet</span
+            ><span class="chip cx">Complexity High</span>
+          </div>
+          <h3>Provision-as-pitch: pre-provision all 27 PCA clubs as draft tenants</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              Run the idempotent provisioner across every club in <code>central.clubs</code>: 27
+              dormant tenants, each with slug, crosswalk, central-read stats, a generated monogram
+              crest where no logo exists, and a staged brand kit — all in a
+              <code>draft</code> status, unrouted and invisible. The concierge motion then inverts:
+              instead of "sign up, then we build your site," the pitch is a reveal link to the
+              club's <em>already-live</em> full-history site, and onboarding collapses to claim
+              &rarr; consent &rarr; flip to live &rarr; hand over an admin reset link.
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span> provisioning is a three-step idempotent upsert
+              (verified: <code>provision.ts</code> <code>onConflictDoUpdate</code> at line 142; the
+              <code>club_claimed</code> check at lines ~106-115 is the only blocker, and
+              draft-status pre-provisioning sidesteps it by <em>being</em> the claim).
+              <span class="basis-tag">external:</span> TeamLinkt sells a US$795 one-time launch
+              package for exactly this white-glove setup; Ovation's central DB makes the same launch
+              artifact nearly free to produce.
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              The single idea that changes what Phase 1 <em>is</em>: not "onboard 2–3 friendly
+              clubs" but "un-hide 2–3 of 27 finished sites." Marginal onboarding cost drops to near
+              zero, the concierge function shifts from data-entry to sales, and a zero-web-presence
+              club sees a century of its own stats before spending a minute. Every other survivor
+              compounds it: brand intake furnishes the drafts, the lifecycle machine gates the
+              reveal, premiers seeding fills the honour board, the health checks certify each draft.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              Requires the lifecycle status column first (idea 6) and a rework of the
+              <code>club_claimed</code> invariant. Data-governance caution: pilot scorecard data is
+              scraped, and CLAUDE.md's hard constraint ("do not commercialise on scraped data;
+              pilot/non-commercial framing") means 27 pre-built sites must stay private reveal
+              links, not public marketing, until licensing is resolved. Biggest build in the set; a
+              2-3 club dry run of the same machinery de-risks it.
+            </dd>
+          </dl>
+          <figure class="svgwrap">
+            <svg
+              viewBox="0 0 720 190"
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-label="Before and after: onboard-then-build versus pre-provision-then-reveal"
+            >
+              <defs>
+                <marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                  <path d="M0,0 L7,3 L0,6 z" fill="#8a8578" />
+                </marker>
+              </defs>
+              <text
+                x="14"
+                y="28"
+                font-size="12"
+                font-weight="700"
+                fill="#a3352b"
+                letter-spacing="1"
+              >
+                TODAY
+              </text>
+              <rect x="14" y="40" width="120" height="44" rx="8" fill="#faeae8" stroke="#cf8a82" />
+              <text x="74" y="66" text-anchor="middle" font-size="12" fill="#7c2a22">
+                pitch club
+              </text>
+              <line
+                x1="134"
+                y1="62"
+                x2="172"
+                y2="62"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar2)"
+              />
+              <rect x="174" y="40" width="120" height="44" rx="8" fill="#faeae8" stroke="#cf8a82" />
+              <text x="234" y="66" text-anchor="middle" font-size="12" fill="#7c2a22">
+                club agrees
+              </text>
+              <line
+                x1="294"
+                y1="62"
+                x2="332"
+                y2="62"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar2)"
+              />
+              <rect x="334" y="40" width="150" height="44" rx="8" fill="#faeae8" stroke="#cf8a82" />
+              <text x="409" y="60" text-anchor="middle" font-size="12" fill="#7c2a22">
+                build site by hand
+              </text>
+              <text x="409" y="76" text-anchor="middle" font-size="10.5" fill="#7c2a22">
+                days of concierge work
+              </text>
+              <line
+                x1="484"
+                y1="62"
+                x2="522"
+                y2="62"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar2)"
+              />
+              <rect x="524" y="40" width="120" height="44" rx="8" fill="#ffffff" stroke="#b8b3a6" />
+              <text x="584" y="66" text-anchor="middle" font-size="12" fill="#3a372f">
+                club goes live
+              </text>
+              <text
+                x="14"
+                y="126"
+                font-size="12"
+                font-weight="700"
+                fill="#1d6b3a"
+                letter-spacing="1"
+              >
+                PROVISION-AS-PITCH
+              </text>
+              <rect x="14" y="138" width="180" height="44" rx="8" fill="#e8f4ec" stroke="#7bb894" />
+              <text x="104" y="158" text-anchor="middle" font-size="12" fill="#1d5231">
+                27 draft sites built once
+              </text>
+              <text x="104" y="174" text-anchor="middle" font-size="10.5" fill="#1d5231">
+                idempotent provisioner
+              </text>
+              <line
+                x1="194"
+                y1="160"
+                x2="232"
+                y2="160"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar2)"
+              />
+              <rect
+                x="234"
+                y="138"
+                width="150"
+                height="44"
+                rx="8"
+                fill="#e8f4ec"
+                stroke="#7bb894"
+              />
+              <text x="309" y="158" text-anchor="middle" font-size="12" fill="#1d5231">
+                pitch = reveal link
+              </text>
+              <text x="309" y="174" text-anchor="middle" font-size="10.5" fill="#1d5231">
+                full history, already live
+              </text>
+              <line
+                x1="384"
+                y1="160"
+                x2="422"
+                y2="160"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar2)"
+              />
+              <rect
+                x="424"
+                y="138"
+                width="120"
+                height="44"
+                rx="8"
+                fill="#e8f4ec"
+                stroke="#7bb894"
+              />
+              <text x="484" y="164" text-anchor="middle" font-size="12" fill="#1d5231">
+                claim + consent
+              </text>
+              <line
+                x1="544"
+                y1="160"
+                x2="582"
+                y2="160"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar2)"
+              />
+              <rect
+                x="584"
+                y="138"
+                width="120"
+                height="44"
+                rx="8"
+                fill="#ffffff"
+                stroke="#b8b3a6"
+              />
+              <text x="644" y="164" text-anchor="middle" font-size="12" fill="#3a372f">
+                flip to live
+              </text>
+            </svg>
+            <figcaption>
+              Illustrative only — the reframe moves the expensive build step from per-deal to once,
+              fleet-wide. Not a design spec.
+            </figcaption>
+          </figure>
+        </article>
 
-<article class="idea" id="i4">
-  <div class="idea-head"><span class="idchip">4</span><span class="chip axis">onboarding-health</span><span class="chip conf-md">Confidence 60% — strategic bet</span><span class="chip cx">Complexity High</span></div>
-  <h3>Provision-as-pitch: pre-provision all 27 PCA clubs as draft tenants</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>Run the idempotent provisioner across every club in <code>central.clubs</code>: 27 dormant tenants, each with slug, crosswalk, central-read stats, a generated monogram crest where no logo exists, and a staged brand kit — all in a <code>draft</code> status, unrouted and invisible. The concierge motion then inverts: instead of "sign up, then we build your site," the pitch is a reveal link to the club's <em>already-live</em> full-history site, and onboarding collapses to claim &rarr; consent &rarr; flip to live &rarr; hand over an admin reset link.</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> provisioning is a three-step idempotent upsert (verified: <code>provision.ts</code> <code>onConflictDoUpdate</code> at line 142; the <code>club_claimed</code> check at lines ~106-115 is the only blocker, and draft-status pre-provisioning sidesteps it by <em>being</em> the claim). <span class="basis-tag">external:</span> TeamLinkt sells a US$795 one-time launch package for exactly this white-glove setup; Ovation's central DB makes the same launch artifact nearly free to produce.</dd>
-    <dt>Rationale</dt>
-    <dd>The single idea that changes what Phase 1 <em>is</em>: not "onboard 2–3 friendly clubs" but "un-hide 2–3 of 27 finished sites." Marginal onboarding cost drops to near zero, the concierge function shifts from data-entry to sales, and a zero-web-presence club sees a century of its own stats before spending a minute. Every other survivor compounds it: brand intake furnishes the drafts, the lifecycle machine gates the reveal, premiers seeding fills the honour board, the health checks certify each draft.</dd>
-    <dt>Downsides</dt>
-    <dd>Requires the lifecycle status column first (idea 6) and a rework of the <code>club_claimed</code> invariant. Data-governance caution: pilot scorecard data is scraped, and CLAUDE.md's hard constraint ("do not commercialise on scraped data; pilot/non-commercial framing") means 27 pre-built sites must stay private reveal links, not public marketing, until licensing is resolved. Biggest build in the set; a 2-3 club dry run of the same machinery de-risks it.</dd>
-  </dl>
-  <figure class="svgwrap">
-    <svg viewBox="0 0 720 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Before and after: onboard-then-build versus pre-provision-then-reveal">
-      <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#8a8578"/></marker></defs>
-      <text x="14" y="28" font-size="12" font-weight="700" fill="#a3352b" letter-spacing="1">TODAY</text>
-      <rect x="14" y="40" width="120" height="44" rx="8" fill="#faeae8" stroke="#cf8a82"/>
-      <text x="74" y="66" text-anchor="middle" font-size="12" fill="#7c2a22">pitch club</text>
-      <line x1="134" y1="62" x2="172" y2="62" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar2)"/>
-      <rect x="174" y="40" width="120" height="44" rx="8" fill="#faeae8" stroke="#cf8a82"/>
-      <text x="234" y="66" text-anchor="middle" font-size="12" fill="#7c2a22">club agrees</text>
-      <line x1="294" y1="62" x2="332" y2="62" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar2)"/>
-      <rect x="334" y="40" width="150" height="44" rx="8" fill="#faeae8" stroke="#cf8a82"/>
-      <text x="409" y="60" text-anchor="middle" font-size="12" fill="#7c2a22">build site by hand</text>
-      <text x="409" y="76" text-anchor="middle" font-size="10.5" fill="#7c2a22">days of concierge work</text>
-      <line x1="484" y1="62" x2="522" y2="62" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar2)"/>
-      <rect x="524" y="40" width="120" height="44" rx="8" fill="#ffffff" stroke="#b8b3a6"/>
-      <text x="584" y="66" text-anchor="middle" font-size="12" fill="#3a372f">club goes live</text>
-      <text x="14" y="126" font-size="12" font-weight="700" fill="#1d6b3a" letter-spacing="1">PROVISION-AS-PITCH</text>
-      <rect x="14" y="138" width="180" height="44" rx="8" fill="#e8f4ec" stroke="#7bb894"/>
-      <text x="104" y="158" text-anchor="middle" font-size="12" fill="#1d5231">27 draft sites built once</text>
-      <text x="104" y="174" text-anchor="middle" font-size="10.5" fill="#1d5231">idempotent provisioner</text>
-      <line x1="194" y1="160" x2="232" y2="160" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar2)"/>
-      <rect x="234" y="138" width="150" height="44" rx="8" fill="#e8f4ec" stroke="#7bb894"/>
-      <text x="309" y="158" text-anchor="middle" font-size="12" fill="#1d5231">pitch = reveal link</text>
-      <text x="309" y="174" text-anchor="middle" font-size="10.5" fill="#1d5231">full history, already live</text>
-      <line x1="384" y1="160" x2="422" y2="160" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar2)"/>
-      <rect x="424" y="138" width="120" height="44" rx="8" fill="#e8f4ec" stroke="#7bb894"/>
-      <text x="484" y="164" text-anchor="middle" font-size="12" fill="#1d5231">claim + consent</text>
-      <line x1="544" y1="160" x2="582" y2="160" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar2)"/>
-      <rect x="584" y="138" width="120" height="44" rx="8" fill="#ffffff" stroke="#b8b3a6"/>
-      <text x="644" y="164" text-anchor="middle" font-size="12" fill="#3a372f">flip to live</text>
-    </svg>
-    <figcaption>Illustrative only — the reframe moves the expensive build step from per-deal to once, fleet-wide. Not a design spec.</figcaption>
-  </figure>
-</article>
+        <article class="idea" id="i5">
+          <div class="idea-head">
+            <span class="idchip">5</span><span class="chip axis">onboarding-health</span
+            ><span class="chip conf-hi">Confidence 85%</span
+            ><span class="chip cx">Complexity Low–Medium</span>
+          </div>
+          <h3>Honour-board seeding from central.premiers with provenance flags</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              A concierge seeding wizard that pulls a club's premierships from
+              <code>central.premiers</code> (170 rows across 27 clubs, each with a confidence flag),
+              presents each for accept/edit/reject, and writes accepted rows into the tenant-scoped
+              premierships tables as curated rows tagged <code>provenance: central-seed</code>.
+              Central is never written; seeded rows are born as tenant-owned curated content the
+              club can override — preserving the "curated overrides stay tenant-side" rule while
+              ending the blank-honour-board day one.
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span> all moat tables (honour boards, premierships,
+              life members, awards) are seeded empty at provision —
+              <code>provisionTenant()</code> touches only the tenant row and crosswalk (verified);
+              CLAUDE.md's own mapping table prescribes exactly this: "Premierships honour board |
+              curated | seed from <code>central.premiers</code> (respect <code>confidence</code>;
+              curated overrides stay tenant-side)."
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              Highest value per unit of effort in the set. The product pitch is "your full history
+              instantly," yet the tables that carry the differentiating asset open blank — a
+              100-year-old club sees zero premierships on day one. The seeding source, the
+              confidence rule, and the override model are already specified in the architecture doc;
+              nobody has built the wizard. It is also the difference between a provision-as-pitch
+              reveal link (idea 4) that wows and one that looks unfinished.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              Needs a provenance-model decision (how seeded rows are flagged, whether re-seeding
+              merges or skips) — a data-model conversation, not a solo call. Low-confidence central
+              rows need careful UX so the concierge doesn't bulk-accept doubtful premierships into a
+              club's official history.
+            </dd>
+          </dl>
+        </article>
 
-<article class="idea" id="i5">
-  <div class="idea-head"><span class="idchip">5</span><span class="chip axis">onboarding-health</span><span class="chip conf-hi">Confidence 85%</span><span class="chip cx">Complexity Low–Medium</span></div>
-  <h3>Honour-board seeding from central.premiers with provenance flags</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>A concierge seeding wizard that pulls a club's premierships from <code>central.premiers</code> (170 rows across 27 clubs, each with a confidence flag), presents each for accept/edit/reject, and writes accepted rows into the tenant-scoped premierships tables as curated rows tagged <code>provenance: central-seed</code>. Central is never written; seeded rows are born as tenant-owned curated content the club can override — preserving the "curated overrides stay tenant-side" rule while ending the blank-honour-board day one.</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> all moat tables (honour boards, premierships, life members, awards) are seeded empty at provision — <code>provisionTenant()</code> touches only the tenant row and crosswalk (verified); CLAUDE.md's own mapping table prescribes exactly this: "Premierships honour board | curated | seed from <code>central.premiers</code> (respect <code>confidence</code>; curated overrides stay tenant-side)."</dd>
-    <dt>Rationale</dt>
-    <dd>Highest value per unit of effort in the set. The product pitch is "your full history instantly," yet the tables that carry the differentiating asset open blank — a 100-year-old club sees zero premierships on day one. The seeding source, the confidence rule, and the override model are already specified in the architecture doc; nobody has built the wizard. It is also the difference between a provision-as-pitch reveal link (idea 4) that wows and one that looks unfinished.</dd>
-    <dt>Downsides</dt>
-    <dd>Needs a provenance-model decision (how seeded rows are flagged, whether re-seeding merges or skips) — a data-model conversation, not a solo call. Low-confidence central rows need careful UX so the concierge doesn't bulk-accept doubtful premierships into a club's official history.</dd>
-  </dl>
-</article>
+        <article class="idea" id="i6">
+          <div class="idea-head">
+            <span class="idchip">6</span><span class="chip axis">tenant-deletion</span
+            ><span class="chip conf-md">Confidence 70%</span
+            ><span class="chip cx">Complexity Medium–High</span>
+          </div>
+          <h3>Unified tenant lifecycle state machine + certification gate</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              One <code>status</code> enum on the tenants table —
+              <code
+                >draft &rarr; staging &rarr; live &rarr; archived &rarr; pending_deletion &rarr;
+                deleted</code
+              >
+              — with transitions enforced in one place. It serves three roadmap needs at once:
+              <b>onboarding</b> (tenants are born staged, the subdomain serves a branded holding
+              page, and "go live" is an explicit button gated on derived readiness checks —
+              crosswalk coverage equals central participant count, at least one admin exists, the
+              club's own leaderboard query returns rows, brand is set); <b>deletion</b> ("delete" in
+              the UI becomes <code>archived</code> — hidden, logins blocked, data intact — with a
+              scheduled job running idea 3's sweep only after a 30-day grace); and
+              <b>billing later</b> (the dormant entitlements/billing code needs exactly this state
+              to key "past-due &rarr; paused" off).
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span> the tenants schema has no status column
+              (verified — full schema read); tenants are born public today (slug resolution alone
+              routes them); <code>tenants.ts:43-44</code> comments that plan "drives feature
+              entitlements; enforcement is dormant until BILLING_ENABLED=true"; the readiness checks
+              automate the manual validation the seed script currently prints as instructions
+              (<code>seed-mandurah-tenant.ts:206-214</code>).
+              <span class="basis-tag">external:</span> soft-delete + grace is the dominant SaaS
+              deprovision pattern; AWS SaaS Lens onboarding-pipeline pattern.
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              Archive-by-default means the risky 30-table sweep almost never runs — most "delete"
+              requests during a pilot are "this club didn't convert," and curated content is the
+              moat the project has committed to never discarding. Born-staged tenants close a real
+              reputational risk: a Peel club's members will screenshot a blank honour board exactly
+              once. And because the same column is the missing signal for two dormant subsystems,
+              this is scaffolding three future phases stand on. Retrofitting a status column after
+              "does tenant exist?" checks proliferate is a painful migration — the cost of deferring
+              grows monotonically.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              Touches tenant routing, login gating, and the platform console at once; the
+              derived-vs-stored health-check design tension (rejections D17/D22) needs resolving
+              inside it. The full six-state machine can ship incrementally (draft/live/archived
+              first).
+            </dd>
+          </dl>
+          <figure class="svgwrap">
+            <svg
+              viewBox="0 0 720 150"
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-label="Tenant lifecycle states"
+            >
+              <defs>
+                <marker id="ar3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                  <path d="M0,0 L7,3 L0,6 z" fill="#8a8578" />
+                </marker>
+              </defs>
+              <rect x="12" y="52" width="100" height="44" rx="22" fill="#efede8" stroke="#b8b3a6" />
+              <text
+                x="62"
+                y="79"
+                text-anchor="middle"
+                font-size="12.5"
+                font-weight="600"
+                fill="#3a372f"
+              >
+                draft
+              </text>
+              <line
+                x1="112"
+                y1="74"
+                x2="148"
+                y2="74"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar3)"
+              />
+              <rect
+                x="150"
+                y="52"
+                width="100"
+                height="44"
+                rx="22"
+                fill="#e9f1f8"
+                stroke="#7fa8c9"
+              />
+              <text
+                x="200"
+                y="79"
+                text-anchor="middle"
+                font-size="12.5"
+                font-weight="600"
+                fill="#1f4d73"
+              >
+                staging
+              </text>
+              <line
+                x1="250"
+                y1="74"
+                x2="286"
+                y2="74"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar3)"
+              />
+              <text
+                x="268"
+                y="60"
+                text-anchor="middle"
+                font-size="10"
+                fill="#1d6b3a"
+                font-weight="700"
+              >
+                certify
+              </text>
+              <rect
+                x="288"
+                y="52"
+                width="100"
+                height="44"
+                rx="22"
+                fill="#e8f4ec"
+                stroke="#7bb894"
+              />
+              <text
+                x="338"
+                y="79"
+                text-anchor="middle"
+                font-size="12.5"
+                font-weight="700"
+                fill="#1d5231"
+              >
+                live
+              </text>
+              <line
+                x1="388"
+                y1="74"
+                x2="424"
+                y2="74"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar3)"
+              />
+              <rect
+                x="426"
+                y="52"
+                width="110"
+                height="44"
+                rx="22"
+                fill="#fdf3e4"
+                stroke="#d9a45f"
+              />
+              <text
+                x="481"
+                y="79"
+                text-anchor="middle"
+                font-size="12.5"
+                font-weight="600"
+                fill="#6b4a12"
+              >
+                archived
+              </text>
+              <line
+                x1="536"
+                y1="74"
+                x2="572"
+                y2="74"
+                stroke="#8a8578"
+                stroke-width="1.6"
+                marker-end="url(#ar3)"
+              />
+              <text
+                x="554"
+                y="60"
+                text-anchor="middle"
+                font-size="10"
+                fill="#a3352b"
+                font-weight="700"
+              >
+                30 days
+              </text>
+              <rect
+                x="574"
+                y="52"
+                width="134"
+                height="44"
+                rx="22"
+                fill="#faeae8"
+                stroke="#cf8a82"
+              />
+              <text
+                x="641"
+                y="79"
+                text-anchor="middle"
+                font-size="12.5"
+                font-weight="600"
+                fill="#7c2a22"
+              >
+                deleted (sweep)
+              </text>
+              <path
+                d="M 481 96 C 460 128, 360 128, 340 98"
+                fill="none"
+                stroke="#8a8578"
+                stroke-width="1.4"
+                stroke-dasharray="4 3"
+                marker-end="url(#ar3)"
+              />
+              <text x="410" y="138" text-anchor="middle" font-size="10.5" fill="#6b675f">
+                restore within grace
+              </text>
+            </svg>
+            <figcaption>
+              Illustrative only — one status column serving soft-opening, deletion grace, and
+              (later) billing suspension. Not a design spec.
+            </figcaption>
+          </figure>
+        </article>
 
-<article class="idea" id="i6">
-  <div class="idea-head"><span class="idchip">6</span><span class="chip axis">tenant-deletion</span><span class="chip conf-md">Confidence 70%</span><span class="chip cx">Complexity Medium–High</span></div>
-  <h3>Unified tenant lifecycle state machine + certification gate</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>One <code>status</code> enum on the tenants table — <code>draft &rarr; staging &rarr; live &rarr; archived &rarr; pending_deletion &rarr; deleted</code> — with transitions enforced in one place. It serves three roadmap needs at once: <b>onboarding</b> (tenants are born staged, the subdomain serves a branded holding page, and "go live" is an explicit button gated on derived readiness checks — crosswalk coverage equals central participant count, at least one admin exists, the club's own leaderboard query returns rows, brand is set); <b>deletion</b> ("delete" in the UI becomes <code>archived</code> — hidden, logins blocked, data intact — with a scheduled job running idea 3's sweep only after a 30-day grace); and <b>billing later</b> (the dormant entitlements/billing code needs exactly this state to key "past-due &rarr; paused" off).</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> the tenants schema has no status column (verified — full schema read); tenants are born public today (slug resolution alone routes them); <code>tenants.ts:43-44</code> comments that plan "drives feature entitlements; enforcement is dormant until BILLING_ENABLED=true"; the readiness checks automate the manual validation the seed script currently prints as instructions (<code>seed-mandurah-tenant.ts:206-214</code>). <span class="basis-tag">external:</span> soft-delete + grace is the dominant SaaS deprovision pattern; AWS SaaS Lens onboarding-pipeline pattern.</dd>
-    <dt>Rationale</dt>
-    <dd>Archive-by-default means the risky 30-table sweep almost never runs — most "delete" requests during a pilot are "this club didn't convert," and curated content is the moat the project has committed to never discarding. Born-staged tenants close a real reputational risk: a Peel club's members will screenshot a blank honour board exactly once. And because the same column is the missing signal for two dormant subsystems, this is scaffolding three future phases stand on. Retrofitting a status column after "does tenant exist?" checks proliferate is a painful migration — the cost of deferring grows monotonically.</dd>
-    <dt>Downsides</dt>
-    <dd>Touches tenant routing, login gating, and the platform console at once; the derived-vs-stored health-check design tension (rejections D17/D22) needs resolving inside it. The full six-state machine can ship incrementally (draft/live/archived first).</dd>
-  </dl>
-  <figure class="svgwrap">
-    <svg viewBox="0 0 720 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tenant lifecycle states">
-      <defs><marker id="ar3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#8a8578"/></marker></defs>
-      <rect x="12" y="52" width="100" height="44" rx="22" fill="#efede8" stroke="#b8b3a6"/>
-      <text x="62" y="79" text-anchor="middle" font-size="12.5" font-weight="600" fill="#3a372f">draft</text>
-      <line x1="112" y1="74" x2="148" y2="74" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar3)"/>
-      <rect x="150" y="52" width="100" height="44" rx="22" fill="#e9f1f8" stroke="#7fa8c9"/>
-      <text x="200" y="79" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f4d73">staging</text>
-      <line x1="250" y1="74" x2="286" y2="74" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar3)"/>
-      <text x="268" y="60" text-anchor="middle" font-size="10" fill="#1d6b3a" font-weight="700">certify</text>
-      <rect x="288" y="52" width="100" height="44" rx="22" fill="#e8f4ec" stroke="#7bb894"/>
-      <text x="338" y="79" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1d5231">live</text>
-      <line x1="388" y1="74" x2="424" y2="74" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar3)"/>
-      <rect x="426" y="52" width="110" height="44" rx="22" fill="#fdf3e4" stroke="#d9a45f"/>
-      <text x="481" y="79" text-anchor="middle" font-size="12.5" font-weight="600" fill="#6b4a12">archived</text>
-      <line x1="536" y1="74" x2="572" y2="74" stroke="#8a8578" stroke-width="1.6" marker-end="url(#ar3)"/>
-      <text x="554" y="60" text-anchor="middle" font-size="10" fill="#a3352b" font-weight="700">30 days</text>
-      <rect x="574" y="52" width="134" height="44" rx="22" fill="#faeae8" stroke="#cf8a82"/>
-      <text x="641" y="79" text-anchor="middle" font-size="12.5" font-weight="600" fill="#7c2a22">deleted (sweep)</text>
-      <path d="M 481 96 C 460 128, 360 128, 340 98" fill="none" stroke="#8a8578" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ar3)"/>
-      <text x="410" y="138" text-anchor="middle" font-size="10.5" fill="#6b675f">restore within grace</text>
-    </svg>
-    <figcaption>Illustrative only — one status column serving soft-opening, deletion grace, and (later) billing suspension. Not a design spec.</figcaption>
-  </figure>
-</article>
+        <article class="idea" id="i7">
+          <div class="idea-head">
+            <span class="idchip">7</span><span class="chip axis">impersonation</span
+            ><span class="chip conf-hi">Confidence 80%</span
+            ><span class="chip cx">Complexity Small–Medium</span>
+          </div>
+          <h3>Platform audit ledger rendered as the tenant activity timeline</h3>
+          <dl>
+            <dt>Description</dt>
+            <dd>
+              One append-only <code>platform_audit_events</code> table (actor, action, target
+              tenant/admin, reason, payload snapshot, IP, timestamp) written by
+              <em>every</em> concierge endpoint from day one — provision, brand change, reset
+              issued, impersonation start/stop, plan change, lifecycle transition, delete. Rendered
+              per tenant as an "Activity" timeline on tenant-detail, so the same rows serve
+              compliance retention and answer the concierge's daily question: "where did we get to
+              with this club?"
+            </dd>
+            <dt>Basis</dt>
+            <dd>
+              <span class="basis-tag">direct:</span> reset-link issuance currently logs which
+              platform admin acted, but "log is transient (console/stdout). No permanent audit
+              table" (impersonation dossier, verified against
+              <code>platform-admin.ts:493-503</code>).
+              <span class="basis-tag">external:</span> impersonation audit events warrant the
+              longest retention tier (~36 months) in SaaS audit guidance.
+            </dd>
+            <dt>Rationale</dt>
+            <dd>
+              This is the one ordering mistake that cannot be repaired retroactively: events never
+              recorded cannot be backfilled. Ideas 1, 2, 3, and 6 all mutate tenant state on a
+              platform admin's say-so — shipping any of them unaudited bakes in permanent blind
+              spots. Making the ledger a working surface (the timeline the concierge reads daily) is
+              what keeps it populated and honest rather than rotting as write-only compliance.
+              Designed generically, it is also the table billing webhooks and entitlement-denial
+              logging will want in Phase 2.
+            </dd>
+            <dt>Downsides</dt>
+            <dd>
+              Schema shape is a cross-cutting commitment every future feature inherits — worth one
+              deliberate design pass (actor model, payload snapshotting, retention) rather than an
+              incidental table. Small build, but it changes the definition-of-done for every other
+              survivor.
+            </dd>
+          </dl>
+        </article>
 
-<article class="idea" id="i7">
-  <div class="idea-head"><span class="idchip">7</span><span class="chip axis">impersonation</span><span class="chip conf-hi">Confidence 80%</span><span class="chip cx">Complexity Small–Medium</span></div>
-  <h3>Platform audit ledger rendered as the tenant activity timeline</h3>
-  <dl>
-    <dt>Description</dt>
-    <dd>One append-only <code>platform_audit_events</code> table (actor, action, target tenant/admin, reason, payload snapshot, IP, timestamp) written by <em>every</em> concierge endpoint from day one — provision, brand change, reset issued, impersonation start/stop, plan change, lifecycle transition, delete. Rendered per tenant as an "Activity" timeline on tenant-detail, so the same rows serve compliance retention and answer the concierge's daily question: "where did we get to with this club?"</dd>
-    <dt>Basis</dt>
-    <dd><span class="basis-tag">direct:</span> reset-link issuance currently logs which platform admin acted, but "log is transient (console/stdout). No permanent audit table" (impersonation dossier, verified against <code>platform-admin.ts:493-503</code>). <span class="basis-tag">external:</span> impersonation audit events warrant the longest retention tier (~36 months) in SaaS audit guidance.</dd>
-    <dt>Rationale</dt>
-    <dd>This is the one ordering mistake that cannot be repaired retroactively: events never recorded cannot be backfilled. Ideas 1, 2, 3, and 6 all mutate tenant state on a platform admin's say-so — shipping any of them unaudited bakes in permanent blind spots. Making the ledger a working surface (the timeline the concierge reads daily) is what keeps it populated and honest rather than rotting as write-only compliance. Designed generically, it is also the table billing webhooks and entitlement-denial logging will want in Phase 2.</dd>
-    <dt>Downsides</dt>
-    <dd>Schema shape is a cross-cutting commitment every future feature inherits — worth one deliberate design pass (actor model, payload snapshotting, retention) rather than an incidental table. Small build, but it changes the definition-of-done for every other survivor.</dd>
-  </dl>
-</article>
+        <div class="callout">
+          <div class="eyebrow">Sequencing note</div>
+          <p style="margin: 0.4em 0 0">
+            The set has a natural build order: <b>7 (audit ledger)</b> underpins everything that
+            mutates tenant state; <b>6 (lifecycle column)</b> is one migration that both
+            <b>3 (deletion)</b> and <b>4 (provision-as-pitch)</b> depend on;
+            <b>1 (impersonation)</b> and <b>2 (branding panel)</b> are independent of each other but
+            1 partially substitutes for 2's UI (the D11/D15 debate — resolve it before building
+            both). <b>5 (premiers seeding)</b> is standalone and the fastest visible win.
+          </p>
+        </div>
+      </section>
 
-<div class="callout">
-  <div class="eyebrow">Sequencing note</div>
-  <p style="margin:.4em 0 0">The set has a natural build order: <b>7 (audit ledger)</b> underpins everything that mutates tenant state; <b>6 (lifecycle column)</b> is one migration that both <b>3 (deletion)</b> and <b>4 (provision-as-pitch)</b> depend on; <b>1 (impersonation)</b> and <b>2 (branding panel)</b> are independent of each other but 1 partially substitutes for 2's UI (the D11/D15 debate — resolve it before building both). <b>5 (premiers seeding)</b> is standalone and the fastest visible win.</p>
-</div>
-</section>
+      <section id="rejection-summary">
+        <h2>Rejection Summary</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Idea</th>
+              <th>Reason rejected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>D3</td>
+              <td>Deprovision-as-export bundle</td>
+              <td>
+                Folded into idea 3 as its optional export-before-sweep step — not distinct enough to
+                stand alone.
+              </td>
+            </tr>
+            <tr>
+              <td>D4</td>
+              <td>Factory reset ("return to freshly-provisioned")</td>
+              <td>
+                Real but narrower than deletion + lifecycle; better as a brainstorm variant of idea
+                3.
+              </td>
+            </tr>
+            <tr>
+              <td>D7</td>
+              <td>Live brand preview with signed draft tokens</td>
+              <td>
+                Verifier: over-engineered — busting the 5-minute brand cache on PATCH covers most of
+                the stated pain.
+              </td>
+            </tr>
+            <tr>
+              <td>D8</td>
+              <td>Brand kit locker keyed on central club</td>
+              <td>Folded into idea 4's furnish step (pre-provisioning implies pre-staged kits).</td>
+            </tr>
+            <tr>
+              <td>D9</td>
+              <td>Generated monogram crest for zero-asset clubs</td>
+              <td>Good polish; folded into idea 4's furnish step rather than surviving alone.</td>
+            </tr>
+            <tr>
+              <td>D10</td>
+              <td>Provision-time OG/favicon synthesis</td>
+              <td>
+                Scope overrun — SSR/marketing surface work, not concierge tooling; viral-loop claim
+                unsupported.
+              </td>
+            </tr>
+            <tr>
+              <td>D11</td>
+              <td>Skip the platform branding panel; use impersonation + the club's own editor</td>
+              <td>
+                A build-order argument, not a buildable unit — recorded as the tradeoff on idea 2
+                and in the sequencing note.
+              </td>
+            </tr>
+            <tr>
+              <td>D13</td>
+              <td>Consent-gated assistance toggle (Shopify pattern)</td>
+              <td>
+                Strong, but a steady-state trust feature — noted as the natural extension of idea 1
+                post-pilot.
+              </td>
+            </tr>
+            <tr>
+              <td>D15</td>
+              <td>Concierge-actions API instead of impersonation</td>
+              <td>
+                Under-delivers against the literal "access their admin panels" ask; tension recorded
+                on idea 1.
+              </td>
+            </tr>
+            <tr>
+              <td>D16</td>
+              <td>Setup checklist overlay during impersonation</td>
+              <td>
+                Reasoned-only basis; overlaps the readiness checks in idea 6 — gold-plating on idea
+                1.
+              </td>
+            </tr>
+            <tr>
+              <td>D17</td>
+              <td>Standalone tenant health panel + one-click backfill</td>
+              <td>
+                Near-miss (verifier called it core) — merged in as the readiness-check mechanism
+                inside idea 6.
+              </td>
+            </tr>
+            <tr>
+              <td>D18</td>
+              <td>Sea-trial certification gate / soft-opening lifecycle</td>
+              <td>Merged into idea 6 (same status column, same gate).</td>
+            </tr>
+            <tr>
+              <td>D20</td>
+              <td>Scheduled crosswalk self-heal (cron the backfill)</td>
+              <td>
+                Below the meeting-test floor alone; folded into idea 6's derived health checks.
+              </td>
+            </tr>
+            <tr>
+              <td>D22</td>
+              <td>Stored step-state provisioning table</td>
+              <td>
+                Lost the derived-vs-stored tension to computed checks (inside idea 6); tension
+                recorded there.
+              </td>
+            </tr>
+            <tr>
+              <td>S2</td>
+              <td>"Launch package" pipeline narrative</td>
+              <td>
+                Communication frame, not a buildable increment — its substance lives across ideas 2,
+                4, 5, 6.
+              </td>
+            </tr>
+            <tr>
+              <td>S3</td>
+              <td>Audit-first definition-of-done</td>
+              <td>Folded into idea 7's rationale.</td>
+            </tr>
+            <tr>
+              <td>S4</td>
+              <td>Impersonation-first sequencing synthesis</td>
+              <td>Captured as the sequencing note rather than a ranked idea.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="color: var(--muted); font-size: 0.9rem">
+          All four axes retained survivors (tenant-deletion 2 &middot; branding 1 &middot;
+          impersonation 2 &middot; onboarding-health 2). Every direct citation spot-checked by an
+          independent verifier matched the repo exactly; no candidate was cut for a refuted basis.
+        </p>
+      </section>
 
-<section id="rejection-summary">
-<h2>Rejection Summary</h2>
-<table>
-  <thead><tr><th>#</th><th>Idea</th><th>Reason rejected</th></tr></thead>
-  <tbody>
-    <tr><td>D3</td><td>Deprovision-as-export bundle</td><td>Folded into idea 3 as its optional export-before-sweep step — not distinct enough to stand alone.</td></tr>
-    <tr><td>D4</td><td>Factory reset ("return to freshly-provisioned")</td><td>Real but narrower than deletion + lifecycle; better as a brainstorm variant of idea 3.</td></tr>
-    <tr><td>D7</td><td>Live brand preview with signed draft tokens</td><td>Verifier: over-engineered — busting the 5-minute brand cache on PATCH covers most of the stated pain.</td></tr>
-    <tr><td>D8</td><td>Brand kit locker keyed on central club</td><td>Folded into idea 4's furnish step (pre-provisioning implies pre-staged kits).</td></tr>
-    <tr><td>D9</td><td>Generated monogram crest for zero-asset clubs</td><td>Good polish; folded into idea 4's furnish step rather than surviving alone.</td></tr>
-    <tr><td>D10</td><td>Provision-time OG/favicon synthesis</td><td>Scope overrun — SSR/marketing surface work, not concierge tooling; viral-loop claim unsupported.</td></tr>
-    <tr><td>D11</td><td>Skip the platform branding panel; use impersonation + the club's own editor</td><td>A build-order argument, not a buildable unit — recorded as the tradeoff on idea 2 and in the sequencing note.</td></tr>
-    <tr><td>D13</td><td>Consent-gated assistance toggle (Shopify pattern)</td><td>Strong, but a steady-state trust feature — noted as the natural extension of idea 1 post-pilot.</td></tr>
-    <tr><td>D15</td><td>Concierge-actions API instead of impersonation</td><td>Under-delivers against the literal "access their admin panels" ask; tension recorded on idea 1.</td></tr>
-    <tr><td>D16</td><td>Setup checklist overlay during impersonation</td><td>Reasoned-only basis; overlaps the readiness checks in idea 6 — gold-plating on idea 1.</td></tr>
-    <tr><td>D17</td><td>Standalone tenant health panel + one-click backfill</td><td>Near-miss (verifier called it core) — merged in as the readiness-check mechanism inside idea 6.</td></tr>
-    <tr><td>D18</td><td>Sea-trial certification gate / soft-opening lifecycle</td><td>Merged into idea 6 (same status column, same gate).</td></tr>
-    <tr><td>D20</td><td>Scheduled crosswalk self-heal (cron the backfill)</td><td>Below the meeting-test floor alone; folded into idea 6's derived health checks.</td></tr>
-    <tr><td>D22</td><td>Stored step-state provisioning table</td><td>Lost the derived-vs-stored tension to computed checks (inside idea 6); tension recorded there.</td></tr>
-    <tr><td>S2</td><td>"Launch package" pipeline narrative</td><td>Communication frame, not a buildable increment — its substance lives across ideas 2, 4, 5, 6.</td></tr>
-    <tr><td>S3</td><td>Audit-first definition-of-done</td><td>Folded into idea 7's rationale.</td></tr>
-    <tr><td>S4</td><td>Impersonation-first sequencing synthesis</td><td>Captured as the sequencing note rather than a ranked idea.</td></tr>
-  </tbody>
-</table>
-<p style="color:var(--muted);font-size:.9rem">All four axes retained survivors (tenant-deletion 2 &middot; branding 1 &middot; impersonation 2 &middot; onboarding-health 2). Every direct citation spot-checked by an independent verifier matched the repo exactly; no candidate was cut for a refuted basis.</p>
-</section>
-
-<footer class="composition-signal">Composed 2026-07-09 by ce-ideate (repo-grounded) from the Ovation working tree at <code>E:\Claude Code\Ovation</code> — 13-agent run: 4 grounding, 4 evidence scouts, 5 ideation frames, 1 adversarial verifier.</footer>
-
-</div>
-</body>
+      <footer class="composition-signal">
+        Composed 2026-07-09 by ce-ideate (repo-grounded) from the Ovation working tree at
+        <code>E:\Claude Code\Ovation</code> — 13-agent run: 4 grounding, 4 evidence scouts, 5
+        ideation frames, 1 adversarial verifier.
+      </footer>
+    </div>
+  </body>
 </html>

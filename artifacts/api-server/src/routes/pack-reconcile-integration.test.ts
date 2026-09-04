@@ -52,10 +52,7 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
       .select()
       .from(D.cardTemplatesTable)
       .where(
-        and(
-          eq(D.cardTemplatesTable.tenantId, tenantId),
-          eq(D.cardTemplatesTable.source, "pack"),
-        ),
+        and(eq(D.cardTemplatesTable.tenantId, tenantId), eq(D.cardTemplatesTable.source, "pack")),
       );
   }
 
@@ -66,9 +63,7 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
 
   /** Wipe the tenant's pack rows and clear the per-process ensured cache. */
   async function reset() {
-    await D.db
-      .delete(D.cardTemplatesTable)
-      .where(eq(D.cardTemplatesTable.tenantId, tenantId));
+    await D.db.delete(D.cardTemplatesTable).where(eq(D.cardTemplatesTable.tenantId, tenantId));
     P._resetEnsuredTenants();
   }
 
@@ -134,9 +129,7 @@ describe.skipIf(!HAS_DB)("ensurePackTemplates reconciles pack rows to the regist
   afterAll(async () => {
     for (const id of [tenantId, otherTenantId]) {
       if (!id) continue;
-      await D.db
-        .delete(D.cardTemplatesTable)
-        .where(eq(D.cardTemplatesTable.tenantId, id));
+      await D.db.delete(D.cardTemplatesTable).where(eq(D.cardTemplatesTable.tenantId, id));
       await D.db.delete(D.tenantsTable).where(eq(D.tenantsTable.id, id));
     }
     P._resetEnsuredTenants();

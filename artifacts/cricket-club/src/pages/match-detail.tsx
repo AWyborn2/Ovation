@@ -35,7 +35,12 @@ export default function MatchDetail() {
   const brand = useBrand();
   const { id } = useParams<{ id: string }>();
   const matchId = parseInt(id, 10);
-  const { data: match, isLoading, isError, refetch } = useGetMatch(matchId, {
+  const {
+    data: match,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetMatch(matchId, {
     query: { enabled: !!matchId, queryKey: getGetMatchQueryKey(matchId) },
   });
 
@@ -118,7 +123,8 @@ export default function MatchDetail() {
 
   if (isError) return <QueryError onRetry={() => refetch()} />;
   if (isLoading) return <LoadingState label="Loading match…" />;
-  if (!match) return <EmptyState title="Match not found" message="This match could not be found." />;
+  if (!match)
+    return <EmptyState title="Match not found" message="This match could not be found." />;
 
   const hatTrickIds = new Set(match.hatTrickPlayerIds ?? []);
   // Admins manage hat-tricks on tenant-club bowlers (real players only).
@@ -126,7 +132,10 @@ export default function MatchDetail() {
 
   return (
     <div className="space-y-6">
-      <Link href="/matches" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+      <Link
+        href="/matches"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+      >
         <ChevronLeft className="h-4 w-4" /> All matches
       </Link>
 
@@ -136,7 +145,9 @@ export default function MatchDetail() {
           <GradeBadge grade={match.grade} size="lg" />
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-serif font-bold text-primary flex items-center gap-2.5 flex-wrap">
-              <span>{brand.name} vs {match.opponent ?? "Unknown"}</span>
+              <span>
+                {brand.name} vs {match.opponent ?? "Unknown"}
+              </span>
               <OpponentCrest club={match.opponentClub} size={32} />
             </h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
@@ -213,7 +224,10 @@ export default function MatchDetail() {
               )}
             </div>
             {isAdmin && roundError && (
-              <div className="text-xs text-destructive normal-case mt-1" data-testid="text-round-error">
+              <div
+                className="text-xs text-destructive normal-case mt-1"
+                data-testid="text-round-error"
+              >
                 {roundError}
               </div>
             )}
@@ -251,19 +265,21 @@ export default function MatchDetail() {
         </div>
         {(match.result || match.clubScore || match.opponentScore) && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-4">
-            {match.result && (
-              <div className="font-semibold text-foreground/90">{match.result}</div>
-            )}
+            {match.result && <div className="font-semibold text-foreground/90">{match.result}</div>}
             <div className="flex items-center gap-4 ml-auto font-mono text-sm">
               {match.clubScore && (
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{brand.name}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {brand.name}
+                  </div>
                   <div className="font-bold text-primary text-lg">{match.clubScore}</div>
                 </div>
               )}
               {match.opponentScore && (
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate max-w-[10rem]">{match.opponent ?? "Opponent"}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate max-w-[10rem]">
+                    {match.opponent ?? "Opponent"}
+                  </div>
                   <div className="font-bold text-foreground text-lg">{match.opponentScore}</div>
                 </div>
               )}
@@ -334,18 +350,14 @@ type OpponentClubInfo = MatchDetailDto["opponentClub"];
 
 // Branded opposition crest. Renders the club logo when one is matched, falling
 // back silently to nothing (the opponent name is always shown separately).
-function OpponentCrest({
-  club,
-  size = 28,
-}: {
-  club: OpponentClubInfo;
-  size?: number;
-}) {
+function OpponentCrest({ club, size = 28 }: { club: OpponentClubInfo; size?: number }) {
   const [errored, setErrored] = useState(false);
   const src = club?.logoUrl128 || club?.logoUrl;
   if (!club || !src || errored) return null;
   return (
-    <img loading="lazy" decoding="async"
+    <img
+      loading="lazy"
+      decoding="async"
       src={src}
       alt={`${club.name} logo`}
       title={club.name}

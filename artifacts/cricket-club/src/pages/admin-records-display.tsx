@@ -63,10 +63,10 @@ export default function AdminRecordsDisplay() {
     <div className="space-y-6">
       <div>
         <p className="text-muted-foreground mt-1">
-          Control how the public Records page behaves by default: which tab opens first, the
-          default grade for the By Grade and Partnerships tabs, and the default sort order for
-          the Centuries and 5-Wicket Hauls tables. Visitors can still change every control
-          themselves after the page loads.
+          Control how the public Records page behaves by default: which tab opens first, the default
+          grade for the By Grade and Partnerships tabs, and the default sort order for the Centuries
+          and 5-Wicket Hauls tables. Visitors can still change every control themselves after the
+          page loads.
         </p>
       </div>
 
@@ -78,9 +78,7 @@ export default function AdminRecordsDisplay() {
         <SettingsCard
           settings={settingsQ.data}
           allGrades={allGrades}
-          onSaved={() =>
-            qc.invalidateQueries({ queryKey: getGetRecordsDisplaySettingsQueryKey() })
-          }
+          onSaved={() => qc.invalidateQueries({ queryKey: getGetRecordsDisplaySettingsQueryKey() })}
         />
       ) : (
         <QueryError onRetry={() => settingsQ.refetch()} />
@@ -209,8 +207,8 @@ function SettingsCard({
             Partnerships default grade
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            The grade filter pre-selected on the Partnerships tab. "All grades" shows the
-            highest stand for each wicket across every grade.
+            The grade filter pre-selected on the Partnerships tab. "All grades" shows the highest
+            stand for each wicket across every grade.
           </p>
           <select
             value={partnershipsDefaultGrade}

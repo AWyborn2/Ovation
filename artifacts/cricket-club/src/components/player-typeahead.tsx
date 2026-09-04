@@ -87,7 +87,9 @@ export function PlayerTypeahead({
                   setOpen(false);
                 }}
               >
-                <span className="font-semibold">{p.surname}, {p.givenName}</span>
+                <span className="font-semibold">
+                  {p.surname}, {p.givenName}
+                </span>
                 <span className="ml-2 text-xs text-muted-foreground">#{p.id}</span>
               </button>
             ))

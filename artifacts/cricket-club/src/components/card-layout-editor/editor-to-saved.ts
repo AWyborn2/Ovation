@@ -5,10 +5,7 @@ import type { EditorLayer } from "@/lib/share-card";
 // built-in `element` layers that actually differ from their pristine defaults,
 // plus every custom layer in full. Keeping unchanged elements out means a card
 // the admin never touched saves nothing and stays pixel-identical.
-export function editorToSaved(
-  layers: EditorLayer[],
-  pristine: EditorLayer[],
-): CardLayoutLayer[] {
+export function editorToSaved(layers: EditorLayer[], pristine: EditorLayer[]): CardLayoutLayer[] {
   const pById = new Map(pristine.map((p) => [p.id, p]));
   const out: CardLayoutLayer[] = [];
   for (const l of layers) {

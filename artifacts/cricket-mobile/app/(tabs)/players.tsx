@@ -1,16 +1,8 @@
 import React, { useState } from "react";
-import {
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, TextInput, TouchableOpacity, View } from "react-native";
 import { Link } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import {
-  useListPlayers,
-  type Player,
-} from "@workspace/api-client-react";
+import { useListPlayers, type Player } from "@workspace/api-client-react";
 
 import { Body, Card, ErrorView, Heading, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";

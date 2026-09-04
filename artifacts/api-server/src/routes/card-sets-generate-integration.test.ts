@@ -2,13 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { and, eq, isNull } from "drizzle-orm";
 import app from "../app";
-import {
-  db,
-  adminsTable,
-  playersTable,
-  playerGradeStatsTable,
-  cardSetsTable,
-} from "@workspace/db";
+import { db, adminsTable, playersTable, playerGradeStatsTable, cardSetsTable } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 
@@ -57,8 +51,7 @@ describe("card-sets generate: idempotent regeneration (upsert)", () => {
     );
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-card-sets-generate";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-card-sets-generate";
 
     const [existing] = await db
       .select({
@@ -144,10 +137,7 @@ describe("card-sets generate: idempotent regeneration (upsert)", () => {
 
     // Simulate the admin publishing the set (bypassing the 2-slide publish floor
     // — we only care that regeneration doesn't reset the flag).
-    await db
-      .update(cardSetsTable)
-      .set({ isPublished: true })
-      .where(eq(cardSetsTable.id, firstId));
+    await db.update(cardSetsTable).set({ isPublished: true }).where(eq(cardSetsTable.id, firstId));
 
     // Second generation of the SAME group → must update the SAME row.
     const second = await request(app)

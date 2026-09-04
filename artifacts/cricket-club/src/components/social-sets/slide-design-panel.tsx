@@ -41,9 +41,7 @@ export function SlideDesignPanel({
             activeSize={platformSize}
             onClose={() => setEditingLayout(false)}
             controlledLayout={selectedSlide.layout ?? []}
-            onSaveLayout={(layers) =>
-              patchSlide(selectedSlide.id, { layout: layers })
-            }
+            onSaveLayout={(layers) => patchSlide(selectedSlide.id, { layout: layers })}
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -82,9 +80,7 @@ export function SlideDesignPanel({
                     value={selectedSlide.themeId ?? ""}
                     onChange={(e) =>
                       patchSlide(selectedSlide.id, {
-                        themeId: e.target.value
-                          ? Number(e.target.value)
-                          : null,
+                        themeId: e.target.value ? Number(e.target.value) : null,
                       })
                     }
                   >
@@ -111,9 +107,7 @@ export function SlideDesignPanel({
                   : "Customise layout"}
               </Button>
               {selectedSlide.layout && selectedSlide.layout.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  Custom layout applied
-                </span>
+                <span className="text-xs text-muted-foreground">Custom layout applied</span>
               )}
               <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
                 {!slideUsesPack(selectedSlide) &&

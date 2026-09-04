@@ -85,7 +85,9 @@ function RosterName({ p }: { p: JuniorPremiershipPlayer }) {
         paddingVertical: 4,
       }}
     >
-      <Body size={12} muted>{label}</Body>
+      <Body size={12} muted>
+        {label}
+      </Body>
     </View>
   );
 }
@@ -94,84 +96,94 @@ function PremiershipCard({ prem, onOpen }: { prem: JuniorPremiership; onOpen: ()
   const colors = useColors();
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onOpen}>
-    <Card style={{ marginBottom: 12, padding: 0, overflow: "hidden" }}>
-      <View style={{ backgroundColor: JUNIOR.accent, paddingHorizontal: 14, paddingVertical: 12 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Feather name="award" size={18} color={JUNIOR.onAccent} />
-          <Body bold size={15} style={{ color: JUNIOR.onAccent, flex: 1 }}>
-            {prem.ageGroup ?? "Junior"}
-            {prem.season ? ` · ${prem.season}` : ""}
-          </Body>
-          <Feather name="maximize-2" size={14} color={JUNIOR.onAccent} />
-        </View>
-        {prem.association || prem.competition ? (
-          <Body
-            size={10}
-            style={{
-              color: JUNIOR.onAccent,
-              opacity: 0.9,
-              marginTop: 2,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            {prem.association || prem.competition}
-          </Body>
-        ) : null}
-      </View>
-
-      <View style={{ padding: 14, gap: 10 }}>
-        {prem.opponent || prem.hhScore || prem.oppScore ? (
-          <Body size={13}>
-            {prem.opponent ? <Body size={13} muted>def. {prem.opponent} </Body> : null}
-            {prem.hhScore || prem.oppScore ? `${prem.hhScore ?? "—"} vs ${prem.oppScore ?? "—"}` : ""}
-          </Body>
-        ) : null}
-        {prem.resultText ? <Body size={13}>{prem.resultText}</Body> : null}
-
-        {prem.venueOval || prem.venue ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Feather name="map-pin" size={13} color={colors.mutedForeground} />
-            <Body muted size={12}>{prem.venueOval || prem.venue}</Body>
+      <Card style={{ marginBottom: 12, padding: 0, overflow: "hidden" }}>
+        <View
+          style={{ backgroundColor: JUNIOR.accent, paddingHorizontal: 14, paddingVertical: 12 }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Feather name="award" size={18} color={JUNIOR.onAccent} />
+            <Body bold size={15} style={{ color: JUNIOR.onAccent, flex: 1 }}>
+              {prem.ageGroup ?? "Junior"}
+              {prem.season ? ` · ${prem.season}` : ""}
+            </Body>
+            <Feather name="maximize-2" size={14} color={JUNIOR.onAccent} />
           </View>
-        ) : null}
-
-        {prem.players.length > 0 ? (
-          <View>
+          {prem.association || prem.competition ? (
             <Body
-              bold
               size={10}
               style={{
-                color: JUNIOR.accentDark,
+                color: JUNIOR.onAccent,
+                opacity: 0.9,
+                marginTop: 2,
                 textTransform: "uppercase",
                 letterSpacing: 1,
-                marginBottom: 6,
               }}
             >
-              Roster
+              {prem.association || prem.competition}
             </Body>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {prem.players.map((pl, i) => (
-                <RosterName key={i} p={pl} />
-              ))}
-            </View>
-          </View>
-        ) : null}
+          ) : null}
+        </View>
 
-        {prem.matchId != null ? (
-          <Link href={`/juniors/matches/${prem.matchId}` as never} asChild>
-            <TouchableOpacity activeOpacity={0.7}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Body bold size={13} style={{ color: JUNIOR.accentDark }}>
-                  View deciding scorecard
+        <View style={{ padding: 14, gap: 10 }}>
+          {prem.opponent || prem.hhScore || prem.oppScore ? (
+            <Body size={13}>
+              {prem.opponent ? (
+                <Body size={13} muted>
+                  def. {prem.opponent}{" "}
                 </Body>
-                <Feather name="arrow-right" size={14} color={JUNIOR.accentDark} />
+              ) : null}
+              {prem.hhScore || prem.oppScore
+                ? `${prem.hhScore ?? "—"} vs ${prem.oppScore ?? "—"}`
+                : ""}
+            </Body>
+          ) : null}
+          {prem.resultText ? <Body size={13}>{prem.resultText}</Body> : null}
+
+          {prem.venueOval || prem.venue ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Feather name="map-pin" size={13} color={colors.mutedForeground} />
+              <Body muted size={12}>
+                {prem.venueOval || prem.venue}
+              </Body>
+            </View>
+          ) : null}
+
+          {prem.players.length > 0 ? (
+            <View>
+              <Body
+                bold
+                size={10}
+                style={{
+                  color: JUNIOR.accentDark,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 6,
+                }}
+              >
+                Roster
+              </Body>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {prem.players.map((pl, i) => (
+                  <RosterName key={i} p={pl} />
+                ))}
               </View>
-            </TouchableOpacity>
-          </Link>
-        ) : null}
-      </View>
-    </Card>
+            </View>
+          ) : null}
+
+          {prem.matchId != null ? (
+            <Link href={`/juniors/matches/${prem.matchId}` as never} asChild>
+              <TouchableOpacity activeOpacity={0.7}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Body bold size={13} style={{ color: JUNIOR.accentDark }}>
+                    View deciding scorecard
+                  </Body>
+                  <Feather name="arrow-right" size={14} color={JUNIOR.accentDark} />
+                </View>
+              </TouchableOpacity>
+            </Link>
+          ) : null}
+        </View>
+      </Card>
     </TouchableOpacity>
   );
 }
@@ -198,14 +210,8 @@ export default function JuniorPremiershipsScreen() {
       <Stack.Screen options={{ title: "JUNIOR PREMIERSHIPS" }} />
       <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
         {ageGroups.length > 0 ? (
-          <View
-            style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}
-          >
-            <FilterChip
-              label="All ages"
-              active={ageGroup === ""}
-              onPress={() => setAgeGroup("")}
-            />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+            <FilterChip label="All ages" active={ageGroup === ""} onPress={() => setAgeGroup("")} />
             {ageGroups.map((a) => (
               <FilterChip
                 key={a}
@@ -252,7 +258,7 @@ export default function JuniorPremiershipsScreen() {
           summary={
             active.opponent || active.hhScore || active.oppScore
               ? `${active.opponent ? `def. ${active.opponent}` : ""}${
-                  (active.hhScore || active.oppScore)
+                  active.hhScore || active.oppScore
                     ? `${active.opponent ? "  " : ""}${active.hhScore ?? "—"} vs ${active.oppScore ?? "—"}`
                     : ""
                 }`.trim()

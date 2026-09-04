@@ -53,8 +53,7 @@ describe("junior duplicate-profile merge", () => {
   let officeBearerId: number;
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-junior-merge";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-junior-merge";
 
     const [admin] = await db
       .insert(adminsTable)
@@ -126,18 +125,70 @@ describe("junior duplicate-profile merge", () => {
     ]);
 
     await db.insert(juniorMatchBattingTable).values([
-      { id: 98_100_101, matchId: M1, innings: 1, battingTeam: HH_TEAM, isHallsHead: true, participantId: DUP, playerName: "Jm Duplicate", runs: 10, balls: 20 },
-      { id: 98_100_102, matchId: M2, innings: 1, battingTeam: HH_TEAM, isHallsHead: true, participantId: KEEP, playerName: "Jm Keeper", runs: 20, balls: 15 },
+      {
+        id: 98_100_101,
+        matchId: M1,
+        innings: 1,
+        battingTeam: HH_TEAM,
+        isHallsHead: true,
+        participantId: DUP,
+        playerName: "Jm Duplicate",
+        runs: 10,
+        balls: 20,
+      },
+      {
+        id: 98_100_102,
+        matchId: M2,
+        innings: 1,
+        battingTeam: HH_TEAM,
+        isHallsHead: true,
+        participantId: KEEP,
+        playerName: "Jm Keeper",
+        runs: 20,
+        balls: 15,
+      },
     ]);
     await db.insert(juniorMatchBowlingTable).values([
-      { id: 98_100_201, matchId: M1, innings: 2, bowlingTeam: HH_TEAM, isHallsHead: true, participantId: DUP, playerName: "Jm Duplicate", overs: 2, runs: 8, wickets: 1 },
+      {
+        id: 98_100_201,
+        matchId: M1,
+        innings: 2,
+        bowlingTeam: HH_TEAM,
+        isHallsHead: true,
+        participantId: DUP,
+        playerName: "Jm Duplicate",
+        overs: 2,
+        runs: 8,
+        wickets: 1,
+      },
     ]);
     await db.insert(juniorMatchRostersTable).values([
-      { id: 98_100_301, matchId: M1, teamName: HH_TEAM, isHallsHead: true, participantId: DUP, playerName: "Jm Duplicate" },
+      {
+        id: 98_100_301,
+        matchId: M1,
+        teamName: HH_TEAM,
+        isHallsHead: true,
+        participantId: DUP,
+        playerName: "Jm Duplicate",
+      },
       // Both GUIDs rostered in M2 — the classic duplicate signature; must
       // dedupe to one row on merge.
-      { id: 98_100_302, matchId: M2, teamName: HH_TEAM, isHallsHead: true, participantId: DUP, playerName: "Jm Duplicate" },
-      { id: 98_100_311, matchId: M2, teamName: HH_TEAM, isHallsHead: true, participantId: KEEP, playerName: "Jm Keeper" },
+      {
+        id: 98_100_302,
+        matchId: M2,
+        teamName: HH_TEAM,
+        isHallsHead: true,
+        participantId: DUP,
+        playerName: "Jm Duplicate",
+      },
+      {
+        id: 98_100_311,
+        matchId: M2,
+        teamName: HH_TEAM,
+        isHallsHead: true,
+        participantId: KEEP,
+        playerName: "Jm Keeper",
+      },
     ]);
     await db.insert(juniorPremiershipsTable).values({
       id: PREM,
@@ -180,7 +231,9 @@ describe("junior duplicate-profile merge", () => {
   afterAll(async () => {
     await db.delete(juniorMatchesTable).where(inArray(juniorMatchesTable.id, [M1, M2]));
     await db.delete(juniorPremiershipsTable).where(eq(juniorPremiershipsTable.id, PREM));
-    await db.delete(juniorOfficeBearersTable).where(eq(juniorOfficeBearersTable.id, officeBearerId));
+    await db
+      .delete(juniorOfficeBearersTable)
+      .where(eq(juniorOfficeBearersTable.id, officeBearerId));
     await db
       .delete(juniorParticipantsTable)
       .where(like(juniorParticipantsTable.participantId, `test-jm-%-${STAMP}`));
@@ -296,9 +349,7 @@ describe("junior duplicate-profile merge", () => {
       .from(juniorParticipantMergesTable)
       .where(eq(juniorParticipantMergesTable.duplicateParticipantId, DUP));
     expect(mergeRow.keeperParticipantId).toBe(KEEP);
-    expect(
-      (mergeRow.duplicateRow as Record<string, unknown>).display_name,
-    ).toBe("Jm Duplicate");
+    expect((mergeRow.duplicateRow as Record<string, unknown>).display_name).toBe("Jm Duplicate");
 
     // Keeper metadata recomputed across both identities.
     const [keeperRow] = await db
@@ -316,9 +367,7 @@ describe("junior duplicate-profile merge", () => {
     const detail = await request(app).get(`/api/juniors/players/${KEEP}`).expect(200);
     expect(detail.body.batting.runs).toBe(30);
     expect(detail.body.bowling.wickets).toBe(1);
-    const directory = await request(app)
-      .get(`/api/juniors/players?search=Jm Keeper`)
-      .expect(200);
+    const directory = await request(app).get(`/api/juniors/players?search=Jm Keeper`).expect(200);
     const dirRow = (
       directory.body as Array<{ participantId: string; matches: number; runs: number }>
     ).find((r) => r.participantId === KEEP);
@@ -364,9 +413,7 @@ describe("junior duplicate-profile merge", () => {
       .get(`/api/juniors/players?search=Jm Keeper Two`)
       .expect(200);
     expect(
-      (directory.body as Array<{ participantId: string }>).some(
-        (r) => r.participantId === KEEP2,
-      ),
+      (directory.body as Array<{ participantId: string }>).some((r) => r.participantId === KEEP2),
     ).toBe(false);
   });
 
@@ -382,9 +429,7 @@ describe("junior duplicate-profile merge", () => {
     const rows = await db
       .select()
       .from(juniorParticipantMergesTable)
-      .where(
-        inArray(juniorParticipantMergesTable.duplicateParticipantId, [DUP, KEEP]),
-      );
+      .where(inArray(juniorParticipantMergesTable.duplicateParticipantId, [DUP, KEEP]));
     expect(rows).toHaveLength(2);
     for (const r of rows) expect(r.keeperParticipantId).toBe(THIRD);
 

@@ -20,7 +20,9 @@ function MatchCardCrest({ club }: { club: JuniorMatchSummary["opponentClub"] }) 
   const src = club?.logoUrl128 || club?.logoUrl;
   if (!club || !src || errored) return null;
   return (
-    <img loading="lazy" decoding="async"
+    <img
+      loading="lazy"
+      decoding="async"
       src={src}
       alt={`${club.name} logo`}
       title={club.name}
@@ -70,7 +72,7 @@ export default function JuniorsMatches() {
   // Apply saved admin defaults once both settings and filters have loaded.
   useEffect(() => {
     if (!settings || !filters) return;
-    setAgeGroup((prev) => (prev === null ? settings.defaultAgeGroup ?? "" : prev));
+    setAgeGroup((prev) => (prev === null ? (settings.defaultAgeGroup ?? "") : prev));
     setSeason((prev) => {
       if (prev !== null) return prev;
       if (settings.defaultSeasonMode === "all") return "";
@@ -86,7 +88,12 @@ export default function JuniorsMatches() {
   const ageArg = ageGroup || undefined;
   const ready = season !== null && ageGroup !== null;
 
-  const { data: matches, isLoading, isError, refetch } = useListJuniorMatches(
+  const {
+    data: matches,
+    isLoading,
+    isError,
+    refetch,
+  } = useListJuniorMatches(
     { season: seasonArg, ageGroup: ageArg },
     {
       query: {
@@ -108,7 +115,9 @@ export default function JuniorsMatches() {
 
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">Age Group</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-primary">
+            Age Group
+          </label>
           <select
             value={ageGroup ?? ""}
             onChange={(e) => setAgeGroup(e.target.value)}
@@ -117,7 +126,9 @@ export default function JuniorsMatches() {
           >
             <option value="">All age groups</option>
             {ageGroupOptions.map((a) => (
-              <option key={a} value={a}>{a}</option>
+              <option key={a} value={a}>
+                {a}
+              </option>
             ))}
           </select>
         </div>
@@ -131,7 +142,9 @@ export default function JuniorsMatches() {
           >
             <option value="">All seasons</option>
             {(filters?.seasons ?? []).map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </div>
@@ -142,12 +155,17 @@ export default function JuniorsMatches() {
       ) : !ready || isLoading ? (
         <CardGridSkeleton />
       ) : !matches || matches.length === 0 ? (
-        <EmptyState title="No junior matches found" message="No junior matches match these filters." />
+        <EmptyState
+          title="No junior matches found"
+          message="No junior matches match these filters."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matches.map((m) => (
             <Link key={m.id} href={`/juniors/matches/${m.id}`}>
-              <div className={`bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer group h-full flex flex-col gap-3 ${JUNIOR_ACCENT.hoverBorder} transition-colors`}>
+              <div
+                className={`bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer group h-full flex flex-col gap-3 ${JUNIOR_ACCENT.hoverBorder} transition-colors`}
+              >
                 <div className="flex items-center gap-2">
                   {m.ageGroup && (
                     <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
@@ -160,7 +178,9 @@ export default function JuniorsMatches() {
                       vs {m.opponentName ?? "Unknown"}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                      {m.season ?? ""}{m.round ? ` · ${m.round}` : ""}{m.competition ? ` · ${m.competition}` : ""}
+                      {m.season ?? ""}
+                      {m.round ? ` · ${m.round}` : ""}
+                      {m.competition ? ` · ${m.competition}` : ""}
                     </div>
                   </div>
                   {m.status && !/^(final|completed)$/i.test(m.status.trim()) && (
@@ -171,10 +191,13 @@ export default function JuniorsMatches() {
                 </div>
                 {(m.hhScore || m.opponentScore) && (
                   <div className="text-sm font-mono text-foreground/90">
-                    {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span> {m.opponentScore ?? "—"}
+                    {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span>{" "}
+                    {m.opponentScore ?? "—"}
                   </div>
                 )}
-                {m.hhResult && <div className="text-sm text-foreground/90 leading-snug">{m.hhResult}</div>}
+                {m.hhResult && (
+                  <div className="text-sm text-foreground/90 leading-snug">{m.hhResult}</div>
+                )}
                 <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   {fmtJuniorDate(m.matchDate) && (
                     <span className="inline-flex items-center gap-1">

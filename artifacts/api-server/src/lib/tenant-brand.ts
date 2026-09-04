@@ -81,8 +81,7 @@ export function buildTenantBrand(
   // When any background colour is supplied (from either source), derive missing
   // accents from that background rather than leaking the neutral default colours.
   // The all-null case still resolves to the full default brand.
-  const anyBackgroundSupplied =
-    (tenant?.backgroundColour ?? club?.backgroundColour) != null;
+  const anyBackgroundSupplied = (tenant?.backgroundColour ?? club?.backgroundColour) != null;
   return {
     name: club?.name ?? tenant?.name ?? DEFAULT_BRAND.name,
     shortName: club?.shortName ?? tenant?.shortName ?? DEFAULT_BRAND.shortName,
@@ -292,10 +291,7 @@ export async function upsertPlatformBrand(fields: {
       .where(eq(platformSettingsTable.id, 1))
       .returning();
   } else {
-    [row] = await db
-      .select()
-      .from(platformSettingsTable)
-      .where(eq(platformSettingsTable.id, 1));
+    [row] = await db.select().from(platformSettingsTable).where(eq(platformSettingsTable.id, 1));
   }
 
   invalidatePlatformBrandCache();

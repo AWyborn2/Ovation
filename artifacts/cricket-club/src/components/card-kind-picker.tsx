@@ -40,9 +40,7 @@ export function CardKindPicker({
   const selected = value ?? [];
   const isAll = selected.length === 0;
   const toggle = (kind: CardKind) => {
-    const next = selected.includes(kind)
-      ? selected.filter((k) => k !== kind)
-      : [...selected, kind];
+    const next = selected.includes(kind) ? selected.filter((k) => k !== kind) : [...selected, kind];
     onChange(next as CardKind[]);
   };
   const chip = (active: boolean) =>

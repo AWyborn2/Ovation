@@ -17,18 +17,16 @@ describe("isUnbranded", () => {
     // brand-less tenant resolving to it must still trip the finish-setup
     // banner, not read as "already branded".
     expect(DEFAULT_BRAND.logoUrl).toBe("/ovation-logo.svg");
-    expect(
-      isUnbranded({ ...DEFAULT_BRAND, name: "Freshly Provisioned Club" }),
-    ).toBe(true);
+    expect(isUnbranded({ ...DEFAULT_BRAND, name: "Freshly Provisioned Club" })).toBe(true);
   });
 
   it("is false once any brand field diverges from the neutral default", () => {
-    expect(
-      isUnbranded({ ...DEFAULT_BRAND, name: "Some Club", primaryColour: "#ff0000" }),
-    ).toBe(false);
-    expect(
-      isUnbranded({ ...DEFAULT_BRAND, name: "Some Club", logoUrl: "/objects/logo.png" }),
-    ).toBe(false);
+    expect(isUnbranded({ ...DEFAULT_BRAND, name: "Some Club", primaryColour: "#ff0000" })).toBe(
+      false,
+    );
+    expect(isUnbranded({ ...DEFAULT_BRAND, name: "Some Club", logoUrl: "/objects/logo.png" })).toBe(
+      false,
+    );
   });
 
   it("is false on the platform marker response (no tenant)", () => {

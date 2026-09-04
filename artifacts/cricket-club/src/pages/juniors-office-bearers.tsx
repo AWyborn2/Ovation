@@ -1,10 +1,7 @@
 import { Link } from "wouter";
 import { useMemo } from "react";
 import { useBrand } from "@/lib/brand-context";
-import {
-  useListJuniorOfficeBearers,
-  type JuniorOfficeBearer,
-} from "@workspace/api-client-react";
+import { useListJuniorOfficeBearers, type JuniorOfficeBearer } from "@workspace/api-client-react";
 import { Users } from "lucide-react";
 import { JUNIOR_ACCENT } from "@/lib/juniors";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
@@ -102,8 +99,7 @@ export default function JuniorsOfficeBearers() {
               <div className="bg-[#42342b] text-white px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
                 <span>{formatSeason(g.season)}</span>
                 <span className="text-xs whitespace-nowrap">
-                  {g.bearers.length}{" "}
-                  {g.bearers.length === 1 ? "office bearer" : "office bearers"}
+                  {g.bearers.length} {g.bearers.length === 1 ? "office bearer" : "office bearers"}
                 </span>
               </div>
               <div className="p-4 md:p-6">

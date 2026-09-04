@@ -27,8 +27,24 @@ function baseMatch(overrides: Partial<JuniorMatchDetail>): JuniorMatchDetail {
       {
         isHallsHead: true,
         batting: [
-          { playerName: "Alice", runs: 24, balls: 20, fours: 2, sixes: 0, strikeRate: 120, dismissal: "c Smith b Jones" },
-          { playerName: "Bella", runs: 18, balls: 15, fours: 1, sixes: 1, strikeRate: 120, dismissal: null },
+          {
+            playerName: "Alice",
+            runs: 24,
+            balls: 20,
+            fours: 2,
+            sixes: 0,
+            strikeRate: 120,
+            dismissal: "c Smith b Jones",
+          },
+          {
+            playerName: "Bella",
+            runs: 18,
+            balls: 15,
+            fours: 1,
+            sixes: 1,
+            strikeRate: 120,
+            dismissal: null,
+          },
         ],
         bowling: [],
       },

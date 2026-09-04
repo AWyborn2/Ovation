@@ -52,13 +52,36 @@ export function CardSurface({ children }: { children: React.ReactNode }) {
 export function CardHeader({ data }: { data: TradingCardData }) {
   const { logoUrl, GOLD, CHARCOAL, brand } = useCardBrand();
   return (
-    <div style={{ position: "relative", padding: "16px 18px", display: "flex", alignItems: "center", gap: 10 }}>
-      <img src={logoUrl} alt={brand.shortName ?? brand.name} crossOrigin="anonymous" style={{ width: 38, height: 38, objectFit: "contain" }} />
+    <div
+      style={{
+        position: "relative",
+        padding: "16px 18px",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <img
+        src={logoUrl}
+        alt={brand.shortName ?? brand.name}
+        crossOrigin="anonymous"
+        style={{ width: 38, height: 38, objectFit: "contain" }}
+      />
       <div style={{ lineHeight: 1.05 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase" }}>
+        <div
+          style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase" }}
+        >
           {clubShortLabel(brand)}
         </div>
-        <div style={{ fontSize: 10, fontWeight: 600, color: GOLD, letterSpacing: 1.5, textTransform: "uppercase" }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: GOLD,
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
+          }}
+        >
           Cricket Club
         </div>
       </div>
@@ -87,7 +110,9 @@ export function CardHeader({ data }: { data: TradingCardData }) {
               whiteSpace: "nowrap",
             }}
           >
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>
+            <div
+              style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}
+            >
               Cap
             </div>
             <div style={{ fontSize: 20, fontWeight: 900, marginTop: 2 }}>{data.number}</div>
@@ -167,7 +192,15 @@ export function PlayerPhoto({ data, height }: { data: TradingCardData; height: n
   );
 }
 
-export function StatTile({ label, value, big }: { label: string; value: number | string; big?: boolean }) {
+export function StatTile({
+  label,
+  value,
+  big,
+}: {
+  label: string;
+  value: number | string;
+  big?: boolean;
+}) {
   const { GOLD } = useCardBrand();
   return (
     <div
@@ -203,14 +236,38 @@ export function PerfBar({ label, value, max }: { label: string; value: number; m
   const pct = Math.max(4, Math.min(100, max > 0 ? (value / max) * 100 : 0));
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700, marginBottom: 5 }}>
-        <span style={{ color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 11,
+          fontWeight: 700,
+          marginBottom: 5,
+        }}
+      >
+        <span
+          style={{ color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: 0.5 }}
+        >
           {label}
         </span>
         <span style={{ color: GOLD }}>{value}</span>
       </div>
-      <div style={{ height: 8, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${GOLD}, #ffce6e)`, borderRadius: 999 }} />
+      <div
+        style={{
+          height: 8,
+          borderRadius: 999,
+          background: "rgba(255,255,255,0.1)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, ${GOLD}, #ffce6e)`,
+            borderRadius: 999,
+          }}
+        />
       </div>
     </div>
   );
@@ -221,7 +278,9 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
       <div style={{ width: 4, height: 18, background: GOLD, borderRadius: 2 }} />
-      <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>
+      <span
+        style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}
+      >
         {children}
       </span>
     </div>
@@ -231,7 +290,9 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 export function NameBlock({ data }: { data: TradingCardData }) {
   return (
     <div style={{ textAlign: "center", padding: "0 16px" }}>
-      <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: 0.3, lineHeight: 1.1 }}>{data.name}</div>
+      <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: 0.3, lineHeight: 1.1 }}>
+        {data.name}
+      </div>
       {data.rating !== null && (
         <div style={{ marginTop: 8 }}>
           <StarRow rating={data.rating} />
@@ -272,8 +333,19 @@ export function PhaseName({ data }: { data: TradingCardData }) {
   const { GOLD } = useCardBrand();
   return (
     <div style={{ textAlign: "center", padding: "10px 16px 0" }}>
-      <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.3, lineHeight: 1.1 }}>{data.name}</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
+      <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.3, lineHeight: 1.1 }}>
+        {data.name}
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: GOLD,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          marginTop: 2,
+        }}
+      >
         {data.role}
       </div>
     </div>
@@ -300,9 +372,19 @@ export function PhaseContent({ children }: { children: React.ReactNode }) {
 export function PhaseTitle({ children }: { children: React.ReactNode }) {
   const { GOLD } = useCardBrand();
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        marginBottom: 14,
+      }}
+    >
       <div style={{ width: 4, height: 18, background: GOLD, borderRadius: 2 }} />
-      <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>
+      <span
+        style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}
+      >
         {children}
       </span>
     </div>
@@ -312,7 +394,14 @@ export function PhaseTitle({ children }: { children: React.ReactNode }) {
 export function ScaledCard({ children, scale }: { children: React.ReactNode; scale: number }) {
   return (
     <div style={{ width: CARD_W * scale, height: CARD_H * scale }}>
-      <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+      <div
+        style={{
+          width: CARD_W,
+          height: CARD_H,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
         {children}
       </div>
     </div>

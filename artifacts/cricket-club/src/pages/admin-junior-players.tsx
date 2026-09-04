@@ -25,10 +25,7 @@ import {
   JuniorPlayerTypeahead,
   type SelectedJuniorPlayer,
 } from "@/components/junior-player-typeahead";
-import {
-  PlayerTypeahead,
-  type SelectedPlayer,
-} from "@/components/player-typeahead";
+import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 
@@ -52,10 +49,9 @@ export default function AdminJuniorPlayers() {
     search: search.trim() || undefined,
     includePrivate: true,
   };
-  const { data, isLoading, isError, refetch } = useListJuniorPlayers(
-    listParams,
-    { query: { queryKey: getListJuniorPlayersQueryKey(listParams) } },
-  );
+  const { data, isLoading, isError, refetch } = useListJuniorPlayers(listParams, {
+    query: { queryKey: getListJuniorPlayersQueryKey(listParams) },
+  });
 
   const invalidateAll = () => {
     // Junior aggregates are computed live from the line tables, so a merge or
@@ -70,10 +66,9 @@ export default function AdminJuniorPlayers() {
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground">
-        Rename junior players, manage privacy and senior-profile links, and
-        merge duplicate profiles. A merge moves every scorecard line and
-        appearance onto the profile you keep, is permanent, and survives data
-        reloads.
+        Rename junior players, manage privacy and senior-profile links, and merge duplicate
+        profiles. A merge moves every scorecard line and appearance onto the profile you keep, is
+        permanent, and survives data reloads.
       </p>
 
       {error && (
@@ -290,72 +285,64 @@ function JuniorMergeDialog({
         <DialogHeader>
           <DialogTitle>Merge duplicate junior profile</DialogTitle>
         </DialogHeader>
-          <p className="text-sm">
-            <strong>
-              {duplicate.displayName}
-            </strong>{" "}
-            ({duplicate.matches ?? 0} games, {duplicate.runs ?? 0} runs,{" "}
-            {duplicate.wickets ?? 0} wickets) will be absorbed into the keeper:
-            every scorecard line and appearance moves onto the keeper, this
-            profile is deleted, and its old link redirects to the keeper.{" "}
-            <strong>This cannot be undone.</strong>
-          </p>
+        <p className="text-sm">
+          <strong>{duplicate.displayName}</strong> ({duplicate.matches ?? 0} games,{" "}
+          {duplicate.runs ?? 0} runs, {duplicate.wickets ?? 0} wickets) will be absorbed into the
+          keeper: every scorecard line and appearance moves onto the keeper, this profile is
+          deleted, and its old link redirects to the keeper. <strong>This cannot be undone.</strong>
+        </p>
 
-          {error && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-1">
-            <Label>Keeper (the profile to keep)</Label>
-            <JuniorPlayerTypeahead value={keeper} onChange={setKeeper} />
+        {error && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
           </div>
+        )}
 
-          <div className="flex gap-2">
-            <Button
-              disabled={
-                merge.isPending ||
-                !keeper ||
-                keeper.participantId === duplicate.participantId
-              }
-              onClick={async () => {
-                if (!keeper) return;
-                if (
-                  !(await confirm({
-                    title: "Merge profiles permanently?",
-                    description: `${duplicate.displayName}'s ${duplicate.matches ?? 0} games will be moved onto ${keeper.displayName} and ${duplicate.displayName}'s profile deleted. This cannot be undone.`,
-                    confirmText: "Merge",
-                    destructive: true,
-                  }))
-                )
-                  return;
-                setError(null);
-                merge.mutate(
-                  {
-                    id: duplicate.participantId,
-                    data: { keeperParticipantId: keeper.participantId },
+        <div className="space-y-1">
+          <Label>Keeper (the profile to keep)</Label>
+          <JuniorPlayerTypeahead value={keeper} onChange={setKeeper} />
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            disabled={
+              merge.isPending || !keeper || keeper.participantId === duplicate.participantId
+            }
+            onClick={async () => {
+              if (!keeper) return;
+              if (
+                !(await confirm({
+                  title: "Merge profiles permanently?",
+                  description: `${duplicate.displayName}'s ${duplicate.matches ?? 0} games will be moved onto ${keeper.displayName} and ${duplicate.displayName}'s profile deleted. This cannot be undone.`,
+                  confirmText: "Merge",
+                  destructive: true,
+                }))
+              )
+                return;
+              setError(null);
+              merge.mutate(
+                {
+                  id: duplicate.participantId,
+                  data: { keeperParticipantId: keeper.participantId },
+                },
+                {
+                  onSuccess: () => {
+                    qc.invalidateQueries({
+                      queryKey: getGetJuniorPlayerQueryKey(keeper.participantId),
+                    });
+                    onMerged();
                   },
-                  {
-                    onSuccess: () => {
-                      qc.invalidateQueries({
-                        queryKey: getGetJuniorPlayerQueryKey(
-                          keeper.participantId,
-                        ),
-                      });
-                      onMerged();
-                    },
-                    onError: (e) => setError(handleAdminMutationError(e)),
-                  },
-                );
-              }}
-            >
-              {merge.isPending ? "Merging…" : "Merge"}
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-          </div>
+                  onError: (e) => setError(handleAdminMutationError(e)),
+                },
+              );
+            }}
+          >
+            {merge.isPending ? "Merging…" : "Merge"}
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -398,96 +385,94 @@ function JuniorRowSeniorLinkDialog({
         <DialogHeader>
           <DialogTitle>Senior profile link</DialogTitle>
         </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Link <strong className="text-foreground">{participant.displayName}</strong>{" "}
-            to their senior profile. Cross-reference only — junior and senior
-            stats stay separate and are never combined.
-          </p>
+        <p className="text-sm text-muted-foreground">
+          Link <strong className="text-foreground">{participant.displayName}</strong> to their
+          senior profile. Cross-reference only — junior and senior stats stay separate and are never
+          combined.
+        </p>
 
-          {error && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+        {error && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label>Current link</Label>
+          {currentSeniorId == null ? (
+            <div className="text-sm text-muted-foreground">No senior profile linked.</div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
+              <span>
+                {currentSenior
+                  ? `${currentSenior.givenName} ${currentSenior.surname}`
+                  : `Senior player #${currentSeniorId}`}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    !(await confirm({
+                      title: "Unlink senior profile?",
+                      description: `Remove ${participant.displayName}'s senior profile link? No stats are affected.`,
+                      confirmText: "Unlink",
+                      destructive: true,
+                    }))
+                  )
+                    return;
+                  setError(null);
+                  clearLink.mutate(
+                    { id: participant.participantId },
+                    {
+                      onSuccess: () => {
+                        onChanged();
+                        onClose();
+                      },
+                      onError: onErr,
+                    },
+                  );
+                }}
+              >
+                Unlink
+              </Button>
             </div>
           )}
+        </div>
 
-          <div className="space-y-2">
-            <Label>Current link</Label>
-            {currentSeniorId == null ? (
-              <div className="text-sm text-muted-foreground">
-                No senior profile linked.
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
-                <span>
-                  {currentSenior
-                    ? `${currentSenior.givenName} ${currentSenior.surname}`
-                    : `Senior player #${currentSeniorId}`}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={async () => {
-                    if (
-                      !(await confirm({
-                        title: "Unlink senior profile?",
-                        description: `Remove ${participant.displayName}'s senior profile link? No stats are affected.`,
-                        confirmText: "Unlink",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    clearLink.mutate(
-                      { id: participant.participantId },
-                      {
-                        onSuccess: () => {
-                          onChanged();
-                          onClose();
-                        },
-                        onError: onErr,
-                      },
-                    );
-                  }}
-                >
-                  Unlink
-                </Button>
-              </div>
-            )}
-          </div>
+        <div className="space-y-1">
+          <Label>{currentSeniorId == null ? "Link a senior player" : "Replace with"}</Label>
+          <PlayerTypeahead value={senior} onChange={setSenior} />
+        </div>
 
-          <div className="space-y-1">
-            <Label>{currentSeniorId == null ? "Link a senior player" : "Replace with"}</Label>
-            <PlayerTypeahead value={senior} onChange={setSenior} />
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              disabled={busy || !senior}
-              onClick={() => {
-                if (!senior) return;
-                setError(null);
-                setLink.mutate(
-                  {
-                    id: participant.participantId,
-                    data: { seniorPlayerId: senior.id },
+        <div className="flex gap-2">
+          <Button
+            disabled={busy || !senior}
+            onClick={() => {
+              if (!senior) return;
+              setError(null);
+              setLink.mutate(
+                {
+                  id: participant.participantId,
+                  data: { seniorPlayerId: senior.id },
+                },
+                {
+                  onSuccess: () => {
+                    onChanged();
+                    onClose();
                   },
-                  {
-                    onSuccess: () => {
-                      onChanged();
-                      onClose();
-                    },
-                    onError: onErr,
-                  },
-                );
-              }}
-            >
-              {setLink.isPending ? "Linking…" : "Link"}
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-          </div>
+                  onError: onErr,
+                },
+              );
+            }}
+          >
+            {setLink.isPending ? "Linking…" : "Link"}
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

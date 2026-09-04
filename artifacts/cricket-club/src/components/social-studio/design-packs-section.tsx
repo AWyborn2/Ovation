@@ -28,8 +28,7 @@ export function DesignPacksSection({
   previewData: PackCardData | null;
   theme: ApiCardTheme | null;
 }) {
-  const { availablePacks, bulkPackId, busy, kindsUsing, applyPackEverywhere } =
-    selection;
+  const { availablePacks, bulkPackId, busy, kindsUsing, applyPackEverywhere } = selection;
 
   if (availablePacks.length === 0) return null;
 
@@ -37,8 +36,8 @@ export function DesignPacksSection({
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Design packs</h2>
       <p className="text-sm text-muted-foreground">
-        A pack is a complete set of card designs. Apply one to every card type at
-        once, or pick a different pack for a single card type below.
+        A pack is a complete set of card designs. Apply one to every card type at once, or pick a
+        different pack for a single card type below.
       </p>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {availablePacks.map((pack) => {
@@ -51,9 +50,7 @@ export function DesignPacksSection({
               data={previewData}
               packId={pack.packId}
             >
-              <span className="block truncate text-sm font-medium">
-                {pack.name}
-              </span>
+              <span className="block truncate text-sm font-medium">{pack.name}</span>
               <p className="text-[11px] text-muted-foreground">
                 {owned === 0
                   ? "Not used by any card type"
@@ -67,9 +64,7 @@ export function DesignPacksSection({
                 disabled={busy}
                 onClick={() => applyPackEverywhere(pack.packId)}
               >
-                {bulkPackId === pack.packId && (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                )}
+                {bulkPackId === pack.packId && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                 Use for all card types
               </Button>
             </PackPreviewTile>

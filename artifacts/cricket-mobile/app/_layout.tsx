@@ -1,8 +1,4 @@
-import {
-  Oswald_500Medium,
-  Oswald_600SemiBold,
-  Oswald_700Bold,
-} from "@expo-google-fonts/oswald";
+import { Oswald_500Medium, Oswald_600SemiBold, Oswald_700Bold } from "@expo-google-fonts/oswald";
 import {
   Montserrat_400Regular,
   Montserrat_500Medium,

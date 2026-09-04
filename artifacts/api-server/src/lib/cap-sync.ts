@@ -1,10 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  capRegisterTable,
-  playerGradeStatsTable,
-  playersTable,
-} from "@workspace/db";
+import { db, capRegisterTable, playerGradeStatsTable, playersTable } from "@workspace/db";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 /** The transaction handle passed to a `db.transaction` callback. */
@@ -107,12 +102,7 @@ export async function recomputeCapsFromStats(
     const caps = await tx
       .select()
       .from(capRegisterTable)
-      .where(
-        and(
-          eq(capRegisterTable.tenantId, tenantId),
-          eq(capRegisterTable.category, category),
-        ),
-      );
+      .where(and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.category, category)));
 
     let updated = 0;
     for (const cap of caps) {
@@ -123,12 +113,7 @@ export async function recomputeCapsFromStats(
         await tx
           .update(capRegisterTable)
           .set({ gamesAGrade: games, inStats })
-          .where(
-            and(
-              eq(capRegisterTable.tenantId, tenantId),
-              eq(capRegisterTable.id, cap.id),
-            ),
-          );
+          .where(and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.id, cap.id)));
         updated++;
       }
     }
@@ -154,12 +139,7 @@ export async function getCappedPlayerIds(
   const rows = await db
     .select({ playerId: capRegisterTable.playerId })
     .from(capRegisterTable)
-    .where(
-      and(
-        eq(capRegisterTable.tenantId, tenantId),
-        eq(capRegisterTable.category, category),
-      ),
-    );
+    .where(and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.category, category)));
   const ids = new Set<number>();
   for (const r of rows) if (r.playerId != null) ids.add(r.playerId);
   return ids;
@@ -250,12 +230,7 @@ export async function syncCapsFromStats(
   const existingCaps = await tx
     .select()
     .from(capRegisterTable)
-    .where(
-      and(
-        eq(capRegisterTable.tenantId, tenantId),
-        eq(capRegisterTable.category, category),
-      ),
-    );
+    .where(and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.category, category)));
 
   const capByPlayer = new Map<number, (typeof existingCaps)[number]>();
   let maxCapNumber = 0;
@@ -307,10 +282,7 @@ export async function syncCapsFromStats(
       .from(playersTable)
       .where(inArray(playersTable.id, [...toMint]));
     for (const p of playerRows) {
-      nameByPlayer.set(
-        p.id,
-        `${p.givenName ?? ""} ${p.surname ?? ""}`.trim() || `Player #${p.id}`,
-      );
+      nameByPlayer.set(p.id, `${p.givenName ?? ""} ${p.surname ?? ""}`.trim() || `Player #${p.id}`);
     }
   }
 
@@ -322,12 +294,7 @@ export async function syncCapsFromStats(
       await tx
         .update(capRegisterTable)
         .set({ inStats: true, gamesAGrade: games })
-        .where(
-          and(
-            eq(capRegisterTable.tenantId, tenantId),
-            eq(capRegisterTable.id, existing.id),
-          ),
-        );
+        .where(and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.id, existing.id)));
       updated++;
       continue;
     }

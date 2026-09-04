@@ -1,10 +1,6 @@
 import { useMemo } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2, X } from "lucide-react";
-import type {
-  CompositeColumnRef,
-  CompositeDef,
-  DisplayBoard,
-} from "@workspace/api-client-react";
+import type { CompositeColumnRef, CompositeDef, DisplayBoard } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -20,31 +16,21 @@ export function CompositeEditor({
   onPatch: (patch: Partial<CompositeDef>) => void;
   onRemove: () => void;
 }) {
-  const sourceById = useMemo(
-    () => new Map(sourceBoards.map((b) => [b.id, b])),
-    [sourceBoards],
-  );
+  const sourceById = useMemo(() => new Map(sourceBoards.map((b) => [b.id, b])), [sourceBoards]);
 
   // Season-aligned needs every chosen column to be a season-based list board.
   const seasonEligible =
     composite.columns.length >= 2 &&
     composite.columns.every((col) => {
       const b = sourceById.get(col.boardId);
-      return (
-        !!b &&
-        b.entries.length > 0 &&
-        b.entries.every((e) => (e.season ?? "").trim() !== "")
-      );
+      return !!b && b.entries.length > 0 && b.entries.every((e) => (e.season ?? "").trim() !== "");
     });
 
   const setCol = (i: number, patch: Partial<CompositeColumnRef>) =>
     onPatch({
-      columns: composite.columns.map((c, idx) =>
-        idx === i ? { ...c, ...patch } : c,
-      ),
+      columns: composite.columns.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
     });
-  const addCol = () =>
-    onPatch({ columns: [...composite.columns, { boardId: "", heading: "" }] });
+  const addCol = () => onPatch({ columns: [...composite.columns, { boardId: "", heading: "" }] });
   const removeCol = (i: number) =>
     onPatch({ columns: composite.columns.filter((_, idx) => idx !== i) });
   const moveCol = (i: number, dir: -1 | 1) => {
@@ -71,9 +57,7 @@ export function CompositeEditor({
           />
         </label>
         <label className="space-y-1 flex-1 min-w-[12rem]">
-          <span className="text-xs font-medium text-muted-foreground">
-            Subtitle (optional)
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Subtitle (optional)</span>
           <Input
             value={composite.subtitle ?? ""}
             onChange={(e) => onPatch({ subtitle: e.target.value })}
@@ -107,9 +91,7 @@ export function CompositeEditor({
           <select
             className="px-2 py-1 rounded border bg-background text-sm"
             value={composite.transition ?? "slide"}
-            onChange={(e) =>
-              onPatch({ transition: e.target.value as "scroll" | "slide" })
-            }
+            onChange={(e) => onPatch({ transition: e.target.value as "scroll" | "slide" })}
             data-testid={`composite-transition-${composite.id}`}
           >
             <option value="scroll">Scroll</option>
@@ -129,8 +111,8 @@ export function CompositeEditor({
 
       {composite.seasonAligned && !seasonEligible && (
         <p className="text-xs text-amber-600">
-          Season-aligned won't apply until every column is a season-based list
-          board — it will fall back to plain side-by-side columns.
+          Season-aligned won't apply until every column is a season-based list board — it will fall
+          back to plain side-by-side columns.
         </p>
       )}
 
@@ -138,9 +120,7 @@ export function CompositeEditor({
         <span className="text-xs font-medium text-muted-foreground">Columns</span>
         {composite.columns.map((col, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-mono text-muted-foreground w-5">
-              {i + 1}
-            </span>
+            <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
             <select
               className="px-2 py-1.5 rounded border bg-background text-sm min-w-[12rem]"
               value={col.boardId}

@@ -40,8 +40,8 @@ export function RosterEditor({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          The roster is the canonical &ldquo;games played&rdquo; record — adding
-          or removing a player here changes their junior games count everywhere.
+          The roster is the canonical &ldquo;games played&rdquo; record — adding or removing a
+          player here changes their junior games count everywhere.
         </p>
         {hhRoster.length === 0 ? (
           <div className="text-sm text-muted-foreground italic">No roster recorded.</div>

@@ -122,17 +122,12 @@ export function resolveTemplate(
   // gradeLeader / clubLeaderboard: choose Runs vs Wickets by category.
   const category = (input as { category?: string }).category ?? "Runs";
   const wantsWickets = category.trim().toLowerCase().startsWith("w");
-  const match = designs.find(
-    (d) => (d.categoryPreset === "Wickets") === wantsWickets,
-  );
+  const match = designs.find((d) => (d.categoryPreset === "Wickets") === wantsWickets);
   return (match ?? designs[0]).template;
 }
 
 /** Select the format html for a size. A1 has three; every other card has two. */
-export function selectFormatHtml(
-  formats: PackTemplateFormats,
-  size: CardSize,
-): string {
+export function selectFormatHtml(formats: PackTemplateFormats, size: CardSize): string {
   if ("portrait" in formats) {
     // Match Result — three distinct layouts.
     if (size === "portrait") return formats.portrait;

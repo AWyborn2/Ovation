@@ -123,7 +123,7 @@ export default function AdminSocialCreate() {
   // Junior cards are locked to the brown junior palette (no admin theme);
   // otherwise the tenant's default theme, matching the modal's initial pick.
   const previewTheme = useMemo(
-    () => (isJunior ? null : themes.find((t) => t.isDefault) ?? themes[0] ?? null),
+    () => (isJunior ? null : (themes.find((t) => t.isDefault) ?? themes[0] ?? null)),
     [isJunior, themes],
   );
 
@@ -147,8 +147,8 @@ export default function AdminSocialCreate() {
     <div className="space-y-6">
       <div>
         <p className="text-muted-foreground mt-1">
-          Pick a card type, prefill it from your data where available, edit any
-          field, and preview live before exporting.
+          Pick a card type, prefill it from your data where available, edit any field, and preview
+          live before exporting.
         </p>
       </div>
 

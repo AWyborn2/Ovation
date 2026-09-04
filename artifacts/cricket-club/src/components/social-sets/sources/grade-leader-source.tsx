@@ -30,7 +30,7 @@ export function GradeLeaderSource({
   });
   const stats = (statsQ.data ?? []) as Stat[];
   const statValue = (s: Stat, cat: "Runs" | "Wickets") =>
-    cat === "Runs" ? s.runs ?? 0 : s.wickets ?? 0;
+    cat === "Runs" ? (s.runs ?? 0) : (s.wickets ?? 0);
   const ranked = useMemo(() => {
     return [...stats]
       .filter((s) => statValue(s, category) > 0)
@@ -54,9 +54,7 @@ export function GradeLeaderSource({
     setBatchError(null);
     try {
       const boards = await Promise.all(
-        GRADES.map((g) =>
-          qc.fetchQuery(getGetGradeLeaderboardQueryOptions(g)) as Promise<Stat[]>,
-        ),
+        GRADES.map((g) => qc.fetchQuery(getGetGradeLeaderboardQueryOptions(g)) as Promise<Stat[]>),
       );
       const inputs: ShareCardInput[] = [];
       GRADES.forEach((g, i) => {
@@ -68,9 +66,7 @@ export function GradeLeaderSource({
       onAddMany(inputs);
     } catch (e) {
       console.error("Batch add (grade leaderboards) failed", e);
-      setBatchError(
-        e instanceof Error ? e.message : "Could not load every grade leaderboard.",
-      );
+      setBatchError(e instanceof Error ? e.message : "Could not load every grade leaderboard.");
     } finally {
       setBatching(false);
     }
@@ -79,11 +75,7 @@ export function GradeLeaderSource({
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <select
-          className={selectClass}
-          value={grade}
-          onChange={(e) => setGrade(e.target.value)}
-        >
+        <select className={selectClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
           {GRADES.map((g) => (
             <option key={g} value={g}>
               {g}
@@ -100,12 +92,7 @@ export function GradeLeaderSource({
         </select>
       </div>
       <div className="flex justify-end border-b pb-3">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={addAllGrades}
-          disabled={batching}
-        >
+        <Button size="sm" variant="outline" onClick={addAllGrades} disabled={batching}>
           {batching ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
@@ -114,9 +101,7 @@ export function GradeLeaderSource({
           Add all grade leaderboards
         </Button>
       </div>
-      {batchError && (
-        <p className="text-sm text-destructive">{batchError}</p>
-      )}
+      {batchError && <p className="text-sm text-destructive">{batchError}</p>}
       {statsQ.isLoading ? (
         <LoadingState label="Loading leaderboard…" />
       ) : ranked.length === 0 ? (
@@ -134,7 +119,7 @@ export function GradeLeaderSource({
                 {s.givenName} {s.surname}
               </span>
               <span className="font-mono text-muted-foreground">
-                {category === "Runs" ? s.runs ?? 0 : s.wickets ?? 0}
+                {category === "Runs" ? (s.runs ?? 0) : (s.wickets ?? 0)}
               </span>
             </button>
           ))}

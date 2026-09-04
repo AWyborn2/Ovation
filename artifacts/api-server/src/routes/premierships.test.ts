@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { matchesTable } from "@workspace/db";
-import {
-  premiershipSeasons,
-  pickGrandFinal,
-  linkPremiershipMatch,
-} from "./premierships";
+import { premiershipSeasons, pickGrandFinal, linkPremiershipMatch } from "./premierships";
 
 type GfMatch = Pick<
   typeof matchesTable.$inferSelect,
@@ -32,11 +28,13 @@ function gf(overrides: Partial<GfMatch> & { id: number }): GfMatch {
   };
 }
 
-function prem(overrides: Partial<{
-  result: string | null;
-  competition: string;
-  matchDate: string | null;
-}> = {}) {
+function prem(
+  overrides: Partial<{
+    result: string | null;
+    competition: string;
+    matchDate: string | null;
+  }> = {},
+) {
   return {
     result: "Won",
     competition: "A Grade",
@@ -100,20 +98,13 @@ describe("pickGrandFinal", () => {
     const t20Final = gf({ id: 11, opponent: "Mandurah T20", result: "Won" });
     const candidates = [cupFinal, t20Final];
     // A T20 premiership should pick the T20 final...
-    expect(
-      pickGrandFinal(candidates, prem({ competition: "A Grade T20" })),
-    ).toBe(11);
+    expect(pickGrandFinal(candidates, prem({ competition: "A Grade T20" }))).toBe(11);
     // ...and a non-T20 premiership should pick the cup final.
-    expect(
-      pickGrandFinal(candidates, prem({ competition: "A Grade" })),
-    ).toBe(10);
+    expect(pickGrandFinal(candidates, prem({ competition: "A Grade" }))).toBe(10);
   });
 
   it("prefers a Won result for a normal (decided) premiership", () => {
-    const candidates = [
-      gf({ id: 1, result: "Lost" }),
-      gf({ id: 2, result: "Won" }),
-    ];
+    const candidates = [gf({ id: 1, result: "Lost" }), gf({ id: 2, result: "Won" })];
     expect(pickGrandFinal(candidates, prem({ result: "Won" }))).toBe(2);
   });
 
@@ -136,9 +127,7 @@ describe("pickGrandFinal", () => {
       gf({ id: 1, opponent: "Halls Head", result: "Won" }),
       gf({ id: 2, opponent: "Pinjarra Cricket Club", result: "Won" }),
     ];
-    expect(
-      pickGrandFinal(candidates, prem({ result: "Won vs Pinjarra by 5 wkts" })),
-    ).toBe(2);
+    expect(pickGrandFinal(candidates, prem({ result: "Won vs Pinjarra by 5 wkts" }))).toBe(2);
   });
 
   it("falls back to most-recent date then lowest id when nothing else separates", () => {
@@ -188,8 +177,22 @@ describe("linkPremiershipMatch", () => {
       }),
     };
     const finalsByKey = byKey([
-      gf({ id: 11613, grade: "PPL", season: 2025, opponent: "Waroona Cricket Club", result: "Won", matchDate: "12:00 PM, Tuesday, 24 Feb 2026" }),
-      gf({ id: 11612, grade: "PPL", season: 2025, opponent: "Pinjarra Cricket Club", result: "Won", matchDate: "12:00 PM, Tuesday, 10 Mar 2026" }),
+      gf({
+        id: 11613,
+        grade: "PPL",
+        season: 2025,
+        opponent: "Waroona Cricket Club",
+        result: "Won",
+        matchDate: "12:00 PM, Tuesday, 24 Feb 2026",
+      }),
+      gf({
+        id: 11612,
+        grade: "PPL",
+        season: 2025,
+        opponent: "Pinjarra Cricket Club",
+        result: "Won",
+        matchDate: "12:00 PM, Tuesday, 10 Mar 2026",
+      }),
     ]);
     expect(linkPremiershipMatch(ppl2026, byKey([]), finalsByKey)).toBe(11612);
   });

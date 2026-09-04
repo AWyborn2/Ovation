@@ -38,19 +38,16 @@ export function EditorCanvas({
   selRef.current = selectedId;
   layersRef.current = layers;
   onChangeRef.current = onChange;
-  const drag = useRef<
-    | {
-        mode: "move" | "resize";
-        px: number;
-        py: number;
-        x: number;
-        y: number;
-        w: number;
-        h: number;
-        vAnchor: "top" | "bottom";
-      }
-    | null
-  >(null);
+  const drag = useRef<{
+    mode: "move" | "resize";
+    px: number;
+    py: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    vAnchor: "top" | "bottom";
+  } | null>(null);
 
   useEffect(() => {
     const el = ref.current;
@@ -250,14 +247,14 @@ export function EditorCanvas({
         <div
           key={`v${i}`}
           className="pointer-events-none absolute top-0 bottom-0 w-px bg-primary"
-          style={{ left: `${(vx * 1080) / W * 100}%` }}
+          style={{ left: `${((vx * 1080) / W) * 100}%` }}
         />
       ))}
       {guides.hy.map((hy, i) => (
         <div
           key={`h${i}`}
           className="pointer-events-none absolute left-0 right-0 h-px bg-primary"
-          style={{ top: `${(hy * 1080) / H * 100}%` }}
+          style={{ top: `${((hy * 1080) / H) * 100}%` }}
         />
       ))}
 

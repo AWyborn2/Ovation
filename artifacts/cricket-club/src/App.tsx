@@ -39,9 +39,7 @@ const JuniorsMatchDetail = lazy(() => import("@/pages/juniors-match-detail"));
 const JuniorsPremierships = lazy(() => import("@/pages/juniors-premierships"));
 const JuniorsPlayers = lazy(() => import("@/pages/juniors-players"));
 const JuniorsPlayerDetail = lazy(() => import("@/pages/juniors-player-detail"));
-const JuniorsOfficeBearers = lazy(
-  () => import("@/pages/juniors-office-bearers"),
-);
+const JuniorsOfficeBearers = lazy(() => import("@/pages/juniors-office-bearers"));
 
 // --- Admin / kiosk / special-purpose pages (lazy) ----------------------------
 // This is the heavy tree (Social Studio, card editors, import tooling, honour
@@ -55,26 +53,12 @@ function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
   key: K,
 ) {
-  return lazy(() =>
-    loader().then((m) => ({ default: m[key] as ComponentType })),
-  );
+  return lazy(() => loader().then((m) => ({ default: m[key] as ComponentType })));
 }
-const AdminSocialGroup = lazyNamed(
-  () => import("@/pages/admin-groups"),
-  "AdminSocialGroup",
-);
-const AdminSettingsGroup = lazyNamed(
-  () => import("@/pages/admin-groups"),
-  "AdminSettingsGroup",
-);
-const AdminPeopleGroup = lazyNamed(
-  () => import("@/pages/admin-groups"),
-  "AdminPeopleGroup",
-);
-const AdminHonoursGroup = lazyNamed(
-  () => import("@/pages/admin-groups"),
-  "AdminHonoursGroup",
-);
+const AdminSocialGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminSocialGroup");
+const AdminSettingsGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminSettingsGroup");
+const AdminPeopleGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminPeopleGroup");
+const AdminHonoursGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminHonoursGroup");
 const CaptainPage = lazy(() => import("@/pages/captain"));
 const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
 const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
@@ -126,10 +110,7 @@ function PublicRoutes() {
           <Route path="/juniors/premierships" component={JuniorsPremierships} />
           <Route path="/juniors/players" component={JuniorsPlayers} />
           <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />
-          <Route
-            path="/juniors/office-bearers"
-            component={JuniorsOfficeBearers}
-          />
+          <Route path="/juniors/office-bearers" component={JuniorsOfficeBearers} />
           <Route component={NotFound} />
         </Switch>
       </RouteSuspense>

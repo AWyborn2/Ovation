@@ -13,18 +13,18 @@
 
 ## 0. Snapshot
 
-| Area | Size | Tests |
-|---|---|---|
-| `artifacts/api-server` | 177 files, 41.6k lines, 93 route modules | 70 test files (real Postgres) |
-| `artifacts/cricket-club` | 379 files, 85.4k lines, 66 page files | 30 test files (hermetic) |
-| `artifacts/cricket-mobile` | 41 files, 7.7k lines | 0 |
-| `artifacts/mockup-sandbox` | 63 files, 6.4k lines | 0 (empty scaffold) |
-| `lib/db` | 65 files, 7.8k lines (`central-queries.ts` alone is 3,646) | 2 files, **never run in CI** |
-| `lib/scorecard` | 11 files, 2.0k lines | 1 file, **never run in CI** |
-| `lib/api-spec` | `openapi.yaml` 12,917 lines, 258 operations | – |
-| `scripts` | 30 TS files, 11 SQL files | 1 file, **never run in CI** |
-| `attached_assets` | 287 MB tracked (13 SQL dumps, 10 SQLite DBs) | – |
-| `docs/product-review/evidence` | 185 MB tracked (37 `.webm` recordings) | – |
+| Area                           | Size                                                       | Tests                         |
+| ------------------------------ | ---------------------------------------------------------- | ----------------------------- |
+| `artifacts/api-server`         | 177 files, 41.6k lines, 93 route modules                   | 70 test files (real Postgres) |
+| `artifacts/cricket-club`       | 379 files, 85.4k lines, 66 page files                      | 30 test files (hermetic)      |
+| `artifacts/cricket-mobile`     | 41 files, 7.7k lines                                       | 0                             |
+| `artifacts/mockup-sandbox`     | 63 files, 6.4k lines                                       | 0 (empty scaffold)            |
+| `lib/db`                       | 65 files, 7.8k lines (`central-queries.ts` alone is 3,646) | 2 files, **never run in CI**  |
+| `lib/scorecard`                | 11 files, 2.0k lines                                       | 1 file, **never run in CI**   |
+| `lib/api-spec`                 | `openapi.yaml` 12,917 lines, 258 operations                | –                             |
+| `scripts`                      | 30 TS files, 11 SQL files                                  | 1 file, **never run in CI**   |
+| `attached_assets`              | 287 MB tracked (13 SQL dumps, 10 SQLite DBs)               | –                             |
+| `docs/product-review/evidence` | 185 MB tracked (37 `.webm` recordings)                     | –                             |
 
 Cross-cutting facts:
 
@@ -44,18 +44,18 @@ Cross-cutting facts:
 
 ## 1. Executive summary — the ten things to do first
 
-| # | Item | Why | Effort |
-|---|---|---|---|
-| 1 | Centralise the native-stats fail-closed guard (§2.1) | `CENTRAL_READS=0` or a mis-set tenant row serves Halls Head data under another club's brand | S |
-| 2 | Purge club database dumps (incl. 693 named junior participants) from git history (§2.2) | Children's names and `is_private` flags are in a public-ish repo; 256 MB of dead weight | M |
-| 3 | Neutralise tenant-blind destructive scripts (§2.3) | `seed.ts` truncates the stats core; `seed-committee.ts` deletes every tenant's committee | S |
-| 4 | Auth-gate `GET /imports` and throttle `POST /tracked-links` (§2.4, §2.5) | Unauthenticated data exposure and unbounded inserts | S |
-| 5 | Make the central connection truly read-only (§2.6) | Proxy blocks `insert/update/delete` but not `execute`/`transaction`; DB role is a superuser | S |
-| 6 | Run every test in CI, including the skipped provisioning suites (§3.1) | `lib/db`, `lib/scorecard`, `scripts` tests never run; signup path is green-washed | S–M |
-| 7 | Stop passing the live Supabase URL to PR runs; make pools lazy (§3.2) | Secret exposure and fork PRs always fail | S |
-| 8 | Session revocation (§3.3) | Password change or admin removal leaves 30-day cookies valid | S–M |
-| 9 | Add a build job, lint, Prettier, `.env.example`, version pins (§4) | The deploy bundle is never exercised before Replit; no style enforcement | S |
-| 10 | Replace `xlsx@0.18.5` in the server (§3.5) | Known CVEs, parses admin uploads | S–M |
+| #   | Item                                                                                    | Why                                                                                         | Effort |
+| --- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------ |
+| 1   | Centralise the native-stats fail-closed guard (§2.1)                                    | `CENTRAL_READS=0` or a mis-set tenant row serves Halls Head data under another club's brand | S      |
+| 2   | Purge club database dumps (incl. 693 named junior participants) from git history (§2.2) | Children's names and `is_private` flags are in a public-ish repo; 256 MB of dead weight     | M      |
+| 3   | Neutralise tenant-blind destructive scripts (§2.3)                                      | `seed.ts` truncates the stats core; `seed-committee.ts` deletes every tenant's committee    | S      |
+| 4   | Auth-gate `GET /imports` and throttle `POST /tracked-links` (§2.4, §2.5)                | Unauthenticated data exposure and unbounded inserts                                         | S      |
+| 5   | Make the central connection truly read-only (§2.6)                                      | Proxy blocks `insert/update/delete` but not `execute`/`transaction`; DB role is a superuser | S      |
+| 6   | Run every test in CI, including the skipped provisioning suites (§3.1)                  | `lib/db`, `lib/scorecard`, `scripts` tests never run; signup path is green-washed           | S–M    |
+| 7   | Stop passing the live Supabase URL to PR runs; make pools lazy (§3.2)                   | Secret exposure and fork PRs always fail                                                    | S      |
+| 8   | Session revocation (§3.3)                                                               | Password change or admin removal leaves 30-day cookies valid                                | S–M    |
+| 9   | Add a build job, lint, Prettier, `.env.example`, version pins (§4)                      | The deploy bundle is never exercised before Replit; no style enforcement                    | S      |
+| 10  | Replace `xlsx@0.18.5` in the server (§3.5)                                              | Known CVEs, parses admin uploads                                                            | S–M    |
 
 ---
 
@@ -77,6 +77,7 @@ row, a future "mode", or the `CENTRAL_READS=0` kill switch
 leak switch: it reproduces the documented "Mandurah leak" for all central tenants at once.
 
 **Fix.**
+
 1. In `shouldReadCentral` and `tenantReadsFromCentral`, throw
    `NativeStatsUnavailableError` when `!readsFromCentral && tenantId !== NATIVE_STATS_TENANT_ID`.
 2. Make `CENTRAL_READS=0` return 503 for central tenants instead of native reads.
@@ -100,6 +101,7 @@ children, six flagged private. `.git` is 193 MB, mostly these.
 `CLAUDE.md`, plus clone time and CI checkout cost.
 
 **Fix.**
+
 1. Move the dumps to object storage or the Supabase project; document the location in
    `scripts/README.md` (§6.4).
 2. Move the two xlsx fixtures used by `api-server/src/routes/imports-batch.test.ts:12-13`
@@ -116,9 +118,10 @@ children, six flagged private. `.git` is 193 MB, mostly these.
 ### 2.3 Tenant-blind destructive scripts
 
 **Where.**
+
 - `scripts/src/seed.ts:11` — `TRUNCATE player_grade_stats, grade_summaries, players
-  RESTART IDENTITY CASCADE`, no confirmation, exposed as `pnpm --filter
-  @workspace/scripts run seed` (`scripts/package.json:8`).
+RESTART IDENTITY CASCADE`, no confirmation, exposed as `pnpm --filter
+@workspace/scripts run seed` (`scripts/package.json:8`).
 - `scripts/src/seed-committee.ts:150` — `db.delete(clubRolesTable)` with no tenant
   filter on a tenant-scoped table.
 - `scripts/src/seed-awards.ts`, `seed-nav-items.ts`, `seed-card-audio.ts`,
@@ -130,6 +133,7 @@ children, six flagged private. `.git` is 193 MB, mostly these.
   grade-wide deletes on the stats core.
 
 **Fix.**
+
 1. Delete `seed.ts` and its npm script.
 2. Move the single-tenant ETLs and one-offs to `scripts/legacy/` with a banner
    comment stating they assume a one-club database and must not run against the shared DB.
@@ -167,9 +171,10 @@ at `central-queries.ts:537,1084`). The connection string documented in `CLAUDE.m
 the `postgres.<ref>` superuser role; no read-only role exists.
 
 **Fix.**
+
 1. Create a `central_ro` Postgres role: `GRANT USAGE ON SCHEMA central`, `GRANT SELECT
-   ON ALL TABLES IN SCHEMA central`, `ALTER ROLE central_ro SET
-   default_transaction_read_only = on`. Point `CENTRAL_DATABASE_URL` at it.
+ON ALL TABLES IN SCHEMA central`, `ALTER ROLE central_ro SET
+default_transaction_read_only = on`. Point `CENTRAL_DATABASE_URL` at it.
 2. Extend `BLOCKED_WRITE_METHODS` with `transaction`, `$client`,
    `refreshMaterializedView`; expose a `centralExecuteReadOnly` wrapper for the two raw
    reads.
@@ -182,6 +187,7 @@ rejected by Postgres, not just by the proxy.
 ### 2.7 Schema guarantees for tenant identity
 
 **Where.** `lib/db/src/schema/`:
+
 - `admins.tenantId` (`admins.ts:113`) and `admin_password_resets.tenantId` (`:27`) are
   bare integers without an FK to `tenants.id`.
 - `tenants.centralClubId` (`tenants.ts:51`) and `tenants.customDomain` (`:71`) are not
@@ -201,6 +207,7 @@ until migrations exist (§5.4). **Effort** S.
 ### 3.1 Tests that never run
 
 **Where.**
+
 - `lib/db/src/central-queries.test.ts` (starts with `// @ts-nocheck`),
   `lib/db/src/provision.test.ts`, `lib/scorecard/src/match-summary-input.test.ts`,
   `scripts/src/topup-clubs.test.ts` — no `test` script or vitest dependency in those
@@ -214,6 +221,7 @@ until migrations exist (§5.4). **Effort** S.
   `CLAUDE.md` as the top correctness risk) are also in the skip list.
 
 **Fix.**
+
 1. Root `vitest.workspace.ts` covering `lib/**` and `scripts/**`; add `vitest` to those
    packages; CI job `pnpm -r --if-present test`.
 2. Remove `@ts-nocheck` by excluding `*.test.ts` from lib declaration builds
@@ -234,6 +242,7 @@ until migrations exist (§5.4). **Effort** S.
 variable is unset. Fork PRs receive an empty secret and the API job always fails.
 
 **Fix.**
+
 1. Lazy pool creation: `getDb()` / `getCentralDb()` memoised on first use; keep the
    named `db` export as a lazy getter proxy to avoid touching 100+ call sites.
 2. Point CI's `CENTRAL_DATABASE_URL` at the local service Postgres with the §3.1 fixture
@@ -357,6 +366,7 @@ Add ESLint flat config at root (`typescript-eslint` recommended-type-checked wit
 scripts, and a CI job. Optional `lint-staged` via `simple-git-hooks`.
 
 Two project-specific rules are worth writing:
+
 - `no-restricted-imports` banning `@workspace/db/central` outside
   `lib/db/src/central-queries.ts` (and its future split, §5.1) — mechanically enforces the
   "funnel all central reads" constraint.
@@ -411,18 +421,19 @@ template, `SECURITY.md`; `cancel-in-progress` only for pull requests; non-blocki
 Proposed layout under `lib/db/src/central/`, keeping `central-queries.ts` as a barrel so
 the 25 dynamic-import call sites are unchanged:
 
-| Module | Contents (current line ranges) |
-|---|---|
-| `cache.ts` | `withCentralCache`, TTL, single-flight (307-431) |
-| `grades.ts` | `classifyCentralGrade`, `appGradeFromCentral`, season parsing (64-235) |
-| `privacy.ts` | one `isPrivateRow()` and one documented masking policy |
-| `club-matches.ts` | `getClubMatchRows`, `centralClubMatches`, `centralMatchScorecard`, `centralWeekendWrap` |
+| Module            | Contents (current line ranges)                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `cache.ts`        | `withCentralCache`, TTL, single-flight (307-431)                                                        |
+| `grades.ts`       | `classifyCentralGrade`, `appGradeFromCentral`, season parsing (64-235)                                  |
+| `privacy.ts`      | one `isPrivateRow()` and one documented masking policy                                                  |
+| `club-matches.ts` | `getClubMatchRows`, `centralClubMatches`, `centralMatchScorecard`, `centralWeekendWrap`                 |
 | `leaderboards.ts` | `centralGradeLeaderboard`, `centralSeasonLeaders`, `centralAllTimeLeaders`, `centralClubTotalsBySeason` |
-| `players.ts` | `centralPlayerCareers/Detail/Seasons/MatchLog`, `centralClubParticipants` |
-| `records.ts` | `centralClubRecords`, `centralCenturies`, `centralFiveWicketHauls`, `centralMilestones` |
-| `summaries.ts` | `centralGradeSummaries`, `centralClubTotals`, `centralDashboard`, `centralLadder` |
+| `players.ts`      | `centralPlayerCareers/Detail/Seasons/MatchLog`, `centralClubParticipants`                               |
+| `records.ts`      | `centralClubRecords`, `centralCenturies`, `centralFiveWicketHauls`, `centralMilestones`                 |
+| `summaries.ts`    | `centralGradeSummaries`, `centralClubTotals`, `centralDashboard`, `centralLadder`                       |
 
 While splitting:
+
 - Replace the nine hand-written `or(eq(homeClubId, clubId), eq(awayClubId, clubId))`
   fragments with `clubInvolvedWhere(clubId)`; the eleven `(p?.isPrivate ?? 0) === 1`
   checks with `isPrivateRow(p)`.
@@ -448,13 +459,13 @@ permanently.
 
 ### 5.3 Split the api-server mega-modules
 
-| File | Lines | Split |
-|---|---|---|
-| `routes/imports.ts` | 1,787 (handlers of 474, 436, 220 lines) | `imports-csv.ts`, `imports-scorecard.ts`, `imports-batch.ts` sharing `lib/import-commit.ts` (the five commit paths at L401, 569, 1044, 1429, 1705 all do transaction → `recomputeAggregates` → `syncCapsFromStats` → `runPostCommitSocial`) |
-| `routes/juniors.ts` | 1,637 | players / matches / leaderboards |
-| `routes/juniors-admin.ts` | 1,419 | mirror the juniors split |
-| `routes/social-cards.ts` | 1,138 | move `listRoundMatchIds`, `loadMatchDetailForRequest`, `loadGradeLeaderboard` from `routes/matches.ts` and `routes/grades.ts` into `lib/` (routes should not import routes) |
-| `lib/honour-display-builders.ts` | 1,951, 66 exports | by board family; pass `tenantId`/`central` explicitly instead of `req` so builders are unit-testable |
+| File                             | Lines                                   | Split                                                                                                                                                                                                                                       |
+| -------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `routes/imports.ts`              | 1,787 (handlers of 474, 436, 220 lines) | `imports-csv.ts`, `imports-scorecard.ts`, `imports-batch.ts` sharing `lib/import-commit.ts` (the five commit paths at L401, 569, 1044, 1429, 1705 all do transaction → `recomputeAggregates` → `syncCapsFromStats` → `runPostCommitSocial`) |
+| `routes/juniors.ts`              | 1,637                                   | players / matches / leaderboards                                                                                                                                                                                                            |
+| `routes/juniors-admin.ts`        | 1,419                                   | mirror the juniors split                                                                                                                                                                                                                    |
+| `routes/social-cards.ts`         | 1,138                                   | move `listRoundMatchIds`, `loadMatchDetailForRequest`, `loadGradeLeaderboard` from `routes/matches.ts` and `routes/grades.ts` into `lib/` (routes should not import routes)                                                                 |
+| `lib/honour-display-builders.ts` | 1,951, 66 exports                       | by board family; pass `tenantId`/`central` explicitly instead of `req` so builders are unit-testable                                                                                                                                        |
 
 Also dedupe: `isEmail`/`slugTaken` (`platform.ts:42-47` vs `platform-admin.ts:62-67`),
 `serialize(admin)` vs `serializeAdmin`, `normaliseGrades` (`captains.ts:46` vs
@@ -499,16 +510,16 @@ Add `index("<t>_tenant_idx").on(t.tenantId)` to every tenant-scoped curated tabl
 
 ### 5.6 Split the giant web files
 
-| File | Lines | Split |
-|---|---|---|
-| `lib/share-card.ts` | 4,311 (68 exports, 35 importers) | `share-card/{types,theme,draw-primitives,layers,renderers/*,compose,export,animation-consts}.ts` with a barrel |
-| `pages/admin-honours-display.tsx` | 2,479 (`SettingsForm` 950 lines, 18 `useState`) | editors to `components/honours-display/editors/*.tsx`; `useHonoursDisplaySettings` hook |
-| `components/card-layout-editor.tsx` | 2,055 | one file per component under `components/card-layout-editor/` |
-| `pages/admin-import.tsx` | 1,829 (16 `useState`, 7 `key={index}` on editable rows) | `use-csv-import`, `use-xlsx-import`, `use-batch-import` hooks; rows to `components/admin-import/` |
-| `components/share-card-modal.tsx` | 1,431 (25 `useState`, 12 `useEffect`) | finish the existing `share-card-modal/` hooks dir |
-| `pages/admin-social-sets.tsx` | 1,365 | `components/social-sets/{set-list,set-editor,sources/*}` |
-| `lib/pack-render.ts` | 1,358 | `pack-render/{html-utils,bind,tokens,render}.ts` |
-| `pages/admin-junior-stats.tsx` | 1,221 (42 `useState`) | generic `InningsTable<T>`; `components/junior-stats/` |
+| File                                | Lines                                                   | Split                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `lib/share-card.ts`                 | 4,311 (68 exports, 35 importers)                        | `share-card/{types,theme,draw-primitives,layers,renderers/*,compose,export,animation-consts}.ts` with a barrel |
+| `pages/admin-honours-display.tsx`   | 2,479 (`SettingsForm` 950 lines, 18 `useState`)         | editors to `components/honours-display/editors/*.tsx`; `useHonoursDisplaySettings` hook                        |
+| `components/card-layout-editor.tsx` | 2,055                                                   | one file per component under `components/card-layout-editor/`                                                  |
+| `pages/admin-import.tsx`            | 1,829 (16 `useState`, 7 `key={index}` on editable rows) | `use-csv-import`, `use-xlsx-import`, `use-batch-import` hooks; rows to `components/admin-import/`              |
+| `components/share-card-modal.tsx`   | 1,431 (25 `useState`, 12 `useEffect`)                   | finish the existing `share-card-modal/` hooks dir                                                              |
+| `pages/admin-social-sets.tsx`       | 1,365                                                   | `components/social-sets/{set-list,set-editor,sources/*}`                                                       |
+| `lib/pack-render.ts`                | 1,358                                                   | `pack-render/{html-utils,bind,tokens,render}.ts`                                                               |
+| `pages/admin-junior-stats.tsx`      | 1,221 (42 `useState`)                                   | generic `InningsTable<T>`; `components/junior-stats/`                                                          |
 
 Junior/senior page pairs are copy-paste (`admin-committee` vs `admin-junior-committee`
 share 346 identical lines; `admin-match-display` pair 192; `premierships` pair 187).
@@ -528,6 +539,7 @@ place (duplicated in `lib/scorecard/src/mapping.ts:21` and the server).
 ### 5.8 Finish the brand sweep
 
 User-visible remnants:
+
 - `pages/admin-junior-stats.tsx:323,350,708,1007,1064` — "Result (Halls Head)",
   "Halls Head batted first", "Halls Head roster" shown to every tenant admin.
 - `pages/admin-import.tsx:1079` header "Halls Head".
@@ -719,13 +731,13 @@ pattern. Move the repeated `process.env.SESSION_SECRET` setup into a shared
 
 ## 9. Corrections to existing docs (apply when touching them)
 
-| Doc | Says | Reality |
-|---|---|---|
-| `AGENTS.md` | "No frontend or mobile tests… 22 test files, all backend" | 30 web, 70 API, 3 lib, 1 scripts; CI has a web-tests job |
-| `AGENTS.md` | "35 tables" | count when §5.4 lands; `CLAUDE.md` says 33 |
-| `AGENTS.md` | "Strict TypeScript" | `tsconfig.base.json` is not `strict` |
-| `README.md` | "pnpm 9" | CI uses pnpm 10; `minimumReleaseAge` needs ≥10.16 |
-| `CLAUDE.md` | Phase headings say Phase 0 | STATUS block already corrects; restructure |
-| `central-queries.ts:397` | "no secondary indexes" on central | indexes added 2026-07-09 |
-| `.agents/memory/hhcc-brand-source-of-truth.md` | fallback brand is Halls Head | `brand.ts:79-109` defaults to the Ovation placeholder |
-| `replit.md` | references `post-merge.sh` in project folder | lives at `scripts/post-merge.sh`; uses `--filter db` while CI uses `--filter @workspace/db` |
+| Doc                                            | Says                                                      | Reality                                                                                     |
+| ---------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `AGENTS.md`                                    | "No frontend or mobile tests… 22 test files, all backend" | 30 web, 70 API, 3 lib, 1 scripts; CI has a web-tests job                                    |
+| `AGENTS.md`                                    | "35 tables"                                               | count when §5.4 lands; `CLAUDE.md` says 33                                                  |
+| `AGENTS.md`                                    | "Strict TypeScript"                                       | `tsconfig.base.json` is not `strict`                                                        |
+| `README.md`                                    | "pnpm 9"                                                  | CI uses pnpm 10; `minimumReleaseAge` needs ≥10.16                                           |
+| `CLAUDE.md`                                    | Phase headings say Phase 0                                | STATUS block already corrects; restructure                                                  |
+| `central-queries.ts:397`                       | "no secondary indexes" on central                         | indexes added 2026-07-09                                                                    |
+| `.agents/memory/hhcc-brand-source-of-truth.md` | fallback brand is Halls Head                              | `brand.ts:79-109` defaults to the Ovation placeholder                                       |
+| `replit.md`                                    | references `post-merge.sh` in project folder              | lives at `scripts/post-merge.sh`; uses `--filter db` while CI uses `--filter @workspace/db` |

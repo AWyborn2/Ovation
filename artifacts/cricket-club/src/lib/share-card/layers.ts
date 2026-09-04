@@ -256,7 +256,11 @@ export const drawLayerContent = async (ctx: CanvasRenderingContext2D, l: RenderL
 };
 
 // Mix a hex colour toward an [r,g,b] target by amount (0-1).
-const mixToward = (hex: string, target: [number, number, number], amt: number): [number, number, number] => {
+const mixToward = (
+  hex: string,
+  target: [number, number, number],
+  amt: number,
+): [number, number, number] => {
   const [r, g, b] = hexToRgb(hex);
   return [
     Math.round(r + (target[0] - r) * amt),
@@ -374,11 +378,7 @@ const applyMaskToCanvas = (
 
 // Overlay a linear gradient (colour → transparent) across the layer rect,
 // clipped to the mask shape so it hugs the layer.
-const drawGradientOverlay = (
-  ctx: CanvasRenderingContext2D,
-  rect: PxRect,
-  fx: LayerEffects,
-) => {
+const drawGradientOverlay = (ctx: CanvasRenderingContext2D, rect: PxRect, fx: LayerEffects) => {
   const { x, y, w, h } = rect;
   const dir = fx.gradientDir ?? "bottom";
   const alpha = Math.max(0, Math.min(1, fx.gradientIntensity ?? 0.55));
@@ -399,11 +399,7 @@ const drawGradientOverlay = (
 };
 
 // Stroke a border following the mask shape (or the rect when unmasked).
-const drawLayerBorder = (
-  ctx: CanvasRenderingContext2D,
-  rect: PxRect,
-  fx: LayerEffects,
-) => {
+const drawLayerBorder = (ctx: CanvasRenderingContext2D, rect: PxRect, fx: LayerEffects) => {
   const lw = Math.max(0, (fx.borderWidth ?? 0.006) * 1080);
   if (lw <= 0) return;
   ctx.save();

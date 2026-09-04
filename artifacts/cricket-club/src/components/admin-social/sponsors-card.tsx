@@ -102,16 +102,31 @@ export function SponsorsCard({
             </div>
             <div className="space-y-2">
               <Label htmlFor="sp-link">Link (optional)</Label>
-              <Input id="sp-link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" />
+              <Input
+                id="sp-link"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://"
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="sp-from">Active from</Label>
-                <Input id="sp-from" type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} />
+                <Input
+                  id="sp-from"
+                  type="date"
+                  value={activeFrom}
+                  onChange={(e) => setActiveFrom(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sp-to">Active to</Label>
-                <Input id="sp-to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} />
+                <Input
+                  id="sp-to"
+                  type="date"
+                  value={activeTo}
+                  onChange={(e) => setActiveTo(e.target.value)}
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -180,11 +195,16 @@ export function SponsorsCard({
             sponsors.map((s) => (
               <div key={s.id} className="border rounded p-2 space-y-2">
                 <div className="flex items-center gap-3">
-                  <img src={s.logoUrl} alt={s.name} className="h-10 w-16 object-contain bg-muted rounded" />
+                  <img
+                    src={s.logoUrl}
+                    alt={s.name}
+                    className="h-10 w-16 object-contain bg-muted rounded"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{s.name}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {s.link || "no link"} • {s.activeFrom ?? "no start"} → {s.activeTo ?? "no end"}
+                      {s.link || "no link"} • {s.activeFrom ?? "no start"} →{" "}
+                      {s.activeTo ?? "no end"}
                     </div>
                   </div>
                   <Input

@@ -6,7 +6,7 @@ Review run: `20260721-055154-4c151c1c` | Branch: `feat/design-packs-auto-draft` 
 
 - **F1 (P0):** Cross-tenant junior data leak — added tenantId filter to sweep query and loadJuniorMatchDetail
 - **F2 (P0):** Senior/junior match ID collision — added sourceMatchIsJunior to dedupe index and upsert lookup
-- **F6 (P1):** Unreset ensuredTenants cache in tests — exported _resetEnsuredTenants, called in beforeEach
+- **F6 (P1):** Unreset ensuredTenants cache in tests — exported \_resetEnsuredTenants, called in beforeEach
 - **F7 partial (P2):** ensurePackTemplates GET handler — wrapped in try-catch so failure doesn't block listing
 
 ### Filed as GitHub Issues

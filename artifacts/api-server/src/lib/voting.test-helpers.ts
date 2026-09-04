@@ -51,9 +51,7 @@ export type ScenarioOptions = {
  * an import and the requested rounds (each a non-abandoned match with every
  * player on its scorecard). Returns ids plus a cleanup that removes everything.
  */
-export async function createVotingScenario(
-  opts: ScenarioOptions = {},
-): Promise<VotingScenario> {
+export async function createVotingScenario(opts: ScenarioOptions = {}): Promise<VotingScenario> {
   const grade = opts.grade ?? "A Grade";
   const season = opts.season ?? 2099;
   const playerCount = opts.playerCount ?? 4;
@@ -101,9 +99,7 @@ export async function createVotingScenario(
       passwordHash: "x",
     })
     .returning();
-  await db
-    .insert(captainGradePermissionsTable)
-    .values({ captainId: captain.id, grade });
+  await db.insert(captainGradePermissionsTable).values({ captainId: captain.id, grade });
 
   const [imp] = await db
     .insert(importsTable)
@@ -176,10 +172,7 @@ export async function insertBallot(args: {
 }
 
 export async function getWinners(awardId: number, _season: number) {
-  return db
-    .select()
-    .from(awardWinnersTable)
-    .where(eq(awardWinnersTable.awardId, awardId));
+  return db.select().from(awardWinnersTable).where(eq(awardWinnersTable.awardId, awardId));
 }
 
 export async function closePool(): Promise<void> {

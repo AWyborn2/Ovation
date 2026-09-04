@@ -25,7 +25,11 @@ router.post("/captain-auth/login", loginRateLimiter, async (req, res): Promise<v
     res.status(401).json({ error: "Invalid username or password" });
     return;
   }
-  const token = encodeCaptainSession({ captainId: captain.id, issuedAt: Date.now(), epoch: captain.sessionEpoch });
+  const token = encodeCaptainSession({
+    captainId: captain.id,
+    issuedAt: Date.now(),
+    epoch: captain.sessionEpoch,
+  });
   res.cookie(CAPTAIN_SESSION_COOKIE, token, SESSION_COOKIE_OPTS);
   const grades = await getCaptainGrades(captain.id);
   res.json(serializeCaptain(captain, grades));

@@ -123,8 +123,7 @@ const FAN_STEP_DEFS: StepConfig[] = [
     key: "fan-recent-matches",
     element: '[data-tour="recent-matches"]',
     title: "Recent matches",
-    description:
-      "The latest game from each grade. Tap any card for a full digital scorecard.",
+    description: "The latest game from each grade. Tap any card for a full digital scorecard.",
     side: "top",
     align: "center",
   },
@@ -166,8 +165,7 @@ const ADMIN_STEP_DEFS: StepConfig[] = [
     key: "admin-menu",
     element: '[data-tour="admin-nav"]',
     title: "Admin menu",
-    description:
-      "Everything you manage lives in this menu. We'll walk through each group next.",
+    description: "Everything you manage lives in this menu. We'll walk through each group next.",
     side: "right",
     align: "start",
   },
@@ -244,10 +242,7 @@ function pick(override: string | undefined, fallback: string): string {
   return v.length > 0 ? v : fallback;
 }
 
-function applyOverrides(
-  defs: StepConfig[],
-  overrides: TourStepContent[] | undefined,
-): DriveStep[] {
+function applyOverrides(defs: StepConfig[], overrides: TourStepContent[] | undefined): DriveStep[] {
   const byKey = new Map((overrides ?? []).map((o) => [o.key, o]));
   return defs.map((def) => {
     const o = byKey.get(def.key);

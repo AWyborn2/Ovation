@@ -28,10 +28,7 @@ export function fmtJuniorDate(d: string | null | undefined): string | null {
 }
 
 /** Format a possibly-null number to a fixed number of digits, or an em dash. */
-export function fmtNum(
-  value: number | null | undefined,
-  digits = 2,
-): string {
+export function fmtNum(value: number | null | undefined, digits = 2): string {
   return value != null ? value.toFixed(digits) : "—";
 }
 

@@ -1,8 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  useListJuniorPremierships,
-  type JuniorPremiership,
-} from "@workspace/api-client-react";
+import { useListJuniorPremierships, type JuniorPremiership } from "@workspace/api-client-react";
 import { useBrand } from "@/lib/brand-context";
 import {
   PLAQUE_STYLES,
@@ -42,7 +39,9 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
         : "");
   return (
     <PlaqueFrame>
-      <div style={PLAQUE_STYLES.title} className="text-[12px] font-bold uppercase">{title}</div>
+      <div style={PLAQUE_STYLES.title} className="text-[12px] font-bold uppercase">
+        {title}
+      </div>
 
       {(prem.association || prem.competition) && (
         <div style={{ ...PLAQUE_STYLES.meta, marginTop: "2px" }} className="text-[10px]">

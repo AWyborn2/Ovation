@@ -8,11 +8,7 @@ import {
   matchesTable,
 } from "@workspace/db";
 import { eq, sql, inArray } from "drizzle-orm";
-import {
-  detectCrossings,
-  BOARD_STAT_LABEL,
-  type BoardKey,
-} from "./milestone-detector";
+import { detectCrossings, BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
 import {
   detectAndQueueMatchMilestones,
   type MatchMilestoneContext,
@@ -68,9 +64,7 @@ export async function snapshotCareerTotals(): Promise<Map<number, CareerTotals>>
  * this BEFORE a match commit so debut detection can see who crossed 0→1 in the
  * grade.
  */
-export async function snapshotGradeGames(
-  grade: string,
-): Promise<Map<number, number>> {
+export async function snapshotGradeGames(grade: string): Promise<Map<number, number>> {
   const rows = await db
     .select({
       playerId: playerGradeStatsTable.playerId,
@@ -107,9 +101,7 @@ async function queueCareerCrossings(
     })
     .from(playersTable)
     .where(sql`${playersTable.id} = ANY(${playerIds})`);
-  const nameById = new Map(
-    playerRows.map((p) => [p.id, `${p.givenName} ${p.surname}`.trim()]),
-  );
+  const nameById = new Map(playerRows.map((p) => [p.id, `${p.givenName} ${p.surname}`.trim()]));
   for (const c of crossings) {
     const name = nameById.get(c.playerId) ?? "Unknown";
     const [event] = await db
@@ -168,8 +160,7 @@ export async function runPostCommitSocial(opts: {
   /** Present only for per-match commits; drives debut/cap/century/5-for cards. */
   matchContext?: MatchMilestoneContext;
 }): Promise<void> {
-  const { tenantId, importId, affectedGrades, season, beforeMap, logger, matchContext } =
-    opts;
+  const { tenantId, importId, affectedGrades, season, beforeMap, logger, matchContext } = opts;
   const [socialSettings] = await db
     .select()
     .from(socialSettingsTable)
@@ -272,9 +263,7 @@ export async function runBatchPostCommitSocial(opts: {
   // Match-summary drafts for the entire batch: gather all import IDs from the
   // match contexts, look up the real match IDs, and generate drafts in one call.
   try {
-    const batchImportIds = Array.from(
-      new Set(matchContexts.map((c) => c.importId)),
-    );
+    const batchImportIds = Array.from(new Set(matchContexts.map((c) => c.importId)));
     if (batchImportIds.length > 0) {
       const matchRows = await db
         .select({ id: matchesTable.id })

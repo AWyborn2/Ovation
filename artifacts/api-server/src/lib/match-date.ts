@@ -12,8 +12,18 @@
  */
 
 const MONTHS: Record<string, string> = {
-  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+  jan: "01",
+  feb: "02",
+  mar: "03",
+  apr: "04",
+  may: "05",
+  jun: "06",
+  jul: "07",
+  aug: "08",
+  sep: "09",
+  oct: "10",
+  nov: "11",
+  dec: "12",
 };
 
 /** Reject a well-formed but impossible date (e.g. 31 Feb, month 13). */
@@ -79,9 +89,10 @@ export function parseMatchDate(d: string | null | undefined): string | null {
  * recorded is ordinary missing data, whereas a non-empty value the parser
  * cannot read is a format the importer should have handled.
  */
-export function partitionMatchDates(
-  raw: (string | null | undefined)[],
-): { parsed: string[]; unparsed: string[] } {
+export function partitionMatchDates(raw: (string | null | undefined)[]): {
+  parsed: string[];
+  unparsed: string[];
+} {
   const parsed: string[] = [];
   const unparsed: string[] = [];
   for (const value of raw) {

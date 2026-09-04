@@ -13,11 +13,7 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import {
-  snakeToCamel,
-  serializeCorrection,
-  SNAKE_TO_TABLE,
-} from "../lib/junior-admin-helpers";
+import { snakeToCamel, serializeCorrection, SNAKE_TO_TABLE } from "../lib/junior-admin-helpers";
 import { isCentralTenant } from "../lib/tenant";
 
 /**
@@ -47,9 +43,7 @@ router.get(
       res.json([]);
       return;
     }
-    const conds = [
-      eq(juniorStatCorrectionsTable.tenantId, getTenantId(req)),
-    ];
+    const conds = [eq(juniorStatCorrectionsTable.tenantId, getTenantId(req))];
     if (query.data.matchId !== undefined) {
       conds.push(eq(juniorStatCorrectionsTable.matchId, query.data.matchId));
     }
@@ -106,14 +100,12 @@ router.delete(
       );
     if (newer) {
       res.status(409).json({
-        error:
-          "A newer correction targets the same row — revert that one first",
+        error: "A newer correction targets the same row — revert that one first",
       });
       return;
     }
 
-    const table =
-      SNAKE_TO_TABLE[correction.targetTable as keyof typeof SNAKE_TO_TABLE];
+    const table = SNAKE_TO_TABLE[correction.targetTable as keyof typeof SNAKE_TO_TABLE];
     if (!table) {
       res.status(500).json({ error: "Unknown correction target" });
       return;
@@ -131,22 +123,12 @@ router.delete(
             await tx
               .update(juniorParticipantsTable)
               .set(set)
-              .where(
-                eq(
-                  juniorParticipantsTable.participantId,
-                  correction.targetId,
-                ),
-              );
+              .where(eq(juniorParticipantsTable.participantId, correction.targetId));
           } else {
             await tx
               .update(table)
               .set(set)
-              .where(
-                eq(
-                  (table as typeof juniorMatchesTable).id,
-                  Number(correction.targetId),
-                ),
-              );
+              .where(eq((table as typeof juniorMatchesTable).id, Number(correction.targetId)));
           }
         }
       } else if (correction.op === "insert") {
@@ -154,12 +136,7 @@ router.delete(
         if (correction.targetTable !== "junior_participants") {
           await tx
             .delete(table)
-            .where(
-              eq(
-                (table as typeof juniorMatchesTable).id,
-                Number(correction.targetId),
-              ),
-            );
+            .where(eq((table as typeof juniorMatchesTable).id, Number(correction.targetId)));
         }
       } else if (correction.op === "delete") {
         // Undo a deletion by re-inserting the full pre-image.

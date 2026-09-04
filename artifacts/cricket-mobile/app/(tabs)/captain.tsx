@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  RefreshControl,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, RefreshControl, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -218,9 +211,8 @@ function CaptainHome({ captain }: { captain: Captain }) {
       ) : awards.length === 0 ? (
         <Card>
           <Body muted size={13} style={{ fontStyle: "italic" }}>
-            You have no awards open for voting right now. Once an admin opens an
-            award for one of your grades and a match scorecard is imported, the
-            rounds will appear here.
+            You have no awards open for voting right now. Once an admin opens an award for one of
+            your grades and a match scorecard is imported, the rounds will appear here.
           </Body>
         </Card>
       ) : (
@@ -286,12 +278,7 @@ function GradeSection({ configId, grade }: { configId: number; grade: VotableGra
         </Body>
       ) : (
         rounds.map((round) => (
-          <RoundBallot
-            key={round.round}
-            configId={configId}
-            grade={grade.grade}
-            round={round}
-          />
+          <RoundBallot key={round.round} configId={configId} grade={grade.grade} round={round} />
         ))
       )}
     </View>
@@ -322,8 +309,7 @@ function RoundBallot({
     pick3: round.ballot?.pick3PlayerId ?? null,
   });
 
-  const nameOf = (id: number | null) =>
-    round.players.find((p) => p.playerId === id)?.name ?? null;
+  const nameOf = (id: number | null) => round.players.find((p) => p.playerId === id)?.name ?? null;
 
   const reset = () => {
     setPicks({
@@ -659,11 +645,7 @@ function Row({
         opacity: disabled ? 0.4 : 1,
       }}
     >
-      <Body
-        size={15}
-        muted={muted}
-        style={{ color: selected ? colors.primary : undefined }}
-      >
+      <Body size={15} muted={muted} style={{ color: selected ? colors.primary : undefined }}>
         {label}
         {disabled ? "  (already picked)" : ""}
       </Body>

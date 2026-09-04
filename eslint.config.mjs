@@ -144,7 +144,8 @@ export default tseslint.config(
       "no-restricted-syntax": [
         "error",
         {
-          selector: "MemberExpression[object.type='MemberExpression'][object.object.name='process'][object.property.name='env']",
+          selector:
+            "MemberExpression[object.type='MemberExpression'][object.object.name='process'][object.property.name='env']",
           message:
             "Read environment variables through `env` in src/config.ts so every setting is declared, validated at boot, and listed in .env.example (plan.md §4.2).",
         },

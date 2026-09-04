@@ -29,14 +29,19 @@ export function DigitalScorecard({ match, hatTrickIds }: DigitalScorecardProps) 
   if (!hasAnyData) {
     return (
       <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-        {match.abandoned ? "Match abandoned — no scorecard recorded." : "No scorecard recorded for this match."}
+        {match.abandoned
+          ? "Match abandoned — no scorecard recorded."
+          : "No scorecard recorded for this match."}
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex flex-col gap-3 p-3 rounded-md overflow-hidden" style={{ background: "#0a1626" }}>
+      <div
+        className="flex flex-col gap-3 p-3 rounded-md overflow-hidden"
+        style={{ background: "#0a1626" }}
+      >
         {scorecard.innings.map((inn, i) => (
           <div key={i} className="flex flex-col gap-2">
             <BattingCard innings={inn} onPlayerClick={onPlayerClick} />

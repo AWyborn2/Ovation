@@ -33,8 +33,7 @@ export function VotingManager({
   onAwardChanged: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: configs, isLoading, isError, refetch } =
-    useListAwardVotingConfigs(award.id);
+  const { data: configs, isLoading, isError, refetch } = useListAwardVotingConfigs(award.id);
   const upsert = useUpsertAwardVotingConfig();
   const [showNew, setShowNew] = useState(false);
   const [season, setSeason] = useState(new Date().getFullYear());
@@ -50,9 +49,7 @@ export function VotingManager({
   return (
     <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-bold uppercase tracking-wide text-primary">
-          3-2-1 voting
-        </h4>
+        <h4 className="text-sm font-bold uppercase tracking-wide text-primary">3-2-1 voting</h4>
         <Button
           size="sm"
           variant={showNew ? "outline" : "secondary"}
@@ -113,8 +110,7 @@ export function VotingManager({
         />
       ) : sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
-          No voting seasons configured. Add a season to let captains vote 3-2-1
-          each round.
+          No voting seasons configured. Add a season to let captains vote 3-2-1 each round.
         </p>
       ) : (
         <div className="space-y-3">
@@ -166,10 +162,7 @@ function VotingConfigCard({
 
   const patch = (data: Parameters<typeof update.mutate>[0]["data"]) => {
     setError(null);
-    update.mutate(
-      { id: config.id, data },
-      { onSuccess: onChanged, onError },
-    );
+    update.mutate({ id: config.id, data }, { onSuccess: onChanged, onError });
   };
 
   const toggleGrade = (g: string) => {
@@ -313,10 +306,7 @@ function VotingConfigCard({
             )
               return;
             setError(null);
-            finalise.mutate(
-              { id: config.id },
-              { onSuccess: onChanged, onError },
-            );
+            finalise.mutate({ id: config.id }, { onSuccess: onChanged, onError });
           }}
         >
           {finalise.isPending ? "Finalising…" : finalised ? "Re-finalise" : "Finalise winner(s)"}
@@ -340,11 +330,7 @@ function TallyView({ configId }: { configId: number }) {
       />
     );
   if (!data || data.entries.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground italic">
-        No votes submitted yet.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground italic">No votes submitted yet.</p>;
   }
   const winners = new Set(data.winnerPlayerIds);
   return (
@@ -386,10 +372,7 @@ function BallotsView({ configId, finalised }: { configId: number; finalised: boo
   if (isLoading) return <LoadingState label="Loading ballots…" className="py-4" />;
   if (isError)
     return (
-      <QueryError
-        message="We couldn’t load ballots. Please try again."
-        onRetry={() => refetch()}
-      />
+      <QueryError message="We couldn’t load ballots. Please try again." onRetry={() => refetch()} />
     );
   if (!data || data.length === 0) {
     return <p className="text-sm text-muted-foreground italic">No ballots submitted yet.</p>;
@@ -445,13 +428,7 @@ function BallotsView({ configId, finalised }: { configId: number; finalised: boo
   );
 }
 
-function ClearBallotButton({
-  configId,
-  ballotId,
-}: {
-  configId: number;
-  ballotId: number;
-}) {
+function ClearBallotButton({ configId, ballotId }: { configId: number; ballotId: number }) {
   const queryClient = useQueryClient();
   const remove = useDeleteConfigBallot();
   const confirm = useConfirm();

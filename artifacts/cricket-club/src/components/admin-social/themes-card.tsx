@@ -21,13 +21,7 @@ const DEFAULT_THEME_COLORS = {
   textLight: "#F5F2E8",
 };
 
-export function ThemesCard({
-  themes,
-  onChanged,
-}: {
-  themes: CardTheme[];
-  onChanged: () => void;
-}) {
+export function ThemesCard({ themes, onChanged }: { themes: CardTheme[]; onChanged: () => void }) {
   const confirm = useConfirm();
   const create = useCreateCardTheme({ mutation: { onSuccess: onChanged } });
   const update = useUpdateCardTheme({ mutation: { onSuccess: onChanged } });
@@ -67,7 +61,8 @@ export function ThemesCard({
   const add = () => {
     setError(null);
     if (!name.trim()) return setError("Theme name required.");
-    if (bgUpload.isUploading || logoUpload.isUploading) return setError("Image is still uploading.");
+    if (bgUpload.isUploading || logoUpload.isUploading)
+      return setError("Image is still uploading.");
     create.mutate(
       {
         data: {
@@ -102,7 +97,12 @@ export function ThemesCard({
           <div className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="th-name">Theme name</Label>
-              <Input id="th-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Finals Night" />
+              <Input
+                id="th-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Finals Night"
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               {colorFields.map((f) => (
@@ -130,7 +130,11 @@ export function ThemesCard({
               <Label>Background image (optional)</Label>
               <div className="border border-dashed rounded p-3 flex flex-col items-center gap-2">
                 {bgImageUrl ? (
-                  <img src={bgImageUrl} alt="background" className="max-h-20 object-cover rounded" />
+                  <img
+                    src={bgImageUrl}
+                    alt="background"
+                    className="max-h-20 object-cover rounded"
+                  />
                 ) : (
                   <Upload className="h-6 w-6 text-muted-foreground" />
                 )}
@@ -173,7 +177,11 @@ export function ThemesCard({
               </div>
             </div>
             {error && <div className="text-sm text-destructive">{error}</div>}
-            <Button onClick={add} disabled={create.isPending || bgUpload.isUploading || logoUpload.isUploading} className="w-full">
+            <Button
+              onClick={add}
+              disabled={create.isPending || bgUpload.isUploading || logoUpload.isUploading}
+              className="w-full"
+            >
               Add theme
             </Button>
           </div>
@@ -190,7 +198,11 @@ export function ThemesCard({
               <div key={t.id} className="flex items-center gap-3 border rounded p-2">
                 <div className="flex gap-1">
                   {[t.bgDark, t.bgPanel, t.accent, t.textLight].map((c, i) => (
-                    <span key={i} className="h-8 w-4 rounded-sm border" style={{ backgroundColor: c }} />
+                    <span
+                      key={i}
+                      className="h-8 w-4 rounded-sm border"
+                      style={{ backgroundColor: c }}
+                    />
                   ))}
                 </div>
                 <div className="flex-1 min-w-0">

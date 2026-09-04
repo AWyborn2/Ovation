@@ -1,7 +1,4 @@
-import {
-  OVERRIDE_COLOUR_KEYS,
-  type OverrideColourKey,
-} from "@/lib/theme-tokens";
+import { OVERRIDE_COLOUR_KEYS, type OverrideColourKey } from "@/lib/theme-tokens";
 
 /**
  * Shared descriptors for the branding override editors. Both the club-facing

@@ -64,8 +64,7 @@ function deriveMeta(
 ): { filename: string; sizeCode: string } {
   const opts = (options ?? {}) as { size?: string };
   const size = typeof opts.size === "string" ? opts.size : "square";
-  const sizeCode =
-    size === "portrait" ? "4x5" : size === "story" ? "9x16" : "1x1";
+  const sizeCode = size === "portrait" ? "4x5" : size === "story" ? "9x16" : "1x1";
   const inp = (input ?? {}) as { kind?: string; junior?: boolean };
   const kind = typeof inp.kind === "string" ? inp.kind : "card";
   // The download name carries the tenant's own slug (e.g. "mandurah-junior-…"),
@@ -134,8 +133,7 @@ export function createJob(
         const j = jobs.get(id);
         if (j) {
           j.status = "error";
-          j.error =
-            err instanceof Error ? err.message : "Video render failed";
+          j.error = err instanceof Error ? err.message : "Video render failed";
         }
       }
     });

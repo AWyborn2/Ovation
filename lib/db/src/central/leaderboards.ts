@@ -10,18 +10,9 @@ import {
 import type { PlayerGradeStat } from "../schema";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows } from "./club-matches";
-import {
-  appGradeFromCentral,
-  centralSeasonMatchesStartYear,
-  parseSeasonStartYear,
-} from "./grades";
+import { appGradeFromCentral, centralSeasonMatchesStartYear, parseSeasonStartYear } from "./grades";
 import { isPrivateRow } from "./privacy";
-import {
-  battingInningsKindSql,
-  round2,
-  splitDisplayName,
-  tallyFielding,
-} from "./scoring";
+import { battingInningsKindSql, round2, splitDisplayName, tallyFielding } from "./scoring";
 import { inList } from "./where";
 
 /**
@@ -75,9 +66,8 @@ export async function centralGradeLeaderboard(
   },
 ): Promise<PlayerGradeStat[]> {
   const clubId = opts.clubId;
-  return withCentralCache(
-    cacheKey("centralGradeLeaderboard", [appGrade, clubId, opts]),
-    () => centralGradeLeaderboardImpl(appGrade, clubId, opts),
+  return withCentralCache(cacheKey("centralGradeLeaderboard", [appGrade, clubId, opts]), () =>
+    centralGradeLeaderboardImpl(appGrade, clubId, opts),
   );
 }
 
@@ -220,9 +210,7 @@ async function centralGradeLeaderboardImpl(
     const isPrivate = isPrivateRow(r);
     const name = isPrivate
       ? { givenName: "Private", surname: "Player" }
-      : splitDisplayName(
-          opts.nameByGuid?.get(participantId) ?? r.displayName ?? participantId,
-        );
+      : splitDisplayName(opts.nameByGuid?.get(participantId) ?? r.displayName ?? participantId);
     const dismissals = innings - notOuts;
     const resolvedPlayerId = opts.intByGuid?.get(participantId) ?? 0;
     const fld = fieldingByPid.get(participantId);
@@ -241,8 +229,7 @@ async function centralGradeLeaderboardImpl(
       notOuts,
       runs,
       batAvg: dismissals > 0 ? round2(runs / dismissals) : null,
-      highScore:
-        innings === 0 ? null : `${highScore}${highScoreNotOut ? "*" : ""}`,
+      highScore: innings === 0 ? null : `${highScore}${highScoreNotOut ? "*" : ""}`,
       fifties: Number(r.fifties),
       hundreds: Number(r.hundreds),
       wickets: null,
@@ -289,9 +276,8 @@ export async function centralAllTimeLeaders(
   metric: "runs" | "wickets",
   appGrade?: string,
 ): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
-  return withCentralCache(
-    cacheKey("centralAllTimeLeaders", [clubId, metric, appGrade]),
-    () => centralLeadersImpl(clubId, metric, { appGrade }),
+  return withCentralCache(cacheKey("centralAllTimeLeaders", [clubId, metric, appGrade]), () =>
+    centralLeadersImpl(clubId, metric, { appGrade }),
   );
 }
 
@@ -302,13 +288,8 @@ async function centralLeadersImpl(
 ): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows
-    .filter(
-      (m) =>
-        opts.season === undefined || parseSeasonStartYear(m.season) === opts.season,
-    )
-    .filter(
-      (m) => opts.appGrade === undefined || appGradeFromCentral(m.grade) === opts.appGrade,
-    )
+    .filter((m) => opts.season === undefined || parseSeasonStartYear(m.season) === opts.season)
+    .filter((m) => opts.appGrade === undefined || appGradeFromCentral(m.grade) === opts.appGrade)
     .map((m) => m.matchId);
   if (matchIds.length === 0) return [];
 
@@ -345,9 +326,7 @@ async function centralLeadersImpl(
           .orderBy(desc(sql`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`))
           .limit(25);
 
-  const ids = agg
-    .map((a) => a.participantId)
-    .filter((p): p is string => Boolean(p));
+  const ids = agg.map((a) => a.participantId).filter((p): p is string => Boolean(p));
   if (ids.length === 0) return [];
   const players = await centralDb
     .select({
@@ -402,9 +381,8 @@ export async function centralClubTotalsBySeason(
   clubId: number,
   season: number,
 ): Promise<CentralClubSeasonGradeLeaders[]> {
-  return withCentralCache(
-    cacheKey("centralClubTotalsBySeason", [clubId, season]),
-    () => centralClubTotalsBySeasonImpl(clubId, season),
+  return withCentralCache(cacheKey("centralClubTotalsBySeason", [clubId, season]), () =>
+    centralClubTotalsBySeasonImpl(clubId, season),
   );
 }
 

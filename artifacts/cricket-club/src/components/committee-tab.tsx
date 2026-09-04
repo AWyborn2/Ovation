@@ -76,8 +76,8 @@ export function CommitteeTab() {
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
-          Season-by-season record of the people who have led {brand.name}.
-          Grade captains are listed on each grade's page.
+          Season-by-season record of the people who have led {brand.name}. Grade captains are listed
+          on each grade's page.
         </p>
       </div>
 
@@ -99,8 +99,7 @@ export function CommitteeTab() {
               <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
                 <span>{formatSeason(g.season)}</span>
                 <span className="text-xs whitespace-nowrap">
-                  {g.roles.length}{" "}
-                  {g.roles.length === 1 ? "office bearer" : "office bearers"}
+                  {g.roles.length} {g.roles.length === 1 ? "office bearer" : "office bearers"}
                 </span>
               </div>
               <div className="p-4 md:p-6">

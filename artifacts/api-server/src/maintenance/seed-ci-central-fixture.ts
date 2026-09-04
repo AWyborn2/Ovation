@@ -37,10 +37,46 @@ function assertLocal(name: string): void {
 }
 
 const CLUBS = [
-  { id: 1, name: "Halls Head Cricket Club", short: "HHCC", colour: "#00305c", from: "1991/92", to: null, parent: null, role: null },
-  { id: 2, name: "Mandurah Cricket Club", short: "MCC", colour: "#1b5e20", from: "2002/03", to: null, parent: null, role: null },
-  { id: 3, name: "Pinjarra Cricket Club", short: "PCC", colour: "#b71c1c", from: "2002/03", to: null, parent: null, role: null },
-  { id: 4, name: "Peel Districts (folded)", short: "PDCC", colour: "#4a148c", from: "2002/03", to: "2010/11", parent: 2, role: "folded_into" },
+  {
+    id: 1,
+    name: "Halls Head Cricket Club",
+    short: "HHCC",
+    colour: "#00305c",
+    from: "1991/92",
+    to: null,
+    parent: null,
+    role: null,
+  },
+  {
+    id: 2,
+    name: "Mandurah Cricket Club",
+    short: "MCC",
+    colour: "#1b5e20",
+    from: "2002/03",
+    to: null,
+    parent: null,
+    role: null,
+  },
+  {
+    id: 3,
+    name: "Pinjarra Cricket Club",
+    short: "PCC",
+    colour: "#b71c1c",
+    from: "2002/03",
+    to: null,
+    parent: null,
+    role: null,
+  },
+  {
+    id: 4,
+    name: "Peel Districts (folded)",
+    short: "PDCC",
+    colour: "#4a148c",
+    from: "2002/03",
+    to: "2010/11",
+    parent: 2,
+    role: "folded_into",
+  },
 ];
 
 const PLAYERS = [
@@ -53,9 +89,36 @@ const PLAYERS = [
 ];
 
 const MATCHES = [
-  { id: 1001, round: "1", home: 1, away: 2, homeScore: "8/180", awayScore: "10/150", winner: 1, date: "2024-10-12" },
-  { id: 1002, round: "2", home: 2, away: 3, homeScore: "10/120", awayScore: "6/121", winner: 3, date: "2024-10-19" },
-  { id: 1003, round: "3", home: 3, away: 1, homeScore: "9/200", awayScore: "10/190", winner: 3, date: "2024-10-26" },
+  {
+    id: 1001,
+    round: "1",
+    home: 1,
+    away: 2,
+    homeScore: "8/180",
+    awayScore: "10/150",
+    winner: 1,
+    date: "2024-10-12",
+  },
+  {
+    id: 1002,
+    round: "2",
+    home: 2,
+    away: 3,
+    homeScore: "10/120",
+    awayScore: "6/121",
+    winner: 3,
+    date: "2024-10-19",
+  },
+  {
+    id: 1003,
+    round: "3",
+    home: 3,
+    away: 1,
+    homeScore: "9/200",
+    awayScore: "10/190",
+    winner: 3,
+    date: "2024-10-26",
+  },
 ];
 
 async function main(): Promise<void> {
@@ -93,7 +156,10 @@ async function main(): Promise<void> {
         ${`${CLUBS.find((c) => c.id === m.winner)!.name} won`})
     `);
 
-    for (const [innings, clubId] of [[1, m.home], [2, m.away]] as const) {
+    for (const [innings, clubId] of [
+      [1, m.home],
+      [2, m.away],
+    ] as const) {
       const side = PLAYERS.filter((p) => p.club === clubId);
       const teamName = CLUBS.find((c) => c.id === clubId)!.name;
       for (const [i, p] of side.entries()) {

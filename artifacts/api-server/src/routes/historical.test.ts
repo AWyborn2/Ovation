@@ -73,9 +73,7 @@ describe("historical records routes (integration)", () => {
       expect(Array.isArray(res.body.records)).toBe(true);
       expect(Array.isArray(res.body.fiftyPlus)).toBe(true);
 
-      const mine = res.body.records.filter(
-        (r: { grade: string }) => r.grade === PARTNERSHIP_GRADE,
-      );
+      const mine = res.body.records.filter((r: { grade: string }) => r.grade === PARTNERSHIP_GRADE);
       expect(mine).toHaveLength(3);
       expect(mine[0]).toMatchObject({
         id: expect.any(Number),
@@ -90,9 +88,7 @@ describe("historical records routes (integration)", () => {
 
     it("orders records by runs DESC then id ASC within a grade", async () => {
       const res = await request(app).get("/api/partnerships");
-      const mine = res.body.records.filter(
-        (r: { grade: string }) => r.grade === PARTNERSHIP_GRADE,
-      );
+      const mine = res.body.records.filter((r: { grade: string }) => r.grade === PARTNERSHIP_GRADE);
       // 200 (High A) before 200 (High B) before 100 (Low Stand): runs DESC, id ASC tie-break.
       expect(mine.map((r: { batsmen: string }) => r.batsmen)).toEqual([
         "High A",
@@ -124,9 +120,7 @@ describe("historical records routes (integration)", () => {
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
 
-      const mine = res.body.filter(
-        (r: { grade: string }) => r.grade === CENTURY_GRADE,
-      );
+      const mine = res.body.filter((r: { grade: string }) => r.grade === CENTURY_GRADE);
       expect(mine).toHaveLength(3);
       expect(mine[0]).toMatchObject({
         id: expect.any(Number),
@@ -140,15 +134,9 @@ describe("historical records routes (integration)", () => {
 
     it("orders by batsman ASC then id ASC within a grade", async () => {
       const res = await request(app).get("/api/centuries");
-      const mine = res.body.filter(
-        (r: { grade: string }) => r.grade === CENTURY_GRADE,
-      );
+      const mine = res.body.filter((r: { grade: string }) => r.grade === CENTURY_GRADE);
       // Alpha before Bravo; the two Alpha rows fall back to id ASC.
-      expect(mine.map((r: { batsman: string }) => r.batsman)).toEqual([
-        "Alpha",
-        "Alpha",
-        "Bravo",
-      ]);
+      expect(mine.map((r: { batsman: string }) => r.batsman)).toEqual(["Alpha", "Alpha", "Bravo"]);
       const alphas = mine.filter((r: { batsman: string }) => r.batsman === "Alpha");
       expect(alphas[0].id).toBeLessThan(alphas[1].id);
     });
@@ -176,11 +164,7 @@ describe("historical records routes (integration)", () => {
       const res = await request(app).get("/api/five-wicket-hauls");
       const mine = res.body.filter((r: { grade: string }) => r.grade === HAUL_GRADE);
       // Xray before Yankee; the two Xray rows fall back to id ASC.
-      expect(mine.map((r: { bowler: string }) => r.bowler)).toEqual([
-        "Xray",
-        "Xray",
-        "Yankee",
-      ]);
+      expect(mine.map((r: { bowler: string }) => r.bowler)).toEqual(["Xray", "Xray", "Yankee"]);
       const xrays = mine.filter((r: { bowler: string }) => r.bowler === "Xray");
       expect(xrays[0].id).toBeLessThan(xrays[1].id);
     });

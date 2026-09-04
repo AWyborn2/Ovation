@@ -79,8 +79,8 @@ function ClubPicker({ onPick }: { onPick: (c: AvailableClub) => void }) {
         ))}
         {clubs.length === 0 ? (
           <li className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No clubs match “{q}”. Only Peel Cricket Association clubs are available
-            during the pilot.
+            No clubs match “{q}”. Only Peel Cricket Association clubs are available during the
+            pilot.
           </li>
         ) : null}
       </ul>
@@ -160,9 +160,7 @@ function DetailsForm({
       checkSlugAvailable({ slug: s })
         .then((r) =>
           setSlugState(
-            r.available
-              ? { status: "ok" }
-              : { status: "bad", reason: r.reason ?? "Unavailable" },
+            r.available ? { status: "ok" } : { status: "bad", reason: r.reason ?? "Unavailable" },
           ),
         )
         .catch(() => setSlugState({ status: "idle" }));

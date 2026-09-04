@@ -3,11 +3,7 @@ import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useBrand } from "@/lib/tenant-brand";
-import {
-  useGetMatch,
-  getGetMatchQueryKey,
-  useListPremierships,
-} from "@workspace/api-client-react";
+import { useGetMatch, getGetMatchQueryKey, useListPremierships } from "@workspace/api-client-react";
 
 import { Body, Card, ErrorView, Heading, Loading, styles } from "@/components/ui";
 import { DigitalScorecard } from "@/components/scorecard";
@@ -52,13 +48,21 @@ export default function MatchDetailScreen() {
     <>
       <Stack.Screen options={{ title: (data.opponent ?? "MATCH").toUpperCase() }} />
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Heading size="lg">{brand.shortName} vs {data.opponent ?? "Unknown"}</Heading>
-        <Body muted size={12} style={{ marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
+        <Heading size="lg">
+          {brand.shortName} vs {data.opponent ?? "Unknown"}
+        </Heading>
+        <Body
+          muted
+          size={12}
+          style={{ marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}
+        >
           {data.grade} · {fmtSeason(data.season)}
           {label ? ` · ${label}` : ""}
         </Body>
         {data.competition ? (
-          <Body muted size={11} style={{ marginTop: 2 }}>{data.competition}</Body>
+          <Body muted size={11} style={{ marginTop: 2 }}>
+            {data.competition}
+          </Body>
         ) : null}
 
         {premiership ? (
@@ -87,27 +91,47 @@ export default function MatchDetailScreen() {
         ) : null}
 
         <Card style={{ marginTop: 12 }}>
-          {data.result ? <Body bold size={13}>{data.result}</Body> : null}
-          {(data.clubScore || data.opponentScore) ? (
+          {data.result ? (
+            <Body bold size={13}>
+              {data.result}
+            </Body>
+          ) : null}
+          {data.clubScore || data.opponentScore ? (
             <View style={{ flexDirection: "row", gap: 24, marginTop: data.result ? 10 : 0 }}>
               {data.clubScore ? (
                 <View>
-                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>{brand.shortName}</Body>
+                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>
+                    {brand.shortName}
+                  </Body>
                   <Heading size="md">{data.clubScore}</Heading>
                 </View>
               ) : null}
               {data.opponentScore ? (
                 <View>
-                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>{data.opponent ?? "Opponent"}</Body>
+                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>
+                    {data.opponent ?? "Opponent"}
+                  </Body>
                   <Heading size="md">{data.opponentScore}</Heading>
                 </View>
               ) : null}
             </View>
           ) : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 10 }}>
-            {fmtDate(data.matchDate) ? <Body muted size={11}>{fmtDate(data.matchDate)}</Body> : null}
-            {data.venue ? <Body muted size={11}>{data.venue}</Body> : null}
-            {data.abandoned ? <Body size={11} bold style={{ color: colors.primary }}>ABANDONED</Body> : null}
+            {fmtDate(data.matchDate) ? (
+              <Body muted size={11}>
+                {fmtDate(data.matchDate)}
+              </Body>
+            ) : null}
+            {data.venue ? (
+              <Body muted size={11}>
+                {data.venue}
+              </Body>
+            ) : null}
+            {data.abandoned ? (
+              <Body size={11} bold style={{ color: colors.primary }}>
+                ABANDONED
+              </Body>
+            ) : null}
           </View>
         </Card>
 

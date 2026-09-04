@@ -1,9 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
-import {
-  RequestUploadUrlBody,
-  RequestUploadUrlResponse,
-} from "@workspace/api-zod";
+import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { requireAdmin } from "../middlewares/require-admin";
 
@@ -22,11 +19,7 @@ const ALLOWED_IMAGE_MIME = new Set([
   "image/gif",
 ]);
 // Animated card-template backgrounds. GIFs go through the image set above.
-const ALLOWED_VIDEO_MIME = new Set([
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-]);
+const ALLOWED_VIDEO_MIME = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 // Background music tracks for animated share-card video clips. Covers the
 // common upload formats browsers emit (some send audio/mp4 or audio/x-m4a for
 // .m4a, and audio/x-wav for .wav).

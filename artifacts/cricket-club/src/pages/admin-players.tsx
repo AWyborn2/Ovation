@@ -155,7 +155,11 @@ export default function AdminPlayers() {
                     )
                   }
                   onDelete={async () => {
-                    if ((p.totalGames ?? 0) > 0 || (p.totalRuns ?? 0) > 0 || (p.totalWickets ?? 0) > 0) {
+                    if (
+                      (p.totalGames ?? 0) > 0 ||
+                      (p.totalRuns ?? 0) > 0 ||
+                      (p.totalWickets ?? 0) > 0
+                    ) {
                       if (
                         !(await confirm({
                           title: "Delete player with stats?",
@@ -175,10 +179,7 @@ export default function AdminPlayers() {
                     )
                       return;
                     setError(null);
-                    deletePlayer.mutate(
-                      { id: p.id },
-                      { onSuccess: invalidate, onError: onErr },
-                    );
+                    deletePlayer.mutate({ id: p.id }, { onSuccess: invalidate, onError: onErr });
                   }}
                   onMerge={() => setMergeFor(p)}
                   onJuniorLink={() => setJuniorLinkFor(p)}
@@ -293,7 +294,9 @@ function PlayerRow({
           <span className="font-medium">
             {player.surname}, {player.givenName}
           </span>
-          {player.deceased && <span className="ml-2 text-xs text-muted-foreground">✝ deceased</span>}
+          {player.deceased && (
+            <span className="ml-2 text-xs text-muted-foreground">✝ deceased</span>
+          )}
           <span className="ml-3 text-xs text-muted-foreground">
             {player.totalGames ?? 0}g · {player.totalRuns ?? 0}r · {player.totalWickets ?? 0}w
           </span>
@@ -470,11 +473,7 @@ function PlayerGallery({ playerId }: { playerId: number }) {
                   img.isDefault ? "border-primary" : "border-transparent"
                 }`}
               >
-                <img
-                  src={img.imageUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+                <img src={img.imageUrl} alt="" className="h-full w-full object-cover" />
                 {img.isDefault && (
                   <span className="absolute left-1 top-1 rounded bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                     Default
@@ -545,21 +544,21 @@ function MergeDialog({
             will be reassigned to the keeper. The duplicate will then be deleted.
           </DialogDescription>
         </DialogHeader>
-          <div className="space-y-1">
-            <Label>Keeper (the player to keep)</Label>
-            <PlayerTypeahead value={keeper} onChange={setKeeper} />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => keeper && onMerge(keeper.id)}
-              disabled={pending || !keeper || keeper.id === duplicate.id}
-            >
-              {pending ? "Merging…" : "Merge"}
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-          </div>
+        <div className="space-y-1">
+          <Label>Keeper (the player to keep)</Label>
+          <PlayerTypeahead value={keeper} onChange={setKeeper} />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => keeper && onMerge(keeper.id)}
+            disabled={pending || !keeper || keeper.id === duplicate.id}
+          >
+            {pending ? "Merging…" : "Merge"}
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

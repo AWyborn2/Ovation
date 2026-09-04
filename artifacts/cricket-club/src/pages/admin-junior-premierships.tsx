@@ -23,16 +23,15 @@ export default function AdminJuniorPremierships() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: getListJuniorPremiershipsQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: getListJuniorPremiershipsQueryKey() });
 
   return (
     <div className="space-y-6">
       <div>
         <p className="text-muted-foreground mt-1">
-          Set the captain and man-of-the-match for each junior premiership. These
-          aren&apos;t in the source data, so they&apos;re added by hand here and
-          shown on the junior premiership plaques.
+          Set the captain and man-of-the-match for each junior premiership. These aren&apos;t in the
+          source data, so they&apos;re added by hand here and shown on the junior premiership
+          plaques.
         </p>
       </div>
 
@@ -91,7 +90,10 @@ export default function AdminJuniorPremierships() {
                   {p.resultText && <div>{p.resultText}</div>}
                   <div>
                     Captain:{" "}
-                    {p.players.filter((pp) => pp.isCaptain).map((pp) => pp.playerName).join(", ") || "—"}
+                    {p.players
+                      .filter((pp) => pp.isCaptain)
+                      .map((pp) => pp.playerName)
+                      .join(", ") || "—"}
                   </div>
                   <div>M.O.M: {p.mom || "—"}</div>
                 </div>

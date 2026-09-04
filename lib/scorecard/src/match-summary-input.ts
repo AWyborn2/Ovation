@@ -9,12 +9,7 @@
 import { buildScorecard } from "./mapping";
 import { buildJuniorScorecard } from "./junior-mapping";
 import { DEFAULT_BRAND, type ClubBrand } from "./brand";
-import type {
-  Scorecard,
-  ScorecardTeam,
-  ScorecardBatsman,
-  ScorecardBowler,
-} from "./types";
+import type { Scorecard, ScorecardTeam, ScorecardBatsman, ScorecardBowler } from "./types";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import type {
   MatchSummaryTeam,
@@ -81,18 +76,14 @@ export function topBatters(
 }
 
 /** Best bowlers by wickets, then by fewest runs conceded. */
-export function topBowlers(
-  bowlers: ScorecardBowler[],
-  excludeName?: string,
-): MatchSummaryBowler[] {
+export function topBowlers(bowlers: ScorecardBowler[], excludeName?: string): MatchSummaryBowler[] {
   return [...bowlers]
     .filter((b) => !excludeName || b.name !== excludeName)
     .filter((b) => (b.wickets ?? 0) > 0 || !!b.overs)
     .sort(
       (a, b) =>
         (b.wickets ?? 0) - (a.wickets ?? 0) ||
-        (a.runs ?? Number.MAX_SAFE_INTEGER) -
-          (b.runs ?? Number.MAX_SAFE_INTEGER),
+        (a.runs ?? Number.MAX_SAFE_INTEGER) - (b.runs ?? Number.MAX_SAFE_INTEGER),
     )
     .slice(0, 3)
     .map((b) => ({
@@ -104,9 +95,7 @@ export function topBowlers(
 }
 
 /** Winner from the club-perspective result text, defaulting to a draw. */
-export function deriveWinner(
-  result: string | null | undefined,
-): "club" | "opposition" | "draw" {
+export function deriveWinner(result: string | null | undefined): "club" | "opposition" | "draw" {
   const r = (result ?? "").toLowerCase();
   if (/\bwon\b|\bwin\b|\bvictor/.test(r)) return "club";
   if (/\blost\b|\bloss\b|\bdefeat/.test(r)) return "opposition";
@@ -159,19 +148,13 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
     };
   }
 
-  const clubTeam = first.battingTeam.isHallsHead
-    ? first.battingTeam
-    : first.bowlingTeam;
-  const oppTeam = first.battingTeam.isHallsHead
-    ? first.bowlingTeam
-    : first.battingTeam;
+  const clubTeam = first.battingTeam.isHallsHead ? first.battingTeam : first.bowlingTeam;
+  const oppTeam = first.battingTeam.isHallsHead ? first.bowlingTeam : first.battingTeam;
 
   const innings: MatchSummaryInnings[] = sc.innings
     .filter((inn) => inn.totalRuns != null || inn.batsmen.length > 0)
     .map((inn, i) => ({
-      teamKey: inn.battingTeam.isHallsHead
-        ? ("club" as const)
-        : ("opposition" as const),
+      teamKey: inn.battingTeam.isHallsHead ? ("club" as const) : ("opposition" as const),
       inningsNum: (i + 1) as 1 | 2,
       totalRuns: String(inn.totalRuns ?? 0),
       wickets: String(inn.wickets ?? 0),
@@ -180,11 +163,7 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
       topBowlers: topBowlers(inn.bowlers),
     }));
 
-  const roundLabel = match.stage
-    ? match.stage
-    : match.round != null
-      ? `Round ${match.round}`
-      : "";
+  const roundLabel = match.stage ? match.stage : match.round != null ? `Round ${match.round}` : "";
   const matchTitle = [match.grade, roundLabel].filter(Boolean).join(" • ");
 
   return {
@@ -193,9 +172,7 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
     matchType: match.competition ?? seasonLabel(match.season),
     date: match.matchDate ? formatMatchDate(match.matchDate) : null,
     venue: match.venue ?? null,
-    result: match.abandoned
-      ? "Match abandoned"
-      : (match.result ?? "Result unavailable"),
+    result: match.abandoned ? "Match abandoned" : (match.result ?? "Result unavailable"),
     resultWinner: match.abandoned ? "draw" : deriveWinner(match.result),
     club: toTeam(clubTeam),
     opposition: toTeam(oppTeam),
@@ -277,19 +254,12 @@ export function juniorMatchToSummaryInput(
       // only fall back to "0" when there's truly no data of any kind.
       const battingRecorded = inn.batsmen.length > 0;
       const totalRuns =
-        inn.totalRuns ??
-        (battingRecorded
-          ? inn.batsmen.reduce((s, b) => s + (b.runs ?? 0), 0)
-          : 0);
+        inn.totalRuns ?? (battingRecorded ? inn.batsmen.reduce((s, b) => s + (b.runs ?? 0), 0) : 0);
       const wickets =
         inn.wickets ??
-        (battingRecorded
-          ? inn.batsmen.filter((b) => !b.notOut && b.dismissal).length
-          : 0);
+        (battingRecorded ? inn.batsmen.filter((b) => !b.notOut && b.dismissal).length : 0);
       return {
-        teamKey: inn.battingTeam.isHallsHead
-          ? ("club" as const)
-          : ("opposition" as const),
+        teamKey: inn.battingTeam.isHallsHead ? ("club" as const) : ("opposition" as const),
         inningsNum: (i + 1) as 1 | 2,
         totalRuns: String(totalRuns),
         wickets: String(wickets),
@@ -299,13 +269,10 @@ export function juniorMatchToSummaryInput(
       };
     });
 
-  const matchTitle =
-    [match.ageGroup, match.round].filter(Boolean).join(" • ") ||
-    "Junior Match";
+  const matchTitle = [match.ageGroup, match.round].filter(Boolean).join(" • ") || "Junior Match";
 
   const isNoResult =
-    !match.innings.length ||
-    /no result|not recorded|abandon/i.test(match.status ?? "");
+    !match.innings.length || /no result|not recorded|abandon/i.test(match.status ?? "");
 
   return {
     kind: "matchSummary",

@@ -20,6 +20,7 @@ only ever minted for Halls Head. Central tenants are provisioned without it, so
 `intByGuid.get(participantId)` always misses.
 
 **Proposed fix**
+
 - On tenant provisioning, enumerate the club's central participants
   (`centralClubParticipants(clubId)` already exists in `central-queries.ts`) and
   insert one `player_id_map` row per GUID with a freshly minted tenant-local int.
@@ -27,6 +28,7 @@ only ever minted for Halls Head. Central tenants are provisioned without it, so
 - Re-verify: central leaderboard rows now carry non-zero `playerId`.
 
 **Acceptance**
+
 - WK + Mandurah leaderboard rows have real `playerId`s; player pages load.
 
 ---
@@ -42,6 +44,7 @@ is only "Initial Surname".
 
 **Investigation needed (before fixing)**
 Query the central DB for WK's club id:
+
 ```sql
 -- one row per participant for this club, with innings + best score
 select participant_id, display_name, count(*) innings, max(runs) hs
@@ -50,13 +53,16 @@ where club_id = <wk_central_club_id>
 group by participant_id, display_name
 order by innings desc;
 ```
+
 Determine which case applies:
+
 - (a) one `participant_id` has 214 innings → **source data merges people** (data
   quality; needs curation/splitting, partly upstream).
 - (b) several `participant_id`s share "M Brown" → app can keep them separate
   (correct) OR is collapsing them somewhere (find + fix the name-keying).
 
 **Proposed fix** (depends on outcome)
+
 - If many GUIDs → one person: de-dupe via `player_id_map` (several GUIDs → one int).
 - If one GUID → many people: flag as upstream data issue; consider a curation
   table keyed on the (now-built) `player_id_map` id.
@@ -74,6 +80,7 @@ WK page header shows the Halls Head logo, although `/tenant-brand` reports WK ha
 a `logoUrl` set.
 
 **Investigation**
+
 - Check WK's `tenants.logo_url` value (does it point at a HH asset?).
 - Check the brand resolver's fallback path (`tenant-brand.ts` / `halls-head-brand`
   lineage) — does it substitute the HH logo when the tenant asset is
@@ -96,6 +103,7 @@ omitted (no clean central source). After deploying PR #7, those cards disappear
 for central tenants.
 
 **Decision needed**
+
 - Accept centuries + 5-fers only? (simplest, all real data) — or
 - Invest in deriving career crossings from central running totals (possible but
   heavier; debuts need a cap concept central lacks; hat-tricks aren't in central).

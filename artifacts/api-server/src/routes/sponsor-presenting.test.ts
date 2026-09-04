@@ -4,11 +4,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 // module — which throws without DATABASE_URL — is never loaded. This keeps the
 // suite a pure, DB-free schema/contract round-trip.
 import { sponsorsTable } from "@workspace/db/schema";
-import {
-  CreateSponsorBody,
-  UpdateSponsorBody,
-  ListSponsorsResponseItem,
-} from "@workspace/api-zod";
+import { CreateSponsorBody, UpdateSponsorBody, ListSponsorsResponseItem } from "@workspace/api-zod";
 
 /**
  * A7 — presenting-sponsor designation: schema + OpenAPI contract round-trip.
@@ -31,9 +27,7 @@ describe("A7 sponsors.is_presenting — schema + contract round-trip", () => {
   });
 
   it("enforces at most one presenting sponsor per tenant via a partial unique index", () => {
-    const idx = config.indexes.find(
-      (i) => i.config.name === "sponsors_one_presenting_per_tenant",
-    );
+    const idx = config.indexes.find((i) => i.config.name === "sponsors_one_presenting_per_tenant");
     expect(idx, "partial unique index present").toBeTruthy();
     expect(idx?.config.unique).toBe(true);
     // Scoped to tenant_id, partial on is_presenting.

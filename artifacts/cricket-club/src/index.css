@@ -100,9 +100,9 @@
   --destructive-foreground: 0 0% 100%;
   --destructive-border: 6 78% 40%;
 
-  --app-font-sans: 'IBM Plex Sans', sans-serif;
-  --app-font-serif: 'Bricolage Grotesque', sans-serif;
-  --app-font-mono: 'IBM Plex Mono', monospace;
+  --app-font-sans: "IBM Plex Sans", sans-serif;
+  --app-font-serif: "Bricolage Grotesque", sans-serif;
+  --app-font-mono: "IBM Plex Mono", monospace;
   --radius: 0.5rem;
 
   /* Juniors section banner accent. Default = neutral slate; BrandProvider
@@ -173,7 +173,12 @@
   /* Design-system headings: Bricolage Grotesque 700-800, sentence case, in
      foreground ink — the accent is reserved for numbers, CTAs and live states,
      and uppercase for small pills/labels only. */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-serif font-bold tracking-tight text-foreground;
   }
 }

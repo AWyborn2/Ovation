@@ -22,12 +22,48 @@ import { navIcon } from "@/lib/nav-icons";
 import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 const SENIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
-  { label: "Honour Boards", target: "/honour-boards", isExternal: false, iconKey: "scrollText", description: "Premierships, life members, awards and records." },
-  { label: "Players", target: "/players", isExternal: false, iconKey: "users", description: "Searchable directory of every club player." },
-  { label: "Matches", target: "/matches", isExternal: false, iconKey: "clipboardList", description: "Game-by-game results and full scorecards." },
-  { label: "Grades", target: "/grades", isExternal: false, iconKey: "trophy", description: "Per-grade leaderboards and summaries." },
-  { label: "Records", target: "/records", isExternal: false, iconKey: "award", description: "All-time club records and milestones." },
-  { label: "Premierships", target: "/premierships", isExternal: false, iconKey: "crown", description: "Premiership honour boards and squads." },
+  {
+    label: "Honour Boards",
+    target: "/honour-boards",
+    isExternal: false,
+    iconKey: "scrollText",
+    description: "Premierships, life members, awards and records.",
+  },
+  {
+    label: "Players",
+    target: "/players",
+    isExternal: false,
+    iconKey: "users",
+    description: "Searchable directory of every club player.",
+  },
+  {
+    label: "Matches",
+    target: "/matches",
+    isExternal: false,
+    iconKey: "clipboardList",
+    description: "Game-by-game results and full scorecards.",
+  },
+  {
+    label: "Grades",
+    target: "/grades",
+    isExternal: false,
+    iconKey: "trophy",
+    description: "Per-grade leaderboards and summaries.",
+  },
+  {
+    label: "Records",
+    target: "/records",
+    isExternal: false,
+    iconKey: "award",
+    description: "All-time club records and milestones.",
+  },
+  {
+    label: "Premierships",
+    target: "/premierships",
+    isExternal: false,
+    iconKey: "crown",
+    description: "Premiership honour boards and squads.",
+  },
 ];
 
 const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
@@ -55,12 +91,16 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
   const inner = (
     <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
       {Icon && <Icon className="h-7 w-7 text-primary mb-3" />}
-      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">{item.label}</div>
+      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
+        {item.label}
+      </div>
       {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
     </div>
   );
   return item.isExternal ? (
-    <a href={item.target} target="_blank" rel="noopener noreferrer">{inner}</a>
+    <a href={item.target} target="_blank" rel="noopener noreferrer">
+      {inner}
+    </a>
   ) : (
     <Link href={item.target}>{inner}</Link>
   );
@@ -107,12 +147,11 @@ function RecentMatchCard({ m }: { m: MatchSummary }) {
         </div>
         {(m.clubScore || m.opponentScore) && (
           <div className="text-sm font-mono text-foreground/90">
-            {m.clubScore ?? "—"} <span className="text-muted-foreground">vs</span> {m.opponentScore ?? "—"}
+            {m.clubScore ?? "—"} <span className="text-muted-foreground">vs</span>{" "}
+            {m.opponentScore ?? "—"}
           </div>
         )}
-        {m.result && (
-          <div className="text-sm text-foreground/80 leading-snug">{m.result}</div>
-        )}
+        {m.result && <div className="text-sm text-foreground/80 leading-snug">{m.result}</div>}
         <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {fmtDate(m.matchDate) && (
             <span className="inline-flex items-center gap-1">
@@ -144,7 +183,9 @@ function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[]
             <li key={p.playerId}>
               <Link href={`/players/${p.playerId}`}>
                 <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
-                  <span className="font-medium">{p.givenName} {p.surname}</span>
+                  <span className="font-medium">
+                    {p.givenName} {p.surname}
+                  </span>
                   <span className="font-mono text-sm">{p.value}</span>
                 </div>
               </Link>
@@ -168,8 +209,7 @@ export default function Home() {
 
   // Top performers drive BOTH the leader lists AND the grade chips: the response
   // carries availableGrades for the resolved season (or all grades, all-time).
-  const seasonParams =
-    season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
+  const seasonParams = season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
   const { data: tp } = useGetSeniorSeasonTopPerformers({
     ...(gradeFilter ? { grade: gradeFilter } : {}),
     ...seasonParams,
@@ -192,7 +232,7 @@ export default function Home() {
   const topWicketTakers = tp?.topWicketTakers ?? [];
 
   // Header label for the resolved season ("All time" when aggregating).
-  const seasonLabel = season === "all" ? "All time" : tp?.seasonLabel ?? null;
+  const seasonLabel = season === "all" ? "All time" : (tp?.seasonLabel ?? null);
   const seasonValue =
     season === "latest"
       ? data?.latestSeason != null
@@ -266,9 +306,7 @@ export default function Home() {
               <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
               <Select
                 value={seasonValue}
-                onValueChange={(v) =>
-                  setSeason(v === "all" ? "all" : Number(v))
-                }
+                onValueChange={(v) => setSeason(v === "all" ? "all" : Number(v))}
               >
                 <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
                   <SelectValue placeholder="Season" />

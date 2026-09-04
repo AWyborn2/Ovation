@@ -9,10 +9,7 @@
  * and cannot cycle.
  */
 import { DEFAULT_BRAND } from "@workspace/scorecard";
-import {
-  resolvePhotoField,
-  type TemplateContext,
-} from "./card-template";
+import { resolvePhotoField, type TemplateContext } from "./card-template";
 
 import {
   type AnimationHandle,
@@ -91,7 +88,22 @@ export const prepareAnimation = async (
       durationMs,
       loop: true,
       draw: (ctx, t) =>
-        drawTemplateFrame(ctx, W, H, scale, input, template, opts, p, bg, photoImg, logos, motion, t, speed),
+        drawTemplateFrame(
+          ctx,
+          W,
+          H,
+          scale,
+          input,
+          template,
+          opts,
+          p,
+          bg,
+          photoImg,
+          logos,
+          motion,
+          t,
+          speed,
+        ),
       cleanup: () => {
         const v = bg?.video;
         if (v) {
@@ -108,7 +120,11 @@ export const prepareAnimation = async (
 
   // Built-in still card (motion "none" or no real layers): render once, draw flat.
   if (motion === "none") {
-    const stillBlob = await renderShareCard(input, { ...opts, template: null, motionPreset: "none" });
+    const stillBlob = await renderShareCard(input, {
+      ...opts,
+      template: null,
+      motionPreset: "none",
+    });
     const bmp = await createImageBitmap(stillBlob);
     return {
       width: W,
@@ -300,8 +316,7 @@ const prepareClipAudio = async (spec: CardAudioSpec): Promise<ClipAudio | null> 
   try {
     const AudioCtx =
       window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return null;
     const res = await fetch(spec.url);
     if (!res.ok) return null;
@@ -498,4 +513,3 @@ export const renderShareCardGif = async (
   const blob = new Blob([bytes as BlobPart], { type: "image/gif" });
   return { blob, ext: "gif" };
 };
-

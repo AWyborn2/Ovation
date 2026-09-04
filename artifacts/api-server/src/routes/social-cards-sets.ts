@@ -69,36 +69,41 @@ router.get("/card-sets", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
-router.post("/card-sets", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const body = CreateCardSetBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const isPublished = body.data.isPublished ?? false;
-  if (
-    isPublished &&
-    (body.data.slides.length < CARD_SET_MIN_SLIDES ||
-      body.data.slides.length > CARD_SET_MAX_SLIDES)
-  ) {
-    res.status(400).json({
-      error: `A published carousel must have between ${CARD_SET_MIN_SLIDES} and ${CARD_SET_MAX_SLIDES} slides`,
-    });
-    return;
-  }
-  const [row] = await db
-    .insert(cardSetsTable)
-    .values({
-      tenantId: getTenantId(req),
-      name: body.data.name,
-      platformSize: body.data.platformSize,
-      slides: body.data.slides as unknown as CardSetSlide[],
-      isPublished,
-      updatedAt: new Date(),
-    })
-    .returning();
-  res.status(201).json(row);
-});
+router.post(
+  "/card-sets",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const body = CreateCardSetBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const isPublished = body.data.isPublished ?? false;
+    if (
+      isPublished &&
+      (body.data.slides.length < CARD_SET_MIN_SLIDES ||
+        body.data.slides.length > CARD_SET_MAX_SLIDES)
+    ) {
+      res.status(400).json({
+        error: `A published carousel must have between ${CARD_SET_MIN_SLIDES} and ${CARD_SET_MAX_SLIDES} slides`,
+      });
+      return;
+    }
+    const [row] = await db
+      .insert(cardSetsTable)
+      .values({
+        tenantId: getTenantId(req),
+        name: body.data.name,
+        platformSize: body.data.platformSize,
+        slides: body.data.slides as unknown as CardSetSlide[],
+        isPublished,
+        updatedAt: new Date(),
+      })
+      .returning();
+    res.status(201).json(row);
+  },
+);
 
 // Batch-assemble a carousel from a group of same-kind cards, server-side, and
 // UPSERT one set keyed on the grouping columns so regeneration updates the same
@@ -133,16 +138,13 @@ router.post(
       // round" action operates on.
       if (round == null || season == null || !grades || grades.length !== 1) {
         res.status(400).json({
-          error:
-            "matchSummary generation requires round, season and exactly one grade",
+          error: "matchSummary generation requires round, season and exactly one grade",
         });
         return;
       }
       const grade = grades[0];
       const ids = await listRoundMatchIds(req, { grade, season, round });
-      const details = await Promise.all(
-        ids.map((id) => loadMatchDetailForRequest(req, id)),
-      );
+      const details = await Promise.all(ids.map((id) => loadMatchDetailForRequest(req, id)));
       inputs = details
         .filter((d): d is NonNullable<typeof d> => d != null)
         // `detail as MatchDetail` mirrors match-summary-drafter.ts — the loaded
@@ -157,9 +159,7 @@ router.post(
       // names a subset). Category isn't in the body contract — default to Runs,
       // matching the editor's default. Grouping columns stay null (spans grades).
       const gradeList = grades && grades.length ? grades : [...GENERATE_GRADES];
-      const boards = await Promise.all(
-        gradeList.map((g) => loadGradeLeaderboard(req, g)),
-      );
+      const boards = await Promise.all(gradeList.map((g) => loadGradeLeaderboard(req, g)));
       gradeList.forEach((g, i) => {
         const top = topLeaderRow(boards[i] ?? [], "Runs");
         if (top) inputs.push(gradeLeaderInput(top, g, "Runs"));
@@ -348,61 +348,75 @@ router.post(
   },
 );
 
-router.put("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = UpdateCardSetParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const body = UpdateCardSetBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
-  }
-  const isPublished = body.data.isPublished ?? false;
-  if (
-    isPublished &&
-    (body.data.slides.length < CARD_SET_MIN_SLIDES ||
-      body.data.slides.length > CARD_SET_MAX_SLIDES)
-  ) {
-    res.status(400).json({
-      error: `A published carousel must have between ${CARD_SET_MIN_SLIDES} and ${CARD_SET_MAX_SLIDES} slides`,
-    });
-    return;
-  }
-  const [row] = await db
-    .update(cardSetsTable)
-    .set({
-      name: body.data.name,
-      platformSize: body.data.platformSize,
-      slides: body.data.slides as unknown as CardSetSlide[],
-      isPublished,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(cardSetsTable.id, params.data.id), eq(cardSetsTable.tenantId, getTenantId(req))))
-    .returning();
-  if (!row) {
-    res.status(404).json({ error: "Card set not found" });
-    return;
-  }
-  res.json(row);
-});
+router.put(
+  "/card-sets/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = UpdateCardSetParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = UpdateCardSetBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const isPublished = body.data.isPublished ?? false;
+    if (
+      isPublished &&
+      (body.data.slides.length < CARD_SET_MIN_SLIDES ||
+        body.data.slides.length > CARD_SET_MAX_SLIDES)
+    ) {
+      res.status(400).json({
+        error: `A published carousel must have between ${CARD_SET_MIN_SLIDES} and ${CARD_SET_MAX_SLIDES} slides`,
+      });
+      return;
+    }
+    const [row] = await db
+      .update(cardSetsTable)
+      .set({
+        name: body.data.name,
+        platformSize: body.data.platformSize,
+        slides: body.data.slides as unknown as CardSetSlide[],
+        isPublished,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(cardSetsTable.id, params.data.id), eq(cardSetsTable.tenantId, getTenantId(req))),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Card set not found" });
+      return;
+    }
+    res.json(row);
+  },
+);
 
-router.delete("/card-sets/:id", requireAdmin, requireEntitlement("socialStudio"), async (req, res): Promise<void> => {
-  const params = DeleteCardSetParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const result = await db
-    .delete(cardSetsTable)
-    .where(and(eq(cardSetsTable.id, params.data.id), eq(cardSetsTable.tenantId, getTenantId(req))))
-    .returning({ id: cardSetsTable.id });
-  if (result.length === 0) {
-    res.status(404).json({ error: "Card set not found" });
-    return;
-  }
-  res.status(204).end();
-});
+router.delete(
+  "/card-sets/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = DeleteCardSetParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const result = await db
+      .delete(cardSetsTable)
+      .where(
+        and(eq(cardSetsTable.id, params.data.id), eq(cardSetsTable.tenantId, getTenantId(req))),
+      )
+      .returning({ id: cardSetsTable.id });
+    if (result.length === 0) {
+      res.status(404).json({ error: "Card set not found" });
+      return;
+    }
+    res.status(204).end();
+  },
+);
 
 export default router;

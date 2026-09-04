@@ -40,11 +40,7 @@ export function FileIdentityResolver({
   resolution: FileResolutionEntry | undefined;
   onChange: (r: FileResolutionEntry) => void;
 }) {
-  const roundVal = resolution
-    ? resolution.round
-    : parsedRound != null
-      ? String(parsedRound)
-      : "";
+  const roundVal = resolution ? resolution.round : parsedRound != null ? String(parsedRound) : "";
   const stageVal = resolution ? resolution.stage : (parsedStage ?? "");
   return (
     <div className="flex items-center gap-1">
@@ -99,9 +95,7 @@ export function BatchStatusBadge({ status }: { status: string }) {
   };
   const ok = status === "ready" || status === "abandoned";
   const warn =
-    status === "needsResolution" ||
-    status === "duplicate" ||
-    status === "duplicateInBatch";
+    status === "needsResolution" || status === "duplicate" || status === "duplicateInBatch";
   const cls = ok
     ? "bg-green-600/15 text-green-700 dark:text-green-400"
     : warn
@@ -176,9 +170,7 @@ export function PlayerResolutionRow({
           </div>
         ) : resolution?.action === "create" && status === "new" ? (
           <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <span className="text-sm text-blue-700 dark:text-blue-400">
-              will create new player
-            </span>
+            <span className="text-sm text-blue-700 dark:text-blue-400">will create new player</span>
             <div className="w-full sm:w-72">
               <PlayerTypeahead
                 value={null}
@@ -234,15 +226,8 @@ export function PlayerResolutionRow({
         )}
         {resolution?.action === "create" && status === "suggested" && (
           <div className="mt-1 flex items-center gap-2 sm:justify-end">
-            <span className="text-sm text-blue-700 dark:text-blue-400">
-              will create new player
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onChange(undefined)}
-            >
+            <span className="text-sm text-blue-700 dark:text-blue-400">will create new player</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange(undefined)}>
               Change
             </Button>
           </div>

@@ -18,8 +18,7 @@ describe("season batch import — upload/preview (integration)", () => {
   const holderIds: number[] = [];
 
   beforeAll(async () => {
-    process.env.SESSION_SECRET =
-      process.env.SESSION_SECRET ?? "test-secret-for-batch-flow";
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-batch-flow";
     const [admin] = await db
       .insert(adminsTable)
       .values({
@@ -70,9 +69,8 @@ describe("season batch import — upload/preview (integration)", () => {
 
     // Players are de-duplicated across the batch (one row per unique name).
     const keys = new Set(
-      res.body.players.map(
-        (p: { surname: string; givenName: string }) =>
-          `${p.surname}|${p.givenName}`.toLowerCase(),
+      res.body.players.map((p: { surname: string; givenName: string }) =>
+        `${p.surname}|${p.givenName}`.toLowerCase(),
       ),
     );
     expect(keys.size).toBe(res.body.players.length);
@@ -128,15 +126,10 @@ describe("season batch import — upload/preview (integration)", () => {
     expect(res.status).toBe(200);
     const id = res.body.importId as number;
 
-    const del = await request(app)
-      .delete(`/api/imports/${id}`)
-      .set("Cookie", adminCookie);
+    const del = await request(app).delete(`/api/imports/${id}`).set("Cookie", adminCookie);
     expect(del.status).toBe(204);
 
-    const rows = await db
-      .select()
-      .from(importsTable)
-      .where(eq(importsTable.id, id));
+    const rows = await db.select().from(importsTable).where(eq(importsTable.id, id));
     expect(rows).toHaveLength(0);
   });
 });

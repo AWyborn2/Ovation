@@ -70,13 +70,7 @@ function defaultSeasonYear(): number {
 type Apply = (patch: CardFormState) => void;
 
 /** Dispatch to the right prefill panel for a kind, or nothing when form-only. */
-export function PrefillPanel({
-  kind,
-  onApply,
-}: {
-  kind: CardKind;
-  onApply: Apply;
-}) {
+export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }) {
   const source = DESCRIPTORS[kind].prefill;
   if (source === "match") return <MatchPrefillPanel kind={kind} onApply={onApply} />;
   if (source === "fixture") return <FixturePrefillPanel kind={kind} onApply={onApply} />;
@@ -146,17 +140,36 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
       }
     >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <SelectField label="Grade" value={grade} onChange={(v) => { setGrade(v); setSeason(null); setMatchId(null); }}>
-          {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+        <SelectField
+          label="Grade"
+          value={grade}
+          onChange={(v) => {
+            setGrade(v);
+            setSeason(null);
+            setMatchId(null);
+          }}
+        >
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
         </SelectField>
         <SelectField
           label="Season"
           value={effectiveSeason == null ? "" : String(effectiveSeason)}
           disabled={seasons.length === 0}
-          onChange={(v) => { setSeason(v ? Number(v) : null); setMatchId(null); }}
+          onChange={(v) => {
+            setSeason(v ? Number(v) : null);
+            setMatchId(null);
+          }}
         >
           {seasons.length === 0 && <option value="">No matches</option>}
-          {seasons.map((s) => <option key={s} value={s}>{seasonLabel(s)}</option>)}
+          {seasons.map((s) => (
+            <option key={s} value={s}>
+              {seasonLabel(s)}
+            </option>
+          ))}
         </SelectField>
         <SelectField
           label="Match"
@@ -165,7 +178,11 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
           onChange={(v) => setMatchId(v ? Number(v) : null)}
         >
           <option value="">{filtered.length === 0 ? "No matches" : "Select a match…"}</option>
-          {filtered.map((m) => <option key={m.id} value={m.id}>{matchLabel(m)}</option>)}
+          {filtered.map((m) => (
+            <option key={m.id} value={m.id}>
+              {matchLabel(m)}
+            </option>
+          ))}
         </SelectField>
       </div>
       <ApplyButton onClick={apply} disabled={disabled} loading={needsDetail && detailQ.isLoading} />
@@ -215,9 +232,20 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
       }
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <SelectField label="Grade" value={grade} onChange={(v) => { setGrade(v); setFixtureId(null); }}>
+        <SelectField
+          label="Grade"
+          value={grade}
+          onChange={(v) => {
+            setGrade(v);
+            setFixtureId(null);
+          }}
+        >
           <option value="">All grades</option>
-          {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
         </SelectField>
         <SelectField
           label="Fixture"
@@ -226,7 +254,11 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
           onChange={(v) => setFixtureId(v ? Number(v) : null)}
         >
           <option value="">{fixtures.length === 0 ? "No fixtures" : "Select a fixture…"}</option>
-          {fixtures.map((f) => <option key={f.id} value={f.id}>{label(f)}</option>)}
+          {fixtures.map((f) => (
+            <option key={f.id} value={f.id}>
+              {label(f)}
+            </option>
+          ))}
         </SelectField>
       </div>
       <ApplyButton
@@ -258,7 +290,11 @@ function LadderPrefillPanel({ onApply }: { onApply: Apply }) {
     <PrefillCard title="Prefill from the ladder" hint="Loads the current standings for the grade.">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <SelectField label="Grade" value={grade} onChange={setGrade}>
-          {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
         </SelectField>
         <YearField value={seasonYear} onChange={setSeasonYear} />
       </div>
@@ -285,7 +321,11 @@ function ClubTotalsPrefillPanel({ onApply }: { onApply: Apply }) {
     <PrefillCard title="Prefill club leaders" hint="Loads the top player per grade for the season.">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <YearField value={seasonYear} onChange={setSeasonYear} />
-        <SelectField label="Category" value={category} onChange={(v) => setCategory(v as "Runs" | "Wickets")}>
+        <SelectField
+          label="Category"
+          value={category}
+          onChange={(v) => setCategory(v as "Runs" | "Wickets")}
+        >
           <option value="Runs">Runs</option>
           <option value="Wickets">Wickets</option>
         </SelectField>

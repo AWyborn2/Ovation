@@ -31,9 +31,7 @@ function groupBySeason(winners: AwardWinner[]): SeasonGroup[] {
   return [...bySeason.entries()]
     .map(([season, ws]) => ({
       season,
-      winners: [...ws].sort(
-        (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-      ),
+      winners: [...ws].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id),
     }))
     .sort((a, b) => b.season - a.season);
 }
@@ -267,9 +265,7 @@ export default function AwardsScreen() {
   const boardByAward = new Map<number, PointsLeaderboard>();
   for (const b of boards ?? []) boardByAward.set(b.awardId, b);
 
-  const sorted = [...(awards ?? [])].sort(
-    (a, b) => a.displayOrder - b.displayOrder || a.id - b.id,
-  );
+  const sorted = [...(awards ?? [])].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
   return (
     <>

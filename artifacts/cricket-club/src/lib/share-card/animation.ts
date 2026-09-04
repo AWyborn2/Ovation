@@ -35,8 +35,7 @@ export const applyCountUp = (text: string, frac: number): string =>
 // The effective motion preset: an explicit option wins, else the template's own
 // preset, else "none".
 export const effectiveMotion = (opts: RenderOptions): MotionPreset =>
-  opts.motionPreset ??
-  ((opts.template?.motionPreset as MotionPreset | undefined) || "none");
+  opts.motionPreset ?? ((opts.template?.motionPreset as MotionPreset | undefined) || "none");
 
 // A card is animated when it has a moving background (video/GIF) or a motion
 // preset other than "none".
@@ -71,8 +70,7 @@ export const clampDuration = (ms: number): number =>
   Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, Math.round(ms)));
 
 // Clamp the animation speed multiplier into its safe band (default 1).
-const clampSpeed = (s: number): number =>
-  Math.max(MIN_SPEED, Math.min(MAX_SPEED, s));
+const clampSpeed = (s: number): number => Math.max(MIN_SPEED, Math.min(MAX_SPEED, s));
 
 // The effective clip length for a card: an explicit admin override wins (clamped),
 // else a video template's own background duration, else the default.
@@ -85,6 +83,4 @@ export const effectiveDuration = (opts: RenderOptions): number => {
 
 // The effective animation speed for a card (clamped; default 1).
 export const effectiveSpeed = (opts: RenderOptions): number =>
-  typeof opts.speed === "number" && Number.isFinite(opts.speed)
-    ? clampSpeed(opts.speed)
-    : 1;
+  typeof opts.speed === "number" && Number.isFinite(opts.speed) ? clampSpeed(opts.speed) : 1;

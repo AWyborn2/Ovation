@@ -79,10 +79,7 @@ export function LiveIndicator({
 }) {
   return (
     <StatusPill tone="live" className={className}>
-      <span
-        aria-hidden
-        className="h-1.5 w-1.5 rounded-full bg-[hsl(153_56%_52%)] animate-pulse"
-      />
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[hsl(153_56%_52%)] animate-pulse" />
       {children}
     </StatusPill>
   );

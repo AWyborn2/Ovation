@@ -43,9 +43,9 @@ export function BackfillControls({
               onChange={() => setReconcileMode("peel")}
             />
             <span>
-              <strong>Peel</strong> — subtract this season from the baseline so career
-              totals stay exactly the same. Use when the all-time figures already include
-              this season and you&rsquo;re just itemising it.
+              <strong>Peel</strong> — subtract this season from the baseline so career totals stay
+              exactly the same. Use when the all-time figures already include this season and
+              you&rsquo;re just itemising it.
             </span>
           </label>
           <label className="flex items-start gap-2">
@@ -57,15 +57,14 @@ export function BackfillControls({
               onChange={() => setReconcileMode("add")}
             />
             <span>
-              <strong>Add</strong> — add this season on top of existing totals (career
-              totals increase). Use for genuinely missing history.
+              <strong>Add</strong> — add this season on top of existing totals (career totals
+              increase). Use for genuinely missing history.
             </span>
           </label>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Leave off for the current season — totals are added to the running season as
-          normal.
+          Leave off for the current season — totals are added to the running season as normal.
         </p>
       )}
     </div>
@@ -126,8 +125,8 @@ export function NetEffectPanel({
         </p>
       ) : (
         <p>
-          Career totals increase by {seasonGames} game(s), {seasonRuns} run(s) and{" "}
-          {seasonWickets} wicket(s) — added on top of existing figures.
+          Career totals increase by {seasonGames} game(s), {seasonRuns} run(s) and {seasonWickets}{" "}
+          wicket(s) — added on top of existing figures.
         </p>
       )}
       {negatives.length > 0 && (
@@ -136,8 +135,8 @@ export function NetEffectPanel({
             {negatives.length} player(s) would floor at zero
           </p>
           <p className="text-muted-foreground">
-            Their season games exceed what the baseline holds, so a peel would change
-            their career total. Review before applying:
+            Their season games exceed what the baseline holds, so a peel would change their career
+            total. Review before applying:
           </p>
           <ul className="list-disc pl-5">
             {negatives.map((n, i) => (

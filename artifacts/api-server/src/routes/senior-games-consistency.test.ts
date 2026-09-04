@@ -65,124 +65,124 @@ async function careerTotals(playerId: number) {
 
 // Per-grade rows for a player, the source for the leaderboard + detail stats[].
 
-describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("senior career Games / Runs / Wickets are consistent across every surface", () => {
-  it("totalRuns / totalWickets / totalGames match across Directory, Detail and the per-grade Leaderboard", async () => {
-    for (const p of KNOWN) {
-      const career = await careerTotals(p.id);
-      expect(career, `${p.name} should exist`).toBeDefined();
+describe.skipIf(process.env.CI_SKIP_DATA_TESTS)(
+  "senior career Games / Runs / Wickets are consistent across every surface",
+  () => {
+    it("totalRuns / totalWickets / totalGames match across Directory, Detail and the per-grade Leaderboard", async () => {
+      for (const p of KNOWN) {
+        const career = await careerTotals(p.id);
+        expect(career, `${p.name} should exist`).toBeDefined();
 
-      // Directory (GET /players) — search by this player's surname so their
-      // row is guaranteed to be on the page, then locate by numeric id.
-      const surname = p.name.split(" ").slice(-1)[0];
-      const directoryRes = await request(app)
-        .get("/api/players")
-        .query({ search: surname, limit: 200 })
-        .expect(200);
-      const directory = (directoryRes.body as { players: DirectoryPlayer[] }).players;
-      const dirRow = directory.find((r) => r.id === p.id);
-      expect(dirRow, `${p.name} in /players directory`).toBeDefined();
-
-      // Directory career totals equal the DB source of truth.
-      expect(n(dirRow!.totalRuns), `${p.name} directory totalRuns`).toBe(n(career!.totalRuns));
-      expect(n(dirRow!.totalWickets), `${p.name} directory totalWickets`).toBe(
-        n(career!.totalWickets),
-      );
-      expect(n(dirRow!.totalGames), `${p.name} directory totalGames`).toBe(
-        n(career!.totalGames),
-      );
-
-      // Player Detail (GET /players/:id) — career totals + per-grade stats[].
-      const detailRes = await request(app).get(`/api/players/${p.id}`).expect(200);
-      const detail = detailRes.body as PlayerDetail;
-
-      // Detail career totals equal the DB source of truth AND the directory row.
-      expect(n(detail.totalRuns), `${p.name} detail totalRuns`).toBe(n(career!.totalRuns));
-      expect(n(detail.totalWickets), `${p.name} detail totalWickets`).toBe(
-        n(career!.totalWickets),
-      );
-      expect(n(detail.totalGames), `${p.name} detail totalGames`).toBe(n(career!.totalGames));
-      expect(n(detail.totalRuns), `${p.name} directory==detail runs`).toBe(n(dirRow!.totalRuns));
-      expect(n(detail.totalWickets), `${p.name} directory==detail wickets`).toBe(
-        n(dirRow!.totalWickets),
-      );
-
-      // Per-grade stats[] sum to the career total (the core invariant).
-      const sumRuns = detail.stats.reduce((acc, s) => acc + n(s.runs), 0);
-      const sumWickets = detail.stats.reduce((acc, s) => acc + n(s.wickets), 0);
-      const sumGames = detail.stats.reduce((acc, s) => acc + n(s.games), 0);
-      expect(sumRuns, `${p.name} per-grade runs sum to career`).toBe(n(career!.totalRuns));
-      expect(sumWickets, `${p.name} per-grade wickets sum to career`).toBe(
-        n(career!.totalWickets),
-      );
-      expect(sumGames, `${p.name} per-grade games sum to career`).toBe(n(career!.totalGames));
-
-      // Per-grade Leaderboard rows match the detail stats[] for the same grade.
-      for (const s of detail.stats) {
-        const lbRes = await request(app)
-          .get(`/api/grades/${encodeURIComponent(s.grade)}/leaderboard`)
+        // Directory (GET /players) — search by this player's surname so their
+        // row is guaranteed to be on the page, then locate by numeric id.
+        const surname = p.name.split(" ").slice(-1)[0];
+        const directoryRes = await request(app)
+          .get("/api/players")
+          .query({ search: surname, limit: 200 })
           .expect(200);
-        const lb = lbRes.body as GradeStatRow[];
-        const lbRow = lb.find((r) => r.playerId === p.id);
-        expect(lbRow, `${p.name} in ${s.grade} leaderboard`).toBeDefined();
-        expect(n(lbRow!.runs), `${p.name} ${s.grade} leaderboard runs`).toBe(n(s.runs));
-        expect(n(lbRow!.wickets), `${p.name} ${s.grade} leaderboard wickets`).toBe(
-          n(s.wickets),
+        const directory = (directoryRes.body as { players: DirectoryPlayer[] }).players;
+        const dirRow = directory.find((r) => r.id === p.id);
+        expect(dirRow, `${p.name} in /players directory`).toBeDefined();
+
+        // Directory career totals equal the DB source of truth.
+        expect(n(dirRow!.totalRuns), `${p.name} directory totalRuns`).toBe(n(career!.totalRuns));
+        expect(n(dirRow!.totalWickets), `${p.name} directory totalWickets`).toBe(
+          n(career!.totalWickets),
         );
-        expect(n(lbRow!.games), `${p.name} ${s.grade} leaderboard games`).toBe(n(s.games));
+        expect(n(dirRow!.totalGames), `${p.name} directory totalGames`).toBe(n(career!.totalGames));
+
+        // Player Detail (GET /players/:id) — career totals + per-grade stats[].
+        const detailRes = await request(app).get(`/api/players/${p.id}`).expect(200);
+        const detail = detailRes.body as PlayerDetail;
+
+        // Detail career totals equal the DB source of truth AND the directory row.
+        expect(n(detail.totalRuns), `${p.name} detail totalRuns`).toBe(n(career!.totalRuns));
+        expect(n(detail.totalWickets), `${p.name} detail totalWickets`).toBe(
+          n(career!.totalWickets),
+        );
+        expect(n(detail.totalGames), `${p.name} detail totalGames`).toBe(n(career!.totalGames));
+        expect(n(detail.totalRuns), `${p.name} directory==detail runs`).toBe(n(dirRow!.totalRuns));
+        expect(n(detail.totalWickets), `${p.name} directory==detail wickets`).toBe(
+          n(dirRow!.totalWickets),
+        );
+
+        // Per-grade stats[] sum to the career total (the core invariant).
+        const sumRuns = detail.stats.reduce((acc, s) => acc + n(s.runs), 0);
+        const sumWickets = detail.stats.reduce((acc, s) => acc + n(s.wickets), 0);
+        const sumGames = detail.stats.reduce((acc, s) => acc + n(s.games), 0);
+        expect(sumRuns, `${p.name} per-grade runs sum to career`).toBe(n(career!.totalRuns));
+        expect(sumWickets, `${p.name} per-grade wickets sum to career`).toBe(
+          n(career!.totalWickets),
+        );
+        expect(sumGames, `${p.name} per-grade games sum to career`).toBe(n(career!.totalGames));
+
+        // Per-grade Leaderboard rows match the detail stats[] for the same grade.
+        for (const s of detail.stats) {
+          const lbRes = await request(app)
+            .get(`/api/grades/${encodeURIComponent(s.grade)}/leaderboard`)
+            .expect(200);
+          const lb = lbRes.body as GradeStatRow[];
+          const lbRow = lb.find((r) => r.playerId === p.id);
+          expect(lbRow, `${p.name} in ${s.grade} leaderboard`).toBeDefined();
+          expect(n(lbRow!.runs), `${p.name} ${s.grade} leaderboard runs`).toBe(n(s.runs));
+          expect(n(lbRow!.wickets), `${p.name} ${s.grade} leaderboard wickets`).toBe(n(s.wickets));
+          expect(n(lbRow!.games), `${p.name} ${s.grade} leaderboard games`).toBe(n(s.games));
+        }
       }
-    }
-  });
+    });
 
-  it("club-wide: every senior's per-grade runs/wickets/games sum to their career total", async () => {
-    // Whole-of-club invariant rather than a handful of names: aggregate the
-    // per-grade table and compare to the career totals for every real player
-    // (fill-ins / cap-only excluded). Catches any single player whose snapshot
-    // recompute drifted from their stored career figure.
-    const FILL_IN_FLOOR = 90000;
-    const players = await db
-      .select({
-        id: playersTable.id,
-        totalGames: playersTable.totalGames,
-        totalRuns: playersTable.totalRuns,
-        totalWickets: playersTable.totalWickets,
-      })
-      .from(playersTable)
-      .where(
-        and(
-          lt(playersTable.id, FILL_IN_FLOOR),
-          eq(playersTable.isFillIn, false),
-          eq(playersTable.isCapOnly, false),
-        ),
-      );
+    it("club-wide: every senior's per-grade runs/wickets/games sum to their career total", async () => {
+      // Whole-of-club invariant rather than a handful of names: aggregate the
+      // per-grade table and compare to the career totals for every real player
+      // (fill-ins / cap-only excluded). Catches any single player whose snapshot
+      // recompute drifted from their stored career figure.
+      const FILL_IN_FLOOR = 90000;
+      const players = await db
+        .select({
+          id: playersTable.id,
+          totalGames: playersTable.totalGames,
+          totalRuns: playersTable.totalRuns,
+          totalWickets: playersTable.totalWickets,
+        })
+        .from(playersTable)
+        .where(
+          and(
+            lt(playersTable.id, FILL_IN_FLOOR),
+            eq(playersTable.isFillIn, false),
+            eq(playersTable.isCapOnly, false),
+          ),
+        );
 
-    const allGradeRows = await db
-      .select({
-        playerId: playerGradeStatsTable.playerId,
-        games: playerGradeStatsTable.games,
-        runs: playerGradeStatsTable.runs,
-        wickets: playerGradeStatsTable.wickets,
-      })
-      .from(playerGradeStatsTable);
+      const allGradeRows = await db
+        .select({
+          playerId: playerGradeStatsTable.playerId,
+          games: playerGradeStatsTable.games,
+          runs: playerGradeStatsTable.runs,
+          wickets: playerGradeStatsTable.wickets,
+        })
+        .from(playerGradeStatsTable);
 
-    const sums = new Map<number, { games: number; runs: number; wickets: number }>();
-    for (const r of allGradeRows) {
-      const cur = sums.get(r.playerId) ?? { games: 0, runs: 0, wickets: 0 };
-      cur.games += n(r.games);
-      cur.runs += n(r.runs);
-      cur.wickets += n(r.wickets);
-      sums.set(r.playerId, cur);
-    }
+      const sums = new Map<number, { games: number; runs: number; wickets: number }>();
+      for (const r of allGradeRows) {
+        const cur = sums.get(r.playerId) ?? { games: 0, runs: 0, wickets: 0 };
+        cur.games += n(r.games);
+        cur.runs += n(r.runs);
+        cur.wickets += n(r.wickets);
+        sums.set(r.playerId, cur);
+      }
 
-    const mismatches: string[] = [];
-    for (const p of players) {
-      const s = sums.get(p.id) ?? { games: 0, runs: 0, wickets: 0 };
-      if (s.runs !== n(p.totalRuns)) mismatches.push(`#${p.id} runs ${s.runs}!=${n(p.totalRuns)}`);
-      if (s.wickets !== n(p.totalWickets))
-        mismatches.push(`#${p.id} wickets ${s.wickets}!=${n(p.totalWickets)}`);
-      if (s.games !== n(p.totalGames))
-        mismatches.push(`#${p.id} games ${s.games}!=${n(p.totalGames)}`);
-    }
+      const mismatches: string[] = [];
+      for (const p of players) {
+        const s = sums.get(p.id) ?? { games: 0, runs: 0, wickets: 0 };
+        if (s.runs !== n(p.totalRuns))
+          mismatches.push(`#${p.id} runs ${s.runs}!=${n(p.totalRuns)}`);
+        if (s.wickets !== n(p.totalWickets))
+          mismatches.push(`#${p.id} wickets ${s.wickets}!=${n(p.totalWickets)}`);
+        if (s.games !== n(p.totalGames))
+          mismatches.push(`#${p.id} games ${s.games}!=${n(p.totalGames)}`);
+      }
 
-    expect(mismatches, mismatches.slice(0, 20).join("; ")).toHaveLength(0);
-  });
-});
+      expect(mismatches, mismatches.slice(0, 20).join("; ")).toHaveLength(0);
+    });
+  },
+);

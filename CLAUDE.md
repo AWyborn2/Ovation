@@ -52,7 +52,8 @@ Source of truth: `PCA Database/PCA app database/pca_full.db` (SQLite) and
 `pca_full_postgres.sql` (load this into Supabase/Postgres as schema `central`). Scope: 24
 seasons 2002/03–2025/26, 11,604 matches, ~218k batting / ~129k bowling rows, 27 clubs,
 170 premiers. A trimmed `pca_pilot.db` / `pca_pilot_postgres.sql` also exists. Builder scripts
-+ review CSVs sit beside them (`Scripts/`, `Review/`).
+
+- review CSVs sit beside them (`Scripts/`, `Review/`).
 
 Tables: `clubs` (lineage: `parent_club_id`, `lineage_role`, `active_from/to`), `players`
 (PlayHQ `participant_id` GUID PK, `display_name`, `is_private`, `current_club_id`), `matches`
@@ -73,16 +74,16 @@ own tables for tenant-curated content only.
 
 ### PCA → app concept mapping
 
-| App concept | Today | Central-read replacement |
-|---|---|---|
-| `matches` (per-club) | `hhcc_batted_first`, `opponent_club_id`, `source_key` | `central.matches` where `home_club_id = :club OR away_club_id = :club`; batted-first from innings order |
-| `match_player_lines` | club players only | `central.match_batting/bowling/rosters` where `club_id = :club` |
-| `match_opposition_lines` | display-only text | other side of the same central match — now real data, same tables |
-| `players` + career aggregates | per-club rows, ints | `central.players` (GUID `participant_id`) + career views filtered to club; respect `is_private` |
-| `player_grade_season_stats` snapshots | CSV/xlsx imports | derived from central scorecards; import pipeline becomes legacy/fallback |
-| `clubs` register (branding) | loaded from master DB | `central.clubs` + `club_name_history` / `v_club_combined` (lineage toggle) |
-| Premierships honour board | curated | seed from `central.premiers` (respect `confidence`; curated overrides stay tenant-side) |
-| Hand-kept records, honour boards, life members, awards, ToD, caps, committee, social cards | club tables | stay tenant-side, add `tenant_id` (this is the differentiating asset — never discard) |
+| App concept                                                                                | Today                                                 | Central-read replacement                                                                                |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `matches` (per-club)                                                                       | `hhcc_batted_first`, `opponent_club_id`, `source_key` | `central.matches` where `home_club_id = :club OR away_club_id = :club`; batted-first from innings order |
+| `match_player_lines`                                                                       | club players only                                     | `central.match_batting/bowling/rosters` where `club_id = :club`                                         |
+| `match_opposition_lines`                                                                   | display-only text                                     | other side of the same central match — now real data, same tables                                       |
+| `players` + career aggregates                                                              | per-club rows, ints                                   | `central.players` (GUID `participant_id`) + career views filtered to club; respect `is_private`         |
+| `player_grade_season_stats` snapshots                                                      | CSV/xlsx imports                                      | derived from central scorecards; import pipeline becomes legacy/fallback                                |
+| `clubs` register (branding)                                                                | loaded from master DB                                 | `central.clubs` + `club_name_history` / `v_club_combined` (lineage toggle)                              |
+| Premierships honour board                                                                  | curated                                               | seed from `central.premiers` (respect `confidence`; curated overrides stay tenant-side)                 |
+| Hand-kept records, honour boards, life members, awards, ToD, caps, committee, social cards | club tables                                           | stay tenant-side, add `tenant_id` (this is the differentiating asset — never discard)                   |
 
 Player identity migration: app `players.id` (int) ↔ PlayHQ `participant_id` (GUID). Halls Head
 already links some history by name; build a crosswalk table (`player_id_map`) rather than
@@ -91,12 +92,12 @@ rewriting either side.
 ## Tenancy target
 
 - `tenants` table: `id, slug (subdomain), club_id (→ central.clubs), name, colours, logo,
-  favicon, custom_domain, plan`. Resolve tenant per-request (subdomain → context middleware);
+favicon, custom_domain, plan`. Resolve tenant per-request (subdomain → context middleware);
   thread `tenantId` through every API call.
 - Tenant-scope curated tables with `tenant_id`; enforce with Postgres RLS (Supabase).
 - Per-tenant theming from the tenant row → CSS tokens + `index.html` metadata served dynamically.
 - Auth: per-tenant admins + super-admin; onboarding = "pick your club" → instantly populated.
-- Juniors isolation invariant (junior_* tables, `/api/juniors/*` only, never blended) holds
+- Juniors isolation invariant (junior\__ tables, `/api/juniors/_` only, never blended) holds
   per-tenant.
 
 ## STATUS (29 Jun 2026) — read this first

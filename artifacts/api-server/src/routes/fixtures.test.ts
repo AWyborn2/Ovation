@@ -241,10 +241,7 @@ describe("fixtures + team lists", () => {
     expect(second.body.id).toBe(first.body.id);
     expect(second.body.players[0].displayName).toBe("Second XI");
 
-    const rows = await db
-      .select()
-      .from(teamListsTable)
-      .where(eq(teamListsTable.fixtureId, id));
+    const rows = await db.select().from(teamListsTable).where(eq(teamListsTable.fixtureId, id));
     expect(rows).toHaveLength(1);
   });
 

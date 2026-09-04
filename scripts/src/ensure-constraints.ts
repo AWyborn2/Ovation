@@ -175,11 +175,19 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
   { name: "player_grade_stats_player_idx", table: "player_grade_stats", columns: ["player_id"] },
   { name: "player_grade_stats_grade_idx", table: "player_grade_stats", columns: ["grade"] },
   { name: "pgss_player_idx", table: "player_grade_season_stats", columns: ["player_id"] },
-  { name: "pgss_grade_season_idx", table: "player_grade_season_stats", columns: ["grade", "season"] },
+  {
+    name: "pgss_grade_season_idx",
+    table: "player_grade_season_stats",
+    columns: ["grade", "season"],
+  },
   { name: "matches_grade_season_idx", table: "matches", columns: ["grade", "season"] },
   { name: "matches_match_date_idx", table: "matches", columns: ["match_date"] },
   { name: "cap_register_player_idx", table: "cap_register", columns: ["player_id"] },
-  { name: "premiership_players_premiership_idx", table: "premiership_players", columns: ["premiership_id"] },
+  {
+    name: "premiership_players_premiership_idx",
+    table: "premiership_players",
+    columns: ["premiership_id"],
+  },
   { name: "junior_match_batting_match_idx", table: "junior_match_batting", columns: ["match_id"] },
   { name: "junior_match_bowling_match_idx", table: "junior_match_bowling", columns: ["match_id"] },
   { name: "junior_match_rosters_match_idx", table: "junior_match_rosters", columns: ["match_id"] },
@@ -247,7 +255,8 @@ async function indexExists(name: string): Promise<boolean> {
 async function verify(): Promise<string[]> {
   const missing: string[] = [];
   for (const c of CONSTRAINTS) {
-    if (!(await constraintExists(c.table, c.name, "u"))) missing.push(`unique ${c.table}.${c.name}`);
+    if (!(await constraintExists(c.table, c.name, "u")))
+      missing.push(`unique ${c.table}.${c.name}`);
   }
   for (const c of CHECKS) {
     if (!(await constraintExists(c.table, c.name, "c"))) missing.push(`check ${c.table}.${c.name}`);
@@ -316,9 +325,7 @@ async function apply(): Promise<void> {
 
   for (const ix of INDEXES) {
     const cols = ix.columns.map((col) => `"${col}"`).join(", ");
-    await db.execute(
-      sql.raw(`CREATE INDEX IF NOT EXISTS "${ix.name}" ON "${ix.table}" (${cols})`),
-    );
+    await db.execute(sql.raw(`CREATE INDEX IF NOT EXISTS "${ix.name}" ON "${ix.table}" (${cols})`));
     console.log(`✓ ${ix.name} ensured`);
   }
 }

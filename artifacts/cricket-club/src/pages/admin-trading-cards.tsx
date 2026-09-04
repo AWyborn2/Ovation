@@ -41,9 +41,7 @@ export default function AdminTradingCards() {
           awards={(awardsQ.data ?? [])
             .filter((a) => a.published)
             .map((a) => ({ key: a.key, title: a.title }))}
-          onSaved={() =>
-            qc.invalidateQueries({ queryKey: getGetTradingCardSettingsQueryKey() })
-          }
+          onSaved={() => qc.invalidateQueries({ queryKey: getGetTradingCardSettingsQueryKey() })}
         />
       ) : (
         <QueryError onRetry={() => settingsQ.refetch()} />
@@ -87,24 +85,18 @@ function SettingsCard({
   // Toggle a stat key, preserving the order in which the admin selected them
   // (selection order drives the order tiles appear on the card).
   const toggleStat = (key: string) =>
-    setStatKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
+    setStatKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
   // Toggle a stat key for one role's override list (independent ordered lists).
   const toggleRoleStat = (role: CardRole, key: string) =>
     setStatKeysByRole((prev) => {
       const current = prev[role] ?? [];
-      const next = current.includes(key)
-        ? current.filter((k) => k !== key)
-        : [...current, key];
+      const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
       return { ...prev, [role]: next };
     });
 
   const toggleAward = (key: string) =>
-    setAwardKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
+    setAwardKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
   const save = () => {
     setError(null);
@@ -130,11 +122,7 @@ function SettingsCard({
             Selected stats appear on every card in the order you pick them. Leave all unticked to
             use the automatic per-role default selection.
           </p>
-          <StatPicker
-            selected={statKeys}
-            onToggle={toggleStat}
-            testIdPrefix="stat"
-          />
+          <StatPicker selected={statKeys} onToggle={toggleStat} testIdPrefix="stat" />
         </div>
 
         {/* Per-role stat overrides */}
@@ -236,15 +224,9 @@ function StatPicker({
             }`}
             data-testid={`${testIdPrefix}-${stat.key}`}
           >
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => onToggle(stat.key)}
-            />
+            <input type="checkbox" checked={isSelected} onChange={() => onToggle(stat.key)} />
             <span className="font-medium text-sm flex-1">{stat.label}</span>
-            {isSelected && (
-              <span className="text-xs font-bold text-primary">{order + 1}</span>
-            )}
+            {isSelected && <span className="text-xs font-bold text-primary">{order + 1}</span>}
           </label>
         );
       })}
