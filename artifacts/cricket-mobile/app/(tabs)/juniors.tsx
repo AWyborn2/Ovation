@@ -6,7 +6,7 @@ import { useGetJuniorsOverview } from "@workspace/api-client-react";
 
 import { Body, Card, Heading, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 import { JUNIOR, fmtJuniorDate } from "@/lib/juniors";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import { navIcon } from "@/lib/nav-icons";
@@ -168,6 +168,7 @@ function LeaderList({
 
 export default function JuniorsOverviewScreen() {
   const colors = useColors();
+  const brand = useBrand();
   const { data, isLoading } = useGetJuniorsOverview();
   const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
 
@@ -201,7 +202,7 @@ export default function JuniorsOverviewScreen() {
         </Heading>
         <Body muted size={13} style={{ marginTop: 4 }}>
           Match results, scorecards, premierships and player stats for{" "}
-          {BRAND.possessive} junior grades.
+          {brand.possessive} junior grades.
         </Body>
       </View>
 

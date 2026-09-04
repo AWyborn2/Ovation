@@ -1,6 +1,6 @@
 kind = "mobile"
 previewPath = "/cricket-mobile/"
-title = "HHCC Mobile"
+title = "Ovation Mobile"
 version = "1.0.0"
 id = "artifacts/cricket-mobile"
 router = "expo-domain"

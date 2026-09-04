@@ -2,7 +2,7 @@ import React from "react";
 import { ScrollView, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 import {
   useGetJuniorMatch,
   getGetJuniorMatchQueryKey,
@@ -42,6 +42,7 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 export default function JuniorMatchDetailScreen() {
   const colors = useColors();
+  const brand = useBrand();
   const { id } = useLocalSearchParams<{ id: string }>();
   const matchId = Number(id);
   const { data: match, isLoading, isError } = useGetJuniorMatch(matchId, {
@@ -64,7 +65,7 @@ export default function JuniorMatchDetailScreen() {
         </View>
 
         <Heading size="lg" style={{ marginTop: 12 }}>
-          {BRAND.shortName} vs {match.opponentName ?? "Unknown"}
+          {brand.shortName} vs {match.opponentName ?? "Unknown"}
         </Heading>
         <Body
           muted

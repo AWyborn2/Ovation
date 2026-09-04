@@ -2,7 +2,7 @@ import React from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 import {
   useGetMatch,
   getGetMatchQueryKey,
@@ -30,6 +30,7 @@ const matchLabel = (round: number | null | undefined, stage: string | null | und
 
 export default function MatchDetailScreen() {
   const colors = useColors();
+  const brand = useBrand();
   const { id } = useLocalSearchParams<{ id: string }>();
   const matchId = Number(id);
   const { data, isLoading, isError } = useGetMatch(matchId, {
@@ -51,7 +52,7 @@ export default function MatchDetailScreen() {
     <>
       <Stack.Screen options={{ title: (data.opponent ?? "MATCH").toUpperCase() }} />
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Heading size="lg">{BRAND.shortName} vs {data.opponent ?? "Unknown"}</Heading>
+        <Heading size="lg">{brand.shortName} vs {data.opponent ?? "Unknown"}</Heading>
         <Body muted size={12} style={{ marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
           {data.grade} · {fmtSeason(data.season)}
           {label ? ` · ${label}` : ""}
@@ -91,7 +92,7 @@ export default function MatchDetailScreen() {
             <View style={{ flexDirection: "row", gap: 24, marginTop: data.result ? 10 : 0 }}>
               {data.clubScore ? (
                 <View>
-                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>{BRAND.shortName}</Body>
+                  <Body muted size={10} style={{ letterSpacing: 1, textTransform: "uppercase" }}>{brand.shortName}</Body>
                   <Heading size="md">{data.clubScore}</Heading>
                 </View>
               ) : null}

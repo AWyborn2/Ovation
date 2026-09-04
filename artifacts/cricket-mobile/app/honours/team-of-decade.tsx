@@ -2,7 +2,7 @@ import React from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { BRAND } from "@/constants/brand";
+import { useBrand } from "@/lib/tenant-brand";
 import {
   useListTeamOfDecadeBoards,
   type TeamOfDecadeBoard,
@@ -149,6 +149,7 @@ function BoardCard({ board }: { board: TeamOfDecadeBoard }) {
 
 export default function TeamOfDecadeScreen() {
   const colors = useColors();
+  const brand = useBrand();
   const { data: boards, isLoading } = useListTeamOfDecadeBoards();
 
   const sorted = [...(boards ?? [])].sort(
@@ -164,7 +165,7 @@ export default function TeamOfDecadeScreen() {
       >
         <Heading size="lg">Teams of the Decade</Heading>
         <Body muted size={12} style={{ marginTop: 4, marginBottom: 16 }}>
-          The greatest XIs in {BRAND.name} history — selected to honour the
+          The greatest XIs in {brand.name} history — selected to honour the
           finest players of each era.
         </Body>
 
