@@ -198,14 +198,12 @@ async function main() {
       });
   }
 
-  // eslint-disable-next-line no-console
   console.log(`Seeded ${AWARDS.length} award definition(s).`);
 }
 
 main().then(
   () => process.exit(0),
   (err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exit(1);
   },

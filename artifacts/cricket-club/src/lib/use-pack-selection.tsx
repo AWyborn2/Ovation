@@ -51,7 +51,7 @@ export type PackSelection = {
   /** How many kinds currently render with `packId`, counting unclaimed ones. */
   kindsUsing: (packId: string) => number;
   selectPack: (kind: CardKind, value: string) => Promise<void>;
-  usePackEverywhere: (packId: string) => Promise<void>;
+  applyPackEverywhere: (packId: string) => Promise<void>;
 };
 
 /**
@@ -182,7 +182,7 @@ export function usePackSelection({
       (selectablePacksByKind.get(k) ?? []).includes(packId),
     );
 
-  const usePackEverywhere = async (packId: string) => {
+  const applyPackEverywhere = async (packId: string) => {
     const name = packName(packId);
     const covered = kindsCoveredByPack(packId);
     if (covered.length === 0) return;
@@ -240,6 +240,6 @@ export function usePackSelection({
     clearError: () => setError(null),
     kindsUsing,
     selectPack,
-    usePackEverywhere,
+    applyPackEverywhere,
   };
 }

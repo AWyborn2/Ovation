@@ -19,7 +19,7 @@ Mature pnpm monorepo: React+Vite+Tailwind web (`artifacts/cricket-club`), Expo m
 (`artifacts/cricket-mobile`), Express 5 + Drizzle + Postgres API (`artifacts/api-server`),
 OpenAPI-first (`lib/api-spec/openapi.yaml` → Orval-generated hooks in `lib/api-client-react`
 and Zod in `lib/api-zod`), shared scorecard view-model `lib/scorecard`, schema in
-`lib/db/src/schema/`. 33 schema tables, ~39 route modules, ~55 web pages. Run commands and the
+`lib/db/src/schema/`. 47 schema tables, ~90 route modules, ~66 web pages. Run commands and the
 full data model are in `replit.md`.
 
 ### Where Halls Head is baked in (white-label debt inventory)

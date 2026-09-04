@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import {
   db,
   captainsTable,
@@ -131,7 +131,11 @@ router.patch("/captains/:id", requireAdmin, async (req, res): Promise<void> => {
   let row: CaptainRow | undefined;
   const scoped = and(eq(captainsTable.id, params.data.id), eq(captainsTable.tenantId, tenantId));
   if (Object.keys(patch).length > 0) {
-    [row] = await db.update(captainsTable).set(patch).where(scoped).returning();
+    // A password change invalidates the captain's outstanding sessions.
+    const set = patch.passwordHash
+      ? { ...patch, sessionEpoch: sql`${captainsTable.sessionEpoch} + 1` }
+      : patch;
+    [row] = await db.update(captainsTable).set(set).where(scoped).returning();
   } else {
     [row] = await db.select().from(captainsTable).where(scoped);
   }

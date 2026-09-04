@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { type Feather } from "@expo/vector-icons";
 
 type FeatherName = keyof typeof Feather.glyphMap;
 

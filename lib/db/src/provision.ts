@@ -1,5 +1,12 @@
 import { eq, ilike } from "drizzle-orm";
-import { db } from "./index";
+import { db, type Db } from "./index";
+
+/**
+ * Anything that can run tenant-DB reads and inserts: the shared `db` handle or
+ * a transaction handle from `db.transaction`, so callers can mint atomically
+ * with their own writes.
+ */
+type TenantExecutor = Pick<Db, "select" | "insert">;
 import { tenantsTable, type TenantRow } from "./schema/tenants";
 import { playerIdMapTable } from "./schema/player_id_map";
 import {
@@ -171,22 +178,36 @@ export async function provisionTenant(
     plan: opts.plan ?? "free",
   };
 
-  const [tenant] =
-    mode === "create"
-      ? await db.insert(tenantsTable).values(values).returning()
-      : await db
-          .insert(tenantsTable)
-          .values(values)
-          .onConflictDoUpdate({ target: tenantsTable.slug, set: values })
-          .returning();
+  // A concierge re-run (upsert) refreshes the tenant's IDENTITY from central
+  // but must not clobber branding an admin has since set in the app — the old
+  // `set: values` reset logo, colours, favicon, custom domain and plan to their
+  // provisioning defaults on every re-run.
+  const identityOnly = {
+    centralClubId: values.centralClubId,
+    appClubId: values.appClubId,
+    readsFromCentral: values.readsFromCentral,
+    name: values.name,
+    shortName: values.shortName,
+  };
 
-  // Mint the player identity crosswalk (idempotent) via the shared helper so the
-  // provisioning path and the backfill script (scripts/backfill-player-id-map)
-  // mint identically.
-  const { minted, totalParticipants } = await mintPlayerIdMap(
-    tenant.id,
-    tenant.centralClubId,
-  );
+  // Tenant row + crosswalk mint in ONE transaction: a failure while minting
+  // used to leave a tenant with a partial player_id_map.
+  const { tenant, minted, totalParticipants } = await db.transaction(async (tx) => {
+    const [row] =
+      mode === "create"
+        ? await tx.insert(tenantsTable).values(values).returning()
+        : await tx
+            .insert(tenantsTable)
+            .values(values)
+            .onConflictDoUpdate({ target: tenantsTable.slug, set: identityOnly })
+            .returning();
+
+    // Mint the player identity crosswalk (idempotent) via the shared helper so the
+    // provisioning path and the backfill script (scripts/backfill-player-id-map)
+    // mint identically.
+    const mint = await mintPlayerIdMap(row.id, row.centralClubId, tx);
+    return { tenant: row, ...mint };
+  });
 
   return {
     tenant,
@@ -214,9 +235,11 @@ export interface MintPlayerIdMapResult {
 export async function mintPlayerIdMap(
   tenantId: number,
   centralClubId: number,
+  /** Tenant-DB executor; pass a transaction handle to mint atomically with other writes. */
+  executor: TenantExecutor = db,
 ): Promise<MintPlayerIdMapResult> {
   const participants = await centralClubParticipants(centralClubId);
-  const existing = await db
+  const existing = await executor
     .select({
       participantId: playerIdMapTable.participantId,
       playerId: playerIdMapTable.playerId,
@@ -229,7 +252,7 @@ export async function mintPlayerIdMap(
     .filter((p) => !mappedGuids.has(p.participantId))
     .map((p) => ({ tenantId, participantId: p.participantId, playerId: nextId++ }));
   if (toInsert.length > 0) {
-    await db.insert(playerIdMapTable).values(toInsert);
+    await executor.insert(playerIdMapTable).values(toInsert);
   }
   return { minted: toInsert.length, totalParticipants: participants.length };
 }

@@ -34,6 +34,25 @@ export function getSessionSecret(): string {
 export interface SessionPayload {
   adminId: number;
   issuedAt: number;
+  /**
+   * The admin's `session_epoch` when this token was minted. Absent on tokens
+   * minted before the column existed (treated as 0). See {@link sessionIsCurrent}.
+   */
+  epoch?: number;
+}
+
+/**
+ * Whether a decoded token is still current for its account: the epoch it was
+ * minted under must equal the row's `session_epoch`. Bumping the row's epoch
+ * (password change or reset, "log out everywhere") invalidates every
+ * outstanding token at once — the revocation a stateless HMAC cookie otherwise
+ * lacks.
+ */
+export function sessionIsCurrent(
+  payload: { epoch?: number },
+  row: { sessionEpoch: number },
+): boolean {
+  return (payload.epoch ?? 0) === row.sessionEpoch;
 }
 
 function b64urlEncode(buf: Buffer): string {
@@ -189,6 +208,8 @@ const PLATFORM_COOKIE_NAME = "ovation_platform_session";
 export interface PlatformSessionPayload {
   platformAdminId: number;
   issuedAt: number;
+  /** See {@link SessionPayload.epoch}. */
+  epoch?: number;
 }
 
 export function encodePlatformSession(p: PlatformSessionPayload): string {
@@ -292,6 +313,8 @@ export function hashResetToken(token: string): string {
 export interface CaptainSessionPayload {
   captainId: number;
   issuedAt: number;
+  /** See {@link SessionPayload.epoch}. */
+  epoch?: number;
 }
 
 export function encodeCaptainSession(p: CaptainSessionPayload): string {

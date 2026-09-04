@@ -21,7 +21,6 @@ const TRACK = "0.0103em";
 const PlayerLine = ({ p }: { p: PremiershipPlayer }) => {
   const display = p.name.replace(/\s+/g, " ").trim().toUpperCase();
   const label = p.isCaptain ? `${display} (CAPT)` : display;
-  const baseCls = "block whitespace-nowrap text-slate-900";
   return (
     <li>
       {p.playerId ? (

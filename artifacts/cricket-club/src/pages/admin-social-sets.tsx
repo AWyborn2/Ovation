@@ -63,7 +63,6 @@ import {
   renderShareCard,
   isAnimatedCard,
   downloadBlob,
-  sponsorAppliesToKind,
   type CardSize,
   type ShareCardInput,
   type RenderOptions,

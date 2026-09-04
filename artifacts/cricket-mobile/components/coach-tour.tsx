@@ -62,7 +62,7 @@ export function CoachTour({
   const next = () => (isLast ? finish() : setIndex((i) => i + 1));
   const back = () => setIndex((i) => Math.max(0, i - 1));
 
-  const { width, height } = Dimensions.get("window");
+  const { height } = Dimensions.get("window");
   const target =
     step.tabIndex != null ? tabRect(step.tabIndex, insets.bottom) : null;
 

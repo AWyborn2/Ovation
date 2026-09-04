@@ -64,17 +64,6 @@ async function careerTotals(playerId: number) {
 }
 
 // Per-grade rows for a player, the source for the leaderboard + detail stats[].
-async function gradeRows(playerId: number) {
-  return db
-    .select({
-      grade: playerGradeStatsTable.grade,
-      games: playerGradeStatsTable.games,
-      runs: playerGradeStatsTable.runs,
-      wickets: playerGradeStatsTable.wickets,
-    })
-    .from(playerGradeStatsTable)
-    .where(eq(playerGradeStatsTable.playerId, playerId));
-}
 
 describe.skipIf(process.env.CI_SKIP_DATA_TESTS)("senior career Games / Runs / Wickets are consistent across every surface", () => {
   it("totalRuns / totalWickets / totalGames match across Directory, Detail and the per-grade Leaderboard", async () => {

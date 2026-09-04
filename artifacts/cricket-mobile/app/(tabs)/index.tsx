@@ -23,7 +23,6 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { BRAND } from "@/constants/brand";
 
-const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
 
 const fmtDate = (d: string | null | undefined) => {
   if (!d) return null;

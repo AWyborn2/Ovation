@@ -24,6 +24,13 @@ import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 const STAMP = Date.now();
 const SLUG = `iso-signup-${STAMP}`.slice(0, 40);
 
+// The signup limiter is 5 requests per IP per hour and its in-memory store
+// spans this whole file, so give every signup attempt its own client address
+// (trust proxy is 1, so X-Forwarded-For sets req.ip). The limiter itself is
+// covered by rate-limit.test.ts.
+let ipCounter = 0;
+const uniqueIp = (): string => `10.77.${Math.floor(ipCounter / 250)}.${(ipCounter++ % 250) + 1}`;
+
 describe("platform self-serve signup", () => {
   let createdTenantId: number | null = null;
 
@@ -53,7 +60,7 @@ describe("platform self-serve signup", () => {
     const club = before.body[0];
 
     const signup = await request(app)
-      .post("/api/platform/signup")
+      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: club.centralClubId,
         slug: SLUG,
@@ -108,7 +115,7 @@ describe("platform self-serve signup", () => {
 
   it.skipIf(process.env.CI_SKIP_DATA_TESTS)("rejects re-claiming the same slug (409)", async () => {
     const dup = await request(app)
-      .post("/api/platform/signup")
+      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: 999999, // irrelevant; slug check should fire
         slug: SLUG,
@@ -120,7 +127,7 @@ describe("platform self-serve signup", () => {
 
   it("rejects a reserved slug (400)", async () => {
     const res = await request(app)
-      .post("/api/platform/signup")
+      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: 1,
         slug: "admin",
@@ -152,7 +159,7 @@ describe("platform self-serve signup", () => {
     ).toBe(false);
 
     const signup = await request(app)
-      .post("/api/platform/signup")
+      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: folded.clubId,
         slug: `folded-${STAMP}`,
@@ -185,7 +192,7 @@ describe("platform self-serve signup", () => {
         ).toBe(false);
 
         const signup = await request(app)
-          .post("/api/platform/signup")
+          .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
           .send({
             centralClubId: club.centralClubId,
             slug: `excl-${visibility}-${STAMP}`.slice(0, 40),
@@ -206,7 +213,7 @@ describe("platform self-serve signup", () => {
     const clubs = await request(app).get("/api/platform/available-clubs");
     expect(clubs.status).toBe(403);
     const signup = await request(app)
-      .post("/api/platform/signup")
+      .post("/api/platform/signup").set("x-forwarded-for", uniqueIp())
       .send({
         centralClubId: 1,
         slug: `off-${STAMP}`,

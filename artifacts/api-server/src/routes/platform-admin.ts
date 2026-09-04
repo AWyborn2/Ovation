@@ -221,6 +221,7 @@ router.post(
       encodePlatformSession({
         platformAdminId: admin.id,
         issuedAt: Date.now(),
+        epoch: admin.sessionEpoch,
       }),
       SESSION_COOKIE_OPTS,
     );

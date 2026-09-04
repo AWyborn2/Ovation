@@ -3,9 +3,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  TextStyle,
+  type TextStyle,
   View,
-  ViewStyle,
+  type ViewStyle,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 

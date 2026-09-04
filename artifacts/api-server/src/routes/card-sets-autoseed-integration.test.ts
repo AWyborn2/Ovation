@@ -44,7 +44,7 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
   let adminId: number;
   let importId: number;
   let matchIds: number[] = [];
-  let draftIds: number[] = [];
+  const draftIds: number[] = [];
   let juniorMatchId: number;
   /** Tenant #1's pre-existing autoseed toggle (null = no settings row yet). */
   let previousAutoseed: boolean | null = null;
@@ -60,11 +60,15 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
     importId = imp.id;
 
     // Two senior matches in the same (grade, season, round) → one carousel.
+    // Manual uploads are unique per (grade, season, round, stage) — see
+    // matches_identity_manual_uidx in scripts/src/ensure-constraints.ts — so
+    // two matches in one round can only come from a bulk load, which carries a
+    // source_key. Give these the bulk-load shape.
     const m = await db
       .insert(matchesTable)
       .values([
-        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "Rovers" },
-        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "United" },
+        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "Rovers", sourceKey: `c4-${STAMP}-a` },
+        { importId, grade: TEST_GRADE, season: SEASON, round: ROUND, opponent: "United", sourceKey: `c4-${STAMP}-b` },
       ])
       .returning({ id: matchesTable.id });
     matchIds = m.map((r) => r.id);

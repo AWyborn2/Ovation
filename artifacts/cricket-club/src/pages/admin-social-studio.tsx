@@ -30,7 +30,6 @@ import { PackPreviewTile } from "@/components/social-studio/pack-preview-tile";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
 import {
-  ALL_CARD_KINDS,
   DEFAULT_PACK_NAME,
   THUMB_SIZE,
   kindLabel,

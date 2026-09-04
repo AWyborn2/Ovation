@@ -42,7 +42,6 @@ import {
   Columns3,
   Palette,
   Paintbrush,
-  Image as ImageIcon,
   Upload,
   Pencil,
   Grid3x3,

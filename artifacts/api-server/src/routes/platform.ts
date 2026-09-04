@@ -200,7 +200,7 @@ router.post(
       // new tenant's own subdomain. The cookie is scoped to the shared apex domain
       // (not just this host) because the redirect below sends the browser to the
       // new tenant's own subdomain, a different host from the one setting it.
-      const token = encodeSession({ adminId: admin.id, issuedAt: Date.now() });
+      const token = encodeSession({ adminId: admin.id, issuedAt: Date.now(), epoch: admin.sessionEpoch });
       res.cookie(SESSION_COOKIE, token, signupSessionCookieOpts(req));
 
       // The new tenant's slug must resolve on its subdomain right away (the

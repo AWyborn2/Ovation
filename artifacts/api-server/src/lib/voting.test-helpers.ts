@@ -175,7 +175,7 @@ export async function insertBallot(args: {
   await db.insert(awardBallotsTable).values(args);
 }
 
-export async function getWinners(awardId: number, season: number) {
+export async function getWinners(awardId: number, _season: number) {
   return db
     .select()
     .from(awardWinnersTable)

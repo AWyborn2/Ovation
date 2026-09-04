@@ -4,6 +4,7 @@ import {
   SESSION_COOKIE,
   decodeSession,
   getAdminById,
+  sessionIsCurrent,
 } from "../lib/auth";
 import { getTenantId } from "./tenant-context";
 import { touchTenantActivity } from "../lib/tenant-activity";
@@ -27,6 +28,7 @@ export async function resolveAdmin(req: Request): Promise<AdminRow | null> {
   if (!payload) return null;
   const admin = await getAdminById(payload.adminId);
   if (!admin || admin.tenantId !== getTenantId(req)) return null;
+  if (!sessionIsCurrent(payload, admin)) return null;
   if (await isTenantSuspended(admin.tenantId)) return null;
   return admin;
 }

@@ -38,7 +38,6 @@ const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
 ];
 
 function StatTile({ label, value }: { label: string; value: number | string }) {
-  const colors = useColors();
   return (
     <Card style={{ flex: 1, padding: 12, alignItems: "center" }}>
       <Body

@@ -18,15 +18,20 @@ platform, so the local-vs-central data boundary and tenant isolation are the hig
 
 ```bash
 pnpm run typecheck
+pnpm run lint
+pnpm run test:libs
 pnpm --filter @workspace/cricket-club test
 # API tests need a real Postgres — see README "Test".
 ```
 
+Copy `.env.example` to `.env` for the full list of environment variables.
+
 ## What CI enforces
 
-[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs three jobs on every PR:
-**Typecheck**, **Web smoke tests** (hermetic), and **API integration tests** (against a
-throwaway Postgres service container, with tenant #1 seeded).
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs six jobs on every PR:
+**Typecheck**, **Lint**, **Build**, **Library unit tests**, **Web smoke tests** (all
+hermetic), and **API integration tests** (against a throwaway Postgres service container,
+with tenant #1 and a small `central` schema fixture seeded).
 
 ## Recommended branch protection (repo admin, one-time)
 
@@ -36,6 +41,9 @@ On GitHub: **Settings → Branches → Add branch ruleset** (or classic branch p
 - ✅ **Require a pull request before merging.**
 - ✅ **Require status checks to pass before merging**, and mark these as required:
   - `Typecheck`
+  - `Lint`
+  - `Build`
+  - `Library unit tests`
   - `Web smoke tests`
   - `API integration tests`
 - ✅ **Require branches to be up to date before merging** (so checks run against the merge result).

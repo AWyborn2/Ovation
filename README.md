@@ -81,8 +81,11 @@ Every push to `main` and every pull request runs [`.github/workflows/ci.yml`](./
 | Job | What it does | Needs a DB? |
 |-----|--------------|-------------|
 | **Typecheck** | `pnpm run typecheck` across the monorepo | no |
+| **Lint** | `pnpm run lint` (ESLint flat config, `eslint.config.mjs`) | no |
+| **Build** | api-server bundle + website `vite build` | no |
+| **Library unit tests** | `pnpm run test:libs` — lib/db, lib/scorecard, scripts (databases mocked) | no |
 | **Web smoke tests** | cricket-club page-render tests | no |
-| **API integration tests** | spins up Postgres, applies schema, seeds tenant #1, runs api-server vitest | yes (service container) |
+| **API integration tests** | spins up Postgres, applies schema, seeds tenant #1 and a small `central` fixture, runs api-server vitest | yes (service container) |
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the merge workflow and branch protection.
 

@@ -13,7 +13,6 @@ import { useColors } from "@/hooks/useColors";
 import { JUNIOR, fmtJuniorDate, fmtNum } from "@/lib/juniors";
 
 function Stat({ label, value }: { label: string; value: string | number }) {
-  const colors = useColors();
   return (
     <Card style={{ flex: 1, minWidth: "30%", padding: 10, alignItems: "center" }}>
       <Body

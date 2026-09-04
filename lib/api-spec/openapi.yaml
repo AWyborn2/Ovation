@@ -1340,6 +1340,17 @@ paths:
         "204":
           description: Logged out
 
+  /auth/logout-all:
+    post:
+      operationId: logoutEverywhere
+      tags: [auth]
+      summary: Log out of every device by invalidating all of this admin's sessions
+      responses:
+        "204":
+          description: All sessions revoked and this browser's cookie cleared
+        "401":
+          description: Not authenticated
+
   /auth/me:
     get:
       operationId: getCurrentAdmin

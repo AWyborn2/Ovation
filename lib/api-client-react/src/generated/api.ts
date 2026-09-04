@@ -4386,6 +4386,76 @@ export const useLogout = <TError = ErrorType<unknown>,
       return useMutation(getLogoutMutationOptions(options));
     }
 
+export const getLogoutEverywhereUrl = () => {
+
+
+
+
+  return `/api/auth/logout-all`
+}
+
+/**
+ * @summary Log out of every device by invalidating all of this admin's sessions
+ */
+export const logoutEverywhere = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getLogoutEverywhereUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getLogoutEverywhereMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutEverywhere>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logoutEverywhere>>, TError,void, TContext> => {
+
+const mutationKey = ['logoutEverywhere'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutEverywhere>>, void> = () => {
+
+
+          return  logoutEverywhere(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutEverywhereMutationResult = NonNullable<Awaited<ReturnType<typeof logoutEverywhere>>>
+
+    export type LogoutEverywhereMutationError = ErrorType<void>
+
+    /**
+ * @summary Log out of every device by invalidating all of this admin's sessions
+ */
+export const useLogoutEverywhere = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutEverywhere>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logoutEverywhere>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutEverywhereMutationOptions(options));
+    }
+
 export const getGetCurrentAdminUrl = () => {
 
 

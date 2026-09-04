@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { type useQueryClient } from "@tanstack/react-query";
 import {
   getGetVotingConfigTallyQueryKey,
   getListVotingConfigBallotsQueryKey,

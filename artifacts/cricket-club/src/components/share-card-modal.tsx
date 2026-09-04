@@ -52,7 +52,6 @@ import {
   renderShareCardVideo,
   renderShareCardGif,
   canExportVideo,
-  canExportGif,
   videoFormatLabel,
 } from "@/lib/share-card-animation";
 import {

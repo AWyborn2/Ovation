@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, ne, count } from "drizzle-orm";
+import { and, asc, eq, ne, count, sql } from "drizzle-orm";
 import { db, adminsTable, type AdminRow } from "@workspace/db";
 import {
   CreateAdminBody,
@@ -7,9 +7,9 @@ import {
   UpdateAdminParams,
   DeleteAdminParams,
 } from "@workspace/api-zod";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { hashPassword } from "../lib/auth";
+import { hashPassword, SESSION_COOKIE } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -107,12 +107,32 @@ router.patch("/admins/:id", requireAdmin, async (req, res): Promise<void> => {
       return;
     }
   }
+  // A password change invalidates every outstanding session for that admin
+  // (the token's epoch no longer matches). Renames don't.
+  const set = patch.passwordHash
+    ? { ...patch, sessionEpoch: sql`${adminsTable.sessionEpoch} + 1` }
+    : patch;
   const [row] = await db
     .update(adminsTable)
-    .set(patch)
+    .set(set)
     .where(and(eq(adminsTable.id, params.data.id), eq(adminsTable.tenantId, tenantId)))
     .returning();
   res.json(serialize(row));
+});
+
+/**
+ * "Log out everywhere": bump the signed-in admin's session epoch so every
+ * token minted before now — on any device — stops resolving, then clear this
+ * browser's cookie too.
+ */
+router.post("/auth/logout-all", requireAdmin, async (req, res): Promise<void> => {
+  const admin = (req as RequestWithAdmin).admin!;
+  await db
+    .update(adminsTable)
+    .set({ sessionEpoch: sql`${adminsTable.sessionEpoch} + 1` })
+    .where(eq(adminsTable.id, admin.id));
+  res.clearCookie(SESSION_COOKIE, { path: "/" });
+  res.sendStatus(204);
 });
 
 router.delete("/admins/:id", requireAdmin, async (req, res): Promise<void> => {

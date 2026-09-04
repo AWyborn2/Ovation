@@ -26,6 +26,8 @@ export const captainsTable = pgTable("captains", {
   username: text("username").notNull(),
   displayName: text("display_name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  /** See adminsTable.sessionEpoch. */
+  sessionEpoch: integer("session_epoch").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

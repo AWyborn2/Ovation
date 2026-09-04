@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request } from "express";
+import type { Logger } from "pino";
 import multer from "multer";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
@@ -97,7 +98,7 @@ type MulterArrayRequest = Request & { files?: Express.Multer.File[] };
  * cap-sync.ts) and nothing else records that it happened.
  */
 function logSkippedCapMints(
-  logger: import("pino").Logger,
+  logger: Logger,
   tenantId: number,
   capsSync: CapSyncResult[],
 ): void {
@@ -600,7 +601,7 @@ router.delete("/imports/:id", requireAdmin, adminWriteRateLimiter, async (req, r
 // Per-match .xlsx scorecard import
 // ---------------------------------------------------------------------------
 
-type MatchCommitReq = Request & { log: import("pino").Logger };
+type MatchCommitReq = Request & { log: Logger };
 
 router.post(
   "/imports/match-xlsx",
@@ -616,7 +617,7 @@ router.post(
 
     let parsed: ParsedMatch;
     try {
-      parsed = parseMatchScorecard(file.buffer);
+      parsed = await parseMatchScorecard(file.buffer);
     } catch (e) {
       res.status(400).json({ error: (e as Error).message });
       return;
@@ -810,13 +811,15 @@ router.post(
       return;
     }
 
-    const candidates: BatchCandidate[] = expanded.map((u) => {
-      try {
-        return { filename: u.filename, parsed: parseMatchScorecard(u.buffer), error: null };
-      } catch (e) {
-        return { filename: u.filename, parsed: null, error: (e as Error).message };
-      }
-    });
+    const candidates: BatchCandidate[] = await Promise.all(
+      expanded.map(async (u): Promise<BatchCandidate> => {
+        try {
+          return { filename: u.filename, parsed: await parseMatchScorecard(u.buffer), error: null };
+        } catch (e) {
+          return { filename: u.filename, parsed: null, error: (e as Error).message };
+        }
+      }),
+    );
 
     const classified = await classifyBatchFiles(candidates);
     const committables = classified.filter((c) => c.committable);

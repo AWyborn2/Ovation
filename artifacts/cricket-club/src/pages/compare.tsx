@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useListPlayers, useGetPlayer, getGetPlayerQueryKey } from "@workspace/api-client-react";
-import type { Player, Stat } from "@workspace/api-client-react";
+import type { Stat } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X } from "lucide-react";
@@ -11,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 import { QueryError } from "@/components/data-states";
 
-type Side = "a" | "b";
 
 function PlayerPicker({ value, onChange, label }: { value: number | null; onChange: (id: number | null) => void; label: string }) {
   const [open, setOpen] = useState(false);

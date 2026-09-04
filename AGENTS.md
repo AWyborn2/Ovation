@@ -24,12 +24,11 @@ artifacts/            ← the runnable apps
   cricket-club/       ← React + Vite + Tailwind website (~50k LOC, 58 pages) — the main product
   api-server/         ← Express 5 + Drizzle + Postgres backend (~23k LOC, ~48 route modules)
   cricket-mobile/     ← Expo / React Native phone app (~7.6k LOC)
-  mockup-sandbox/     ← design scratch area — NOT production
 lib/                  ← shared toolkits
   api-spec/           ← openapi.yaml (single 10.4k-line contract, ~215 operations) — SOURCE OF TRUTH for the API
   api-client-react/   ← GENERATED from openapi.yaml (React Query hooks) — do not hand-edit
   api-zod/            ← GENERATED from openapi.yaml (Zod validators) — do not hand-edit
-  db/                 ← Drizzle schema (35 tables) + central DB connection/queries
+  db/                 ← Drizzle schema (47 tables) + central DB connection/queries
   scorecard/          ← shared match→scorecard view-model, used by web AND mobile
   object-storage-web/ ← image/file upload helpers
 scripts/              ← maintenance / data scripts (incl. central-DB compare & seed)
@@ -70,7 +69,8 @@ now reading shared stats from a central association DB filtered per tenant.**
   Curated tables carry tenant ownership via the `tenantIdColumn()` helper
   (`schema/_tenant.ts` — read its comment block; it documents what is tenant-scoped
   now, what is deferred, and why).
-- **Strict TypeScript** (explicit return types, `import type`), functional React +
+- **TypeScript** with most strict flags on (see `tsconfig.base.json`; `strict: true` is a
+  plan.md follow-up), explicit return types, `import type`, ESLint enforced in CI, functional React +
   hooks, Tailwind tokens for theming, Radix UI primitives. Doc-comments explain
   intent — keep that habit.
 - `@workspace/scorecard` is the SINGLE view-model for web + mobile. Don't fork it.
@@ -108,9 +108,14 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 
 ## Known gaps / watch-outs
 
-- **No frontend or mobile tests.** ~58k LOC of UI is unguarded. All 22 test files are
-  backend. A thin smoke-test layer on critical pages is the cheapest win.
-- **No README.** Knowledge is split across CLAUDE.md / replit.md / `.agents/memory/`.
+- **Test coverage is uneven.** ~70 API suites (real Postgres), ~30 web suites (hermetic
+  smoke + logic), lib/db + lib/scorecard + scripts unit suites (mocked), and **no mobile
+  tests**. The `*-consistency.test.ts` and `honour-display-kiosk.test.ts` suites still
+  need the demo club's full history and are skipped in CI (`CI_SKIP_DATA_TESTS`).
+- **CI** (`.github/workflows/ci.yml`): Typecheck, Lint (ESLint flat config at the root),
+  Build (api-server + website), Library unit tests, Web smoke tests, API integration
+  tests. The API job gives its throwaway Postgres an empty `central` schema plus a small
+  fixture (`seed-ci-central-fixture.ts`) — no live central-DB secret is used in CI.
 - **Dormant code rots.** Billing + entitlements are inert in a live server; treat with
   care, they aren't exercised by normal use.
 - **Dual-read boundary (local vs central DB)** is the highest-risk area for *silent*

@@ -6,6 +6,7 @@ import {
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
+import { tenantsTable } from "./tenants";
 
 /**
  * Single-use password-reset / bootstrap tokens for club admins, minted by a
@@ -24,7 +25,9 @@ export const adminPasswordResetsTable = pgTable(
   "admin_password_resets",
   {
     id: serial("id").primaryKey(),
-    tenantId: integer("tenant_id").notNull(),
+    tenantId: integer("tenant_id")
+      .notNull()
+      .references(() => tenantsTable.id),
     adminId: integer("admin_id").notNull(),
     tokenHash: text("token_hash").notNull(),
     // Which platform admin issued this token (audit trail).

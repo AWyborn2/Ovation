@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { PLAYCRICKET_GRADE_MAP } from "./playcricket-csv";
 
 /**
@@ -234,17 +234,65 @@ function parseFielders(dismissal: string): FieldingRef[] {
   return refs;
 }
 
-export function parseMatchScorecard(buffer: Buffer): ParsedMatch {
-  const warnings: string[] = [];
-  const wb = XLSX.read(buffer, { type: "buffer" });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
+/**
+ * Flatten an ExcelJS cell value to the primitive the parser expects. Formula
+ * cells yield their cached result, rich text is joined, dates become ISO
+ * strings, hyperlinks their text, errors null.
+ */
+function cellToPrimitive(value: ExcelJS.CellValue): Cell {
+  if (value == null) return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "object") {
+    if ("richText" in value) return value.richText.map((r) => r.text).join("");
+    if ("formula" in value || "sharedFormula" in value) {
+      const result = (value as ExcelJS.CellFormulaValue).result;
+      return result == null ? null : cellToPrimitive(result as ExcelJS.CellValue);
+    }
+    if ("hyperlink" in value) {
+      const t = (value as ExcelJS.CellHyperlinkValue).text;
+      return typeof t === "string" ? t : cellToPrimitive(t as ExcelJS.CellValue);
+    }
+    if ("error" in value) return null;
+  }
+  return String(value);
+}
+
+/**
+ * Read the first worksheet as a dense row-major grid (`rows[r][c]`, 0-based,
+ * blank cells `null`, blank rows kept) — the same shape the previous SheetJS
+ * `sheet_to_json({ header: 1, defval: null, blankrows: true })` produced, so
+ * the parser below is unchanged.
+ */
+async function readFirstSheetAsGrid(buffer: Buffer): Promise<Row[]> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
+  const sheet = wb.worksheets[0];
   if (!sheet) throw new Error("Workbook has no sheets");
-  const rows = XLSX.utils.sheet_to_json<Row>(sheet, {
-    header: 1,
-    raw: true,
-    defval: null,
-    blankrows: true,
-  });
+  const rows: Row[] = [];
+  const width = sheet.columnCount;
+  for (let r = 1; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r);
+    const cells: Row = [];
+    for (let c = 1; c <= width; c++) {
+      const cell = row.getCell(c);
+      // ExcelJS mirrors a merged range's value into every cell of the range;
+      // SheetJS (and the parser's block detection, which counts non-empty
+      // cells per row) only saw it in the top-left "master" cell. Keep that
+      // behaviour: non-master cells of a merge read as blank.
+      const isMergedFollower = cell.isMerged && cell.master.address !== cell.address;
+      cells.push(isMergedFollower ? null : cellToPrimitive(cell.value));
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+
+export async function parseMatchScorecard(buffer: Buffer): Promise<ParsedMatch> {
+  const warnings: string[] = [];
+  const rows = await readFirstSheetAsGrid(buffer);
   if (rows.length === 0) throw new Error("Scorecard is empty");
 
   // --- Title: "<Competition> <YYYY/YY>  —  Round N" ---

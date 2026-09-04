@@ -8,7 +8,7 @@ import {
   type JuniorPremiershipPlayer,
 } from "@workspace/api-client-react";
 
-import { Body, Card, ErrorView, Heading, Loading } from "@/components/ui";
+import { Body, Card, ErrorView, Loading } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { JUNIOR } from "@/lib/juniors";
 import { PlaqueModal, type PlaquePlayer } from "@/components/premiership-plaque";

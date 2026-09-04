@@ -100,7 +100,6 @@ async function main() {
       .from(navItemsTable)
       .where(and(eq(navItemsTable.tenantId, tenantId), eq(navItemsTable.surface, surface)));
     if (existing.length > 0) {
-      // eslint-disable-next-line no-console
       console.log(`• ${surface}: ${existing.length} rows already present — skipped`);
       continue;
     }
@@ -121,17 +120,14 @@ async function main() {
         visible: true,
       })),
     );
-    // eslint-disable-next-line no-console
     console.log(`+ ${surface}: seeded ${items.length} items`);
   }
-  // eslint-disable-next-line no-console
   console.log("seed-nav-items: done");
 }
 
 main()
   .then(() => process.exit(0))
   .catch((err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exit(1);
   });

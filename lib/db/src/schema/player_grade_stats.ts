@@ -1,6 +1,6 @@
 import { pgTable, serial, integer, text, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { type z } from "zod/v4";
 import { playersTable } from "./players";
 
 export const playerGradeStatsTable = pgTable("player_grade_stats", {

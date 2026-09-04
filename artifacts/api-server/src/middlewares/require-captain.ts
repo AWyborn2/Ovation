@@ -5,6 +5,7 @@ import {
   CAPTAIN_SESSION_COOKIE,
   decodeCaptainSession,
   getCaptainById,
+  sessionIsCurrent,
 } from "../lib/auth";
 import { getTenantId } from "./tenant-context";
 
@@ -26,6 +27,7 @@ export async function resolveCaptain(req: Request): Promise<CaptainRow | null> {
   if (!payload) return null;
   const captain = await getCaptainById(payload.captainId);
   if (!captain || captain.tenantId !== getTenantId(req)) return null;
+  if (!sessionIsCurrent(payload, captain)) return null;
   return captain;
 }
 

@@ -46,8 +46,7 @@ describe("admin mutation isolation: one tenant cannot mutate another's curated r
     cookie: string,
     body: Record<string, unknown> = {},
   ) =>
-    request(app)
-      [method](path)
+    request(app)[method](path)
       .set("Cookie", cookie)
       .set("x-tenant-id", String(tenantId))
       .send(body);

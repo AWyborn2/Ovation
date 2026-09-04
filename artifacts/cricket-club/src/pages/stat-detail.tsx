@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { useGetStat, getGetStatQueryKey, useUpdateStat, useDeleteStat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,6 @@ export default function StatDetail() {
   const statId = parseInt(id, 10);
   const confirm = useConfirm();
   const { data: stat, isLoading, isError, refetch } = useGetStat(statId, { query: { enabled: !!statId, queryKey: getGetStatQueryKey(statId) } });
-  
   const queryClient = useQueryClient();
   const updateStat = useUpdateStat();
   const deleteStat = useDeleteStat();
@@ -156,7 +155,6 @@ export default function StatDetail() {
                 <Input type="number" name="runOuts" value={formData.runOuts || ""} onChange={handleChange} />
               </div>
             </div>
-            
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
               <Button type="submit" disabled={updateStat.isPending}>Save Changes</Button>

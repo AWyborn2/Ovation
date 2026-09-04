@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Feather } from "@expo/vector-icons";
+import { type Feather } from "@expo/vector-icons";
 
 // First-launch welcome is remembered on the device. Bumping the suffix would
 // re-show the welcome to everyone (e.g. after a major feature change).

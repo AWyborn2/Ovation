@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # One weekly pass over the whole pnpm workspace. Minor and patch bumps are
+  # grouped into a single PR so review load stays low; majors arrive on their
+  # own so they can be assessed individually. Mirrors pnpm-workspace.yaml's
+  # minimumReleaseAge (1 day) so freshly published versions are held back.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 1
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Expo SDK upgrades need `npx expo install --fix` and a coordinated RN
+      # bump; handled deliberately, not by bot (plan.md §6).
+      - dependency-name: "expo*"
+      - dependency-name: "react-native*"
+      - dependency-name: "@expo/*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

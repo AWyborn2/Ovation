@@ -6,7 +6,7 @@ import {
   playersTable,
   matchesTable,
   clubsTable,
-  recordsDisplaySettingsTable,
+  type recordsDisplaySettingsTable,
 } from "@workspace/db";
 
 /**

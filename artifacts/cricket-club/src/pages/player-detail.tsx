@@ -4,7 +4,6 @@ import { useGetPlayer, getGetPlayerQueryKey, useDeletePlayer, useUpdatePlayer, u
 import type { PlayerSeasonStat } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
 import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";

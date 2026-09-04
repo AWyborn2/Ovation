@@ -177,7 +177,6 @@ async function main() {
   }
 
   const matched = rows.filter((r) => r.playerId != null).length;
-  // eslint-disable-next-line no-console
   console.log(
     `Seeded ${rows.length} club roles (${rows.filter((r) => r.grade == null).length} office bearers, ${rows.filter((r) => r.grade != null).length} grade captains); ${matched} linked to players.`,
   );
@@ -186,7 +185,6 @@ async function main() {
 main().then(
   () => process.exit(0),
   (err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exit(1);
   },

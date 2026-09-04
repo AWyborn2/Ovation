@@ -18,7 +18,6 @@ import type {
   PackDesignEntry,
   PackInkTint,
   PackTemplateFormats,
-  PackTemplateField,
 } from "./pack-templates/types";
 import type {
   ShareCardInput,
@@ -1105,7 +1104,7 @@ function bindInput(input: ShareCardInput): BoundInput {
  * `renderPackCard` calls in tests. A source-level guard
  * (`pack-card-mounts.test.ts`) keeps it that way.
  */
-function applyPackData(bound: BoundInput, data: PackCardData, kind: string): void {
+function applyPackData(bound: BoundInput, data: PackCardData, _kind: string): void {
   const { values, images } = bound;
 
   // A1 — tenant logo → top-left clubLogo slot (storyHeader / sharedHeader).

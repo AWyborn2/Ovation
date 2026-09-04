@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { tenantsTable } from "./tenants";
 
 /**
  * Club admins, scoped per tenant. Each row belongs to one tenant (the club whose
@@ -23,10 +24,17 @@ import {
 // scripts/src/ensure-constraints.ts instead (same pattern as cap_register).
 export const adminsTable = pgTable("admins", {
   id: serial("id").primaryKey(),
-  tenantId: integer("tenant_id").notNull().default(1),
+  tenantId: integer("tenant_id")
+    .notNull()
+    .default(1)
+    .references(() => tenantsTable.id),
   username: text("username").notNull(),
   displayName: text("display_name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  // Bumped on password change/reset and "log out everywhere". A session token
+  // carries the epoch it was minted under; a token whose epoch is behind the
+  // row's is rejected, so a leaked cookie dies with the password (plan.md §3.3).
+  sessionEpoch: integer("session_epoch").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -42,6 +50,8 @@ export const platformAdminsTable = pgTable("platform_admins", {
   email: text("email").notNull().unique(),
   displayName: text("display_name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  /** See adminsTable.sessionEpoch. */
+  sessionEpoch: integer("session_epoch").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

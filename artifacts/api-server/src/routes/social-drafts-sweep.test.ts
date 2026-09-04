@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import app from "../app";
 import {
   db,

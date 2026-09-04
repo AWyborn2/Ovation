@@ -21,7 +21,7 @@ import {
   juniorMatchBowlingTable,
   juniorMatchRostersTable,
 } from "@workspace/db";
-import { eq, and, ne, sql } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import {
   matchToSummaryInput,
@@ -30,7 +30,6 @@ import {
 import { getTenantBrand } from "./tenant-brand";
 import { loadMatchDetail } from "../routes/matches";
 import {
-  getOpponentBrandsByAppClubId,
   overlayNativeOpponents,
 } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";

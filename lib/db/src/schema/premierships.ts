@@ -1,6 +1,6 @@
 import { pgTable, serial, integer, text, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { type z } from "zod/v4";
 import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 

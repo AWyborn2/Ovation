@@ -1,9 +1,9 @@
 import { Link } from "wouter";
 import { Trophy } from "lucide-react";
 import type { BoardTier } from "@/lib/honour-boards";
-import { BOARDS } from "@/lib/honour-boards";
+import { type BOARDS } from "@/lib/honour-boards";
 import { TierBadge } from "@/components/tier-badge";
-import { GradeBadge, GradeBadgeList } from "@/components/grade-badge";
+import { GradeBadgeList } from "@/components/grade-badge";
 import { EmptyState } from "@/components/data-states";
 import type { PremiershipCount } from "./types";
 

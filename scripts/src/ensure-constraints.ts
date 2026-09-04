@@ -106,6 +106,23 @@ type PartialIndexSpec = {
 };
 
 const PARTIAL_INDEXES: PartialIndexSpec[] = [
+  // Tenant identity (plan.md §2.7). One tenant per central club: provisioning's
+  // "club already claimed" check was a check-then-insert with nothing backing
+  // it, and the host directory silently let the last-written custom domain win.
+  // Both are now enforced by the database. Kept here (not the Drizzle schema)
+  // so an existing duplicate aborts this script with a clear message instead of
+  // hanging `drizzle-kit push` on a prompt.
+  {
+    name: "tenants_central_club_id_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_central_club_id_uidx"
+          ON "tenants" ("central_club_id")`,
+  },
+  {
+    name: "tenants_custom_domain_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_custom_domain_uidx"
+          ON "tenants" ("custom_domain")
+          WHERE "custom_domain" IS NOT NULL`,
+  },
   // Admin per-match uploads (source_key IS NULL): one match per identity.
   {
     name: "matches_identity_manual_uidx",

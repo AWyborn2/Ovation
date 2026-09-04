@@ -17,7 +17,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # Pin the toolchain. Bump deliberately; keep in step with local dev.
+  # Pin the toolchain. Bump deliberately; keep in step with local dev
+  # (`packageManager` in package.json and .nvmrc).
   NODE_VERSION: "22"
   PNPM_VERSION: "10"
 
@@ -31,23 +32,56 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      - uses: ./.github/actions/setup
       - name: Typecheck
         run: pnpm run typecheck
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Lint. Hermetic. ESLint flat config at the repo root.
+  # ───────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: ESLint
+        run: pnpm run lint
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Production build of everything that ships from CI (api-server bundle and
+  # the website). The mobile app's build is Replit-specific (needs a deployment
+  # domain) and is exercised there. Proves build.mjs, vite.config.ts and the
+  # generated client all bundle — previously only ever run on deploy.
+  # ───────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_PATH: /
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build libs
+        run: pnpm run typecheck:libs
+      - name: Build api-server and website
+        run: pnpm --filter @workspace/api-server --filter @workspace/cricket-club run build
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Library unit tests (lib/db, lib/scorecard, scripts). Hermetic — every
+  # database is mocked in these suites.
+  # ───────────────────────────────────────────────────────────────────────────
+  lib-tests:
+    name: Library unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run lib and scripts tests
+        run: pnpm run test:libs
 
   # ───────────────────────────────────────────────────────────────────────────
   # Website smoke tests (cricket-club). Hermetic — fetch is mocked, no backend
@@ -59,29 +93,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      - uses: ./.github/actions/setup
       - name: Run cricket-club smoke tests
         run: pnpm --filter @workspace/cricket-club test
 
   # ───────────────────────────────────────────────────────────────────────────
   # API server tests (api-server). These are REAL-DB integration tests: they
   # import the Express app and hit a live Postgres (tenant isolation, billing,
-  # platform-admin, consistency suites). So CI spins up Postgres, applies the
-  # Drizzle schema with `db push`, then runs vitest against it.
+  # platform-admin, provisioning, consistency suites). CI spins up Postgres,
+  # applies the Drizzle schema with `db push`, seeds tenant #1, gives the same
+  # database an empty `central` schema plus a small deterministic fixture, and
+  # runs vitest against it. No live central-DB secret is needed or used.
   # ───────────────────────────────────────────────────────────────────────────
   api-tests:
     name: API integration tests
@@ -107,39 +129,43 @@ jobs:
     env:
       # Local service Postgres — never a real/shared database.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
+      # The central schema lives in the SAME local database in CI (see the
+      # push-central / fixture steps below). The real central DB is never
+      # reachable from CI.
+      CENTRAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ovation_test
       # Deterministic secret so session-cookie signing is stable across the run.
       SESSION_SECRET: ci-session-secret-not-for-production
-      # Read-only central PCA database (Supabase). Stored as a GitHub Actions secret.
-      # Several tenant/platform suites import a module that connects on load.
-      CENTRAL_DATABASE_URL: ${{ secrets.CENTRAL_DATABASE_URL }}
-      # Skip data-dependent api tests that need the club's full stats data (not in a fresh CI DB).
+      # Skip suites that need the demo club's FULL curated history (not in a
+      # fresh CI DB). Provisioning suites are no longer skipped: the central
+      # fixture satisfies them.
       CI_SKIP_DATA_TESTS: "true"
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       - name: Apply database schema
         # Non-interactive: --force skips the drizzle-kit confirmation prompt.
         run: pnpm --filter @workspace/db run push-force
 
+      - name: Apply constraints drizzle-kit cannot manage
+        # Mirrors post-merge on Replit (scripts/post-merge.sh): composite and
+        # partial uniques plus performance indexes live in ensure-constraints,
+        # so CI's schema matches production's.
+        run: pnpm --filter @workspace/scripts run ensure-constraints
+
       - name: Seed tenant #1 (fresh-DB only)
         # A CI database built fresh from `db push` is empty; the integration
         # tests assume the demo tenant (Halls Head, id 1) exists. Idempotent.
         run: pnpm --filter @workspace/api-server run seed:ci
+
+      - name: Create the central schema (CI fixture)
+        # Empty `central.*` tables matching lib/db/src/central-schema. Refuses
+        # to run against a non-local host.
+        run: pnpm --filter @workspace/db run push-central
+
+      - name: Seed the central fixture
+        run: pnpm --filter @workspace/api-server run seed:ci-central
 
       - name: Run api-server tests
         run: pnpm --filter @workspace/api-server test

@@ -30,7 +30,8 @@
     "rebrand-seeded-card-themes": "tsx ./src/rebrand-seeded-card-themes.ts",
     "legacy:remove-a-grade-2025-26": "tsx ./legacy/remove-a-grade-2025-26.ts",
     "legacy:add-a-grade-2025-26-debuts": "tsx ./legacy/add-a-grade-2025-26-debuts.ts",
-    "legacy:fix-a-grade-cap-duplicates": "tsx ./legacy/fix-a-grade-cap-duplicates.ts"
+    "legacy:fix-a-grade-cap-duplicates": "tsx ./legacy/fix-a-grade-cap-duplicates.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "vitest": "^4.1.7"
   }
 }
