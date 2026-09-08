@@ -1,9 +1,12 @@
 #!/bin/bash
 set -e
 pnpm install --frozen-lockfile
-pnpm --filter db push
-# Recreate constraints drizzle-kit can't manage reliably (see the script and
-# lib/db/src/schema/cap_register.ts for why). Idempotent and non-interactive.
+# Apply the reviewed migrations in lib/db/migrations (plan.md §5.4). The first
+# run on a database that was built with `drizzle-kit push` baselines it at 0000
+# and runs the reconcile migration; afterwards each run applies only new files.
+# Non-interactive, never prompts.
+pnpm --filter @workspace/db run migrate
+# Read-only assertion that every constraint/index the migrations own exists.
 pnpm --filter @workspace/scripts run ensure-constraints
 # Refresh the cap register's cached game counts from current stats so caps
 # linked to a player (incl. before recompute-on-link existed) show real games.
