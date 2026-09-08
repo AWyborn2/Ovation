@@ -115,8 +115,7 @@ function CardThumb({
 }
 
 type EditorState =
-  | { mode: "template-new"; baseKind: CardKind }
-  | { mode: "template-edit"; template: CardTemplate };
+  { mode: "template-new"; baseKind: CardKind } | { mode: "template-edit"; template: CardTemplate };
 
 export default function AdminSocialStudio() {
   const qc = useQueryClient();

@@ -23,6 +23,22 @@ updates:
       - dependency-name: "expo*"
       - dependency-name: "react-native*"
       - dependency-name: "@expo/*"
+      # React runtime + types follow React Native 0.81 (React 19.1); bumped
+      # together with the Expo SDK, never alone.
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@types/react"
+      - dependency-name: "@types/react-dom"
+      # Newer orval emits the Zod v4 API; both move together in the deferred
+      # Zod v4 cut-over (plan.md §6).
+      - dependency-name: "orval"
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      # @uppy/aws-s3 6 removed the presigned-URL upload mode (getUploadParameters)
+      # that lib/object-storage-web and routes/storage.ts are built on; a major
+      # needs the storage adapter reworked (signRequest / getCredentials).
+      - dependency-name: "@uppy/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

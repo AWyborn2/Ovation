@@ -27,8 +27,7 @@ export interface CheckoutResult {
 
 /** A normalised, provider-agnostic billing event the webhook applies. */
 export type BillingEvent =
-  | { type: "plan.changed"; tenantId: number; plan: Plan }
-  | { type: "ignored" };
+  { type: "plan.changed"; tenantId: number; plan: Plan } | { type: "ignored" };
 
 export interface BillingProvider {
   createCheckoutSession(req: CheckoutRequest): Promise<CheckoutResult>;

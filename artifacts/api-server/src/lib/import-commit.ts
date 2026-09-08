@@ -102,8 +102,7 @@ export type ImportCommitResponse = ImportSummary & {
 
 /** Result of committing a single match import; the router maps it to HTTP. */
 export type MatchCommitOutcome =
-  | { ok: true; body: ImportCommitResponse }
-  | { ok: false; status: 400; error: string };
+  { ok: true; body: ImportCommitResponse } | { ok: false; status: 400; error: string };
 
 // ---------------------------------------------------------------------------
 // Step: audit / logging

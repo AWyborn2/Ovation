@@ -52,12 +52,7 @@ export type {
  * "grid" is a reusable season-grid matrix (rows × admin-chosen columns).
  */
 export type BoardLayout =
-  | "premiership"
-  | "teamOfDecade"
-  | "list"
-  | "columns"
-  | "grid"
-  | "lifeMembers";
+  "premiership" | "teamOfDecade" | "list" | "columns" | "grid" | "lifeMembers";
 
 /** The built-in skin ids (admin skins use "custom:<uuid>"). */
 export type TemplateId = "p1" | "p2" | "p3" | "p4" | "p5" | "p6" | "p7" | "p8" | "p9" | "p10";

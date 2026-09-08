@@ -347,14 +347,7 @@ export type CardTheme = {
 // On built-in cards every preset now animates the real layer model, so elements
 // can enter independently; fadeIn/slideUp keep zero stagger for the simple case.
 export type MotionPreset =
-  | "none"
-  | "fadeIn"
-  | "slideUp"
-  | "popIn"
-  | "wipe"
-  | "stagger"
-  | "countUp"
-  | "matchReveal";
+  "none" | "fadeIn" | "slideUp" | "popIn" | "wipe" | "stagger" | "countUp" | "matchReveal";
 
 export type PhotoPlacement = "feature" | "headshot";
 
