@@ -62,3 +62,4 @@
 - [Honour display + kiosk](honour-display-rework.md) — admin-only TV boards: per-board layouts, single skin, composites, slide/scroll kiosk frames + sponsor strip & full-screen sponsor slides.
 - [Social Studio template model](social-studio-template-model.md) — card_templates carries BOTH background (→opts.template) and layer (source="layers" →opts.layout) designs; per-kind default via defaultForKinds (one-default-per-kind enforced server-side); modal buildOpts splits selectedTemplate by source.
 - [Honour display grids & themes](honour-display-grids-themes.md) — admin TV boards: opt-in season-grid layout, per-board styling, skins/colour/font overrides; gridCatalog drives column pickers.
+- [Replit pnpm publish bootstrap](replit-pnpm-publish.md) — don't exact-pin pnpm in packageManager here; Replit's bootstrap can recursively self-install and abort before app compilation.
