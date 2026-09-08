@@ -49,8 +49,7 @@ export type PackSponsorVariant = "on" | "off";
  * reflows for portrait/square via the `--k` / `--ch` scaling tokens.
  */
 export type PackTemplateFormats =
-  | { story: string; portrait: string; square: string }
-  | { story: string; shared: string };
+  { story: string; portrait: string; square: string } | { story: string; shared: string };
 
 export interface PackCardTemplate {
   /** ShareCardInput kind this design renders. */

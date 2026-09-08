@@ -72,12 +72,7 @@ export interface BoardEntry {
 // "grid" is the opt-in season-grid matrix (rows × admin-chosen columns).
 // "lifeMembers" is the two-column stat-tile + bio card layout.
 export type BoardLayout =
-  | "premiership"
-  | "teamOfDecade"
-  | "list"
-  | "columns"
-  | "grid"
-  | "lifeMembers";
+  "premiership" | "teamOfDecade" | "list" | "columns" | "grid" | "lifeMembers";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 

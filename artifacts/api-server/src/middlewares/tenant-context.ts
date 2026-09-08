@@ -58,9 +58,7 @@ function platformHosts(): Set<string> {
 }
 
 export type HostMode =
-  | { mode: "tenant"; tenantId: number }
-  | { mode: "platform" }
-  | { mode: "fallback" };
+  { mode: "tenant"; tenantId: number } | { mode: "platform" } | { mode: "fallback" };
 
 /** Parse a positive-integer tenant id, or undefined if absent/invalid. */
 function parseTenantId(raw: string | undefined): number | undefined {

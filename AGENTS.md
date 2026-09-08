@@ -103,7 +103,7 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 
 - **OpenAPI-first** workflow (above). Never hand-edit generated files.
 - **Juniors isolation:** junior\__ tables, `/api/juniors/_`only, never blended with
-seniors. Holds per-tenant. (See`replit.md`.)
+  seniors. Holds per-tenant. (See`replit.md`.)
 - **Fill-in exclusion:** `player_id >= 90000` = fill-in player, excluded from all
   derivations.
 - **One ingestion method per (grade, season).** No mixing.

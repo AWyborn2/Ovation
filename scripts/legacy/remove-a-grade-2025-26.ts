@@ -223,8 +223,7 @@ async function main() {
 
   // ---- Plan each row -------------------------------------------------------
   type Action =
-    | { type: "subtract"; snapId: number; newGames: number }
-    | { type: "delete"; snapId: number };
+    { type: "subtract"; snapId: number; newGames: number } | { type: "delete"; snapId: number };
   const plan: Array<{ row: (typeof resolved)[number]; action: Action }> = [];
 
   const exactMatch = (s: SnapRow, c: Counting) => COUNTING_FIELDS.every((f) => s[f] === c[f]);

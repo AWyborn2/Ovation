@@ -241,8 +241,7 @@ export async function getRequestCentralClubId(req: Request): Promise<number> {
  * with the decision so a handler cannot mix the two.
  */
 export type DataSource =
-  | { kind: "central"; tenantId: number; clubId: number }
-  | { kind: "native"; tenantId: number };
+  { kind: "central"; tenantId: number; clubId: number } | { kind: "native"; tenantId: number };
 
 export async function dataSource(req: Request): Promise<DataSource> {
   const tenantId = getTenantId(req);
