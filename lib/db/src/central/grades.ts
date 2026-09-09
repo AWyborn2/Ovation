@@ -16,6 +16,53 @@
  * `appGrade: null` means deliberately unmapped (charity one-offs, Female C the
  * app doesn't have, the Ladies-T20 Female-B predecessor we don't auto-merge).
  */
+// ---------------------------------------------------------------------------
+// WA Premier Cricket (second association, Phase 3). Its grade vocabulary is
+// numbered ("1st Grade"…"10th Grade", "Men's First Grade"), U-age shields
+// ("Tony Mann Shield (Premier U15)"), One-Day grades and Masters — none of
+// which occur in PCA labels, so these rules sit safely beside the PCA ones.
+// Junior/pathway competitions are deliberately EXCLUDED from the senior central
+// read (juniors-isolation invariant: junior data is never blended into senior
+// stats); they stay in the data for a later juniors pass.
+// ---------------------------------------------------------------------------
+const WA_JUNIOR_RE =
+  /\bu1[0-9]s?\b|\bunder\s*1\d\b|\byear\s*\d|\byr\s*\d|\bjunior\b|\bprimary\b|\bschool\b/;
+const WA_ORDINAL_WORDS: Record<string, number> = {
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  seventh: 7,
+  eighth: 8,
+  ninth: 9,
+  tenth: 10,
+};
+const WA_WOMENS_RE = /\bwomen'?s?\b|\bfemale\b|\bladies\b|\bgirls\b/;
+
+/** 1 → "1st", 2 → "2nd", 11 → "11th". */
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+}
+
+/** "1st grade" / "men's first grade" → "1st Grade" (women's → "Women's 1st Grade"). */
+function waNumberedGrade(lower: string): string | null {
+  let n: number | null = null;
+  const num = /\b(\d{1,2})(?:st|nd|rd|th)\s*grade\b/.exec(lower);
+  if (num) n = Number(num[1]);
+  else {
+    const word =
+      /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s*grade\b/.exec(lower);
+    if (word) n = WA_ORDINAL_WORDS[word[1] ?? ""] ?? null;
+  }
+  if (n === null) return null;
+  const base = `${ordinal(n)} Grade`;
+  return WA_WOMENS_RE.test(lower) ? `Women's ${base}` : base;
+}
+
 export interface CentralGradeMapping {
   appGrade: string | null;
   note?: string;
@@ -44,6 +91,26 @@ export function classifyCentralGrade(centralGrade: string | null): CentralGradeM
   // Deliberate exclusion: charity one-offs.
   if (/charity/.test(lower) || /glen dehring/.test(lower)) {
     return { appGrade: null, note: "excluded: charity one-off" };
+  }
+
+  // --- WA Premier Cricket labels (see the WA block above) ------------------
+  if (WA_JUNIOR_RE.test(lower)) {
+    return {
+      appGrade: null,
+      note: "WA junior/pathway grade — excluded from the senior central read",
+    };
+  }
+  const waNumbered = waNumberedGrade(lower);
+  if (waNumbered) return { appGrade: waNumbered, note: formatNote };
+  const waOneDay = /\bone\s*day\s*grade\s*(\d)\b/.exec(lower);
+  if (waOneDay) return { appGrade: `One Day Grade ${waOneDay[1]}` };
+  if (/\bmasters?\b|\bveterans?\b|\bvets\b|\bover\s*\d{2}\b/.test(lower)) {
+    return { appGrade: "Masters" };
+  }
+  // WA senior T20 competitions ("Senior Men T20 Div1", "T20 Division 1"). Kept
+  // deliberately specific so PCA "T20: B Grade" etc. still reach the letter rule.
+  if (/\bt20\s*div(?:ision)?\s*\d\b|\bsenior\s*men\s*t20\b/.test(lower)) {
+    return { appGrade: "T20" };
   }
 
   // PPL / Premier League, including the RetraVision/Retravision sponsor labels.
