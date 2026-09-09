@@ -21,24 +21,16 @@ async function main(): Promise<void> {
   const cq: Record<string, unknown> = await import("@workspace/db/central-queries");
   const fn = <T>(name: string) => cq[name] as T | undefined;
 
-  const getClubMatchRows =
-    fn<(id: number) => Promise<{ matchId: number; grade: string | null; season: string | null }[]>>(
-      "getClubMatchRows",
-    );
-  const centralPlayerCareers =
-    fn<
-      (
-        id: number,
-      ) => Promise<
-        Array<{
-          displayName: string | null;
-          runs: number;
-          wickets: number;
-          games: number;
-          grades: string[];
-        }>
-      >
-    >("centralPlayerCareers");
+  type ClubMatchRow = { matchId: number; grade: string | null; season: string | null };
+  type Career = {
+    displayName: string | null;
+    runs: number;
+    wickets: number;
+    games: number;
+    grades: string[];
+  };
+  const getClubMatchRows = fn<(id: number) => Promise<ClubMatchRow[]>>("getClubMatchRows");
+  const centralPlayerCareers = fn<(id: number) => Promise<Career[]>>("centralPlayerCareers");
 
   console.log(`\n=== central club ${clubId} ===`);
 
