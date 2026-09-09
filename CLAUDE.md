@@ -117,6 +117,14 @@ The roadmap below is the original plan. **Reality has moved ahead of it.** Curre
   **dormant**); 2d Stripe/billing adapter (`routes/billing.ts`, `lib/billing.ts`, **inert** —
   webhook wired in `app.ts` but disabled); 2e super-admin / platform-admin console (live).
 
+- **Phase 3 (other associations): STARTED (10 Sep 2026).** WA Premier Cricket (16 clubs,
+  30,001 matches, ~1.15M stat rows) is loaded as its own raw schema `wa.*` and **projected into
+  `central.*`** with offset ids (clubs 101–116, matches 100001+) so the existing central read
+  path serves WA clubs unchanged; `central.clubs` is now 43 clubs (27 PCA + 16 WA). The grade
+  classifier (`lib/db/src/central/grades.ts`) understands WA labels; WA junior/pathway grades
+  are excluded from the senior read (juniors isolation). Builder + design doc live outside the
+  repo (`Desktop/OVATION APP/WA Cricket Database/`).
+
 ⚠️ Implications: billing + entitlements code is present in a running server but switched off —
 treat as unexercised/brittle. The stats core is mid-migration (some reads local, some central),
 so the local-vs-central boundary is the top correctness risk; keep all central reads funnelled
@@ -150,7 +158,8 @@ awareness) are implemented; Phase D items are tracked there.
 Phase 1: 2–3 friendly PCA clubs on subdomains (concierge) — IN PROGRESS. Phase 2: self-serve
 signup, Stripe, RLS, custom domains — PARTIALLY BUILT (onboarding + admin auth live; entitlements
 dormant; billing inert; super-admin live; RLS + custom domains still TODO). Phase 3: other
-associations as additional central datasets — not started.
+associations as additional central datasets — STARTED (WA Premier Cricket projected into
+`central`, Sep 2026).
 
 ## Do not break
 
