@@ -3,9 +3,37 @@ description: Install pnpm + Node (with the pnpm store cached) and the workspace 
 runs:
   using: composite
   steps:
+    # pnpm is pinned HERE for CI, not in package.json's `packageManager`.
+    #
+    # Replit's publishing bootstrap recursively self-installs pnpm when the root
+    # manifest carries an exact `packageManager` pin and aborts (SIGABRT/EAGAIN)
+    # before the app builds — see .agents/memory/replit-pnpm-publish.md — so
+    # that field must stay OUT of package.json (the Lint job asserts it).
+    #
+    # pnpm/action-setup reads a pin from `packageManager` when present and
+    # ERRORS if a `version` input is also given, so the two install steps below
+    # are mutually exclusive on that field. Expected path: absent → `version:`
+    # below. Tolerated path: present → use it (CI keeps running; Lint fails
+    # with the explanation) rather than every job dying at setup.
+    - name: Detect packageManager pin
+      id: pm
+      shell: bash
+      run: |
+        if node -e "process.exit(require('./package.json').packageManager ? 0 : 1)"; then
+          echo "present=true" >> "$GITHUB_OUTPUT"
+          echo "::warning file=package.json::packageManager is set. This breaks Replit publishing (see .agents/memory/replit-pnpm-publish.md); CI pins pnpm in .github/actions/setup/action.yml instead. Remove the field."
+        else
+          echo "present=false" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Install pnpm
-      # No `version` input: pnpm/action-setup reads the exact pin from
-      # `packageManager` in package.json (and errors if both are given).
+      if: steps.pm.outputs.present != 'true'
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.33.0
+
+    - name: Install pnpm (pin from package.json — tolerated, see above)
+      if: steps.pm.outputs.present == 'true'
       uses: pnpm/action-setup@v4
 
     - name: Install Node

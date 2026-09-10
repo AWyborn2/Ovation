@@ -17,8 +17,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # Node is pinned here (keep in step with .nvmrc); pnpm comes from the
-  # `packageManager` field in package.json via pnpm/action-setup.
+  # Node is pinned here (keep in step with .nvmrc). pnpm is pinned in
+  # .github/actions/setup/action.yml, NOT in package.json's `packageManager`
+  # (that breaks Replit publishing; see .agents/memory/replit-pnpm-publish.md).
   NODE_VERSION: "22"
 
 jobs:
@@ -68,6 +69,13 @@ jobs:
       - name: Prettier
         # The whole tree is formatted (repo-wide pass); keep it that way.
         run: pnpm run format:check
+      - name: packageManager pin must be absent
+        # Replit's publishing bootstrap recursively self-installs pnpm when the
+        # root manifest carries an exact `packageManager` pin and aborts before
+        # the app builds (.agents/memory/replit-pnpm-publish.md). CI pins pnpm
+        # in .github/actions/setup/action.yml instead, so the field must stay
+        # out of package.json. Setup tolerates it; this step is the loud signal.
+        run: node -e "if (require('./package.json').packageManager) { console.error('package.json has a packageManager pin — remove it (see .agents/memory/replit-pnpm-publish.md)'); process.exit(1) }"
 
   # ───────────────────────────────────────────────────────────────────────────
   # Production build of everything that ships from CI (api-server bundle and
