@@ -15,6 +15,13 @@
       "when": 1788494701178,
       "tag": "0001_reconcile_pushed_databases",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789082878175,
+      "tag": "0002_add_session_epoch_columns",
+      "breakpoints": true
     }
   ]
 }
