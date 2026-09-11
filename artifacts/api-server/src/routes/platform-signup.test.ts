@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
@@ -10,6 +10,27 @@ import {
   provisioningExclusionsTable,
 } from "@workspace/db";
 import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
+// Type-only (erased at runtime), so it never bypasses the vi.mock below; the
+// inline `typeof import()` form is forbidden by consistent-type-imports.
+import type * as AuthModule from "../lib/auth";
+
+// Lets ONE signup attempt drive the in-transaction admin insert into a NOT NULL
+// violation (password_hash null) to prove provisioning rolls back atomically.
+// Every other call passes straight through to the real hashing.
+const authMock = vi.hoisted(() => ({ nullHashOnce: false }));
+vi.mock("../lib/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof AuthModule>();
+  return {
+    ...actual,
+    hashPassword: async (password: string) => {
+      if (authMock.nullHashOnce) {
+        authMock.nullHashOnce = false;
+        return null as unknown as string;
+      }
+      return actual.hashPassword(password);
+    },
+  };
+});
 
 /**
  * Self-serve signup E2E (Phase 2b). Picks a real available central club, claims a
@@ -227,5 +248,63 @@ describe("platform self-serve signup", () => {
         password: "correct horse battery",
       });
     expect(signup.status).toBe(403);
+  });
+  it("rolls back the tenant and crosswalk when creating the first admin fails (nothing is stranded)", async () => {
+    const clubs = await request(app).get("/api/platform/available-clubs").expect(200);
+    expect(clubs.body.length).toBeGreaterThan(0);
+    const club = clubs.body[0];
+    const slug = `atomic-${STAMP}`;
+
+    // Force the in-transaction admin insert to violate NOT NULL (password_hash).
+    authMock.nullHashOnce = true;
+    const signup = await request(app)
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
+      .send({
+        centralClubId: club.centralClubId,
+        slug,
+        adminEmail: `atomic+${STAMP}@example.com`,
+        password: "correct horse battery",
+      });
+    expect(signup.status).toBe(500);
+    expect(signup.body.error).toMatch(/nothing was created/i);
+
+    // The whole provisioning transaction rolled back: no tenant row exists for
+    // the slug (and so no player_id_map rows, which are keyed by tenant id), the
+    // club is unclaimed and still on offer.
+    const tenants = await db.select().from(tenantsTable).where(eq(tenantsTable.slug, slug));
+    expect(tenants).toHaveLength(0);
+    const claimed = await db
+      .select({ id: tenantsTable.id })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.centralClubId, club.centralClubId));
+    expect(claimed).toHaveLength(0);
+    const after = await request(app).get("/api/platform/available-clubs").expect(200);
+    expect(
+      after.body.some((c: { centralClubId: number }) => c.centralClubId === club.centralClubId),
+    ).toBe(true);
+
+    // And the very next attempt for the same club and slug succeeds: nothing was
+    // stranded by the failure.
+    const retry = await request(app)
+      .post("/api/platform/signup")
+      .set("x-forwarded-for", uniqueIp())
+      .send({
+        centralClubId: club.centralClubId,
+        slug,
+        adminEmail: `atomic+${STAMP}@example.com`,
+        password: "correct horse battery",
+      });
+    expect(retry.status).toBe(201);
+    const retryTenantId: number = retry.body.tenantId;
+    const admins = await db
+      .select()
+      .from(adminsTable)
+      .where(eq(adminsTable.tenantId, retryTenantId));
+    expect(admins).toHaveLength(1);
+    // Clean up this second tenant (afterAll only knows createdTenantId).
+    await db.delete(adminsTable).where(eq(adminsTable.tenantId, retryTenantId));
+    await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, retryTenantId));
+    await db.delete(tenantsTable).where(eq(tenantsTable.id, retryTenantId));
   });
 });

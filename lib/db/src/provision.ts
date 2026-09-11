@@ -9,6 +9,7 @@ import { db, type Db } from "./index";
 type TenantExecutor = Pick<Db, "select" | "insert">;
 import { tenantsTable, type TenantRow } from "./schema/tenants";
 import { playerIdMapTable } from "./schema/player_id_map";
+import { adminsTable, type AdminRow } from "./schema/admins";
 import {
   provisioningExclusionsTable,
   isExcludedForContext,
@@ -71,6 +72,14 @@ export interface ProvisionTenantOptions {
    * provision a club that's merely hidden from public self-serve signup.
    */
   context?: ProvisioningContext;
+  /**
+   * Create the first admin INSIDE the same transaction as the tenant row and
+   * the crosswalk mint (self-serve signup). Without this, a failure after
+   * provisioning left a tenant with no admin behind a "slug taken" error on
+   * every retry (rmdcc/bmdcc, 10 Sep 2026). The caller hashes the password.
+   * Concierge callers that create admins separately leave this unset.
+   */
+  firstAdmin?: { username: string; displayName: string; passwordHash: string };
 }
 
 export interface ProvisionTenantResult {
@@ -78,6 +87,8 @@ export interface ProvisionTenantResult {
   centralClub: { clubId: number; name: string | null };
   mintedMappings: number;
   totalParticipants: number;
+  /** The first admin, when `firstAdmin` was supplied. */
+  admin?: AdminRow;
 }
 
 /** Resolve the central.clubs row by explicit id, else by exact (case-insensitive) name. */
@@ -192,7 +203,7 @@ export async function provisionTenant(
 
   // Tenant row + crosswalk mint in ONE transaction: a failure while minting
   // used to leave a tenant with a partial player_id_map.
-  const { tenant, minted, totalParticipants } = await db.transaction(async (tx) => {
+  const { tenant, admin, minted, totalParticipants } = await db.transaction(async (tx) => {
     const [row] =
       mode === "create"
         ? await tx.insert(tenantsTable).values(values).returning()
@@ -208,7 +219,22 @@ export async function provisionTenant(
     // provisioning path and the backfill script (scripts/backfill-player-id-map)
     // mint identically.
     const mint = await mintPlayerIdMap(row.id, row.centralClubId, tx);
-    return { tenant: row, ...mint };
+
+    // First admin in the SAME transaction: if this insert fails, the tenant and
+    // its crosswalk roll back with it, so a retry can never hit "already taken"
+    // for a tenant nobody can log in to.
+    let admin: AdminRow | undefined;
+    if (opts.firstAdmin) {
+      const [created] = await tx
+        .insert(adminsTable)
+        .values({ tenantId: row.id, ...opts.firstAdmin })
+        .returning();
+      if (!created) {
+        throw new Error(`provisioning: first-admin insert for "${values.slug}" returned no row`);
+      }
+      admin = created;
+    }
+    return { tenant: row, admin, ...mint };
   });
 
   return {
@@ -216,6 +242,7 @@ export async function provisionTenant(
     centralClub: { clubId: club.clubId, name: club.name },
     mintedMappings: minted,
     totalParticipants,
+    admin,
   };
 }
 
