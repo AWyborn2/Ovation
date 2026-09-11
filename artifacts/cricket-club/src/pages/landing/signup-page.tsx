@@ -97,6 +97,24 @@ export function brandingNowUrl(redirectUrl: string): string {
   return `${redirectUrl.replace(/\/admin\/?$/, "")}/admin/settings/branding`;
 }
 
+/**
+ * Copy for a failed signup, keyed on the HTTP status the API client attaches
+ * (ApiError.status). 409 really is "taken"; another 4xx carries the reason the
+ * server gave; anything else is a failure on our side where nothing was created
+ * (the provisioning transaction rolls back), so never imply the address or club
+ * is taken. Exported as a pure function so the copy is unit-testable.
+ */
+export function signupErrorCopy(err: unknown): string {
+  const e = (err ?? {}) as { status?: unknown; data?: { error?: unknown } };
+  const status = typeof e.status === "number" ? e.status : undefined;
+  const serverMessage = typeof e.data?.error === "string" ? e.data.error : undefined;
+  if (status === 409) return "That address or club is already taken.";
+  if (status !== undefined && status >= 400 && status < 500) {
+    return serverMessage ?? "Could not complete signup. Please check the details and try again.";
+  }
+  return "Signup failed on our side and nothing was created. Please try again shortly.";
+}
+
 function ChoiceScreen({ redirectUrl }: { redirectUrl: string }) {
   // Both options land on the new tenant's own subdomain, already authenticated
   // (the signup response set the session cookie) -- "now" goes straight to the
@@ -254,9 +272,7 @@ function DetailsForm({
       </div>
 
       {signup.isError ? (
-        <p className="text-sm text-destructive">
-          Couldn't complete signup. The address or club may already be taken.
-        </p>
+        <p className="text-sm text-destructive">{signupErrorCopy(signup.error)}</p>
       ) : null}
 
       <Button type="submit" disabled={!canSubmit} className="w-full">

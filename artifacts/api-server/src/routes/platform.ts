@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { isNull } from "drizzle-orm";
-import { db, tenantsTable, adminsTable } from "@workspace/db";
+import { db, tenantsTable } from "@workspace/db";
 import { PlatformSignupBody } from "@workspace/api-zod";
 import { validateSlug, isReservedSlug, slugRejectionReason } from "../lib/slug";
 import { hashPassword, encodeSession, signupSessionCookieOpts, SESSION_COOKIE } from "../lib/auth";
@@ -142,36 +142,30 @@ router.post("/platform/signup", signupRateLimiter, async (req, res): Promise<voi
   }
 
   const { provisionTenant, ProvisionError } = await import("@workspace/db/provision");
+  // Hash first so the provisioning transaction never waits on bcrypt: the only
+  // work inside it is the tenant row, its crosswalk and the first admin.
+  const passwordHash = await hashPassword(parsed.data.password);
   try {
+    // Tenant + crosswalk + first admin in ONE transaction (lib/db provision): a
+    // failure anywhere rolls all of it back, so the club stays claimable and a
+    // retry cannot hit "already taken" for a tenant nobody can log in to.
     const result = await provisionTenant({
       slug,
       centralClubId: parsed.data.centralClubId,
       plan: "free",
       mode: "create",
       context: "self-serve",
-    });
-
-    // The first club admin (email + password, no verification in the pilot).
-    const passwordHash = await hashPassword(parsed.data.password);
-    const [admin] = await db
-      .insert(adminsTable)
-      .values({
-        tenantId: result.tenant.id,
+      firstAdmin: {
         username: adminEmail,
         displayName: adminEmail.split("@")[0] || "Owner",
         passwordHash,
-      })
-      .returning();
+      },
+    });
+    const admin = result.admin;
     if (!admin) {
-      // The tenant was provisioned but the admin row didn't come back --
-      // surface a clean 500 rather than throwing on admin.id below, which
-      // would leave the client with no tenantId to retry or recover with.
-      req.log?.error(
-        { event: "signup_admin_insert_failed", tenantId: result.tenant.id },
-        "signup: admin insert returned no row after tenant provisioning",
-      );
-      res.status(500).json({ error: "Signup failed. Please try again." });
-      return;
+      // provisionTenant throws (and rolls back) when the insert returns no row,
+      // so this is unreachable in practice; kept as a typed guard.
+      throw new Error("signup: provisioning returned no admin");
     }
 
     // Mint the session for the admin just created, not for whatever tenant
@@ -208,7 +202,17 @@ router.post("/platform/signup", signupRateLimiter, async (req, res): Promise<voi
       res.status(400).json({ error: e.message });
       return;
     }
-    throw e;
+    // Anything else is OUR failure (a DB error, a schema mismatch such as the
+    // missing session_epoch column on 10 Sep 2026). Nothing was created because
+    // the provisioning transaction rolled back, so say exactly that instead of
+    // letting the generic handler imply the address or club is taken.
+    req.log?.error(
+      { err: e, event: "signup_failed", slug, centralClubId: parsed.data.centralClubId },
+      "signup: provisioning failed; transaction rolled back",
+    );
+    res.status(500).json({
+      error: "Signup failed on our side and nothing was created. Please try again shortly.",
+    });
   }
 });
 
