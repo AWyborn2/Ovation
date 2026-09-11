@@ -10,13 +10,16 @@ import {
   provisioningExclusionsTable,
 } from "@workspace/db";
 import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
+// Type-only (erased at runtime), so it never bypasses the vi.mock below; the
+// inline `typeof import()` form is forbidden by consistent-type-imports.
+import type * as AuthModule from "../lib/auth";
 
 // Lets ONE signup attempt drive the in-transaction admin insert into a NOT NULL
 // violation (password_hash null) to prove provisioning rolls back atomically.
 // Every other call passes straight through to the real hashing.
 const authMock = vi.hoisted(() => ({ nullHashOnce: false }));
 vi.mock("../lib/auth", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../lib/auth")>();
+  const actual = await importOriginal<typeof AuthModule>();
   return {
     ...actual,
     hashPassword: async (password: string) => {
