@@ -28,6 +28,7 @@ const SENIOR_MENU: Seed[] = [
   { label: "Honour Boards", target: "/honour-boards", iconKey: "scrollText" },
   { label: "Players", target: "/players", iconKey: "users" },
   { label: "Matches", target: "/matches", iconKey: "clipboardList" },
+  { label: "Fixtures", target: "/fixtures", iconKey: "calendarDays" },
   { label: "Grades", target: "/grades", iconKey: "trophy" },
   { label: "Records", target: "/records", iconKey: "award" },
   { label: "Premierships", target: "/premierships", iconKey: "crown" },

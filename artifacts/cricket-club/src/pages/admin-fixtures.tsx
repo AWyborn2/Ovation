@@ -200,6 +200,15 @@ export default function AdminFixtures() {
                     {f.grade}
                     {f.roundLabel ? ` · ${f.roundLabel}` : ""}
                   </span>
+                  {f.source === "playhq" && (
+                    <span
+                      className="ml-2 align-middle inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary"
+                      title="Synced from PlayHQ. Grade, round, opponent, venue, start time and home/away are refreshed by each sync; notes and the team list are yours."
+                      data-testid={`badge-playhq-${f.id}`}
+                    >
+                      PlayHQ
+                    </span>
+                  )}
                 </CardTitle>
                 <div className="text-xs text-muted-foreground mt-1">
                   {formatStart(f.startAt)}

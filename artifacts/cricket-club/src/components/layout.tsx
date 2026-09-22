@@ -28,6 +28,13 @@ const SENIOR_NAV_FALLBACK: ResolvedNavItem[] = [
     iconKey: "clipboardList",
     description: "",
   },
+  {
+    label: "Fixtures",
+    target: "/fixtures",
+    isExternal: false,
+    iconKey: "calendarDays",
+    description: "",
+  },
   { label: "Grades", target: "/grades", isExternal: false, iconKey: "trophy", description: "" },
   { label: "Records", target: "/records", isExternal: false, iconKey: "award", description: "" },
   {

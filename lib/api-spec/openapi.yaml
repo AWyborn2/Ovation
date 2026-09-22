@@ -47,7 +47,9 @@ tags:
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
   - name: fixtures
-    description: Admin-entered upcoming fixtures and per-fixture team lists (feeds fixture-driven social cards; PlayHQ ingest later)
+    description: Upcoming fixtures (admin-entered or projected from PlayHQ) and per-fixture team lists; feeds the fixture-driven social cards
+  - name: fixturesResults
+    description: Season fixtures, results and ladders for the tenant's club, read from the PlayHQ (play.cricket.com.au) landing schema
   - name: navigation
     description: Admin-configurable navigation menus and quick-link/tile cards
   - name: Storage
@@ -3560,6 +3562,59 @@ paths:
                 $ref: "#/components/schemas/TeamList"
         "404":
           description: Fixture not found
+
+  /fixtures-results:
+    get:
+      operationId: listFixturesResults
+      tags: [fixturesResults]
+      summary: Season fixtures and results for the tenant's club from PlayHQ
+      description: >-
+        Every match involving the tenant's club in one season, as published on
+        play.cricket.com.au: upcoming fixtures (start time, venue, opponent) and
+        completed results (scores, result line). Defaults to the newest season the
+        club has data for. Returns `linked: false` with empty lists when the tenant
+        has no PlayHQ organisation linked.
+      parameters:
+        - name: season
+          in: query
+          schema:
+            type: string
+          description: Season name as PlayHQ publishes it (e.g. "Summer 2026/27"); defaults to the newest
+        - name: grade
+          in: query
+          schema:
+            type: string
+          description: App grade label to filter by (e.g. "A Grade"); omit for all grades
+      responses:
+        "200":
+          description: Fixtures and results for the season
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixturesResultsPage"
+
+  /fixtures-results/ladder:
+    get:
+      operationId: getFixturesResultsLadder
+      tags: [fixturesResults]
+      summary: The published ladder for one PlayHQ grade
+      parameters:
+        - name: gradeId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          description: PlayHQ grade GUID (from a fixture's `gradeId`); anything else is a 400
+      responses:
+        "200":
+          description: Ladder tables for the grade
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayhqLadder"
+        "404":
+          description: Grade not found in the PlayHQ landing schema
 
   /milestone-board-settings:
     get:
@@ -11983,8 +12038,120 @@ components:
         source:
           type: string
           enum: [manual, playhq]
-          description: "Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest)"
+          description: "Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)"
+        playhqMatchId:
+          type: ["string", "null"]
+          description: PlayHQ match GUID for playhq-sourced rows; null for manual rows
         createdAt: { type: string, format: date-time }
+
+    PlayhqOpponent:
+      type: object
+      description: The other side of a PlayHQ fixture — the opposing club as PlayHQ names it.
+      required: [name]
+      properties:
+        orgId: { type: ["string", "null"], description: PlayHQ organisation GUID }
+        name: { type: string }
+        shortName: { type: ["string", "null"] }
+        logoUrl: { type: ["string", "null"] }
+
+    PlayhqFixture:
+      type: object
+      description: >-
+        One match involving the tenant's club as published on play.cricket.com.au,
+        shaped from the club's perspective. Upcoming matches carry a start time and
+        no scores; completed ones carry scores, a result line and (for central
+        tenants) the id of the matching scorecard.
+      required: [playhqMatchId, gradeId, grade, gradeName, status, isHome]
+      properties:
+        playhqMatchId: { type: string }
+        gradeId: { type: string, description: PlayHQ grade GUID (one grade in one season) }
+        grade: { type: string, description: App grade label (e.g. "A Grade"), or the raw PlayHQ grade name when unmapped }
+        gradeName: { type: string, description: The grade name as PlayHQ publishes it }
+        season: { type: ["string", "null"], description: Season name as PlayHQ publishes it, e.g. "Summer 2026/27" }
+        round: { type: ["string", "null"] }
+        matchType: { type: ["string", "null"], description: One Day / Two Day / T20 … }
+        status: { type: string, description: PlayHQ status — UPCOMING, PENDING, COMPLETED, ABANDONED … }
+        startAt: { type: ["string", "null"], format: date-time }
+        endAt: { type: ["string", "null"], format: date-time, description: Last scheduled day for multi-day matches }
+        venue: { type: ["string", "null"] }
+        surface: { type: ["string", "null"], description: Playing surface / oval name }
+        isHome: { type: boolean }
+        opponent:
+          oneOf:
+            - $ref: "#/components/schemas/PlayhqOpponent"
+            - type: "null"
+        clubScore: { type: ["string", "null"] }
+        opponentScore: { type: ["string", "null"] }
+        resultText: { type: ["string", "null"] }
+        outcome:
+          type: ["string", "null"]
+          enum: [won, lost, draw, null]
+          description: The club's result, derived from PlayHQ's winner flag; null until completed or when abandoned
+        scorecardMatchId:
+          type: ["integer", "null"]
+          description: The app match id whose scorecard this fixture corresponds to (central tenants only), for linking to /matches/{id}
+
+    FixturesResultsPage:
+      type: object
+      required: [linked, seasons, latestSeason, grades, matches]
+      properties:
+        linked:
+          type: boolean
+          description: False when the tenant has no PlayHQ organisation linked; every list is then empty
+        seasons: { type: array, items: { type: string }, description: Season names the club has PlayHQ data for, newest first }
+        latestSeason: { type: ["string", "null"] }
+        grades: { type: array, items: { type: string }, description: App grade labels present in the selected season }
+        matches:
+          type: array
+          items: { $ref: "#/components/schemas/PlayhqFixture" }
+          description: Every match in the selected season (and grade), ordered by start time ascending
+
+    PlayhqLadderTeam:
+      type: object
+      required: [teamId, teamName, isClub]
+      properties:
+        teamId: { type: string }
+        teamName: { type: string }
+        orgId: { type: ["string", "null"] }
+        isClub: { type: boolean, description: True for the tenant's own team }
+        rank: { type: ["integer", "null"] }
+        played: { type: ["integer", "null"] }
+        won: { type: ["integer", "null"] }
+        lost: { type: ["integer", "null"] }
+        ties: { type: ["integer", "null"] }
+        noResults: { type: ["integer", "null"] }
+        byes: { type: ["integer", "null"] }
+        forfeits: { type: ["integer", "null"] }
+        points: { type: ["number", "null"] }
+        bonusPoints: { type: ["number", "null"] }
+        quotient: { type: ["number", "null"] }
+        netRunRate: { type: ["number", "null"] }
+        runsFor: { type: ["integer", "null"] }
+        wicketsLost: { type: ["integer", "null"] }
+        oversFaced: { type: ["number", "null"] }
+        runsAgainst: { type: ["integer", "null"] }
+        wicketsTaken: { type: ["integer", "null"] }
+        oversBowled: { type: ["number", "null"] }
+
+    PlayhqLadderTable:
+      type: object
+      required: [name, teams]
+      properties:
+        name: { type: string, description: Ladder name as published (a grade can publish more than one, e.g. "One Day" and "Two Day") }
+        teams:
+          type: array
+          items: { $ref: "#/components/schemas/PlayhqLadderTeam" }
+
+    PlayhqLadder:
+      type: object
+      required: [gradeId, gradeName, season, ladders]
+      properties:
+        gradeId: { type: string }
+        gradeName: { type: string }
+        season: { type: ["string", "null"] }
+        ladders:
+          type: array
+          items: { $ref: "#/components/schemas/PlayhqLadderTable" }
 
     CreateFixtureBody:
       type: object

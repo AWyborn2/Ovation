@@ -25,8 +25,11 @@ if (!["localhost", "127.0.0.1", "::1", "postgres"].includes(host)) {
 }
 
 export default defineConfig({
-  schema: path.join(__dirname, "./src/central-schema/index.ts"),
+  schema: [
+    path.join(__dirname, "./src/central-schema/index.ts"),
+    path.join(__dirname, "./src/playhq-schema/index.ts"),
+  ],
   dialect: "postgresql",
-  schemaFilter: ["central"],
+  schemaFilter: ["central", "playhq"],
   dbCredentials: { url },
 });

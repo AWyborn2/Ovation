@@ -37,10 +37,11 @@ separate schema, written only by the loader — the app never reads or writes it
 
 ## What this deliberately does NOT do (next steps, each a reviewed change)
 
-1. **Fixtures in the app.** `public.fixtures` already reserves `source = 'playhq'` but has no
-   external-id column; add `playhq_match_id` + a unique index, then project
-   `playhq.matches where status in ('UPCOMING','PENDING')` for the tenant's club
-   (`home_org_id`/`away_org_id` = the club's org GUID) into `fixtures` per tenant.
+1. ~~**Fixtures in the app.**~~ Done (Sep 2026): `fixtures.playhq_match_id` + partial unique,
+   `tenants.playhq_org_id`, and `scripts/src/playhq-project-fixtures.ts` upsert the tenant's
+   upcoming matches into `fixtures` (`source = 'playhq'`) for Social Studio. The public
+   Fixtures & Results page (`/fixtures`, `GET /fixtures-results`) reads `playhq.matches` /
+   `ladders` directly via `lib/db/src/central/playhq-fixtures.ts`.
 2. **Results into `central.*`.** `central.matches`/`match_batting`/`match_bowling` are today
    rebuilt by the external PCA/WA builders. Projecting `playhq.scorecards` into them must go
    through the same offset-id and grade-classification rules and be checked by the

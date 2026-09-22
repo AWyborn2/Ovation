@@ -10,6 +10,8 @@
  *   pnpm --filter @workspace/scripts run playhq-load -- --dir=<folder> --yes  # every *.json
  *   pnpm --filter @workspace/scripts run playhq-load -- --report=8            # changes, last 8 days
  *   pnpm --filter @workspace/scripts run playhq-load -- --ddl                 # print the schema
+ *   pnpm --filter @workspace/scripts run playhq-load -- --file=<dump.json> --yes --project
+ *       # …then project each linked tenant's fixtures (needs DATABASE_URL too)
  *
  * This is BUILD/OPS tooling in the mould of normalize-central-active-clubs.ts: it opens its
  * own `pg` pool on CENTRAL_DATABASE_URL and writes ONLY to schema `playhq`. The app's
@@ -717,7 +719,7 @@ const has = (flag: string) => process.argv.includes(flag);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA_SQL = path.join(HERE, "..", "sql", "playhq-schema.sql");
 
-function sslFor(url: string): { rejectUnauthorized: true } | false {
+export function sslFor(url: string): { rejectUnauthorized: true } | false {
   const raw = (process.env.CENTRAL_DB_SSL ?? "").trim().toLowerCase();
   if (raw === "1" || raw === "true" || raw === "require") return { rejectUnauthorized: true };
   if (raw === "0" || raw === "false" || raw === "disable") return false;
@@ -732,7 +734,7 @@ function sslFor(url: string): { rejectUnauthorized: true } | false {
     : { rejectUnauthorized: true };
 }
 
-function confirmTarget(url: string): void {
+export function confirmTarget(url: string): void {
   let host = "";
   try {
     host = new URL(url).hostname;
@@ -807,9 +809,10 @@ async function main(): Promise<void> {
   const dryRun = has("--dry-run");
   const init = has("--init");
   const reportDays = argValue("--report") ?? (has("--report") ? "8" : undefined);
-  if (!init && !files.length && reportDays === undefined)
+  const project = has("--project");
+  if (!init && !files.length && reportDays === undefined && !project)
     throw new Error(
-      "Nothing to do: pass --init, --file=<dump.json>, --dir=<folder>, --report[=days] or --ddl.",
+      "Nothing to do: pass --init, --file=<dump.json>, --dir=<folder>, --report[=days], --project or --ddl.",
     );
 
   const parsed = files.map((f) => {
@@ -852,6 +855,14 @@ async function main(): Promise<void> {
     if (reportDays !== undefined) await report(pool, Number(reportDays) || 8);
   } finally {
     await pool.end();
+  }
+  if (project) {
+    // Push the freshly loaded matches into each linked tenant's fixtures
+    // (Social Studio). Needs DATABASE_URL as well; --yes covers both hosts.
+    const { confirmDatabaseTarget } = await import("./lib/cli");
+    confirmDatabaseTarget();
+    const { projectFixtures } = await import("./playhq-project-fixtures");
+    await projectFixtures({ dryRun: false });
   }
 }
 

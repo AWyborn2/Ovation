@@ -99,7 +99,9 @@ import type {
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
+  FixturesResultsPage,
   GenerateCardSetBody,
+  GetFixturesResultsLadderParams,
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
@@ -152,6 +154,7 @@ import type {
   LifeMemberInput,
   LifeMemberUpdate,
   ListFixturesParams,
+  ListFixturesResultsParams,
   ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
@@ -201,6 +204,7 @@ import type {
   PlayerMergeRequest,
   PlayerSeasonStat,
   PlayerUpdate,
+  PlayhqLadder,
   PointsConfigInput,
   PointsConfigUpdate,
   PointsLeaderboard,
@@ -12708,6 +12712,175 @@ export const usePutFixtureTeamList = <TError = ErrorType<void>,
       > => {
       return useMutation(getPutFixtureTeamListMutationOptions(options));
     }
+
+export const getListFixturesResultsUrl = (params?: ListFixturesResultsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fixtures-results?${stringifiedParams}` : `/api/fixtures-results`
+}
+
+/**
+ * Every match involving the tenant's club in one season, as published on play.cricket.com.au: upcoming fixtures (start time, venue, opponent) and completed results (scores, result line). Defaults to the newest season the club has data for. Returns `linked: false` with empty lists when the tenant has no PlayHQ organisation linked.
+ * @summary Season fixtures and results for the tenant's club from PlayHQ
+ */
+export const listFixturesResults = async (params?: ListFixturesResultsParams, options?: RequestInit): Promise<FixturesResultsPage> => {
+
+  return customFetch<FixturesResultsPage>(getListFixturesResultsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFixturesResultsQueryKey = (params?: ListFixturesResultsParams,) => {
+    return [
+    `/api/fixtures-results`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFixturesResultsQueryOptions = <TData = Awaited<ReturnType<typeof listFixturesResults>>, TError = ErrorType<unknown>>(params?: ListFixturesResultsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixturesResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFixturesResultsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFixturesResults>>> = ({ signal }) => listFixturesResults(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFixturesResults>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFixturesResultsQueryResult = NonNullable<Awaited<ReturnType<typeof listFixturesResults>>>
+export type ListFixturesResultsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Season fixtures and results for the tenant's club from PlayHQ
+ */
+
+export function useListFixturesResults<TData = Awaited<ReturnType<typeof listFixturesResults>>, TError = ErrorType<unknown>>(
+ params?: ListFixturesResultsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixturesResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFixturesResultsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetFixturesResultsLadderUrl = (params: GetFixturesResultsLadderParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fixtures-results/ladder?${stringifiedParams}` : `/api/fixtures-results/ladder`
+}
+
+/**
+ * @summary The published ladder for one PlayHQ grade
+ */
+export const getFixturesResultsLadder = async (params: GetFixturesResultsLadderParams, options?: RequestInit): Promise<PlayhqLadder> => {
+
+  return customFetch<PlayhqLadder>(getGetFixturesResultsLadderUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFixturesResultsLadderQueryKey = (params?: GetFixturesResultsLadderParams,) => {
+    return [
+    `/api/fixtures-results/ladder`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFixturesResultsLadderQueryOptions = <TData = Awaited<ReturnType<typeof getFixturesResultsLadder>>, TError = ErrorType<void>>(params: GetFixturesResultsLadderParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixturesResultsLadder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFixturesResultsLadderQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFixturesResultsLadder>>> = ({ signal }) => getFixturesResultsLadder(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFixturesResultsLadder>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFixturesResultsLadderQueryResult = NonNullable<Awaited<ReturnType<typeof getFixturesResultsLadder>>>
+export type GetFixturesResultsLadderQueryError = ErrorType<void>
+
+
+/**
+ * @summary The published ladder for one PlayHQ grade
+ */
+
+export function useGetFixturesResultsLadder<TData = Awaited<ReturnType<typeof getFixturesResultsLadder>>, TError = ErrorType<void>>(
+ params: GetFixturesResultsLadderParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixturesResultsLadder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFixturesResultsLadderQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetMilestoneBoardSettingsUrl = () => {
 
