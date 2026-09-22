@@ -53,7 +53,9 @@ Thumbs.db
 
 # Claude Code skill symlinks -> .agents/skills/ (source of truth); on
 # platforms without symlink support these dereference into duplicate copies
-.claude/skills/
+.claude/skills/*
+# ...except the project skills we version-control deliberately (a bare ".claude/skills/" cannot be re-included)
+!.claude/skills/playcricket-stats-scraper/
 
 # Claude Code personal overrides (permissions, local instructions) - not team policy
 .claude/settings.local.json

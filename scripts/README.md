@@ -13,8 +13,16 @@ Maintenance and data scripts for the Ovation monorepo. Run any of them with
 - `--dry-run` (or `DRY_RUN=1`) previews without writing.
 - A non-local `DATABASE_URL` is refused unless `--yes` is passed.
 
-Nothing here ever writes to the central database; the `centralDb` handle is
-read-only by construction.
+Nothing here writes to the `central` schema through the app; the `centralDb`
+handle is read-only by construction. Two ops scripts open their own connection
+to `CENTRAL_DATABASE_URL`: `normalize-central-active-clubs` (repairs
+`central.clubs.active_to`) and `playhq-load` (writes only schema `playhq`).
+
+## PlayHQ scraper landing zone
+
+| Script        | Purpose                                                                                                                                                                                                                                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `playhq-load` | Loads dumps from the `playcricket-stats-scraper` skill (`.claude/skills/playcricket-stats-scraper/`) into `playhq.*` on `CENTRAL_DATABASE_URL` — fixtures, results, ladders, season stats, scorecards, ball-by-ball. `--init` applies `sql/playhq-schema.sql`; `--dry-run` counts only; `--report=<days>` prints fixture changes; non-local hosts need `--yes`. |
 
 ## Recurring (post-merge on Replit — `scripts/post-merge.sh`)
 

@@ -33,17 +33,20 @@
     "legacy:remove-a-grade-2025-26": "tsx ./legacy/remove-a-grade-2025-26.ts",
     "legacy:add-a-grade-2025-26-debuts": "tsx ./legacy/add-a-grade-2025-26-debuts.ts",
     "legacy:fix-a-grade-cap-duplicates": "tsx ./legacy/fix-a-grade-cap-duplicates.ts",
+    "playhq-load": "tsx ./src/playhq-load.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
     "@workspace/scorecard": "workspace:*",
     "drizzle-orm": "catalog:",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "pg": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "@types/pg": "catalog:"
   }
 }

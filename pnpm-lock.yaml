@@ -650,6 +650,9 @@ importers:
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(@types/pg@8.23.1)(pg@8.23.0)
+      pg:
+        specifier: 'catalog:'
+        version: 8.23.0
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -657,6 +660,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.6.2
+      '@types/pg':
+        specifier: 'catalog:'
+        version: 8.23.1
       tsx:
         specifier: 'catalog:'
         version: 4.23.13
