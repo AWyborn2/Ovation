@@ -16,3 +16,13 @@ pnpm --filter @workspace/scripts run reconcile-caps
 # pointer (players.image_url) so pre-gallery players appear in the gallery /
 # per-card pickers. Idempotent: inserts only for players with no gallery row.
 pnpm --filter @workspace/scripts run backfill-player-images
+# Nav items that shipped after a tenant was seeded (e.g. "Fixtures"): append them
+# to every tenant's menu once. Idempotent; never reorders or resurrects rows.
+pnpm --filter @workspace/scripts run seed-nav-items -- --all-tenants --add-missing --yes \
+  || echo "post-merge: seed-nav-items --add-missing failed (non-fatal)"
+# PlayHQ fixtures → Social Studio: link any unlinked tenant whose central club
+# name matches a PlayHQ organisation, then upsert its upcoming fixtures. Needs
+# CENTRAL_DATABASE_URL (already required for central reads). Non-fatal so a
+# PlayHQ hiccup never blocks a deploy.
+pnpm --filter @workspace/scripts run playhq-project-fixtures -- --auto-link --yes \
+  || echo "post-merge: playhq-project-fixtures failed (non-fatal)"
