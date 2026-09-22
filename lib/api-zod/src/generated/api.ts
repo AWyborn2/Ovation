@@ -5131,8 +5131,11 @@ export const ListFixturesResultsResponse = zod.object({
 /**
  * @summary The published ladder for one PlayHQ grade
  */
+export const getFixturesResultsLadderQueryGradeIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const GetFixturesResultsLadderQueryParams = zod.object({
-  "gradeId": zod.coerce.string().describe('PlayHQ grade GUID (from a fixture\'s `gradeId`)')
+  "gradeId": zod.coerce.string().regex(getFixturesResultsLadderQueryGradeIdRegExp).describe('PlayHQ grade GUID (from a fixture\'s `gradeId`); anything else is a 400')
 })
 
 export const GetFixturesResultsLadderResponse = zod.object({

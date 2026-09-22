@@ -8,7 +8,8 @@
 
 export type GetFixturesResultsLadderParams = {
 /**
- * PlayHQ grade GUID (from a fixture's `gradeId`)
+ * PlayHQ grade GUID (from a fixture's `gradeId`); anything else is a 400
+ * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
  */
 gradeId: string;
 };
