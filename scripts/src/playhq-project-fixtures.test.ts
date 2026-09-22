@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   PLAYHQ_ORG_GUID_RE,
+  matchOrganisation,
+  orgNameKey,
   toFixtureRow,
   type OrgLite,
   type PlayhqMatchLite,
@@ -94,6 +96,29 @@ describe("toFixtureRow", () => {
     );
     expect(row.isHome).toBe(true);
     expect(row.opponentName).toBe("Halls Head A Grade");
+  });
+});
+
+describe("matchOrganisation", () => {
+  const orgs = [
+    { id: HH, name: "Halls Head Cricket Club" },
+    { id: SBCC, name: "Shoalwater Bay Cricket Club" },
+    { id: "90dfe363-87d8-eb11-a7ad-2818780da0cc", name: "SJ Blues Cricket Club" },
+  ];
+  it("links a central club to the one organisation with the same name, ignoring case, punctuation and Inc", () => {
+    expect(matchOrganisation("Halls Head Cricket Club", orgs)).toBe(HH);
+    expect(matchOrganisation("halls head cricket club inc.", orgs)).toBe(HH);
+    expect(orgNameKey("Harvey Benger Cricket Club Inc")).toBe("harvey benger cricket club");
+  });
+  it("refuses to guess when nothing or more than one organisation matches", () => {
+    expect(matchOrganisation("Rockingham Beach Cricket Club", orgs)).toBeNull();
+    expect(matchOrganisation(null, orgs)).toBeNull();
+    expect(
+      matchOrganisation("Halls Head Cricket Club", [
+        ...orgs,
+        { id: "dup", name: "HALLS HEAD CRICKET CLUB" },
+      ]),
+    ).toBeNull();
   });
 });
 

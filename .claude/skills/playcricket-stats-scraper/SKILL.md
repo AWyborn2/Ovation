@@ -165,7 +165,10 @@ then, needing both `DATABASE_URL` (tenant DB) and `CENTRAL_DATABASE_URL`:
 cd scripts && ./node_modules/.bin/tsx ./src/playhq-project-fixtures.ts --yes
 ```
 
-or fold it into the load with `playhq-load … --yes --project`. Every senior match involving the
+or fold it into the load with `playhq-load … --yes --project`. On Replit none of this is manual:
+`scripts/post-merge.sh` runs `playhq-project-fixtures --auto-link` (links unlinked tenants whose
+central club name matches one PlayHQ organisation, then projects) and `seed-nav-items
+--all-tenants --add-missing` (adds the Fixtures menu item) on every deploy. Every senior match involving the
 club from 14 days ago onwards is upserted on `(tenant_id, playhq_match_id)`; re-runs refresh
 grade, round, opponent (with crest), venue, start and home/away, never `notes` or the team list.
 The public **Fixtures & Results** page (`/fixtures`) reads `playhq.*` live through

@@ -11,6 +11,9 @@
  *   # Link a tenant to its PlayHQ organisation first (GUID = last path segment of
  *   # the club's play.cricket.com.au URL), then project:
  *   pnpm --filter @workspace/scripts run playhq-project-fixtures -- --tenant=1 --set-org=<guid> --yes
+ *   # Or let it find the organisation itself: an unlinked tenant whose central club name
+ *   # matches exactly one PlayHQ organisation gets linked (the post-merge hook does this):
+ *   pnpm --filter @workspace/scripts run playhq-project-fixtures -- --auto-link --yes
  *   # `playhq-load --project` runs this after a load.
  *
  * What it writes: one `fixtures` row per senior PlayHQ match involving the
@@ -21,7 +24,7 @@
  * never touched. Rows are never deleted here — a fixture PlayHQ drops or
  * abandons stays until an admin removes it.
  */
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import pg from "pg";
 import { confirmDatabaseTarget, isDryRun } from "./lib/cli";
 import { confirmTarget, sslFor } from "./playhq-load";
@@ -94,6 +97,32 @@ export function toFixtureRow(
 
 export const PLAYHQ_ORG_GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Case-, punctuation- and "Inc"-insensitive club name key, so the central register's
+ * "Harvey Benger Cricket Club Inc" and PlayHQ's "Harvey Benger Cricket Club" agree.
+ */
+export function orgNameKey(name: string | null | undefined): string {
+  return (name ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+inc$/, "");
+}
+
+/**
+ * The ONE PlayHQ organisation whose name matches the club's; null when none or
+ * more than one does (never guess — an unlinked tenant shows "not linked").
+ */
+export function matchOrganisation(
+  clubName: string | null | undefined,
+  orgs: { id: string; name: string | null }[],
+): string | null {
+  const key = orgNameKey(clubName);
+  if (!key) return null;
+  const hits = orgs.filter((o) => orgNameKey(o.name) === key);
+  return hits.length === 1 ? hits[0]!.id : null;
+}
+
 // ---------------------------------------------------------------------------
 // Projection
 // ---------------------------------------------------------------------------
@@ -103,6 +132,8 @@ export interface ProjectionOpts {
   tenantId?: number;
   /** Include matches whose start is at least this many days in the past. */
   windowDays?: number;
+  /** First link unlinked tenants whose central club name matches exactly one PlayHQ organisation. */
+  autoLink?: boolean;
   dryRun?: boolean;
   log?: (line: string) => void;
 }
@@ -127,6 +158,47 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
   const { db, tenantsTable, fixturesTable, clubsTable } = await import("@workspace/db");
   const { appGradeFromCentral } = await import("@workspace/db/central-queries");
 
+  const central = new pg.Client({ connectionString: centralUrl, ssl: sslFor(centralUrl) });
+  await central.connect();
+
+  if (opts.autoLink) {
+    const unlinkedConds = [isNull(tenantsTable.playhqOrgId), isNotNull(tenantsTable.centralClubId)];
+    if (opts.tenantId) unlinkedConds.push(eq(tenantsTable.id, opts.tenantId));
+    const unlinked = await db
+      .select({ id: tenantsTable.id, slug: tenantsTable.slug, clubId: tenantsTable.centralClubId })
+      .from(tenantsTable)
+      .where(and(...unlinkedConds));
+    if (unlinked.length) {
+      const clubs = await central.query<{ club_id: number; name: string | null }>(
+        `select club_id, name from central.clubs where club_id = any($1::int[])`,
+        [unlinked.map((t) => t.clubId)],
+      );
+      const orgs = (
+        await central.query<{ id: string; name: string | null }>(
+          `select id, name from playhq.organisations`,
+        )
+      ).rows;
+      const nameOf = new Map(clubs.rows.map((c) => [c.club_id, c.name]));
+      for (const t of unlinked) {
+        const orgId = matchOrganisation(nameOf.get(t.clubId as number) ?? null, orgs);
+        if (!orgId) {
+          log(
+            `tenant ${t.id} (${t.slug}): no single PlayHQ organisation named like "${nameOf.get(t.clubId as number) ?? "?"}" — left unlinked`,
+          );
+          continue;
+        }
+        log(
+          `tenant ${t.id} (${t.slug}): linking to PlayHQ organisation ${orgId}${opts.dryRun ? " [dry-run]" : ""}`,
+        );
+        if (!opts.dryRun)
+          await db
+            .update(tenantsTable)
+            .set({ playhqOrgId: orgId })
+            .where(eq(tenantsTable.id, t.id));
+      }
+    }
+  }
+
   const tenantConds = [isNotNull(tenantsTable.playhqOrgId)];
   if (opts.tenantId) tenantConds.push(eq(tenantsTable.id, opts.tenantId));
   const tenants = await db
@@ -135,8 +207,9 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
     .where(and(...tenantConds));
   if (tenants.length === 0) {
     log(
-      "No tenant has a playhq_org_id set — nothing to project (use --tenant=<id> --set-org=<guid>).",
+      "No tenant has a playhq_org_id set — nothing to project (use --auto-link, or --tenant=<id> --set-org=<guid>).",
     );
+    await central.end();
     return [];
   }
 
@@ -147,8 +220,6 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
   const clubIdByOrg = new Map<string, number>();
   for (const c of clubs) if (c.orgId) clubIdByOrg.set(c.orgId.toLowerCase(), c.id);
 
-  const central = new pg.Client({ connectionString: centralUrl, ssl: sslFor(centralUrl) });
-  await central.connect();
   const summaries: ProjectionSummary[] = [];
   try {
     for (const t of tenants) {
@@ -284,6 +355,7 @@ async function main(): Promise<void> {
     throw new Error("--tenant must be a positive integer");
   const setOrg = argValue("--set-org");
   const windowDays = Number(argValue("--window-days") ?? 14);
+  const autoLink = process.argv.includes("--auto-link");
   const dryRun = isDryRun();
 
   confirmDatabaseTarget();
@@ -312,7 +384,7 @@ async function main(): Promise<void> {
     }
   }
 
-  await projectFixtures({ tenantId, windowDays, dryRun });
+  await projectFixtures({ tenantId, windowDays, autoLink, dryRun });
   const { closeDb } = await import("@workspace/db");
   await closeDb();
 }

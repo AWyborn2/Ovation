@@ -5,15 +5,24 @@
  * Idempotent / re-runnable: a surface is only seeded when it currently has zero
  * rows, so re-running never clobbers admin edits to an already-populated surface.
  *
+ * `--add-missing` is the one exception, for items that ship AFTER a tenant was
+ * seeded (e.g. "Fixtures"): only seeds flagged `addToExisting` are appended to
+ * an already-populated surface when no row with that target exists, at the end
+ * of the menu so an admin's ordering is untouched. Items an admin removed on
+ * purpose are never resurrected because only flagged seeds are considered.
+ * `--all-tenants` runs it for every tenant (the post-merge hook does this).
+ *
  * Surfaces:
  *  - senior_menu        — senior top menu
  *  - junior_menu        — junior top menu
  *  - junior_quick_links — junior dashboard quick-link cards (title + desc + icon)
  *  - admin_tiles        — admin hub shortcut cards (title + desc)
  *
- * Run with: pnpm --filter @workspace/scripts run seed-nav-items
+ * Run with:
+ *   pnpm --filter @workspace/scripts run seed-nav-items -- --tenant=<id>
+ *   pnpm --filter @workspace/scripts run seed-nav-items -- --all-tenants --add-missing --yes
  */
-import { db, navItemsTable } from "@workspace/db";
+import { closeDb, db, navItemsTable, tenantsTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { confirmDatabaseTarget, isDryRun, requireTenantArg } from "./lib/cli";
 
@@ -22,13 +31,15 @@ type Seed = {
   target: string;
   iconKey?: string;
   description?: string;
+  /** Append to tenants seeded before this item existed (see `--add-missing`). */
+  addToExisting?: boolean;
 };
 
 const SENIOR_MENU: Seed[] = [
   { label: "Honour Boards", target: "/honour-boards", iconKey: "scrollText" },
   { label: "Players", target: "/players", iconKey: "users" },
   { label: "Matches", target: "/matches", iconKey: "clipboardList" },
-  { label: "Fixtures", target: "/fixtures", iconKey: "calendarDays" },
+  { label: "Fixtures", target: "/fixtures", iconKey: "calendarDays", addToExisting: true },
   { label: "Grades", target: "/grades", iconKey: "trophy" },
   { label: "Records", target: "/records", iconKey: "award" },
   { label: "Premierships", target: "/premierships", iconKey: "crown" },
@@ -182,16 +193,58 @@ const SURFACES: { surface: string; items: Seed[] }[] = [
   { surface: "admin_tiles", items: ADMIN_TILES },
 ];
 
-async function main() {
-  const tenantId = requireTenantArg();
-  confirmDatabaseTarget();
+/** Seeds flagged `addToExisting` whose target has no row yet on this surface. */
+export function missingAddToExisting(items: Seed[], existingTargets: Iterable<string>): Seed[] {
+  const have = new Set(existingTargets);
+  return items.filter((it) => it.addToExisting && !have.has(it.target));
+}
+
+async function seedTenant(tenantId: number, addMissing: boolean): Promise<void> {
   for (const { surface, items } of SURFACES) {
     const existing = await db
-      .select({ id: navItemsTable.id })
+      .select({
+        id: navItemsTable.id,
+        target: navItemsTable.target,
+        sortOrder: navItemsTable.sortOrder,
+      })
       .from(navItemsTable)
       .where(and(eq(navItemsTable.tenantId, tenantId), eq(navItemsTable.surface, surface)));
     if (existing.length > 0) {
-      console.log(`• ${surface}: ${existing.length} rows already present — skipped`);
+      const missing = addMissing
+        ? missingAddToExisting(
+            items,
+            existing.map((r) => r.target),
+          )
+        : [];
+      if (missing.length === 0) {
+        console.log(
+          `• tenant ${tenantId} ${surface}: ${existing.length} rows already present — skipped`,
+        );
+        continue;
+      }
+      if (isDryRun()) {
+        console.log(
+          `DRY RUN: would append ${missing.map((m) => m.label).join(", ")} to tenant ${tenantId} ${surface}.`,
+        );
+        continue;
+      }
+      const nextOrder = Math.max(-1, ...existing.map((r) => r.sortOrder)) + 1;
+      await db.insert(navItemsTable).values(
+        missing.map((it, idx) => ({
+          tenantId,
+          surface,
+          label: it.label,
+          description: it.description ?? "",
+          iconKey: it.iconKey ?? "",
+          target: it.target,
+          isExternal: false,
+          sortOrder: nextOrder + idx,
+          visible: true,
+        })),
+      );
+      console.log(
+        `+ tenant ${tenantId} ${surface}: appended ${missing.map((m) => m.label).join(", ")}`,
+      );
       continue;
     }
     if (isDryRun()) {
@@ -213,14 +266,30 @@ async function main() {
         visible: true,
       })),
     );
-    console.log(`+ ${surface}: seeded ${items.length} items`);
+    console.log(`+ tenant ${tenantId} ${surface}: seeded ${items.length} items`);
   }
-  console.log("seed-nav-items: done");
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
+async function main() {
+  const allTenants = process.argv.includes("--all-tenants");
+  const addMissing = process.argv.includes("--add-missing");
+  confirmDatabaseTarget();
+  const tenantIds = allTenants
+    ? (await db.select({ id: tenantsTable.id }).from(tenantsTable).orderBy(tenantsTable.id)).map(
+        (t) => t.id,
+      )
+    : [requireTenantArg()];
+  for (const id of tenantIds) await seedTenant(id, addMissing);
+  console.log("seed-nav-items: done");
+  await closeDb();
+}
+
+const invokedDirectly =
+  process.argv[1] &&
+  (await import("node:path")).resolve(process.argv[1]) ===
+    (await import("node:url")).fileURLToPath(import.meta.url);
+if (invokedDirectly)
+  main().catch((err) => {
     console.error(err);
     process.exit(1);
   });
