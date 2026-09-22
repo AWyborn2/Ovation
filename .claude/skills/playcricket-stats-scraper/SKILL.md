@@ -134,6 +134,16 @@ cd scripts && ./node_modules/.bin/tsx ./src/playhq-load.ts --init --file=<dump>.
 `--report=<days>` prints fixture changes recorded in the last N days, upcoming matches in the
 next 14 days, and completed matches touched. Against the shared Supabase host add `--yes`
 (the script refuses a non-local host without it). `--dir=<folder>` loads every `*.json` in it.
+
+The repo loads no `.env` itself. Ash keeps `CENTRAL_DATABASE_URL` in the gitignored repo-root
+`.env`; export it for the command without ever printing the value (this handles a UTF-8 BOM,
+CRLF and quotes — plain `. ./.env` did not work):
+
+```bash
+export CENTRAL_DATABASE_URL="$(sed '1s/^\xEF\xBB\xBF//' .env | tr -d '\r' | grep '^CENTRAL_DATABASE_URL=' | head -1 | cut -d= -f2- | sed 's/^"//;s/"$//')"
+```
+
+A password containing `@` must be written `%40` inside the URL.
 The published form is `pnpm --filter @workspace/scripts run playhq-load -- …` — on this Windows
 machine call the local `tsx` instead (a `pnpm --filter` run wipes the hand-installed win32
 binaries, see memory).
@@ -200,5 +210,8 @@ and 11,662 deliveries collected in 8 s with 0 errors; loaded twice into a local 
 (second load a no-op); a dump with one altered fixture produced 3 `fixture_changes` rows.
 Current season (2026/27) fixtures plan: 8 senior grades, 525 matches (124 involving Halls
 Head, all `UPCOMING`/`PENDING`, first ball 10 Oct 2026), 65 teams, 81 ladder rows, 5 s.
-Not verified: a load against the real ovation-central Supabase host (no credentials in the
-session) — the `--yes` path is the same code with a different URL.
+Then loaded for real into the ovation-central Supabase project with `--init --yes` (schema
+`playhq` created, 17 tables): 619 matches across both seasons, 91 ladder rows, 250 players,
+24 scorecards, 11,662 balls — confirmed from the Supabase side afterwards. Note Supabase's
+advisor flags RLS disabled on `playhq.*`, exactly as on `central.*` and `wa.*`; the anon key
+can read these tables until a policy decision is made.
