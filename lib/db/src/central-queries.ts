@@ -35,3 +35,4 @@ export * from "./central/leaderboards";
 export * from "./central/players";
 export * from "./central/records";
 export * from "./central/summaries";
+export * from "./central/playhq-fixtures";

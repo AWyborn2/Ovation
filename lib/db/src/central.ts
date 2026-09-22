@@ -1,10 +1,18 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import * as centralSchema from "./central-schema";
+import * as centralTables from "./central-schema";
+import * as playhqTables from "./playhq-schema";
 import { envInt, envSsl } from "./env";
 import { lazyProxy } from "./lazy";
 
 const { Pool } = pg;
+
+/**
+ * Everything reachable through the central connection: the `central.*` PCA
+ * mirror plus the `playhq.*` landing schema (same Postgres, same read-only
+ * role; written only by scripts/src/playhq-load.ts, never by the app).
+ */
+const centralSchema = { ...centralTables, ...playhqTables };
 
 /**
  * Read-only connection to the central PCA database (Postgres schema `central`).
@@ -143,3 +151,4 @@ export async function closeCentralDb(): Promise<void> {
 export const centralDb: CentralDb = lazyProxy(getCentralDb);
 
 export * from "./central-schema";
+export * from "./playhq-schema";

@@ -148,6 +148,29 @@ The published form is `pnpm --filter @workspace/scripts run playhq-load -- …` 
 machine call the local `tsx` instead (a `pnpm --filter` run wipes the hand-installed win32
 binaries, see memory).
 
+### 4b. Project fixtures into Social Studio
+
+The app never reads `playhq.*` directly. Upcoming fixtures reach the admin fixtures page and
+the Match Day / Team List / Countdown cards through `public.fixtures` rows with
+`source = 'playhq'`, written by the projection script. A tenant must first be linked to its
+PlayHQ organisation GUID (once):
+
+```bash
+cd scripts && ./node_modules/.bin/tsx ./src/playhq-project-fixtures.ts --tenant=1 --set-org=4559f1b9-86d8-eb11-a7ad-2818780da0cc --dry-run
+```
+
+then, needing both `DATABASE_URL` (tenant DB) and `CENTRAL_DATABASE_URL`:
+
+```bash
+cd scripts && ./node_modules/.bin/tsx ./src/playhq-project-fixtures.ts --yes
+```
+
+or fold it into the load with `playhq-load … --yes --project`. Every senior match involving the
+club from 14 days ago onwards is upserted on `(tenant_id, playhq_match_id)`; re-runs refresh
+grade, round, opponent (with crest), venue, start and home/away, never `notes` or the team list.
+The public **Fixtures & Results** page (`/fixtures`) reads `playhq.*` live through
+`central-queries` for the same linked organisation, so it needs no projection.
+
 ### 5. Report to the user
 
 Say what was collected (grades, matches by status, scorecards, balls), what changed

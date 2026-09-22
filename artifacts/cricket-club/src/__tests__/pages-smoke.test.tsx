@@ -8,6 +8,7 @@ import PlayerDetail from "@/pages/player-detail";
 import PersonDetail from "@/pages/person-detail";
 import MatchDetail from "@/pages/match-detail";
 import Matches from "@/pages/matches";
+import FixturesResults from "@/pages/fixtures-results";
 import Grades from "@/pages/grades";
 import GradeLeaderboard from "@/pages/grade-leaderboard";
 import StatDetail from "@/pages/stat-detail";
@@ -88,6 +89,58 @@ const MATCH = {
   hatTricks: [],
 };
 
+const PLAYHQ_FIXTURE = {
+  playhqMatchId: "44ec2743-3358-4f75-aced-0a878b234b23",
+  gradeId: "23f816be-ab0e-471a-b5ba-57fff9fce7d0",
+  grade: "A Grade",
+  gradeName: "A Grade Wyllie Cup",
+  season: "Summer 2026/27",
+  round: "Round 1",
+  matchType: "One Day",
+  status: "UPCOMING",
+  startAt: "2026-10-10T03:45:00.000Z",
+  endAt: "2026-10-10T03:45:00.000Z",
+  venue: "Stan Twight Reserve",
+  surface: "Oval #1 (West)",
+  isHome: false,
+  opponent: {
+    orgId: "3d38cd53-8ad8-eb11-a7ad-2818780da0cc",
+    name: "Shoalwater Bay Cricket Club",
+    shortName: "SBCC",
+    logoUrl: null,
+  },
+  clubScore: null,
+  opponentScore: null,
+  resultText: null,
+  outcome: null,
+  scorecardMatchId: null,
+};
+const PLAYHQ_PAGE = {
+  linked: true,
+  seasons: ["Summer 2026/27"],
+  latestSeason: "Summer 2026/27",
+  grades: ["A Grade"],
+  matches: [
+    PLAYHQ_FIXTURE,
+    {
+      ...PLAYHQ_FIXTURE,
+      playhqMatchId: "done-1",
+      status: "COMPLETED",
+      clubScore: "189",
+      opponentScore: "4-190",
+      resultText: "SBCC won by 6 wickets",
+      outcome: "lost",
+      scorecardMatchId: 1,
+    },
+  ],
+};
+const PLAYHQ_LADDER = {
+  gradeId: PLAYHQ_FIXTURE.gradeId,
+  gradeName: PLAYHQ_FIXTURE.gradeName,
+  season: "Summer 2026/27",
+  ladders: [],
+};
+
 const MOCKS: Record<string, unknown> = {
   // Juniors keys first: "/juniors/players" also contains "/players", and the
   // mock matches by substring with the first key winning.
@@ -131,6 +184,9 @@ const MOCKS: Record<string, unknown> = {
   "/people/1": { id: 1, name: "Fixture Official", roles: [], bio: "" },
   "/matches/1": MATCH,
   "/matches": { matches: [MATCH], total: 1, page: 1, limit: 20 },
+  // Ladder key first: "/fixtures-results/ladder" also contains "/fixtures-results".
+  "/fixtures-results/ladder": PLAYHQ_LADDER,
+  "/fixtures-results": PLAYHQ_PAGE,
   "/grades/A%20Grade/leaderboard": [STAT],
   "/stats/1": STAT,
 };
@@ -169,6 +225,12 @@ describe("public detail + juniors page smoke tests", () => {
       "/people/1",
     );
     await settle(container);
+  });
+
+  it("renders fixtures & results with an upcoming fixture and a result", async () => {
+    const { container } = renderAt(<FixturesResults />, "/fixtures");
+    await settle(container);
+    expect(document.body.textContent).toContain("Shoalwater Bay Cricket Club");
   });
 
   it("renders the matches list", async () => {

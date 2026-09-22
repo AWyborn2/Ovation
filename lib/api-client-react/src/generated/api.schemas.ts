@@ -4517,7 +4517,7 @@ export interface TrackedLink {
 }
 
 /**
- * Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest)
+ * Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)
  */
 export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 
@@ -4543,9 +4543,174 @@ export interface Fixture {
   isHome: boolean;
   /** @nullable */
   notes?: string | null;
-  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (reserved for the follow-up PlayHQ ingest) */
+  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list) */
   source: FixtureSource;
+  /**
+     * PlayHQ match GUID for playhq-sourced rows; null for manual rows
+     * @nullable
+     */
+  playhqMatchId?: string | null;
   createdAt: string;
+}
+
+/**
+ * The other side of a PlayHQ fixture — the opposing club as PlayHQ names it.
+ */
+export interface PlayhqOpponent {
+  /**
+     * PlayHQ organisation GUID
+     * @nullable
+     */
+  orgId?: string | null;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+}
+
+/**
+ * The club's result, derived from PlayHQ's winner flag; null until completed or when abandoned
+ * @nullable
+ */
+export type PlayhqFixtureOutcome = typeof PlayhqFixtureOutcome[keyof typeof PlayhqFixtureOutcome] | null;
+
+
+export const PlayhqFixtureOutcome = {
+  won: 'won',
+  lost: 'lost',
+  draw: 'draw',
+} as const;
+
+/**
+ * One match involving the tenant's club as published on play.cricket.com.au, shaped from the club's perspective. Upcoming matches carry a start time and no scores; completed ones carry scores, a result line and (for central tenants) the id of the matching scorecard.
+ */
+export interface PlayhqFixture {
+  playhqMatchId: string;
+  /** PlayHQ grade GUID (one grade in one season) */
+  gradeId: string;
+  /** App grade label (e.g. "A Grade") */
+  grade: string;
+  /** The grade name as PlayHQ publishes it */
+  gradeName: string;
+  /**
+     * Season name as PlayHQ publishes it
+     * @nullable
+     */
+  season?: string | null;
+  /** @nullable */
+  round?: string | null;
+  /**
+     * One Day / Two Day / T20 …
+     * @nullable
+     */
+  matchType?: string | null;
+  /** PlayHQ status — UPCOMING */
+  status: string;
+  /** @nullable */
+  startAt?: string | null;
+  /**
+     * Last scheduled day for multi-day matches
+     * @nullable
+     */
+  endAt?: string | null;
+  /** @nullable */
+  venue?: string | null;
+  /**
+     * Playing surface / oval name
+     * @nullable
+     */
+  surface?: string | null;
+  isHome: boolean;
+  opponent?: PlayhqOpponent | null;
+  /** @nullable */
+  clubScore?: string | null;
+  /** @nullable */
+  opponentScore?: string | null;
+  /** @nullable */
+  resultText?: string | null;
+  /**
+     * The club's result, derived from PlayHQ's winner flag; null until completed or when abandoned
+     * @nullable
+     */
+  outcome?: PlayhqFixtureOutcome;
+  /**
+     * The app match id whose scorecard this fixture corresponds to (central tenants only), for linking to /matches/{id}
+     * @nullable
+     */
+  scorecardMatchId?: number | null;
+}
+
+export interface FixturesResultsPage {
+  /** False when the tenant has no PlayHQ organisation linked; every list is then empty */
+  linked: boolean;
+  /** Season names the club has PlayHQ data for */
+  seasons: string[];
+  /** @nullable */
+  latestSeason: string | null;
+  /** App grade labels present in the selected season */
+  grades: string[];
+  /** Every match in the selected season (and grade), ordered by start time ascending */
+  matches: PlayhqFixture[];
+}
+
+export interface PlayhqLadderTeam {
+  teamId: string;
+  teamName: string;
+  /** @nullable */
+  orgId?: string | null;
+  /** True for the tenant's own team */
+  isClub: boolean;
+  /** @nullable */
+  rank?: number | null;
+  /** @nullable */
+  played?: number | null;
+  /** @nullable */
+  won?: number | null;
+  /** @nullable */
+  lost?: number | null;
+  /** @nullable */
+  ties?: number | null;
+  /** @nullable */
+  noResults?: number | null;
+  /** @nullable */
+  byes?: number | null;
+  /** @nullable */
+  forfeits?: number | null;
+  /** @nullable */
+  points?: number | null;
+  /** @nullable */
+  bonusPoints?: number | null;
+  /** @nullable */
+  quotient?: number | null;
+  /** @nullable */
+  netRunRate?: number | null;
+  /** @nullable */
+  runsFor?: number | null;
+  /** @nullable */
+  wicketsLost?: number | null;
+  /** @nullable */
+  oversFaced?: number | null;
+  /** @nullable */
+  runsAgainst?: number | null;
+  /** @nullable */
+  wicketsTaken?: number | null;
+  /** @nullable */
+  oversBowled?: number | null;
+}
+
+export interface PlayhqLadderTable {
+  /** Ladder name as published (a grade can publish more than one */
+  name: string;
+  teams: PlayhqLadderTeam[];
+}
+
+export interface PlayhqLadder {
+  gradeId: string;
+  gradeName: string;
+  /** @nullable */
+  season: string | null;
+  ladders: PlayhqLadderTable[];
 }
 
 export interface CreateFixtureBody {
@@ -5643,6 +5808,24 @@ grade?: string;
  * When true, only fixtures whose start time is in the future
  */
 upcomingOnly?: boolean;
+};
+
+export type ListFixturesResultsParams = {
+/**
+ * Season name as PlayHQ publishes it (e.g. "Summer 2026/27"); defaults to the newest
+ */
+season?: string;
+/**
+ * App grade label to filter by (e.g. "A Grade"); omit for all grades
+ */
+grade?: string;
+};
+
+export type GetFixturesResultsLadderParams = {
+/**
+ * PlayHQ grade GUID (from a fixture's `gradeId`)
+ */
+gradeId: string;
 };
 
 export type GetKioskDisplayParams = {

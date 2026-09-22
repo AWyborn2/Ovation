@@ -27,6 +27,7 @@ const PlayerDetail = lazy(() => import("@/pages/player-detail"));
 const PersonDetail = lazy(() => import("@/pages/person-detail"));
 const Matches = lazy(() => import("@/pages/matches"));
 const MatchDetail = lazy(() => import("@/pages/match-detail"));
+const FixturesResults = lazy(() => import("@/pages/fixtures-results"));
 const Grades = lazy(() => import("@/pages/grades"));
 const GradeLeaderboard = lazy(() => import("@/pages/grade-leaderboard"));
 const Records = lazy(() => import("@/pages/records"));
@@ -98,6 +99,7 @@ function PublicRoutes() {
           <Route path="/people/:id" component={PersonDetail} />
           <Route path="/matches" component={Matches} />
           <Route path="/matches/:id" component={MatchDetail} />
+          <Route path="/fixtures" component={FixturesResults} />
           <Route path="/grades" component={Grades} />
           <Route path="/grades/:grade" component={GradeLeaderboard} />
           <Route path="/records" component={Records} />

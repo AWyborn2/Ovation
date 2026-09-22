@@ -68,6 +68,8 @@ interface TenantConfig {
   readsFromCentral: boolean;
   plan: Plan;
   suspended: boolean;
+  /** PlayHQ organisation GUID (`tenants.playhq_org_id`), null when not linked. */
+  playhqOrgId: string | null;
 }
 
 const cache = new Map<number, { cfg: TenantConfig; at: number }>();
@@ -103,6 +105,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
       readsFromCentral: tenantsTable.readsFromCentral,
       plan: tenantsTable.plan,
       suspendedAt: tenantsTable.suspendedAt,
+      playhqOrgId: tenantsTable.playhqOrgId,
     })
     .from(tenantsTable)
     .where(eq(tenantsTable.id, tenantId));
@@ -114,6 +117,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
     readsFromCentral: row.readsFromCentral ?? false,
     plan: planFromString(row.plan),
     suspended: row.suspendedAt != null,
+    playhqOrgId: row.playhqOrgId ?? null,
   };
   // Only cache when no invalidation happened while this read was in flight --
   // otherwise a slow read racing a concurrent write would overwrite the
@@ -226,6 +230,16 @@ export async function getTenantCentralClubId(tenantId: number): Promise<number> 
 /** The central club id for the current request's tenant. */
 export async function getRequestCentralClubId(req: Request): Promise<number> {
   return getTenantCentralClubId(getTenantId(req));
+}
+
+/**
+ * The tenant's PlayHQ organisation GUID, or null when the club has not been
+ * linked (`tenants.playhq_org_id`). Surfaces that read `playhq.*` filter on it
+ * and must render a "not linked" state on null rather than fall back to any
+ * other organisation.
+ */
+export async function getTenantPlayhqOrgId(tenantId: number): Promise<string | null> {
+  return (await getTenantConfig(tenantId)).playhqOrgId;
 }
 
 /**

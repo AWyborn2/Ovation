@@ -4946,7 +4946,8 @@ export const ListFixturesResponseItem = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (reserved for the follow-up PlayHQ ingest)'),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
 export const ListFixturesResponse = zod.array(ListFixturesResponseItem)
@@ -5006,7 +5007,8 @@ export const UpdateFixtureResponse = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (reserved for the follow-up PlayHQ ingest)'),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
 
@@ -5080,6 +5082,90 @@ export const PutFixtureTeamListResponse = zod.object({
 })),
   "isPublished": zod.boolean(),
   "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Every match involving the tenant's club in one season, as published on play.cricket.com.au: upcoming fixtures (start time, venue, opponent) and completed results (scores, result line). Defaults to the newest season the club has data for. Returns `linked: false` with empty lists when the tenant has no PlayHQ organisation linked.
+ * @summary Season fixtures and results for the tenant's club from PlayHQ
+ */
+export const ListFixturesResultsQueryParams = zod.object({
+  "season": zod.coerce.string().optional().describe('Season name as PlayHQ publishes it (e.g. \"Summer 2026\/27\"); defaults to the newest'),
+  "grade": zod.coerce.string().optional().describe('App grade label to filter by (e.g. \"A Grade\"); omit for all grades')
+})
+
+export const ListFixturesResultsResponse = zod.object({
+  "linked": zod.boolean().describe('False when the tenant has no PlayHQ organisation linked; every list is then empty'),
+  "seasons": zod.array(zod.string()).describe('Season names the club has PlayHQ data for'),
+  "latestSeason": zod.string().nullable(),
+  "grades": zod.array(zod.string()).describe('App grade labels present in the selected season'),
+  "matches": zod.array(zod.object({
+  "playhqMatchId": zod.string(),
+  "gradeId": zod.string().describe('PlayHQ grade GUID (one grade in one season)'),
+  "grade": zod.string().describe('App grade label (e.g. \"A Grade\")'),
+  "gradeName": zod.string().describe('The grade name as PlayHQ publishes it'),
+  "season": zod.string().nullish().describe('Season name as PlayHQ publishes it'),
+  "round": zod.string().nullish(),
+  "matchType": zod.string().nullish().describe('One Day \/ Two Day \/ T20 …'),
+  "status": zod.string().describe('PlayHQ status — UPCOMING'),
+  "startAt": zod.coerce.date().nullish(),
+  "endAt": zod.coerce.date().nullish().describe('Last scheduled day for multi-day matches'),
+  "venue": zod.string().nullish(),
+  "surface": zod.string().nullish().describe('Playing surface \/ oval name'),
+  "isHome": zod.boolean(),
+  "opponent": zod.union([zod.object({
+  "orgId": zod.string().nullish().describe('PlayHQ organisation GUID'),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish()
+}).describe('The other side of a PlayHQ fixture — the opposing club as PlayHQ names it.'),zod.null()]).optional(),
+  "clubScore": zod.string().nullish(),
+  "opponentScore": zod.string().nullish(),
+  "resultText": zod.string().nullish(),
+  "outcome": zod.union([zod.literal('won'),zod.literal('lost'),zod.literal('draw'),zod.literal(null)]).nullish().describe('The club\'s result, derived from PlayHQ\'s winner flag; null until completed or when abandoned'),
+  "scorecardMatchId": zod.number().nullish().describe('The app match id whose scorecard this fixture corresponds to (central tenants only), for linking to \/matches\/{id}')
+}).describe('One match involving the tenant\'s club as published on play.cricket.com.au, shaped from the club\'s perspective. Upcoming matches carry a start time and no scores; completed ones carry scores, a result line and (for central tenants) the id of the matching scorecard.')).describe('Every match in the selected season (and grade), ordered by start time ascending')
+})
+
+
+/**
+ * @summary The published ladder for one PlayHQ grade
+ */
+export const GetFixturesResultsLadderQueryParams = zod.object({
+  "gradeId": zod.coerce.string().describe('PlayHQ grade GUID (from a fixture\'s `gradeId`)')
+})
+
+export const GetFixturesResultsLadderResponse = zod.object({
+  "gradeId": zod.string(),
+  "gradeName": zod.string(),
+  "season": zod.string().nullable(),
+  "ladders": zod.array(zod.object({
+  "name": zod.string().describe('Ladder name as published (a grade can publish more than one'),
+  "teams": zod.array(zod.object({
+  "teamId": zod.string(),
+  "teamName": zod.string(),
+  "orgId": zod.string().nullish(),
+  "isClub": zod.boolean().describe('True for the tenant\'s own team'),
+  "rank": zod.number().nullish(),
+  "played": zod.number().nullish(),
+  "won": zod.number().nullish(),
+  "lost": zod.number().nullish(),
+  "ties": zod.number().nullish(),
+  "noResults": zod.number().nullish(),
+  "byes": zod.number().nullish(),
+  "forfeits": zod.number().nullish(),
+  "points": zod.number().nullish(),
+  "bonusPoints": zod.number().nullish(),
+  "quotient": zod.number().nullish(),
+  "netRunRate": zod.number().nullish(),
+  "runsFor": zod.number().nullish(),
+  "wicketsLost": zod.number().nullish(),
+  "oversFaced": zod.number().nullish(),
+  "runsAgainst": zod.number().nullish(),
+  "wicketsTaken": zod.number().nullish(),
+  "oversBowled": zod.number().nullish()
+}))
+}))
 })
 
 

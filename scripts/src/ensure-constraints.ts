@@ -146,6 +146,20 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "tenants" ("custom_domain")
           WHERE "custom_domain" IS NOT NULL`,
   },
+  // PlayHQ linkage (migration 0003): one tenant per PlayHQ organisation, one
+  // fixture per PlayHQ match per tenant (the fixtures-projection upsert key).
+  {
+    name: "tenants_playhq_org_id_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_playhq_org_id_uidx"
+          ON "tenants" ("playhq_org_id")
+          WHERE "playhq_org_id" IS NOT NULL`,
+  },
+  {
+    name: "fixtures_tenant_playhq_match_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "fixtures_tenant_playhq_match_uidx"
+          ON "fixtures" ("tenant_id", "playhq_match_id")
+          WHERE "playhq_match_id" IS NOT NULL`,
+  },
   // Admin per-match uploads (source_key IS NULL): one match per identity. Lives
   // only in the reconcile migration + here: Drizzle's index builder cannot
   // express NULLS NOT DISTINCT together with a WHERE clause.

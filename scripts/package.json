@@ -34,6 +34,7 @@
     "legacy:add-a-grade-2025-26-debuts": "tsx ./legacy/add-a-grade-2025-26-debuts.ts",
     "legacy:fix-a-grade-cap-duplicates": "tsx ./legacy/fix-a-grade-cap-duplicates.ts",
     "playhq-load": "tsx ./src/playhq-load.ts",
+    "playhq-project-fixtures": "tsx ./src/playhq-project-fixtures.ts",
     "test": "vitest run"
   },
   "dependencies": {

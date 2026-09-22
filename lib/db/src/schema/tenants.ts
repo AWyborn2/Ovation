@@ -83,6 +83,11 @@ export const tenantsTable = pgTable(
     // Tenant health (platform dashboard). Both nullable, no backfill.
     lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+    // The club's PlayHQ organisation GUID (the last path segment of its
+    // play.cricket.com.au page URL). Links the tenant to `playhq.*` rows: the
+    // Fixtures & Results page and the fixtures projection filter on it. Null =
+    // not linked; those surfaces render "not linked" rather than guessing.
+    playhqOrgId: text("playhq_org_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -90,6 +95,9 @@ export const tenantsTable = pgTable(
     uqCustomDomain: uniqueIndex("tenants_custom_domain_uidx")
       .on(t.customDomain)
       .where(sql`"custom_domain" IS NOT NULL`),
+    uqPlayhqOrg: uniqueIndex("tenants_playhq_org_id_uidx")
+      .on(t.playhqOrgId)
+      .where(sql`"playhq_org_id" IS NOT NULL`),
     chkPlan: check("tenants_plan_check", sql`"plan" IN ('free', 'club', 'pro', 'pilot')`),
   }),
 );
