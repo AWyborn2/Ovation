@@ -1,11 +1,14 @@
 import { useMemo } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { Premiership } from "@workspace/api-client-react";
 import { sortGradesBySeniority } from "@/components/grade-badge";
 import { useSearchParamState } from "@/lib/use-search-param";
 import { CardsSkeleton, FilterChips } from "@/components/broadcast";
 import { QueryError } from "@/components/data-states";
 import { cn } from "@/lib/utils";
+
+/** Fill-in players (id >= 90000) have no profile page to link to. */
+const FILL_IN_MIN_ID = 90000;
 
 const RESULT_VERB = /\s(def\.?|defeated|d\.|beat)\s/i;
 
@@ -29,12 +32,25 @@ function fmtDate(d: string | null | undefined): string | null {
 
 /**
  * A premiership honour card: year, grade pill, venue · date, the result line
- * (verb de-emphasised) and a Captain / MoM definition grid. Links to the match
- * when one is recorded.
+ * (verb de-emphasised), the full named side (captain marked, players linked to
+ * their profiles) and man of the match. Links to the match when one is recorded.
  */
 export function PremiershipCard({ p }: { p: Premiership }) {
   const [, navigate] = useLocation();
   const captain = p.players.find((pl) => pl.isCaptain)?.name ?? null;
+  // The named side in batting order (unordered names keep their listed order).
+  const team = useMemo(
+    () =>
+      p.players
+        .map((pl, i) => ({ pl, i }))
+        .sort(
+          (a, b) =>
+            (a.pl.battingOrder ?? Number.MAX_SAFE_INTEGER) -
+              (b.pl.battingOrder ?? Number.MAX_SAFE_INTEGER) || a.i - b.i,
+        )
+        .map(({ pl }) => pl),
+    [p.players],
+  );
   const parts = p.result ? splitResult(p.result) : null;
   const clickable = p.matchId != null;
   const meta = [p.venue, fmtDate(p.matchDate)].filter(Boolean).join(" · ");
@@ -78,16 +94,47 @@ export function PremiershipCard({ p }: { p: Premiership }) {
           )}
         </div>
       )}
-      {(captain || p.mom) && (
+      {team.length > 0 && (
+        <div className="border-t pt-2">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Team
+          </div>
+          <ol className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs" data-testid="premiership-team">
+            {team.map((pl) => (
+              <li key={pl.id} className="leading-snug [overflow-wrap:anywhere]">
+                {pl.playerId != null && pl.playerId < FILL_IN_MIN_ID ? (
+                  <Link
+                    href={`/players/${pl.playerId}`}
+                    // Don't also trigger the card's own match navigation.
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="hover:text-primary-text hover:underline"
+                  >
+                    {pl.name}
+                  </Link>
+                ) : (
+                  pl.name
+                )}
+                {pl.isCaptain && <span className="font-semibold text-primary-text"> (c)</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {(p.mom || (captain && team.length === 0)) && (
         <dl className="mt-auto grid grid-cols-2 gap-2 border-t pt-2 text-xs">
-          <div>
-            <dt className="text-muted-foreground">Captain</dt>
-            <dd className="font-semibold">{captain ?? "–"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">MoM</dt>
-            <dd className="font-semibold">{p.mom ?? "–"}</dd>
-          </div>
+          {captain && team.length === 0 && (
+            <div>
+              <dt className="text-muted-foreground">Captain</dt>
+              <dd className="font-semibold">{captain}</dd>
+            </div>
+          )}
+          {p.mom && (
+            <div>
+              <dt className="text-muted-foreground">Man of the match</dt>
+              <dd className="font-semibold">{p.mom}</dd>
+            </div>
+          )}
         </dl>
       )}
     </article>
