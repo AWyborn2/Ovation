@@ -9,7 +9,8 @@ import {
 } from "@workspace/api-client-react";
 import { GradeBadge } from "@/components/grade-badge";
 import { ShareButton } from "@/components/share-button";
-import { TableSkeleton, QueryError } from "@/components/data-states";
+import { QueryError } from "@/components/data-states";
+import { Container, Eyebrow, RowsSkeleton } from "@/components/broadcast";
 
 const STAT_COLUMN_COUNT = 13;
 
@@ -71,20 +72,30 @@ export default function GradeLeaderboard() {
 
   if (!isValid) return <div className="p-8 text-center text-muted-foreground">Redirecting…</div>;
   if (isError) return <QueryError onRetry={() => refetch()} />;
-  if (isLoading) return <TableSkeleton />;
+  if (isLoading) return <RowsSkeleton rows={10} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <Container page className="space-y-6 py-[var(--gap-section)]">
+      <nav aria-label="Breadcrumb" className="text-[13px] text-muted-foreground">
+        <Link href="/grades" className="hover:text-foreground">
+          Grades
+        </Link>
+        <span className="mx-1.5" aria-hidden>
+          /
+        </span>
+        <span className="text-foreground">{decodedGrade}</span>
+      </nav>
+      <div className="flex items-end gap-4">
         <GradeBadge grade={decodedGrade} size="lg" />
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary-text">{decodedGrade}</h1>
-          <p className="text-muted-foreground mt-1">Leaderboard and player statistics.</p>
+        <div className="space-y-2">
+          <Eyebrow accent>Leaderboard</Eyebrow>
+          <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">{decodedGrade}</h1>
+          <p className="text-muted-foreground">Career statistics for everyone who has played.</p>
         </div>
       </div>
 
       {isAGrade && (
-        <div className="bg-muted/40 border-l-4 border-primary/60 rounded-md p-4 text-sm leading-snug">
+        <div className="rounded-lg border border-l-4 border-l-primary bg-card p-4 text-sm leading-snug">
           <p className="text-foreground/90">
             <span className="font-semibold">Note:</span> Prior to MyCricket and PlayHQ, the club did
             not record stats for players who played fewer than 10 games. Capped players without
@@ -94,34 +105,31 @@ export default function GradeLeaderboard() {
         </div>
       )}
 
-      <div className="bg-card border rounded-lg overflow-x-auto shadow-sm">
-        <table className="w-full text-sm sticky-id-col">
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        <table className="w-full min-w-[900px] text-sm bc-sticky-first">
           <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="text-left font-medium p-4">Player</th>
-              <th className="text-right font-medium p-4">Mat</th>
-              <th className="text-right font-medium p-4">Inn</th>
-              <th className="text-right font-medium p-4">NO</th>
-              <th className="text-right font-medium p-4">Runs</th>
-              <th className="text-right font-medium p-4">HS</th>
-              <th className="text-right font-medium p-4">Avg</th>
-              <th className="text-right font-medium p-4">100s</th>
-              <th className="text-right font-medium p-4">50s</th>
-              <th className="text-right font-medium p-4">Wkts</th>
-              <th className="text-right font-medium p-4">Runs</th>
-              <th className="text-right font-medium p-4">Avg</th>
-              <th className="text-right font-medium p-4">BB</th>
-              <th className="text-right font-medium p-4">5WI</th>
-              <th className="text-right font-medium p-4">Share</th>
+            <tr className="border-b text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+              <th className="text-left font-semibold px-3 h-10">Player</th>
+              <th className="text-right font-semibold px-3 h-10">Mat</th>
+              <th className="text-right font-semibold px-3 h-10">Inn</th>
+              <th className="text-right font-semibold px-3 h-10">NO</th>
+              <th className="text-right font-semibold px-3 h-10">Runs</th>
+              <th className="text-right font-semibold px-3 h-10">HS</th>
+              <th className="text-right font-semibold px-3 h-10">Avg</th>
+              <th className="text-right font-semibold px-3 h-10">100s</th>
+              <th className="text-right font-semibold px-3 h-10">50s</th>
+              <th className="text-right font-semibold px-3 h-10">Wkts</th>
+              <th className="text-right font-semibold px-3 h-10">Runs</th>
+              <th className="text-right font-semibold px-3 h-10">Avg</th>
+              <th className="text-right font-semibold px-3 h-10">BB</th>
+              <th className="text-right font-semibold px-3 h-10">5WI</th>
+              <th className="text-right font-semibold px-3 h-10">Share</th>
             </tr>
           </thead>
           <tbody>
             {stats?.map((stat) => (
-              <tr
-                key={stat.id}
-                className="border-b last:border-0 hover:bg-muted/50 transition-colors"
-              >
-                <td className="p-4">
+              <tr key={stat.id} className="border-t transition-colors hover:bg-muted">
+                <td className="px-3 py-2.5">
                   <Link
                     href={`/players/${stat.playerId}`}
                     className="font-semibold text-foreground hover:text-primary-text hover:underline"
@@ -129,19 +137,27 @@ export default function GradeLeaderboard() {
                     {stat.surname}, {stat.givenName}
                   </Link>
                 </td>
-                <td className="p-4 text-right font-mono">{stat.games || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.innings || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.notOuts || "-"}</td>
-                <td className="p-4 text-right font-mono font-bold">{stat.runs || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.highScore || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.batAvg?.toFixed(2) || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.hundreds || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.fifties || "-"}</td>
-                <td className="p-4 text-right font-mono font-bold">{stat.wickets || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.runsConceded || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.bowlAvg?.toFixed(2) || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.bestBowling || "-"}</td>
-                <td className="p-4 text-right font-mono">{stat.fiveWickets || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.games || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.innings || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.notOuts || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-bold">
+                  {stat.runs || "-"}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.highScore || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">
+                  {stat.batAvg?.toFixed(2) || "-"}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.hundreds || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.fifties || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-bold">
+                  {stat.wickets || "-"}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.runsConceded || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">
+                  {stat.bowlAvg?.toFixed(2) || "-"}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.bestBowling || "-"}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{stat.fiveWickets || "-"}</td>
                 <td className="p-4 text-right">
                   <ShareButton
                     input={{
@@ -176,11 +192,8 @@ export default function GradeLeaderboard() {
                 </span>
               );
               return (
-                <tr
-                  key={`cap-${c.id}`}
-                  className="border-b last:border-0 hover:bg-muted/50 transition-colors"
-                >
-                  <td className="p-4">{nameNode}</td>
+                <tr key={`cap-${c.id}`} className="border-t transition-colors hover:bg-muted">
+                  <td className="px-3 py-2.5">{nameNode}</td>
                   <td colSpan={STAT_COLUMN_COUNT + 1} className="p-4 text-center">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       No A Grade stats available
@@ -194,15 +207,15 @@ export default function GradeLeaderboard() {
       </div>
 
       {captainHistory.length > 0 && (
-        <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm">
+        <div className="overflow-hidden rounded-lg border bg-card">
+          <div className="border-b px-4 md:px-6 py-3 font-serif text-[22px] font-bold uppercase leading-none">
             {decodedGrade} Captains
           </div>
           <div className="p-4 md:p-6">
             <div className="divide-y divide-border/60">
               {captainHistory.map((c) => (
                 <div key={c.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <span className="font-mono font-bold text-primary-text w-20 shrink-0">
+                  <span className="tabular-nums font-bold text-primary-text w-20 shrink-0">
                     {formatSeasonRange(c.season)}
                   </span>
                   <span>
@@ -225,7 +238,7 @@ export default function GradeLeaderboard() {
           </div>
         </div>
       )}
-    </div>
+    </Container>
   );
 }
 

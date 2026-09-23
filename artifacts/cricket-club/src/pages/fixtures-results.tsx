@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-client-react";
 import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
 import { sortGradesBySeniority } from "@/components/grade-badge";
+import { Container, PageHeader, UnderlineTabs } from "@/components/broadcast";
 
 type Tab = "upcoming" | "results" | "ladder";
 
@@ -78,12 +79,12 @@ function FixtureCard({ fixture: m }: { fixture: PlayhqFixture }) {
       : null;
   return (
     <div
-      className="bg-card border border-border rounded-md p-4 shadow-sm flex flex-col gap-3"
+      className="rounded-lg border bg-card p-4 flex flex-col gap-3"
       data-testid={`fixture-${m.playhqMatchId}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-xs font-bold uppercase tracking-widest text-primary-text">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {m.grade}
             {m.round ? ` · ${m.round}` : ""}
             {m.matchType ? ` · ${m.matchType}` : ""}
@@ -153,8 +154,8 @@ function LadderTable({ name, teams }: { name: string; teams: PlayhqLadderTeam[] 
   const showQuotient = !showNrr && teams.some((t) => t.quotient != null);
   const fmt = (v: number | null | undefined, digits = 0) => (v == null ? "–" : v.toFixed(digits));
   return (
-    <div className="bg-card border border-border rounded-md overflow-hidden">
-      <div className="px-4 py-2 border-b border-border text-xs font-bold uppercase tracking-widest text-primary-text">
+    <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="px-4 py-2 border-b border-border text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {name}
       </div>
       <div className="overflow-x-auto">
@@ -238,13 +239,12 @@ export default function FixturesResults() {
   const seasonLabel = season || data?.latestSeason || "";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text">Fixtures &amp; Results</h1>
-        <p className="text-muted-foreground mt-1">
-          The club's season as published on PlayCricket, across every senior grade.
-        </p>
-      </div>
+    <Container page className="space-y-6 py-[var(--gap-section)]">
+      <PageHeader
+        eyebrow="Club"
+        title="Fixtures & results"
+        subtitle="The club's season as published on PlayCricket, across every senior grade."
+      />
 
       {isError ? (
         <QueryError onRetry={() => refetch()} />
@@ -259,13 +259,13 @@ export default function FixturesResults() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Season
               </label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
+                className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[10rem]"
                 data-testid="select-season"
               >
                 {data.seasons.map((s) => (
@@ -276,13 +276,13 @@ export default function FixturesResults() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Grade
               </label>
               <select
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
+                className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[10rem]"
                 data-testid="select-grade"
               >
                 <option value="">All grades</option>
@@ -295,27 +295,18 @@ export default function FixturesResults() {
             </div>
           </div>
 
-          <div role="tablist" className="flex gap-1 border-b border-border">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                role="tab"
-                type="button"
-                aria-selected={tab === t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-4 py-2 font-serif uppercase tracking-wider text-sm border-b-2 -mb-px transition-colors ${
-                  tab === t.key
-                    ? "border-primary text-primary-text"
-                    : "border-transparent text-muted-foreground hover:text-primary-text"
-                }`}
-                data-testid={`tab-${t.key}`}
-              >
-                {t.label}
-                {t.key === "upcoming" && upcoming.length ? ` (${upcoming.length})` : ""}
-                {t.key === "results" && results.length ? ` (${results.length})` : ""}
-              </button>
-            ))}
-          </div>
+          <UnderlineTabs
+            label="Fixtures"
+            value={tab}
+            onChange={setTab}
+            tabs={TABS.map((t) => ({
+              value: t.key,
+              label:
+                t.label +
+                (t.key === "upcoming" && upcoming.length ? ` (${upcoming.length})` : "") +
+                (t.key === "results" && results.length ? ` (${results.length})` : ""),
+            }))}
+          />
 
           {tab === "upcoming" &&
             (upcoming.length === 0 ? (
@@ -369,6 +360,6 @@ export default function FixturesResults() {
             ))}
         </>
       )}
-    </div>
+    </Container>
   );
 }

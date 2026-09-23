@@ -1,28 +1,28 @@
 import { Link } from "wouter";
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Container, Eyebrow } from "@/components/broadcast";
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-      <div className="bg-muted p-6 rounded-full">
-        <AlertCircle className="h-16 w-16 text-muted-foreground" />
-      </div>
-
-      <div className="space-y-2">
-        <h1 className="text-4xl font-serif font-bold text-primary-text">Given Out!</h1>
-        <p className="text-xl text-muted-foreground max-w-md mx-auto">
-          The page you're looking for has been retired to the pavilion.
-        </p>
-      </div>
-
-      <div className="pt-4">
-        <Link href="/">
-          <Button size="lg" className="font-semibold">
-            Return to Dashboard
-          </Button>
+    <Container page className="flex min-h-[60vh] flex-col items-start justify-center gap-5 py-16">
+      <Eyebrow accent>404</Eyebrow>
+      <h1 className="text-[clamp(44px,6.4vw,92px)] leading-[.95]">Given out!</h1>
+      <p className="max-w-[46ch] text-[15px] text-muted-foreground">
+        The page you're looking for has been retired to the pavilion.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/"
+          className="inline-flex h-[46px] items-center rounded-sm bg-primary px-5 font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
+        >
+          Back to home
+        </Link>
+        <Link
+          href="/players"
+          className="inline-flex h-[46px] items-center rounded-sm border px-5 font-bold transition-colors hover:border-primary"
+        >
+          Browse players
         </Link>
       </div>
-    </div>
+    </Container>
   );
 }

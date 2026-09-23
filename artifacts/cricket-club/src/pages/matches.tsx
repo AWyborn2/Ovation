@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+
 import {
   useListMatches,
   useListGrades,
@@ -9,8 +9,25 @@ import {
 } from "@workspace/api-client-react";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
 import { matchLabel } from "@/lib/utils";
-import { CalendarDays, MapPin } from "lucide-react";
-import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { QueryError, EmptyState } from "@/components/data-states";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Container,
+  PageHeader,
+  PageStack,
+  ResultRow,
+  RowsSkeleton,
+  SectionCard,
+} from "@/components/broadcast";
+
+// Radix Select forbids an empty-string item value, so "all" uses a sentinel.
+const ALL = "__all";
 
 // Compact opposition crest for match cards; falls back silently to nothing
 // (the opponent name is always shown beside it).
@@ -28,7 +45,7 @@ function MatchCardCrest({ club }: { club: MatchSummary["opponentClub"] }) {
       width={28}
       height={28}
       onError={() => setErrored(true)}
-      className="h-7 w-7 shrink-0 rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
+      className="h-6 w-6 shrink-0 rounded-sm bg-white/90 object-contain p-0.5"
       data-testid="img-match-crest"
     />
   );
@@ -132,109 +149,100 @@ export default function Matches() {
   }, [gradeMatches]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text">Matches</h1>
-        <p className="text-muted-foreground mt-1">
-          Browse game-by-game scorecards across all grades.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
-            Grade
-          </label>
-          <select
-            value={grade ?? ""}
-            onChange={(e) => setGrade(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
-          >
-            <option value="">All grades</option>
-            {gradeOptions.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
-            Season
-          </label>
-          <select
-            value={season ?? ""}
-            onChange={(e) => {
-              setSeason(e.target.value);
-              setSeasonReady(true);
-            }}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[8rem]"
-          >
-            <option value="">All seasons</option>
-            {seasonOptions.map((s) => (
-              <option key={s} value={String(s)}>
-                {fmtSeason(s)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {isError ? (
-        <QueryError onRetry={() => refetch()} />
-      ) : isLoading ? (
-        <CardGridSkeleton />
-      ) : !matches || matches.length === 0 ? (
-        <EmptyState
-          title="No matches found"
-          message="Match scorecards appear here once per-match imports are committed."
+    <Container page className="py-[var(--gap-section)]">
+      <PageStack>
+        <PageHeader
+          eyebrow="Stats"
+          title="Matches"
+          subtitle="Results and full scorecards across every grade."
+          actions={
+            <>
+              <Select value={grade || ALL} onValueChange={(v) => setGrade(v === ALL ? "" : v)}>
+                <SelectTrigger
+                  className="h-10 w-auto min-w-[150px] rounded-full"
+                  aria-label="Grade"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All grades</SelectItem>
+                  {gradeOptions.map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {g}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={season || ALL}
+                onValueChange={(v) => {
+                  setSeason(v === ALL ? "" : v);
+                  setSeasonReady(true);
+                }}
+              >
+                <SelectTrigger
+                  className="h-10 w-auto min-w-[140px] rounded-full"
+                  aria-label="Season"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All seasons</SelectItem>
+                  {seasonOptions.map((s) => (
+                    <SelectItem key={s} value={String(s)}>
+                      {fmtSeason(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          }
         />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {matches.map((m) => (
-            <Link key={m.id} href={`/matches/${m.id}`}>
-              <div className="bg-card border border-border rounded-md p-4 shadow-sm hover:border-primary transition-colors cursor-pointer group h-full flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <GradeBadge grade={m.grade} size="sm" />
-                  <MatchCardCrest club={m.opponentClub} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-serif font-bold text-primary-text group-hover:text-primary-text truncate">
-                      vs {m.opponent ?? "Unknown"}
-                    </div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                      {fmtSeason(m.season)}
-                      {matchLabel(m.round, m.stage) ? ` · ${matchLabel(m.round, m.stage)}` : ""}
-                    </div>
-                  </div>
-                  {m.abandoned && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/15 border border-amber-600/40 rounded px-2 py-0.5">
-                      Abandoned
-                    </span>
-                  )}
-                </div>
-                {m.result && (
-                  <div className="text-sm text-foreground/90 leading-snug">{m.result}</div>
-                )}
-                <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {fmtDate(m.matchDate) && (
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {fmtDate(m.matchDate)}
-                    </span>
-                  )}
-                  {m.venue && (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {m.venue}
-                    </span>
-                  )}
-                  <span className="font-mono">{m.playerCount} players</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading || !initialised || !seasonReady ? (
+          <RowsSkeleton rows={8} />
+        ) : !matches || matches.length === 0 ? (
+          <EmptyState
+            title="No matches found"
+            message="Match scorecards appear here once per-match imports are committed."
+          />
+        ) : (
+          <SectionCard>
+            {matches.map((m) => (
+              <ResultRow
+                key={m.id}
+                href={`/matches/${m.id}`}
+                badge={<GradeBadge grade={m.grade} size="md" />}
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    vs {m.opponent ?? "Unknown"}
+                    <MatchCardCrest club={m.opponentClub} />
+                    {m.abandoned && (
+                      <span className="rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Abandoned
+                      </span>
+                    )}
+                  </span>
+                }
+                meta={[
+                  m.grade,
+                  fmtSeason(m.season),
+                  matchLabel(m.round, m.stage),
+                  fmtDate(m.matchDate),
+                  m.venue,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                ours={m.clubScore}
+                theirs={m.opponentScore}
+                result={m.abandoned ? null : m.result}
+              />
+            ))}
+          </SectionCard>
+        )}
+      </PageStack>
+    </Container>
   );
 }
