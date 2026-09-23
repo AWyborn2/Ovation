@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   // Design system: flat fills, hairline border, no shadow. Hover is a plain
   // background-colour swap per variant — no elevate/press opacity overlays.
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -27,8 +27,8 @@ const buttonVariants = cva(
       size: {
         // @replit changed sizes
         default: "min-h-9 px-4 py-2",
-        sm: "min-h-8 rounded-md px-3 text-xs",
-        lg: "min-h-10 rounded-md px-8",
+        sm: "min-h-8 rounded-sm px-3 text-xs",
+        lg: "min-h-11 rounded-sm px-8",
         icon: "h-9 w-9",
       },
     },
