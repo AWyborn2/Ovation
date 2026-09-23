@@ -96,10 +96,13 @@ export function PremiershipCard({ p }: { p: Premiership }) {
       )}
       {team.length > 0 && (
         <div className="border-t pt-2">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mb-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Team
           </div>
-          <ol className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs" data-testid="premiership-team">
+          <ol
+            className="flex flex-col items-center gap-y-0.5 text-center text-xs"
+            data-testid="premiership-team"
+          >
             {team.map((pl) => (
               <li key={pl.id} className="leading-snug [overflow-wrap:anywhere]">
                 {pl.playerId != null && pl.playerId < FILL_IN_MIN_ID ? (
@@ -122,7 +125,7 @@ export function PremiershipCard({ p }: { p: Premiership }) {
         </div>
       )}
       {(p.mom || (captain && team.length === 0)) && (
-        <dl className="mt-auto grid grid-cols-2 gap-2 border-t pt-2 text-xs">
+        <dl className="mt-auto flex justify-center gap-6 border-t pt-2 text-center text-xs">
           {captain && team.length === 0 && (
             <div>
               <dt className="text-muted-foreground">Captain</dt>
