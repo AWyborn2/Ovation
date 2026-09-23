@@ -62,20 +62,19 @@ export default function PersonDetail() {
     .toUpperCase();
 
   return (
-    <div className="space-y-4">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-serif font-bold text-primary-foreground">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-muted font-serif text-3xl font-bold text-muted-foreground">
             {initials || "?"}
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
-              {person.name}
-            </h1>
-            <p className="text-muted-foreground italic mt-1 mb-0">Club official · {brand.name}</p>
+            <h1 className="m-0 text-[clamp(38px,5vw,72px)] leading-[.95]">{person.name}</h1>
+            <p className="mt-2 mb-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
+              Club official · {brand.name}
+            </p>
           </div>
         </div>
-        <div className="w-20 h-[3px] bg-primary mt-4" />
         {person.bio ? (
           <p className="text-foreground mt-4 mb-0 whitespace-pre-line leading-relaxed">
             {person.bio}
@@ -87,8 +86,8 @@ export default function PersonDetail() {
         )}
       </div>
 
-      <div className="bg-card border border-border rounded-md overflow-hidden shadow-md">
-        <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm">
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="border-b px-4 md:px-6 py-3 font-serif text-[22px] font-bold uppercase leading-none">
           Service to the Club
         </div>
         <div className="p-4 md:p-6">
@@ -98,7 +97,7 @@ export default function PersonDetail() {
             <div className="divide-y divide-border/60">
               {service.map((s) => (
                 <div key={s.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <span className="font-mono font-bold text-primary-text w-20 shrink-0">
+                  <span className="tabular-nums font-bold text-primary-text w-20 shrink-0">
                     {formatSeason(s.season)}
                   </span>
                   <span className="font-semibold text-foreground">{s.label}</span>
