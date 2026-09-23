@@ -62,7 +62,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
 
   return (
     <div className="grid md:grid-cols-[220px_1fr] gap-6 py-6">
-      <aside className="bg-card border border-border rounded-md p-4 h-fit sticky top-28">
+      <aside className="bg-card border border-border rounded-md p-4 h-fit sticky top-[calc(var(--header-h)+16px)]">
         <div className="mb-4 pb-3 border-b border-border">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Signed in as</div>
           <div className="font-medium">{admin.displayName}</div>

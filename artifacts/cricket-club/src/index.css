@@ -128,7 +128,7 @@
   --win-fg: #15803d;
   --loss-bg: rgb(185 28 28 / 0.08);
   --loss-fg: #b91c1c;
-  /* Sticky header height; U4 sets 60px below the mobile breakpoint. */
+  /* Sticky header height (68px desktop; 60px below the nav breakpoint). */
   --header-h: 68px;
   /* Broadcast page gutter and vertical section rhythm. */
   --pad: clamp(16px, 3.2vw, 40px);
@@ -137,6 +137,12 @@
   /* Juniors section banner accent. Default = neutral slate; BrandProvider
      overrides it at runtime from the tenant brand's tertiary colour. */
   --juniors-accent: #475569;
+}
+
+@media (width < 56.25rem) {
+  :root {
+    --header-h: 60px;
+  }
 }
 
 .dark {
