@@ -10,7 +10,7 @@ export default function NotFound() {
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-4xl font-serif font-bold text-primary">Given Out!</h1>
+        <h1 className="text-4xl font-serif font-bold text-primary-text">Given Out!</h1>
         <p className="text-xl text-muted-foreground max-w-md mx-auto">
           The page you're looking for has been retired to the pavilion.
         </p>

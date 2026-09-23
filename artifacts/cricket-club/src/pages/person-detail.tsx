@@ -46,7 +46,7 @@ export default function PersonDetail() {
     return (
       <div className="space-y-4">
         <EmptyState title="Person not found" message="This person could not be found." />
-        <Link href="/honour-boards" className="text-primary hover:underline">
+        <Link href="/honour-boards" className="text-primary-text hover:underline">
           ← Back to honour boards
         </Link>
       </div>
@@ -69,7 +69,7 @@ export default function PersonDetail() {
             {initials || "?"}
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
               {person.name}
             </h1>
             <p className="text-muted-foreground italic mt-1 mb-0">Club official · {brand.name}</p>
@@ -98,7 +98,7 @@ export default function PersonDetail() {
             <div className="divide-y divide-border/60">
               {service.map((s) => (
                 <div key={s.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <span className="font-mono font-bold text-primary w-20 shrink-0">
+                  <span className="font-mono font-bold text-primary-text w-20 shrink-0">
                     {formatSeason(s.season)}
                   </span>
                   <span className="font-semibold text-foreground">{s.label}</span>
@@ -109,7 +109,7 @@ export default function PersonDetail() {
         </div>
       </div>
 
-      <Link href="/honour-boards" className="inline-block text-primary hover:underline">
+      <Link href="/honour-boards" className="inline-block text-primary-text hover:underline">
         ← Back to honour boards
       </Link>
     </div>

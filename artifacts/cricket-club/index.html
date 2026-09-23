@@ -25,21 +25,23 @@
       (function () {
         try {
           var stored = localStorage.getItem("ovation-theme");
+          // Broadcast defaults to dark; only an explicit "system" follows the OS.
           var dark =
             stored === "dark" ||
             (stored !== "light" &&
-              window.matchMedia &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches);
+              (stored !== "system" ||
+                (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)));
           if (dark) document.documentElement.classList.add("dark");
         } catch (e) {
-          // localStorage/matchMedia unavailable — leave the light default.
+          // localStorage/matchMedia unavailable — default to dark.
+          document.documentElement.classList.add("dark");
         }
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <!-- The decorative families for the Social Studio's selectable card fonts

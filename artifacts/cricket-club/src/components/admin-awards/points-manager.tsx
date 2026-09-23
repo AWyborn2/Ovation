@@ -44,7 +44,7 @@ export function PointsManager({
   return (
     <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-bold uppercase tracking-wide text-primary">
+        <h4 className="text-sm font-bold uppercase tracking-wide text-primary-text">
           Points from stats{award.pointsGrade ? ` · ${award.pointsGrade}` : ""}
         </h4>
         <Button
@@ -349,7 +349,7 @@ function PointsBoardView({ configId }: { configId: number }) {
               <td className="px-3 py-2 font-medium">
                 {e.name}
                 {winners.has(e.playerId) && (
-                  <span className="ml-2 text-xs text-primary">● leader</span>
+                  <span className="ml-2 text-xs text-primary-text">● leader</span>
                 )}
               </td>
               <td className="px-3 py-2 text-right font-bold">{e.points}</td>

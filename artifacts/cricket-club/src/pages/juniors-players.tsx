@@ -248,10 +248,12 @@ export default function JuniorsPlayers() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
           Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Junior Players & Leaders</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">
+          Junior Players & Leaders
+        </h1>
         <p className="text-muted-foreground mt-1">
           Junior runs, wickets and games — names shown as recorded.
         </p>
@@ -265,8 +267,8 @@ export default function JuniorsPlayers() {
             onClick={() => setTab(t.key)}
             className={`px-3 py-2 font-serif text-sm uppercase tracking-wider border-b-2 -mb-px transition-colors ${
               tab === t.key
-                ? "text-primary border-primary"
-                : "text-muted-foreground border-transparent hover:text-primary"
+                ? "text-primary-text border-primary"
+                : "text-muted-foreground border-transparent hover:text-primary-text"
             }`}
             data-testid={`tab-${t.key}`}
           >
@@ -279,7 +281,7 @@ export default function JuniorsPlayers() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Search
               </label>
               <input
@@ -291,7 +293,7 @@ export default function JuniorsPlayers() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Age Group
               </label>
               <select
@@ -309,7 +311,7 @@ export default function JuniorsPlayers() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Season
               </label>
               <select
@@ -357,7 +359,7 @@ export default function JuniorsPlayers() {
                     >
                       <td className="px-3 py-2">
                         <Link href={`/juniors/players/${p.participantId}`}>
-                          <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                          <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                             {p.displayName}
                           </span>
                         </Link>
@@ -491,7 +493,7 @@ export default function JuniorsPlayers() {
                       <td className="px-2 py-2 text-muted-foreground font-mono">{i + 1}</td>
                       <td className="px-3 py-2">
                         <Link href={`/juniors/players/${r.participantId}`}>
-                          <span className="font-medium text-primary hover:text-[#bc8c6b] cursor-pointer">
+                          <span className="font-medium text-primary-text hover:text-[#bc8c6b] cursor-pointer">
                             {r.displayName}
                           </span>
                         </Link>
@@ -547,7 +549,7 @@ export default function JuniorsPlayers() {
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                        <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                           {p.displayName}
                         </span>
                       </Link>
@@ -593,7 +595,7 @@ export default function JuniorsPlayers() {
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                        <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                           {p.displayName}
                         </span>
                       </Link>
@@ -629,7 +631,7 @@ export default function JuniorsPlayers() {
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                        <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                           {p.displayName}
                         </span>
                       </Link>
@@ -666,7 +668,7 @@ export default function JuniorsPlayers() {
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                        <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                           {p.displayName}
                         </span>
                       </Link>
@@ -679,7 +681,7 @@ export default function JuniorsPlayers() {
                     </td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/matches/${p.matchId}`}>
-                        <span className="hover:text-primary cursor-pointer">
+                        <span className="hover:text-primary-text cursor-pointer">
                           {p.opponentName ?? "—"}
                         </span>
                       </Link>
@@ -713,7 +715,7 @@ export default function JuniorsPlayers() {
                     <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
-                        <span className="font-medium text-primary hover:text-primary cursor-pointer">
+                        <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                           {p.displayName}
                         </span>
                       </Link>
@@ -723,7 +725,7 @@ export default function JuniorsPlayers() {
                     </td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/matches/${p.matchId}`}>
-                        <span className="hover:text-primary cursor-pointer">
+                        <span className="hover:text-primary-text cursor-pointer">
                           {p.opponentName ?? "—"}
                         </span>
                       </Link>

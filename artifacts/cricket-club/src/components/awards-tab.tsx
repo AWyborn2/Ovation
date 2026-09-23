@@ -35,7 +35,7 @@ const WinnerName = ({ winner }: { winner: AwardWinner }) =>
   winner.playerId != null ? (
     <Link
       href={`/players/${winner.playerId}`}
-      className="font-semibold text-primary hover:underline"
+      className="font-semibold text-primary-text hover:underline"
     >
       {winner.name}
     </Link>
@@ -54,7 +54,7 @@ const LiveTally = ({ tally }: { tally: AwardTally }) => {
   return (
     <div className="px-4 md:px-6 pt-4 pb-1">
       <div className="flex items-center gap-2 mb-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary-text">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
@@ -74,7 +74,7 @@ const LiveTally = ({ tally }: { tally: AwardTally }) => {
                   {i + 1}
                 </span>
                 <span
-                  className={`truncate ${winners.has(e.playerId) ? "font-bold text-primary" : "font-medium"}`}
+                  className={`truncate ${winners.has(e.playerId) ? "font-bold text-primary-text" : "font-medium"}`}
                 >
                   {e.name}
                   {winners.has(e.playerId) && tally.votingOpen && (
@@ -97,7 +97,7 @@ const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
   return (
     <div className="px-4 md:px-6 pt-4 pb-1">
       <div className="flex items-center gap-2 mb-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary-text">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
@@ -119,7 +119,7 @@ const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
                 <Link
                   href={`/players/${e.playerId}`}
                   className={`truncate hover:underline ${
-                    winners.has(e.playerId) ? "font-bold text-primary" : "font-medium"
+                    winners.has(e.playerId) ? "font-bold text-primary-text" : "font-medium"
                   }`}
                 >
                   {e.name}
@@ -171,7 +171,7 @@ const AwardBoardCard = ({
           <div className="divide-y divide-border/60">
             {groups.map((g) => (
               <div key={g.season} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                <span className="font-mono font-bold text-primary w-20 shrink-0">
+                <span className="font-mono font-bold text-primary-text w-20 shrink-0">
                   {formatSeason(g.season)}
                 </span>
                 <span className="flex flex-wrap gap-x-2 gap-y-1">
@@ -208,7 +208,9 @@ export function AwardsTab() {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">Club Awards</h2>
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
+          Club Awards
+        </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
           {brand.name}'s honour rolls — recognising the players and members awarded each season.

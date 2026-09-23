@@ -9,7 +9,7 @@ import type { PremiershipCount } from "./types";
 
 export const SummaryStat = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-card border border-border rounded-md p-5 shadow-md">
-    <div className="text-3xl md:text-4xl font-serif font-bold text-primary">
+    <div className="text-3xl md:text-4xl font-serif font-bold text-primary-text">
       {typeof value === "number" ? value.toLocaleString() : value}
     </div>
     <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1 font-serif">
@@ -59,25 +59,25 @@ const BoardCard = ({
       <table className="w-full text-sm sticky-id-col">
         <thead>
           <tr className="bg-black/25">
-            <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-14">
+            <th className="text-center font-serif uppercase tracking-wider text-primary-text p-3 text-xs w-14">
               #
             </th>
-            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">
+            <th className="text-left font-serif uppercase tracking-wider text-primary-text p-3 text-xs">
               Surname
             </th>
-            <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">
+            <th className="text-left font-serif uppercase tracking-wider text-primary-text p-3 text-xs">
               Given Name
             </th>
-            <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">
+            <th className="text-right font-serif uppercase tracking-wider text-primary-text p-3 text-xs">
               {board.headlineLabel}
             </th>
             {board.key === "games" && (
-              <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs">
+              <th className="text-center font-serif uppercase tracking-wider text-primary-text p-3 text-xs">
                 Prem
               </th>
             )}
             <th
-              className={`font-serif uppercase tracking-wider text-primary p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}
+              className={`font-serif uppercase tracking-wider text-primary-text p-3 text-xs hidden sm:table-cell ${board.key === "games" ? "text-left" : "text-right"}`}
             >
               {board.key === "games" ? "Grades" : board.supportingLabel}
             </th>
@@ -89,13 +89,13 @@ const BoardCard = ({
               key={r.playerId}
               className={`border-t border-border/50 hover:bg-primary/10 transition-colors ${i % 2 ? "bg-black/10" : ""}`}
             >
-              <td className="p-3 text-center font-mono text-primary font-bold">
+              <td className="p-3 text-center font-mono text-primary-text font-bold">
                 {tier.startRank + i}
               </td>
               <td className="p-3">
                 <Link
                   href={`/players/${r.playerId}`}
-                  className="font-semibold text-primary hover:underline uppercase"
+                  className="font-semibold text-primary-text hover:underline uppercase"
                 >
                   {r.surname}
                 </Link>
@@ -135,7 +135,9 @@ export const BoardView = ({
 }) => (
   <div className="space-y-4">
     <div className="bg-card border border-border rounded-md p-6 shadow-md">
-      <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">{board.title}</h2>
+      <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
+        {board.title}
+      </h2>
       <div className="w-20 h-[3px] bg-primary mt-3" />
       <p className="text-muted-foreground italic mt-3 mb-0">{board.subtitle}</p>
     </div>
@@ -166,8 +168,8 @@ export function QuickLink({
   return (
     <Link href={href}>
       <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-        <Icon className="h-7 w-7 text-primary mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
+        <Icon className="h-7 w-7 text-primary-text mb-3" />
+        <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary-text">
           {title}
         </div>
         <p className="text-sm text-muted-foreground mt-1">{desc}</p>

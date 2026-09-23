@@ -446,7 +446,7 @@ function PlayerGallery({ playerId }: { playerId: number }) {
     <div className="basis-full space-y-2 rounded-md border bg-muted/30 p-3">
       <div className="flex items-center justify-between">
         <Label>Photo gallery</Label>
-        <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+        <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
           {isUploading ? "Uploading…" : "+ Add photo"}
           <input
             type="file"
@@ -484,7 +484,7 @@ function PlayerGallery({ playerId }: { playerId: number }) {
                 {!img.isDefault && (
                   <button
                     type="button"
-                    className="text-[11px] text-primary hover:underline disabled:opacity-50"
+                    className="text-[11px] text-primary-text hover:underline disabled:opacity-50"
                     disabled={busy}
                     onClick={() =>
                       setDefault.mutate(

@@ -9,7 +9,7 @@ const EntryName = ({ entry }: { entry: RecordLeaderboardEntry }) =>
   entry.playerId != null ? (
     <Link
       href={`/players/${entry.playerId}`}
-      className="font-semibold text-primary hover:underline"
+      className="font-semibold text-primary-text hover:underline"
     >
       {entry.name}
     </Link>
@@ -31,7 +31,7 @@ const LeaderboardCard = ({ board }: { board: RecordLeaderboard }) => {
         <div className="divide-y divide-border/60">
           {board.entries.map((e) => (
             <div key={`${e.rank}-${e.name}`} className="flex items-baseline gap-3 px-2 py-2">
-              <span className="font-mono font-bold text-primary w-7 shrink-0 text-center">
+              <span className="font-mono font-bold text-primary-text w-7 shrink-0 text-center">
                 {e.rank}
               </span>
               <span className="flex-1 min-w-0 truncate">
@@ -62,7 +62,7 @@ const Section = ({
 }) => (
   <div className="space-y-4">
     <div className="bg-card border border-border rounded-md p-6 shadow-md">
-      <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">{title}</h2>
+      <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">{title}</h2>
       <div className="w-20 h-[3px] bg-primary mt-3" />
       <p className="text-muted-foreground italic mt-3 mb-0">{subtitle}</p>
     </div>
@@ -97,7 +97,7 @@ export function RecordsTab() {
   return (
     <div className="space-y-8">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Notable Honour Board Records
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />

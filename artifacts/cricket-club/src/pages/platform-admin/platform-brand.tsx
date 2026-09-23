@@ -243,7 +243,7 @@ export default function PlatformBrand() {
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   </div>
                 ) : null}
-                <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                   {isUploadingLogo ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
                   <input
                     type="file"
@@ -304,7 +304,7 @@ export default function PlatformBrand() {
                     }}
                   />
                 )}
-                <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                   {isUploadingFavicon
                     ? "Uploading…"
                     : faviconUrl

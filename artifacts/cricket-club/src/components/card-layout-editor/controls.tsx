@@ -14,7 +14,7 @@ export function EffectBtn({
       type="button"
       onClick={onClick}
       className={`flex-1 rounded border px-1 py-1 text-[10px] ${
-        active ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"
+        active ? "border-primary bg-primary/10 text-primary-text" : "text-muted-foreground"
       }`}
     >
       {children}
@@ -36,7 +36,7 @@ export function ShapeBtn({
       type="button"
       onClick={onClick}
       className={`flex h-8 w-8 items-center justify-center rounded border ${
-        active ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"
+        active ? "border-primary bg-primary/10 text-primary-text" : "text-muted-foreground"
       }`}
     >
       {children}

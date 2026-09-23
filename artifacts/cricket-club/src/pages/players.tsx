@@ -130,7 +130,7 @@ export default function Players() {
                   <td className="p-4">
                     <Link
                       href={`/players/${player.id}`}
-                      className="font-semibold text-primary hover:underline"
+                      className="font-semibold text-primary-text hover:underline"
                     >
                       {player.surname}, {player.givenName}
                     </Link>

@@ -82,7 +82,7 @@ const MilestoneCard = ({
         <div className="text-xs uppercase tracking-widest text-muted-foreground font-serif">
           {status.boardLabel}
         </div>
-        <div className="font-mono font-bold text-primary text-lg">
+        <div className="font-mono font-bold text-primary-text text-lg">
           {fmtNum(status.currentValue)}
         </div>
       </div>
@@ -90,9 +90,9 @@ const MilestoneCard = ({
         <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2">
           <TierBadge
             tierIndex={status.currentTierIndex!}
-            className="h-4 w-4 text-primary shrink-0"
+            className="h-4 w-4 text-primary-text shrink-0"
           />
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary truncate flex-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-primary-text truncate flex-1">
             {status.currentTierLabel}
           </span>
           <button
@@ -101,7 +101,7 @@ const MilestoneCard = ({
             disabled={sharing}
             aria-label={`Share ${status.currentTierLabel} milestone`}
             title="Share milestone"
-            className="p-1 -m-1 rounded text-primary/80 hover:text-primary hover:bg-primary/15 transition-colors disabled:opacity-50 shrink-0"
+            className="p-1 -m-1 rounded text-primary-text/80 hover:text-primary-text hover:bg-primary/15 transition-colors disabled:opacity-50 shrink-0"
           >
             <Share2 className="h-3.5 w-3.5" />
           </button>
@@ -114,7 +114,7 @@ const MilestoneCard = ({
             className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5"
           />
           <div className="text-xs leading-snug">
-            <span className="font-mono font-bold text-primary">{fmtNum(status.gap!)}</span>{" "}
+            <span className="font-mono font-bold text-primary-text">{fmtNum(status.gap!)}</span>{" "}
             <span className="text-muted-foreground">
               {status.boardLabel.toLowerCase()} away from the{" "}
             </span>
@@ -362,7 +362,7 @@ export default function PlayerDetail() {
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-serif font-bold text-primary">
+            <h1 className="text-3xl font-serif font-bold text-primary-text">
               {player.givenName} {player.surname}
             </h1>
             <div className="mt-2">
@@ -426,13 +426,13 @@ export default function PlayerDetail() {
       {premsWon > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary m-0 flex items-center gap-2">
+            <h2 className="text-lg font-serif font-bold text-primary-text m-0 flex items-center gap-2">
               <Trophy className="h-5 w-5 text-amber-600" />
               Premierships won
             </h2>
             <Link
               href="/premierships"
-              className="text-xs uppercase tracking-widest text-primary hover:underline"
+              className="text-xs uppercase tracking-widest text-primary-text hover:underline"
             >
               View board →
             </Link>
@@ -459,7 +459,7 @@ export default function PlayerDetail() {
                 className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3"
               >
                 <div className="text-center shrink-0">
-                  <div className="font-mono font-bold text-primary text-lg leading-none">
+                  <div className="font-mono font-bold text-primary-text text-lg leading-none">
                     {p.year}
                   </div>
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -494,7 +494,9 @@ export default function PlayerDetail() {
       {milestones.length > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary m-0">Milestone tracker</h2>
+            <h2 className="text-lg font-serif font-bold text-primary-text m-0">
+              Milestone tracker
+            </h2>
             <span className="text-xs uppercase tracking-widest text-muted-foreground">
               Next honour board target
             </span>
@@ -516,11 +518,11 @@ export default function PlayerDetail() {
       {seasons.length > 0 && selectedSeason !== null && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary m-0">
+            <h2 className="text-lg font-serif font-bold text-primary-text m-0">
               Milestones hit this season
             </h2>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Season
               </label>
               <select
@@ -550,10 +552,10 @@ export default function PlayerDetail() {
                 >
                   <TierBadge
                     tierIndex={c.tierIndex}
-                    className="h-6 w-6 text-primary shrink-0 mt-0.5"
+                    className="h-6 w-6 text-primary-text shrink-0 mt-0.5"
                   />
                   <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-primary-text truncate">
                       {c.tierLabel}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
@@ -587,7 +589,7 @@ export default function PlayerDetail() {
       {seasonsByGrade.length > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary m-0">By season</h2>
+            <h2 className="text-lg font-serif font-bold text-primary-text m-0">By season</h2>
             <span className="text-xs uppercase tracking-widest text-muted-foreground">
               Year-by-year history
             </span>
@@ -598,7 +600,7 @@ export default function PlayerDetail() {
               <div key={grade}>
                 <div className="flex items-center gap-2 mb-2">
                   <GradeBadge grade={grade} size="sm" />
-                  <span className="font-semibold text-primary">{grade}</span>
+                  <span className="font-semibold text-primary-text">{grade}</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm sticky-id-col">
@@ -655,7 +657,7 @@ export default function PlayerDetail() {
                         </tr>
                       ))}
                       <tr className="border-t-2 border-primary/40 bg-muted/30 font-semibold">
-                        <td className="p-3 font-mono uppercase tracking-wider text-xs text-primary">
+                        <td className="p-3 font-mono uppercase tracking-wider text-xs text-primary-text">
                           Total
                         </td>
                         <td className="p-3 text-right font-mono">{totals.games || "-"}</td>
@@ -689,7 +691,7 @@ export default function PlayerDetail() {
       {matchLines && matchLines.length > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary m-0">Match by match</h2>
+            <h2 className="text-lg font-serif font-bold text-primary-text m-0">Match by match</h2>
             <span className="text-xs uppercase tracking-widest text-muted-foreground">
               {filteredMatchLines.length === matchLines.length
                 ? `${matchLines.length} game${matchLines.length === 1 ? "" : "s"} recorded`
@@ -699,7 +701,7 @@ export default function PlayerDetail() {
           <div className="w-12 h-[2px] bg-primary mb-4" />
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Season
               </label>
               <select
@@ -716,7 +718,7 @@ export default function PlayerDetail() {
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Grade
               </label>
               <select
@@ -779,7 +781,7 @@ export default function PlayerDetail() {
                           <Link
                             href={`/matches/${m.matchId}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-primary hover:underline"
+                            className="text-primary-text hover:underline"
                           >
                             {m.opponent ?? "—"}
                           </Link>
@@ -842,7 +844,7 @@ export default function PlayerDetail() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <GradeBadge grade={stat.grade} size="sm" />
-                      <span className="font-semibold text-primary">{stat.grade}</span>
+                      <span className="font-semibold text-primary-text">{stat.grade}</span>
                     </div>
                   </td>
                   <td className="p-4 text-right font-mono">{stat.games || "-"}</td>
@@ -903,7 +905,7 @@ function JuniorCareerSection({ playerId }: { playerId: number }) {
   return (
     <div className="bg-card border border-border rounded-md p-5 shadow-sm">
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-lg font-serif font-bold text-primary m-0">Junior career</h2>
+        <h2 className="text-lg font-serif font-bold text-primary-text m-0">Junior career</h2>
         <span className="text-xs uppercase tracking-widest text-muted-foreground">
           Kept separate from senior records
         </span>
@@ -944,7 +946,7 @@ function JuniorIdentitySummary({ participantId }: { participantId: string }) {
     <div className="border border-border rounded-md p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
         <div>
-          <span className="font-semibold text-primary">{junior.displayName}</span>
+          <span className="font-semibold text-primary-text">{junior.displayName}</span>
           <span className="ml-2 text-xs text-muted-foreground">
             {junior.firstSeason && junior.lastSeason
               ? `${junior.firstSeason} – ${junior.lastSeason}`
@@ -954,7 +956,7 @@ function JuniorIdentitySummary({ participantId }: { participantId: string }) {
         </div>
         <Link
           href={`/juniors/players/${junior.participantId}`}
-          className="text-sm text-primary hover:underline"
+          className="text-sm text-primary-text hover:underline"
         >
           View junior profile →
         </Link>
@@ -965,7 +967,7 @@ function JuniorIdentitySummary({ participantId }: { participantId: string }) {
             key={t.label}
             className="bg-background/60 border border-border rounded-md p-2 text-center"
           >
-            <div className="text-lg font-serif font-bold text-primary">{t.value}</div>
+            <div className="text-lg font-serif font-bold text-primary-text">{t.value}</div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
               {t.label}
             </div>

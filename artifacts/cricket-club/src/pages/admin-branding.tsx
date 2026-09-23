@@ -338,7 +338,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                         />
                       </span>
                       <span className="flex items-center gap-1.5 text-sm font-semibold">
-                        {selected && <Check className="h-4 w-4 text-primary" />}
+                        {selected && <Check className="h-4 w-4 text-primary-text" />}
                         {look.label}
                       </span>
                       <span className="text-xs text-muted-foreground">{look.description}</span>
@@ -358,7 +358,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                         className="h-12 w-20 rounded object-cover border"
                       />
                     )}
-                    <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                    <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                       {isUploadingBackground
                         ? "Uploading…"
                         : backgroundUrl
@@ -437,7 +437,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                       className="h-12 w-12 rounded object-contain border"
                     />
                   )}
-                  <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                  <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                     {isUploadingLogo ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
                     <input
                       type="file"
@@ -463,7 +463,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                       className="h-6 w-6 rounded object-contain border"
                     />
                   )}
-                  <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                  <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                     {isUploadingFavicon
                       ? "Uploading…"
                       : faviconUrl
@@ -672,7 +672,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                               onClick={() => setOverrideKeys(c.keys, null)}
                               disabled={busy}
                               data-testid={`override-${c.id}-reset`}
-                              className="text-xs font-medium text-primary hover:underline"
+                              className="text-xs font-medium text-primary-text hover:underline"
                             >
                               Reset
                             </button>
@@ -745,7 +745,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                     onClick={() => setOverrides({})}
                     disabled={busy}
                     data-testid="override-reset-all"
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="text-sm font-medium text-primary-text hover:underline"
                   >
                     Reset all to auto
                   </button>

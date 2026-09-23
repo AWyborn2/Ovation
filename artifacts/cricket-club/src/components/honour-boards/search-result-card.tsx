@@ -6,7 +6,7 @@ import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";
 const Chip = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-background/60 border border-border rounded px-3 py-2">
     <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-    <div className="font-mono font-semibold text-primary">{value}</div>
+    <div className="font-mono font-semibold text-primary-text">{value}</div>
   </div>
 );
 
@@ -21,7 +21,7 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
   return (
     <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md">
       <Link href={`/players/${player.id}`} className="block group">
-        <h3 className="font-serif text-xl font-bold text-primary group-hover:underline m-0 uppercase">
+        <h3 className="font-serif text-xl font-bold text-primary-text group-hover:underline m-0 uppercase">
           {player.givenName} {player.surname}
         </h3>
       </Link>
@@ -55,22 +55,22 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
           <table className="w-full text-xs sticky-id-col">
             <thead>
               <tr className="bg-black/25">
-                <th className="text-left font-serif uppercase tracking-wider text-primary p-2">
+                <th className="text-left font-serif uppercase tracking-wider text-primary-text p-2">
                   Grade
                 </th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                <th className="text-right font-serif uppercase tracking-wider text-primary-text p-2">
                   Mat
                 </th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                <th className="text-right font-serif uppercase tracking-wider text-primary-text p-2">
                   Runs
                 </th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                <th className="text-right font-serif uppercase tracking-wider text-primary-text p-2">
                   HS
                 </th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                <th className="text-right font-serif uppercase tracking-wider text-primary-text p-2">
                   Wkts
                 </th>
-                <th className="text-right font-serif uppercase tracking-wider text-primary p-2">
+                <th className="text-right font-serif uppercase tracking-wider text-primary-text p-2">
                   BB
                 </th>
               </tr>
@@ -83,7 +83,7 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <GradeBadge grade={s.grade} size="sm" />
-                        <span className="font-semibold text-primary">{s.grade}</span>
+                        <span className="font-semibold text-primary-text">{s.grade}</span>
                       </div>
                     </td>
                     <td className="p-2 text-right font-mono">{s.games ?? "-"}</td>

@@ -112,7 +112,7 @@ function SectionToggle({ isJuniors }: { isJuniors: boolean }) {
       <Link
         href="/"
         className={`px-4 py-1.5 transition-colors ${
-          isJuniors ? "text-primary hover:bg-primary/10" : "bg-primary text-primary-foreground"
+          isJuniors ? "text-primary-text hover:bg-primary/10" : "bg-primary text-primary-foreground"
         }`}
         data-testid="link-section-seniors"
       >
@@ -121,7 +121,7 @@ function SectionToggle({ isJuniors }: { isJuniors: boolean }) {
       <Link
         href="/juniors"
         className={`px-4 py-1.5 transition-colors border-l-2 border-primary ${
-          isJuniors ? "bg-primary text-primary-foreground" : "text-primary hover:bg-primary/10"
+          isJuniors ? "bg-primary text-primary-foreground" : "text-primary-text hover:bg-primary/10"
         }`}
         data-testid="link-section-juniors"
       >
@@ -152,7 +152,7 @@ function HelpButton({ className }: { className?: string }) {
       data-tour="help-button"
       aria-label="Help and guided tour"
       title="Help / Take a tour"
-      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/60 px-3 py-1.5 text-primary text-sm font-serif uppercase tracking-wider transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className ?? ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/60 px-3 py-1.5 text-primary-text text-sm font-serif uppercase tracking-wider transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className ?? ""}`}
     >
       <HelpCircle className="h-4 w-4" />
       <span className="hidden lg:inline">Help</span>
@@ -171,7 +171,7 @@ function ThemeToggleButton({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/60 px-3 py-1.5 text-primary text-sm font-serif uppercase tracking-wider transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className ?? ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/60 px-3 py-1.5 text-primary-text text-sm font-serif uppercase tracking-wider transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className ?? ""}`}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
@@ -211,9 +211,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   // Juniors uses the same gold accents as seniors; only the section banner below
   // stays brown (with gold writing) to distinguish the two sides.
-  const activeText = "text-primary";
+  const activeText = "text-primary-text";
   const activeBorder = "border-primary";
-  const hoverText = "hover:text-primary";
+  const hoverText = "hover:text-primary-text";
   const hoverBorder = "hover:border-primary/50";
   const activeMobileBg = "bg-primary text-primary-foreground";
 
@@ -270,7 +270,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <HelpButton />
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-primary hover:text-primary/80 focus:outline-none"
+                className="text-primary-text hover:text-primary-text/80 focus:outline-none"
                 data-tour="main-nav"
                 aria-label="Open navigation menu"
               >
@@ -283,7 +283,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Section banner — makes the active side obvious. */}
         <div
           className={`w-full border-t ${
-            isJuniors ? "text-primary" : "bg-primary text-primary-foreground border-primary"
+            isJuniors ? "text-primary-text" : "bg-primary text-primary-foreground border-primary"
           }`}
           style={
             isJuniors
@@ -367,7 +367,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex flex-col items-center md:items-start">
-              <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">
+              <h3 className="font-serif text-primary-text uppercase text-lg mb-4 tracking-wider">
                 Quick Links
               </h3>
               <ul className="space-y-2 text-center md:text-left">
@@ -378,14 +378,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         href={item.target}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
+                        className="text-muted-foreground hover:text-primary-text transition-colors"
                       >
                         {item.label}
                       </a>
                     ) : (
                       <Link
                         href={item.target}
-                        className="text-muted-foreground hover:text-primary transition-colors"
+                        className="text-muted-foreground hover:text-primary-text transition-colors"
                       >
                         {item.label}
                       </Link>
@@ -396,7 +396,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex flex-col items-center md:items-start">
-              <h3 className="font-serif text-primary uppercase text-lg mb-4 tracking-wider">
+              <h3 className="font-serif text-primary-text uppercase text-lg mb-4 tracking-wider">
                 Contact
               </h3>
               <p className="text-muted-foreground mb-4 text-center md:text-left">
@@ -409,7 +409,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="mx-2" aria-hidden>
               ·
             </span>
-            <Link href="/admin" className="hover:text-primary transition-colors">
+            <Link href="/admin" className="hover:text-primary-text transition-colors">
               {me.data ? "Admin" : "Admin login"}
             </Link>
           </div>

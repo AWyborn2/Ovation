@@ -134,7 +134,7 @@ export default function MatchDetail() {
     <div className="space-y-6">
       <Link
         href="/matches"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary-text"
       >
         <ChevronLeft className="h-4 w-4" /> All matches
       </Link>
@@ -144,7 +144,7 @@ export default function MatchDetail() {
         <div className="flex items-start gap-4">
           <GradeBadge grade={match.grade} size="lg" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-serif font-bold text-primary flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-serif font-bold text-primary-text flex items-center gap-2.5 flex-wrap">
               <span>
                 {brand.name} vs {match.opponent ?? "Unknown"}
               </span>
@@ -161,7 +161,7 @@ export default function MatchDetail() {
                 <button
                   type="button"
                   onClick={startEditRound}
-                  className="inline-flex items-center gap-1 normal-case text-xs font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 normal-case text-xs font-medium text-primary-text hover:underline"
                   data-testid="button-edit-round"
                 >
                   <Pencil className="h-3 w-3" />
@@ -272,7 +272,7 @@ export default function MatchDetail() {
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
                     {brand.name}
                   </div>
-                  <div className="font-bold text-primary text-lg">{match.clubScore}</div>
+                  <div className="font-bold text-primary-text text-lg">{match.clubScore}</div>
                 </div>
               )}
               {match.opponentScore && (
@@ -294,7 +294,7 @@ export default function MatchDetail() {
       {/* Admin: hat-trick management */}
       {isAdmin && hhBowlers.length > 0 && (
         <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <h2 className="text-sm font-serif font-bold text-primary flex items-center gap-1.5">
+          <h2 className="text-sm font-serif font-bold text-primary-text flex items-center gap-1.5">
             <Flame className="h-4 w-4" /> Hat-tricks
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5 mb-3">

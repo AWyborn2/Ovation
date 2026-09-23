@@ -34,13 +34,13 @@ export function CapRegisterTab() {
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
+          <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
             A Grade Caps
           </h2>
           <div className="flex items-center gap-2">
             <label
               htmlFor="cap-category"
-              className="text-xs font-bold uppercase tracking-widest text-primary"
+              className="text-xs font-bold uppercase tracking-widest text-primary-text"
             >
               List
             </label>
@@ -63,7 +63,7 @@ export function CapRegisterTab() {
       </div>
 
       <div className="bg-card border-2 border-primary/40 rounded-md p-5 md:p-6 shadow-md">
-        <h3 className="text-lg font-serif font-bold text-primary uppercase tracking-wider m-0">
+        <h3 className="text-lg font-serif font-bold text-primary-text uppercase tracking-wider m-0">
           About this register
         </h3>
         <div className="w-12 h-[2px] bg-primary mt-2 mb-3" />
@@ -106,13 +106,13 @@ export function CapRegisterTab() {
             <table className="w-full text-sm sticky-id-col">
               <thead>
                 <tr className="bg-black/25">
-                  <th className="text-center font-serif uppercase tracking-wider text-primary p-3 text-xs w-16">
+                  <th className="text-center font-serif uppercase tracking-wider text-primary-text p-3 text-xs w-16">
                     Cap #
                   </th>
-                  <th className="text-left font-serif uppercase tracking-wider text-primary p-3 text-xs">
+                  <th className="text-left font-serif uppercase tracking-wider text-primary-text p-3 text-xs">
                     Player
                   </th>
-                  <th className="text-right font-serif uppercase tracking-wider text-primary p-3 text-xs">
+                  <th className="text-right font-serif uppercase tracking-wider text-primary-text p-3 text-xs">
                     A Grade Games
                   </th>
                 </tr>
@@ -123,19 +123,19 @@ export function CapRegisterTab() {
                     key={c.capNumber}
                     className={`border-t border-border/50 ${i % 2 ? "bg-black/10" : ""} hover:bg-primary/10 transition-colors`}
                   >
-                    <td className="p-3 text-center font-mono text-primary font-bold">
+                    <td className="p-3 text-center font-mono text-primary-text font-bold">
                       {c.capNumber}
                     </td>
                     <td className="p-3">
                       {c.playerId !== null && c.playerId !== undefined ? (
                         <Link
                           href={`/players/${c.playerId}`}
-                          className="uppercase font-semibold text-primary hover:underline"
+                          className="uppercase font-semibold text-primary-text hover:underline"
                         >
                           {c.name}
                         </Link>
                       ) : (
-                        <span className="uppercase font-semibold text-primary">{c.name}</span>
+                        <span className="uppercase font-semibold text-primary-text">{c.name}</span>
                       )}
                       {c.deceased && (
                         <span

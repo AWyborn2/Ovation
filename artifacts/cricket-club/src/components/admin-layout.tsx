@@ -92,7 +92,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
                   <span
                     className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${
                       active
-                        ? "bg-primary-foreground text-primary"
+                        ? "bg-primary-foreground text-primary-text"
                         : "bg-primary text-primary-foreground"
                     }`}
                     aria-label={`${pendingCount} drafts awaiting review`}

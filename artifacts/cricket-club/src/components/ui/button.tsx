@@ -22,7 +22,7 @@ const buttonVariants = cva(
         secondary:
           "border bg-secondary text-secondary-foreground border-secondary-border hover:bg-secondary/80",
         ghost: "border border-transparent hover:bg-muted",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-primary-text underline-offset-4 hover:underline",
       },
       size: {
         // @replit changed sizes

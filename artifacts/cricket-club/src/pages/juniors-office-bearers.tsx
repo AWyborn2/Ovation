@@ -72,7 +72,7 @@ export default function JuniorsOfficeBearers() {
         <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
           Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary flex items-center gap-2">
+        <h1 className="text-3xl font-serif font-bold text-primary-text flex items-center gap-2">
           <Users className="h-7 w-7 text-[#bc8c6b]" /> Junior Office Bearers
         </h1>
         <p className="text-muted-foreground mt-1">

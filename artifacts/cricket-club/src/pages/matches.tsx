@@ -134,7 +134,7 @@ export default function Matches() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Matches</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">Matches</h1>
         <p className="text-muted-foreground mt-1">
           Browse game-by-game scorecards across all grades.
         </p>
@@ -142,7 +142,9 @@ export default function Matches() {
 
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">Grade</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+            Grade
+          </label>
           <select
             value={grade ?? ""}
             onChange={(e) => setGrade(e.target.value)}
@@ -157,7 +159,9 @@ export default function Matches() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+            Season
+          </label>
           <select
             value={season ?? ""}
             onChange={(e) => {
@@ -194,7 +198,7 @@ export default function Matches() {
                   <GradeBadge grade={m.grade} size="sm" />
                   <MatchCardCrest club={m.opponentClub} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-serif font-bold text-primary group-hover:text-primary truncate">
+                    <div className="font-serif font-bold text-primary-text group-hover:text-primary-text truncate">
                       vs {m.opponent ?? "Unknown"}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">

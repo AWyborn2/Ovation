@@ -477,7 +477,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
                     className="h-12 w-12 rounded object-contain border"
                   />
                 )}
-                <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                   {isUploadingLogo ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
                   <input
                     type="file"
@@ -503,7 +503,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
                     className="h-6 w-6 rounded object-contain border"
                   />
                 )}
-                <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                   {isUploadingFavicon
                     ? "Uploading…"
                     : faviconUrl
@@ -691,7 +691,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
                                     type="button"
                                     onClick={() => setOverrideKey(key, null)}
                                     disabled={busy}
-                                    className="text-[10px] font-medium text-primary hover:underline"
+                                    className="text-[10px] font-medium text-primary-text hover:underline"
                                   >
                                     Auto
                                   </button>
@@ -757,7 +757,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
                       onClick={() => setOverrides({})}
                       disabled={busy}
                       data-testid="token-reset-all"
-                      className="text-sm font-medium text-primary hover:underline"
+                      className="text-sm font-medium text-primary-text hover:underline"
                     >
                       Reset all tokens to auto
                     </button>

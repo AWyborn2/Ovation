@@ -46,11 +46,11 @@ export default function Grades() {
               <Card className="hover:border-primary transition-colors cursor-pointer group">
                 <CardHeader className="flex flex-row items-center gap-4">
                   <GradeBadge grade={grade.grade} size="lg" />
-                  <CardTitle className="group-hover:text-primary transition-colors flex-1">
+                  <CardTitle className="group-hover:text-primary-text transition-colors flex-1">
                     {grade.grade}
                   </CardTitle>
                   <div
-                    className="flex items-center gap-1.5 text-primary font-bold"
+                    className="flex items-center gap-1.5 text-primary-text font-bold"
                     title={`${premsByGrade.get(grade.grade) ?? 0} premierships`}
                   >
                     <Trophy className="h-5 w-5" />

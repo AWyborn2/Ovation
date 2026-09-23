@@ -150,7 +150,7 @@ export default function AdminAwards() {
                     {MECHANISM_LABEL[award.mechanism]}
                   </span>
                   {award.mechanism === "points" && award.pointsGrade && (
-                    <span className="ml-2 align-middle text-xs font-normal rounded bg-primary/15 text-primary px-2 py-0.5">
+                    <span className="ml-2 align-middle text-xs font-normal rounded bg-primary/15 text-primary-text px-2 py-0.5">
                       {award.pointsGrade}
                     </span>
                   )}

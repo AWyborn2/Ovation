@@ -153,7 +153,7 @@ export default function HonourBoards() {
           className="h-16 md:h-20 w-auto drop-shadow-lg"
         />
         <div>
-          <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary m-0 leading-tight">
+          <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary-text m-0 leading-tight">
             {brand.name} — Honour Boards
           </h1>
           <div className="text-xs md:text-sm uppercase tracking-widest text-muted-foreground mt-2">
@@ -284,14 +284,16 @@ export default function HonourBoards() {
         activeTab !== "committee" &&
         activeTab !== "records" && (
           <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Scope</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-primary-text">
+              Scope
+            </span>
             <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
               <button
                 onClick={() => setScope("career")}
                 className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
                   scope === "career"
                     ? "bg-primary text-primary-foreground"
-                    : "text-primary hover:bg-primary/15"
+                    : "text-primary-text hover:bg-primary/15"
                 }`}
               >
                 Career
@@ -301,7 +303,7 @@ export default function HonourBoards() {
                 className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-l-2 border-primary ${
                   scope === "by-grade"
                     ? "bg-primary text-primary-foreground"
-                    : "text-primary hover:bg-primary/15"
+                    : "text-primary-text hover:bg-primary/15"
                 }`}
               >
                 By Grade
@@ -332,7 +334,7 @@ export default function HonourBoards() {
           {/* Dated, prioritized achievements from real match data */}
           <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
             <div>
-              <h2 className="text-lg md:text-xl font-serif font-bold text-primary m-0">
+              <h2 className="text-lg md:text-xl font-serif font-bold text-primary-text m-0">
                 {milestonesBoard?.featured ? "Recent milestones" : "Milestones"}
               </h2>
               <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">
@@ -355,7 +357,7 @@ export default function HonourBoards() {
                     className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${
                       active
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary-text"
                     }`}
                   >
                     {f.label}
@@ -383,7 +385,7 @@ export default function HonourBoards() {
                   <div className="flex justify-center">
                     <button
                       onClick={() => setMilestonesExpanded((v) => !v)}
-                      className="px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border-2 border-primary text-primary hover:bg-primary/15 transition-colors"
+                      className="px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border-2 border-primary text-primary-text hover:bg-primary/15 transition-colors"
                     >
                       {milestonesExpanded
                         ? "Show less"
@@ -447,7 +449,7 @@ export default function HonourBoards() {
 
       <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-card border border-border rounded-md py-4 border-t-4 border-t-primary">
         Last updated:{" "}
-        <span className="text-primary font-bold">
+        <span className="text-primary-text font-bold">
           {new Date().toLocaleDateString("en-AU", {
             day: "numeric",
             month: "long",

@@ -506,7 +506,7 @@ function MembersManager({
 
   return (
     <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4">
-      <h4 className="text-sm font-bold uppercase tracking-wide text-primary">Lineup</h4>
+      <h4 className="text-sm font-bold uppercase tracking-wide text-primary-text">Lineup</h4>
       {members.length > 1 && (
         <p className="text-xs text-muted-foreground">
           Drag the <GripVertical className="inline h-3 w-3 align-text-bottom" /> handle to reorder
@@ -655,7 +655,7 @@ function MemberRow({
           {badges.map((b) => (
             <span
               key={b}
-              className="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+              className="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-text"
             >
               {b}
             </span>

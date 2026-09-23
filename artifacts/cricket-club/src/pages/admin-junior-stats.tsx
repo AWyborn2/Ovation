@@ -112,7 +112,9 @@ export default function AdminJuniorStats() {
               onClick={() => setMatchId(m.id)}
               className="w-full text-left bg-card border border-border rounded-md p-3 shadow-sm hover:border-primary transition-colors flex flex-wrap items-center gap-x-4 gap-y-1"
             >
-              <span className="font-medium text-primary">vs {m.opponentName ?? "Unknown"}</span>
+              <span className="font-medium text-primary-text">
+                vs {m.opponentName ?? "Unknown"}
+              </span>
               <span className="text-xs text-muted-foreground uppercase tracking-wider">
                 {m.season ?? ""}
                 {m.ageGroup ? ` · ${m.ageGroup}` : ""}

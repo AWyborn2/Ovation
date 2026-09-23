@@ -59,7 +59,7 @@ export function BackgroundPicker({
             data-testid={testId ? `${testId}-url` : undefined}
           />
           <div className="flex items-center gap-2">
-            <label className="text-xs inline-flex items-center gap-1.5 cursor-pointer text-primary">
+            <label className="text-xs inline-flex items-center gap-1.5 cursor-pointer text-primary-text">
               <Upload className="h-3.5 w-3.5" />
               {upload.isUploading ? "Uploading…" : "Upload image"}
               <input

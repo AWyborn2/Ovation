@@ -37,7 +37,7 @@ function FinishSetupBanner() {
     <Card className="border-primary/40 bg-primary/5">
       <CardContent className="flex items-center justify-between gap-4 flex-wrap py-4">
         <div className="flex items-center gap-3">
-          <Palette className="h-5 w-5 text-primary shrink-0" />
+          <Palette className="h-5 w-5 text-primary-text shrink-0" />
           <div>
             <p className="font-medium">Finish setting up your club</p>
             <p className="text-sm text-muted-foreground">
@@ -135,7 +135,7 @@ export default function AdminHub() {
             <Card className="hover:border-primary cursor-pointer transition-colors h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {Icon && <Icon className="h-5 w-5 text-primary" />}
+                  {Icon && <Icon className="h-5 w-5 text-primary-text" />}
                   {t.label}
                 </CardTitle>
               </CardHeader>

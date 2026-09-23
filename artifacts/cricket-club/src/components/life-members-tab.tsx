@@ -27,7 +27,9 @@ const StatTile = ({
 }) => (
   <div className="bg-background/60 border border-border rounded p-3">
     <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-    <div className="font-mono font-bold text-primary text-lg leading-tight mt-0.5">{value}</div>
+    <div className="font-mono font-bold text-primary-text text-lg leading-tight mt-0.5">
+      {value}
+    </div>
     {sub && <div className="text-[11px] text-muted-foreground mt-0.5">{sub}</div>}
   </div>
 );
@@ -62,7 +64,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
   const paragraphs = (member.blurb ?? "").split(/\n\n+/);
   const nameContent = (
     <span
-      className="font-serif font-bold uppercase tracking-wide text-2xl md:text-3xl text-primary"
+      className="font-serif font-bold uppercase tracking-wide text-2xl md:text-3xl text-primary-text"
       style={{ fontFamily: '"Roboto Slab", serif' }}
     >
       {member.name}
@@ -87,7 +89,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Inducted
           </div>
-          <div className="font-mono font-bold text-primary text-2xl leading-none">
+          <div className="font-mono font-bold text-primary-text text-2xl leading-none">
             {member.inductionYear}
           </div>
         </div>
@@ -107,7 +109,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-border bg-background/60"
                 >
                   <GradeBadge grade={g} size="sm" />
-                  <span className="font-semibold text-primary">{g}</span>
+                  <span className="font-semibold text-primary-text">{g}</span>
                 </span>
               ))}
             </div>
@@ -135,7 +137,9 @@ export function LifeMembersTab() {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">Life Members</h2>
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
+          Life Members
+        </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />
         <p className="text-muted-foreground italic mt-3 mb-0">
           {brand.name}'s highest individual honour — recognising members whose contribution to the

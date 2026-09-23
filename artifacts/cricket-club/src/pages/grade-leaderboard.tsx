@@ -78,7 +78,7 @@ export default function GradeLeaderboard() {
       <div className="flex items-center gap-4">
         <GradeBadge grade={decodedGrade} size="lg" />
         <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">{decodedGrade}</h1>
+          <h1 className="text-3xl font-serif font-bold text-primary-text">{decodedGrade}</h1>
           <p className="text-muted-foreground mt-1">Leaderboard and player statistics.</p>
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function GradeLeaderboard() {
                 <td className="p-4">
                   <Link
                     href={`/players/${stat.playerId}`}
-                    className="font-semibold text-foreground hover:text-primary hover:underline"
+                    className="font-semibold text-foreground hover:text-primary-text hover:underline"
                   >
                     {stat.surname}, {stat.givenName}
                   </Link>
@@ -166,7 +166,7 @@ export default function GradeLeaderboard() {
               const nameNode = c.playerId ? (
                 <Link
                   href={`/players/${c.playerId}`}
-                  className="font-semibold text-foreground hover:text-primary hover:underline"
+                  className="font-semibold text-foreground hover:text-primary-text hover:underline"
                 >
                   {c.surname ? `${c.surname}, ${c.givenName}` : c.givenName}
                 </Link>
@@ -202,7 +202,7 @@ export default function GradeLeaderboard() {
             <div className="divide-y divide-border/60">
               {captainHistory.map((c) => (
                 <div key={c.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <span className="font-mono font-bold text-primary w-20 shrink-0">
+                  <span className="font-mono font-bold text-primary-text w-20 shrink-0">
                     {formatSeasonRange(c.season)}
                   </span>
                   <span>
@@ -211,7 +211,7 @@ export default function GradeLeaderboard() {
                         href={
                           c.playerId != null ? `/players/${c.playerId}` : `/people/${c.nonPlayerId}`
                         }
-                        className="font-semibold text-primary hover:underline"
+                        className="font-semibold text-primary-text hover:underline"
                       >
                         {c.name}
                       </Link>

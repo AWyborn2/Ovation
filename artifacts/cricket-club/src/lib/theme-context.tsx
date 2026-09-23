@@ -15,9 +15,9 @@ function readStoredPreference(): ThemePreference {
     if (stored === "light" || stored === "dark" || stored === "system") return stored;
   } catch {
     // localStorage unavailable (privacy mode, SSR-adjacent contexts) — fall
-    // through to the OS-preference default.
+    // through to the Broadcast default (dark).
   }
-  return "system";
+  return "dark";
 }
 
 function resolveMode(preference: ThemePreference): ThemeMode {

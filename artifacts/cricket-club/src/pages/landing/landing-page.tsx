@@ -36,7 +36,7 @@ const FEATURES = [
 function PricingLine({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
-      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary-text" />
       <span>{children}</span>
     </div>
   );

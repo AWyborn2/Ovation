@@ -17,6 +17,7 @@ import {
   hslTripletToHex,
   isOverrideColourKey,
   OVERRIDE_COLOUR_KEYS,
+  tripletContrast,
 } from "./theme-tokens";
 
 // Halls Head's real legacy brand values (mirrors lib/scorecard/src/brand.ts's
@@ -40,20 +41,20 @@ const ALL_ACCENTS = Object.keys(ACCENT_TOKENS) as AccentToken[];
 // The design system's fixed navy surface values — used by the fallback path
 // (no backgroundColour, L > 60%, or useNavyBase=true).
 const DARK_SURFACES: Record<string, string> = {
-  "--background": "222 33% 8%", // #0B0F1A
-  "--card": "220 30% 11%", // #131826
-  "--muted": "222 28% 16%", // #1B2236
-  "--border": "220 23% 21%", // #232B3D
-  "--foreground": "220 20% 96%", // #F5F7FA
-  "--muted-foreground": "218 12% 60%", // #8D96A8
+  "--background": "207 29% 6%", // #0B1014
+  "--card": "208 25% 10%", // #131A20
+  "--muted": "206 23% 14%", // #1B242B
+  "--border": "207 21% 19%", // #26313A
+  "--foreground": "210 30% 96%", // #F2F5F8
+  "--muted-foreground": "209 12% 61%", // #8E9BA7
 };
 const LIGHT_SURFACES: Record<string, string> = {
-  "--background": "220 25% 97%", // #F5F6FA
+  "--background": "210 18% 96%", // #F2F4F6
   "--card": "0 0% 100%", // #FFFFFF
-  "--muted": "220 20% 94%", // #EBEDF2
-  "--border": "220 20% 88%", // #D9DDE6
-  "--foreground": "222 30% 12%", // #14171F
-  "--muted-foreground": "218 12% 42%", // #5D6472
+  "--muted": "206 19% 93%", // #E9EDF0
+  "--border": "207 17% 87%", // #D9DFE4
+  "--foreground": "208 29% 10%", // #121A21
+  "--muted-foreground": "209 13% 39%", // #56636F
 };
 
 describe("hexToHsl / hexToHslTriplet", () => {
@@ -149,7 +150,7 @@ describe("deriveThemeTokens: navy fallback (no backgroundColour, L > 60%, or use
     expect(tokens["--accent"]).toBe(expected);
     expect(tokens["--ring"]).toBe(expected);
     // L=57 > 55 → dark navy foreground on the accent fill.
-    expect(tokens["--primary-foreground"]).toBe("222 33% 8%");
+    expect(tokens["--primary-foreground"]).toBe("213 26% 8%");
   });
 
   it("preset ACCENT_HEX colours produce the same HSL as ACCENT_TOKENS (round-trip)", () => {
@@ -167,56 +168,56 @@ describe("deriveThemeTokens: navy fallback (no backgroundColour, L > 60%, or use
 
 describe("deriveThemeTokens: surfaces derived from backgroundColour", () => {
   // Halls Head #333F48 → hexToHsl: {h:206, s:17, l:24}
-  // s_dark = min(17, 35) = 17; s_light = min(17, 20) = 17
+  // s_dark = min(17, 20) = 17; s_light = min(17, 18) = 17
   it("Halls Head (dark) derives surfaces from its background hue", () => {
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
-    expect(tokens["--background"]).toBe("206 17% 8%");
-    expect(tokens["--card"]).toBe("206 15% 11%"); // Math.round(17*0.9)=15
-    expect(tokens["--muted"]).toBe("206 14% 16%"); // Math.round(17*0.85)=14
-    expect(tokens["--border"]).toBe("206 12% 21%"); // Math.round(17*0.7)=12
+    expect(tokens["--background"]).toBe("206 29% 6%");
+    expect(tokens["--card"]).toBe("206 25% 10%"); // Math.round(17*1.47)=25
+    expect(tokens["--muted"]).toBe("206 23% 14%"); // Math.round(17*1.35)=23
+    expect(tokens["--border"]).toBe("206 21% 19%"); // Math.round(17*1.24)=21
     // Foreground and accent are unaffected by the surface derivation.
-    expect(tokens["--foreground"]).toBe("220 20% 96%");
+    expect(tokens["--foreground"]).toBe("210 30% 96%");
     expect(tokens["--primary"]).toBe(hexToHslTriplet(HALLS_HEAD_LEGACY.primaryColour)!);
   });
 
   it("Halls Head (light) derives surfaces from its background hue", () => {
     const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "light");
-    expect(tokens["--background"]).toBe("206 17% 97%");
+    expect(tokens["--background"]).toBe("206 18% 96%");
     expect(tokens["--card"]).toBe("0 0% 100%");
-    expect(tokens["--muted"]).toBe("206 15% 94%"); // Math.round(17*0.9)=15
-    expect(tokens["--border"]).toBe("206 14% 88%"); // Math.round(17*0.85)=14
-    expect(tokens["--foreground"]).toBe("222 30% 12%");
+    expect(tokens["--muted"]).toBe("206 19% 93%"); // Math.round(17*1.1)=19
+    expect(tokens["--border"]).toBe("206 17% 87%");
+    expect(tokens["--foreground"]).toBe("208 29% 10%");
   });
 
-  // Wild #7A2E4C → hexToHsl: {h:336, s:45, l:33}; s_dark clamped to 35
-  it("wild brand (dark) clamps saturation at 35 and uses its hue", () => {
+  // Wild #7A2E4C → hexToHsl: {h:336, s:45, l:33}; s_dark clamped to 20
+  it("wild brand (dark) clamps saturation at 20 and uses its hue", () => {
     const wild: ClubBrand = {
       name: "Wild FC",
       backgroundColour: "#7A2E4C",
       primaryColour: "#2E7A5C",
     };
     const tokens = deriveThemeTokens(wild, "dark");
-    expect(tokens["--background"]).toBe("336 35% 8%");
-    expect(tokens["--card"]).toBe("336 32% 11%"); // Math.round(35*0.9)=32
-    expect(tokens["--muted"]).toBe("336 30% 16%"); // Math.round(35*0.85)=30
-    expect(tokens["--border"]).toBe("336 25% 21%"); // Math.round(35*0.7)=25
+    expect(tokens["--background"]).toBe("336 34% 6%");
+    expect(tokens["--card"]).toBe("336 29% 10%"); // Math.round(20*1.47)=29
+    expect(tokens["--muted"]).toBe("336 27% 14%"); // Math.round(20*1.35)=27
+    expect(tokens["--border"]).toBe("336 25% 19%"); // Math.round(20*1.24)=25
   });
 
   it("useNavyBase=true overrides a valid dark backgroundColour and restores navy", () => {
     const navyBrand: ClubBrand = { ...HALLS_HEAD_LEGACY, useNavyBase: true };
     const dark = deriveThemeTokens(navyBrand, "dark");
-    expect(dark["--background"]).toBe("222 33% 8%");
-    expect(dark["--card"]).toBe("220 30% 11%");
+    expect(dark["--background"]).toBe("207 29% 6%");
+    expect(dark["--card"]).toBe("208 25% 10%");
     const light = deriveThemeTokens(navyBrand, "light");
-    expect(light["--background"]).toBe("220 25% 97%");
+    expect(light["--background"]).toBe("210 18% 96%");
     expect(light["--card"]).toBe("0 0% 100%");
   });
 
   it("backgroundColour with L > 60% falls back to navy", () => {
     const lightBrand: ClubBrand = { name: "Light FC", backgroundColour: "#CCDDEE" }; // L=87%
     const tokens = deriveThemeTokens(lightBrand, "dark");
-    expect(tokens["--background"]).toBe("222 33% 8%");
-    expect(tokens["--card"]).toBe("220 30% 11%");
+    expect(tokens["--background"]).toBe("207 29% 6%");
+    expect(tokens["--card"]).toBe("208 25% 10%");
   });
 });
 
@@ -411,4 +412,45 @@ describe("deriveThemeTokens: totality / edge cases", () => {
       });
     }
   }
+});
+
+describe("--primary-text: contrast-safe accent text (Broadcast R2)", () => {
+  const YELLOW: ClubBrand = { name: "Yellow FC", primaryColour: "#FBE34A" };
+
+  it("a light yellow primary in light mode darkens to ≥ 4.5:1 on the card, fill unchanged", () => {
+    const tokens = deriveThemeTokens(YELLOW, "light");
+    expect(tokens["--primary"]).toBe(hexToHslTriplet("#FBE34A"));
+    expect(tokens["--primary-text"]).not.toBe(tokens["--primary"]);
+    expect(tripletContrast(tokens["--primary-text"], tokens["--card"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("a dark navy primary in dark mode lightens to ≥ 4.5:1 on the dark card", () => {
+    const tokens = deriveThemeTokens({ name: "Navy FC", primaryColour: "#1E3A8A" }, "dark");
+    expect(tripletContrast(tokens["--primary-text"], tokens["--card"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("an accent that already passes is used verbatim", () => {
+    const tokens = deriveThemeTokens(HALLS_HEAD_LEGACY, "dark");
+    expect(tokens["--primary-text"]).toBe(tokens["--primary"]);
+  });
+
+  it("is computed against an overridden --card", () => {
+    const brand: ClubBrand = {
+      ...HALLS_HEAD_LEGACY,
+      themeOverrides: { "--card": "#F4F4F4" },
+    };
+    const tokens = deriveThemeTokens(brand, "dark");
+    expect(tripletContrast(tokens["--primary-text"], tokens["--card"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("an explicit --primary-text override wins", () => {
+    const brand: ClubBrand = { ...YELLOW, themeOverrides: { "--primary-text": "#123456" } };
+    expect(deriveThemeTokens(brand, "light")["--primary-text"]).toBe(hexToHslTriplet("#123456"));
+  });
+
+  it("is emitted for every mode and brand", () => {
+    for (const mode of ["light", "dark"] as const) {
+      expect(deriveThemeTokens(DEFAULT_BRAND, mode)["--primary-text"]).toBeTruthy();
+    }
+  });
 });
