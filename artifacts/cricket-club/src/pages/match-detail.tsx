@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useBrand } from "@/lib/brand-context";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMatch,
@@ -12,12 +12,16 @@ import {
   type MatchDetail as MatchDetailDto,
 } from "@workspace/api-client-react";
 import { useCurrentAdmin, handleAdminMutationError } from "@/lib/admin-auth";
-import { GradeBadge } from "@/components/grade-badge";
-import { DigitalScorecard } from "@/components/scorecard/digital-scorecard";
+
+import { BroadcastScorecard } from "@/components/scorecard/broadcast-scorecard";
+import { buildScorecard } from "@workspace/scorecard";
+import { useBrandLogo } from "@/lib/use-brand";
+import { useClubShortName } from "@/lib/brand-context";
+import { Container, resultCode } from "@/components/broadcast";
 import { LazyShareCardModal } from "@/components/share-card-modal-lazy";
 import { matchToSummaryInput } from "@/lib/match-summary";
-import { matchLabel } from "@/lib/utils";
-import { CalendarDays, MapPin, ChevronLeft, Pencil, Check, X, Flame, Share2 } from "lucide-react";
+import { cn, matchLabel } from "@/lib/utils";
+import { Pencil, Check, X, Flame, Share2 } from "lucide-react";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 const FINALS_STAGES = Object.values(MatchStage);
@@ -43,6 +47,10 @@ export default function MatchDetail() {
   } = useGetMatch(matchId, {
     query: { enabled: !!matchId, queryKey: getGetMatchQueryKey(matchId) },
   });
+
+  const brandLogo = useBrandLogo();
+  const brandShort = useClubShortName();
+  const scorecard = useMemo(() => (match ? buildScorecard(match) : null), [match]);
 
   const me = useCurrentAdmin();
   const isAdmin = !!me.data;
@@ -129,244 +137,282 @@ export default function MatchDetail() {
   const hatTrickIds = new Set(match.hatTrickPlayerIds ?? []);
   // Admins manage hat-tricks on tenant-club bowlers (real players only).
   const hhBowlers = match.lines.filter((l) => l.bowled && l.playerId < 90000);
+  const clubOvers = scorecard?.innings.find((i) => i.battingTeam.isHallsHead)?.oversTotal ?? null;
+  const oppOvers = scorecard?.innings.find((i) => !i.battingTeam.isHallsHead)?.oversTotal ?? null;
+
+  const code = match.abandoned ? null : resultCode(match.result);
+  const verb = code === "W" ? "def" : code === "L" ? "lost to" : code === "T" ? "tied" : "v";
+  const oppName = match.opponent ?? "Opposition";
+  const meta = [
+    `${match.grade} · ${fmtSeason(match.season)}`,
+    !match.stage && matchLabel(match.round, match.stage),
+    fmtDate(match.matchDate),
+    match.venue,
+  ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <Link
-        href="/matches"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary-text"
-      >
-        <ChevronLeft className="h-4 w-4" /> All matches
-      </Link>
+    <Container page className="py-[var(--gap-section)]">
+      <div className="flex flex-col gap-[var(--gap-section)]">
+        <nav aria-label="Breadcrumb" className="text-[13px] text-muted-foreground">
+          <Link href="/matches" className="hover:text-foreground">
+            Matches
+          </Link>
+          <span className="mx-1.5" aria-hidden>
+            /
+          </span>
+          <span className="text-foreground">
+            {brandShort} v {oppName}
+          </span>
+        </nav>
 
-      {/* Header */}
-      <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <GradeBadge grade={match.grade} size="lg" />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-serif font-bold text-primary-text flex items-center gap-2.5 flex-wrap">
-              <span>
-                {brand.name} vs {match.opponent ?? "Unknown"}
+        <section
+          className="rounded-lg border p-[clamp(16px,2.4vw,32px)]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 15% 0%, var(--glow), transparent 55%), hsl(var(--card))",
+          }}
+          data-testid="match-hero"
+        >
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-muted-foreground">
+            {match.stage && (
+              <span className="inline-flex h-[26px] items-center rounded-full bg-primary px-3 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground">
+                {match.stage}
               </span>
-              <OpponentCrest club={match.opponentClub} size={32} />
-            </h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-wider mt-0.5">
-              <span>
-                {match.grade} · {fmtSeason(match.season)}
-                {!editingRound && matchLabel(match.round, match.stage)
-                  ? ` · ${matchLabel(match.round, match.stage)}`
-                  : ""}
+            )}
+            {match.abandoned && (
+              <span className="inline-flex h-[26px] items-center rounded-full border px-3 text-xs font-bold uppercase tracking-[0.08em]">
+                Abandoned
               </span>
+            )}
+            <span>{meta.join(" · ")}</span>
+            <div className="ml-auto flex items-center gap-2">
               {isAdmin && !editingRound && (
                 <button
                   type="button"
                   onClick={startEditRound}
-                  className="inline-flex items-center gap-1 normal-case text-xs font-medium text-primary-text hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary-text hover:underline"
                   data-testid="button-edit-round"
                 >
                   <Pencil className="h-3 w-3" />
                   {match.round != null || match.stage ? "Edit round/stage" : "Set round/stage"}
                 </button>
               )}
-              {isAdmin && editingRound && (
-                <span className="inline-flex items-center gap-1.5 normal-case">
-                  <span className="text-foreground">· Round</span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={roundValue}
-                    onChange={(e) => {
-                      setRoundValue(e.target.value);
-                      if (e.target.value) setStageValue("");
-                    }}
-                    disabled={updateRound.isPending || !!stageValue}
-                    autoFocus
-                    className="w-16 px-2 py-0.5 rounded border border-border bg-background text-foreground text-sm disabled:opacity-50"
-                    data-testid="input-round"
-                  />
-                  <span className="text-foreground">or final</span>
-                  <select
-                    value={stageValue}
-                    onChange={(e) => {
-                      setStageValue(e.target.value);
-                      if (e.target.value) setRoundValue("");
-                    }}
-                    disabled={updateRound.isPending}
-                    className="px-2 py-0.5 rounded border border-border bg-background text-foreground text-sm"
-                    data-testid="select-stage"
-                  >
-                    <option value="">—</option>
-                    {FINALS_STAGES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={saveRound}
-                    disabled={updateRound.isPending}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:underline disabled:opacity-50"
-                    data-testid="button-save-round"
-                  >
-                    <Check className="h-3.5 w-3.5" /> Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEditRound}
-                    disabled={updateRound.isPending}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:underline disabled:opacity-50"
-                    data-testid="button-cancel-round"
-                  >
-                    <X className="h-3.5 w-3.5" /> Cancel
-                  </button>
-                </span>
-              )}
-            </div>
-            {isAdmin && roundError && (
-              <div
-                className="text-xs text-destructive normal-case mt-1"
-                data-testid="text-round-error"
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold transition-colors hover:border-primary"
+                data-testid="button-share-match"
               >
-                {roundError}
-              </div>
-            )}
-            {match.competition && (
-              <div className="text-xs text-muted-foreground mt-0.5">{match.competition}</div>
-            )}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-              {fmtDate(match.matchDate) && (
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays className="h-3.5 w-3.5" /> {fmtDate(match.matchDate)}
-                </span>
-              )}
-              {match.venue && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" /> {match.venue}
-                </span>
-              )}
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </button>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            {match.abandoned && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/15 border border-amber-600/40 rounded px-2 py-0.5">
-                Abandoned
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => setShareOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-              data-testid="button-share-match"
+
+          {isAdmin && editingRound && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-sm">
+              <span>Round</span>
+              <input
+                type="number"
+                min={1}
+                value={roundValue}
+                onChange={(e) => {
+                  setRoundValue(e.target.value);
+                  if (e.target.value) setStageValue("");
+                }}
+                disabled={updateRound.isPending || !!stageValue}
+                autoFocus
+                className="h-8 w-16 rounded-sm border bg-muted px-2 text-sm disabled:opacity-50"
+                data-testid="input-round"
+              />
+              <span>or final</span>
+              <select
+                value={stageValue}
+                onChange={(e) => {
+                  setStageValue(e.target.value);
+                  if (e.target.value) setRoundValue("");
+                }}
+                disabled={updateRound.isPending}
+                className="h-8 rounded-sm border bg-muted px-2 text-sm"
+                data-testid="select-stage"
+              >
+                <option value="">—</option>
+                {FINALS_STAGES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={saveRound}
+                disabled={updateRound.isPending}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary-text hover:underline disabled:opacity-50"
+                data-testid="button-save-round"
+              >
+                <Check className="h-3.5 w-3.5" /> Save
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditRound}
+                disabled={updateRound.isPending}
+                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:underline disabled:opacity-50"
+                data-testid="button-cancel-round"
+              >
+                <X className="h-3.5 w-3.5" /> Cancel
+              </button>
+            </div>
+          )}
+          {isAdmin && roundError && (
+            <div className="mt-1 text-xs text-destructive" data-testid="text-round-error">
+              {roundError}
+            </div>
+          )}
+
+          <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
+            <TeamSide
+              name={brand.name}
+              logo={brandLogo}
+              score={match.clubScore}
+              overs={clubOvers}
+            />
+            <div
+              className="font-serif text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground"
+              data-testid="match-verb"
             >
-              <Share2 className="h-3.5 w-3.5" /> Share
-            </button>
+              {verb}
+            </div>
+            <TeamSide
+              name={oppName}
+              club={match.opponentClub}
+              score={match.opponentScore}
+              overs={oppOvers}
+              align="right"
+              muted
+            />
           </div>
-        </div>
-        {(match.result || match.clubScore || match.opponentScore) && (
-          <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-4">
-            {match.result && <div className="font-semibold text-foreground/90">{match.result}</div>}
-            <div className="flex items-center gap-4 ml-auto font-mono text-sm">
-              {match.clubScore && (
-                <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {brand.name}
-                  </div>
-                  <div className="font-bold text-primary-text text-lg">{match.clubScore}</div>
-                </div>
+
+          {(match.result || match.competition) && (
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t pt-4 text-sm">
+              {match.result && (
+                <span className="font-semibold text-primary-text">{match.result}</span>
               )}
-              {match.opponentScore && (
-                <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate max-w-[10rem]">
-                    {match.opponent ?? "Opponent"}
-                  </div>
-                  <div className="font-bold text-foreground text-lg">{match.opponentScore}</div>
-                </div>
+              {match.competition && (
+                <span className="text-muted-foreground">{match.competition}</span>
               )}
             </div>
+          )}
+        </section>
+
+        <BroadcastScorecard match={match} hatTrickIds={hatTrickIds} />
+
+        {/* Admin: hat-trick management */}
+        {isAdmin && hhBowlers.length > 0 && (
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <h2 className="flex items-center gap-1.5 text-[22px] leading-none">
+              <Flame className="h-4 w-4" /> Hat-tricks
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+              Mark any {brand.name} bowler who took a hat-trick in this match.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {hhBowlers.map((l) => {
+                const has = hatTrickIds.has(l.playerId);
+                return (
+                  <label
+                    key={l.id}
+                    className="inline-flex items-center gap-2 text-sm cursor-pointer rounded border border-border px-3 py-2 hover:bg-muted/50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={has}
+                      disabled={setHatTrick.isPending}
+                      onChange={(e) =>
+                        setHatTrick.mutate({
+                          id: matchId,
+                          data: { playerId: l.playerId, hatTrick: e.target.checked },
+                        })
+                      }
+                      data-testid={`checkbox-hattrick-${l.playerId}`}
+                    />
+                    <span className="text-foreground">
+                      {l.givenName} {l.surname}
+                    </span>
+                    <span className="ml-auto font-mono text-xs text-muted-foreground">
+                      {l.wickets ?? 0}/{l.runsConceded ?? "—"}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {hatTrickError && <div className="mt-3 text-sm text-destructive">{hatTrickError}</div>}
           </div>
         )}
+
+        <LazyShareCardModal
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          input={shareOpen ? matchToSummaryInput(match) : null}
+          engine="ondemand"
+          appPath={`/matches/${matchId}`}
+          playerId={null}
+        />
       </div>
-
-      {/* Branded digital scorecard */}
-      <DigitalScorecard match={match} hatTrickIds={hatTrickIds} />
-
-      {/* Admin: hat-trick management */}
-      {isAdmin && hhBowlers.length > 0 && (
-        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <h2 className="text-sm font-serif font-bold text-primary-text flex items-center gap-1.5">
-            <Flame className="h-4 w-4" /> Hat-tricks
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-            Mark any {brand.name} bowler who took a hat-trick in this match.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {hhBowlers.map((l) => {
-              const has = hatTrickIds.has(l.playerId);
-              return (
-                <label
-                  key={l.id}
-                  className="inline-flex items-center gap-2 text-sm cursor-pointer rounded border border-border px-3 py-2 hover:bg-muted/50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={has}
-                    disabled={setHatTrick.isPending}
-                    onChange={(e) =>
-                      setHatTrick.mutate({
-                        id: matchId,
-                        data: { playerId: l.playerId, hatTrick: e.target.checked },
-                      })
-                    }
-                    data-testid={`checkbox-hattrick-${l.playerId}`}
-                  />
-                  <span className="text-foreground">
-                    {l.givenName} {l.surname}
-                  </span>
-                  <span className="ml-auto font-mono text-xs text-muted-foreground">
-                    {l.wickets ?? 0}/{l.runsConceded ?? "—"}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-          {hatTrickError && <div className="mt-3 text-sm text-destructive">{hatTrickError}</div>}
-        </div>
-      )}
-
-      <LazyShareCardModal
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        input={shareOpen ? matchToSummaryInput(match) : null}
-        engine="ondemand"
-        appPath={`/matches/${matchId}`}
-        playerId={null}
-      />
-    </div>
+    </Container>
   );
 }
 
 type OpponentClubInfo = MatchDetailDto["opponentClub"];
 
-// Branded opposition crest. Renders the club logo when one is matched, falling
-// back silently to nothing (the opponent name is always shown separately).
-function OpponentCrest({ club, size = 28 }: { club: OpponentClubInfo; size?: number }) {
+/** One side of the score hero: crest, name, big score, overs. */
+function TeamSide({
+  name,
+  logo,
+  club,
+  score,
+  overs,
+  align = "left",
+  muted,
+}: {
+  name: string;
+  logo?: string | null;
+  club?: OpponentClubInfo;
+  score?: string | null;
+  overs?: string | null;
+  align?: "left" | "right";
+  muted?: boolean;
+}) {
   const [errored, setErrored] = useState(false);
-  const src = club?.logoUrl128 || club?.logoUrl;
-  if (!club || !src || errored) return null;
+  const src = logo ?? club?.logoUrl128 ?? club?.logoUrl ?? null;
+  const right = align === "right";
   return (
-    <img
-      loading="lazy"
-      decoding="async"
-      src={src}
-      alt={`${club.name} logo`}
-      title={club.name}
-      width={size}
-      height={size}
-      onError={() => setErrored(true)}
-      className="inline-block rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
-      style={{ width: size, height: size }}
-      data-testid="img-opponent-crest"
-    />
+    <div
+      className={cn("flex min-w-0 flex-col gap-2", right ? "items-end text-right" : "items-start")}
+    >
+      {src && !errored ? (
+        <img
+          src={src}
+          alt=""
+          onError={() => setErrored(true)}
+          className="h-[clamp(48px,7vw,88px)] w-auto object-contain"
+        />
+      ) : (
+        <span
+          aria-hidden
+          className="flex h-[clamp(48px,7vw,88px)] w-[clamp(48px,7vw,88px)] items-center justify-center rounded-full bg-muted font-serif text-[clamp(22px,3vw,36px)] font-bold text-muted-foreground"
+        >
+          {name.trim()[0]?.toUpperCase() ?? "?"}
+        </span>
+      )}
+      <div className="max-w-full truncate font-semibold">{name}</div>
+      <div
+        className={cn(
+          "font-serif text-[clamp(34px,5.4vw,72px)] font-bold leading-none tabular-nums",
+          muted && "text-muted-foreground",
+        )}
+      >
+        {score || "–"}
+      </div>
+      {overs && <div className="text-[13px] text-muted-foreground">{overs} overs</div>}
+    </div>
   );
 }

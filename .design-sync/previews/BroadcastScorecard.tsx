@@ -1,7 +1,7 @@
-import { DigitalScorecard } from "@workspace/cricket-club";
+import { BroadcastScorecard } from "@workspace/cricket-club";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// DigitalScorecard mounts PlayerStatsModal (closed), whose generated
+// BroadcastScorecard mounts PlayerStatsModal (closed), whose generated
 // react-query hook needs a QueryClient in context even while disabled.
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false, refetchOnWindowFocus: false } },
@@ -125,7 +125,7 @@ export function AbandonedMatch() {
   return (
     <QueryClientProvider client={queryClient}>
       <div style={{ maxWidth: 620 }}>
-        <DigitalScorecard
+        <BroadcastScorecard
           match={{
             ...match,
             id: 4102,
