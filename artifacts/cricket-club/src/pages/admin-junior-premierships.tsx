@@ -28,7 +28,7 @@ export default function AdminJuniorPremierships() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Set the captain and man-of-the-match for each junior premiership. These aren&apos;t in the
           source data, so they&apos;re added by hand here and shown on the junior premiership
           plaques.
@@ -36,7 +36,7 @@ export default function AdminJuniorPremierships() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}

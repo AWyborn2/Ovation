@@ -66,7 +66,7 @@ export default function AdminAwards() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Create club awards and record their past winners. Each award appears as its own honour
             board on the website and mobile app.
           </p>
@@ -77,7 +77,7 @@ export default function AdminAwards() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -135,7 +135,7 @@ export default function AdminAwards() {
           <Card key={award.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div className="min-w-0">
-                <CardTitle className="text-xl">
+                <CardTitle className="text-[22px] leading-none">
                   {award.title}
                   <span
                     className={`ml-2 align-middle text-xs font-normal rounded px-2 py-0.5 ${

@@ -126,7 +126,7 @@ export function WinnersManager({
             ) : (
               <div key={w.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
-                  <span className="font-mono font-bold text-primary-text">
+                  <span className="tabular-nums font-bold text-primary-text">
                     {formatSeason(w.season)}
                   </span>
                   <span className="ml-3 font-semibold">{w.name}</span>

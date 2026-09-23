@@ -57,7 +57,7 @@ export default function AdminLifeMembers() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Manage the Life Members honour board. Changes apply immediately to the public page.
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function AdminLifeMembers() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -122,7 +122,7 @@ export default function AdminLifeMembers() {
           <Card key={m.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-xl">
+                <CardTitle className="text-[22px] leading-none">
                   {m.name}{" "}
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
                     inducted {m.inductionYear}
