@@ -22,6 +22,7 @@ import {
 import { extractBrandPalette } from "@/lib/color-extraction";
 import { ColourSlotPicker } from "@/components/colour-slot-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHero } from "@/components/broadcast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -62,9 +63,9 @@ export default function AdminBranding() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold">Branding</h1>
-        <p className="text-muted-foreground mt-1">
+      <div className="space-y-2">
+        <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">Branding</h2>
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Your club's logo, favicon, and accent colour — these drive the look of your public site.
         </p>
       </div>
@@ -799,45 +800,80 @@ function Editor({ brand }: { brand: TenantBrand }) {
         <Label>Live preview</Label>
         <div
           style={previewStyle}
-          className="rounded-lg border bg-background font-sans text-foreground p-6 space-y-4"
+          className="overflow-hidden rounded-lg border bg-background font-sans text-foreground"
           data-testid="branding-live-preview"
         >
-          <div className="flex items-center gap-3">
-            {previewBrand.logoUrl && (
-              <img src={previewBrand.logoUrl} alt="" className="h-10 w-10 rounded object-contain" />
+          {/* Site header, as the Broadcast shell draws it. */}
+          <div
+            className="flex items-center gap-2.5 border-b bg-[var(--glass)] px-4 py-3"
+            data-testid="branding-preview-header"
+          >
+            {previewBrand.logoUrl ? (
+              <img src={previewBrand.logoUrl} alt="" className="h-8 w-8 rounded object-contain" />
+            ) : (
+              <span className="grid h-8 w-8 place-items-center rounded bg-primary text-xs font-bold text-primary-foreground">
+                {previewBrand.name.slice(0, 1)}
+              </span>
             )}
-            <span className="font-serif text-xl font-bold">{previewBrand.name}</span>
+            <span className="min-w-0 truncate font-serif text-base font-bold uppercase">
+              {previewBrand.name}
+            </span>
+            <span className="ml-auto hidden gap-3 text-xs text-muted-foreground sm:flex">
+              <span className="text-foreground">Home</span>
+              <span>Stats</span>
+              <span>History</span>
+            </span>
+            <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
+              Admin
+            </span>
           </div>
-          <div className="rounded-md border bg-card text-card-foreground p-4 space-y-3">
-            <p className="text-sm">Body text on a card surface — this is how a paragraph reads.</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium">
-                Primary button
-              </span>
-              <span className="rounded-md bg-secondary text-secondary-foreground px-3 py-2 text-sm font-medium">
-                Secondary
-              </span>
-              <span className="rounded-md bg-destructive text-destructive-foreground px-3 py-2 text-sm font-medium">
-                Delete
-              </span>
+          {/* Home hero with the unsaved photo (or the brand gradient). */}
+          <PageHero
+            variant="home"
+            image={heroImages?.home ?? null}
+            contentClassName="px-4 pb-4 pt-12"
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--primary))]">
+              {tagline || "Est. club history"}
             </div>
-            <div className="rounded-md bg-muted text-muted-foreground px-3 py-2 text-sm">
-              Muted panel
+            <div className="font-serif text-2xl font-bold uppercase leading-none">
+              {previewBrand.name}
             </div>
-            <div className="rounded-md border border-input px-3 py-2 text-sm text-muted-foreground">
-              Input field
+          </PageHero>
+          <div className="space-y-4 p-4">
+            <div className="rounded-md border bg-card text-card-foreground p-4 space-y-3">
+              <p className="text-sm">
+                Body text on a card surface — this is how a paragraph reads.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium">
+                  Primary button
+                </span>
+                <span className="rounded-md bg-secondary text-secondary-foreground px-3 py-2 text-sm font-medium">
+                  Secondary
+                </span>
+                <span className="rounded-md bg-destructive text-destructive-foreground px-3 py-2 text-sm font-medium">
+                  Delete
+                </span>
+              </div>
+              <div className="rounded-md bg-muted text-muted-foreground px-3 py-2 text-sm">
+                Muted panel
+              </div>
+              <div className="rounded-md border border-input px-3 py-2 text-sm text-muted-foreground">
+                Input field
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <BadgeStyleContext.Provider value={badgeStyle}>
-              <GradeBadge grade="A Grade" size="md" badgeStyle={badgeStyle} />
-              <GradeBadge grade="B Grade" size="md" badgeStyle={badgeStyle} />
-            </BadgeStyleContext.Provider>
+            <div className="flex items-center gap-3">
+              <BadgeStyleContext.Provider value={badgeStyle}>
+                <GradeBadge grade="A Grade" size="md" badgeStyle={badgeStyle} />
+                <GradeBadge grade="B Grade" size="md" badgeStyle={badgeStyle} />
+              </BadgeStyleContext.Provider>
+            </div>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Updates live as you edit — background, surfaces, buttons, borders, radius and fonts all
-          reflect your changes here before you save.
+          Updates live as you edit — header, hero photo, background, surfaces, buttons, borders,
+          radius and fonts all reflect your changes here before you save.
         </p>
       </div>
     </div>
