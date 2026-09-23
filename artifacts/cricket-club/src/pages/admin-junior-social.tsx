@@ -34,7 +34,7 @@ export default function AdminJuniorSocial() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Generate brown-branded junior milestone and match-summary cards for Instagram, Facebook,
           TikTok and X. Private junior players are never shown. Junior stats stay completely
           separate from the senior side.

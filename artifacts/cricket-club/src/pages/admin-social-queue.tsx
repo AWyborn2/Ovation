@@ -179,7 +179,7 @@ export default function AdminSocialQueue() {
                     {isJuniorMatch && (
                       <Badge
                         className="text-white text-[10px] uppercase tracking-wide"
-                        style={{ backgroundColor: "#42342B" }}
+                        style={{ backgroundColor: "var(--juniors-accent)" }}
                       >
                         Junior
                       </Badge>
