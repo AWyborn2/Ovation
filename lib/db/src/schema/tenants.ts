@@ -11,6 +11,18 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+/** Per-tenant Broadcast imagery slots (storage paths; null/absent = not set). */
+export interface TenantHeroImages {
+  home?: string | null;
+  juniors?: string | null;
+  honours?: string | null;
+  explore?: {
+    honours?: string | null;
+    players?: string | null;
+    premierships?: string | null;
+  } | null;
+}
+
 /**
  * Tenant register for the white-label platform. One row per club that runs
  * Ovation as its own branded app. Halls Head is tenant #1 (the demo).
@@ -88,6 +100,11 @@ export const tenantsTable = pgTable(
     // Fixtures & Results page and the fixtures projection filter on it. Null =
     // not linked; those surfaces render "not linked" rather than guessing.
     playhqOrgId: text("playhq_org_id"),
+    // Broadcast imagery: tenant-uploaded hero and explore-card photos, keyed by
+    // slot (`home`, `juniors`, `honours`, `explore.{honours,players,premierships}`),
+    // each an `/api/storage/...` path or null. Null column = no imagery; heroes
+    // fall back to a brand-colour gradient. See `TenantHeroImages`.
+    heroImages: jsonb("hero_images").$type<TenantHeroImages>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

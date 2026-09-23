@@ -168,6 +168,20 @@ describe("PATCH /platform/admin/tenants/:id/brand: concierge branding", () => {
     expect(row.faviconUrl).toBe("/objects/uploads/pab-favicon-original.png");
   });
 
+  it("sets a single Broadcast explore image through the concierge route", async () => {
+    const heroImages = { explore: { players: "/api/storage/objects/uploads/pab-players.webp" } };
+    await request(app)
+      .patch(`/api/platform/admin/tenants/${tenantAId}/brand`)
+      .set("Cookie", platformCookie)
+      .send({ heroImages })
+      .expect(200);
+
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
+    expect(row.heroImages?.explore?.players).toBe("/api/storage/objects/uploads/pab-players.webp");
+    // Imagery is independent of the logo set by the previous test.
+    expect(row.logoUrl).toBe("/objects/uploads/pab-logo-v2.png");
+  });
+
   it("an explicit null clears a previously-set field", async () => {
     await request(app)
       .patch(`/api/platform/admin/tenants/${tenantAId}/brand`)
