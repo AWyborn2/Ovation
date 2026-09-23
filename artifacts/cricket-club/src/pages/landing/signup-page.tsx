@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
 import { ArrowLeft, Check, Loader2, Search } from "lucide-react";
 import {
   useGetAvailableClubs,
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apexDomain } from "@/lib/apex-domain";
+import { PlatformHeader } from "./platform-chrome";
 
 /**
  * Self-serve onboarding wizard (platform/apex host). Pick a central PCA club →
@@ -59,16 +59,16 @@ function ClubPicker({ onPick }: { onPick: (c: AvailableClub) => void }) {
           placeholder="Search for your club…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="pl-9"
+          className="h-11 rounded-full pl-9"
         />
       </div>
-      <ul className="mt-4 max-h-96 divide-y overflow-y-auto rounded-md border">
+      <ul className="mt-4 max-h-96 divide-y overflow-y-auto rounded-lg border">
         {clubs.map((c) => (
           <li key={c.centralClubId}>
             <button
               type="button"
               onClick={() => onPick(c)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted"
+              className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted"
             >
               <span className="font-medium">{c.name}</span>
               {c.shortName ? (
@@ -123,7 +123,7 @@ function ChoiceScreen({ redirectUrl }: { redirectUrl: string }) {
   return (
     <div className="space-y-6 text-center">
       <div>
-        <h2 className="text-xl font-semibold">Your club's site is live!</h2>
+        <h2 className="text-[clamp(28px,3.2vw,36px)] leading-none">Your club's site is live!</h2>
         <p className="mt-2 text-muted-foreground">
           Want to set up your logo and colours now, or finish that later?
         </p>
@@ -224,7 +224,7 @@ function DetailsForm({
         >
           <ArrowLeft className="mr-1 h-4 w-4" /> Choose a different club
         </button>
-        <h2 className="text-xl font-semibold">{club.name}</h2>
+        <h2 className="text-[clamp(28px,3.2vw,36px)] leading-none">{club.name}</h2>
         <p className="text-sm text-muted-foreground">Set up your club's site.</p>
       </div>
 
@@ -241,7 +241,7 @@ function DetailsForm({
           {slugState.status === "checking" ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : slugState.status === "ok" ? (
-            <Check className="h-4 w-4 text-green-600" />
+            <Check className="h-4 w-4 text-[var(--win-fg)]" />
           ) : null}
         </div>
         {slugState.status === "bad" ? (
@@ -293,26 +293,32 @@ export default function SignupPage() {
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg px-6 py-16">
-      <Link href="/" className="text-lg font-semibold tracking-tight">
-        Ovation
-      </Link>
-      <div className="mt-10">
-        {redirectUrl ? (
-          <ChoiceScreen redirectUrl={redirectUrl} />
-        ) : club ? (
-          <DetailsForm club={club} onBack={() => setClub(null)} onSignedUp={setRedirectUrl} />
-        ) : (
-          <>
-            <h1 className="text-2xl font-semibold tracking-tight">Find your club</h1>
-            <p className="mt-2 text-muted-foreground">
-              Pick your club and we'll populate its full history instantly.
-            </p>
-            <div className="mt-6">
-              <ClubPicker onPick={setClub} />
-            </div>
-          </>
-        )}
+    <div className="min-h-screen bg-background text-foreground">
+      <PlatformHeader />
+      <div className="flex justify-center px-[var(--pad)] py-[clamp(32px,6vw,72px)]">
+        <section
+          className="w-full max-w-lg rounded-xl border bg-card p-[clamp(20px,3vw,32px)] text-card-foreground shadow-[var(--shadow-pop)]"
+          data-testid="signup-card"
+        >
+          {redirectUrl ? (
+            <ChoiceScreen redirectUrl={redirectUrl} />
+          ) : club ? (
+            <DetailsForm club={club} onBack={() => setClub(null)} onSignedUp={setRedirectUrl} />
+          ) : (
+            <>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
+                Get started
+              </div>
+              <h1 className="mt-2 text-[clamp(34px,4vw,48px)] leading-none">Find your club</h1>
+              <p className="mt-2 text-muted-foreground">
+                Pick your club and we'll populate its full history instantly.
+              </p>
+              <div className="mt-6">
+                <ClubPicker onPick={setClub} />
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

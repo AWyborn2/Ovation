@@ -1,8 +1,9 @@
 import { Link } from "wouter";
 import { Trophy, History, Palette, Smartphone, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHero } from "@/components/broadcast";
 import { apexDomain } from "@/lib/apex-domain";
+import { PlatformFooter, PlatformHeader, PlatformSectionHeading } from "./platform-chrome";
 
 /**
  * Ovation marketing / landing page. Rendered on the apex host (platform mode),
@@ -47,67 +48,65 @@ function hallsHeadUrl(): string {
   return `https://hallshead.${apexDomain()}`;
 }
 
+const SECTION = "mx-auto max-w-[1280px] px-[var(--pad)] py-[clamp(48px,7vw,88px)]";
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-semibold tracking-tight">Ovation</span>
-          <div className="flex items-center gap-2">
-            <Link href="/directory">
-              <Button size="sm" variant="ghost">
-                Browse clubs
-              </Button>
-            </Link>
-            <Link href="/platform-admin">
-              <Button size="sm" variant="ghost">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm">Get started</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PlatformHeader />
 
       <main>
-        <section className="mx-auto max-w-5xl px-6 py-20 text-center">
-          <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-            Your cricket club's stats and history — beautifully, automatically.
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Ovation gives any club its full record — stats, premierships, honour boards and
-            milestones — on a branded site that stays current on its own. Pick your club and it's
-            populated in seconds.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/signup">
-              <Button size="lg" className="gap-2">
-                Find your club <ArrowRight className="h-4 w-4" />
+        <PageHero
+          variant="home"
+          contentClassName="pt-[clamp(72px,11vw,140px)] pb-[clamp(40px,6vw,72px)]"
+        >
+          <div className="max-w-3xl">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--primary))]">
+              White-label cricket stats
+            </div>
+            <h1 className="mt-3 text-[clamp(44px,6.4vw,88px)] leading-[0.95]">
+              Your cricket club's stats and history — beautifully, automatically.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg text-white/75">
+              Ovation gives any club its full record — stats, premierships, honour boards and
+              milestones — on a branded site that stays current on its own. Pick your club and it's
+              populated in seconds.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button asChild size="lg" className="gap-2">
+                <Link href="/signup">
+                  Find your club <ArrowRight className="h-4 w-4" />
+                </Link>
               </Button>
-            </Link>
-            <Link href="/directory">
-              <Button size="lg" variant="outline">
-                Browse clubs
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              >
+                <Link href="/directory">Browse clubs</Link>
               </Button>
-            </Link>
+            </div>
+            <p className="mt-4 text-sm text-white/60">
+              Free during the pilot — Peel Cricket Association clubs available now.
+            </p>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Free during the pilot — Peel Cricket Association clubs available now.
-          </p>
-        </section>
+        </PageHero>
 
-        <section className="border-t bg-muted/30">
-          <div className="mx-auto grid max-w-5xl gap-8 px-6 py-16 sm:grid-cols-2">
+        <section className={SECTION}>
+          <div className="grid gap-4 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <div key={f.title} className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-background">
+              <div
+                key={f.title}
+                className="flex gap-4 rounded-lg border bg-card p-[clamp(16px,2vw,24px)]"
+                data-testid="landing-feature"
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-primary/10 text-primary-text">
                   <f.icon className="h-5 w-5" />
-                </div>
+                </span>
                 <div>
-                  <h3 className="font-semibold">{f.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{f.body}</p>
+                  <h3 className="text-[22px] leading-none">{f.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
                 </div>
               </div>
             ))}
@@ -115,29 +114,22 @@ export default function LandingPage() {
         </section>
 
         <section className="border-t">
-          <div className="mx-auto max-w-5xl px-6 py-16">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold tracking-tight">Pricing</h2>
-              <p className="mt-2 text-muted-foreground">
-                Free during the pilot. Every plan gets your full history and branding.
-              </p>
-            </div>
-            <div className="mt-10 grid gap-6 sm:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Free</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+          <div className={SECTION}>
+            <PlatformSectionHeading eyebrow="Pricing" title="Pricing">
+              Free during the pilot. Every plan gets your full history and branding.
+            </PlatformSectionHeading>
+            <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="text-[28px] leading-none">Free</h3>
+                <div className="mt-4 space-y-3 text-sm">
                   <PricingLine>Full club history, stats and records</PricingLine>
                   <PricingLine>Your own logo, colours and favicon</PricingLine>
                   <PricingLine>A club.ovation.app address</PricingLine>
-                </CardContent>
-              </Card>
-              <Card className="border-primary/40">
-                <CardHeader>
-                  <CardTitle>Pro</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                </div>
+              </div>
+              <div className="rounded-lg border border-primary/50 bg-card p-6 shadow-[var(--shadow-pop)]">
+                <h3 className="text-[28px] leading-none">Pro</h3>
+                <div className="mt-4 space-y-3 text-sm">
                   <PricingLine>Everything in Free</PricingLine>
                   <PricingLine>Your own domain (e.g. yourclub.com.au)</PricingLine>
                   <p className="pt-2 text-muted-foreground">
@@ -146,60 +138,52 @@ export default function LandingPage() {
                     </a>{" "}
                     to upgrade.
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="border-t bg-muted/30">
-          <div className="mx-auto max-w-5xl px-6 py-16 text-center">
-            <h2 className="text-2xl font-semibold tracking-tight">See it in action</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
+        <section className="border-t bg-muted/40">
+          <div className={`${SECTION} text-center`}>
+            <PlatformSectionHeading eyebrow="Live now" title="See it in action">
               Halls Head Cricket Club runs its full site on Ovation — stats, honour boards and
               history, kept current automatically.
-            </p>
+            </PlatformSectionHeading>
             <div className="mt-6">
-              <a href={hallsHeadUrl()} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" className="gap-2">
+              <Button asChild variant="outline" className="gap-2">
+                <a href={hallsHeadUrl()} target="_blank" rel="noopener noreferrer">
                   Visit Halls Head's site <ArrowRight className="h-4 w-4" />
-                </Button>
-              </a>
+                </a>
+              </Button>
             </div>
           </div>
         </section>
 
         <section className="border-t">
-          <div className="mx-auto max-w-5xl px-6 py-16 text-center">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Why Ovation over a Facebook page or a spreadsheet?
-            </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
+          <div className={SECTION}>
+            <PlatformSectionHeading title="Why Ovation over a Facebook page or a spreadsheet?">
               Your history stays current automatically, drawn from the shared association database —
               no one has to keep re-entering scores or chasing down old spreadsheets.
-            </p>
+            </PlatformSectionHeading>
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-6 py-20 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Ready to see your club's history?
-          </h2>
-          <div className="mt-8">
-            <Link href="/signup">
-              <Button size="lg" className="gap-2">
-                Get started <ArrowRight className="h-4 w-4" />
+        <section className="border-t">
+          <div className={`${SECTION} text-center`}>
+            <PlatformSectionHeading title="Ready to see your club's history?" />
+            <div className="mt-8">
+              <Button asChild size="lg" className="gap-2">
+                <Link href="/signup">
+                  Get started <ArrowRight className="h-4 w-4" />
+                </Link>
               </Button>
-            </Link>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t">
-        <div className="mx-auto max-w-5xl px-6 py-8 text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Ovation. A white-label cricket stats platform.
-        </div>
-      </footer>
+      <PlatformFooter />
     </div>
   );
 }

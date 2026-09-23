@@ -5,6 +5,7 @@ import { useListDirectoryClubs } from "@workspace/api-client-react";
 import type { DirectoryClub } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PlatformFooter, PlatformHeader, PlatformSectionHeading } from "./platform-chrome";
 
 /**
  * Public club directory. Rendered on the apex host (platform mode) so anyone
@@ -29,7 +30,8 @@ function ClubCard({ club }: { club: DirectoryClub }) {
       href={club.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col overflow-hidden rounded-lg border bg-background transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="bc-lift group flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      data-testid="directory-club"
     >
       <div
         className="flex items-center gap-3 border-b p-4"
@@ -42,14 +44,14 @@ function ClubCard({ club }: { club: DirectoryClub }) {
         ) : (
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md text-sm font-semibold text-white"
-            style={{ backgroundColor: accent ?? "#334155" }}
+            style={{ backgroundColor: accent ?? "hsl(var(--muted-foreground))" }}
             aria-hidden
           >
             {initials(club.name)}
           </div>
         )}
         <div className="min-w-0">
-          <h3 className="truncate font-semibold leading-tight">{club.name}</h3>
+          <h3 className="truncate text-[22px] leading-none">{club.name}</h3>
           {club.shortName && club.shortName !== club.name ? (
             <p className="truncate text-xs text-muted-foreground">{club.shortName}</p>
           ) : null}
@@ -90,27 +92,14 @@ export default function DirectoryPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/">
-            <span className="cursor-pointer text-lg font-semibold tracking-tight">Ovation</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link href="/platform-admin">
-              <Button size="sm" variant="ghost">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm">Get started</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PlatformHeader showDirectory={false} />
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
+      <main className="mx-auto max-w-[1280px] px-[var(--pad)] py-[var(--gap-section)]">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Clubs on Ovation</h1>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
+            Directory
+          </div>
+          <h1 className="mt-2 text-[clamp(38px,4.6vw,64px)] leading-none">Clubs on Ovation</h1>
           <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
             Browse the clubs running their stats and history on Ovation. Pick one to visit its site.
           </p>
@@ -123,7 +112,7 @@ export default function DirectoryPage() {
               placeholder="Search clubs…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="pl-9"
+              className="h-11 rounded-full pl-9"
               aria-label="Search clubs"
             />
           </div>
@@ -155,25 +144,20 @@ export default function DirectoryPage() {
         </div>
 
         <div className="mt-16 border-t pt-10 text-center">
-          <h2 className="text-xl font-semibold tracking-tight">Don't see your club?</h2>
-          <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
+          <PlatformSectionHeading title="Don't see your club?">
             Any club can join in seconds — your full history is populated automatically.
-          </p>
+          </PlatformSectionHeading>
           <div className="mt-6">
-            <Link href="/signup">
-              <Button className="gap-2">
+            <Button asChild className="gap-2">
+              <Link href="/signup">
                 Find your club <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </main>
 
-      <footer className="border-t">
-        <div className="mx-auto max-w-5xl px-6 py-8 text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Ovation. A white-label cricket stats platform.
-        </div>
-      </footer>
+      <PlatformFooter />
     </div>
   );
 }
