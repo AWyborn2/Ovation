@@ -29,7 +29,7 @@ function MatchCardCrest({ club }: { club: JuniorMatchSummary["opponentClub"] }) 
       width={28}
       height={28}
       onError={() => setErrored(true)}
-      className="h-7 w-7 shrink-0 rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
+      className="h-7 w-7 shrink-0 rounded-sm object-contain bg-white/90 p-0.5"
       data-testid="img-junior-match-crest"
     />
   );
@@ -106,22 +106,22 @@ export default function JuniorsMatches() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
+        <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
           Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Junior Matches</h1>
+        <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">Junior Matches</h1>
         <p className="text-muted-foreground mt-1">Browse junior game-by-game scorecards.</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">
+          <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Age Group
           </label>
           <select
             value={ageGroup ?? ""}
             onChange={(e) => setAgeGroup(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[10rem]"
+            className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[10rem]"
             data-testid="select-age-group"
           >
             <option value="">All age groups</option>
@@ -133,11 +133,13 @@ export default function JuniorsMatches() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+          <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Season
+          </label>
           <select
             value={season ?? ""}
             onChange={(e) => setSeason(e.target.value)}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[8rem]"
+            className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[8rem]"
             data-testid="select-season"
           >
             <option value="">All seasons</option>
@@ -164,17 +166,17 @@ export default function JuniorsMatches() {
           {matches.map((m) => (
             <Link key={m.id} href={`/juniors/matches/${m.id}`}>
               <div
-                className={`bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer group h-full flex flex-col gap-3 ${JUNIOR_ACCENT.hoverBorder} transition-colors`}
+                className={`rounded-lg border bg-card p-4 cursor-pointer group h-full flex flex-col gap-3 ${JUNIOR_ACCENT.hoverBorder} transition-colors`}
               >
                 <div className="flex items-center gap-2">
                   {m.ageGroup && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
                       {m.ageGroup}
                     </span>
                   )}
                   <MatchCardCrest club={m.opponentClub} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-serif font-bold text-primary group-hover:text-primary truncate">
+                    <div className="font-serif font-bold text-primary-text group-hover:text-primary-text truncate">
                       vs {m.opponentName ?? "Unknown"}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -190,7 +192,7 @@ export default function JuniorsMatches() {
                   )}
                 </div>
                 {(m.hhScore || m.opponentScore) && (
-                  <div className="text-sm font-mono text-foreground/90">
+                  <div className="text-sm tabular-nums text-foreground/90">
                     {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span>{" "}
                     {m.opponentScore ?? "—"}
                   </div>

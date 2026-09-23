@@ -56,8 +56,8 @@ export default function AdminTourContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Welcome & guided tour</h1>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">Welcome & guided tour</h2>
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Edit the first-visit welcome message and the wording of each guided-tour step. Leave a
           field blank to use the built-in default. Which sections the tour points at is fixed, but
           you can re-word every title and description — changes go live for visitors right away, no
@@ -238,7 +238,7 @@ function StepEditor({
             className="space-y-2 border rounded-md p-4"
             data-testid={`tour-step-${s.key}`}
           >
-            <div className="text-xs font-mono text-muted-foreground">Step {idx + 1}</div>
+            <div className="text-xs tabular-nums text-muted-foreground">Step {idx + 1}</div>
             <div className="space-y-1.5">
               <Label htmlFor={`${s.key}-title`}>Title</Label>
               <Input

@@ -86,26 +86,30 @@ export function hslTripletToHex(triplet?: string | null): string | null {
 }
 
 /**
- * The design system's fixed navy surface scales — the Ovation fallback when no
- * club backgroundColour is available, it is too light, or `useNavyBase` is set.
- * Dark mode: #0B0F1A page → #131826 card → #1B2236 elevated → #232B3D border.
- * Light mode: #F5F6FA page → #FFFFFF card → #EBEDF2 elevated → #D9DDE6 border.
+ * The Broadcast design system's fixed neutral surface scales — the Ovation
+ * fallback when no club backgroundColour is available, it is too light, or
+ * `useNavyBase` is set.
+ * Dark mode: #0B1014 page → #131A20 card → #1B242B elevated → #26313A border.
+ * Light mode: #F2F4F6 page → #FFFFFF card → #E9EDF0 elevated → #D9DFE4 border.
  */
 const NAVY_DARK = {
-  950: "222 33% 8%",
-  900: "220 30% 11%",
-  800: "222 28% 16%",
-  700: "220 23% 21%",
+  950: "207 29% 6%",
+  900: "208 25% 10%",
+  800: "206 23% 14%",
+  700: "207 21% 19%",
 };
-const INK_DARK = { 0: "220 20% 96%", 2: "218 12% 60%" };
+const INK_DARK = { 0: "210 30% 96%", 2: "209 12% 61%" };
 
 const NAVY_LIGHT = {
-  bg: "220 25% 97%",
+  bg: "210 18% 96%",
   card: "0 0% 100%",
-  elevated: "220 20% 94%",
-  border: "220 20% 88%",
+  elevated: "206 19% 93%",
+  border: "207 17% 87%",
 };
-const INK_LIGHT = { 0: "222 30% 12%", 2: "218 12% 42%" };
+const INK_LIGHT = { 0: "208 29% 10%", 2: "209 13% 39%" };
+
+/** Near-black text used on light accent fills (Broadcast #10151B). */
+const ON_ACCENT_DARK = "213 26% 8%";
 
 /**
  * The five accent hues a tenant may pick as their brand colour — identical in
@@ -143,6 +147,7 @@ export const OVERRIDE_COLOUR_KEYS = [
   "--primary",
   "--primary-foreground",
   "--primary-border",
+  "--primary-text",
   "--secondary",
   "--secondary-foreground",
   "--secondary-border",
@@ -250,12 +255,12 @@ export function applyThemeOverrides(
  * Maximum saturation (integer percent) applied to derived dark-mode surface
  * steps — caps very saturated club colours so surfaces remain readable.
  */
-const SURFACE_DARK_MAX_S = 35;
+const SURFACE_DARK_MAX_S = 20;
 /**
  * Maximum saturation (integer percent) applied to derived light-mode surface
  * steps — light-mode surfaces stay subtly tinted, never garish.
  */
-const SURFACE_LIGHT_MAX_S = 20;
+const SURFACE_LIGHT_MAX_S = 18;
 /**
  * Minimum-darkness floor: a backgroundColour whose HSL lightness exceeds this
  * value is too light to use as a dark page background and falls back to navy.
@@ -293,20 +298,24 @@ function buildSurfaceScale(
     if (hsl && hsl.l <= SURFACE_FLOOR_L) {
       const { h, s } = hsl;
       if (mode === "dark") {
+        // Broadcast scale: near-black with a brand tint, slightly more saturated
+        // than the clamped source (Halls Head #333F48 → #0B1014 / #131A20 /
+        // #1B242B / #26313A).
         const sd = Math.min(s, SURFACE_DARK_MAX_S);
         return {
-          page: `${h} ${sd}% 8%`,
-          card: `${h} ${Math.round(sd * 0.9)}% 11%`,
-          elevated: `${h} ${Math.round(sd * 0.85)}% 16%`,
-          border: `${h} ${Math.round(sd * 0.7)}% 21%`,
+          page: `${h} ${Math.round(sd * 1.7)}% 6%`,
+          card: `${h} ${Math.round(sd * 1.47)}% 10%`,
+          elevated: `${h} ${Math.round(sd * 1.35)}% 14%`,
+          border: `${h} ${Math.round(sd * 1.24)}% 19%`,
         };
       } else {
+        // Halls Head → #F2F4F6 / #FFFFFF / #E9EDF0 / #D9DFE4.
         const sl = Math.min(s, SURFACE_LIGHT_MAX_S);
         return {
-          page: `${h} ${sl}% 97%`,
+          page: `${h} ${Math.round(sl * 1.05)}% 96%`,
           card: "0 0% 100%",
-          elevated: `${h} ${Math.round(sl * 0.9)}% 94%`,
-          border: `${h} ${Math.round(sl * 0.85)}% 88%`,
+          elevated: `${h} ${Math.round(sl * 1.1)}% 93%`,
+          border: `${h} ${sl}% 87%`,
         };
       }
     }
@@ -352,9 +361,15 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
 
   const hsl = hexToHsl(brand.primaryColour);
   const accent = hsl ? hslString(hsl) : ACCENT_TOKENS.amber;
-  const accentForeground = hsl && hsl.l > 55 ? NAVY_DARK[950] : INK_DARK[0];
+  const accentForeground = hsl && hsl.l > 55 ? ON_ACCENT_DARK : INK_DARK[0];
 
-  if (mode === "dark") {
+  const tokens = mode === "dark" ? darkTokens() : lightTokens();
+  if (!brand.themeOverrides?.["--primary-text"]) {
+    tokens["--primary-text"] = contrastSafeText(tokens["--primary"], tokens["--card"]);
+  }
+  return tokens;
+
+  function darkTokens(): Record<string, string> {
     return applyThemeOverrides(
       {
         "--background": surf.page,
@@ -389,38 +404,93 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
     );
   }
 
-  return applyThemeOverrides(
-    {
-      "--background": surf.page,
-      "--foreground": INK_LIGHT[0],
-      "--border": surf.border,
-      "--input": surf.border,
-      "--ring": accent,
-      "--card": surf.card,
-      "--card-foreground": INK_LIGHT[0],
-      "--card-border": surf.border,
-      "--popover": surf.card,
-      "--popover-foreground": INK_LIGHT[0],
-      "--popover-border": surf.border,
-      "--primary": accent,
-      "--primary-foreground": accentForeground,
-      "--primary-border": accent,
-      "--secondary": surf.elevated,
-      "--secondary-foreground": INK_LIGHT[2],
-      "--secondary-border": surf.border,
-      "--muted": surf.elevated,
-      "--muted-foreground": INK_LIGHT[2],
-      "--muted-border": surf.border,
-      "--accent": accent,
-      "--accent-foreground": accentForeground,
-      "--accent-border": accent,
-      "--destructive": "6 78% 46%",
-      "--destructive-foreground": "0 0% 100%",
-      "--destructive-border": "6 78% 40%",
-    },
-    brand.themeOverrides,
-    mode,
-  );
+  function lightTokens(): Record<string, string> {
+    return applyThemeOverrides(
+      {
+        "--background": surf.page,
+        "--foreground": INK_LIGHT[0],
+        "--border": surf.border,
+        "--input": surf.border,
+        "--ring": accent,
+        "--card": surf.card,
+        "--card-foreground": INK_LIGHT[0],
+        "--card-border": surf.border,
+        "--popover": surf.card,
+        "--popover-foreground": INK_LIGHT[0],
+        "--popover-border": surf.border,
+        "--primary": accent,
+        "--primary-foreground": accentForeground,
+        "--primary-border": accent,
+        "--secondary": surf.elevated,
+        "--secondary-foreground": INK_LIGHT[2],
+        "--secondary-border": surf.border,
+        "--muted": surf.elevated,
+        "--muted-foreground": INK_LIGHT[2],
+        "--muted-border": surf.border,
+        "--accent": accent,
+        "--accent-foreground": accentForeground,
+        "--accent-border": accent,
+        "--destructive": "6 78% 46%",
+        "--destructive-foreground": "0 0% 100%",
+        "--destructive-border": "6 78% 40%",
+      },
+      brand.themeOverrides,
+      mode,
+    );
+  }
+}
+
+/** Parse an "H S% L%" triplet into {h, s, l}; null when malformed. */
+function parseTriplet(triplet: string | undefined): Hsl | null {
+  if (!triplet) return null;
+  const m = /^\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*$/.exec(triplet);
+  return m ? { h: parseFloat(m[1]), s: parseFloat(m[2]), l: parseFloat(m[3]) } : null;
+}
+
+/** WCAG relative luminance of an HSL colour. */
+function luminance(c: Hsl): number {
+  const hex = hslTripletToHex(hslString(c));
+  if (!hex) return 0;
+  const channel = (i: number) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+}
+
+/** WCAG contrast ratio between two HSL colours. */
+export function contrastRatio(a: Hsl, b: Hsl): number {
+  const la = luminance(a);
+  const lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** Contrast ratio between two "H S% L%" triplets (0 when either is malformed). */
+export function tripletContrast(a: string, b: string): number {
+  const pa = parseTriplet(a);
+  const pb = parseTriplet(b);
+  return pa && pb ? contrastRatio(pa, pb) : 0;
+}
+
+/**
+ * The accent colour as it should be used for TEXT on the card surface: the
+ * primary itself when it already reaches WCAG AA (4.5:1) against the card,
+ * otherwise the primary's hue/saturation stepped darker (light card) or lighter
+ * (dark card) until it does. Fills keep `--primary`; only text uses this.
+ */
+export function contrastSafeText(primary: string, card: string): string {
+  const p = parseTriplet(primary);
+  const c = parseTriplet(card);
+  if (!p || !c) return primary;
+  if (contrastRatio(p, c) >= 4.5) return primary;
+  const darker = luminance(c) > 0.18;
+  let l = p.l;
+  while (l > 0 && l < 100) {
+    l += darker ? -1 : 1;
+    const candidate = { ...p, l };
+    if (contrastRatio(candidate, c) >= 4.5) return hslString(candidate);
+  }
+  return hslString({ ...p, l: darker ? 0 : 100 });
 }
 
 /** Re-export for callers that need the default brand's tokens statically. */

@@ -53,7 +53,7 @@ export function BoardConfigEditor({
           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
           {board.title}
           {grid && (
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary">
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary-text">
               <Grid3x3 className="h-3 w-3" />
               {gridColumns.length > 0 ? "grid" : "grid-capable"}
             </span>
@@ -265,7 +265,9 @@ export function BoardConfigEditor({
                       type="button"
                       onClick={() => toggleGridCol(opt.key)}
                       className={`text-xs px-2 py-1 rounded border transition ${
-                        on ? "border-primary bg-primary/10 text-primary" : "hover:border-primary/50"
+                        on
+                          ? "border-primary bg-primary/10 text-primary-text"
+                          : "hover:border-primary/50"
                       }`}
                       data-testid={`board-gridcol-${board.id}-${opt.key}`}
                     >

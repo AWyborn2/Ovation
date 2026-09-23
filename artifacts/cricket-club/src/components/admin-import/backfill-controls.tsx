@@ -130,7 +130,7 @@ export function NetEffectPanel({
         </p>
       )}
       {negatives.length > 0 && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-1">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-1">
           <p className="font-medium text-destructive">
             {negatives.length} player(s) would floor at zero
           </p>

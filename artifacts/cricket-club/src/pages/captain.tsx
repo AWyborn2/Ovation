@@ -189,11 +189,11 @@ function RoundBallot({
           </div>
           {hasBallot && !open ? (
             <div className="text-sm text-muted-foreground mt-1">
-              <span className="font-mono font-bold text-primary">3</span>{" "}
+              <span className="font-mono font-bold text-primary-text">3</span>{" "}
               {nameOf(round.ballot!.pick1PlayerId)} ·{" "}
-              <span className="font-mono font-bold text-primary">2</span>{" "}
+              <span className="font-mono font-bold text-primary-text">2</span>{" "}
               {nameOf(round.ballot!.pick2PlayerId)} ·{" "}
-              <span className="font-mono font-bold text-primary">1</span>{" "}
+              <span className="font-mono font-bold text-primary-text">1</span>{" "}
               {nameOf(round.ballot!.pick3PlayerId)}
             </div>
           ) : (
@@ -277,7 +277,7 @@ function PickSelect({
   const excludeSet = new Set(exclude.filter((x): x is number => x != null));
   return (
     <div className="grid grid-cols-[80px_1fr] items-center gap-3">
-      <span className="text-sm font-bold text-primary">{label}</span>
+      <span className="text-sm font-bold text-primary-text">{label}</span>
       <select
         className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         value={value ?? ""}

@@ -43,3 +43,9 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+
+// cmdk (search palette, Compare picker) scrolls the highlighted item into
+// view; jsdom does not implement scrollIntoView.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+}

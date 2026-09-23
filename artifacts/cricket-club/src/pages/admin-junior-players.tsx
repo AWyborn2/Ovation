@@ -72,7 +72,7 @@ export default function AdminJuniorPlayers() {
       </p>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -201,7 +201,7 @@ function JuniorPlayerRow({
               </span>
             )}
             {player.seniorPlayerId != null && (
-              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/40 rounded px-1.5 py-0.5">
+              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary-text border border-primary/40 rounded px-1.5 py-0.5">
                 Senior linked
               </span>
             )}
@@ -293,7 +293,7 @@ function JuniorMergeDialog({
         </p>
 
         {error && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -392,7 +392,7 @@ function JuniorRowSeniorLinkDialog({
         </p>
 
         {error && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}

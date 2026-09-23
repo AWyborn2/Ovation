@@ -43,7 +43,7 @@ export function SkinEditor({
           />
         </label>
         {isDefault ? (
-          <span className="text-xs px-2 py-1 rounded bg-primary/10 text-primary font-medium">
+          <span className="text-xs px-2 py-1 rounded bg-primary/10 text-primary-text font-medium">
             Club default
           </span>
         ) : (

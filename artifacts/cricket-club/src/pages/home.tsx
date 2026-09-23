@@ -78,7 +78,10 @@ const fmtDate = (d: string | null | undefined) => {
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div className="text-3xl font-serif font-bold text-primary" data-testid={`stat-${label}`}>
+      <div
+        className="text-3xl font-serif font-bold text-primary-text"
+        data-testid={`stat-${label}`}
+      >
         {value}
       </div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
@@ -90,8 +93,8 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
   const Icon = navIcon(item.iconKey);
   const inner = (
     <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-      {Icon && <Icon className="h-7 w-7 text-primary mb-3" />}
-      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
+      {Icon && <Icon className="h-7 w-7 text-primary-text mb-3" />}
+      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary-text">
         {item.label}
       </div>
       {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
@@ -131,7 +134,7 @@ function RecentMatchCard({ m }: { m: MatchSummary }) {
           <GradeBadge grade={m.grade} size="sm" />
           <MatchCardCrest club={m.opponentClub} />
           <div className="flex-1 min-w-0">
-            <div className="font-serif font-bold text-primary truncate">
+            <div className="font-serif font-bold text-primary-text truncate">
               vs {m.opponent ?? "Unknown"}
             </div>
             <div className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -172,8 +175,8 @@ function RecentMatchCard({ m }: { m: MatchSummary }) {
 function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[] }) {
   return (
     <section className="bg-card border border-border rounded-md p-4 shadow-sm">
-      <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-        <TrendingUp className="h-4 w-4 text-primary" /> {title}
+      <h3 className="font-serif font-bold text-primary-text flex items-center gap-2 mb-3">
+        <TrendingUp className="h-4 w-4 text-primary-text" /> {title}
       </h3>
       {leaders.length === 0 ? (
         <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
@@ -182,7 +185,7 @@ function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[]
           {leaders.map((p) => (
             <li key={p.playerId}>
               <Link href={`/players/${p.playerId}`}>
-                <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
+                <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary-text">
                   <span className="font-medium">
                     {p.givenName} {p.surname}
                   </span>
@@ -245,10 +248,10 @@ export default function Home() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
           <Trophy className="h-4 w-4" /> Seniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Senior Cricket</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">Senior Cricket</h1>
         <p className="text-muted-foreground mt-1">
           Results, scorecards, records and player stats for {brand.name}'s senior grades.
         </p>
@@ -285,7 +288,7 @@ export default function Home() {
           {data.recentMatches.length > 0 && (
             <section className="space-y-3" data-tour="recent-matches">
               <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                <h2 className="text-xl font-serif font-bold text-primary">Recent Matches</h2>
+                <h2 className="text-xl font-serif font-bold text-primary-text">Recent Matches</h2>
                 {data.latestSeasonLabel && (
                   <span className="text-xs uppercase tracking-widest text-muted-foreground">
                     {data.latestSeasonLabel} season
@@ -303,7 +306,7 @@ export default function Home() {
           {/* Top performers with season picker + grade filter */}
           <section className="space-y-3" data-tour="top-performers">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
+              <h2 className="text-xl font-serif font-bold text-primary-text">Top Performers</h2>
               <Select
                 value={seasonValue}
                 onValueChange={(v) => setSeason(v === "all" ? "all" : Number(v))}

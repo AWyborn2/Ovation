@@ -42,7 +42,7 @@ export default function AdminHonourBoards() {
         <Button onClick={() => setShowNew((v) => !v)}>{showNew ? "Close" : "Add board"}</Button>
       </div>
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -276,7 +276,9 @@ function BoardOverrides({
 
   return (
     <div className="border-t pt-4 space-y-3">
-      <h3 className="font-semibold text-sm">Overrides (pin / hide / annotate)</h3>
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        Overrides (pin / hide / annotate)
+      </h3>
       <div className="flex flex-wrap gap-2 items-end">
         <div className="w-64 space-y-1">
           <Label className="text-xs">Player</Label>

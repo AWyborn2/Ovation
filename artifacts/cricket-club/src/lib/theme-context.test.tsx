@@ -56,7 +56,19 @@ describe("ThemeProvider / useThemeMode", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
-  it("resolves to light on first render when the OS prefers light and nothing is stored", () => {
+  it("defaults to dark even when the OS prefers light and nothing is stored (Broadcast AE2)", () => {
+    mockMatchMedia(false);
+    render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId("mode").textContent).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("a stored system preference follows an OS light preference", () => {
+    localStorage.setItem("ovation-theme", "system");
     mockMatchMedia(false);
     render(
       <ThemeProvider>
@@ -91,6 +103,7 @@ describe("ThemeProvider / useThemeMode", () => {
   });
 
   it("live-updates when the stored preference is system and the OS preference changes", () => {
+    localStorage.setItem("ovation-theme", "system");
     const { fireChange } = mockMatchMedia(false);
     render(
       <ThemeProvider>
@@ -105,6 +118,7 @@ describe("ThemeProvider / useThemeMode", () => {
   });
 
   it("stops tracking the OS once an explicit choice is made", () => {
+    localStorage.setItem("ovation-theme", "system");
     const { fireChange } = mockMatchMedia(false);
     render(
       <ThemeProvider>

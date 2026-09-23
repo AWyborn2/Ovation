@@ -42,7 +42,7 @@ export default function AdminPeople() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Club officials who served the club but never played (e.g. Secretaries and Treasurers).
             Add them here, then link them on committee or captain rows so their name becomes a
             clickable profile.
@@ -54,7 +54,7 @@ export default function AdminPeople() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}

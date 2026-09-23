@@ -7467,6 +7467,49 @@ components:
             (e.g. {"--card": "#101826", "--radius": "0.75rem"}). Colour tokens
             carry a 6-digit hex; --radius / --app-font-* carry a raw CSS value.
             Null = a fully-derived theme (the default).
+        heroImages:
+          oneOf:
+            - $ref: "#/components/schemas/TenantHeroImages"
+            - type: "null"
+          description: >-
+            Tenant-uploaded Broadcast imagery. Null = none (heroes render a
+            brand-colour gradient).
+
+    TenantHeroImages:
+      type: object
+      description: >-
+        Broadcast imagery slots, each a storage URL (e.g. /api/storage/objects/...)
+        or null when unset.
+      additionalProperties: false
+      properties:
+        home:
+          type: ["string", "null"]
+          maxLength: 2048
+        juniors:
+          type: ["string", "null"]
+          maxLength: 2048
+        honours:
+          type: ["string", "null"]
+          maxLength: 2048
+        explore:
+          oneOf:
+            - $ref: "#/components/schemas/TenantExploreImages"
+            - type: "null"
+
+    TenantExploreImages:
+      type: object
+      description: Explore-the-club photo card images, one per card.
+      additionalProperties: false
+      properties:
+        honours:
+          type: ["string", "null"]
+          maxLength: 2048
+        players:
+          type: ["string", "null"]
+          maxLength: 2048
+        premierships:
+          type: ["string", "null"]
+          maxLength: 2048
 
     UpdateTenantBrandBody:
       type: object
@@ -7515,12 +7558,19 @@ components:
             Curated per-token theme overrides (surface/panel/border/alert colours,
             corner radius, font) keyed by CSS custom property. Null clears all
             overrides back to the fully-derived theme.
+        heroImages:
+          oneOf:
+            - $ref: "#/components/schemas/TenantHeroImages"
+            - type: "null"
+          description: >-
+            Broadcast imagery (hero and explore-card photos). Replaces the whole
+            slot map; null clears all imagery (heroes fall back to a gradient).
 
     UpdateAdminTenantBrandBody:
       type: object
       description: >-
         Partial concierge (platform-admin) update of a tenant's cosmetic
-        branding fields. Closed to exactly these nine properties — unknown
+        branding fields. Closed to exactly these properties — unknown
         keys such as plan, customDomain, or backgroundUrl are stripped by
         validation and can never reach the handler. Colour fields are
         validated as 6-digit hex.
@@ -7562,6 +7612,13 @@ components:
             offering) keyed by CSS custom property. Colour tokens carry a 6-digit
             hex; --radius / --app-font-* carry a raw CSS value. Null clears all
             overrides back to the fully-derived theme.
+        heroImages:
+          oneOf:
+            - $ref: "#/components/schemas/TenantHeroImages"
+            - type: "null"
+          description: >-
+            Broadcast imagery (hero and explore-card photos). Replaces the whole
+            slot map; null clears all imagery (heroes fall back to a gradient).
 
     PlatformBrand:
       type: object
@@ -7837,6 +7894,13 @@ components:
             Per-token theme overrides keyed by CSS custom property, or null when
             the theme is fully derived. Surfaced so the concierge editor can seed
             its custom-design controls from the tenant's saved overrides.
+        heroImages:
+          oneOf:
+            - $ref: "#/components/schemas/TenantHeroImages"
+            - type: "null"
+          description: >-
+            The tenant's Broadcast imagery, surfaced so the concierge editor can
+            show and edit the saved hero and explore photos.
         lastActiveAt:
           type: ["string", "null"]
           description: >-

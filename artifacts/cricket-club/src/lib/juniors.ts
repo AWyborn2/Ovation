@@ -3,7 +3,7 @@
 // layout.tsx) stays club brown (with gold writing) to distinguish the two sides.
 
 export const JUNIOR_ACCENT = {
-  text: "text-primary",
+  text: "text-primary-text",
   bg: "bg-primary",
   bgSoft: "bg-primary/10",
   border: "border-primary",

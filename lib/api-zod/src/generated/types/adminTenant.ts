@@ -7,6 +7,7 @@
  */
 import type { AdminTenantPlan } from './adminTenantPlan';
 import type { AdminTenantThemeOverrides } from './adminTenantThemeOverrides';
+import type { TenantHeroImages } from './tenantHeroImages';
 
 /**
  * A tenant as listed in the platform-admin console.
@@ -49,6 +50,8 @@ export interface AdminTenant {
      * @nullable
      */
   themeOverrides?: AdminTenantThemeOverrides;
+  /** The tenant's Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos. */
+  heroImages?: TenantHeroImages | null;
   /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable

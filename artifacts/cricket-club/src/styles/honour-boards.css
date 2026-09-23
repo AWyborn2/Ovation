@@ -103,6 +103,10 @@
   margin: 2px 0 0;
   color: var(--hb-ink);
   font-weight: 800;
+  /* Pin the pre-Broadcast heading case/tracking so the app's global h1–h6
+     rule (uppercase, 0.01em) never reaches the kiosk skins. */
+  text-transform: none;
+  letter-spacing: -0.025em;
 }
 .hb-sub {
   margin: 4px 0 0;

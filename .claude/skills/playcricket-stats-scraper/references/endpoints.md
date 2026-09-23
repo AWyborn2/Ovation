@@ -19,6 +19,20 @@ Two kinds of organisation GUID exist and they behave differently:
 
 So for a club, grades are discovered through its teams; `harness.discover()` does both and merges.
 
+## Finding an organisation GUID without the URL
+
+### `GET /orgsproducts/organisation/{orgId}` — name, short name, crest for a known GUID
+
+### `GET /orgsproducts/organisation/search?searchString=…`
+
+What the site's search box calls. Returned `{"organisations":[]}` for "Rockingham Mandurah" even
+though the club exists as "Rockingham-Mandurah Cricket Club" (`2dd0a9a1-86d8-eb11-a7ad-2818780da0cc`),
+so do not treat an empty result as proof of absence. The reliable way to enumerate every club in a
+competition is `/fixturesladders/grades/{gradeId}/teams` for each of the association's grades and
+collecting `teams[].owningOrganisation` — that is how the WA-side clubs were found. A club can sit
+in a different association from the one you expect (Rockingham-Mandurah plays WA Premier Cricket
+and only occasionally enters a Peel CA cup).
+
 ## Organisation-scoped
 
 ### `GET /fixturesladders/organisations/{orgId}/seasons`

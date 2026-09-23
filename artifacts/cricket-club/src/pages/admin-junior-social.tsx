@@ -273,7 +273,7 @@ function JuniorMilestones({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
                 className="text-left border rounded-md p-3 hover:border-primary hover:bg-primary/5 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-primary shrink-0" />
+                  <Trophy className="h-4 w-4 text-primary-text shrink-0" />
                   <span className="font-medium truncate">{m.playerName}</span>
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">{m.tierLabel}</div>

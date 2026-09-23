@@ -30,7 +30,7 @@
   // Default "this is a junior / pathway grade" test — juniors stay isolated (never blended
   // into senior stats). Override per plan with {includeJuniors:true} or your own gradeFilter.
   ov.JUNIOR_RE =
-    /\b(year\s?\d{1,2}|u\s?\d{1,2}s?\b|under\s?\d{1,2}|junior|primary|stage\s?\d|blast|woolworths|pathway|school)\b/i;
+    /\b(year\s?\d{1,2}|u\s?\d{1,2}s?\b|under\s?\d{1,2}s?\b|junior|primary|stage\s?\d|blast|woolworths|pathway|school)\b/i;
 
   // ---------------------------------------------------------------- IndexedDB store
   const DB = "ov-playhq";

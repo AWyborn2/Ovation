@@ -22,12 +22,12 @@ export const tabClass = (active: boolean) =>
   `inline-flex items-center gap-1.5 px-4 md:px-5 py-2.5 rounded text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
     active
       ? "bg-primary text-primary-foreground"
-      : "text-muted-foreground hover:bg-muted hover:text-primary"
+      : "text-muted-foreground hover:bg-muted hover:text-primary-text"
   }`;
 
 export const dropdownItemClass = (active: boolean) =>
   `cursor-pointer text-xs md:text-sm font-semibold uppercase tracking-wider ${
-    active ? "bg-primary/10 text-primary" : ""
+    active ? "bg-primary/10 text-primary-text" : ""
   }`;
 
 // Max cards shown in the "Just achieved" grid (debuts first, then milestones).

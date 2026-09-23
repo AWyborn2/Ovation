@@ -14,12 +14,12 @@ export const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
     <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
       <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2 pr-8">
         <div className="flex items-center gap-2">
-          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary-text shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary-text truncate">
             {p.tierLabel}
           </span>
         </div>
-        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+        <div className="font-serif font-bold text-primary-text uppercase leading-tight group-hover:underline">
           {p.surname}
           <span className="font-sans font-normal text-foreground/80 normal-case">
             {" "}
@@ -69,12 +69,12 @@ export const DebutCard = ({ entry: d }: { entry: DebutEntry }) => {
     <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
       <Link href={`/players/${d.playerId}`} className="flex flex-col gap-2 pr-8">
         <div className="flex items-center gap-2">
-          <Star className="h-5 w-5 text-primary shrink-0" strokeWidth={2.25} />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+          <Star className="h-5 w-5 text-primary-text shrink-0" strokeWidth={2.25} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary-text truncate">
             Debut
           </span>
         </div>
-        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+        <div className="font-serif font-bold text-primary-text uppercase leading-tight group-hover:underline">
           {d.name}
         </div>
         <div className="text-xs text-muted-foreground mt-auto">{subline}</div>
@@ -108,12 +108,12 @@ export const ApproachingCard = ({ entry: p }: { entry: ApproachingEntry }) => {
     <div className="group relative bg-background/60 border border-border rounded-md p-3 flex flex-col gap-2 hover:border-primary hover:bg-primary/5 transition-colors">
       <Link href={`/players/${p.playerId}`} className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary truncate">
+          <TierBadge tierIndex={p.tierIndex} className="h-5 w-5 text-primary-text shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary-text truncate">
             {p.tierLabel}
           </span>
         </div>
-        <div className="font-serif font-bold text-primary uppercase leading-tight group-hover:underline">
+        <div className="font-serif font-bold text-primary-text uppercase leading-tight group-hover:underline">
           {p.surname}
           <span className="font-sans font-normal text-foreground/80 normal-case">
             {" "}
@@ -125,7 +125,7 @@ export const ApproachingCard = ({ entry: p }: { entry: ApproachingEntry }) => {
             {p.currentValue.toLocaleString()}
           </span>{" "}
           {p.boardLabel.toLowerCase()} •{" "}
-          <span className="font-bold text-primary whitespace-nowrap">
+          <span className="font-bold text-primary-text whitespace-nowrap">
             {p.gap.toLocaleString()} to go
           </span>
         </div>
@@ -151,12 +151,12 @@ export const DatedMilestoneCard = ({ item }: { item: MilestoneItem }) => {
           {meta.label}
         </span>
         {item.recent && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text">
             Recent
           </span>
         )}
       </div>
-      <div className="font-serif font-bold text-primary leading-tight">{item.playerName}</div>
+      <div className="font-serif font-bold text-primary-text leading-tight">{item.playerName}</div>
       <div className="text-sm font-semibold text-foreground mt-0.5">{item.label}</div>
       {item.detail && <div className="text-xs text-muted-foreground mt-1">{item.detail}</div>}
       <div className="flex items-center gap-2 mt-2 flex-wrap">

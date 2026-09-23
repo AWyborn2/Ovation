@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useListJuniorPremierships, type JuniorPremiership } from "@workspace/api-client-react";
 import { useBrand } from "@/lib/brand-context";
+import { slugify, useShareFilePrefix } from "@/lib/share-filename";
 import {
   PLAQUE_STYLES,
   PlaqueFrame,
@@ -84,6 +85,7 @@ const Plaque = ({ prem }: { prem: JuniorPremiership }) => {
 /** Juniors premiership wall — reads only `/api/juniors/*` (juniors isolation). */
 export default function JuniorsPremierships() {
   const { data, isLoading, isError, refetch } = useListJuniorPremierships();
+  const sharePrefix = useShareFilePrefix();
   const [ageGroup, setAgeGroup] = useState("All");
 
   const ageGroups = useMemo(() => {
@@ -107,7 +109,7 @@ export default function JuniorsPremierships() {
     <PremiershipBoard
       heading="JUNIOR PREMIERSHIPS"
       eyebrow={
-        <div className="text-xs font-bold uppercase tracking-[0.3em] text-[#e7c9b1] mb-1">
+        <div className="text-xs font-bold uppercase tracking-[0.3em] text-white/70 mb-1">
           Juniors
         </div>
       }
@@ -134,10 +136,7 @@ export default function JuniorsPremierships() {
       focusRingClass="focus-visible:ring-primary"
       lightboxTheme="gold"
       exportFileName={(p) =>
-        `hhcc-junior-${p.ageGroup ?? "premiership"}-${p.season ?? ""}`
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "")
+        slugify(`${sharePrefix}-junior-${p.ageGroup ?? "premiership"}-${p.season ?? ""}`)
       }
     />
   );

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { TenantHeroImages } from './tenantHeroImages';
 import type { UpdateTenantBrandBodyThemeOverrides } from './updateTenantBrandBodyThemeOverrides';
 
 /**
@@ -46,4 +47,6 @@ export interface UpdateTenantBrandBody {
      * @nullable
      */
   themeOverrides?: UpdateTenantBrandBodyThemeOverrides;
+  /** Broadcast imagery (hero and explore-card photos). Replaces the whole slot map; null clears all imagery (heroes fall back to a gradient). */
+  heroImages?: TenantHeroImages | null;
 }

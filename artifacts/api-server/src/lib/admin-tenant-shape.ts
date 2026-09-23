@@ -27,6 +27,7 @@ export function toAdminTenant(t: TenantRow, centralClubName: string | null, admi
     juniorsColour: t.juniorsColour,
     badgeStyle: t.badgeStyle,
     themeOverrides: t.themeOverrides,
+    heroImages: t.heroImages ?? null,
     lastActiveAt: t.lastActiveAt instanceof Date ? t.lastActiveAt.toISOString() : t.lastActiveAt,
     suspendedAt: t.suspendedAt instanceof Date ? t.suspendedAt.toISOString() : t.suspendedAt,
     // Branding is "complete" when the tenant set its own logo AND background colour

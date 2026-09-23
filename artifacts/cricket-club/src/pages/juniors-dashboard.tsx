@@ -46,7 +46,10 @@ const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div className="text-3xl font-serif font-bold text-primary" data-testid={`stat-${label}`}>
+      <div
+        className="text-3xl font-serif font-bold text-primary-text"
+        data-testid={`stat-${label}`}
+      >
         {value}
       </div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
@@ -58,8 +61,8 @@ function QuickLink({ item }: { item: ResolvedNavItem }) {
   const Icon = navIcon(item.iconKey);
   const inner = (
     <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-      {Icon && <Icon className="h-7 w-7 text-primary mb-3" />}
-      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary">
+      {Icon && <Icon className="h-7 w-7 text-primary-text mb-3" />}
+      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary-text">
         {item.label}
       </div>
       {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
@@ -116,10 +119,10 @@ export default function JuniorsDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
           <ScrollText className="h-4 w-4" /> Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Junior Cricket</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">Junior Cricket</h1>
         <p className="text-muted-foreground mt-1">
           Match results, scorecards, premierships and player stats for {brand.name}'s junior grades.
         </p>
@@ -155,18 +158,18 @@ export default function JuniorsDashboard() {
           {/* Recent matches */}
           {data.recentMatches.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xl font-serif font-bold text-primary">Recent Matches</h2>
+              <h2 className="text-xl font-serif font-bold text-primary-text">Recent Matches</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.recentMatches.map((m) => (
                   <Link key={m.id} href={`/juniors/matches/${m.id}`}>
                     <div className="bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer h-full flex flex-col gap-2 hover:border-primary transition-colors group">
                       <div className="flex items-center gap-2">
                         {m.ageGroup && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/15 border border-primary/40 rounded px-2 py-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/15 border border-primary/40 rounded px-2 py-0.5">
                             {m.ageGroup}
                           </span>
                         )}
-                        <div className="font-serif font-bold text-foreground group-hover:text-primary truncate">
+                        <div className="font-serif font-bold text-foreground group-hover:text-primary-text truncate">
                           vs {m.opponentName ?? "Unknown"}
                         </div>
                       </div>
@@ -196,7 +199,7 @@ export default function JuniorsDashboard() {
           {/* Top performers with season picker */}
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-xl font-serif font-bold text-primary">Top Performers</h2>
+              <h2 className="text-xl font-serif font-bold text-primary-text">Top Performers</h2>
               <Select value={seasonValue} onValueChange={(v) => setSeason(v)}>
                 <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
                   <SelectValue placeholder="Season" />
@@ -245,8 +248,8 @@ export default function JuniorsDashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <section className="bg-card border border-border rounded-md p-4 shadow-sm">
-                <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-primary" /> Top Run Scorers
+                <h3 className="font-serif font-bold text-primary-text flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-primary-text" /> Top Run Scorers
                 </h3>
                 {topRunScorers.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
@@ -255,7 +258,7 @@ export default function JuniorsDashboard() {
                     {topRunScorers.map((p) => (
                       <li key={p.participantId}>
                         <Link href={`/juniors/players/${p.participantId}`}>
-                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
+                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary-text">
                             <span className="font-medium">{p.displayName}</span>
                             <span className="font-mono text-sm">{p.runs}</span>
                           </div>
@@ -266,8 +269,8 @@ export default function JuniorsDashboard() {
                 )}
               </section>
               <section className="bg-card border border-border rounded-md p-4 shadow-sm">
-                <h3 className="font-serif font-bold text-primary flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-primary" /> Top Wicket Takers
+                <h3 className="font-serif font-bold text-primary-text flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-primary-text" /> Top Wicket Takers
                 </h3>
                 {topWicketTakers.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
@@ -276,7 +279,7 @@ export default function JuniorsDashboard() {
                     {topWicketTakers.map((p) => (
                       <li key={p.participantId}>
                         <Link href={`/juniors/players/${p.participantId}`}>
-                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary">
+                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary-text">
                             <span className="font-medium">{p.displayName}</span>
                             <span className="font-mono text-sm">{p.wickets}</span>
                           </div>

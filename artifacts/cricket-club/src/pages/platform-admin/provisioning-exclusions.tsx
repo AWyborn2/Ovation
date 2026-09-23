@@ -53,7 +53,7 @@ export default function ProvisioningExclusions() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Provisioning exclusions</h1>
+      <h1 className="mb-2 text-[clamp(38px,4.6vw,64px)] leading-none">Provisioning exclusions</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Clubs excluded from provisioning, independent of the central register's own folded/renamed
         data.

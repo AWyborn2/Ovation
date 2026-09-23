@@ -1261,6 +1261,49 @@ export interface HallsHeadBrand {
 export type TenantBrandThemeOverrides = {[key: string]: string} | null;
 
 /**
+ * Explore-the-club photo card images, one per card.
+ */
+export interface TenantExploreImages {
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
+  honours?: string | null;
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
+  players?: string | null;
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
+  premierships?: string | null;
+}
+
+/**
+ * Broadcast imagery slots, each a storage URL (e.g. /api/storage/objects/...) or null when unset.
+ */
+export interface TenantHeroImages {
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
+  home?: string | null;
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
+  juniors?: string | null;
+  /**
+     * @maxLength 2048
+     * @nullable
+     */
+  honours?: string | null;
+  explore?: TenantExploreImages | null;
+}
+
+/**
  * A tenant's brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web/mobile theme and document title.
  */
 export interface TenantBrand {
@@ -1304,6 +1347,8 @@ export interface TenantBrand {
      * @nullable
      */
   themeOverrides?: TenantBrandThemeOverrides;
+  /** Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient). */
+  heroImages?: TenantHeroImages | null;
 }
 
 /**
@@ -1351,6 +1396,8 @@ export interface UpdateTenantBrandBody {
      * @nullable
      */
   themeOverrides?: UpdateTenantBrandBodyThemeOverrides;
+  /** Broadcast imagery (hero and explore-card photos). Replaces the whole slot map; null clears all imagery (heroes fall back to a gradient). */
+  heroImages?: TenantHeroImages | null;
 }
 
 /**
@@ -1360,7 +1407,7 @@ export interface UpdateTenantBrandBody {
 export type UpdateAdminTenantBrandBodyThemeOverrides = {[key: string]: string} | null;
 
 /**
- * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
  */
 export interface UpdateAdminTenantBrandBody {
   /** @minLength 1 */
@@ -1403,6 +1450,8 @@ export interface UpdateAdminTenantBrandBody {
      * @nullable
      */
   themeOverrides?: UpdateAdminTenantBrandBodyThemeOverrides;
+  /** Broadcast imagery (hero and explore-card photos). Replaces the whole slot map; null clears all imagery (heroes fall back to a gradient). */
+  heroImages?: TenantHeroImages | null;
 }
 
 /**
@@ -1645,6 +1694,8 @@ export interface AdminTenant {
      * @nullable
      */
   themeOverrides?: AdminTenantThemeOverrides;
+  /** The tenant's Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos. */
+  heroImages?: TenantHeroImages | null;
   /**
      * ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.
      * @nullable

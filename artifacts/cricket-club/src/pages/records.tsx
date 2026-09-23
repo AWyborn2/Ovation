@@ -115,7 +115,7 @@ const SortHeader = ({
         type="button"
         onClick={() => onSort(col)}
         className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider text-xs ${
-          active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          active ? "text-primary-text" : "text-muted-foreground hover:text-foreground"
         }`}
         data-testid={`sort-${col}`}
       >
@@ -252,7 +252,7 @@ const RecordCard = ({ row }: { row: RecordRow }) => {
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-serif font-bold text-primary mb-1 group-hover:scale-105 transition-transform origin-left">
+        <div className="text-3xl font-serif font-bold text-primary-text mb-1 group-hover:scale-105 transition-transform origin-left">
           {typeof row.value === "number" ? row.value.toLocaleString() : row.value}
         </div>
         {row.stat ? (
@@ -331,7 +331,7 @@ const GradeFilter = ({
   allLabel?: string;
 }) => (
   <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-    <span className="text-xs font-bold uppercase tracking-widest text-primary">Grade</span>
+    <span className="text-xs font-bold uppercase tracking-widest text-primary-text">Grade</span>
     <div className="flex items-center gap-3 self-start">
       {value && <GradeBadge grade={value} size="md" />}
       <select
@@ -429,7 +429,7 @@ const PartnershipsSection = ({
         <GradeBadge grade={p.grade} size="sm" />
       </td>
       <td className="px-4 py-3 whitespace-nowrap">{p.wicket}</td>
-      <td className="px-4 py-3 font-serif font-bold text-primary">{p.runs}</td>
+      <td className="px-4 py-3 font-serif font-bold text-primary-text">{p.runs}</td>
       <td className="px-4 py-3">{p.batsmen}</td>
       <td className="px-4 py-3 text-muted-foreground">{p.opposition ?? "-"}</td>
       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{p.season ?? "-"}</td>
@@ -551,7 +551,7 @@ const CenturiesSection = ({
             <td className="px-4 py-3">
               <PlayerName playerId={c.playerId} name={c.batsman} />
             </td>
-            <td className="px-4 py-3 font-serif font-bold text-primary">{c.score ?? "-"}</td>
+            <td className="px-4 py-3 font-serif font-bold text-primary-text">{c.score ?? "-"}</td>
             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{c.season ?? "-"}</td>
           </tr>
         ))}
@@ -624,7 +624,7 @@ const FiveForSection = ({
             <td className="px-4 py-3">
               <PlayerName playerId={f.playerId} name={f.bowler} />
             </td>
-            <td className="px-4 py-3 font-serif font-bold text-primary">{f.figures ?? "-"}</td>
+            <td className="px-4 py-3 font-serif font-bold text-primary-text">{f.figures ?? "-"}</td>
             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{f.season ?? "-"}</td>
           </tr>
         ))}
@@ -729,7 +729,7 @@ export default function Records() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Award className="h-8 w-8 text-primary" />
+        <Award className="h-8 w-8 text-primary-text" />
         <div>
           <h1 className="text-3xl font-serif font-bold">Club Records</h1>
           <p className="text-muted-foreground mt-1">
@@ -760,7 +760,7 @@ export default function Records() {
             className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
               tab === t.key
                 ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-primary-text"
             }`}
           >
             {t.label}
@@ -770,7 +770,9 @@ export default function Records() {
 
       {tab === "by-grade" && (
         <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-          <span className="text-xs font-bold uppercase tracking-widest text-primary">Grade</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary-text">
+            Grade
+          </span>
           <div className="flex items-center gap-3 self-start">
             {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
             <select

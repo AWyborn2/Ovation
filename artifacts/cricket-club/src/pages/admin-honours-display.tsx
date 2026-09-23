@@ -31,8 +31,10 @@ export default function AdminHonoursDisplay() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Honour boards display &amp; kiosk</h1>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">
+          Honour boards display &amp; kiosk
+        </h2>
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Pick the single skin every honour board renders in, and configure the auto-rotating
           clubroom TV kiosk. These pages are admin-only: the display lives at{" "}
           <code>/honours-display</code> and the TV mode opens from a short{" "}

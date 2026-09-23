@@ -84,7 +84,7 @@ export default function AdminMilestoneBoard() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Control what the Significant Milestones section on the public Honour Boards page shows.
         </p>
       </div>
@@ -201,7 +201,7 @@ function SettingsCard({
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             What to show
           </h3>
           <div className="space-y-2">
@@ -229,7 +229,7 @@ function SettingsCard({
         </div>
 
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Significant thresholds
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -254,7 +254,7 @@ function SettingsCard({
         </div>
 
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Recency window
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -276,7 +276,7 @@ function SettingsCard({
         </div>
 
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Career tiers
           </h3>
           <p className="text-xs text-muted-foreground mb-3">

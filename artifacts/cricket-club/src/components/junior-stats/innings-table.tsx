@@ -70,7 +70,7 @@ export function InningsTable<L extends InningsLine, P, A>({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-primary">{title}</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider text-primary-text">{title}</h3>
         {canAdd && (
           <Button size="sm" variant="outline" onClick={() => setAdding((a) => !a)}>
             {adding ? "Close" : addLabel}

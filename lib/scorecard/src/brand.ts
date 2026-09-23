@@ -68,6 +68,24 @@ export interface ClubBrand {
    * override-able keys.
    */
   themeOverrides?: Record<string, string> | null;
+  /**
+   * Tenant-uploaded Broadcast imagery (hero and explore-card photos), each a
+   * storage URL or null. Null/absent = no imagery; heroes render a brand-colour
+   * gradient instead of another club's photo.
+   */
+  heroImages?: BrandHeroImages | null;
+}
+
+/** Broadcast imagery slots a tenant can fill from admin branding. */
+export interface BrandHeroImages {
+  home?: string | null;
+  juniors?: string | null;
+  honours?: string | null;
+  explore?: {
+    honours?: string | null;
+    players?: string | null;
+    premierships?: string | null;
+  } | null;
 }
 
 /** @deprecated Use {@link ClubBrand}. Kept so downstream imports compile. */

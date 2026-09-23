@@ -31,7 +31,7 @@ export function SettingsSection({
 }) {
   return (
     <div>
-      <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {title}
       </h3>
       <p className="text-xs text-muted-foreground mb-3">{description}</p>
@@ -58,7 +58,7 @@ export function DefaultSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[14rem]"
+      className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[14rem]"
       data-testid={testId}
     >
       <option value="">{allLabel}</option>
@@ -132,7 +132,7 @@ export function OrderList({
             className="flex items-center gap-2 border rounded px-3 py-2 bg-card"
             data-testid={ids.row}
           >
-            <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
+            <span className="text-xs tabular-nums text-muted-foreground w-5">{idx + 1}</span>
             <span className="flex-1 text-sm font-medium">{g}</span>
             <Button
               type="button"

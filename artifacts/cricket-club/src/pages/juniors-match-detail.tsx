@@ -26,13 +26,13 @@ export default function JuniorsMatchDetail() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <Link href="/juniors/matches">
-          <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+          <span className="inline-flex items-center gap-1 text-sm text-primary-text hover:underline cursor-pointer">
             <ArrowLeft className="h-4 w-4" /> Back to junior matches
           </span>
         </Link>
         {isAdmin && Number.isFinite(id) && (
           <Link href={`/admin/people/junior-scorecards?matchId=${id}`}>
-            <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+            <span className="inline-flex items-center gap-1 text-sm text-primary-text hover:underline cursor-pointer">
               <Pencil className="h-3.5 w-3.5" /> Edit scorecard
             </span>
           </Link>
@@ -47,10 +47,10 @@ export default function JuniorsMatchDetail() {
         <EmptyState title="Match not found" message="We couldn't find this junior match." />
       ) : (
         <>
-          <div className="bg-card border border-border rounded-md p-5 shadow-sm space-y-3">
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)] space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               {match.ageGroup && (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
                   {match.ageGroup}
                 </span>
               )}
@@ -60,7 +60,7 @@ export default function JuniorsMatchDetail() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary">
+            <h1 className="text-[clamp(30px,4.6vw,56px)] leading-none">
               {brand.name} <span className="text-muted-foreground font-normal">vs</span>{" "}
               {match.opponentName ?? "Unknown"}
             </h1>
@@ -71,13 +71,13 @@ export default function JuniorsMatchDetail() {
               {match.association ? ` · ${match.association}` : ""}
             </div>
             {(match.hhScore || match.opponentScore) && (
-              <div className="text-lg font-mono text-foreground">
+              <div className="text-lg tabular-nums text-foreground">
                 {match.hhScore ?? "—"} <span className="text-muted-foreground text-sm">vs</span>{" "}
                 {match.opponentScore ?? "—"}
               </div>
             )}
             {match.hhResult && (
-              <div className="text-base font-semibold text-primary">{match.hhResult}</div>
+              <div className="text-base font-semibold text-primary-text">{match.hhResult}</div>
             )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
               {fmtJuniorDate(match.matchDate) && (

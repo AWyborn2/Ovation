@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/broadcast";
 import { handleAdminMutationError, useCurrentAdmin } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -61,9 +62,13 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-serif font-bold">Admin users</h1>
+      <PageHeader
+        eyebrow="Admin"
+        title="Admin users"
+        subtitle="Add, rename, reset passwords and remove the admins for this club."
+      />
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}

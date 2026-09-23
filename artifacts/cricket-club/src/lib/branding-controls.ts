@@ -161,7 +161,7 @@ export const FULL_TOKEN_GROUPS: readonly TokenGroup[] = [
   },
   {
     label: "Primary",
-    keys: ["--primary", "--primary-foreground", "--primary-border"],
+    keys: ["--primary", "--primary-foreground", "--primary-border", "--primary-text"],
   },
   {
     label: "Secondary",
@@ -204,6 +204,7 @@ export const TOKEN_LABELS: Record<OverrideColourKey, string> = {
   "--primary": "Primary",
   "--primary-foreground": "Primary text",
   "--primary-border": "Primary border",
+  "--primary-text": "Primary text (accent as text)",
   "--secondary": "Secondary",
   "--secondary-foreground": "Secondary text",
   "--secondary-border": "Secondary border",

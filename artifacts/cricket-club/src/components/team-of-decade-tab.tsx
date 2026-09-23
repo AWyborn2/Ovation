@@ -24,7 +24,7 @@ const MemberName = ({ member }: { member: TeamOfDecadeMember }) =>
   member.playerId != null ? (
     <Link
       href={`/players/${member.playerId}`}
-      className="font-semibold text-primary hover:underline"
+      className="font-semibold text-primary-text hover:underline"
     >
       {member.name}
     </Link>
@@ -67,7 +67,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
               const badges = memberBadges(m);
               return (
                 <div key={m.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <span className="font-mono font-bold text-primary w-6 shrink-0 text-right">
+                  <span className="font-mono font-bold text-primary-text w-6 shrink-0 text-right">
                     {i + 1}
                   </span>
                   <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1 min-w-0">
@@ -75,7 +75,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
                     {badges.map((b) => (
                       <span
                         key={b}
-                        className="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                        className="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-text"
                       >
                         {b}
                       </span>
@@ -103,7 +103,7 @@ export function TeamOfDecadeTab() {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Teams of the Decade
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />

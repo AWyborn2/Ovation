@@ -47,8 +47,9 @@ export interface Dump {
 }
 export type Row = Record<string, unknown>;
 
-const JUNIOR_RE =
-  /\b(year\s?\d{1,2}|u\s?\d{1,2}s?\b|under\s?\d{1,2}|junior|primary|stage\s?\d|blast|woolworths|pathway|school)\b/i;
+/** Junior / pathway grade labels (PCA "Year N", WA "Under 17s", "U15", …) — kept out of senior surfaces. */
+export const JUNIOR_RE =
+  /\b(year\s?\d{1,2}|u\s?\d{1,2}s?\b|under\s?\d{1,2}s?\b|junior|primary|stage\s?\d|blast|woolworths|pathway|school)\b/i;
 
 // ---------------------------------------------------------------------------
 // Small coercion helpers — API payloads are untyped JSON

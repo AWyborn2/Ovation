@@ -36,6 +36,7 @@ import {
   type BadgeStyle,
 } from "@/components/grade-badge";
 import { BadgeStyleContext } from "@/lib/brand-context";
+import { HeroImageFields, isEmptyHeroImages } from "@/components/hero-image-fields";
 
 /** True when the response is the platform marker rather than a tenant brand. */
 function isPlatformResponse(data: TenantBrand | PlatformBrand | undefined): data is PlatformBrand {
@@ -118,6 +119,8 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(
     Object.keys(brand.themeOverrides ?? {}).length > 0,
   );
+  const [heroImages, setHeroImages] = useState(brand.heroImages ?? null);
+  const [isUploadingImagery, setIsUploadingImagery] = useState(false);
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,6 +138,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setUseNavyBase(brand.useNavyBase ?? false);
     setBackgroundUrl(brand.backgroundUrl ?? "");
     setOverrides({ ...(brand.themeOverrides ?? {}) });
+    setHeroImages(brand.heroImages ?? null);
   }, [brand]);
 
   /** Set (value) or clear (null) a group of override keys together. */
@@ -235,6 +239,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
       badgeStyle: badgeStyle,
       useNavyBase: useNavyBase,
       themeOverrides: themeOverridesPayload,
+      heroImages: isEmptyHeroImages(heroImages) ? null : heroImages,
     };
     if (colourTab === "preset") {
       update.mutate({
@@ -282,7 +287,12 @@ function Editor({ brand }: { brand: TenantBrand }) {
       ? contrastWarningMessage([customPrimary, customSecondary, customTertiary], mode)
       : null;
 
-  const busy = isUploadingLogo || isUploadingFavicon || isUploadingBackground || update.isPending;
+  const busy =
+    isUploadingLogo ||
+    isUploadingFavicon ||
+    isUploadingBackground ||
+    isUploadingImagery ||
+    update.isPending;
 
   return (
     <div className="grid gap-6 xl:grid-cols-3">
@@ -338,7 +348,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                         />
                       </span>
                       <span className="flex items-center gap-1.5 text-sm font-semibold">
-                        {selected && <Check className="h-4 w-4 text-primary" />}
+                        {selected && <Check className="h-4 w-4 text-primary-text" />}
                         {look.label}
                       </span>
                       <span className="text-xs text-muted-foreground">{look.description}</span>
@@ -358,7 +368,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                         className="h-12 w-20 rounded object-cover border"
                       />
                     )}
-                    <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                    <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                       {isUploadingBackground
                         ? "Uploading…"
                         : backgroundUrl
@@ -389,6 +399,25 @@ function Editor({ brand }: { brand: TenantBrand }) {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Photos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Hero and explore photos for your home, juniors and honour-board pages. Large photos
+                are resized automatically. Leave a slot empty for a brand-colour backdrop.
+              </p>
+              <HeroImageFields
+                value={heroImages}
+                onChange={setHeroImages}
+                disabled={busy}
+                onError={setError}
+                onBusyChange={setIsUploadingImagery}
+              />
             </CardContent>
           </Card>
 
@@ -437,7 +466,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                       className="h-12 w-12 rounded object-contain border"
                     />
                   )}
-                  <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                  <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                     {isUploadingLogo ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
                     <input
                       type="file"
@@ -463,7 +492,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                       className="h-6 w-6 rounded object-contain border"
                     />
                   )}
-                  <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                  <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
                     {isUploadingFavicon
                       ? "Uploading…"
                       : faviconUrl
@@ -672,7 +701,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                               onClick={() => setOverrideKeys(c.keys, null)}
                               disabled={busy}
                               data-testid={`override-${c.id}-reset`}
-                              className="text-xs font-medium text-primary hover:underline"
+                              className="text-xs font-medium text-primary-text hover:underline"
                             >
                               Reset
                             </button>
@@ -745,7 +774,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
                     onClick={() => setOverrides({})}
                     disabled={busy}
                     data-testid="override-reset-all"
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="text-sm font-medium text-primary-text hover:underline"
                   >
                     Reset all to auto
                   </button>

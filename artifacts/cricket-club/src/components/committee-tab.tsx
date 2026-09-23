@@ -33,7 +33,7 @@ const RoleName = ({ role }: { role: ClubRole }) => {
         ? `/people/${role.nonPlayerId}`
         : null;
   return href != null ? (
-    <Link href={href} className="font-semibold text-primary hover:underline">
+    <Link href={href} className="font-semibold text-primary-text hover:underline">
       {role.name}
     </Link>
   ) : (
@@ -71,7 +71,7 @@ export function CommitteeTab() {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-md p-6 shadow-md">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary m-0">
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Office Bearers
         </h2>
         <div className="w-20 h-[3px] bg-primary mt-3" />

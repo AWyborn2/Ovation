@@ -62,7 +62,7 @@ export default function AdminRecordsDisplay() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Control how the public Records page behaves by default: which tab opens first, the default
           grade for the By Grade and Partnerships tabs, and the default sort order for the Centuries
           and 5-Wicket Hauls tables. Visitors can still change every control themselves after the
@@ -142,7 +142,7 @@ function SettingsCard({
   };
 
   const selectClass =
-    "px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium";
+    "h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground";
 
   return (
     <Card>
@@ -152,7 +152,7 @@ function SettingsCard({
       <CardContent className="space-y-8">
         {/* Default tab */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Default tab
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -180,7 +180,7 @@ function SettingsCard({
 
         {/* By Grade default grade */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             By Grade default grade
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -203,7 +203,7 @@ function SettingsCard({
 
         {/* Partnerships default grade */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Partnerships default grade
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -227,7 +227,7 @@ function SettingsCard({
 
         {/* Centuries default sort */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Centuries default sort
           </h3>
           <div className="flex flex-wrap items-end gap-3">
@@ -265,7 +265,7 @@ function SettingsCard({
 
         {/* 5-Wicket Hauls default sort */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             5-Wicket Hauls default sort
           </h3>
           <div className="flex flex-wrap items-end gap-3">

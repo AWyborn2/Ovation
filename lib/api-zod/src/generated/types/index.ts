@@ -423,6 +423,8 @@ export * from './teamOfDecadeMemberInput';
 export * from './teamOfDecadeMemberUpdate';
 export * from './tenantBrand';
 export * from './tenantBrandThemeOverrides';
+export * from './tenantExploreImages';
+export * from './tenantHeroImages';
 export * from './tenantPlan';
 export * from './tenantPlanPlan';
 export * from './tourContent';

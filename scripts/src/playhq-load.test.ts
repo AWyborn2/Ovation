@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { diffFixture, oversToBalls, rowsFromDump, upsertSql, type Dump } from "./playhq-load";
+import {
+  JUNIOR_RE,
+  diffFixture,
+  oversToBalls,
+  rowsFromDump,
+  upsertSql,
+  type Dump,
+} from "./playhq-load";
 
 // Shapes below mirror what play.cricket.com.au returned on 22 Sep 2026 (see
 // .claude/skills/playcricket-stats-scraper/references/endpoints.md).
@@ -524,5 +531,27 @@ describe("upsertSql", () => {
   it("uses do nothing when only key columns exist, and no conflict clause for append-only tables", () => {
     expect(upsertSql("t", ["a", "b"], ["a", "b"], 1)).toContain("do nothing");
     expect(upsertSql("t", ["a"], [], 1)).toBe("insert into t (a) values ($1) ");
+  });
+});
+
+describe("JUNIOR_RE", () => {
+  it("flags PCA and WA junior/pathway labels and leaves senior ones alone", () => {
+    for (const j of [
+      "Year 6 Boys",
+      "Year 10-11 Boys South West",
+      "Ted Hussey Shield (Male Under 17s)",
+      "John Inverarity Shield (Male Under 13s)",
+      "Female Youth League Under 14s",
+      "U15 Boys",
+    ])
+      expect(JUNIOR_RE.test(j), j).toBe(true);
+    for (const s of [
+      "A Grade Wyllie Cup",
+      "Men's First Grade",
+      "Men's Colts League",
+      "Female B Grade",
+      "Men's Premier T20's",
+    ])
+      expect(JUNIOR_RE.test(s), s).toBe(false);
   });
 });

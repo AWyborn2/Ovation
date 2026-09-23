@@ -81,7 +81,7 @@ export default function AdminCaps() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Manage the A Grade cap lists. Changes apply immediately to the public honour boards
             page.
           </p>
@@ -103,7 +103,7 @@ export default function AdminCaps() {
               setCategory(e.target.value as CapCategory);
               setEditingId(null);
             }}
-            className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+            className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground"
           >
             <option value="male">A Grade Male</option>
             <option value="female">A Grade Female</option>
@@ -189,7 +189,7 @@ export default function AdminCaps() {
                       />
                     ) : (
                       <tr key={cap.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4 font-mono font-bold">{cap.capNumber}</td>
+                        <td className="py-2 pr-4 tabular-nums font-bold">{cap.capNumber}</td>
                         <td className="py-2 pr-4">
                           {cap.name}
                           {cap.deceased && (
@@ -205,7 +205,7 @@ export default function AdminCaps() {
                             <span className="text-muted-foreground italic">— unmatched —</span>
                           )}
                         </td>
-                        <td className="py-2 pr-4 font-mono">
+                        <td className="py-2 pr-4 tabular-nums">
                           {cap.inStats ? cap.gamesAGrade : "—"}
                         </td>
                         <td className="py-2 pr-4">

@@ -129,8 +129,8 @@ function formatVal(v: number | null, fmt?: (v: number) => string) {
 
 function StatRow({ row }: { row: Row }) {
   const winner = compareRow(row);
-  const aClass = winner === "a" ? "bg-primary/15 text-primary font-bold" : "";
-  const bClass = winner === "b" ? "bg-primary/15 text-primary font-bold" : "";
+  const aClass = winner === "a" ? "bg-primary/15 text-primary-text font-bold" : "";
+  const bClass = winner === "b" ? "bg-primary/15 text-primary-text font-bold" : "";
   return (
     <tr className="border-b last:border-0">
       <td className={cn("p-3 text-right font-mono w-1/3", aClass)}>
@@ -293,7 +293,7 @@ export default function Compare() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Head-to-Head</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">Head-to-Head</h1>
         <p className="text-muted-foreground mt-1">
           Pick any two players and compare their careers side-by-side.
         </p>
@@ -317,13 +317,13 @@ export default function Compare() {
         <>
           <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
             <div className="grid grid-cols-3 border-b bg-muted/50">
-              <div className="p-4 text-right font-serif text-lg font-bold text-primary">
+              <div className="p-4 text-right font-serif text-lg font-bold text-primary-text">
                 {playerA ? `${playerA.givenName} ${playerA.surname}` : "..."}
               </div>
               <div className="p-4 text-center font-serif uppercase tracking-wider text-sm text-muted-foreground self-center">
                 Career Totals
               </div>
-              <div className="p-4 text-left font-serif text-lg font-bold text-primary">
+              <div className="p-4 text-left font-serif text-lg font-bold text-primary-text">
                 {playerB ? `${playerB.givenName} ${playerB.surname}` : "..."}
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function Compare() {
                 }));
                 return (
                   <div key={grade} className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-4 py-3 border-b bg-muted/50 font-semibold text-primary flex items-center gap-3">
+                    <div className="px-4 py-3 border-b bg-muted/50 font-semibold text-primary-text flex items-center gap-3">
                       <GradeBadge grade={grade} size="md" />
                       <span>{grade}</span>
                     </div>

@@ -141,7 +141,7 @@ export function EffectPresets({
             type="button"
             disabled={!name.trim() || createPreset.isPending}
             onClick={() => void saveCurrent()}
-            className="rounded border px-2 py-1 text-[10px] text-primary disabled:opacity-40"
+            className="rounded border px-2 py-1 text-[10px] text-primary-text disabled:opacity-40"
           >
             {createPreset.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
           </button>

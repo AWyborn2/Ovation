@@ -69,11 +69,11 @@
 ## Wave-2 findings (folded)
 
 - **react-query wall (structural)**: components calling generated API hooks (ShareButton →
-  useGetSocialSettings, SearchResultCard → useGetPlayer, PlayerStatsModal, DigitalScorecard's
+  useGetSocialSettings, SearchResultCard → useGetPlayer, PlayerStatsModal, BroadcastScorecard's
   always-mounted modal) resolve @tanstack/react-query INSIDE the DS bundle — a preview-side
   QueryClientProvider is a different module instance and can never satisfy them ("No QueryClient
   set"). These stay floor cards by construction: PromotionCard, DebutCard, SearchResultCard,
-  PlayerStatsModal; DigitalScorecard previews only its abandoned-match state. Possible future fix:
+  PlayerStatsModal; BroadcastScorecard previews only its abandoned-match state. Possible future fix:
   app-side `ds-query-provider` component exported from src/components, or harness vendoring of
   react-query like vendorReact.
 - Capture server doesn't serve the app's public/ — DEFAULT_BRAND's /ovation-logo.svg 404s in
