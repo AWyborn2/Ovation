@@ -33,7 +33,7 @@ const BearerName = ({ bearer }: { bearer: JuniorOfficeBearer }) =>
   bearer.participantId != null ? (
     <Link
       href={`/juniors/players/${bearer.participantId}`}
-      className="font-semibold text-[#bc8c6b] hover:underline"
+      className="font-semibold text-primary-text hover:underline"
     >
       {bearer.name}
     </Link>
@@ -69,11 +69,11 @@ export default function JuniorsOfficeBearers() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#bc8c6b] mb-2">
+        <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
           Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text flex items-center gap-2">
-          <Users className="h-7 w-7 text-[#bc8c6b]" /> Junior Office Bearers
+        <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none flex items-center gap-2">
+          <Users className="h-7 w-7 text-primary-text" /> Junior Office Bearers
         </h1>
         <p className="text-muted-foreground mt-1">
           Season-by-season record of the people who run {brand.name} juniors.
@@ -92,11 +92,11 @@ export default function JuniorsOfficeBearers() {
       ) : (
         <div className="grid gap-4">
           {seasons.map((g) => (
-            <div
-              key={g.season}
-              className="bg-card border border-border rounded-md overflow-hidden shadow-md"
-            >
-              <div className="bg-[#42342b] text-white px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
+            <div key={g.season} className="rounded-lg border bg-card overflow-hidden">
+              <div
+                className="flex items-center justify-between gap-3 px-4 py-3 font-serif text-lg font-bold uppercase leading-none text-white md:px-6"
+                style={{ background: "var(--juniors-accent)" }}
+              >
                 <span>{formatSeason(g.season)}</span>
                 <span className="text-xs whitespace-nowrap">
                   {g.bearers.length} {g.bearers.length === 1 ? "office bearer" : "office bearers"}

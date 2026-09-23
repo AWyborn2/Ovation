@@ -36,7 +36,7 @@ export type BowlingAddValues = {
 };
 
 const right = "px-2 py-1.5 text-right";
-const mono = "px-2 py-1.5 text-right font-mono";
+const mono = "px-2 py-1.5 text-right tabular-nums";
 
 const BOWLING_COLUMNS: InningsColumn<JuniorBowlingLine>[] = [
   {

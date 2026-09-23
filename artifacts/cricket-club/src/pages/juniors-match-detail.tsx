@@ -47,7 +47,7 @@ export default function JuniorsMatchDetail() {
         <EmptyState title="Match not found" message="We couldn't find this junior match." />
       ) : (
         <>
-          <div className="bg-card border border-border rounded-md p-5 shadow-sm space-y-3">
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)] space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               {match.ageGroup && (
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
@@ -60,7 +60,7 @@ export default function JuniorsMatchDetail() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary-text">
+            <h1 className="text-[clamp(30px,4.6vw,56px)] leading-none">
               {brand.name} <span className="text-muted-foreground font-normal">vs</span>{" "}
               {match.opponentName ?? "Unknown"}
             </h1>
@@ -71,7 +71,7 @@ export default function JuniorsMatchDetail() {
               {match.association ? ` · ${match.association}` : ""}
             </div>
             {(match.hhScore || match.opponentScore) && (
-              <div className="text-lg font-mono text-foreground">
+              <div className="text-lg tabular-nums text-foreground">
                 {match.hhScore ?? "—"} <span className="text-muted-foreground text-sm">vs</span>{" "}
                 {match.opponentScore ?? "—"}
               </div>

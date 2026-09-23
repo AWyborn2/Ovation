@@ -248,12 +248,10 @@ export default function JuniorsPlayers() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
+        <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
           Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text">
-          Junior Players & Leaders
-        </h1>
+        <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">Junior Players & Leaders</h1>
         <p className="text-muted-foreground mt-1">
           Junior runs, wickets and games — names shown as recorded.
         </p>
@@ -281,7 +279,7 @@ export default function JuniorsPlayers() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Search
               </label>
               <input
@@ -293,13 +291,13 @@ export default function JuniorsPlayers() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Age Group
               </label>
               <select
                 value={ageGroup}
                 onChange={(e) => setAgeGroup(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[9rem]"
+                className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[9rem]"
                 data-testid="select-age-group"
               >
                 <option value="">All age groups</option>
@@ -311,13 +309,13 @@ export default function JuniorsPlayers() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Season
               </label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium min-w-[8rem]"
+                className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[8rem]"
                 data-testid="select-season"
               >
                 <option value="">All seasons</option>
@@ -340,7 +338,7 @@ export default function JuniorsPlayers() {
               message="No junior players match these filters."
             />
           ) : (
-            <div className="overflow-x-auto bg-card border border-border rounded-md">
+            <div className="overflow-x-auto rounded-lg border bg-card">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -369,9 +367,9 @@ export default function JuniorsPlayers() {
                           ? `${p.firstSeason} – ${p.lastSeason}`
                           : (p.firstSeason ?? "—")}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono">{p.matches ?? 0}</td>
-                      <td className="px-3 py-2 text-right font-mono">{p.runs ?? 0}</td>
-                      <td className="px-3 py-2 text-right font-mono">{p.wickets ?? 0}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{p.matches ?? 0}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{p.runs ?? 0}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{p.wickets ?? 0}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -383,25 +381,25 @@ export default function JuniorsPlayers() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Search
               </label>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Player name"
-                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm"
+                className="px-3 py-2 rounded border bg-card text-foreground text-sm"
                 data-testid="input-lb-search"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Age Group
               </label>
               <select
                 value={ageGroup}
                 onChange={(e) => setAgeGroup(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[9rem]"
+                className="px-3 py-2 rounded border bg-card text-foreground text-sm font-medium min-w-[9rem]"
                 data-testid="select-lb-age-group"
               >
                 <option value="">All age groups</option>
@@ -413,13 +411,13 @@ export default function JuniorsPlayers() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#bc8c6b]">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Season
               </label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                className="px-3 py-2 rounded border-2 border-[#bc8c6b] bg-card text-foreground text-sm font-medium min-w-[8rem]"
+                className="px-3 py-2 rounded border bg-card text-foreground text-sm font-medium min-w-[8rem]"
                 data-testid="select-lb-season"
               >
                 <option value="">All seasons</option>
@@ -442,20 +440,20 @@ export default function JuniorsPlayers() {
               message="No junior leaderboard data for this filter."
             />
           ) : (
-            <div className="overflow-x-auto bg-card border border-border rounded-md">
+            <div className="overflow-x-auto rounded-lg border bg-card">
               <table className="w-full text-sm whitespace-nowrap">
                 <thead>
                   <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="px-2 py-1 border-b border-border" />
                     <th className="px-2 py-1 border-b border-border" />
                     <th
-                      className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 border-x border-x-border text-[#bc8c6b]"
+                      className="px-2 py-1 text-center border-b border-border border-x border-x-border text-primary-text"
                       colSpan={LB_COLS.filter((c) => c.group === "bat").length}
                     >
                       Batting
                     </th>
                     <th
-                      className="px-2 py-1 text-center border-b border-[#bc8c6b]/40 text-[#bc8c6b]"
+                      className="px-2 py-1 text-center border-b border-border text-primary-text"
                       colSpan={LB_COLS.filter((c) => c.group === "bowl").length}
                     >
                       Bowling
@@ -472,9 +470,9 @@ export default function JuniorsPlayers() {
                           key={c.key}
                           title={c.title}
                           onClick={() => toggleSort(c.key)}
-                          className={`px-2 py-2 text-right cursor-pointer select-none border-b border-border hover:text-[#bc8c6b] ${
+                          className={`px-2 py-2 text-right cursor-pointer select-none border-b border-border hover:text-primary-text ${
                             firstBowl ? "border-l border-l-border" : ""
-                          } ${active ? "text-[#bc8c6b]" : ""}`}
+                          } ${active ? "text-primary-text" : ""}`}
                           data-testid={`sort-${c.key}`}
                         >
                           {c.label}
@@ -488,12 +486,12 @@ export default function JuniorsPlayers() {
                   {sortedRich.map((r, i) => (
                     <tr
                       key={r.participantId}
-                      className="border-b border-border/60 last:border-0 hover:bg-[#bc8c6b]/5"
+                      className="border-b border-border/60 last:border-0 hover:bg-muted"
                     >
-                      <td className="px-2 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                      <td className="px-2 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
                       <td className="px-3 py-2">
                         <Link href={`/juniors/players/${r.participantId}`}>
-                          <span className="font-medium text-primary-text hover:text-[#bc8c6b] cursor-pointer">
+                          <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
                             {r.displayName}
                           </span>
                         </Link>
@@ -503,8 +501,8 @@ export default function JuniorsPlayers() {
                         return (
                           <td
                             key={c.key}
-                            className={`px-2 py-2 text-right font-mono ${firstBowl ? "border-l border-l-border" : ""} ${
-                              sortKey === c.key ? "text-[#bc8c6b]" : ""
+                            className={`px-2 py-2 text-right tabular-nums ${firstBowl ? "border-l border-l-border" : ""} ${
+                              sortKey === c.key ? "text-primary-text" : ""
                             }`}
                           >
                             {c.render(r)}
@@ -529,7 +527,7 @@ export default function JuniorsPlayers() {
             message="No junior games data is available yet."
           />
         ) : (
-          <div className="overflow-x-auto bg-card border border-border rounded-md">
+          <div className="overflow-x-auto rounded-lg border bg-card">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -546,7 +544,7 @@ export default function JuniorsPlayers() {
                     key={p.participantId}
                     className="border-b border-border/60 last:border-0 hover:bg-primary/5"
                   >
-                    <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
                         <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
@@ -554,9 +552,11 @@ export default function JuniorsPlayers() {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold">{p.matches ?? 0}</td>
-                    <td className="px-3 py-2 text-right font-mono">{p.runs ?? 0}</td>
-                    <td className="px-3 py-2 text-right font-mono">{p.wickets ?? 0}</td>
+                    <td className="px-3 py-2 text-right tabular-nums font-bold">
+                      {p.matches ?? 0}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.runs ?? 0}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.wickets ?? 0}</td>
                   </tr>
                 ))}
               </tbody>
@@ -573,7 +573,7 @@ export default function JuniorsPlayers() {
           message="No junior leaderboard data is available yet."
         />
       ) : (
-        <div className="overflow-x-auto bg-card border border-border rounded-md">
+        <div className="overflow-x-auto rounded-lg border bg-card">
           {tab === "runs" && (
             <table className="w-full text-sm">
               <thead>
@@ -592,7 +592,7 @@ export default function JuniorsPlayers() {
                     key={p.participantId}
                     className="border-b border-border/60 last:border-0 hover:bg-primary/5"
                   >
-                    <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
                         <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
@@ -600,10 +600,10 @@ export default function JuniorsPlayers() {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold">{p.runs}</td>
-                    <td className="px-3 py-2 text-right font-mono">{p.innings}</td>
-                    <td className="px-3 py-2 text-right font-mono">{p.highScore ?? "—"}</td>
-                    <td className="px-3 py-2 text-right font-mono">{fmtNum(p.average, 2)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums font-bold">{p.runs}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.innings}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.highScore ?? "—"}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmtNum(p.average, 2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -628,7 +628,7 @@ export default function JuniorsPlayers() {
                     key={p.participantId}
                     className="border-b border-border/60 last:border-0 hover:bg-primary/5"
                   >
-                    <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
                         <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
@@ -636,12 +636,12 @@ export default function JuniorsPlayers() {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold">{p.wickets}</td>
-                    <td className="px-3 py-2 text-right font-mono">{p.matches}</td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    <td className="px-3 py-2 text-right tabular-nums font-bold">{p.wickets}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.matches}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
                       {p.bestWickets != null ? p.bestWickets : "—"}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmtNum(p.economy, 2)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmtNum(p.economy, 2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -665,7 +665,7 @@ export default function JuniorsPlayers() {
                     key={`${p.participantId}-${p.matchId}-${i}`}
                     className="border-b border-border/60 last:border-0 hover:bg-primary/5"
                   >
-                    <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
                         <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
@@ -673,7 +673,7 @@ export default function JuniorsPlayers() {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold">
+                    <td className="px-3 py-2 text-right tabular-nums font-bold">
                       {p.runs}
                       {p.balls != null ? (
                         <span className="text-xs text-muted-foreground"> ({p.balls})</span>
@@ -712,7 +712,7 @@ export default function JuniorsPlayers() {
                     key={`${p.participantId}-${p.matchId}-${i}`}
                     className="border-b border-border/60 last:border-0 hover:bg-primary/5"
                   >
-                    <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
                     <td className="px-3 py-2">
                       <Link href={`/juniors/players/${p.participantId}`}>
                         <span className="font-medium text-primary-text hover:text-primary-text cursor-pointer">
@@ -720,7 +720,7 @@ export default function JuniorsPlayers() {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold">
+                    <td className="px-3 py-2 text-right tabular-nums font-bold">
                       {p.wickets}/{p.runs}
                     </td>
                     <td className="px-3 py-2">
