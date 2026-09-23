@@ -295,7 +295,7 @@ export default function JuniorsDashboard() {
         variant="juniors"
         image={heroImage}
         imagePosition="45% 40%"
-        className="min-h-[clamp(360px,34vw,480px)] text-[#F7EBDD]"
+        className="min-h-[clamp(360px,34vw,480px)] text-white"
         contentClassName="gap-4"
       >
         <LivePill className="self-start">Junior cricket</LivePill>
