@@ -901,6 +901,45 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* P11 · Ovation Broadcast — the redesigned app on a screen: near-black
+   panels, hairline borders, Barlow Condensed display titles and the tenant's
+   primary accent (read from --club-secondary, as P10 explains). Distinct from
+   P5 · Broadcast (a TV-hero look on pure black). */
+.skin-p11 {
+  --hb-bg: #0b1014;
+  --hb-board-bg: #11181e;
+  --hb-board-border: rgba(255, 255, 255, 0.08);
+  --hb-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
+  --hb-radius: 14px;
+  --hb-ink: #eef2f5;
+  --hb-muted: #8a96a3;
+  --hb-faint: rgba(255, 255, 255, 0.05);
+  --hb-row-stripe: rgba(255, 255, 255, 0.03);
+  --hb-accent: var(--club-secondary, #ffb238);
+  --hb-accent-ink: #0b1014;
+  --hb-head-ink: var(--club-secondary, #ffb238);
+  --hb-season-ink: var(--club-secondary, #ffb238);
+  --hb-head-border: rgba(255, 255, 255, 0.1);
+  --hb-crest-bg: var(--club-secondary, #ffb238);
+  --hb-crest-ink: #0b1014;
+  --hb-chip-bg: var(--club-secondary, #ffb238);
+  --hb-chip-ink: #0b1014;
+  --hb-title-font: "Barlow Condensed", "Helvetica Neue", Arial, sans-serif;
+}
+.skin-p11 .hb-title {
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-weight: 700;
+}
+.skin-p11 .hb-flag {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+}
+.skin-p11 .hb-squad-name {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 /* ---- Per-board skin wrapper -------------------------------------------------
    A board can carry its own skin (overriding the club-wide one). The wrapper
    applies the skin's --hb-* vars to just that board's subtree. */

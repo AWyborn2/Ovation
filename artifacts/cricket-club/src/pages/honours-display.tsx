@@ -9,6 +9,8 @@ import {
   applyBoardConfig,
 } from "@/components/honours-display/use-approaching-board";
 import { QueryError } from "@/components/data-states";
+import { Button } from "@/components/ui/button";
+import { PageHeader, PageStack } from "@/components/broadcast";
 import "@/styles/honour-boards.css";
 
 export default function HonoursDisplay() {
@@ -27,7 +29,7 @@ export default function HonoursDisplay() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="animate-pulse text-slate-400">Loading honour boards…</div>
+        <div className="animate-pulse text-muted-foreground">Loading honour boards…</div>
       </div>
     );
   }
@@ -43,21 +45,17 @@ export default function HonoursDisplay() {
   const skin = settings.defaultTemplate;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Digital Honour Boards</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {brand.name} — premierships, records and honours, styled for the big screen.
-          </p>
-        </div>
-        <Link
-          href="/honours-display/kiosk"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-        >
-          ▶ Launch kiosk
-        </Link>
-      </div>
+    <PageStack>
+      <PageHeader
+        eyebrow="Clubroom display"
+        title="Digital Honour Boards"
+        subtitle={`${brand.name} — premierships, records and honours, styled for the big screen.`}
+        actions={
+          <Button asChild>
+            <Link href="/honours-display/kiosk">▶ Launch kiosk</Link>
+          </Button>
+        }
+      />
 
       <div className={`hb ${skinClass(skin)} space-y-10`} style={rootStyle(brand, settings)}>
         {boards.map((board) => (
@@ -70,6 +68,6 @@ export default function HonoursDisplay() {
           />
         ))}
       </div>
-    </div>
+    </PageStack>
   );
 }
