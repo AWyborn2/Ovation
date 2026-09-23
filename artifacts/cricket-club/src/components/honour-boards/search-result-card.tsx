@@ -6,7 +6,7 @@ import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";
 const Chip = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-background/60 border border-border rounded px-3 py-2">
     <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-    <div className="font-mono font-semibold text-primary-text">{value}</div>
+    <div className="tabular-nums font-semibold text-primary-text">{value}</div>
   </div>
 );
 
@@ -19,7 +19,7 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
   const a = agg[0] ?? null;
   const grades = player.gradesPlayed || "—";
   return (
-    <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md">
+    <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
       <Link href={`/players/${player.id}`} className="block group">
         <h3 className="font-serif text-xl font-bold text-primary-text group-hover:underline m-0 uppercase">
           {player.givenName} {player.surname}
@@ -86,11 +86,11 @@ export const SearchResultCard = ({ playerId }: { playerId: number }) => {
                         <span className="font-semibold text-primary-text">{s.grade}</span>
                       </div>
                     </td>
-                    <td className="p-2 text-right font-mono">{s.games ?? "-"}</td>
-                    <td className="p-2 text-right font-mono">{s.runs ?? "-"}</td>
-                    <td className="p-2 text-right font-mono">{s.highScore ?? "-"}</td>
-                    <td className="p-2 text-right font-mono">{s.wickets ?? "-"}</td>
-                    <td className="p-2 text-right font-mono">{s.bestBowling ?? "-"}</td>
+                    <td className="p-2 text-right tabular-nums">{s.games ?? "-"}</td>
+                    <td className="p-2 text-right tabular-nums">{s.runs ?? "-"}</td>
+                    <td className="p-2 text-right tabular-nums">{s.highScore ?? "-"}</td>
+                    <td className="p-2 text-right tabular-nums">{s.wickets ?? "-"}</td>
+                    <td className="p-2 text-right tabular-nums">{s.bestBowling ?? "-"}</td>
                   </tr>
                 ))}
             </tbody>

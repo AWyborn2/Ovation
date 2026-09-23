@@ -32,7 +32,7 @@ export function CapRegisterTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+      <div className="rounded-lg border bg-card p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
             A Grade Caps
@@ -62,7 +62,7 @@ export function CapRegisterTab() {
         </p>
       </div>
 
-      <div className="bg-card border-2 border-primary/40 rounded-md p-5 md:p-6 shadow-md">
+      <div className="bg-card border-2 border-primary/40 rounded-md p-5 md:p-6">
         <h3 className="text-lg font-serif font-bold text-primary-text uppercase tracking-wider m-0">
           About this register
         </h3>
@@ -77,7 +77,7 @@ export function CapRegisterTab() {
         </p>
       </div>
 
-      <div className="bg-card border border-border rounded-md p-4 shadow-md flex flex-wrap gap-3 items-center text-xs">
+      <div className="rounded-lg border bg-card p-4 flex flex-wrap gap-3 items-center text-xs">
         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold">
           <span>✝</span> deceased
         </span>
@@ -91,17 +91,17 @@ export function CapRegisterTab() {
       />
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
           Loading cap register…
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground italic">
           {search.trim()
             ? `No caps matched "${search}".`
             : `No ${categoryLabel} caps have been recorded yet.`}
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
+        <div className="rounded-lg border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm sticky-id-col">
               <thead>
@@ -123,7 +123,7 @@ export function CapRegisterTab() {
                     key={c.capNumber}
                     className={`border-t border-border/50 ${i % 2 ? "bg-black/10" : ""} hover:bg-primary/10 transition-colors`}
                   >
-                    <td className="p-3 text-center font-mono text-primary-text font-bold">
+                    <td className="p-3 text-center tabular-nums text-primary-text font-bold">
                       {c.capNumber}
                     </td>
                     <td className="p-3">
@@ -147,7 +147,7 @@ export function CapRegisterTab() {
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-right font-mono">
+                    <td className="p-3 text-right tabular-nums">
                       {c.inStats && c.gamesAGrade > 0 ? (
                         c.gamesAGrade
                       ) : (

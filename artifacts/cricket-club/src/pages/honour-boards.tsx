@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import {
   useGetDashboard,
@@ -9,17 +10,8 @@ import {
   getListPlayersQueryKey,
   type MilestoneItem,
 } from "@workspace/api-client-react";
-import { ChevronDown, ClipboardList, Crown, Users } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { GradeBadge } from "@/components/grade-badge";
-import { LoadingState, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
-import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 import {
   BOARDS,
   type BoardKey,
@@ -27,43 +19,120 @@ import {
   computeBoard,
   statToAggregated,
 } from "@/lib/honour-boards";
-import { useBrandLogo } from "@/lib/use-brand";
-import { useBrand } from "@/lib/brand-context";
+import { useHeroImage } from "@/lib/use-hero-image";
+import { useSearchParamState } from "@/lib/use-search-param";
 import { CapRegisterTab } from "@/components/cap-register-tab";
 import { LifeMembersTab } from "@/components/life-members-tab";
 import { AwardsTab } from "@/components/awards-tab";
 import { TeamOfDecadeTab } from "@/components/team-of-decade-tab";
 import { CommitteeTab } from "@/components/committee-tab";
 import { RecordsTab } from "@/components/records-tab";
-import type { ActiveTab, Scope } from "@/components/honour-boards/types";
-import {
-  STATISTICS_ITEMS,
-  HONOUR_BOARD_ITEMS,
-  tabClass,
-  dropdownItemClass,
-  MILESTONE_FILTERS,
-  MILESTONES_PREVIEW,
-} from "@/components/honour-boards/constants";
-import { SummaryStat, BoardView, QuickLink } from "@/components/honour-boards/board-cards";
+import type { Scope } from "@/components/honour-boards/types";
+import { MILESTONE_FILTERS, MILESTONES_PREVIEW } from "@/components/honour-boards/constants";
+import { BoardView } from "@/components/honour-boards/board-cards";
 import { DatedMilestoneCard } from "@/components/honour-boards/milestone-cards";
 import { SearchResultCard } from "@/components/honour-boards/search-result-card";
+import { PremiershipGrid } from "@/components/premierships/premiership-cards";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Container,
+  Eyebrow,
+  FilterChips,
+  FullBleedPage,
+  PageHero,
+  RowsSkeleton,
+  SegmentedControl,
+  StatTile,
+  StatTileGrid,
+  UnderlineTabs,
+} from "@/components/broadcast";
 
 export type { PremiershipCount } from "@/components/honour-boards/types";
 import type { PremiershipCount } from "@/components/honour-boards/types";
 
-export default function HonourBoards() {
-  const logoUrl = useBrandLogo();
-  const brand = useBrand();
-  const [activeTab, setActiveTab] = useState<ActiveTab>("milestones");
-  const [scope, setScope] = useState<Scope>("career");
-  const [selectedGrade, setSelectedGrade] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [milestoneKind, setMilestoneKind] = useState<MilestoneItem["kind"] | "all">("all");
-  const [milestonesExpanded, setMilestonesExpanded] = useState(false);
+const TABS = [
+  { value: "premierships", label: "Premierships" },
+  { value: "milestones", label: "Milestones" },
+  { value: "leaderboards", label: "Leaderboards" },
+  { value: "life-members", label: "Life members" },
+  { value: "awards", label: "Awards" },
+  { value: "records", label: "Records" },
+  { value: "caps", label: "Cap register" },
+  { value: "team-of-decade", label: "Team of the decade" },
+  { value: "committee", label: "Office bearers" },
+  { value: "search", label: "Search" },
+] as const;
+type Tab = (typeof TABS)[number]["value"];
+const TAB_VALUES = new Set<string>(TABS.map((t) => t.value));
 
+function MilestonesPanel() {
+  const { data: milestonesBoard } = useGetMilestonesBoard();
+  const [kind, setKind] = useState<MilestoneItem["kind"] | "all">("all");
+  const [expanded, setExpanded] = useState(false);
+  const filtered = useMemo(() => {
+    const items = milestonesBoard?.items ?? [];
+    return kind === "all" ? items : items.filter((i) => i.kind === kind);
+  }, [milestonesBoard, kind]);
+  const visible = expanded ? filtered : filtered.slice(0, MILESTONES_PREVIEW);
+
+  return (
+    <div className="space-y-4">
+      <FilterChips
+        label="Milestone type"
+        value={kind}
+        onChange={(v) => {
+          setKind(v);
+          setExpanded(false);
+        }}
+        options={MILESTONE_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+      />
+      {filtered.length === 0 ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          {!milestonesBoard || (milestonesBoard.items.length === 0 && !milestonesBoard.windowStart)
+            ? "No dated milestones yet — they appear as match scorecards are imported."
+            : "No milestones of this type recorded yet."}
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr))]">
+            {visible.map((item) => (
+              <DatedMilestoneCard key={item.id} item={item} />
+            ))}
+          </div>
+          {filtered.length > MILESTONES_PREVIEW && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="h-10 rounded-full border px-5 text-sm font-semibold transition-colors hover:border-primary"
+              >
+                {expanded ? "Show less" : `Show ${filtered.length - MILESTONES_PREVIEW} more`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function LeaderboardsPanel() {
+  const [boardKey, setBoardKey] = useSearchParamState("board", "games");
+  const [scope, setScope] = useState<Scope>("career");
+  const [grade, setGrade] = useState("");
   const { data: dashboard } = useGetDashboard();
   const { data: gradesList } = useListGrades();
   const { data: premierships } = useListPremierships();
+  const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
+  useEffect(() => {
+    if (!grade && grades.length > 0) setGrade(grades[0]);
+  }, [grades, grade]);
 
   const premMap = useMemo(() => {
     const m = new Map<number, PremiershipCount>();
@@ -79,385 +148,185 @@ export default function HonourBoards() {
     return m;
   }, [premierships]);
 
-  const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
-
-  // Set default selected grade when grades load
-  useEffect(() => {
-    if (!selectedGrade && grades.length > 0) {
-      setSelectedGrade(grades[0]);
-    }
-  }, [grades, selectedGrade]);
-
-  // Fetch all grade leaderboards (career scope) or just selected (by-grade)
-  const gradesToFetch = scope === "career" ? grades : selectedGrade ? [selectedGrade] : [];
-
-  const leaderboardQueries = useQueries({
-    queries: gradesToFetch.map((g) => ({
-      ...getGetGradeLeaderboardQueryOptions(g),
-    })),
+  const gradesToFetch = scope === "career" ? grades : grade ? [grade] : [];
+  const queries = useQueries({
+    queries: gradesToFetch.map((g) => getGetGradeLeaderboardQueryOptions(g)),
   });
-
-  const allStats = useMemo(
-    () => leaderboardQueries.flatMap((q) => q.data ?? []),
-    [leaderboardQueries],
+  const allStats = useMemo(() => queries.flatMap((q) => q.data ?? []), [queries]);
+  const aggregated = useMemo(
+    () => (scope === "career" ? aggregateCareer(allStats) : allStats.map(statToAggregated)),
+    [allStats, scope],
   );
-
-  const isLoadingBoards = leaderboardQueries.some((q) => q.isLoading);
-  const isErrorBoards = leaderboardQueries.some((q) => q.isError);
-
-  const aggregatedPlayers = useMemo(() => {
-    if (scope === "career") return aggregateCareer(allStats);
-    return allStats.map(statToAggregated);
-  }, [allStats, scope]);
-
-  const totalDismissals = useMemo(() => {
-    if (!dashboard) return 0;
-    return aggregatedPlayers.reduce((sum, p) => sum + p.catches + p.stumpings + p.runOuts, 0);
-  }, [aggregatedPlayers, dashboard]);
-
-  // Dated, prioritized milestones (centuries, five-fors, hat-tricks, A Grade
-  // debuts, career-tier crossings) derived server-side from real match data.
-  const { data: milestonesBoard } = useGetMilestonesBoard();
-
-  const filteredMilestones = useMemo(() => {
-    const items = milestonesBoard?.items ?? [];
-    return milestoneKind === "all" ? items : items.filter((i) => i.kind === milestoneKind);
-  }, [milestonesBoard, milestoneKind]);
-  const visibleMilestones = milestonesExpanded
-    ? filteredMilestones
-    : filteredMilestones.slice(0, MILESTONES_PREVIEW);
-
-  // Search
-  const searchParams = { search: searchTerm, page: 1, limit: 12 };
-  const {
-    data: searchResults,
-    isLoading: isSearchLoading,
-    isError: isSearchError,
-    refetch: refetchSearch,
-  } = useListPlayers(searchParams, {
-    query: {
-      enabled: activeTab === "search" && searchTerm.trim().length > 0,
-      queryKey: getListPlayersQueryKey(searchParams),
-    },
-  });
+  const board = BOARDS.find((b) => b.key === boardKey) ?? BOARDS[0];
 
   return (
-    <div className="space-y-6">
-      {/* Hero header */}
-      <div className="bg-card border border-border rounded-md p-6 md:p-8 flex items-center gap-4 md:gap-6 shadow-lg">
-        <img
-          loading="lazy"
-          decoding="async"
-          src={logoUrl}
-          alt={brand.name}
-          className="h-16 md:h-20 w-auto drop-shadow-lg"
-        />
-        <div>
-          <h1 className="text-2xl md:text-4xl font-serif font-bold text-primary-text m-0 leading-tight">
-            {brand.name} — Honour Boards
-          </h1>
-          <div className="text-xs md:text-sm uppercase tracking-widest text-muted-foreground mt-2">
-            Established 1991 • Career milestones across all grades
-          </div>
-        </div>
-      </div>
-
-      {/* Summary stats */}
+    <div className="space-y-5">
       {dashboard && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <SummaryStat label="Total Players" value={dashboard.totalPlayers} />
-          <SummaryStat label="Total Games" value={dashboard.totalGames} />
-          <SummaryStat label="Runs Scored" value={dashboard.totalRuns} />
-          <SummaryStat label="Wickets" value={dashboard.totalWickets} />
-          <SummaryStat label="Total Dismissals" value={totalDismissals} />
+        <StatTileGrid>
+          <StatTile label="Players" value={dashboard.totalPlayers} />
+          <StatTile label="Games" value={dashboard.totalGames} />
+          <StatTile label="Runs" value={dashboard.totalRuns} />
+          <StatTile label="Wickets" value={dashboard.totalWickets} />
+        </StatTileGrid>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={board.key} onValueChange={(v) => setBoardKey(v)}>
+          <SelectTrigger
+            className="h-10 w-auto min-w-[200px] rounded-full"
+            data-testid="board-select"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {BOARDS.map((b) => (
+              <SelectItem key={b.key} value={b.key}>
+                {b.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <SegmentedControl<Scope>
+          label="Scope"
+          value={scope}
+          onChange={setScope}
+          options={[
+            { value: "career", label: "Career" },
+            { value: "by-grade", label: "By grade" },
+          ]}
+        />
+        {scope === "by-grade" && (
+          <Select value={grade} onValueChange={setGrade}>
+            <SelectTrigger className="h-10 w-auto min-w-[160px] rounded-full">
+              <SelectValue placeholder="Grade" />
+            </SelectTrigger>
+            <SelectContent>
+              {grades.map((g) => (
+                <SelectItem key={g} value={g}>
+                  {g}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+      {queries.some((q) => q.isLoading) ? (
+        <RowsSkeleton rows={6} />
+      ) : queries.some((q) => q.isError) ? (
+        <QueryError onRetry={() => queries.forEach((q) => q.refetch())} />
+      ) : (
+        <BoardView
+          tiers={computeBoard(aggregated, board.key as BoardKey)}
+          board={board}
+          premMap={premMap}
+        />
+      )}
+    </div>
+  );
+}
+
+function SearchPanel() {
+  const [term, setTerm] = useState("");
+  const params = { search: term, page: 1, limit: 12 };
+  const { data, isLoading, isError, refetch } = useListPlayers(params, {
+    query: { enabled: term.trim().length > 0, queryKey: getListPlayersQueryKey(params) },
+  });
+  return (
+    <div className="space-y-4">
+      <label className="relative block max-w-[480px]">
+        <span className="sr-only">Search players</span>
+        <Search
+          className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Search for a player by name"
+          className="h-[46px] w-full rounded-full border bg-card pl-10 pr-4 text-[15px] outline-none placeholder:text-muted-foreground focus:border-primary"
+        />
+      </label>
+      {term.trim().length === 0 ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          Start typing to search the club roster.
+        </div>
+      ) : isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <LoadingState label="Searching…" />
+      ) : !data?.players?.length ? (
+        <EmptyState title="No players found" message={`No players matched "${term}".`} />
+      ) : (
+        <div className="grid gap-3">
+          {data.players.map((p) => (
+            <SearchResultCard key={p.id} playerId={p.id} />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Quick links */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <QuickLink
-          href="/matches"
-          icon={ClipboardList}
-          title="Matches"
-          desc="Browse senior games and full scorecards."
+export default function HonourBoards() {
+  const heroImage = useHeroImage("honours");
+  const [tabParam, setTab] = useSearchParamState("tab", "premierships");
+  const tab: Tab = TAB_VALUES.has(tabParam) ? (tabParam as Tab) : "premierships";
+  const premQ = useListPremierships();
+
+  return (
+    <FullBleedPage>
+      <PageHero
+        variant="honours"
+        image={heroImage}
+        imagePosition="50% 40%"
+        fullWidthImage
+        className="min-h-[clamp(240px,26vw,340px)]"
+        contentClassName="gap-3"
+      >
+        <Eyebrow className="text-[hsl(var(--primary))]">History</Eyebrow>
+        <h1 className="text-[clamp(40px,5.4vw,76px)] leading-[.95] text-white">Honour boards</h1>
+        <p className="max-w-[52ch] text-[15px] text-white/80">
+          Premierships, life members, awards and records.
+        </p>
+      </PageHero>
+
+      <Container className="space-y-6 py-[var(--gap-section)]">
+        <UnderlineTabs
+          label="Honour boards"
+          height={52}
+          value={tab}
+          onChange={(v) => setTab(v)}
+          tabs={TABS.map((t) => ({ value: t.value, label: t.label }))}
         />
-        <QuickLink
-          href="/premierships"
-          icon={Crown}
-          title="Premierships"
-          desc="Senior honour boards and winning rosters."
-        />
-        <QuickLink
-          href="/players"
-          icon={Users}
-          title="Players & Leaders"
-          desc="Runs, wickets and games leaderboards."
-        />
-      </div>
-
-      {/* Tabs */}
-      {(() => {
-        const activeStat = STATISTICS_ITEMS.find((b) => b.key === activeTab);
-        const activeHonourBoard = HONOUR_BOARD_ITEMS.find((h) => h.tab === activeTab);
-        return (
-          <div className="bg-card border border-border rounded-md p-2 flex flex-wrap items-center gap-2 shadow-md">
-            <button
-              onClick={() => setActiveTab("milestones")}
-              className={tabClass(activeTab === "milestones")}
-            >
-              Milestones
-            </button>
-
-            {/* Statistics — career/by-grade leaderboards (Games lives in Honour Boards) */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={tabClass(!!activeStat)}>
-                  {activeStat ? `Statistics: ${activeStat.label}` : "Statistics"}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-52">
-                {STATISTICS_ITEMS.map((b) => (
-                  <DropdownMenuItem
-                    key={b.key}
-                    onSelect={() => setActiveTab(b.key)}
-                    className={dropdownItemClass(activeTab === b.key)}
-                  >
-                    {b.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Honour Boards — Games Played plus the curated boards */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={tabClass(!!activeHonourBoard)}>
-                  {activeHonourBoard
-                    ? `Honour Boards: ${activeHonourBoard.label}`
-                    : "Honour Boards"}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-52">
-                {HONOUR_BOARD_ITEMS.map((h) => (
-                  <DropdownMenuItem
-                    key={h.tab}
-                    onSelect={() => setActiveTab(h.tab)}
-                    className={dropdownItemClass(activeTab === h.tab)}
-                  >
-                    {h.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <button onClick={() => setActiveTab("caps")} className={tabClass(activeTab === "caps")}>
-              A Grade Caps
-            </button>
-            <button
-              onClick={() => setActiveTab("life-members")}
-              className={tabClass(activeTab === "life-members")}
-            >
-              Life Members
-            </button>
-
-            <button
-              onClick={() => setActiveTab("search")}
-              className={tabClass(activeTab === "search")}
-            >
-              Search
-            </button>
-          </div>
-        );
-      })()}
-
-      {/* Scope control — only shown for leaderboard (BOARDS) tabs, including
-          Games. Hidden for milestones, search, and the curated honour tabs
-          (caps / life-members / awards / team-of-decade / committee / records). */}
-      {activeTab !== "milestones" &&
-        activeTab !== "search" &&
-        activeTab !== "caps" &&
-        activeTab !== "life-members" &&
-        activeTab !== "awards" &&
-        activeTab !== "team-of-decade" &&
-        activeTab !== "committee" &&
-        activeTab !== "records" && (
-          <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary-text">
-              Scope
-            </span>
-            <div className="inline-flex rounded overflow-hidden border-2 border-primary self-start">
-              <button
-                onClick={() => setScope("career")}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-                  scope === "career"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-primary-text hover:bg-primary/15"
-                }`}
-              >
-                Career
-              </button>
-              <button
-                onClick={() => setScope("by-grade")}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-l-2 border-primary ${
-                  scope === "by-grade"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-primary-text hover:bg-primary/15"
-                }`}
-              >
-                By Grade
-              </button>
-            </div>
-            {scope === "by-grade" && (
-              <div className="flex items-center gap-3 self-start">
-                {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
-                <select
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(e.target.value)}
-                  className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-                >
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        )}
-
-      {/* Tab content */}
-      {activeTab === "milestones" ? (
-        <div className="space-y-6">
-          {/* Dated, prioritized achievements from real match data */}
-          <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-md space-y-4">
-            <div>
-              <h2 className="text-lg md:text-xl font-serif font-bold text-primary-text m-0">
-                {milestonesBoard?.featured ? "Recent milestones" : "Milestones"}
-              </h2>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">
-                {milestonesBoard?.featured
-                  ? "Latest centuries, five-fors, hat-tricks, debuts and career milestones"
-                  : "Significant achievements, ranked by milestone"}
-              </div>
-            </div>
-            <div className="w-12 h-[2px] bg-primary" />
-            <div className="flex flex-wrap gap-2">
-              {MILESTONE_FILTERS.map((f) => {
-                const active = milestoneKind === f.value;
-                return (
-                  <button
-                    key={f.value}
-                    onClick={() => {
-                      setMilestoneKind(f.value);
-                      setMilestonesExpanded(false);
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${
-                      active
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:border-primary hover:text-primary-text"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
-            </div>
-            {filteredMilestones.length === 0 ? (
-              <div className="text-sm text-muted-foreground italic">
-                {!milestonesBoard ||
-                (milestonesBoard.items.length === 0 && !milestonesBoard.windowStart)
-                  ? "No dated milestones yet — they appear as match scorecards are imported."
-                  : milestoneKind === "all"
-                    ? "No milestones recorded yet."
-                    : `No ${MILESTONE_FILTERS.find((f) => f.value === milestoneKind)?.label.toLowerCase()} recorded yet.`}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                  {visibleMilestones.map((item) => (
-                    <DatedMilestoneCard key={item.id} item={item} />
-                  ))}
-                </div>
-                {filteredMilestones.length > MILESTONES_PREVIEW && (
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => setMilestonesExpanded((v) => !v)}
-                      className="px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border-2 border-primary text-primary-text hover:bg-primary/15 transition-colors"
-                    >
-                      {milestonesExpanded
-                        ? "Show less"
-                        : `Show ${filteredMilestones.length - MILESTONES_PREVIEW} more`}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : activeTab === "caps" ? (
-        <CapRegisterTab />
-      ) : activeTab === "life-members" ? (
-        <LifeMembersTab />
-      ) : activeTab === "awards" ? (
-        <AwardsTab />
-      ) : activeTab === "team-of-decade" ? (
-        <TeamOfDecadeTab />
-      ) : activeTab === "committee" ? (
-        <CommitteeTab />
-      ) : activeTab === "records" ? (
-        <RecordsTab />
-      ) : activeTab === "search" ? (
-        <div className="space-y-4">
-          <Input
-            placeholder="Search for a player by name…"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full text-base"
-          />
-          {searchTerm.trim().length === 0 ? (
-            <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
-              Start typing to search the club roster.
-            </div>
-          ) : isSearchError ? (
-            <QueryError onRetry={() => refetchSearch()} />
-          ) : isSearchLoading ? (
-            <LoadingState label="Searching…" />
-          ) : !searchResults?.players?.length ? (
-            <EmptyState title="No players found" message={`No players matched "${searchTerm}".`} />
+        <div role="tabpanel" aria-label={TABS.find((t) => t.value === tab)?.label}>
+          {tab === "premierships" ? (
+            <PremiershipGrid
+              premierships={premQ.data}
+              isLoading={premQ.isLoading}
+              isError={premQ.isError}
+              onRetry={() => premQ.refetch()}
+            />
+          ) : tab === "milestones" ? (
+            <MilestonesPanel />
+          ) : tab === "leaderboards" ? (
+            <LeaderboardsPanel />
+          ) : tab === "life-members" ? (
+            <LifeMembersTab />
+          ) : tab === "awards" ? (
+            <AwardsTab />
+          ) : tab === "records" ? (
+            <RecordsTab />
+          ) : tab === "caps" ? (
+            <CapRegisterTab />
+          ) : tab === "team-of-decade" ? (
+            <TeamOfDecadeTab />
+          ) : tab === "committee" ? (
+            <CommitteeTab />
           ) : (
-            <div className="grid gap-3">
-              {searchResults.players.map((p) => (
-                <SearchResultCard key={p.id} playerId={p.id} />
-              ))}
-            </div>
+            <SearchPanel />
           )}
         </div>
-      ) : isLoadingBoards ? (
-        <TableSkeleton />
-      ) : isErrorBoards ? (
-        <QueryError onRetry={() => leaderboardQueries.forEach((q) => q.refetch())} />
-      ) : (
-        (() => {
-          const board = BOARDS.find((b) => b.key === (activeTab as BoardKey))!;
-          const tiers = computeBoard(aggregatedPlayers, board.key);
-          return <BoardView tiers={tiers} board={board} premMap={premMap} />;
-        })()
-      )}
-
-      <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-card border border-border rounded-md py-4 border-t-4 border-t-primary">
-        Last updated:{" "}
-        <span className="text-primary-text font-bold">
-          {new Date().toLocaleDateString("en-AU", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-        </span>{" "}
-        • {brand.name}
-      </div>
-    </div>
+      </Container>
+    </FullBleedPage>
   );
 }

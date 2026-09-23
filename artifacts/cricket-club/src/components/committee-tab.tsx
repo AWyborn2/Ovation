@@ -70,7 +70,7 @@ export function CommitteeTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+      <div className="rounded-lg border bg-card p-6">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Office Bearers
         </h2>
@@ -82,20 +82,17 @@ export function CommitteeTab() {
       </div>
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
           Loading committee…
         </div>
       ) : seasons.length === 0 ? (
-        <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground italic">
           No committee records have been published yet.
         </div>
       ) : (
         <div className="grid gap-4">
           {seasons.map((g) => (
-            <div
-              key={g.season}
-              className="bg-card border border-border rounded-md overflow-hidden shadow-md"
-            >
+            <div key={g.season} className="rounded-lg border bg-card overflow-hidden">
               <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
                 <span>{formatSeason(g.season)}</span>
                 <span className="text-xs whitespace-nowrap">

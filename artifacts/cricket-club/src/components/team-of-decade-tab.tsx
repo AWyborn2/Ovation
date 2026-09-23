@@ -35,7 +35,7 @@ const MemberName = ({ member }: { member: TeamOfDecadeMember }) =>
 const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
   const members = sortMembers(board.members);
   return (
-    <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
+    <div className="rounded-lg border bg-card overflow-hidden">
       <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="font-serif font-bold uppercase tracking-wider text-sm truncate">
@@ -67,7 +67,7 @@ const BoardCard = ({ board }: { board: TeamOfDecadeBoard }) => {
               const badges = memberBadges(m);
               return (
                 <div key={m.id} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <span className="font-mono font-bold text-primary-text w-6 shrink-0 text-right">
+                  <span className="tabular-nums font-bold text-primary-text w-6 shrink-0 text-right">
                     {i + 1}
                   </span>
                   <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1 min-w-0">
@@ -102,7 +102,7 @@ export function TeamOfDecadeTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+      <div className="rounded-lg border bg-card p-6">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Teams of the Decade
         </h2>
@@ -114,11 +114,11 @@ export function TeamOfDecadeTab() {
       </div>
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
           Loading teams…
         </div>
       ) : sorted.length === 0 ? (
-        <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground italic">
           No Teams of the Decade have been published yet.
         </div>
       ) : (
