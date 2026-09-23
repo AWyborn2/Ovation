@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useBrand } from "@/lib/brand-context";
 import {
   useGetSeniorOverview,
   useGetSeniorSeasonTopPerformers,
   type MatchSummary,
-  type SeasonLeader,
 } from "@workspace/api-client-react";
-import { Trophy, TrendingUp, CalendarDays, MapPin } from "lucide-react";
+import { useBrand, useClubShortName } from "@/lib/brand-context";
+import { useExploreImage, useHeroImage } from "@/lib/use-hero-image";
+import { clubAbbrev, gradeCode } from "@/lib/grade-code";
+import { matchLabel } from "@/lib/utils";
 import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { QueryError, EmptyState } from "@/components/data-states";
 import {
   Select,
   SelectContent,
@@ -16,353 +18,330 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { matchLabel } from "@/lib/utils";
-import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
-import { navIcon } from "@/lib/nav-icons";
-import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import {
+  Container,
+  FilterChips,
+  LeaderRow,
+  LivePill,
+  PageHero,
+  PageStack,
+  PhotoCard,
+  ResultRow,
+  ResultsTicker,
+  RowsSkeleton,
+  SectionCard,
+  SegmentedControl,
+  StatTile,
+  StatTileGrid,
+  StatTilesSkeleton,
+  type TickerItem,
+} from "@/components/broadcast";
 
-const SENIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
-  {
-    label: "Honour Boards",
-    target: "/honour-boards",
-    isExternal: false,
-    iconKey: "scrollText",
-    description: "Premierships, life members, awards and records.",
-  },
-  {
-    label: "Players",
-    target: "/players",
-    isExternal: false,
-    iconKey: "users",
-    description: "Searchable directory of every club player.",
-  },
-  {
-    label: "Matches",
-    target: "/matches",
-    isExternal: false,
-    iconKey: "clipboardList",
-    description: "Game-by-game results and full scorecards.",
-  },
-  {
-    label: "Grades",
-    target: "/grades",
-    isExternal: false,
-    iconKey: "trophy",
-    description: "Per-grade leaderboards and summaries.",
-  },
-  {
-    label: "Records",
-    target: "/records",
-    isExternal: false,
-    iconKey: "award",
-    description: "All-time club records and milestones.",
-  },
-  {
-    label: "Premierships",
-    target: "/premierships",
-    isExternal: false,
-    iconKey: "crown",
-    description: "Premiership honour boards and squads.",
-  },
-];
-
-const fmtSeason = (s: number) => `${s}/${String((s + 1) % 100).padStart(2, "0")}`;
-
-const fmtDate = (d: string | null | undefined) => {
-  if (!d) return null;
-  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return d;
-  return `${m[3]}/${m[2]}/${m[1]}`;
-};
-
-function StatCard({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div
-        className="text-3xl font-serif font-bold text-primary-text"
-        data-testid={`stat-${label}`}
-      >
-        {value}
-      </div>
-      <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
-    </div>
-  );
-}
-
-function QuickLink({ item }: { item: ResolvedNavItem }) {
-  const Icon = navIcon(item.iconKey);
-  const inner = (
-    <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-      {Icon && <Icon className="h-7 w-7 text-primary-text mb-3" />}
-      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary-text">
-        {item.label}
-      </div>
-      {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
-    </div>
-  );
-  return item.isExternal ? (
-    <a href={item.target} target="_blank" rel="noopener noreferrer">
-      {inner}
-    </a>
-  ) : (
-    <Link href={item.target}>{inner}</Link>
-  );
-}
-
-function MatchCardCrest({ club }: { club: MatchSummary["opponentClub"] }) {
-  const [errored, setErrored] = useState(false);
-  const src = club?.logoUrl128 || club?.logoUrl;
-  if (!club || !src || errored) return null;
-  return (
-    <img
-      src={src}
-      alt={`${club.name} logo`}
-      title={club.name}
-      width={28}
-      height={28}
-      onError={() => setErrored(true)}
-      className="h-7 w-7 shrink-0 rounded-sm object-contain bg-white/90 p-0.5 shadow-sm"
-    />
-  );
-}
-
-function RecentMatchCard({ m }: { m: MatchSummary }) {
-  return (
-    <Link href={`/matches/${m.id}`}>
-      <div className="bg-card border border-border rounded-md p-4 shadow-sm hover:border-primary transition-colors cursor-pointer group h-full flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <GradeBadge grade={m.grade} size="sm" />
-          <MatchCardCrest club={m.opponentClub} />
-          <div className="flex-1 min-w-0">
-            <div className="font-serif font-bold text-primary-text truncate">
-              vs {m.opponent ?? "Unknown"}
-            </div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider">
-              {fmtSeason(m.season)}
-              {matchLabel(m.round, m.stage) ? ` · ${matchLabel(m.round, m.stage)}` : ""}
-            </div>
-          </div>
-          {m.abandoned && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/15 border border-amber-600/40 rounded px-2 py-0.5">
-              Abandoned
-            </span>
-          )}
-        </div>
-        {(m.clubScore || m.opponentScore) && (
-          <div className="text-sm font-mono text-foreground/90">
-            {m.clubScore ?? "—"} <span className="text-muted-foreground">vs</span>{" "}
-            {m.opponentScore ?? "—"}
-          </div>
-        )}
-        {m.result && <div className="text-sm text-foreground/80 leading-snug">{m.result}</div>}
-        <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          {fmtDate(m.matchDate) && (
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" /> {fmtDate(m.matchDate)}
-            </span>
-          )}
-          {m.venue && (
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" /> {m.venue}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function LeaderList({ title, leaders }: { title: string; leaders: SeasonLeader[] }) {
-  return (
-    <section className="bg-card border border-border rounded-md p-4 shadow-sm">
-      <h3 className="font-serif font-bold text-primary-text flex items-center gap-2 mb-3">
-        <TrendingUp className="h-4 w-4 text-primary-text" /> {title}
-      </h3>
-      {leaders.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {leaders.map((p) => (
-            <li key={p.playerId}>
-              <Link href={`/players/${p.playerId}`}>
-                <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary-text">
-                  <span className="font-medium">
-                    {p.givenName} {p.surname}
-                  </span>
-                  <span className="font-mono text-sm">{p.value}</span>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
+type Metric = "runs" | "wickets";
 // Season picker value: "latest" (default), "all" (all-time), or a season year.
 type SeasonChoice = "latest" | "all" | number;
 
-export default function Home() {
-  const brand = useBrand();
-  const { data, isLoading, isError, refetch } = useGetSeniorOverview();
-  const quickLinks = useNavSurface("senior_menu", SENIOR_QUICK_LINKS_FALLBACK);
-  const [gradeFilter, setGradeFilter] = useState<string>("");
+/** "2026-03-07" → "Sat 7 Mar" (null when unparseable). */
+export function shortMatchDate(iso: string | null | undefined): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso ?? "");
+  if (!m) return null;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return d.toLocaleDateString("en-AU", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+/** The newest match (by date, then id) — the "Latest scorecard" CTA target. */
+export function latestMatch(matches: MatchSummary[]): MatchSummary | null {
+  return (
+    [...matches].sort(
+      (a, b) => (b.matchDate ?? "").localeCompare(a.matchDate ?? "") || b.id - a.id,
+    )[0] ?? null
+  );
+}
+
+/** Ticker items: one per latest-round result across the senior grades. */
+export function tickerItems(matches: MatchSummary[], clubShort: string): TickerItem[] {
+  return sortGradesBySeniority(matches.map((m) => m.grade)).flatMap((grade) =>
+    matches
+      .filter((m) => m.grade === grade && !m.abandoned && (m.clubScore || m.opponentScore))
+      .map((m) => ({
+        id: m.id,
+        grade: gradeCode(m.grade),
+        line: `${clubShort} ${m.clubScore ?? "–"} v ${clubAbbrev(
+          m.opponentClub?.name ?? m.opponent,
+          m.opponentClub?.shortName,
+        )} ${m.opponentScore ?? "–"}`,
+        result: m.result,
+        href: `/matches/${m.id}`,
+      })),
+  );
+}
+
+function LatestResults({ matches }: { matches: MatchSummary[] }) {
+  return (
+    <SectionCard
+      title="Latest results"
+      action={
+        <Link href="/matches" className="text-sm font-semibold text-primary-text">
+          All matches →
+        </Link>
+      }
+    >
+      <div data-tour="recent-matches">
+        {matches.length === 0 ? (
+          <p className="py-4 text-sm text-muted-foreground">No results yet this season.</p>
+        ) : (
+          matches.map((m) => (
+            <ResultRow
+              key={m.id}
+              href={`/matches/${m.id}`}
+              badge={<GradeBadge grade={m.grade} size="md" />}
+              title={`vs ${m.opponent ?? "Unknown"}`}
+              meta={[m.grade, matchLabel(m.round, m.stage), shortMatchDate(m.matchDate), m.venue]
+                .filter(Boolean)
+                .join(" · ")}
+              ours={m.clubScore}
+              theirs={m.opponentScore}
+              result={m.abandoned ? null : m.result}
+            />
+          ))
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
+function TopPerformers({
+  seasons,
+  latestSeason,
+}: {
+  seasons: { season: number; label: string }[];
+  latestSeason: number | null;
+}) {
+  const [metric, setMetric] = useState<Metric>("runs");
+  const [grade, setGrade] = useState<string>("all");
   const [season, setSeason] = useState<SeasonChoice>("latest");
 
-  // Top performers drive BOTH the leader lists AND the grade chips: the response
-  // carries availableGrades for the resolved season (or all grades, all-time).
   const seasonParams = season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
-  const { data: tp } = useGetSeniorSeasonTopPerformers({
-    ...(gradeFilter ? { grade: gradeFilter } : {}),
+  const { data: tp, isLoading } = useGetSeniorSeasonTopPerformers({
+    ...(grade !== "all" ? { grade } : {}),
     ...seasonParams,
   });
 
-  const gradeOptions = useMemo(
+  const grades = useMemo(
     () => sortGradesBySeniority(tp?.availableGrades ?? []),
     [tp?.availableGrades],
   );
 
-  // If the chosen grade has no records in the newly-selected season, fall back
-  // to the club-wide list so we never show an empty, stale grade filter.
+  // A grade with no records in the newly chosen season falls back to all
+  // grades, so the chips never show a stale, empty filter.
   useEffect(() => {
-    if (gradeFilter && tp && !tp.availableGrades.includes(gradeFilter)) {
-      setGradeFilter("");
-    }
-  }, [tp, gradeFilter]);
+    if (grade !== "all" && tp && !tp.availableGrades.includes(grade)) setGrade("all");
+  }, [tp, grade]);
 
-  const topRunScorers = tp?.topRunScorers ?? [];
-  const topWicketTakers = tp?.topWicketTakers ?? [];
-
-  // Header label for the resolved season ("All time" when aggregating).
-  const seasonLabel = season === "all" ? "All time" : (tp?.seasonLabel ?? null);
+  const leaders = (metric === "runs" ? tp?.topRunScorers : tp?.topWicketTakers) ?? [];
+  const top = leaders.slice(0, 5);
+  const max = top[0]?.value ?? 0;
   const seasonValue =
     season === "latest"
-      ? data?.latestSeason != null
-        ? String(data.latestSeason)
+      ? latestSeason != null
+        ? String(latestSeason)
         : "latest"
       : season === "all"
         ? "all"
         : String(season);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
-          <Trophy className="h-4 w-4" /> Seniors
+    <SectionCard
+      title="Top performers"
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl<Metric>
+            label="Leaderboard"
+            value={metric}
+            onChange={setMetric}
+            options={[
+              { value: "runs", label: "Runs" },
+              { value: "wickets", label: "Wickets" },
+            ]}
+          />
+          <Select
+            value={seasonValue}
+            onValueChange={(v) => setSeason(v === "all" ? "all" : Number(v))}
+          >
+            <SelectTrigger
+              className="h-9 w-auto gap-2 rounded-full px-3.5"
+              data-testid="season-select"
+            >
+              <SelectValue placeholder="Season" />
+            </SelectTrigger>
+            <SelectContent>
+              {seasons.map((s) => (
+                <SelectItem key={s.season} value={String(s.season)}>
+                  {s.label}
+                </SelectItem>
+              ))}
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text">Senior Cricket</h1>
-        <p className="text-muted-foreground mt-1">
-          Results, scorecards, records and player stats for {brand.name}'s senior grades.
-        </p>
-      </div>
-
-      {isError ? (
-        <QueryError onRetry={() => refetch()} />
-      ) : isLoading ? (
-        <CardGridSkeleton />
-      ) : !data ? (
-        <EmptyState
-          title="No senior data yet"
-          message="Senior stats appear here once imports are committed."
-        />
-      ) : (
-        <>
-          {/* Totals */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-tour="home-totals">
-            <StatCard label="Players" value={data.totals.players.toLocaleString()} />
-            <StatCard label="Games" value={data.totals.games.toLocaleString()} />
-            <StatCard label="Runs" value={data.totals.runs.toLocaleString()} />
-            <StatCard label="Wickets" value={data.totals.wickets.toLocaleString()} />
-            <StatCard label="Grades" value={data.totals.grades} />
-          </div>
-
-          {/* Quick links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="quick-links">
-            {quickLinks.map((item, idx) => (
-              <QuickLink key={`${item.target}-${idx}`} item={item} />
+      }
+    >
+      <div data-tour="top-performers" className="space-y-3">
+        {grades.length > 1 && (
+          <FilterChips
+            label="Grade"
+            value={grade}
+            onChange={setGrade}
+            options={[
+              { value: "all", label: "All" },
+              ...grades.map((g) => ({ value: g, label: g })),
+            ]}
+          />
+        )}
+        {isLoading ? (
+          <RowsSkeleton rows={5} />
+        ) : top.length === 0 ? (
+          <p className="py-4 text-sm text-muted-foreground">No data for this season yet.</p>
+        ) : (
+          <div>
+            {top.map((p, i) => (
+              <LeaderRow
+                key={p.playerId}
+                rank={i + 1}
+                name={`${p.givenName} ${p.surname}`}
+                value={p.value}
+                max={max}
+                href={`/players/${p.playerId}`}
+              />
             ))}
           </div>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
 
-          {/* Recent matches */}
-          {data.recentMatches.length > 0 && (
-            <section className="space-y-3" data-tour="recent-matches">
-              <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                <h2 className="text-xl font-serif font-bold text-primary-text">Recent Matches</h2>
-                {data.latestSeasonLabel && (
-                  <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                    {data.latestSeasonLabel} season
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {data.recentMatches.map((m) => (
-                  <RecentMatchCard key={m.id} m={m} />
-                ))}
-              </div>
-            </section>
+function ExploreGrid() {
+  const honours = useExploreImage("honours");
+  const players = useExploreImage("players");
+  const premierships = useExploreImage("premierships");
+  return (
+    <section className="space-y-4" data-tour="quick-links">
+      <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">Explore the club</h2>
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]">
+        <PhotoCard
+          href="/honour-boards"
+          image={honours}
+          title="Honour boards"
+          description="Premierships, life members, awards and records."
+        />
+        <PhotoCard
+          href="/players"
+          image={players}
+          title="Players"
+          description="Every player who has represented the club."
+        />
+        <PhotoCard
+          href="/premierships"
+          image={premierships}
+          title="Premierships"
+          description="The sides that brought home the flag."
+        />
+      </div>
+    </section>
+  );
+}
+
+export default function Home() {
+  const brand = useBrand();
+  const clubShort = useClubShortName();
+  const heroImage = useHeroImage("home");
+  const { data, isLoading, isError, refetch } = useGetSeniorOverview();
+
+  const recent = data?.recentMatches ?? [];
+  const latest = latestMatch(recent);
+  const round = recent.reduce<number | null>(
+    (acc, m) => (m.round != null && (acc == null || m.round > acc) ? m.round : acc),
+    null,
+  );
+  const liveLabel = [
+    data?.latestSeasonLabel ? `${data.latestSeasonLabel} season` : null,
+    round != null ? `Round ${round}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <>
+      <PageHero
+        variant="home"
+        image={heroImage}
+        className="min-h-[clamp(420px,40vw,540px)]"
+        contentClassName="gap-5"
+      >
+        {liveLabel && <LivePill className="self-start">{liveLabel}</LivePill>}
+        <h1 className="max-w-[9ch] text-[clamp(56px,8.4vw,120px)] font-extrabold leading-[.88] text-white">
+          Senior cricket
+        </h1>
+        <p className="max-w-[46ch] text-[15px] text-white/80">
+          Results, scorecards, records and player stats for {brand.name}'s senior grades.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          {latest && (
+            <Link
+              href={`/matches/${latest.id}`}
+              className="inline-flex h-[46px] items-center rounded-sm bg-primary px-5 font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            >
+              Latest scorecard
+            </Link>
           )}
+          <Link
+            href="/players"
+            className="inline-flex h-[46px] items-center rounded-sm border border-white/30 bg-white/10 px-5 font-bold text-white backdrop-blur-md transition-transform hover:-translate-y-0.5"
+          >
+            Browse players
+          </Link>
+        </div>
+        <ResultsTicker items={tickerItems(recent, clubShort.toUpperCase())} className="mt-3" />
+      </PageHero>
 
-          {/* Top performers with season picker + grade filter */}
-          <section className="space-y-3" data-tour="top-performers">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-xl font-serif font-bold text-primary-text">Top Performers</h2>
-              <Select
-                value={seasonValue}
-                onValueChange={(v) => setSeason(v === "all" ? "all" : Number(v))}
-              >
-                <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
-                  <SelectValue placeholder="Season" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data.availableSeasons.map((s) => (
-                    <SelectItem key={s.season} value={String(s.season)}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="all">All time</SelectItem>
-                </SelectContent>
-              </Select>
+      <Container className="py-[var(--gap-section)]">
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <PageStack>
+            <StatTilesSkeleton />
+            <RowsSkeleton rows={5} />
+          </PageStack>
+        ) : !data ? (
+          <EmptyState
+            title="No senior data yet"
+            message="Senior stats appear here once imports are committed."
+          />
+        ) : (
+          <PageStack>
+            <div data-tour="home-totals">
+              <StatTileGrid>
+                <StatTile label="Players" value={data.totals.players} />
+                <StatTile label="Games" value={data.totals.games} />
+                <StatTile label="Runs" value={data.totals.runs} />
+                <StatTile label="Wickets" value={data.totals.wickets} />
+                <StatTile label="Grades" value={data.totals.grades} />
+              </StatTileGrid>
             </div>
-            {seasonLabel && (
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                {season === "all" ? "All time" : `${seasonLabel} season`}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setGradeFilter("")}
-                className={`text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1.5 border transition-colors ${
-                  gradeFilter === ""
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "text-muted-foreground border-border hover:border-primary/50"
-                }`}
-                data-testid="filter-grade-all"
-              >
-                All Grades
-              </button>
-              {gradeOptions.map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setGradeFilter(g)}
-                  className={`text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1.5 border transition-colors ${
-                    gradeFilter === g
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "text-muted-foreground border-border hover:border-primary/50"
-                  }`}
-                  data-testid={`filter-grade-${g}`}
-                >
-                  {g}
-                </button>
-              ))}
+            <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))]">
+              <LatestResults matches={recent} />
+              <TopPerformers seasons={data.availableSeasons} latestSeason={data.latestSeason} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <LeaderList title="Top Run Scorers" leaders={topRunScorers} />
-              <LeaderList title="Top Wicket Takers" leaders={topWicketTakers} />
-            </div>
-          </section>
-        </>
-      )}
-    </div>
+            <ExploreGrid />
+          </PageStack>
+        )}
+      </Container>
+    </>
   );
 }

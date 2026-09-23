@@ -69,8 +69,8 @@ export function ResultsTicker({ items, className }: { items: TickerItem[]; class
       )}
       data-testid="results-ticker"
     >
-      <div className="flex flex-none items-center gap-2 bg-primary px-4 font-serif text-[15px] font-extrabold uppercase tracking-[0.1em] text-[#10151B]">
-        <span aria-hidden className="h-[7px] w-[7px] rounded-full bg-[#10151B] bc-pulse" />
+      <div className="flex flex-none items-center gap-2 bg-primary px-4 font-serif text-[15px] font-extrabold uppercase tracking-[0.1em] text-primary-foreground">
+        <span aria-hidden className="h-[7px] w-[7px] rounded-full bg-primary-foreground bc-pulse" />
         Results
       </div>
       {reduced ? (
