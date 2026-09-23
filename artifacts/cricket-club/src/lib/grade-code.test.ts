@@ -9,6 +9,7 @@ describe("gradeCode", () => {
     ["Female", "F"],
     ["Under 17s", "U17"],
     ["U15 Boys", "U15"],
+    ["Year 9 Boys", "Y9"],
     ["PPL", "PPL"],
     ["Colts", "COL"],
     ["", ""],

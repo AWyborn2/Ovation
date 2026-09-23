@@ -5,9 +5,15 @@ import {
   useGetJuniorsOverview,
   useGetJuniorSeasonTopPerformers,
   useGetJuniorsFilters,
+  useListJuniorPremierships,
+  type JuniorMatchSummary,
+  type JuniorPremiership,
 } from "@workspace/api-client-react";
-import { CalendarDays, ScrollText, TrendingUp } from "lucide-react";
 import { fmtJuniorDate } from "@/lib/juniors";
+import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
+import { navIcon } from "@/lib/nav-icons";
+import { gradeCode } from "@/lib/grade-code";
+import { useHeroImage } from "@/lib/use-hero-image";
 import {
   Select,
   SelectContent,
@@ -15,9 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
-import { navIcon } from "@/lib/nav-icons";
-import { CardGridSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { QueryError, EmptyState } from "@/components/data-states";
+import {
+  Container,
+  FilterChips,
+  FullBleedPage,
+  JuniorGradeTile,
+  LeaderRow,
+  LivePill,
+  PageHero,
+  PageStack,
+  ResultRow,
+  RowsSkeleton,
+  SectionCard,
+  SegmentedControl,
+  StatTile,
+  StatTileGrid,
+  StatTilesSkeleton,
+} from "@/components/broadcast";
 
 const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
   {
@@ -43,256 +64,279 @@ const JUNIOR_QUICK_LINKS_FALLBACK: ResolvedNavItem[] = [
   },
 ];
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
+/** Admin-configured junior quick links (the junior_quick_links nav surface). */
+function JuniorQuickLinks() {
+  const links = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
   return (
-    <div className="bg-card border border-border rounded-md p-4 text-center shadow-sm">
-      <div
-        className="text-3xl font-serif font-bold text-primary-text"
-        data-testid={`stat-${label}`}
-      >
-        {value}
-      </div>
-      <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
+    <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))]">
+      {links.map((item) => {
+        const Icon = navIcon(item.iconKey);
+        const body = (
+          <>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border bg-muted text-primary-text">
+              {Icon && <Icon className="h-[18px] w-[18px]" aria-hidden />}
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{item.label}</span>
+              {item.description && (
+                <span className="block text-[13px] text-muted-foreground">{item.description}</span>
+              )}
+            </span>
+          </>
+        );
+        const cls = "flex items-center gap-3 rounded-lg border bg-card p-4 bc-lift";
+        return item.isExternal ? (
+          <a
+            key={item.target}
+            href={item.target}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cls}
+          >
+            {body}
+          </a>
+        ) : (
+          <Link key={item.target} href={item.target} className={cls}>
+            {body}
+          </Link>
+        );
+      })}
     </div>
   );
 }
 
-function QuickLink({ item }: { item: ResolvedNavItem }) {
-  const Icon = navIcon(item.iconKey);
-  const inner = (
-    <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-      {Icon && <Icon className="h-7 w-7 text-primary-text mb-3" />}
-      <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary-text">
-        {item.label}
-      </div>
-      {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
-    </div>
-  );
-  return item.isExternal ? (
-    <a href={item.target} target="_blank" rel="noopener noreferrer">
-      {inner}
-    </a>
-  ) : (
-    <Link href={item.target}>{inner}</Link>
-  );
-}
-
+type Metric = "runs" | "wickets";
 // Season picker value: "latest" (default), "all" (all-time), or a season string.
 type SeasonChoice = "latest" | "all" | string;
 
-export default function JuniorsDashboard() {
-  const brand = useBrand();
-  const { data, isLoading, isError, refetch } = useGetJuniorsOverview();
-  const quickLinks = useNavSurface("junior_quick_links", JUNIOR_QUICK_LINKS_FALLBACK);
+function LatestJuniorResults({ matches }: { matches: JuniorMatchSummary[] }) {
+  return (
+    <SectionCard
+      title="Latest junior results"
+      action={
+        <Link href="/juniors/matches" className="text-sm font-semibold text-primary-text">
+          All matches →
+        </Link>
+      }
+    >
+      {matches.length === 0 ? (
+        <p className="py-4 text-sm text-muted-foreground">No junior results yet.</p>
+      ) : (
+        matches.map((m) => (
+          <ResultRow
+            key={m.id}
+            href={`/juniors/matches/${m.id}`}
+            badge={<JuniorGradeTile code={gradeCode(m.ageGroup ?? m.grade) || "JR"} />}
+            title={`vs ${m.opponentName ?? "Unknown"}`}
+            meta={[m.teamName ?? m.ageGroup, m.round, fmtJuniorDate(m.matchDate)]
+              .filter(Boolean)
+              .join(" · ")}
+            ours={m.hhScore}
+            theirs={m.opponentScore}
+            result={m.hhResult}
+          />
+        ))
+      )}
+    </SectionCard>
+  );
+}
+
+function JuniorPremiershipsCard({ items }: { items: JuniorPremiership[] }) {
+  const recent = [...items]
+    .sort((a, b) => (b.season ?? "").localeCompare(a.season ?? ""))
+    .slice(0, 6);
+  return (
+    <SectionCard
+      title="Junior premierships"
+      action={
+        <Link href="/juniors/premierships" className="text-sm font-semibold text-primary-text">
+          All premierships →
+        </Link>
+      }
+    >
+      {recent.length === 0 ? (
+        <p className="py-4 text-sm text-muted-foreground">No junior premierships recorded yet.</p>
+      ) : (
+        <ul>
+          {recent.map((p) => {
+            const captain = p.players.find((pl) => pl.isCaptain)?.playerName;
+            return (
+              <li key={p.id} className="flex items-center gap-4 border-t py-3 first:border-t-0">
+                <span className="w-[92px] shrink-0 font-serif text-[26px] font-bold leading-none text-primary-text tabular-nums">
+                  {p.season ?? "–"}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">
+                    {p.teamName ?? p.ageGroup ?? "Junior side"}
+                  </span>
+                  {captain && (
+                    <span className="block text-[13px] text-muted-foreground">
+                      Captain {captain}
+                    </span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </SectionCard>
+  );
+}
+
+function JuniorTopPerformers({ latestSeason }: { latestSeason: string | null }) {
   const { data: filters } = useGetJuniorsFilters();
-  const [ageFilter, setAgeFilter] = useState<string>("");
+  const [metric, setMetric] = useState<Metric>("runs");
+  const [age, setAge] = useState("all");
   const [season, setSeason] = useState<SeasonChoice>("latest");
-
   const seasonOptions = useMemo(() => filters?.seasons ?? [], [filters?.seasons]);
-
-  // Top performers drive BOTH the leader lists AND the age-group chips: the
-  // response carries availableAgeGroups for the resolved season (or all-time).
   const seasonParams = season === "all" ? { allTime: true } : season === "latest" ? {} : { season };
-  const { data: tp } = useGetJuniorSeasonTopPerformers({
-    ...(ageFilter ? { ageGroup: ageFilter } : {}),
+  const { data: tp, isLoading } = useGetJuniorSeasonTopPerformers({
+    ...(age !== "all" ? { ageGroup: age } : {}),
     ...seasonParams,
   });
-
-  const ageOptions = useMemo(() => tp?.availableAgeGroups ?? [], [tp?.availableAgeGroups]);
-
-  // If the chosen age group has no records in the newly-selected season, fall
-  // back to the club-wide list so we never show an empty, stale age filter.
   useEffect(() => {
-    if (ageFilter && tp && !tp.availableAgeGroups.includes(ageFilter)) {
-      setAgeFilter("");
-    }
-  }, [tp, ageFilter]);
+    if (age !== "all" && tp && !tp.availableAgeGroups.includes(age)) setAge("all");
+  }, [tp, age]);
 
-  const topRunScorers = tp?.topRunScorers ?? [];
-  const topWicketTakers = tp?.topWicketTakers ?? [];
-
-  // Header label for the resolved season ("All time" when aggregating).
-  const seasonLabel = season === "all" ? "All time" : (tp?.season ?? null);
+  const rows =
+    metric === "runs"
+      ? (tp?.topRunScorers ?? []).map((p) => ({
+          id: p.participantId,
+          name: p.displayName,
+          v: p.runs,
+        }))
+      : (tp?.topWicketTakers ?? []).map((p) => ({
+          id: p.participantId,
+          name: p.displayName,
+          v: p.wickets,
+        }));
+  const top = rows.slice(0, 5);
+  const max = top[0]?.v ?? 0;
   const seasonValue =
-    season === "latest" ? (data?.latestSeason ?? "latest") : season === "all" ? "all" : season;
+    season === "latest" ? (latestSeason ?? "latest") : season === "all" ? "all" : season;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
-          <ScrollText className="h-4 w-4" /> Juniors
-        </div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text">Junior Cricket</h1>
-        <p className="text-muted-foreground mt-1">
-          Match results, scorecards, premierships and player stats for {brand.name}'s junior grades.
-        </p>
-      </div>
-
-      {isError ? (
-        <QueryError onRetry={() => refetch()} />
-      ) : isLoading ? (
-        <CardGridSkeleton />
-      ) : !data ? (
-        <EmptyState
-          title="No junior data yet"
-          message="There's no junior data available to show yet."
-        />
-      ) : (
-        <>
-          {/* Totals */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatCard label="Matches" value={data.totals.matches} />
-            <StatCard label="Players" value={data.totals.players} />
-            <StatCard label="Premierships" value={data.totals.premierships} />
-            <StatCard label="Seasons" value={data.totals.seasons} />
-            <StatCard label="Age Groups" value={data.totals.ageGroups} />
-          </div>
-
-          {/* Quick links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {quickLinks.map((item, idx) => (
-              <QuickLink key={`${item.target}-${idx}`} item={item} />
-            ))}
-          </div>
-
-          {/* Recent matches */}
-          {data.recentMatches.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-xl font-serif font-bold text-primary-text">Recent Matches</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {data.recentMatches.map((m) => (
-                  <Link key={m.id} href={`/juniors/matches/${m.id}`}>
-                    <div className="bg-card border border-border rounded-md p-4 shadow-sm cursor-pointer h-full flex flex-col gap-2 hover:border-primary transition-colors group">
-                      <div className="flex items-center gap-2">
-                        {m.ageGroup && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/15 border border-primary/40 rounded px-2 py-0.5">
-                            {m.ageGroup}
-                          </span>
-                        )}
-                        <div className="font-serif font-bold text-foreground group-hover:text-primary-text truncate">
-                          vs {m.opponentName ?? "Unknown"}
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                        {m.season ?? ""}
-                        {m.round ? ` · ${m.round}` : ""}
-                      </div>
-                      {(m.hhScore || m.opponentScore) && (
-                        <div className="text-sm font-mono text-foreground/90">
-                          {m.hhScore ?? "—"} <span className="text-muted-foreground">vs</span>{" "}
-                          {m.opponentScore ?? "—"}
-                        </div>
-                      )}
-                      {m.hhResult && <div className="text-sm text-foreground/80">{m.hhResult}</div>}
-                      {fmtJuniorDate(m.matchDate) && (
-                        <span className="mt-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <CalendarDays className="h-3.5 w-3.5" /> {fmtJuniorDate(m.matchDate)}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Top performers with season picker */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-xl font-serif font-bold text-primary-text">Top Performers</h2>
-              <Select value={seasonValue} onValueChange={(v) => setSeason(v)}>
-                <SelectTrigger className="w-[150px] h-9" data-testid="season-select">
-                  <SelectValue placeholder="Season" />
-                </SelectTrigger>
-                <SelectContent>
-                  {seasonOptions.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="all">All time</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {seasonLabel && (
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                {season === "all" ? "All time" : `${seasonLabel} season`}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setAgeFilter("")}
-                className={`text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1.5 border transition-colors ${
-                  ageFilter === ""
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "text-muted-foreground border-border hover:border-primary/50"
-                }`}
-                data-testid="filter-age-all"
-              >
-                All Ages
-              </button>
-              {ageOptions.map((a) => (
-                <button
-                  key={a}
-                  onClick={() => setAgeFilter(a)}
-                  className={`text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1.5 border transition-colors ${
-                    ageFilter === a
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "text-muted-foreground border-border hover:border-primary/50"
-                  }`}
-                  data-testid={`filter-age-${a}`}
-                >
-                  {a}
-                </button>
+    <SectionCard
+      title="Top performers"
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl<Metric>
+            label="Leaderboard"
+            value={metric}
+            onChange={setMetric}
+            options={[
+              { value: "runs", label: "Runs" },
+              { value: "wickets", label: "Wickets" },
+            ]}
+          />
+          <Select value={seasonValue} onValueChange={(v) => setSeason(v)}>
+            <SelectTrigger
+              className="h-9 w-auto gap-2 rounded-full px-3.5"
+              data-testid="season-select"
+            >
+              <SelectValue placeholder="Season" />
+            </SelectTrigger>
+            <SelectContent>
+              {seasonOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
               ))}
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        {(tp?.availableAgeGroups.length ?? 0) > 1 && (
+          <FilterChips
+            label="Age group"
+            value={age}
+            onChange={setAge}
+            options={[
+              { value: "all", label: "All" },
+              ...(tp?.availableAgeGroups ?? []).map((a) => ({ value: a, label: a })),
+            ]}
+          />
+        )}
+        {isLoading ? (
+          <RowsSkeleton rows={5} />
+        ) : top.length === 0 ? (
+          <p className="py-4 text-sm text-muted-foreground">No data for this season yet.</p>
+        ) : (
+          top.map((r, i) => (
+            <LeaderRow
+              key={r.id}
+              rank={i + 1}
+              name={r.name}
+              value={r.v}
+              max={max}
+              href={`/juniors/players/${r.id}`}
+            />
+          ))
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
+export default function JuniorsDashboard() {
+  const brand = useBrand();
+  const heroImage = useHeroImage("juniors");
+  // Juniors isolation: this page reads only /api/juniors/* hooks.
+  const { data, isLoading, isError, refetch } = useGetJuniorsOverview();
+  const { data: premierships } = useListJuniorPremierships();
+
+  return (
+    <FullBleedPage>
+      <PageHero
+        variant="juniors"
+        image={heroImage}
+        imagePosition="45% 40%"
+        className="min-h-[clamp(360px,34vw,480px)] text-[#F7EBDD]"
+        contentClassName="gap-4"
+      >
+        <LivePill className="self-start">Junior cricket</LivePill>
+        <h1 className="text-[clamp(44px,6.4vw,92px)] leading-[.95] text-[hsl(var(--primary))]">
+          Juniors
+        </h1>
+        <p className="max-w-[46ch] text-[15px] text-[rgba(247,235,221,.82)]">
+          Match results, scorecards, premierships and player stats for {brand.name}'s junior sides.
+        </p>
+      </PageHero>
+
+      <Container className="py-[var(--gap-section)]">
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <PageStack>
+            <StatTilesSkeleton count={4} />
+            <RowsSkeleton rows={5} />
+          </PageStack>
+        ) : !data ? (
+          <EmptyState
+            title="No junior data yet"
+            message="There's no junior data available to show yet."
+          />
+        ) : (
+          <PageStack>
+            <StatTileGrid>
+              <StatTile label="Junior players" value={data.totals.players} />
+              <StatTile label="Age groups" value={data.totals.ageGroups} />
+              <StatTile label="Matches" value={data.totals.matches} />
+              <StatTile label="Premierships" value={data.totals.premierships} />
+            </StatTileGrid>
+            <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))]">
+              <LatestJuniorResults matches={data.recentMatches} />
+              <JuniorPremiershipsCard items={premierships ?? []} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <section className="bg-card border border-border rounded-md p-4 shadow-sm">
-                <h3 className="font-serif font-bold text-primary-text flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-primary-text" /> Top Run Scorers
-                </h3>
-                {topRunScorers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {topRunScorers.map((p) => (
-                      <li key={p.participantId}>
-                        <Link href={`/juniors/players/${p.participantId}`}>
-                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary-text">
-                            <span className="font-medium">{p.displayName}</span>
-                            <span className="font-mono text-sm">{p.runs}</span>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-              <section className="bg-card border border-border rounded-md p-4 shadow-sm">
-                <h3 className="font-serif font-bold text-primary-text flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-primary-text" /> Top Wicket Takers
-                </h3>
-                {topWicketTakers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No data for this season yet.</p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {topWicketTakers.map((p) => (
-                      <li key={p.participantId}>
-                        <Link href={`/juniors/players/${p.participantId}`}>
-                          <div className="flex items-center justify-between py-2 cursor-pointer hover:text-primary-text">
-                            <span className="font-medium">{p.displayName}</span>
-                            <span className="font-mono text-sm">{p.wickets}</span>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            </div>
-          </section>
-        </>
-      )}
-    </div>
+            <JuniorTopPerformers latestSeason={data.latestSeason ?? null} />
+            <JuniorQuickLinks />
+          </PageStack>
+        )}
+      </Container>
+    </FullBleedPage>
   );
 }
