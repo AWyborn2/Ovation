@@ -7,10 +7,9 @@ import {
   type PlatformAdmin,
 } from "@workspace/api-client-react";
 import { usePlatformAdmin, useInvalidatePlatformAdmin } from "@/lib/platform-admin-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { SignInCard } from "@/components/sign-in-card";
+import { cn } from "@/lib/utils";
 
 /**
  * The apex/concierge console gate. Mirrors the club AdminShell but for the global
@@ -30,8 +29,6 @@ export function PlatformAdminShell({ children }: { children: ReactNode }) {
 }
 
 function PlatformLoginGate() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const invalidate = useInvalidatePlatformAdmin();
   const login = usePlatformAdminLogin({
@@ -47,54 +44,19 @@ function PlatformLoginGate() {
     },
   });
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError("Email and password are required.");
-      return;
-    }
-    login.mutate({ data: { email: email.trim().toLowerCase(), password } });
-  };
-
   return (
-    <div className="mx-auto max-w-md py-16 px-6">
-      <p className="mb-6 text-center text-lg font-semibold tracking-tight">
-        Ovation — Platform admin
-      </p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="pa-email">Email</Label>
-              <Input
-                id="pa-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoFocus
-                autoComplete="username"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pa-password">Password</Label>
-              <Input
-                id="pa-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-            <Button type="submit" disabled={login.isPending}>
-              {login.isPending ? "Signing in…" : "Sign in"}
-            </Button>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-background px-[var(--pad)] text-foreground">
+      <SignInCard
+        eyebrow="Ovation / Platform"
+        title="Platform sign-in"
+        idPrefix="pa-"
+        userField="email"
+        pending={login.isPending}
+        error={error}
+        onSubmit={({ username, password }) =>
+          login.mutate({ data: { email: username.trim().toLowerCase(), password } })
+        }
+      />
     </div>
   );
 }
@@ -114,16 +76,20 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
   ];
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link href="/platform-admin" className="font-semibold tracking-tight">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b bg-[var(--glass)] backdrop-blur-[20px] backdrop-saturate-150">
+        <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between gap-4 px-[var(--pad)]">
+          <Link
+            href="/platform-admin"
+            className="font-serif text-xl font-bold uppercase tracking-wide"
+            data-testid="platform-home"
+          >
             Ovation <span className="text-muted-foreground">/ Platform</span>
           </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-muted-foreground">{admin.email}</span>
+          <div className="flex min-w-0 items-center gap-3 text-sm">
+            <span className="hidden truncate text-muted-foreground sm:inline">{admin.email}</span>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => logout.mutate()}
               disabled={logout.isPending}
@@ -132,7 +98,10 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
             </Button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-5xl gap-1 px-4">
+        <nav
+          aria-label="Platform"
+          className="mx-auto flex max-w-[1280px] gap-1 overflow-x-auto px-[var(--pad)] [scrollbar-width:none]"
+        >
           {nav.map(({ href, label, icon: Icon }) => {
             const active =
               href === "/platform-admin" ? location === href : location.startsWith(href);
@@ -140,11 +109,13 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
               <Link
                 key={href}
                 href={href}
-                className={`inline-flex items-center gap-1 border-b-2 px-3 py-2 text-sm ${
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors",
                   active
-                    ? "border-primary font-medium text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
               >
                 <Icon className="h-4 w-4" /> {label}
               </Link>
@@ -152,7 +123,9 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
           })}
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-[1280px] px-[var(--pad)] py-[var(--gap-section)]">
+        {children}
+      </main>
     </div>
   );
 }

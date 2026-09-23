@@ -58,7 +58,7 @@ function SortHeader({
   const active = sort.column === column;
   const ariaSort = active ? (sort.direction === "asc" ? "ascending" : "descending") : "none";
   return (
-    <th className="px-4 py-2 font-medium" aria-sort={ariaSort} style={{ textAlign: align }}>
+    <th className="h-10 px-4 font-semibold" aria-sort={ariaSort} style={{ textAlign: align }}>
       <button
         type="button"
         onClick={() => onSort(column)}
@@ -97,7 +97,7 @@ export default function TenantsList() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tenants</h1>
+          <h1 className="mb-2 text-[clamp(38px,4.6vw,64px)] leading-none">Tenants</h1>
           <p className="text-sm text-muted-foreground">
             Every club running Ovation, with its plan, data source, and health.
           </p>
@@ -146,15 +146,15 @@ export default function TenantsList() {
           {q.trim() ? `No tenants match “${q}”.` : EMPTY_FILTER_COPY[filter]}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border bg-background">
+        <div className="overflow-x-auto rounded-lg border bg-card">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-muted-foreground">
+            <thead className="border-b text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               <tr>
                 <SortHeader label="Club" column="name" sort={sort} onSort={onSort} />
-                <th className="px-4 py-2 font-medium">Address</th>
-                <th className="px-4 py-2 font-medium">Plan</th>
-                <th className="px-4 py-2 font-medium">Data source</th>
-                <th className="px-4 py-2 font-medium">Branding</th>
+                <th className="h-10 px-4 font-semibold">Address</th>
+                <th className="h-10 px-4 font-semibold">Plan</th>
+                <th className="h-10 px-4 font-semibold">Data source</th>
+                <th className="h-10 px-4 font-semibold">Branding</th>
                 <SortHeader label="Last active" column="lastActive" sort={sort} onSort={onSort} />
                 <SortHeader
                   label="Admins"
@@ -167,7 +167,7 @@ export default function TenantsList() {
             </thead>
             <tbody className="divide-y">
               {tenants.map((t) => (
-                <tr key={t.id} className="hover:bg-muted/40">
+                <tr key={t.id} className="transition-colors hover:bg-muted">
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <Link
@@ -204,7 +204,9 @@ export default function TenantsList() {
                   <td className="px-4 py-2 text-muted-foreground">
                     {formatLastActive(t.lastActiveAt)}
                   </td>
-                  <td className="px-4 py-2 text-right text-muted-foreground">{t.adminCount}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
+                    {t.adminCount}
+                  </td>
                 </tr>
               ))}
             </tbody>

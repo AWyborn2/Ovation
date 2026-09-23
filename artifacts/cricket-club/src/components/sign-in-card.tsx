@@ -14,6 +14,7 @@ export function SignInCard({
   title,
   intro,
   idPrefix,
+  userField = "username",
   pending,
   error,
   onSubmit,
@@ -22,6 +23,8 @@ export function SignInCard({
   title: string;
   intro?: ReactNode;
   idPrefix: string;
+  /** The identity field: a username (club/captain) or an email (platform). */
+  userField?: "username" | "email";
   pending: boolean;
   error: string | null;
   onSubmit: (credentials: { username: string; password: string }) => void;
@@ -40,7 +43,8 @@ export function SignInCard({
     onSubmit({ username, password });
   };
 
-  const message = missing ? "Username and password are required." : error;
+  const userLabel = userField === "email" ? "Email" : "Username";
+  const message = missing ? `${userLabel} and password are required.` : error;
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center py-12">
@@ -53,9 +57,10 @@ export function SignInCard({
         {intro && <p className="mt-3 text-sm text-muted-foreground">{intro}</p>}
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor={`${idPrefix}username`}>Username</Label>
+            <Label htmlFor={`${idPrefix}${userField}`}>{userLabel}</Label>
             <Input
-              id={`${idPrefix}username`}
+              id={`${idPrefix}${userField}`}
+              type={userField === "email" ? "email" : "text"}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoFocus

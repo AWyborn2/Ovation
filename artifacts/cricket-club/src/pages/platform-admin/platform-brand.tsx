@@ -195,7 +195,7 @@ export default function PlatformBrand() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Platform Brand</h1>
+        <h1 className="mb-2 text-[clamp(38px,4.6vw,64px)] leading-none">Platform Brand</h1>
         <p className="text-sm text-muted-foreground">
           The Ovation platform's own name, logo, accent colour, and favicon. Changes appear on the
           landing page immediately — no redeploy needed.
