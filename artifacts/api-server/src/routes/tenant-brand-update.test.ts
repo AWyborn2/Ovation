@@ -149,13 +149,16 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
     expect(cleared.body.heroImages).toBeNull();
   });
 
-  it("rejects an unknown heroImages slot (closed schema, 400)", async () => {
+  it("strips an unknown heroImages slot rather than storing it (closed schema)", async () => {
     await request(app)
       .patch("/api/tenant-brand")
       .set("Cookie", adminACookie)
       .set("x-tenant-id", String(tenantAId))
-      .send({ heroImages: { banner: "/x.webp" } })
-      .expect(400);
+      .send({ heroImages: { banner: "/x.webp", home: "/api/storage/objects/h.webp" } })
+      .expect(200);
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
+    expect(row.heroImages).toEqual({ home: "/api/storage/objects/h.webp" });
+    expect(row.heroImages).not.toHaveProperty("banner");
   });
 
   it("a partial update (only logoUrl) leaves other fields untouched", async () => {
