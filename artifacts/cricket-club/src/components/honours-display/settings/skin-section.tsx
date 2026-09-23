@@ -17,6 +17,7 @@ const TEMPLATE_BLURB: Record<TemplateId, string> = {
   p8: "App-style flags with bright accents (dark).",
   p9: "Printed acrylic board with a filled colour header row.",
   p10: "Matches the Ovation app — dark charcoal, club gold, serif titles.",
+  p11: "Matches the Broadcast redesign — near-black panels, condensed titles, club accent.",
 };
 
 /** Skin picker — built-in templates + admin-authored themes. */
