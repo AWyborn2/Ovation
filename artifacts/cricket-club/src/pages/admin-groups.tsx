@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { lazy, Suspense, type ReactNode } from "react";
 import { LoadingState } from "@/components/data-states";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PageHeader, UnderlineTabs } from "@/components/broadcast";
 import { useEntitlements, type Feature } from "@/lib/entitlements";
 const AdminSocial = lazy(() => import("@/pages/admin-social"));
 const AdminSocialStudio = lazy(() => import("@/pages/admin-social-studio"));
@@ -51,8 +51,8 @@ type AdminTab = {
 // Shared tabbed shell for a consolidated admin group. The active tab is driven
 // by the URL (the first tab lives at the group's base path; every other tab is
 // a single path segment under it), so each tab is directly deep-linkable and the
-// side-nav / hub can link straight to a specific tab. Inactive tab panels stay
-// unmounted (Radix default) so each page's queries only fire when its tab opens.
+// side-nav / hub can link straight to a specific tab. Only the active tab's
+// panel is mounted, so each page's queries only fire when its tab opens.
 function AdminTabGroup({
   title,
   description,
@@ -74,35 +74,29 @@ function AdminTabGroup({
       (t) => t.path !== basePath && (location === t.path || location.startsWith(`${t.path}/`)),
     )?.value ?? visibleTabs[0]?.value;
 
+  const activeTab = visibleTabs.find((t) => t.value === active);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold">{title}</h1>
-        {description && <p className="text-muted-foreground mt-1">{description}</p>}
-      </div>
-      {visibleTabs.length === 0 ? (
+      <PageHeader eyebrow="Admin" title={title} subtitle={description} />
+      {!activeTab ? (
         <p className="text-muted-foreground">Upgrade your plan to unlock these tools.</p>
       ) : (
-        <Tabs
-          value={active}
-          onValueChange={(v) => {
-            const t = visibleTabs.find((x) => x.value === v);
-            if (t) navigate(t.path);
-          }}
-        >
-          <TabsList className="flex flex-wrap h-auto justify-start">
-            {visibleTabs.map((t) => (
-              <TabsTrigger key={t.value} value={t.value}>
-                {t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {visibleTabs.map((t) => (
-            <TabsContent key={t.value} value={t.value} className="mt-6">
-              <Suspense fallback={<LoadingState label="Loading…" />}>{t.element}</Suspense>
-            </TabsContent>
-          ))}
-        </Tabs>
+        <div>
+          <UnderlineTabs
+            label={title}
+            tabs={visibleTabs.map((t) => ({ value: t.value, label: t.label }))}
+            value={activeTab.value}
+            onChange={(v) => {
+              const t = visibleTabs.find((x) => x.value === v);
+              if (t) navigate(t.path);
+            }}
+          />
+          {/* Only the active tab mounts, so each page's queries fire only when opened. */}
+          <div role="tabpanel" aria-label={activeTab.label} className="mt-6">
+            <Suspense fallback={<LoadingState label="Loading…" />}>{activeTab.element}</Suspense>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,11 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useLogin } from "@workspace/api-client-react";
 import { useCurrentAdmin, useInvalidateAdmin } from "@/lib/admin-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { AdminLayout } from "@/components/admin-layout";
+import { SignInCard } from "@/components/sign-in-card";
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const me = useCurrentAdmin();
@@ -19,8 +16,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 
 function LoginGate() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const invalidate = useInvalidateAdmin();
   const login = useLogin({
@@ -36,50 +31,14 @@ function LoginGate() {
     },
   });
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) {
-      setError("Username and password are required.");
-      return;
-    }
-    login.mutate({ data: { username, password } });
-  };
-
   return (
-    <div className="max-w-md mx-auto py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin sign-in</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                autoComplete="username"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-            <Button type="submit" disabled={login.isPending}>
-              {login.isPending ? "Signing in…" : "Sign in"}
-            </Button>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <SignInCard
+      eyebrow="Back office"
+      title="Admin sign-in"
+      idPrefix=""
+      pending={login.isPending}
+      error={error}
+      onSubmit={(data) => login.mutate({ data })}
+    />
   );
 }
