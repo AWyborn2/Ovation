@@ -29,7 +29,7 @@ export function StatBadge({
         "font-mono font-bold text-[11px] px-2 py-0.5 rounded-sm",
         tone === "green"
           ? "text-[hsl(153_56%_52%)] bg-[rgba(63,201,139,0.12)]"
-          : "text-primary bg-muted",
+          : "text-primary-text bg-muted",
         className,
       )}
     >
@@ -40,7 +40,7 @@ export function StatBadge({
 
 const STATUS_PILL_TONES = {
   live: "bg-[rgba(63,201,139,0.12)] text-[hsl(153_56%_52%)]",
-  pilot: "bg-[rgba(255,178,56,0.12)] text-primary",
+  pilot: "bg-[rgba(255,178,56,0.12)] text-primary-text",
   info: "bg-[rgba(76,140,245,0.12)] text-[hsl(217_89%_63%)]",
   neutral: "bg-muted text-muted-foreground",
   danger: "bg-[rgba(240,101,75,0.12)] text-destructive",

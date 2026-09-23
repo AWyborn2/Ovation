@@ -201,7 +201,7 @@ function JuniorPlayerRow({
               </span>
             )}
             {player.seniorPlayerId != null && (
-              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/40 rounded px-1.5 py-0.5">
+              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary-text border border-primary/40 rounded px-1.5 py-0.5">
                 Senior linked
               </span>
             )}

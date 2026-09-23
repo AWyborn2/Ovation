@@ -24,6 +24,10 @@
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-primary-border: hsl(var(--primary-border));
+  /* Accent used as TEXT: use `text-primary-text`, which resolves to the
+     contrast-safe --primary-text (≥4.5:1 on the card, derived per tenant in
+     deriveThemeTokens). Fills, borders and rings keep the raw --primary. */
+  --color-primary-text: hsl(var(--primary-text));
 
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
@@ -51,6 +55,11 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Broadcast desktop/mobile header breakpoint (~900px) → the `nav:` variant. */
+@theme {
+  --breakpoint-nav: 56.25rem;
+}
+
 /* Colour tokens below are generated from deriveThemeTokens(DEFAULT_BRAND, mode)
    (artifacts/cricket-club/src/lib/theme-tokens.ts) — the neutral (brand-less)
    fallback palette, painted before the tenant brand API response resolves and
@@ -64,36 +73,37 @@
      buildSurfaceScale(s_light=min(25,20)=20). Accent from primaryColour
      "#94A3B8" = 215 20% 65%. Regenerate with deriveThemeTokens if either
      the algorithm or DEFAULT_BRAND changes. */
-  --background: 215 20% 97%;
-  --foreground: 222 30% 12%;
+  --background: 215 19% 96%;
+  --foreground: 208 29% 10%;
 
-  --border: 215 17% 88%;
-  --input: 215 17% 88%;
+  --border: 215 18% 87%;
+  --input: 215 18% 87%;
 
   --ring: 215 20% 65%;
 
   --card: 0 0% 100%;
-  --card-foreground: 222 30% 12%;
-  --card-border: 215 17% 88%;
+  --card-foreground: 208 29% 10%;
+  --card-border: 215 18% 87%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222 30% 12%;
-  --popover-border: 215 17% 88%;
+  --popover-foreground: 208 29% 10%;
+  --popover-border: 215 18% 87%;
 
   --primary: 215 20% 65%;
-  --primary-foreground: 222 33% 8%;
+  --primary-foreground: 213 26% 8%;
   --primary-border: 215 20% 65%;
+  --primary-text: 215 20% 48%;
 
-  --secondary: 215 18% 94%;
-  --secondary-foreground: 218 12% 42%;
-  --secondary-border: 215 17% 88%;
+  --secondary: 215 20% 93%;
+  --secondary-foreground: 209 13% 39%;
+  --secondary-border: 215 18% 87%;
 
-  --muted: 215 18% 94%;
-  --muted-foreground: 218 12% 42%;
-  --muted-border: 215 17% 88%;
+  --muted: 215 20% 93%;
+  --muted-foreground: 209 13% 39%;
+  --muted-border: 215 18% 87%;
 
   --accent: 215 20% 65%;
-  --accent-foreground: 222 33% 8%;
+  --accent-foreground: 213 26% 8%;
   --accent-border: 215 20% 65%;
 
   --destructive: 6 78% 46%;
@@ -101,9 +111,25 @@
   --destructive-border: 6 78% 40%;
 
   --app-font-sans: "IBM Plex Sans", sans-serif;
-  --app-font-serif: "Bricolage Grotesque", sans-serif;
+  /* Broadcast display/number face. Tenants can still override it via
+     themeOverrides["--app-font-serif"]. */
+  --app-font-serif: "Barlow Condensed", "IBM Plex Sans", sans-serif;
   --app-font-mono: "IBM Plex Mono", monospace;
-  --radius: 0.5rem;
+  /* 12px cards/tables/popovers; --radius-sm (8px) for buttons, menu items, tiles. */
+  --radius: 0.75rem;
+
+  /* Broadcast depth tokens (light). Derived from the live brand vars, so they
+     follow every tenant without being part of deriveThemeTokens. */
+  --glass: hsl(var(--card) / 0.72);
+  --pop: hsl(var(--card) / 0.94);
+  --glow: hsl(var(--primary) / 0.16);
+  --shadow-pop: 0 20px 40px -18px rgb(16 24 40 / 0.22);
+  --win-bg: rgb(21 128 61 / 0.1);
+  --win-fg: #15803d;
+  --loss-bg: rgb(185 28 28 / 0.08);
+  --loss-fg: #b91c1c;
+  /* Sticky header height; U4 sets 60px below the mobile breakpoint. */
+  --header-h: 68px;
 
   /* Juniors section banner accent. Default = neutral slate; BrandProvider
      overrides it at runtime from the tenant brand's tertiary colour. */
@@ -116,35 +142,47 @@
      buildSurfaceScale(s_dark=min(25,35)=25). Accent from primaryColour
      "#94A3B8" = 215 20% 65%. Regenerate with deriveThemeTokens if either
      the algorithm or DEFAULT_BRAND changes. */
-  --background: 215 25% 8%;
-  --foreground: 220 20% 96%;
-  --border: 215 18% 21%;
-  --input: 215 18% 21%;
+  --background: 215 34% 6%;
+  --foreground: 210 30% 96%;
+  --border: 215 25% 19%;
+  --input: 215 25% 19%;
   --ring: 215 20% 65%;
 
-  --card: 215 23% 11%;
-  --card-foreground: 220 20% 96%;
-  --card-border: 215 18% 21%;
+  --card: 215 29% 10%;
+  --card-foreground: 210 30% 96%;
+  --card-border: 215 25% 19%;
 
-  --popover: 215 23% 11%;
-  --popover-foreground: 220 20% 96%;
-  --popover-border: 215 18% 21%;
+  --popover: 215 29% 10%;
+  --popover-foreground: 210 30% 96%;
+  --popover-border: 215 25% 19%;
 
   --primary: 215 20% 65%;
-  --primary-foreground: 222 33% 8%;
+  --primary-foreground: 213 26% 8%;
   --primary-border: 215 20% 65%;
+  --primary-text: 215 20% 65%;
 
-  --secondary: 215 21% 16%;
-  --secondary-foreground: 218 12% 60%;
-  --secondary-border: 215 18% 21%;
+  --secondary: 215 27% 14%;
+  --secondary-foreground: 209 12% 61%;
+  --secondary-border: 215 25% 19%;
 
-  --muted: 215 21% 16%;
-  --muted-foreground: 218 12% 60%;
-  --muted-border: 215 18% 21%;
+  --muted: 215 27% 14%;
+  --muted-foreground: 209 12% 61%;
+  --muted-border: 215 25% 19%;
 
   --accent: 215 20% 65%;
-  --accent-foreground: 222 33% 8%;
+  --accent-foreground: 213 26% 8%;
   --accent-border: 215 20% 65%;
+
+  /* Broadcast depth tokens (dark). Derived from the live brand vars, so they
+     follow every tenant without being part of deriveThemeTokens. */
+  --glass: hsl(var(--background) / 0.72);
+  --pop: hsl(var(--card) / 0.92);
+  --glow: hsl(var(--primary) / 0.12);
+  --shadow-pop: 0 24px 48px -16px rgb(0 0 0 / 0.6);
+  --win-bg: rgb(74 222 128 / 0.14);
+  --win-fg: #4ade80;
+  --loss-bg: rgb(248 113 113 / 0.14);
+  --loss-fg: #f87171;
 
   --destructive: 9 85% 62%;
   --destructive-foreground: 0 0% 100%;
@@ -170,16 +208,63 @@
     content: "";
     @apply fixed inset-0 pointer-events-none bg-background/80 mix-blend-multiply z-[-1];
   }
-  /* Design-system headings: Bricolage Grotesque 700-800, sentence case, in
-     foreground ink — the accent is reserved for numbers, CTAs and live states,
-     and uppercase for small pills/labels only. */
+  /* Broadcast headings: Barlow Condensed 700, uppercase, 0.01em tracking, in
+     foreground ink — the accent is reserved for numbers, CTAs and live states. */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-serif font-bold tracking-tight text-foreground;
+    @apply font-serif font-bold uppercase text-foreground;
+    letter-spacing: 0.01em;
+  }
+  body {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+}
+
+/* Broadcast motion. Everything below is disabled under reduced motion. */
+@keyframes bc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes bc-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@utility bc-pulse {
+  animation: bc-pulse 1.8s ease-in-out infinite;
+}
+@utility bc-lift {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  &:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .bc-lift:hover {
+    transform: none;
   }
 }
 

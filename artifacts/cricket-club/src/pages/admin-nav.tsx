@@ -357,7 +357,7 @@ function NavItemRow({
           <ArrowDown className="h-4 w-4" />
         </button>
       </div>
-      {Icon && <Icon className="h-5 w-5 text-primary shrink-0" />}
+      {Icon && <Icon className="h-5 w-5 text-primary-text shrink-0" />}
       <div className="min-w-0 flex-1">
         <div className="font-medium flex items-center gap-1.5">
           {item.label}

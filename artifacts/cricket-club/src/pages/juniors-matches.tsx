@@ -106,16 +106,16 @@ export default function JuniorsMatches() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
           Juniors
         </div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Junior Matches</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">Junior Matches</h1>
         <p className="text-muted-foreground mt-1">Browse junior game-by-game scorecards.</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">
+          <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
             Age Group
           </label>
           <select
@@ -133,7 +133,9 @@ export default function JuniorsMatches() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-primary">Season</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+            Season
+          </label>
           <select
             value={season ?? ""}
             onChange={(e) => setSeason(e.target.value)}
@@ -168,13 +170,13 @@ export default function JuniorsMatches() {
               >
                 <div className="flex items-center gap-2">
                   {m.ageGroup && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
                       {m.ageGroup}
                     </span>
                   )}
                   <MatchCardCrest club={m.opponentClub} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-serif font-bold text-primary group-hover:text-primary truncate">
+                    <div className="font-serif font-bold text-primary-text group-hover:text-primary-text truncate">
                       vs {m.opponentName ?? "Unknown"}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">

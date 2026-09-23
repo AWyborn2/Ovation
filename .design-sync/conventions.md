@@ -4,7 +4,7 @@ This is the Ovation white-label cricket platform's component library (shadcn/ui 
 
 ## Setup and wrapping
 
-- No global provider is required — tokens live in `styles.css` as CSS custom properties on `:root`, with a `.dark` class variant for dark mode.
+- No global provider is required — tokens live in `styles.css` as CSS custom properties on `:root`, with a `.dark` class variant for dark mode (dark is the default). Broadcast depth tokens: `--glass`, `--pop`, `--glow`, `--shadow-pop`, `--win-*`/`--loss-*`, `--header-h`; `nav:` is the ~900px desktop-header breakpoint.
 - Exceptions that DO need wrapping: every `Sidebar*` component must sit inside `<SidebarProvider>`; `Tooltip` needs `<TooltipProvider>`; `Toast` pieces need `<ToastProvider>` (or just use `<Toaster />` once). Compose leaf pieces inside their family root (`AccordionItem` inside `Accordion`, `SelectItem` inside `Select`, `TableCell` inside `Table`, etc.).
 - Components whose `.prompt.md` mentions API hooks (`AdminShell`, `Layout`, `WinnerForm`, `PlayerStatsModal`, `EntitlementGate`, …) fetch live data and will not render in a static design — build page chrome from `Sidebar*`, `Card*`, and `NavigationMenu` instead.
 
@@ -16,9 +16,9 @@ Tailwind utility classes backed by semantic tokens. The shipped stylesheet conta
 |---|---|
 | Surfaces | `bg-background`, `bg-card`, `bg-popover`, `bg-muted`, `bg-accent`, `bg-secondary` |
 | Brand/status | `bg-primary`, `bg-destructive` (+ `text-primary-foreground`, `text-destructive-foreground`) |
-| Text | `text-foreground`, `text-muted-foreground`, `text-card-foreground` |
+| Text | `text-foreground`, `text-muted-foreground`, `text-card-foreground`; accent as text is `text-primary-text` (contrast-safe `--primary-text`), never `text-primary` |
 | Borders | `border-border`, `border-input`, `ring-ring`; radius `rounded-sm/md/lg/xl` (from `--radius`) |
-| Type | `font-sans` (IBM Plex Sans), `font-mono` (IBM Plex Mono); display headings use "Bricolage Grotesque" |
+| Type | `font-sans` (IBM Plex Sans), `font-mono` (IBM Plex Mono); display headings and stat numbers use `font-serif` ("Barlow Condensed", uppercase, 0.01em; always `tabular-nums` for numbers) |
 
 Raw CSS uses the same tokens: `hsl(var(--primary))`, `hsl(var(--card-border))`, `var(--radius)`. Every colour token has `-foreground` and `-border` companions (`--card`/`--card-foreground`/`--card-border`). Do not invent new colour utilities (e.g. `bg-blue-500` may not exist in the sheet) — use tokens; arbitrary values like `bg-[hsl(var(--muted))]` are safe. Note: tenant brands recolour these tokens at runtime — never hard-code hex where a token exists.
 

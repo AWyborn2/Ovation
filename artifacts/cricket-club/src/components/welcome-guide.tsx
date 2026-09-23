@@ -60,7 +60,7 @@ export function WelcomeGuide() {
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : dismiss())}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-primary mb-1">
+          <div className="flex items-center gap-2 text-primary-text mb-1">
             <Trophy className="h-5 w-5" />
             <span className="text-xs font-bold uppercase tracking-[0.2em]">{brand.name}</span>
           </div>
@@ -76,7 +76,7 @@ export function WelcomeGuide() {
             <ul className="space-y-2">
               {CAN_DO.map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-start gap-2 text-sm">
-                  <Icon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <Icon className="h-4 w-4 text-primary-text mt-0.5 shrink-0" />
                   <span>{text}</span>
                 </li>
               ))}

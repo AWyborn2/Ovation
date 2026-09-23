@@ -159,7 +159,7 @@ export function AudioTracksCard({
                   <div className="font-medium truncate flex items-center gap-2">
                     {t.name}
                     {t.isCurated && (
-                      <span className="text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] uppercase tracking-wide bg-primary/15 text-primary-text px-1.5 py-0.5 rounded">
                         Library
                       </span>
                     )}

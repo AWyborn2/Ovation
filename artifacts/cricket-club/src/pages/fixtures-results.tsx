@@ -83,7 +83,7 @@ function FixtureCard({ fixture: m }: { fixture: PlayhqFixture }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-xs font-bold uppercase tracking-widest text-primary">
+          <div className="text-xs font-bold uppercase tracking-widest text-primary-text">
             {m.grade}
             {m.round ? ` · ${m.round}` : ""}
             {m.matchType ? ` · ${m.matchType}` : ""}
@@ -137,7 +137,7 @@ function FixtureCard({ fixture: m }: { fixture: PlayhqFixture }) {
           {m.scorecardMatchId != null && (
             <Link
               href={`/matches/${m.scorecardMatchId}`}
-              className="inline-block mt-1 text-primary underline underline-offset-2 text-sm font-medium"
+              className="inline-block mt-1 text-primary-text underline underline-offset-2 text-sm font-medium"
             >
               View scorecard
             </Link>
@@ -154,7 +154,7 @@ function LadderTable({ name, teams }: { name: string; teams: PlayhqLadderTeam[] 
   const fmt = (v: number | null | undefined, digits = 0) => (v == null ? "–" : v.toFixed(digits));
   return (
     <div className="bg-card border border-border rounded-md overflow-hidden">
-      <div className="px-4 py-2 border-b border-border text-xs font-bold uppercase tracking-widest text-primary">
+      <div className="px-4 py-2 border-b border-border text-xs font-bold uppercase tracking-widest text-primary-text">
         {name}
       </div>
       <div className="overflow-x-auto">
@@ -240,7 +240,7 @@ export default function FixturesResults() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Fixtures &amp; Results</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary-text">Fixtures &amp; Results</h1>
         <p className="text-muted-foreground mt-1">
           The club's season as published on PlayCricket, across every senior grade.
         </p>
@@ -259,7 +259,7 @@ export default function FixturesResults() {
         <>
           <div className="flex flex-wrap gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Season
               </label>
               <select
@@ -276,7 +276,7 @@ export default function FixturesResults() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary">
+              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
                 Grade
               </label>
               <select
@@ -305,8 +305,8 @@ export default function FixturesResults() {
                 onClick={() => setTab(t.key)}
                 className={`px-4 py-2 font-serif uppercase tracking-wider text-sm border-b-2 -mb-px transition-colors ${
                   tab === t.key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-primary"
+                    ? "border-primary text-primary-text"
+                    : "border-transparent text-muted-foreground hover:text-primary-text"
                 }`}
                 data-testid={`tab-${t.key}`}
               >

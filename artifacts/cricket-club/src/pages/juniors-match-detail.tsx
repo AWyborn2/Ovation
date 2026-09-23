@@ -26,13 +26,13 @@ export default function JuniorsMatchDetail() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <Link href="/juniors/matches">
-          <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+          <span className="inline-flex items-center gap-1 text-sm text-primary-text hover:underline cursor-pointer">
             <ArrowLeft className="h-4 w-4" /> Back to junior matches
           </span>
         </Link>
         {isAdmin && Number.isFinite(id) && (
           <Link href={`/admin/people/junior-scorecards?matchId=${id}`}>
-            <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+            <span className="inline-flex items-center gap-1 text-sm text-primary-text hover:underline cursor-pointer">
               <Pencil className="h-3.5 w-3.5" /> Edit scorecard
             </span>
           </Link>
@@ -50,7 +50,7 @@ export default function JuniorsMatchDetail() {
           <div className="bg-card border border-border rounded-md p-5 shadow-sm space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               {match.ageGroup && (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text bg-primary/10 border border-primary/40 rounded px-2 py-0.5">
                   {match.ageGroup}
                 </span>
               )}
@@ -60,7 +60,7 @@ export default function JuniorsMatchDetail() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary">
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary-text">
               {brand.name} <span className="text-muted-foreground font-normal">vs</span>{" "}
               {match.opponentName ?? "Unknown"}
             </h1>
@@ -77,7 +77,7 @@ export default function JuniorsMatchDetail() {
               </div>
             )}
             {match.hhResult && (
-              <div className="text-base font-semibold text-primary">{match.hhResult}</div>
+              <div className="text-base font-semibold text-primary-text">{match.hhResult}</div>
             )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
               {fmtJuniorDate(match.matchDate) && (

@@ -226,7 +226,7 @@ function StatPicker({
           >
             <input type="checkbox" checked={isSelected} onChange={() => onToggle(stat.key)} />
             <span className="font-medium text-sm flex-1">{stat.label}</span>
-            {isSelected && <span className="text-xs font-bold text-primary">{order + 1}</span>}
+            {isSelected && <span className="text-xs font-bold text-primary-text">{order + 1}</span>}
           </label>
         );
       })}
