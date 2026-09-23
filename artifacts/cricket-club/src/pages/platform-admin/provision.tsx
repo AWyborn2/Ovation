@@ -104,7 +104,7 @@ function DetailsForm({ club, onBack }: { club: AvailableClub; onBack: () => void
         >
           <ArrowLeft className="mr-1 h-4 w-4" /> Choose a different club
         </button>
-        <h2 className="text-xl font-semibold">{club.name}</h2>
+        <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">{club.name}</h2>
         <p className="text-sm text-muted-foreground">
           Provision this club as a tenant. The first admin is optional.
         </p>
@@ -177,7 +177,7 @@ export default function ProvisionTenant() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Provision a club</h1>
+      <h1 className="mb-2 text-[clamp(38px,4.6vw,64px)] leading-none">Provision a club</h1>
       <p className="text-sm text-muted-foreground">
         Concierge onboarding from the central PCA register.
       </p>

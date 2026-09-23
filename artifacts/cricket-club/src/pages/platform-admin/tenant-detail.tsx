@@ -94,7 +94,7 @@ export default function TenantDetail() {
         <ArrowLeft className="mr-1 h-4 w-4" /> All tenants
       </Link>
 
-      <h1 className="text-2xl font-semibold tracking-tight">{tenant.name}</h1>
+      <h1 className="mb-2 text-[clamp(38px,4.6vw,64px)] leading-none">{tenant.name}</h1>
       <p className="text-sm text-muted-foreground">
         {tenant.slug} · {tenant.readsFromCentral ? "Central PCA data" : "Native data"}
         {tenant.centralClubName ? ` · ${tenant.centralClubName}` : ""}
