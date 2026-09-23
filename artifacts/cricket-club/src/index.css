@@ -130,6 +130,9 @@
   --loss-fg: #b91c1c;
   /* Sticky header height; U4 sets 60px below the mobile breakpoint. */
   --header-h: 68px;
+  /* Broadcast page gutter and vertical section rhythm. */
+  --pad: clamp(16px, 3.2vw, 40px);
+  --gap-section: clamp(24px, 3vw, 40px);
 
   /* Juniors section banner accent. Default = neutral slate; BrandProvider
      overrides it at runtime from the tenant brand's tertiary colour. */
@@ -269,6 +272,19 @@
 }
 
 @layer components {
+  /* Broadcast tables (TableCard stickyFirst): the identity column stays pinned
+     at every width while the stats scroll beneath it. */
+  .bc-sticky-first :where(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: hsl(var(--card));
+    box-shadow: 1px 0 0 0 hsl(var(--border));
+  }
+  .bc-sticky-first tr:hover :where(td):first-child {
+    background-color: hsl(var(--muted));
+  }
+
   /*
    * Wide stat tables freeze their first (identity/anchor) column on small
    * screens, so a fan can read across a row without losing track of who/what
