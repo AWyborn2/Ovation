@@ -66,7 +66,7 @@ export function latestMatch(matches: MatchSummary[]): MatchSummary | null {
 
 /** Ticker items: one per latest-round result across the senior grades. */
 export function tickerItems(matches: MatchSummary[], clubShort: string): TickerItem[] {
-  return sortGradesBySeniority(matches.map((m) => m.grade)).flatMap((grade) =>
+  return sortGradesBySeniority(new Set(matches.map((m) => m.grade))).flatMap((grade) =>
     matches
       .filter((m) => m.grade === grade && !m.abandoned && (m.clubScore || m.opponentScore))
       .map((m) => ({
