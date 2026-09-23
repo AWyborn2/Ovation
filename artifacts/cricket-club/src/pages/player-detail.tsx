@@ -370,7 +370,7 @@ export default function PlayerDetail() {
     .slice(0, 8);
 
   return (
-    <Container className="py-[var(--gap-section)]">
+    <Container page className="py-[var(--gap-section)]">
       <PageStack>
         <nav aria-label="Breadcrumb" className="text-[13px] text-muted-foreground">
           <Link href="/players" className="hover:text-foreground">

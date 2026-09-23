@@ -133,7 +133,7 @@ export default function Players() {
   const total = data?.total;
 
   return (
-    <Container className="py-[var(--gap-section)]">
+    <Container page className="py-[var(--gap-section)]">
       <PageStack>
         <PageHeader
           eyebrow="Stats"
