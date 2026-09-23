@@ -21,17 +21,14 @@ export function JuniorScorecard({ match }: JuniorScorecardProps) {
 
   if (!hasAnyData) {
     return (
-      <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
+      <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground italic">
         No scorecard recorded for this match.
       </div>
     );
   }
 
   return (
-    <div
-      className="flex flex-col gap-3 p-3 rounded-md overflow-hidden"
-      style={{ background: "#0a1626" }}
-    >
+    <div className="flex flex-col gap-3 p-3 rounded-lg border bg-card overflow-hidden">
       {scorecard.innings.map((inn, i) => (
         <div key={i} className="flex flex-col gap-2">
           <BattingCard innings={inn} />

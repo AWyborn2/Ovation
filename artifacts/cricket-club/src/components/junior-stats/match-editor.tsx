@@ -72,7 +72,7 @@ export function JuniorMatchEditor({ matchId, onBack }: { matchId: number; onBack
       ) : (
         <>
           <div>
-            <h2 className="text-xl font-serif font-bold text-primary-text">
+            <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">
               vs {match.opponentName ?? "Unknown"}
             </h2>
             <div className="text-sm text-muted-foreground">

@@ -11,8 +11,8 @@ import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-card border border-border rounded-md p-3 text-center">
-      <div className="text-xl font-serif font-bold text-primary-text">{value}</div>
+    <div className="rounded-lg border bg-card p-3 text-center">
+      <div className="text-[clamp(22px,2.2vw,28px)] leading-none">{value}</div>
       <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
         {label}
       </div>
@@ -49,12 +49,10 @@ export default function JuniorsPlayerDetail() {
       ) : (
         <>
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary-text mb-2">
+            <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
               Junior Player
             </div>
-            <h1 className="text-3xl font-serif font-bold text-primary-text">
-              {player.displayName}
-            </h1>
+            <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">{player.displayName}</h1>
             <div className="text-sm text-muted-foreground mt-1">
               {player.firstSeason && player.lastSeason
                 ? `${player.firstSeason} – ${player.lastSeason}`
@@ -100,7 +98,7 @@ export default function JuniorsPlayerDetail() {
           {player.seasons.length > 0 && (
             <section className="space-y-2">
               <h2 className="text-lg font-serif font-bold text-primary-text">By Season</h2>
-              <div className="overflow-x-auto bg-card border border-border rounded-md">
+              <div className="overflow-x-auto rounded-lg border bg-card">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -116,9 +114,9 @@ export default function JuniorsPlayerDetail() {
                       <tr key={i} className="border-b border-border/60 last:border-0">
                         <td className="px-3 py-2 font-medium">{s.season}</td>
                         <td className="px-3 py-2 text-muted-foreground">{s.teams ?? "—"}</td>
-                        <td className="px-3 py-2 text-right font-mono">{s.matches}</td>
-                        <td className="px-3 py-2 text-right font-mono">{s.runs}</td>
-                        <td className="px-3 py-2 text-right font-mono">{s.wickets}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{s.matches}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{s.runs}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{s.wickets}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -134,7 +132,7 @@ export default function JuniorsPlayerDetail() {
               <div className="space-y-2">
                 {player.matches.map((m) => (
                   <Link key={m.matchId} href={`/juniors/matches/${m.matchId}`}>
-                    <div className="bg-card border border-border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary transition-colors flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <div className="rounded-lg border bg-card p-3 cursor-pointer hover:border-primary transition-colors flex flex-wrap items-center gap-x-4 gap-y-1">
                       <div className="font-medium text-primary-text min-w-0">
                         vs {m.opponentName ?? "Unknown"}
                       </div>
@@ -148,7 +146,7 @@ export default function JuniorsPlayerDetail() {
                           {fmtJuniorDate(m.matchDate)}
                         </div>
                       )}
-                      <div className="ml-auto flex items-center gap-3 text-xs font-mono">
+                      <div className="ml-auto flex items-center gap-3 text-xs tabular-nums">
                         {m.batting && m.batting.runs != null && (
                           <span title="Batting">
                             {m.batting.runs}
@@ -206,7 +204,7 @@ function SeniorCareerSection({ seniorPlayerId }: { seniorPlayerId: number }) {
           Kept separate from junior records
         </span>
       </div>
-      <div className="bg-card border border-border rounded-md p-4 shadow-sm">
+      <div className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
           <span className="font-semibold text-primary-text">
             {senior.givenName} {senior.surname}
