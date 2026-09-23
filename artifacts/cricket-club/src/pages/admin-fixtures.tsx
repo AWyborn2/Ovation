@@ -125,7 +125,7 @@ export default function AdminFixtures() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Upcoming fixtures and team lists. These feed the Match Day, Team List and Countdown
             social cards.
           </p>
@@ -136,7 +136,7 @@ export default function AdminFixtures() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -194,7 +194,7 @@ export default function AdminFixtures() {
           <Card key={f.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-xl">
+                <CardTitle className="text-[22px] leading-none">
                   {f.isHome ? "vs" : "@"} {f.opponentName}
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
                     {f.grade}

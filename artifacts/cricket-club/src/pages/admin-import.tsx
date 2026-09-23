@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { PageHeader } from "@/components/broadcast";
 import { useClubShortName } from "@/lib/brand-context";
 import {
   useImportSession,
@@ -70,13 +71,11 @@ export default function AdminImport() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold">Admin · Import Stats</h1>
-        <p className="text-muted-foreground mt-1">
-          Import a whole-season PlayCricket CSV, or add a single match scorecard to the running
-          season totals. Nothing is applied until you Confirm.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Admin"
+        title="Import stats"
+        subtitle="Import a whole-season PlayCricket CSV, or add a single match scorecard to the running season totals. Nothing is applied until you Confirm."
+      />
 
       {session.committed && noPreview && (
         <div className="rounded-md border border-green-600/40 bg-green-600/10 p-4 text-sm space-y-2">

@@ -37,6 +37,9 @@ import {
 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { navIcon, NAV_ICON_MAP } from "@/lib/nav-icons";
+import { toResolvedNavItem } from "@/lib/use-nav";
+import { groupNavItems, type Section } from "@/lib/nav-groups";
+import { Eyebrow } from "@/components/broadcast";
 import { ListSkeleton, LoadingState, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 
@@ -86,7 +89,7 @@ export default function AdminNav() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Add, rename, reorder, hide or remove items across the site's menus and card grids. Each
           item can link to an internal page or an external website (external links open in a new
           tab). Changes take effect immediately on the public site.
@@ -111,6 +114,50 @@ export default function AdminNav() {
 }
 
 type SurfaceConfig = (typeof SURFACES)[number];
+
+/** Menu surfaces that feed the Broadcast header, and the section they group under. */
+const HEADER_SECTIONS: Partial<Record<NavSurface, Section>> = {
+  senior_menu: "seniors",
+  junior_menu: "juniors",
+};
+
+/**
+ * Read-only preview of where each visible item lands in the site header: the
+ * header groups menu items into Stats / History / Club by target, with
+ * external and unmapped links under Club (`groupNavItems`).
+ */
+function HeaderGroupPreview({ items, section }: { items: NavItem[]; section: Section }) {
+  const grouped = groupNavItems(
+    items.filter((i) => i.visible).map((i) => toResolvedNavItem(i)),
+    section,
+  );
+  const columns = [
+    ...(grouped.top.length ? [{ key: "top", label: "Top level", items: grouped.top }] : []),
+    ...grouped.groups,
+  ];
+  return (
+    <div className="rounded-lg border bg-muted/40 p-3" data-testid={`header-preview-${section}`}>
+      <Eyebrow>Header preview</Eyebrow>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {columns.map((col) => (
+          <div key={col.key} data-testid={`header-group-${col.key}`}>
+            <div className="text-sm font-semibold">{col.label}</div>
+            <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+              {col.items.map((i, idx) => (
+                <li key={`${i.target}-${idx}`} className="flex items-center gap-1 truncate">
+                  {i.label}
+                  {i.isExternal && (
+                    <ExternalLink className="h-3 w-3 shrink-0" aria-label="external" />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function SurfaceSection({ config, options }: { config: SurfaceConfig; options: NavOptions }) {
   const qc = useQueryClient();
@@ -209,6 +256,10 @@ function SurfaceSection({ config, options }: { config: SurfaceConfig; options: N
               />
             ))}
           </div>
+        )}
+
+        {HEADER_SECTIONS[surface] && items.length > 0 && (
+          <HeaderGroupPreview items={items} section={HEADER_SECTIONS[surface]!} />
         )}
 
         {adding ? (

@@ -7,7 +7,7 @@ import {
   getGetPasswordResetQueryKey,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eyebrow } from "@/components/broadcast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -74,19 +74,22 @@ export default function AdminReset() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-md py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Set your admin password</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <div className="flex min-h-[60vh] items-center justify-center py-12">
+        <section className="w-full max-w-md rounded-xl border bg-card p-[clamp(20px,3vw,32px)] text-card-foreground shadow-[var(--shadow-pop)]">
+          <Eyebrow accent>Back office</Eyebrow>
+          <h1 className="mt-2 mb-6 text-[clamp(30px,3.4vw,40px)] leading-none">
+            Set your admin password
+          </h1>
+          <div>
             {info.isLoading && token ? (
               <div className="flex items-center py-6 text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking your link…
               </div>
             ) : done ? (
               <div className="space-y-4">
-                <p className="text-sm text-green-700">Your password is set. You can now sign in.</p>
+                <p className="text-sm text-[var(--win-fg)]">
+                  Your password is set. You can now sign in.
+                </p>
                 <Button onClick={() => navigate("/admin")}>Go to sign-in</Button>
               </div>
             ) : invalid ? (
@@ -128,8 +131,8 @@ export default function AdminReset() {
                 {error ? <p className="text-sm text-destructive">{error}</p> : null}
               </form>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
     </Layout>
   );
