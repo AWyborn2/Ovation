@@ -70,7 +70,7 @@ const LiveTally = ({ tally }: { tally: AwardTally }) => {
           {top.map((e, i) => (
             <div key={e.playerId} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="flex items-baseline gap-3 min-w-0">
-                <span className="font-mono text-xs text-muted-foreground w-5 shrink-0">
+                <span className="tabular-nums text-xs text-muted-foreground w-5 shrink-0">
                   {i + 1}
                 </span>
                 <span
@@ -82,7 +82,7 @@ const LiveTally = ({ tally }: { tally: AwardTally }) => {
                   )}
                 </span>
               </span>
-              <span className="font-mono font-bold shrink-0">{e.points}</span>
+              <span className="tabular-nums font-bold shrink-0">{e.points}</span>
             </div>
           ))}
         </div>
@@ -113,7 +113,7 @@ const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
           {top.map((e, i) => (
             <div key={e.playerId} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="flex items-baseline gap-3 min-w-0">
-                <span className="font-mono text-xs text-muted-foreground w-5 shrink-0">
+                <span className="tabular-nums text-xs text-muted-foreground w-5 shrink-0">
                   {i + 1}
                 </span>
                 <Link
@@ -128,7 +128,7 @@ const LivePointsBoard = ({ board }: { board: PointsLeaderboard }) => {
                   )}
                 </Link>
               </span>
-              <span className="font-mono font-bold shrink-0">{e.points}</span>
+              <span className="tabular-nums font-bold shrink-0">{e.points}</span>
             </div>
           ))}
         </div>
@@ -148,7 +148,7 @@ const AwardBoardCard = ({
 }) => {
   const groups = groupBySeason(award.winners);
   return (
-    <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
+    <div className="rounded-lg border bg-card overflow-hidden">
       <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
         <span>{award.title}</span>
         <span className="text-xs whitespace-nowrap">
@@ -171,7 +171,7 @@ const AwardBoardCard = ({
           <div className="divide-y divide-border/60">
             {groups.map((g) => (
               <div key={g.season} className="flex items-baseline gap-4 py-2.5 first:pt-0 last:pb-0">
-                <span className="font-mono font-bold text-primary-text w-20 shrink-0">
+                <span className="tabular-nums font-bold text-primary-text w-20 shrink-0">
                   {formatSeason(g.season)}
                 </span>
                 <span className="flex flex-wrap gap-x-2 gap-y-1">
@@ -207,7 +207,7 @@ export function AwardsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+      <div className="rounded-lg border bg-card p-6">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Club Awards
         </h2>
@@ -218,11 +218,11 @@ export function AwardsTab() {
       </div>
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
           Loading awards…
         </div>
       ) : sorted.length === 0 ? (
-        <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground italic">
           No awards have been added yet.
         </div>
       ) : (

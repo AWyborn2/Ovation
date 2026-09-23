@@ -1,34 +1,5 @@
 import { Award, Target, Zap, Flame, UserPlus } from "lucide-react";
 import type { MilestoneItem } from "@workspace/api-client-react";
-import { BOARDS } from "@/lib/honour-boards";
-import type { ActiveTab } from "./types";
-
-// "Statistics" dropdown — every career/by-grade leaderboard except Games,
-// which is surfaced at the top of the Honour Boards menu instead.
-export const STATISTICS_ITEMS = BOARDS.filter((b) => b.key !== "games");
-
-// "Honour Boards" dropdown — Games Played (a leaderboard, lifted to the top)
-// plus the curated honour boards. A Grade Caps and Life Members are their own
-// top-level tabs, so they are intentionally not in this list.
-export const HONOUR_BOARD_ITEMS: { tab: ActiveTab; label: string }[] = [
-  { tab: "games", label: "Games Played" },
-  { tab: "awards", label: "Awards" },
-  { tab: "team-of-decade", label: "Team of the Decade" },
-  { tab: "committee", label: "Office Bearers" },
-  { tab: "records", label: "Notable Records" },
-];
-
-export const tabClass = (active: boolean) =>
-  `inline-flex items-center gap-1.5 px-4 md:px-5 py-2.5 rounded text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-    active
-      ? "bg-primary text-primary-foreground"
-      : "text-muted-foreground hover:bg-muted hover:text-primary-text"
-  }`;
-
-export const dropdownItemClass = (active: boolean) =>
-  `cursor-pointer text-xs md:text-sm font-semibold uppercase tracking-wider ${
-    active ? "bg-primary/10 text-primary-text" : ""
-  }`;
 
 // Max cards shown in the "Just achieved" grid (debuts first, then milestones).
 export const RECENT_ITEMS_LIMIT = 5;

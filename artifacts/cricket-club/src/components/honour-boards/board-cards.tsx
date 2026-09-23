@@ -7,17 +7,6 @@ import { GradeBadgeList } from "@/components/grade-badge";
 import { EmptyState } from "@/components/data-states";
 import type { PremiershipCount } from "./types";
 
-export const SummaryStat = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="bg-card border border-border rounded-md p-5 shadow-md">
-    <div className="text-3xl md:text-4xl font-serif font-bold text-primary-text">
-      {typeof value === "number" ? value.toLocaleString() : value}
-    </div>
-    <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1 font-serif">
-      {label}
-    </div>
-  </div>
-);
-
 export const PremiershipBadge = ({ count }: { count: PremiershipCount }) => {
   if (count.won === 0) return <span className="text-muted-foreground/60">—</span>;
   return (
@@ -26,9 +15,9 @@ export const PremiershipBadge = ({ count }: { count: PremiershipCount }) => {
       title={`${count.won} premiership${count.won === 1 ? "" : "s"}${count.captained ? `, captained ${count.captained}` : ""}`}
     >
       <Trophy className="h-3 w-3" />
-      <span className="font-mono">{count.won}</span>
+      <span className="tabular-nums">{count.won}</span>
       {count.captained > 0 && (
-        <span className="ml-0.5 font-mono text-[10px] bg-amber-600 text-white rounded px-1">
+        <span className="ml-0.5 tabular-nums text-[10px] bg-amber-600 text-white rounded px-1">
           C×{count.captained}
         </span>
       )}
@@ -45,7 +34,7 @@ const BoardCard = ({
   board: (typeof BOARDS)[number];
   premMap?: Map<number, PremiershipCount>;
 }) => (
-  <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
+  <div className="rounded-lg border bg-card overflow-hidden">
     <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
       <span className="flex items-center gap-2 md:gap-3">
         <TierBadge tierIndex={tier.tierIndex} />
@@ -89,7 +78,7 @@ const BoardCard = ({
               key={r.playerId}
               className={`border-t border-border/50 hover:bg-primary/10 transition-colors ${i % 2 ? "bg-black/10" : ""}`}
             >
-              <td className="p-3 text-center font-mono text-primary-text font-bold">
+              <td className="p-3 text-center tabular-nums text-primary-text font-bold">
                 {tier.startRank + i}
               </td>
               <td className="p-3">
@@ -101,7 +90,7 @@ const BoardCard = ({
                 </Link>
               </td>
               <td className="p-3 text-foreground/90">{r.givenName}</td>
-              <td className="p-3 text-right font-mono font-bold">{r.headline}</td>
+              <td className="p-3 text-right tabular-nums font-bold">{r.headline}</td>
               {board.key === "games" && (
                 <td className="p-3 text-center">
                   <PremiershipBadge count={premMap?.get(r.playerId) ?? { won: 0, captained: 0 }} />
@@ -111,7 +100,7 @@ const BoardCard = ({
                 {board.key === "games" ? (
                   <GradeBadgeList grades={r.gradesPlayed} size="sm" />
                 ) : (
-                  <span className="block text-right font-mono text-muted-foreground">
+                  <span className="block text-right tabular-nums text-muted-foreground">
                     {r.supporting}
                   </span>
                 )}
@@ -134,7 +123,7 @@ export const BoardView = ({
   premMap?: Map<number, PremiershipCount>;
 }) => (
   <div className="space-y-4">
-    <div className="bg-card border border-border rounded-md p-6 shadow-md">
+    <div className="rounded-lg border bg-card p-6">
       <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
         {board.title}
       </h2>
@@ -151,29 +140,3 @@ export const BoardView = ({
     )}
   </div>
 );
-
-// Quick-link cards mirroring the Juniors dashboard, in the club gold (the
-// senior section keeps gold as its accent everywhere).
-export function QuickLink({
-  href,
-  icon: Icon,
-  title,
-  desc,
-}: {
-  href: string;
-  icon: typeof Trophy;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Link href={href}>
-      <div className="bg-card border border-border rounded-md p-5 shadow-sm cursor-pointer h-full hover:border-primary transition-colors group">
-        <Icon className="h-7 w-7 text-primary-text mb-3" />
-        <div className="font-serif font-bold text-lg text-foreground group-hover:text-primary-text">
-          {title}
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">{desc}</p>
-      </div>
-    </Link>
-  );
-}

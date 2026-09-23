@@ -27,7 +27,7 @@ export const PromotionCard = ({ entry: p }: { entry: PromotionEntry }) => {
           </span>
         </div>
         <div className="text-xs text-muted-foreground mt-auto">
-          <span className="font-mono font-bold text-foreground">
+          <span className="tabular-nums font-bold text-foreground">
             {p.currentValue.toLocaleString()}
           </span>{" "}
           {p.boardLabel.toLowerCase()} • just past {p.threshold.toLocaleString()}
@@ -121,7 +121,7 @@ export const ApproachingCard = ({ entry: p }: { entry: ApproachingEntry }) => {
           </span>
         </div>
         <div className="text-xs text-muted-foreground mt-auto">
-          <span className="font-mono font-bold text-foreground">
+          <span className="tabular-nums font-bold text-foreground">
             {p.currentValue.toLocaleString()}
           </span>{" "}
           {p.boardLabel.toLowerCase()} •{" "}

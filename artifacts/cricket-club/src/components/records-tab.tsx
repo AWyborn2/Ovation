@@ -20,7 +20,7 @@ const EntryName = ({ entry }: { entry: RecordLeaderboardEntry }) =>
 const LeaderboardCard = ({ board }: { board: RecordLeaderboard }) => {
   const leadCount = board.entries[0]?.count ?? 0;
   return (
-    <div className="bg-card border border-border rounded-md overflow-hidden shadow-lg">
+    <div className="rounded-lg border bg-card overflow-hidden">
       <div className="bg-primary text-primary-foreground px-4 md:px-6 py-3 font-serif font-bold uppercase tracking-wider text-sm flex items-center justify-between gap-3">
         <span>{board.title}</span>
         <span className="text-xs whitespace-nowrap">
@@ -31,13 +31,13 @@ const LeaderboardCard = ({ board }: { board: RecordLeaderboard }) => {
         <div className="divide-y divide-border/60">
           {board.entries.map((e) => (
             <div key={`${e.rank}-${e.name}`} className="flex items-baseline gap-3 px-2 py-2">
-              <span className="font-mono font-bold text-primary-text w-7 shrink-0 text-center">
+              <span className="tabular-nums font-bold text-primary-text w-7 shrink-0 text-center">
                 {e.rank}
               </span>
               <span className="flex-1 min-w-0 truncate">
                 <EntryName entry={e} />
               </span>
-              <span className="font-mono font-bold shrink-0 tabular-nums">{e.count}</span>
+              <span className="tabular-nums font-bold shrink-0 tabular-nums">{e.count}</span>
               <span className="text-xs text-muted-foreground shrink-0 w-16 hidden sm:inline">
                 {e.count === 1 ? board.unit.replace(/s$/, "") : board.unit}
               </span>
@@ -61,13 +61,13 @@ const Section = ({
   emptyText: string;
 }) => (
   <div className="space-y-4">
-    <div className="bg-card border border-border rounded-md p-6 shadow-md">
+    <div className="rounded-lg border bg-card p-6">
       <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">{title}</h2>
       <div className="w-20 h-[3px] bg-primary mt-3" />
       <p className="text-muted-foreground italic mt-3 mb-0">{subtitle}</p>
     </div>
     {boards.length === 0 ? (
-      <div className="bg-card border border-border rounded-md p-8 text-center text-muted-foreground italic">
+      <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground italic">
         {emptyText}
       </div>
     ) : (
@@ -85,7 +85,7 @@ export function RecordsTab() {
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
+      <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
         Loading records…
       </div>
     );
@@ -96,7 +96,7 @@ export function RecordsTab() {
 
   return (
     <div className="space-y-8">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+      <div className="rounded-lg border bg-card p-6">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Notable Honour Board Records
         </h2>
