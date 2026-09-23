@@ -101,7 +101,7 @@ const HOME_ITEM: ResolvedNavItem = {
  * full-bleed (heroes span the viewport; pages own their Container). Every
  * other route keeps the centred content column until it is redesigned.
  */
-const FULL_BLEED_ROUTES: RegExp[] = [];
+const FULL_BLEED_ROUTES: RegExp[] = [/^\/players(\/\d+)?\/?$/];
 
 export function isFullBleedRoute(location: string): boolean {
   return FULL_BLEED_ROUTES.some((re) => re.test(location));

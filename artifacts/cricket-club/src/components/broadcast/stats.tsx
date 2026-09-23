@@ -54,12 +54,17 @@ export function StatStrip({
   return (
     <div
       className={cn(
-        "grid gap-px overflow-hidden rounded-lg border bg-border [grid-template-columns:repeat(auto-fit,minmax(110px,1fr))]",
+        "grid overflow-hidden rounded-lg border bg-card [grid-template-columns:repeat(auto-fill,minmax(110px,1fr))]",
         className,
       )}
     >
       {items.map((it, i) => (
-        <div key={i} className="bg-card px-4 py-3">
+        <div
+          key={i}
+          // Hairline dividers drawn outward (right + bottom) and clipped by the
+          // container, so a wrapped last row leaves card space, not a grey block.
+          className="px-4 py-3 [box-shadow:1px_0_0_hsl(var(--border)),0_1px_0_hsl(var(--border))]"
+        >
           <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {it.label}
           </div>
