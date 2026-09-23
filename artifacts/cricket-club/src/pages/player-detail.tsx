@@ -20,8 +20,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
-import { GradeBadge, GradeBadgeListFromString } from "@/components/grade-badge";
-import { Share2, Trophy, Crown, Upload, Loader2, ImageOff } from "lucide-react";
+import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
+import { gradeCode } from "@/lib/grade-code";
+import {
+  AttrChip,
+  Container,
+  Eyebrow,
+  GlassPill,
+  PageStack,
+  StatStrip,
+  Timeline,
+  initialsOf,
+} from "@/components/broadcast";
+import { Share2, Trophy, Crown, Upload, Loader2 } from "lucide-react";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import {
   aggregateCareer,
@@ -82,7 +93,7 @@ const MilestoneCard = ({
         <div className="text-xs uppercase tracking-widest text-muted-foreground font-serif">
           {status.boardLabel}
         </div>
-        <div className="font-mono font-bold text-primary-text text-lg">
+        <div className="tabular-nums font-bold text-primary-text text-lg">
           {fmtNum(status.currentValue)}
         </div>
       </div>
@@ -114,7 +125,7 @@ const MilestoneCard = ({
             className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5"
           />
           <div className="text-xs leading-snug">
-            <span className="font-mono font-bold text-primary-text">{fmtNum(status.gap!)}</span>{" "}
+            <span className="tabular-nums font-bold text-primary-text">{fmtNum(status.gap!)}</span>{" "}
             <span className="text-muted-foreground">
               {status.boardLabel.toLowerCase()} away from the{" "}
             </span>
@@ -315,577 +326,679 @@ export default function PlayerDetail() {
     return `${m[3]}/${m[2]}/${m[1]}`;
   };
 
+  const fullName = `${player.givenName} ${player.surname}`.trim();
+  const gradeList = sortGradesBySeniority(
+    (player.gradesPlayed ?? "")
+      .split(",")
+      .map((g) => g.trim())
+      .filter(Boolean),
+  );
+  const debutSeason = (seasonStats ?? []).reduce<number | null>(
+    (min, r) => (r.season != null && (min == null || r.season < min) ? r.season : min),
+    null,
+  );
+  const shareInput: ShareCardInput = {
+    kind: "player",
+    playerName: fullName,
+    gradesPlayed: player.gradesPlayed,
+    stats: [
+      ...(aggregated
+        ? [
+            { label: "Games", value: aggregated.games ?? 0 },
+            { label: "Runs", value: aggregated.runs ?? 0 },
+            { label: "Wickets", value: aggregated.wickets ?? 0 },
+          ]
+        : []),
+      ...((player.premiershipsWon ?? 0) > 0
+        ? [{ label: "Premierships", value: player.premiershipsWon ?? 0 }]
+        : []),
+    ],
+    photoUrl: player.imageUrl,
+  };
+  const batOuts = aggregated ? aggregated.innings - aggregated.notOuts : 0;
+  const careerAvg = aggregated && batOuts > 0 ? (aggregated.runs / batOuts).toFixed(2) : null;
+  const milestoneTimeline = seasons
+    .slice()
+    .sort((a, b) => b - a)
+    .flatMap((s) =>
+      getPlayerSeasonCrossings(playerStats, s).map((c) => ({
+        key: `${s}-${c.key}-${c.threshold}`,
+        label: String(s),
+        title: c.tierLabel,
+      })),
+    )
+    .slice(0, 8);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {(player.imageUrl || isAdmin) && (
-            <div className="relative shrink-0">
-              <div className="h-20 w-20 rounded-full overflow-hidden border-2 border-primary/40 bg-muted flex items-center justify-center">
-                {player.imageUrl ? (
-                  <img
-                    loading="lazy"
-                    decoding="async"
-                    src={player.imageUrl}
-                    alt={`${player.givenName} ${player.surname}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <ImageOff className="h-7 w-7 text-muted-foreground" />
-                )}
+    <Container page className="py-[var(--gap-section)]">
+      <PageStack>
+        <nav aria-label="Breadcrumb" className="text-[13px] text-muted-foreground">
+          <Link href="/players" className="hover:text-foreground">
+            Players
+          </Link>
+          <span className="mx-1.5" aria-hidden>
+            /
+          </span>
+          <span className="text-foreground">{fullName}</span>
+        </nav>
+
+        <div className="flex flex-wrap items-end gap-[clamp(20px,3vw,40px)]">
+          <div className="relative aspect-[4/5] min-w-0 max-w-[380px] flex-[1_1_260px] overflow-hidden rounded-lg border bg-muted">
+            {player.imageUrl ? (
+              <img
+                src={player.imageUrl}
+                alt={fullName}
+                className="h-full w-full object-cover"
+                style={{ objectPosition: "52% 40%" }}
+                data-testid="player-portrait"
+              />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center font-serif text-[clamp(64px,10vw,120px)] font-bold text-muted-foreground"
+                data-testid="player-initials"
+              >
+                {initialsOf(fullName)}
               </div>
-              {isAdmin && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
+            )}
+            {capEntry && (
+              <GlassPill className="absolute left-3 top-3">Cap {capEntry.capNumber}</GlassPill>
+            )}
+            {isAdmin && (
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+                {player.imageUrl && (
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading || updatePlayer.isPending}
-                    aria-label="Upload player photo"
-                    title="Upload player photo"
-                    className="absolute -bottom-1 -right-1 rounded-full bg-primary text-primary-foreground p-1.5 shadow hover:bg-primary/90 disabled:opacity-50"
+                    onClick={() => persistImageUrl(null)}
+                    disabled={updatePlayer.isPending}
+                    className="rounded-full bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur-md hover:bg-black/75 disabled:opacity-50"
                   >
-                    {isUploading || updatePlayer.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="h-3.5 w-3.5" />
-                    )}
+                    Remove photo
                   </button>
-                </>
-              )}
-            </div>
-          )}
-          <div>
-            <h1 className="text-3xl font-serif font-bold text-primary-text">
-              {player.givenName} {player.surname}
-            </h1>
-            <div className="mt-2">
-              <GradeBadgeListFromString gradesPlayed={player.gradesPlayed} size="md" />
-            </div>
-            {isAdmin && player.imageUrl && (
-              <button
-                type="button"
-                onClick={() => persistImageUrl(null)}
-                disabled={updatePlayer.isPending}
-                className="mt-2 text-xs text-muted-foreground hover:text-destructive underline disabled:opacity-50"
-              >
-                Remove photo
-              </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || updatePlayer.isPending}
+                  aria-label="Upload player photo"
+                  title="Upload player photo"
+                  className="rounded-full bg-primary p-2 text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isUploading || updatePlayer.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             )}
-            {photoError && <p className="mt-1 text-xs text-destructive">{photoError}</p>}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {(() => {
-            const fullName = `${player.givenName} ${player.surname}`.trim();
-            const career = aggregateCareer(player.stats)[0];
-            const stats: { label: string; value: number | string }[] = career
-              ? [
-                  { label: "Games", value: career.games ?? 0 },
-                  { label: "Runs", value: career.runs ?? 0 },
-                  { label: "Wickets", value: career.wickets ?? 0 },
-                ]
-              : [];
-            if ((player.premiershipsWon ?? 0) > 0) {
-              stats.push({ label: "Premierships", value: player.premiershipsWon ?? 0 });
-            }
-            const input: ShareCardInput = {
-              kind: "player",
-              playerName: fullName,
-              gradesPlayed: player.gradesPlayed,
-              stats,
-              photoUrl: player.imageUrl,
-            };
-            return (
+
+          <div className="flex min-w-0 flex-[2_1_420px] flex-col gap-4">
+            {(gradeList[0] || debutSeason != null) && (
+              <Eyebrow accent>
+                {[gradeList[0], debutSeason != null ? `Debut ${fmtSeason(debutSeason)}` : null]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Eyebrow>
+            )}
+            <h1 className="text-[clamp(44px,6.4vw,96px)] leading-[.95]">{fullName}</h1>
+            {gradeList.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <AttrChip>Grades {gradeList.map(gradeCode).join(" · ")}</AttrChip>
+                {premsWon > 0 && (
+                  <AttrChip>
+                    {premsWon} premiership{premsWon === 1 ? "" : "s"}
+                  </AttrChip>
+                )}
+              </div>
+            )}
+            {aggregated && (
+              <StatStrip
+                items={[
+                  { label: "Matches", value: aggregated.games },
+                  { label: "Runs", value: aggregated.runs },
+                  { label: "High score", value: aggregated.highScoreDisplay },
+                  { label: "Average", value: careerAvg },
+                  { label: "Wickets", value: aggregated.wickets },
+                  { label: "Best", value: aggregated.bestBowling || null },
+                  { label: "Catches", value: aggregated.catches },
+                ]}
+              />
+            )}
+            {photoError && <p className="text-xs text-destructive">{photoError}</p>}
+            <div className="flex flex-wrap items-center gap-2">
               <ShareButton
-                input={input}
+                input={shareInput}
                 appPath={`/players/${player.id}`}
                 playerId={player.id}
-                label="Share profile"
+                label="Share player card"
+                variant="default"
+                className="h-11 rounded-full px-5 transition-transform hover:-translate-y-0.5"
               />
-            );
-          })()}
-          <Button variant="outline" onClick={() => setCardOpen(true)}>
-            <IdCard className="mr-1.5 h-4 w-4" /> Trading Card
-          </Button>
-          {isAdmin && (
-            <Button variant="destructive" onClick={handleDelete} disabled={deletePlayer.isPending}>
-              Delete Player
-            </Button>
-          )}
-        </div>
-      </div>
-      <TradingCardModal playerId={playerId} open={cardOpen} onOpenChange={setCardOpen} />
-
-      {premsWon > 0 && (
-        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary-text m-0 flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-600" />
-              Premierships won
-            </h2>
-            <Link
-              href="/premierships"
-              className="text-xs uppercase tracking-widest text-primary-text hover:underline"
-            >
-              View board →
-            </Link>
-          </div>
-          <div className="w-12 h-[2px] bg-primary mb-4" />
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-amber-500/15 border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold">
-              <Trophy className="h-4 w-4" />
-              <span className="font-mono text-lg">{premsWon}</span>
-              <span className="text-xs uppercase tracking-wider">won</span>
-            </div>
-            {premsCaptained > 0 && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-amber-600 text-white font-bold">
-                <Crown className="h-4 w-4" />
-                <span className="font-mono text-lg">{premsCaptained}</span>
-                <span className="text-xs uppercase tracking-wider">captained</span>
-              </div>
-            )}
-          </div>
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {premierships.map((p) => (
-              <div
-                key={p.id}
-                className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3"
+              <Link
+                href={`/compare?a=${player.id}`}
+                className="inline-flex h-11 items-center rounded-full border px-5 text-sm font-semibold transition-colors hover:border-primary"
               >
-                <div className="text-center shrink-0">
-                  <div className="font-mono font-bold text-primary-text text-lg leading-none">
-                    {p.year}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {p.grade}
-                  </div>
-                </div>
-                <div className="min-w-0 text-xs">
-                  {p.competition && p.competition !== p.grade.toUpperCase() && (
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
-                      {p.competition}
-                    </div>
-                  )}
-                  {p.result && (
-                    <div className="font-semibold text-foreground/90 leading-snug">{p.result}</div>
-                  )}
-                  <div className="text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                    {p.venue && <span>{p.venue}</span>}
-                    {p.matchDate && <span>· {formatPremDate(p.matchDate)}</span>}
-                    {p.isCaptain && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-600 text-white font-bold text-[10px] uppercase">
-                        <Crown className="h-3 w-3" /> Captain
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {milestones.length > 0 && (
-        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary-text m-0">
-              Milestone tracker
-            </h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
-              Next honour board target
-            </span>
-          </div>
-          <div className="w-12 h-[2px] bg-primary mb-4" />
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {milestones.map((m) => (
-              <MilestoneCard
-                key={m.key}
-                status={m}
-                playerName={`${player.givenName} ${player.surname}`.trim()}
-                photoUrl={player.imageUrl}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {seasons.length > 0 && selectedSeason !== null && (
-        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary-text m-0">
-              Milestones hit this season
-            </h2>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
-                Season
-              </label>
-              <select
-                value={String(selectedSeason)}
-                onChange={(e) => setSelectedSeason(parseInt(e.target.value, 10))}
-                className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+                Compare
+              </Link>
+              <Button
+                variant="outline"
+                className="h-11 rounded-full px-5"
+                onClick={() => setCardOpen(true)}
               >
-                {seasons.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                <IdCard className="mr-1.5 h-4 w-4" /> Trading card
+              </Button>
+              {isAdmin && (
+                <Button
+                  variant="destructive"
+                  className="h-11 rounded-full px-5"
+                  onClick={handleDelete}
+                  disabled={deletePlayer.isPending}
+                >
+                  Delete player
+                </Button>
+              )}
             </div>
           </div>
-          <div className="w-12 h-[2px] bg-primary mb-4" />
-          {seasonCrossings.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic">
-              No honour board crossed in {selectedSeason}.
+        </div>
+        <TradingCardModal playerId={playerId} open={cardOpen} onOpenChange={setCardOpen} />
+
+        {milestoneTimeline.length > 0 && (
+          <section className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <h2 className="mb-4 text-[clamp(22px,2.2vw,28px)] leading-none">Milestones</h2>
+            <Timeline items={milestoneTimeline} />
+          </section>
+        )}
+
+        {premsWon > 0 && (
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <h2 className="m-0 text-[clamp(22px,2.2vw,28px)] leading-none flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-amber-600" />
+                Premierships won
+              </h2>
+              <Link
+                href="/premierships"
+                className="text-xs uppercase tracking-widest text-primary-text hover:underline"
+              >
+                View board →
+              </Link>
             </div>
-          ) : (
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {seasonCrossings.map((c) => (
+            <div className="mb-4" />
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-amber-500/15 border border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold">
+                <Trophy className="h-4 w-4" />
+                <span className="tabular-nums text-lg">{premsWon}</span>
+                <span className="text-xs uppercase tracking-wider">won</span>
+              </div>
+              {premsCaptained > 0 && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-amber-600 text-white font-bold">
+                  <Crown className="h-4 w-4" />
+                  <span className="tabular-nums text-lg">{premsCaptained}</span>
+                  <span className="text-xs uppercase tracking-wider">captained</span>
+                </div>
+              )}
+            </div>
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {premierships.map((p) => (
                 <div
-                  key={`${c.key}-${c.threshold}`}
+                  key={p.id}
                   className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3"
                 >
-                  <TierBadge
-                    tierIndex={c.tierIndex}
-                    className="h-6 w-6 text-primary-text shrink-0 mt-0.5"
-                  />
-                  <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-primary-text truncate">
-                      {c.tierLabel}
+                  <div className="text-center shrink-0">
+                    <div className="tabular-nums font-bold text-primary-text text-lg leading-none">
+                      {p.year}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <span className="font-mono font-bold text-foreground">
-                        {fmtNum(c.beforeValue)}
-                      </span>
-                      <span> → </span>
-                      <span className="font-mono font-bold text-foreground">
-                        {fmtNum(c.afterValue)}
-                      </span>{" "}
-                      {c.boardLabel.toLowerCase()}
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      {p.grade}
+                    </div>
+                  </div>
+                  <div className="min-w-0 text-xs">
+                    {p.competition && p.competition !== p.grade.toUpperCase() && (
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+                        {p.competition}
+                      </div>
+                    )}
+                    {p.result && (
+                      <div className="font-semibold text-foreground/90 leading-snug">
+                        {p.result}
+                      </div>
+                    )}
+                    <div className="text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                      {p.venue && <span>{p.venue}</span>}
+                      {p.matchDate && <span>· {formatPremDate(p.matchDate)}</span>}
+                      {p.isCaptain && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-600 text-white font-bold text-[10px] uppercase">
+                          <Crown className="h-3 w-3" /> Captain
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      )}
-
-      {showCappedNoStats && capEntry && (
-        <div className="bg-muted/40 border-l-4 border-primary/60 rounded-md p-4 text-sm leading-snug">
-          <p className="text-foreground/90">
-            <span className="font-semibold">A Grade Cap #{capEntry.capNumber}.</span> Played between
-            1 and 9 A Grade games for the club. Individual stats were not recorded prior to
-            MyCricket and PlayHQ for players with fewer than 10 games.
-          </p>
-        </div>
-      )}
-
-      {seasonsByGrade.length > 0 && (
-        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <div className="flex items-baseline justify-between gap-3 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary-text m-0">By season</h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
-              Year-by-year history
-            </span>
           </div>
-          <div className="w-12 h-[2px] bg-primary mb-4" />
-          <div className="space-y-6">
-            {seasonsByGrade.map(({ grade, rows, totals, batAvg, bowlAvg }) => (
-              <div key={grade}>
-                <div className="flex items-center gap-2 mb-2">
-                  <GradeBadge grade={grade} size="sm" />
-                  <span className="font-semibold text-primary-text">{grade}</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm sticky-id-col">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="text-left font-medium p-3">Season</th>
-                        <th className="text-right font-medium p-3">Mat</th>
-                        <th className="text-right font-medium p-3">Inn</th>
-                        <th className="text-right font-medium p-3">NO</th>
-                        <th className="text-right font-medium p-3">Runs</th>
-                        <th className="text-right font-medium p-3">HS</th>
-                        <th className="text-right font-medium p-3">Avg</th>
-                        <th className="text-right font-medium p-3">100s</th>
-                        <th className="text-right font-medium p-3">50s</th>
-                        <th className="text-right font-medium p-3">Wkts</th>
-                        <th className="text-right font-medium p-3">Runs</th>
-                        <th className="text-right font-medium p-3">Avg</th>
-                        <th className="text-right font-medium p-3">BB</th>
-                        <th className="text-right font-medium p-3">5WI</th>
-                        <th className="text-right font-medium p-3">Ct</th>
-                        <th className="text-right font-medium p-3">St</th>
-                        <th className="text-right font-medium p-3">RO</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r) => (
-                        <tr
-                          key={`${grade}-${r.season ?? "baseline"}`}
-                          className="border-b last:border-0 hover:bg-muted/50 transition-colors"
-                        >
-                          <td className="p-3 font-mono whitespace-nowrap">
-                            {r.season != null ? fmtSeason(r.season) : "Pre-2025"}
-                          </td>
-                          <td className="p-3 text-right font-mono">{r.games || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.innings || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.notOuts || "-"}</td>
-                          <td className="p-3 text-right font-mono font-bold">{r.runs || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.highScore || "-"}</td>
-                          <td className="p-3 text-right font-mono">
-                            {r.batAvg?.toFixed(2) || "-"}
-                          </td>
-                          <td className="p-3 text-right font-mono">{r.hundreds || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.fifties || "-"}</td>
-                          <td className="p-3 text-right font-mono font-bold">{r.wickets || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.runsConceded || "-"}</td>
-                          <td className="p-3 text-right font-mono">
-                            {r.bowlAvg?.toFixed(2) || "-"}
-                          </td>
-                          <td className="p-3 text-right font-mono">{r.bestBowling || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.fiveWickets || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.catches || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.stumpings || "-"}</td>
-                          <td className="p-3 text-right font-mono">{r.runOuts || "-"}</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t-2 border-primary/40 bg-muted/30 font-semibold">
-                        <td className="p-3 font-mono uppercase tracking-wider text-xs text-primary-text">
-                          Total
-                        </td>
-                        <td className="p-3 text-right font-mono">{totals.games || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.innings || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.notOuts || "-"}</td>
-                        <td className="p-3 text-right font-mono font-bold">{totals.runs || "-"}</td>
-                        <td className="p-3 text-right font-mono">-</td>
-                        <td className="p-3 text-right font-mono">{batAvg?.toFixed(2) || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.hundreds || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.fifties || "-"}</td>
-                        <td className="p-3 text-right font-mono font-bold">
-                          {totals.wickets || "-"}
-                        </td>
-                        <td className="p-3 text-right font-mono">{totals.runsConceded || "-"}</td>
-                        <td className="p-3 text-right font-mono">{bowlAvg?.toFixed(2) || "-"}</td>
-                        <td className="p-3 text-right font-mono">-</td>
-                        <td className="p-3 text-right font-mono">{totals.fiveWickets || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.catches || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.stumpings || "-"}</td>
-                        <td className="p-3 text-right font-mono">{totals.runOuts || "-"}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        )}
 
-      {matchLines && matchLines.length > 0 && (
-        <div className="bg-card border border-border rounded-md p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
-            <h2 className="text-lg font-serif font-bold text-primary-text m-0">Match by match</h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
-              {filteredMatchLines.length === matchLines.length
-                ? `${matchLines.length} game${matchLines.length === 1 ? "" : "s"} recorded`
-                : `${filteredMatchLines.length} of ${matchLines.length} games`}
-            </span>
-          </div>
-          <div className="w-12 h-[2px] bg-primary mb-4" />
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
-                Season
-              </label>
-              <select
-                value={matchSeasonFilter}
-                onChange={(e) => setMatchSeasonFilter(e.target.value)}
-                className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-              >
-                <option value="all">All seasons</option>
-                {matchSeasonOptions.map((s) => (
-                  <option key={s} value={String(s)}>
-                    {fmtSeason(s)}
-                  </option>
-                ))}
-              </select>
+        {milestones.length > 0 && (
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <h2 className="m-0 text-[clamp(22px,2.2vw,28px)] leading-none">Milestone tracker</h2>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Next honour board target
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
-                Grade
-              </label>
-              <select
-                value={matchGradeFilter}
-                onChange={(e) => setMatchGradeFilter(e.target.value)}
-                className="px-3 py-1.5 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-              >
-                <option value="all">All grades</option>
-                {matchGradeOptions.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
+            <div className="mb-4" />
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              {milestones.map((m) => (
+                <MilestoneCard
+                  key={m.key}
+                  status={m}
+                  playerName={`${player.givenName} ${player.surname}`.trim()}
+                  photoUrl={player.imageUrl}
+                />
+              ))}
             </div>
           </div>
-          {filteredMatchLines.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic">
-              No matches for the selected filters.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm sticky-id-col">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left font-medium p-3">Season</th>
-                    <th className="text-left font-medium p-3">Rnd</th>
-                    <th className="text-left font-medium p-3">Grade</th>
-                    <th className="text-left font-medium p-3">Opponent</th>
-                    <th className="text-left font-medium p-3">Batting</th>
-                    <th className="text-left font-medium p-3">Bowling</th>
-                    <th className="text-left font-medium p-3">Field</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMatchLines.map((m) => {
-                    const fieldParts = [
-                      m.catches ? `${m.catches}c` : "",
-                      m.stumpings ? `${m.stumpings}st` : "",
-                      m.runOuts ? `${m.runOuts}ro` : "",
-                    ].filter(Boolean);
-                    return (
-                      <tr
-                        key={m.matchId}
-                        className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          window.location.href = `/matches/${m.matchId}`;
-                        }}
-                      >
-                        <td className="p-3 font-mono">
-                          {m.season != null
-                            ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
-                            : "—"}
-                        </td>
-                        <td className="p-3 font-mono">{m.stage ?? m.round ?? "—"}</td>
-                        <td className="p-3">
-                          <GradeBadge grade={m.grade} size="sm" />
-                        </td>
-                        <td className="p-3">
-                          <Link
-                            href={`/matches/${m.matchId}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-primary-text hover:underline"
-                          >
-                            {m.opponent ?? "—"}
-                          </Link>
-                        </td>
-                        <td className="p-3 font-mono">
-                          {m.batted
-                            ? `${m.runs ?? 0}${m.notOut ? "*" : ""}${m.balls != null ? ` (${m.balls})` : ""}`
-                            : "—"}
-                        </td>
-                        <td className="p-3 font-mono">
-                          {m.bowled
-                            ? `${m.wickets ?? 0}/${m.runsConceded ?? 0}${m.overs ? ` (${m.overs})` : ""}`
-                            : "—"}
-                        </td>
-                        <td className="p-3 font-mono">
-                          {fieldParts.length ? fieldParts.join(" ") : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+        )}
 
-      <div className="bg-card border rounded-lg overflow-x-auto shadow-sm">
-        <table className="w-full text-sm sticky-id-col">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="text-left font-medium p-4">Grade</th>
-              <th className="text-right font-medium p-4">Mat</th>
-              <th className="text-right font-medium p-4">Inn</th>
-              <th className="text-right font-medium p-4">NO</th>
-              <th className="text-right font-medium p-4">Runs</th>
-              <th className="text-right font-medium p-4">HS</th>
-              <th className="text-right font-medium p-4">Avg</th>
-              <th className="text-right font-medium p-4">100s</th>
-              <th className="text-right font-medium p-4">50s</th>
-              <th className="text-right font-medium p-4">Wkts</th>
-              <th className="text-right font-medium p-4">Runs</th>
-              <th className="text-right font-medium p-4">Avg</th>
-              <th className="text-right font-medium p-4">BB</th>
-              <th className="text-right font-medium p-4">5WI</th>
-              <th className="text-right font-medium p-4">Ct</th>
-              <th className="text-right font-medium p-4">St</th>
-              <th className="text-right font-medium p-4">RO</th>
-              <th className="text-right font-medium p-4">Edit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {player.stats
-              .filter((s) => s.grade !== "CLUB TOTAL")
-              .map((stat) => (
-                <tr
-                  key={stat.id}
-                  className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+        {seasons.length > 0 && selectedSeason !== null && (
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
+              <h2 className="m-0 text-[clamp(22px,2.2vw,28px)] leading-none">
+                Milestones hit this season
+              </h2>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+                  Season
+                </label>
+                <select
+                  value={String(selectedSeason)}
+                  onChange={(e) => setSelectedSeason(parseInt(e.target.value, 10))}
+                  className="h-9 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground"
                 >
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <GradeBadge grade={stat.grade} size="sm" />
-                      <span className="font-semibold text-primary-text">{stat.grade}</span>
+                  {seasons.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mb-4" />
+            {seasonCrossings.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic">
+                No honour board crossed in {selectedSeason}.
+              </div>
+            ) : (
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {seasonCrossings.map((c) => (
+                  <div
+                    key={`${c.key}-${c.threshold}`}
+                    className="bg-background/60 border border-border rounded-md p-3 flex items-start gap-3"
+                  >
+                    <TierBadge
+                      tierIndex={c.tierIndex}
+                      className="h-6 w-6 text-primary-text shrink-0 mt-0.5"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-primary-text truncate">
+                        {c.tierLabel}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        <span className="tabular-nums font-bold text-foreground">
+                          {fmtNum(c.beforeValue)}
+                        </span>
+                        <span> → </span>
+                        <span className="tabular-nums font-bold text-foreground">
+                          {fmtNum(c.afterValue)}
+                        </span>{" "}
+                        {c.boardLabel.toLowerCase()}
+                      </div>
                     </div>
-                  </td>
-                  <td className="p-4 text-right font-mono">{stat.games || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.innings || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.notOuts || "-"}</td>
-                  <td className="p-4 text-right font-mono font-bold">{stat.runs || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.highScore || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.batAvg?.toFixed(2) || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.hundreds || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.fifties || "-"}</td>
-                  <td className="p-4 text-right font-mono font-bold">{stat.wickets || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.runsConceded || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.bowlAvg?.toFixed(2) || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.bestBowling || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.fiveWickets || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.catches || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.stumpings || "-"}</td>
-                  <td className="p-4 text-right font-mono">{stat.runOuts || "-"}</td>
-                  <td className="p-4 text-right">
-                    <Link
-                      href={`/stats/${stat.id}`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {showCappedNoStats && capEntry && (
+          <div className="bg-muted/40 border-l-4 border-primary/60 rounded-md p-4 text-sm leading-snug">
+            <p className="text-foreground/90">
+              <span className="font-semibold">A Grade Cap #{capEntry.capNumber}.</span> Played
+              between 1 and 9 A Grade games for the club. Individual stats were not recorded prior
+              to MyCricket and PlayHQ for players with fewer than 10 games.
+            </p>
+          </div>
+        )}
+
+        {seasonsByGrade.length > 0 && (
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <h2 className="m-0 text-[clamp(22px,2.2vw,28px)] leading-none">By season</h2>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Year-by-year history
+              </span>
+            </div>
+            <div className="mb-4" />
+            <div className="space-y-6">
+              {seasonsByGrade.map(({ grade, rows, totals, batAvg, bowlAvg }) => (
+                <div key={grade}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <GradeBadge grade={grade} size="sm" />
+                    <span className="font-semibold text-primary-text">{grade}</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm sticky-id-col">
+                      <thead>
+                        <tr className="border-b text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                          <th className="text-left font-medium p-3">Season</th>
+                          <th className="text-right font-medium p-3">Mat</th>
+                          <th className="text-right font-medium p-3">Inn</th>
+                          <th className="text-right font-medium p-3">NO</th>
+                          <th className="text-right font-medium p-3">Runs</th>
+                          <th className="text-right font-medium p-3">HS</th>
+                          <th className="text-right font-medium p-3">Avg</th>
+                          <th className="text-right font-medium p-3">100s</th>
+                          <th className="text-right font-medium p-3">50s</th>
+                          <th className="text-right font-medium p-3">Wkts</th>
+                          <th className="text-right font-medium p-3">Runs</th>
+                          <th className="text-right font-medium p-3">Avg</th>
+                          <th className="text-right font-medium p-3">BB</th>
+                          <th className="text-right font-medium p-3">5WI</th>
+                          <th className="text-right font-medium p-3">Ct</th>
+                          <th className="text-right font-medium p-3">St</th>
+                          <th className="text-right font-medium p-3">RO</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr
+                            key={`${grade}-${r.season ?? "baseline"}`}
+                            className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                          >
+                            <td className="p-3 tabular-nums whitespace-nowrap">
+                              {r.season != null ? fmtSeason(r.season) : "Pre-2025"}
+                            </td>
+                            <td className="p-3 text-right tabular-nums">{r.games || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.innings || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.notOuts || "-"}</td>
+                            <td className="p-3 text-right tabular-nums font-bold">
+                              {r.runs || "-"}
+                            </td>
+                            <td className="p-3 text-right tabular-nums">{r.highScore || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">
+                              {r.batAvg?.toFixed(2) || "-"}
+                            </td>
+                            <td className="p-3 text-right tabular-nums">{r.hundreds || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.fifties || "-"}</td>
+                            <td className="p-3 text-right tabular-nums font-bold">
+                              {r.wickets || "-"}
+                            </td>
+                            <td className="p-3 text-right tabular-nums">{r.runsConceded || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">
+                              {r.bowlAvg?.toFixed(2) || "-"}
+                            </td>
+                            <td className="p-3 text-right tabular-nums">{r.bestBowling || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.fiveWickets || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.catches || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.stumpings || "-"}</td>
+                            <td className="p-3 text-right tabular-nums">{r.runOuts || "-"}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 border-primary/40 bg-muted/30 font-semibold">
+                          <td className="p-3 tabular-nums uppercase tracking-wider text-xs text-primary-text">
+                            Total
+                          </td>
+                          <td className="p-3 text-right tabular-nums">{totals.games || "-"}</td>
+                          <td className="p-3 text-right tabular-nums">{totals.innings || "-"}</td>
+                          <td className="p-3 text-right tabular-nums">{totals.notOuts || "-"}</td>
+                          <td className="p-3 text-right tabular-nums font-bold">
+                            {totals.runs || "-"}
+                          </td>
+                          <td className="p-3 text-right tabular-nums">-</td>
+                          <td className="p-3 text-right tabular-nums">
+                            {batAvg?.toFixed(2) || "-"}
+                          </td>
+                          <td className="p-3 text-right tabular-nums">{totals.hundreds || "-"}</td>
+                          <td className="p-3 text-right tabular-nums">{totals.fifties || "-"}</td>
+                          <td className="p-3 text-right tabular-nums font-bold">
+                            {totals.wickets || "-"}
+                          </td>
+                          <td className="p-3 text-right tabular-nums">
+                            {totals.runsConceded || "-"}
+                          </td>
+                          <td className="p-3 text-right tabular-nums">
+                            {bowlAvg?.toFixed(2) || "-"}
+                          </td>
+                          <td className="p-3 text-right tabular-nums">-</td>
+                          <td className="p-3 text-right tabular-nums">
+                            {totals.fiveWickets || "-"}
+                          </td>
+                          <td className="p-3 text-right tabular-nums">{totals.catches || "-"}</td>
+                          <td className="p-3 text-right tabular-nums">{totals.stumpings || "-"}</td>
+                          <td className="p-3 text-right tabular-nums">{totals.runOuts || "-"}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {matchLines && matchLines.length > 0 && (
+          <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-1">
+              <h2 className="m-0 text-[clamp(22px,2.2vw,28px)] leading-none">Match by match</h2>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                {filteredMatchLines.length === matchLines.length
+                  ? `${matchLines.length} game${matchLines.length === 1 ? "" : "s"} recorded`
+                  : `${filteredMatchLines.length} of ${matchLines.length} games`}
+              </span>
+            </div>
+            <div className="mb-4" />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+                  Season
+                </label>
+                <select
+                  value={matchSeasonFilter}
+                  onChange={(e) => setMatchSeasonFilter(e.target.value)}
+                  className="h-9 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground"
+                >
+                  <option value="all">All seasons</option>
+                  {matchSeasonOptions.map((s) => (
+                    <option key={s} value={String(s)}>
+                      {fmtSeason(s)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-primary-text">
+                  Grade
+                </label>
+                <select
+                  value={matchGradeFilter}
+                  onChange={(e) => setMatchGradeFilter(e.target.value)}
+                  className="h-9 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground"
+                >
+                  <option value="all">All grades</option>
+                  {matchGradeOptions.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {filteredMatchLines.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic">
+                No matches for the selected filters.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm sticky-id-col">
+                  <thead>
+                    <tr className="border-b text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                      <th className="text-left font-medium p-3">Season</th>
+                      <th className="text-left font-medium p-3">Rnd</th>
+                      <th className="text-left font-medium p-3">Grade</th>
+                      <th className="text-left font-medium p-3">Opponent</th>
+                      <th className="text-left font-medium p-3">Batting</th>
+                      <th className="text-left font-medium p-3">Bowling</th>
+                      <th className="text-left font-medium p-3">Field</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMatchLines.map((m) => {
+                      const fieldParts = [
+                        m.catches ? `${m.catches}c` : "",
+                        m.stumpings ? `${m.stumpings}st` : "",
+                        m.runOuts ? `${m.runOuts}ro` : "",
+                      ].filter(Boolean);
+                      return (
+                        <tr
+                          key={m.matchId}
+                          className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            window.location.href = `/matches/${m.matchId}`;
+                          }}
+                        >
+                          <td className="p-3 tabular-nums">
+                            {m.season != null
+                              ? `${m.season}/${String((m.season + 1) % 100).padStart(2, "0")}`
+                              : "—"}
+                          </td>
+                          <td className="p-3 tabular-nums">{m.stage ?? m.round ?? "—"}</td>
+                          <td className="p-3">
+                            <GradeBadge grade={m.grade} size="sm" />
+                          </td>
+                          <td className="p-3">
+                            <Link
+                              href={`/matches/${m.matchId}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-primary-text hover:underline"
+                            >
+                              {m.opponent ?? "—"}
+                            </Link>
+                          </td>
+                          <td className="p-3 tabular-nums">
+                            {m.batted
+                              ? `${m.runs ?? 0}${m.notOut ? "*" : ""}${m.balls != null ? ` (${m.balls})` : ""}`
+                              : "—"}
+                          </td>
+                          <td className="p-3 tabular-nums">
+                            {m.bowled
+                              ? `${m.wickets ?? 0}/${m.runsConceded ?? 0}${m.overs ? ` (${m.overs})` : ""}`
+                              : "—"}
+                          </td>
+                          <td className="p-3 tabular-nums">
+                            {fieldParts.length ? fieldParts.join(" ") : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="overflow-x-auto rounded-lg border bg-card">
+          <table className="w-full text-sm sticky-id-col">
+            <thead>
+              <tr className="border-b text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                <th className="text-left font-medium p-4">Grade</th>
+                <th className="text-right font-medium p-4">Mat</th>
+                <th className="text-right font-medium p-4">Inn</th>
+                <th className="text-right font-medium p-4">NO</th>
+                <th className="text-right font-medium p-4">Runs</th>
+                <th className="text-right font-medium p-4">HS</th>
+                <th className="text-right font-medium p-4">Avg</th>
+                <th className="text-right font-medium p-4">100s</th>
+                <th className="text-right font-medium p-4">50s</th>
+                <th className="text-right font-medium p-4">Wkts</th>
+                <th className="text-right font-medium p-4">Runs</th>
+                <th className="text-right font-medium p-4">Avg</th>
+                <th className="text-right font-medium p-4">BB</th>
+                <th className="text-right font-medium p-4">5WI</th>
+                <th className="text-right font-medium p-4">Ct</th>
+                <th className="text-right font-medium p-4">St</th>
+                <th className="text-right font-medium p-4">RO</th>
+                <th className="text-right font-medium p-4">Edit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {player.stats
+                .filter((s) => s.grade !== "CLUB TOTAL")
+                .map((stat) => (
+                  <tr
+                    key={stat.id}
+                    className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <GradeBadge grade={stat.grade} size="sm" />
+                        <span className="font-semibold text-primary-text">{stat.grade}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-right tabular-nums">{stat.games || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.innings || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.notOuts || "-"}</td>
+                    <td className="p-4 text-right tabular-nums font-bold">{stat.runs || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.highScore || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">
+                      {stat.batAvg?.toFixed(2) || "-"}
+                    </td>
+                    <td className="p-4 text-right tabular-nums">{stat.hundreds || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.fifties || "-"}</td>
+                    <td className="p-4 text-right tabular-nums font-bold">{stat.wickets || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.runsConceded || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">
+                      {stat.bowlAvg?.toFixed(2) || "-"}
+                    </td>
+                    <td className="p-4 text-right tabular-nums">{stat.bestBowling || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.fiveWickets || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.catches || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.stumpings || "-"}</td>
+                    <td className="p-4 text-right tabular-nums">{stat.runOuts || "-"}</td>
+                    <td className="p-4 text-right">
+                      <Link
+                        href={`/stats/${stat.id}`}
+                        className="text-sm text-primary-text hover:underline"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              {player.stats.length === 0 && (
+                <tr>
+                  <td colSpan={18} className="p-8 text-center text-muted-foreground">
+                    No stats recorded yet.
                   </td>
                 </tr>
-              ))}
-            {player.stats.length === 0 && (
-              <tr>
-                <td colSpan={18} className="p-8 text-center text-muted-foreground">
-                  No stats recorded yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      <JuniorCareerSection playerId={player.id} />
-    </div>
+        <JuniorCareerSection playerId={player.id} />
+      </PageStack>
+    </Container>
   );
 }
 
@@ -903,14 +1016,14 @@ function JuniorCareerSection({ playerId }: { playerId: number }) {
   });
   if (!links?.length) return null;
   return (
-    <div className="bg-card border border-border rounded-md p-5 shadow-sm">
+    <div className="rounded-lg border bg-card p-[clamp(16px,2vw,24px)]">
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-lg font-serif font-bold text-primary-text m-0">Junior career</h2>
+        <h2 className="m-0 text-[clamp(22px,2.2vw,28px)] leading-none">Junior career</h2>
         <span className="text-xs uppercase tracking-widest text-muted-foreground">
           Kept separate from senior records
         </span>
       </div>
-      <div className="w-12 h-[2px] bg-primary mb-4" />
+      <div className="mb-4" />
       <div className="space-y-4">
         {links.map((l) => (
           <JuniorIdentitySummary key={l.participantId} participantId={l.participantId} />

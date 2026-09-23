@@ -1,11 +1,33 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Centred 1280px content column with the Broadcast page gutter. */
-export function Container({ className, children }: { className?: string; children: ReactNode }) {
+/**
+ * Centred 1280px content column with the Broadcast page gutter. `page` marks
+ * it as a full-bleed page root (data-full-bleed), so the site layout drops its
+ * own column and the page controls the full width.
+ */
+export function Container({
+  className,
+  children,
+  page,
+}: {
+  className?: string;
+  children: ReactNode;
+  page?: boolean;
+}) {
   return (
-    <div className={cn("mx-auto w-full max-w-[1280px] px-[var(--pad)]", className)}>{children}</div>
+    <div
+      className={cn("mx-auto w-full max-w-[1280px] px-[var(--pad)]", className)}
+      data-full-bleed={page ? "" : undefined}
+    >
+      {children}
+    </div>
   );
+}
+
+/** Wrapper marking a full-bleed page root that is not itself a Container. */
+export function FullBleedPage({ children }: { children: ReactNode }) {
+  return <div data-full-bleed="">{children}</div>;
 }
 
 /** Vertical rhythm between page sections (clamp 24–40px). */

@@ -96,17 +96,6 @@ const HOME_ITEM: ResolvedNavItem = {
   description: "",
 };
 
-/**
- * Routes whose pages have been rebuilt on the Broadcast system render
- * full-bleed (heroes span the viewport; pages own their Container). Every
- * other route keeps the centred content column until it is redesigned.
- */
-const FULL_BLEED_ROUTES: RegExp[] = [];
-
-export function isFullBleedRoute(location: string): boolean {
-  return FULL_BLEED_ROUTES.some((re) => re.test(location));
-}
-
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const section = sectionOf(location);
@@ -127,7 +116,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     [section, seniorNav, juniorNav],
   );
   const nav = useMemo(() => groupNavItems(items, section), [items, section]);
-  const fullBleed = isFullBleedRoute(location);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -140,13 +128,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         jumpTo={items.filter((i) => i.target !== "/" && i.target !== "/juniors")}
       />
       <main className="relative z-0 w-full flex-1 overflow-x-clip">
-        {fullBleed ? (
-          children
-        ) : (
-          <div className="mx-auto max-w-[1280px] space-y-8 px-[var(--pad)] py-[var(--gap-section)]">
-            {children}
-          </div>
-        )}
+        {/* Pages rebuilt on the Broadcast system mark their root with
+            data-full-bleed; the .bc-page:has() rule then drops this column so
+            heroes can span the viewport and the page owns its Container. */}
+        <div className="bc-page mx-auto max-w-[1280px] space-y-8 px-[var(--pad)] py-[var(--gap-section)]">
+          {children}
+        </div>
       </main>
       <SiteFooter nav={nav} />
     </div>

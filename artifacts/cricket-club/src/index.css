@@ -235,6 +235,13 @@
   }
 }
 
+/* Full-bleed Broadcast pages (root marked data-full-bleed) escape the
+   layout's centred column. Unlayered so it beats the column's utilities. */
+.bc-page:has(> [data-full-bleed]) {
+  max-width: none;
+  padding: 0;
+}
+
 /* Broadcast motion. Everything below is disabled under reduced motion. */
 @keyframes bc-pulse {
   0%,
