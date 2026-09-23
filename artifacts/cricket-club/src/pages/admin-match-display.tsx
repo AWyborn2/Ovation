@@ -55,8 +55,8 @@ export default function AdminMatchDisplay() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">Matches page display</h1>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="text-[clamp(22px,2.2vw,28px)] leading-none">Matches page display</h2>
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Control how the public Matches page behaves by default: which grade and season load first,
           the order grades appear in the dropdown, and the round order within a season. Visitors can
           still change the filters themselves after the page loads.

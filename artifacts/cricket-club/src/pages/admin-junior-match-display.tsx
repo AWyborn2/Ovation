@@ -41,7 +41,7 @@ export default function AdminJuniorMatchDisplay() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Control how the public Junior Matches page behaves by default: which age group and season
           load first, and the order age groups appear in the dropdown. Visitors can still change the
           filters themselves after the page loads.

@@ -44,7 +44,7 @@ export function PointsManager({
   return (
     <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-bold uppercase tracking-wide text-primary-text">
+        <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
           Points from stats{award.pointsGrade ? ` · ${award.pointsGrade}` : ""}
         </h4>
         <Button

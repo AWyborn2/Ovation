@@ -87,7 +87,7 @@ export default function AdminTeamOfDecade() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Curate best-XI honour boards. Each board appears as its own card on the Honour Boards
             page once published. Drafts stay hidden from the public.
           </p>
@@ -98,7 +98,7 @@ export default function AdminTeamOfDecade() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -155,7 +155,7 @@ export default function AdminTeamOfDecade() {
           <Card key={board.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div className="min-w-0">
-                <CardTitle className="text-xl">
+                <CardTitle className="text-[22px] leading-none">
                   {board.title}
                   {board.published ? (
                     <span className="ml-2 align-middle text-xs font-normal rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5">
@@ -506,7 +506,9 @@ function MembersManager({
 
   return (
     <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4">
-      <h4 className="text-sm font-bold uppercase tracking-wide text-primary-text">Lineup</h4>
+      <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
+        Lineup
+      </h4>
       {members.length > 1 && (
         <p className="text-xs text-muted-foreground">
           Drag the <GripVertical className="inline h-3 w-3 align-text-bottom" /> handle to reorder
@@ -645,7 +647,7 @@ function MemberRow({
           >
             <GripVertical className="h-4 w-4" />
           </button>
-          <span className="font-mono text-xs text-muted-foreground w-6 text-right">
+          <span className="tabular-nums text-xs text-muted-foreground w-6 text-right">
             {member.battingOrder}
           </span>
           <span className="font-semibold truncate">{member.name}</span>
