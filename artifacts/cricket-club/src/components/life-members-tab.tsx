@@ -27,7 +27,7 @@ const StatTile = ({
 }) => (
   <div className="bg-background/60 border border-border rounded p-3">
     <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-    <div className="font-mono font-bold text-primary-text text-lg leading-tight mt-0.5">
+    <div className="tabular-nums font-bold text-primary-text text-lg leading-tight mt-0.5">
       {value}
     </div>
     {sub && <div className="text-[11px] text-muted-foreground mt-0.5">{sub}</div>}
@@ -71,7 +71,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
     </span>
   );
   return (
-    <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-lg">
+    <div className="rounded-lg border bg-card p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {member.playerId !== null && member.playerId !== undefined ? (
@@ -89,7 +89,7 @@ const MemberCard = ({ member }: { member: LifeMember }) => {
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Inducted
           </div>
-          <div className="font-mono font-bold text-primary-text text-2xl leading-none">
+          <div className="tabular-nums font-bold text-primary-text text-2xl leading-none">
             {member.inductionYear}
           </div>
         </div>
@@ -136,7 +136,7 @@ export function LifeMembersTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card border border-border rounded-md p-6 shadow-md">
+      <div className="rounded-lg border bg-card p-6">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary-text m-0">
           Life Members
         </h2>
@@ -149,7 +149,7 @@ export function LifeMembersTab() {
       </div>
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
           Loading life members…
         </div>
       ) : (

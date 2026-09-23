@@ -22,7 +22,7 @@ export default function AdminTradingCards() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Choose which statistics and awards appear on player trading cards. Set a default that
           applies to every card, then optionally override the stats per player role (Batsman,
           Bowler, All-Rounder, Wicket-Keeper). Leave a section empty to fall back: a role with no
@@ -115,7 +115,7 @@ function SettingsCard({
       <CardContent className="space-y-8">
         {/* Default stats (apply to every role unless overridden) */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Default statistics (all roles)
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -127,7 +127,7 @@ function SettingsCard({
 
         {/* Per-role stat overrides */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Statistics by role
           </h3>
           <p className="text-xs text-muted-foreground mb-4">
@@ -150,7 +150,7 @@ function SettingsCard({
 
         {/* Awards */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Awards eligible for cards
           </h3>
           <p className="text-xs text-muted-foreground mb-3">

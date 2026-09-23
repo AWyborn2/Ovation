@@ -146,7 +146,7 @@ export default function AdminSocialCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Pick a card type, prefill it from your data where available, edit any field, and preview
           live before exporting.
         </p>

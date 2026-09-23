@@ -59,7 +59,7 @@ function AwardVotingCard({ award }: { award: VotableAward }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">
+        <CardTitle className="text-[22px] leading-none">
           {award.awardTitle}{" "}
           <span className="text-sm font-normal text-muted-foreground">
             {formatSeason(award.season)}
@@ -189,11 +189,11 @@ function RoundBallot({
           </div>
           {hasBallot && !open ? (
             <div className="text-sm text-muted-foreground mt-1">
-              <span className="font-mono font-bold text-primary-text">3</span>{" "}
+              <span className="tabular-nums font-bold text-primary-text">3</span>{" "}
               {nameOf(round.ballot!.pick1PlayerId)} ·{" "}
-              <span className="font-mono font-bold text-primary-text">2</span>{" "}
+              <span className="tabular-nums font-bold text-primary-text">2</span>{" "}
               {nameOf(round.ballot!.pick2PlayerId)} ·{" "}
-              <span className="font-mono font-bold text-primary-text">1</span>{" "}
+              <span className="tabular-nums font-bold text-primary-text">1</span>{" "}
               {nameOf(round.ballot!.pick3PlayerId)}
             </div>
           ) : (
