@@ -43,7 +43,7 @@ export default function AdminSocial() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground mt-1">
+        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
           Branded share-card factory for Instagram, Facebook, TikTok and X.
         </p>
       </div>
