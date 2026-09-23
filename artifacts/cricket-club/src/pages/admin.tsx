@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { HelpCircle, Palette } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader, PageStack } from "@/components/broadcast";
 import { Button } from "@/components/ui/button";
 import { useNavSurface, type ResolvedNavItem } from "@/lib/use-nav";
 import {
@@ -34,24 +34,24 @@ function FinishSetupBanner() {
   const brandQ = useGetTenantBrand();
   if (!isUnbranded(brandQ.data)) return null;
   return (
-    <Card className="border-primary/40 bg-primary/5">
-      <CardContent className="flex items-center justify-between gap-4 flex-wrap py-4">
-        <div className="flex items-center gap-3">
-          <Palette className="h-5 w-5 text-primary-text shrink-0" />
-          <div>
-            <p className="font-medium">Finish setting up your club</p>
-            <p className="text-sm text-muted-foreground">
-              Add your logo and brand colours so your site looks like your own club.
-            </p>
-          </div>
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-primary/40 bg-primary/5 p-4">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/15 text-primary-text">
+          <Palette className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="font-semibold">Finish setting up your club</p>
+          <p className="text-sm text-muted-foreground">
+            Add your logo and brand colours so your site looks like your own club.
+          </p>
         </div>
-        <Link href="/admin/settings/branding">
-          <Button size="sm" data-testid="button-finish-branding">
-            Set up branding
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
+      </div>
+      <Link href="/admin/settings/branding">
+        <Button size="sm" data-testid="button-finish-branding">
+          Set up branding
+        </Button>
+      </Link>
+    </section>
   );
 }
 
@@ -108,39 +108,41 @@ export default function AdminHub() {
   const tiles = useNavSurface("admin_tiles", TILES_FALLBACK);
   const tourContentQ = useGetTourContent();
   return (
-    <div className="space-y-6">
+    <PageStack>
       <FinishSetupBanner />
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-serif font-bold">Admin</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage club data and the public honour boards.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => launchAdminTour(tourContentQ.data)}
-          data-testid="admin-tour-start"
-          className="gap-1.5"
-        >
-          <HelpCircle className="h-4 w-4" />
-          Take the admin tour
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Back office"
+        title="Admin"
+        subtitle="Manage club data and the public honour boards."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => launchAdminTour(tourContentQ.data)}
+            data-testid="admin-tour-start"
+            className="gap-1.5"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Take the admin tour
+          </Button>
+        }
+      />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t, idx) => {
           const Icon = navIcon(t.iconKey);
           const card = (
-            <Card className="hover:border-primary cursor-pointer transition-colors h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {Icon && <Icon className="h-5 w-5 text-primary-text" />}
-                  {t.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">{t.description}</CardContent>
-            </Card>
+            <div
+              className="bc-lift flex h-full flex-col gap-3 rounded-lg border bg-card p-5 text-card-foreground"
+              data-testid="admin-hub-tile"
+            >
+              {Icon && (
+                <span className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary-text">
+                  <Icon className="h-5 w-5" />
+                </span>
+              )}
+              <h2 className="text-[22px] leading-none">{t.label}</h2>
+              <p className="text-sm text-muted-foreground">{t.description}</p>
+            </div>
           );
           return t.isExternal ? (
             <a key={`${t.target}-${idx}`} href={t.target} target="_blank" rel="noopener noreferrer">
@@ -153,6 +155,6 @@ export default function AdminHub() {
           );
         })}
       </div>
-    </div>
+    </PageStack>
   );
 }
