@@ -21,6 +21,7 @@ import {
 import {
   Container,
   FilterChips,
+  FullBleedPage,
   LeaderRow,
   LivePill,
   PageHero,
@@ -277,7 +278,7 @@ export default function Home() {
     .join(" · ");
 
   return (
-    <>
+    <FullBleedPage>
       <PageHero
         variant="home"
         image={heroImage}
@@ -342,6 +343,6 @@ export default function Home() {
           </PageStack>
         )}
       </Container>
-    </>
+    </FullBleedPage>
   );
 }
