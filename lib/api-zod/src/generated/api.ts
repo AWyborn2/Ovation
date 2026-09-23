@@ -365,6 +365,20 @@ export const GetMatchParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getMatchResponseClubOneHeroImagesOneHomeMax = 2048;
+
+export const getMatchResponseClubOneHeroImagesOneJuniorsMax = 2048;
+
+export const getMatchResponseClubOneHeroImagesOneHonoursMax = 2048;
+
+export const getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const getMatchResponseClubOneHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const GetMatchResponse = zod.object({
   "id": zod.number(),
   "grade": zod.string(),
@@ -401,7 +415,17 @@ export const GetMatchResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(getMatchResponseClubOneHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(getMatchResponseClubOneHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -473,6 +497,20 @@ export const UpdateMatchRoundBody = zod.object({
   "stage": zod.union([zod.enum(['Elimination Final', 'Qualifying Final', 'Semi Final', 'Preliminary Final', 'Grand Final']).describe('Finals stage of a match. A finals match carries one of these with a NULL\nround; a regular match carries a numeric round with a NULL stage.\n'),zod.null()]).optional().describe('New finals stage for the match (clears round). Mutually exclusive with round.')
 }).describe('Set a match\'s identity to a numeric round OR a finals stage (mutually\nexclusive). Provide `round` for a regular match, or `stage` for a finals\nmatch. Setting one clears the other.\n')
 
+export const updateMatchRoundResponseClubOneHeroImagesOneHomeMax = 2048;
+
+export const updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax = 2048;
+
+export const updateMatchRoundResponseClubOneHeroImagesOneHonoursMax = 2048;
+
+export const updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const updateMatchRoundResponseClubOneHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const UpdateMatchRoundResponse = zod.object({
   "id": zod.number(),
   "grade": zod.string(),
@@ -509,7 +547,17 @@ export const UpdateMatchRoundResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -577,6 +625,20 @@ export const SetMatchHatTrickBody = zod.object({
   "hatTrick": zod.boolean().describe('True to record a hat-trick for the player, false to remove it.')
 })
 
+export const setMatchHatTrickResponseClubOneHeroImagesOneHomeMax = 2048;
+
+export const setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax = 2048;
+
+export const setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax = 2048;
+
+export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const SetMatchHatTrickResponse = zod.object({
   "id": zod.number(),
   "grade": zod.string(),
@@ -613,7 +675,17 @@ export const SetMatchHatTrickResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
   "lines": zod.array(zod.object({
@@ -7459,6 +7531,20 @@ export const CreateCardRenderStillBody = zod.object({
 /**
  * @summary Resolve the current tenant's brand (name, short name, logo, colours). Tenant is resolved per-request by the tenant-context middleware.
  */
+export const getTenantBrandResponseOneHeroImagesOneHomeMax = 2048;
+
+export const getTenantBrandResponseOneHeroImagesOneJuniorsMax = 2048;
+
+export const getTenantBrandResponseOneHeroImagesOneHonoursMax = 2048;
+
+export const getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const getTenantBrandResponseOneHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const GetTenantBrandResponse = zod.union([zod.object({
   "name": zod.string(),
   "shortName": zod.string().nullish(),
@@ -7472,7 +7558,17 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(getTenantBrandResponseOneHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(getTenantBrandResponseOneHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.object({
   "platform": zod.literal(true),
   "name": zod.string().nullish().describe('Platform name (e.g. \"Ovation\"). Null = DEFAULT_BRAND fallback.'),
@@ -7485,6 +7581,20 @@ export const GetTenantBrandResponse = zod.union([zod.object({
 /**
  * @summary Self-service update of the current tenant's own cosmetic branding (name, short name, logo, favicon, colours) by that tenant's own admin. Deliberately excludes plan and customDomain, which stay on the super-admin-only platform console; the request schema does not carry those properties at all, so they cannot be set through this endpoint.
  */
+export const updateTenantBrandBodyHeroImagesOneHomeMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const UpdateTenantBrandBody = zod.object({
   "name": zod.string().optional(),
   "shortName": zod.string().nullish(),
@@ -7497,8 +7607,32 @@ export const UpdateTenantBrandBody = zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('The \"App look\" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour).'),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Curated per-token theme overrides (surface\/panel\/border\/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Curated per-token theme overrides (surface\/panel\/border\/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(updateTenantBrandBodyHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(updateTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Broadcast imagery (hero and explore-card photos). Replaces the whole slot map; null clears all imagery (heroes fall back to a gradient).')
 }).describe('Partial self-service update of a tenant\'s own cosmetic branding fields. Deliberately closed to exactly this property set — plan and customDomain are not valid properties on this schema at all, so they cannot be set through this endpoint regardless of handler changes.')
+
+export const updateTenantBrandResponseHeroImagesOneHomeMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneJuniorsMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
 
 export const UpdateTenantBrandResponse = zod.object({
   "name": zod.string(),
@@ -7513,7 +7647,17 @@ export const UpdateTenantBrandResponse = zod.object({
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
   "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(updateTenantBrandResponseHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(updateTenantBrandResponseHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.')
 
 
@@ -7617,6 +7761,20 @@ export const GetPlatformAdminMeResponse = zod.object({
 /**
  * @summary Every tenant on the platform, with plan and admin count.
  */
+export const listAllTenantsResponseHeroImagesOneHomeMax = 2048;
+
+export const listAllTenantsResponseHeroImagesOneJuniorsMax = 2048;
+
+export const listAllTenantsResponseHeroImagesOneHonoursMax = 2048;
+
+export const listAllTenantsResponseHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const listAllTenantsResponseHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const listAllTenantsResponseHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const ListAllTenantsResponseItem = zod.object({
   "id": zod.number(),
   "slug": zod.string(),
@@ -7637,6 +7795,16 @@ export const ListAllTenantsResponseItem = zod.object({
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(listAllTenantsResponseHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(listAllTenantsResponseHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(listAllTenantsResponseHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7668,6 +7836,20 @@ export const GetAdminTenantParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getAdminTenantResponseTenantHeroImagesOneHomeMax = 2048;
+
+export const getAdminTenantResponseTenantHeroImagesOneJuniorsMax = 2048;
+
+export const getAdminTenantResponseTenantHeroImagesOneHonoursMax = 2048;
+
+export const getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const getAdminTenantResponseTenantHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const GetAdminTenantResponse = zod.object({
   "tenant": zod.object({
   "id": zod.number(),
@@ -7689,6 +7871,16 @@ export const GetAdminTenantResponse = zod.object({
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(getAdminTenantResponseTenantHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7713,6 +7905,20 @@ export const UpdateAdminTenantBody = zod.object({
   "customDomain": zod.string().nullish()
 }).describe('Partial update of a tenant\'s plan and\/or custom domain.')
 
+export const updateAdminTenantResponseHeroImagesOneHomeMax = 2048;
+
+export const updateAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
+
+export const updateAdminTenantResponseHeroImagesOneHonoursMax = 2048;
+
+export const updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const updateAdminTenantResponseHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
+
 export const UpdateAdminTenantResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string(),
@@ -7733,6 +7939,16 @@ export const UpdateAdminTenantResponse = zod.object({
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(updateAdminTenantResponseHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(updateAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7750,6 +7966,18 @@ export const UpdateAdminTenantBrandParams = zod.object({
 export const updateAdminTenantBrandBodyBackgroundColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
 export const updateAdminTenantBrandBodyPrimaryColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
 export const updateAdminTenantBrandBodyJuniorsColourRegExp = new RegExp('^#[0-9a-fA-F]{6}$');
+export const updateAdminTenantBrandBodyHeroImagesOneHomeMax = 2048;
+
+export const updateAdminTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
+
+export const updateAdminTenantBrandBodyHeroImagesOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const updateAdminTenantBrandBodyHeroImagesOneExploreOnePremiershipsMax = 2048;
+
 
 
 export const UpdateAdminTenantBrandBody = zod.object({
@@ -7763,8 +7991,32 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "juniorsColour": zod.string().regex(updateAdminTenantBrandBodyJuniorsColourRegExp).nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
-  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Full per-token theme overrides (the premium concierge \"custom design\" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.')
-}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
+  "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Full per-token theme overrides (the premium concierge \"custom design\" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Broadcast imagery (hero and explore-card photos). Replaces the whole slot map; null clears all imagery (heroes fall back to a gradient).')
+}).describe('Partial concierge (platform-admin) update of a tenant\'s cosmetic branding fields. Closed to exactly these properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.')
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
 
 export const UpdateAdminTenantBrandResponse = zod.object({
   "tenant": zod.object({
@@ -7787,6 +8039,16 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7805,6 +8067,20 @@ export const UpdateAdminTenantBrandResponse = zod.object({
 export const ArchiveAdminTenantParams = zod.object({
   "id": zod.coerce.number()
 })
+
+export const archiveAdminTenantResponseHeroImagesOneHomeMax = 2048;
+
+export const archiveAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
+
+export const archiveAdminTenantResponseHeroImagesOneHonoursMax = 2048;
+
+export const archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const archiveAdminTenantResponseHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
 
 export const ArchiveAdminTenantResponse = zod.object({
   "id": zod.number(),
@@ -7826,6 +8102,16 @@ export const ArchiveAdminTenantResponse = zod.object({
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(archiveAdminTenantResponseHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(archiveAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
@@ -7838,6 +8124,20 @@ export const ArchiveAdminTenantResponse = zod.object({
 export const RestoreAdminTenantParams = zod.object({
   "id": zod.coerce.number()
 })
+
+export const restoreAdminTenantResponseHeroImagesOneHomeMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneHonoursMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneExploreOnePremiershipsMax = 2048;
+
+
 
 export const RestoreAdminTenantResponse = zod.object({
   "id": zod.number(),
@@ -7859,6 +8159,16 @@ export const RestoreAdminTenantResponse = zod.object({
   "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
+  "heroImages": zod.union([zod.object({
+  "home": zod.string().max(restoreAdminTenantResponseHeroImagesOneHomeMax).nullish(),
+  "juniors": zod.string().max(restoreAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
+  "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "explore": zod.union([zod.object({
+  "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
+  "players": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
+  "premierships": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOnePremiershipsMax).nullish()
+}).describe('Explore-the-club photo card images, one per card.'),zod.null()]).optional()
+}).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')

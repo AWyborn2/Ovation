@@ -5,10 +5,11 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { TenantHeroImages } from './tenantHeroImages';
 import type { UpdateAdminTenantBrandBodyThemeOverrides } from './updateAdminTenantBrandBodyThemeOverrides';
 
 /**
- * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these nine properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
+ * Partial concierge (platform-admin) update of a tenant's cosmetic branding fields. Closed to exactly these properties — unknown keys such as plan, customDomain, or backgroundUrl are stripped by validation and can never reach the handler. Colour fields are validated as 6-digit hex.
  */
 export interface UpdateAdminTenantBrandBody {
   /** @minLength 1 */
@@ -51,4 +52,6 @@ export interface UpdateAdminTenantBrandBody {
      * @nullable
      */
   themeOverrides?: UpdateAdminTenantBrandBodyThemeOverrides;
+  /** Broadcast imagery (hero and explore-card photos). Replaces the whole slot map; null clears all imagery (heroes fall back to a gradient). */
+  heroImages?: TenantHeroImages | null;
 }

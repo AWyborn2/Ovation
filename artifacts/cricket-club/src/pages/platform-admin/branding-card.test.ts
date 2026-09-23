@@ -104,6 +104,22 @@ describe("buildBrandSavePayload", () => {
     });
     expect(cleared.themeOverrides).toBeNull();
   });
+
+  it("carries heroImages when given, normalises all-empty imagery to null, omits it when absent", () => {
+    const base = {
+      persisted: PERSISTED,
+      ...FIELD_EDITS,
+      colourMode: "token" as const,
+      colours: seedColourState(PERSISTED),
+    };
+    const heroImages = { home: "/api/storage/objects/h.webp", explore: { players: null } };
+    expect(buildBrandSavePayload({ ...base, heroImages }).heroImages).toEqual(heroImages);
+    expect(
+      buildBrandSavePayload({ ...base, heroImages: { home: null, explore: { players: null } } })
+        .heroImages,
+    ).toBeNull();
+    expect("heroImages" in buildBrandSavePayload(base)).toBe(false);
+  });
 });
 
 describe("mode switching (KTD4 — mode at save time wins)", () => {

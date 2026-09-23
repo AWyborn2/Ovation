@@ -59,6 +59,7 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
       | "badgeStyle"
       | "useNavyBase"
       | "themeOverrides"
+      | "heroImages"
     >
   > = {};
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
@@ -74,6 +75,9 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
   if (parsed.data.badgeStyle !== undefined) updates.badgeStyle = parsed.data.badgeStyle;
   if (parsed.data.useNavyBase !== undefined) updates.useNavyBase = parsed.data.useNavyBase;
   if (parsed.data.themeOverrides !== undefined) updates.themeOverrides = parsed.data.themeOverrides;
+  // Broadcast imagery replaces the whole slot map (the admin form always sends
+  // every slot); null clears all imagery.
+  if (parsed.data.heroImages !== undefined) updates.heroImages = parsed.data.heroImages;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "Nothing to update" });

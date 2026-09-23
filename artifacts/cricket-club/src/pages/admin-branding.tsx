@@ -36,6 +36,7 @@ import {
   type BadgeStyle,
 } from "@/components/grade-badge";
 import { BadgeStyleContext } from "@/lib/brand-context";
+import { HeroImageFields, isEmptyHeroImages } from "@/components/hero-image-fields";
 
 /** True when the response is the platform marker rather than a tenant brand. */
 function isPlatformResponse(data: TenantBrand | PlatformBrand | undefined): data is PlatformBrand {
@@ -118,6 +119,8 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(
     Object.keys(brand.themeOverrides ?? {}).length > 0,
   );
+  const [heroImages, setHeroImages] = useState(brand.heroImages ?? null);
+  const [isUploadingImagery, setIsUploadingImagery] = useState(false);
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,6 +138,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setUseNavyBase(brand.useNavyBase ?? false);
     setBackgroundUrl(brand.backgroundUrl ?? "");
     setOverrides({ ...(brand.themeOverrides ?? {}) });
+    setHeroImages(brand.heroImages ?? null);
   }, [brand]);
 
   /** Set (value) or clear (null) a group of override keys together. */
@@ -235,6 +239,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
       badgeStyle: badgeStyle,
       useNavyBase: useNavyBase,
       themeOverrides: themeOverridesPayload,
+      heroImages: isEmptyHeroImages(heroImages) ? null : heroImages,
     };
     if (colourTab === "preset") {
       update.mutate({
@@ -282,7 +287,12 @@ function Editor({ brand }: { brand: TenantBrand }) {
       ? contrastWarningMessage([customPrimary, customSecondary, customTertiary], mode)
       : null;
 
-  const busy = isUploadingLogo || isUploadingFavicon || isUploadingBackground || update.isPending;
+  const busy =
+    isUploadingLogo ||
+    isUploadingFavicon ||
+    isUploadingBackground ||
+    isUploadingImagery ||
+    update.isPending;
 
   return (
     <div className="grid gap-6 xl:grid-cols-3">
@@ -389,6 +399,25 @@ function Editor({ brand }: { brand: TenantBrand }) {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Photos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Hero and explore photos for your home, juniors and honour-board pages. Large photos
+                are resized automatically. Leave a slot empty for a brand-colour backdrop.
+              </p>
+              <HeroImageFields
+                value={heroImages}
+                onChange={setHeroImages}
+                disabled={busy}
+                onError={setError}
+                onBusyChange={setIsUploadingImagery}
+              />
             </CardContent>
           </Card>
 

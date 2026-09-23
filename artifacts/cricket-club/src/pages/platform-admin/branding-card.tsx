@@ -6,6 +6,7 @@ import {
   getGetTenantBrandQueryKey,
   getListAllTenantsQueryKey,
   type AdminTenant,
+  type TenantHeroImages,
   type UpdateAdminTenantBrandBody,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
@@ -35,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { HeroImageFields, isEmptyHeroImages } from "@/components/hero-image-fields";
 import {
   GradeBadge,
   BADGE_STYLE_ORDER,
@@ -145,6 +147,8 @@ export function buildBrandSavePayload(args: {
   badgeStyle: string | null;
   useNavyBase: boolean;
   themeOverrides?: Record<string, string> | null;
+  /** Broadcast imagery; omitted from the payload when undefined. */
+  heroImages?: TenantHeroImages | null;
 }): UpdateAdminTenantBrandBody {
   const { persisted, colours } = args;
   const base = {
@@ -159,6 +163,9 @@ export function buildBrandSavePayload(args: {
       args.themeOverrides && Object.keys(args.themeOverrides).length > 0
         ? args.themeOverrides
         : null,
+    ...(args.heroImages !== undefined
+      ? { heroImages: isEmptyHeroImages(args.heroImages) ? null : args.heroImages }
+      : {}),
   };
   if (args.colourMode === "token") {
     return {
@@ -275,6 +282,8 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
   const [customDesignOpen, setCustomDesignOpen] = useState<boolean>(
     Object.keys(tenant.themeOverrides ?? {}).length > 0,
   );
+  const [heroImages, setHeroImages] = useState<TenantHeroImages | null>(tenant.heroImages ?? null);
+  const [isUploadingImagery, setIsUploadingImagery] = useState(false);
   const [colourNote, setColourNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -398,6 +407,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
         badgeStyle,
         useNavyBase,
         themeOverrides: overrides,
+        heroImages,
       }),
     });
   };
@@ -437,7 +447,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
     mode,
   );
 
-  const busy = isUploadingLogo || isUploadingFavicon || update.isPending;
+  const busy = isUploadingLogo || isUploadingFavicon || isUploadingImagery || update.isPending;
 
   return (
     <Card className="md:col-span-2">
@@ -519,6 +529,18 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
                   />
                 </label>
               </div>
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <Label>Photos (Broadcast heroes and explore cards)</Label>
+              <HeroImageFields
+                value={heroImages}
+                onChange={setHeroImages}
+                basePath="/api/platform/admin/storage"
+                disabled={busy}
+                onError={setError}
+                onBusyChange={setIsUploadingImagery}
+              />
             </div>
 
             <div className="space-y-2">

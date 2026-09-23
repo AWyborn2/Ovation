@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TenantBrandThemeOverrides } from './tenantBrandThemeOverrides';
+import type { TenantHeroImages } from './tenantHeroImages';
 
 /**
  * A tenant's brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web/mobile theme and document title.
@@ -51,4 +52,6 @@ export interface TenantBrand {
      * @nullable
      */
   themeOverrides?: TenantBrandThemeOverrides;
+  /** Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient). */
+  heroImages?: TenantHeroImages | null;
 }

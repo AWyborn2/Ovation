@@ -442,6 +442,7 @@ router.patch(
         | "badgeStyle"
         | "useNavyBase"
         | "themeOverrides"
+        | "heroImages"
       >
     > = {};
     if (parsed.data.name !== undefined) updates.name = parsed.data.name;
@@ -457,6 +458,7 @@ router.patch(
     if (parsed.data.useNavyBase !== undefined) updates.useNavyBase = parsed.data.useNavyBase;
     if (parsed.data.themeOverrides !== undefined)
       updates.themeOverrides = parsed.data.themeOverrides;
+    if (parsed.data.heroImages !== undefined) updates.heroImages = parsed.data.heroImages;
 
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "Nothing to update" });

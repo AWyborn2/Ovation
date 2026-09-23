@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm";
 import { db, clubsTable, tenantsTable, platformSettingsTable } from "@workspace/db";
-import { DEFAULT_BRAND, type HallsHeadBrand } from "@workspace/scorecard/brand";
+import {
+  DEFAULT_BRAND,
+  type BrandHeroImages,
+  type HallsHeadBrand,
+} from "@workspace/scorecard/brand";
 
 /**
  * Per-tenant brand (logo + colours + badge style), the single shape every
@@ -30,6 +34,8 @@ interface TenantBrandRow {
   /** Optional so pre-existing test fixtures compile; the live `getTenantBrand`
    * select always supplies it. */
   themeOverrides?: Record<string, string> | null;
+  /** Optional for the same reason as themeOverrides. */
+  heroImages?: BrandHeroImages | null;
 }
 
 /** Minimal brand columns read from the `clubs` register row (`appClubId`). */
@@ -122,6 +128,9 @@ export function buildTenantBrand(
     // Per-token theme overrides — tenant row only, null when the tenant has set
     // none (the fully-derived theme). The clubs register has no override concept.
     themeOverrides: tenant?.themeOverrides ?? null,
+    // Broadcast imagery — tenant row only, null when nothing is uploaded (heroes
+    // then render a brand gradient, never another club's photo).
+    heroImages: tenant?.heroImages ?? null,
   };
 }
 
@@ -149,6 +158,7 @@ export async function getTenantBrand(tenantId: number): Promise<TenantBrand> {
       useNavyBase: tenantsTable.useNavyBase,
       badgeStyle: tenantsTable.badgeStyle,
       themeOverrides: tenantsTable.themeOverrides,
+      heroImages: tenantsTable.heroImages,
       appClubId: tenantsTable.appClubId,
     })
     .from(tenantsTable)

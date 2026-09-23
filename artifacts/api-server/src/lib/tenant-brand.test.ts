@@ -47,6 +47,7 @@ const HALLS_HEAD_WIRE_BRAND = {
   badgeStyle: null,
   useNavyBase: false,
   themeOverrides: null,
+  heroImages: null,
 };
 const { accentToken: _defaultAccent, ...defaultBrandBase } = DEFAULT_BRAND;
 const DEFAULT_WIRE_BRAND = {
@@ -54,6 +55,7 @@ const DEFAULT_WIRE_BRAND = {
   badgeStyle: null,
   useNavyBase: false,
   themeOverrides: null,
+  heroImages: null,
 };
 
 describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", () => {
@@ -125,6 +127,28 @@ describe("tenant-brand: buildTenantBrand fallback chain (tenant #1 snapshot)", (
     expect(withOverrides.themeOverrides).toEqual(overrides);
     // No override column → null (clubs register has no override concept).
     expect(buildTenantBrand(null, null).themeOverrides).toBeNull();
+  });
+
+  it("passes tenant heroImages through; old rows without imagery resolve to null", () => {
+    const heroImages = { home: "/api/storage/objects/uploads/h.webp", explore: null };
+    const brand = buildTenantBrand(
+      {
+        name: "Photo FC",
+        shortName: null,
+        logoUrl: null,
+        backgroundUrl: null,
+        faviconUrl: null,
+        backgroundColour: null,
+        primaryColour: null,
+        juniorsColour: null,
+        useNavyBase: false,
+        badgeStyle: null,
+        heroImages,
+      },
+      null,
+    );
+    expect(brand.heroImages).toEqual(heroImages);
+    expect(buildTenantBrand(null, null).heroImages).toBeNull();
   });
 
   it("resolves logoUrl to the Ovation placeholder asset for a tenant with no brand data (U5, AE4)", () => {

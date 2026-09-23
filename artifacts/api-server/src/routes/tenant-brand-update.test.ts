@@ -110,6 +110,54 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
     expect(cleared.body.tagline).toBeNull();
   });
 
+  it("round-trips Broadcast heroImages through PATCH and GET, isolated per tenant", async () => {
+    const heroImages = {
+      home: "/api/storage/objects/uploads/hero-home.webp",
+      juniors: null,
+      honours: null,
+      explore: {
+        honours: null,
+        players: "/api/storage/objects/uploads/p.webp",
+        premierships: null,
+      },
+    };
+    const res = await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ heroImages })
+      .expect(200);
+    expect(res.body.heroImages).toEqual(heroImages);
+
+    const get = await request(app)
+      .get("/api/tenant-brand")
+      .set("x-tenant-id", String(tenantAId))
+      .expect(200);
+    expect(get.body.heroImages.home).toBe(heroImages.home);
+
+    // Tenant B never sees tenant A's imagery.
+    const [rowB] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantBId));
+    expect(rowB.heroImages).toBeNull();
+
+    // An explicit null clears all imagery, and the cache reflects it at once.
+    const cleared = await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ heroImages: null })
+      .expect(200);
+    expect(cleared.body.heroImages).toBeNull();
+  });
+
+  it("rejects an unknown heroImages slot (closed schema, 400)", async () => {
+    await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ heroImages: { banner: "/x.webp" } })
+      .expect(400);
+  });
+
   it("a partial update (only logoUrl) leaves other fields untouched", async () => {
     await request(app)
       .patch("/api/tenant-brand")
