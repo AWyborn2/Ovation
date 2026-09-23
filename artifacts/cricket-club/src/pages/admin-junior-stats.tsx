@@ -110,7 +110,7 @@ export default function AdminJuniorStats() {
               key={m.id}
               type="button"
               onClick={() => setMatchId(m.id)}
-              className="w-full text-left bg-card border border-border rounded-md p-3 shadow-sm hover:border-primary transition-colors flex flex-wrap items-center gap-x-4 gap-y-1"
+              className="w-full text-left rounded-lg border bg-card p-3 hover:border-primary transition-colors flex flex-wrap items-center gap-x-4 gap-y-1"
             >
               <span className="font-medium text-primary-text">
                 vs {m.opponentName ?? "Unknown"}
@@ -123,7 +123,7 @@ export default function AdminJuniorStats() {
               {fmtJuniorDate(m.matchDate) && (
                 <span className="text-xs text-muted-foreground">{fmtJuniorDate(m.matchDate)}</span>
               )}
-              <span className="ml-auto text-xs font-mono text-muted-foreground">
+              <span className="ml-auto text-xs tabular-nums text-muted-foreground">
                 {m.hhScore ?? "—"} vs {m.opponentScore ?? "—"}
               </span>
             </button>

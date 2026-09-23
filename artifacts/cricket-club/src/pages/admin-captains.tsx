@@ -64,7 +64,7 @@ export default function AdminCaptains() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mt-1">
+          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
             Create grade captain logins and grant each one the grades they vote for. Captains sign
             in at <code>/captain</code> to submit their 3-2-1 votes each round.
           </p>
@@ -75,7 +75,7 @@ export default function AdminCaptains() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -124,7 +124,7 @@ export default function AdminCaptains() {
           <Card key={captain.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div className="min-w-0">
-                <CardTitle className="text-xl">{captain.displayName}</CardTitle>
+                <CardTitle className="text-[22px] leading-none">{captain.displayName}</CardTitle>
                 <div className="text-xs text-muted-foreground mt-1">
                   @{captain.username} ·{" "}
                   {captain.grades.length > 0 ? captain.grades.join(", ") : "no grades assigned"}
