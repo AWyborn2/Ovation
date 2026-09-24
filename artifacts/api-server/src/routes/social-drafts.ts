@@ -12,7 +12,11 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { publicWriteRateLimiter } from "../middlewares/rate-limit";
-import { CreateTrackedLinkBody, GenerateRecapsBody } from "@workspace/api-zod";
+import {
+  CreateTrackedLinkBody,
+  GenerateRecapsBody,
+  UpdateSocialDraftBody,
+} from "@workspace/api-zod";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
@@ -25,7 +29,11 @@ import {
   storedValuesFor,
   type DraftStatus,
 } from "../lib/draft-status";
-import { listDraftRevisions, revertDraftToRevision } from "../lib/draft-revisions";
+import {
+  listDraftRevisions,
+  recordDraftRevision,
+  revertDraftToRevision,
+} from "../lib/draft-revisions";
 
 const router: IRouter = Router();
 
@@ -272,6 +280,60 @@ router.post(
       }
       throw err;
     }
+  },
+);
+
+router.patch(
+  "/social-drafts/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const parsed = UpdateSocialDraftBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (normalizeDraftStatus(draft.status) === "dismissed") {
+      res.status(409).json({ error: "Reopen the draft before editing it" });
+      return;
+    }
+    const { caption, photoUrl } = parsed.data;
+    const patch: Partial<typeof socialDraftsTable.$inferInsert> = {
+      // A manual action: stop any pending auto-promotion (KTD4).
+      autoReadyAt: null,
+    };
+    if (caption !== undefined) {
+      patch.caption = caption;
+      // Marks the caption as the admin's: data refreshes keep it.
+      patch.editedAt = new Date();
+    }
+    if (photoUrl !== undefined) {
+      patch.photoUrl = photoUrl;
+      // The admin's choice is never replaced by an automatic pick (KTD6).
+      patch.photoSource = photoUrl === null ? null : "manual";
+      if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
+    }
+    const updated = await db.transaction(async (tx) => {
+      await recordDraftRevision(draft, "edit", tx);
+      const [row] = await tx
+        .update(socialDraftsTable)
+        .set(patch)
+        .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+        .returning();
+      return row;
+    });
+    res.json(presentDraft(updated));
   },
 );
 

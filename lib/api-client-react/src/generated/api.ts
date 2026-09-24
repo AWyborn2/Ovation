@@ -273,6 +273,7 @@ import type {
   UpdateJuniorMatchBody,
   UpdateJuniorParticipantBody,
   UpdatePlatformBrandBody,
+  UpdateSocialDraftRequest,
   UpdateTenantBody,
   UpdateTenantBrandBody,
   UploadMatchBatchBody,
@@ -15127,6 +15128,79 @@ export const useApproveSocialDraft = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getApproveSocialDraftMutationOptions(options));
+    }
+
+export const getUpdateSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}`
+}
+
+/**
+ * Records the current content as an "edit" revision first, so the change can be reverted. A caption edit marks the draft edited (later data refreshes keep it); a photo set here is recorded as the admin's choice and never replaced by an automatic pick. Any edit stops auto-promotion.
+ * @summary Edit a draft's caption or swap its photo (keeps a revision)
+ */
+export const updateSocialDraft = async (id: number,
+    updateSocialDraftRequest: UpdateSocialDraftRequest, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getUpdateSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateSocialDraftRequest,)
+  }
+);}
+
+
+
+
+export const getUpdateSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialDraft>>, TError,{id: number;data: BodyType<UpdateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSocialDraft>>, TError,{id: number;data: BodyType<UpdateSocialDraftRequest>}, TContext> => {
+
+const mutationKey = ['updateSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSocialDraft>>, {id: number;data: BodyType<UpdateSocialDraftRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSocialDraft(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof updateSocialDraft>>>
+    export type UpdateSocialDraftMutationBody = BodyType<UpdateSocialDraftRequest>
+    export type UpdateSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Edit a draft's caption or swap its photo (keeps a revision)
+ */
+export const useUpdateSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialDraft>>, TError,{id: number;data: BodyType<UpdateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSocialDraft>>,
+        TError,
+        {id: number;data: BodyType<UpdateSocialDraftRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateSocialDraftMutationOptions(options));
     }
 
 export const getSendBackSocialDraftUrl = (id: number,) => {

@@ -111,6 +111,9 @@ export async function revertDraftToRevision(
         editedAt: new Date(),
         // A manual action: stop any pending auto-promotion (KTD4).
         autoReadyAt: null,
+        // Reverting to corrected data (a posted card's "refresh") resolves the
+        // stale marker; the admin has chosen what the card shows.
+        staleSince: null,
       })
       .where(eq(socialDraftsTable.id, draftId))
       .returning();

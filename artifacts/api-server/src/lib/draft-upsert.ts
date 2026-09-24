@@ -1,5 +1,10 @@
-import { and, eq, like, ne, sql } from "drizzle-orm";
-import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
+import { and, desc, eq, like, ne, sql } from "drizzle-orm";
+import {
+  db,
+  socialDraftsTable,
+  socialDraftRevisionsTable,
+  type SocialDraftRow,
+} from "@workspace/db";
 import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
 import { enrichDraft, isAutoPhoto } from "./draft-enrich";
@@ -145,11 +150,27 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
   }
 
   if (normalizeDraftStatus(existing.status) === "posted") {
-    const [row] = await db
-      .update(socialDraftsTable)
-      .set({ staleSince: existing.staleSince ?? new Date() })
-      .where(eq(socialDraftsTable.id, existing.id))
-      .returning();
+    // What was shared is never rewritten. The corrected data is kept as a
+    // "refresh" revision, so the admin can apply it with a revert (R31) —
+    // recorded once per distinct correction, not on every sweep.
+    const posted = existing;
+    const row = await db.transaction(async (tx) => {
+      const [latest] = await tx
+        .select({ cardInput: socialDraftRevisionsTable.cardInput })
+        .from(socialDraftRevisionsTable)
+        .where(eq(socialDraftRevisionsTable.draftId, posted.id))
+        .orderBy(desc(socialDraftRevisionsTable.createdAt), desc(socialDraftRevisionsTable.id))
+        .limit(1);
+      if (!latest || !sameCardInput(latest.cardInput, input.cardInput)) {
+        await recordDraftRevision({ ...posted, cardInput: input.cardInput }, "refresh", tx);
+      }
+      const [updated] = await tx
+        .update(socialDraftsTable)
+        .set({ staleSince: posted.staleSince ?? new Date() })
+        .where(eq(socialDraftsTable.id, posted.id))
+        .returning();
+      return updated;
+    });
     return { action: "stale", draft: row };
   }
 

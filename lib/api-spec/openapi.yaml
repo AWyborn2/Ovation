@@ -4232,6 +4232,41 @@ paths:
         "409":
           description: The draft is posted or dismissed
 
+  /social-drafts/{id}:
+    patch:
+      operationId: updateSocialDraft
+      tags: [socialCards]
+      summary: Edit a draft's caption or swap its photo (keeps a revision)
+      description: >-
+        Records the current content as an "edit" revision first, so the change
+        can be reverted. A caption edit marks the draft edited (later data
+        refreshes keep it); a photo set here is recorded as the admin's choice
+        and never replaced by an automatic pick. Any edit stops auto-promotion.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSocialDraftRequest"
+      responses:
+        "200":
+          description: The updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "400":
+          description: Invalid body
+        "404":
+          description: Not found
+        "409":
+          description: The draft is dismissed
+
   /social-drafts/{id}/send-back:
     post:
       operationId: sendBackSocialDraft
@@ -10734,6 +10769,10 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "Season-start override for countdown cards. Null = derive from the earliest upcoming fixture."
+        lastSweepAt:
+          type: ["string", "null"]
+          format: date-time
+          description: "When the scheduled drafting sweep last completed for this club (read-only)."
         familyConfig:
           $ref: "#/components/schemas/SocialFamilyConfig"
 
@@ -12469,6 +12508,15 @@ components:
       properties:
         url: { type: string, nullable: true }
         disabled: { type: boolean }
+
+    UpdateSocialDraftRequest:
+      type: object
+      properties:
+        caption:
+          type: string
+        photoUrl:
+          type: ["string", "null"]
+          description: "A library or uploaded image URL; null removes the photo."
 
     SocialDraft:
       type: object
