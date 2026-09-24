@@ -12,6 +12,7 @@ import {
 import { DEFAULT_BRAND } from "@workspace/scorecard";
 import { navIcon } from "@/lib/nav-icons";
 import { launchAdminTour } from "@/lib/tour";
+import { NeedsAttention } from "@/components/admin-hub/needs-attention";
 
 /**
  * Whether the tenant's resolved brand is still the neutral default -- computed
@@ -127,6 +128,7 @@ export default function AdminHub() {
           </Button>
         }
       />
+      <NeedsAttention />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t, idx) => {
           const Icon = navIcon(t.iconKey);
